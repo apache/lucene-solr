@@ -165,7 +165,17 @@ abstract class IntervalFunction {
   static final IntervalFunction UNORDERED = new SingletonFunction("UNORDERED") {
     @Override
     public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
-      return new UnorderedIntervalIterator(intervalIterators);
+      return new UnorderedIntervalIterator(intervalIterators, true);
+    }
+  };
+
+  /**
+   * Return an iterator over intervals where the subiterators appear in any order, and do not overlap
+   */
+  static final IntervalFunction UNORDERED_NO_OVERLAP = new SingletonFunction("UNORDERED_NO_OVERLAP") {
+    @Override
+    public IntervalIterator apply(List<IntervalIterator> iterators) {
+      return new UnorderedIntervalIterator(iterators, false);
     }
   };
 
@@ -173,10 +183,11 @@ abstract class IntervalFunction {
 
     private final PriorityQueue<IntervalIterator> queue;
     private final IntervalIterator[] subIterators;
+    private final boolean allowOverlaps;
 
     int start = -1, end = -1, queueEnd;
 
-    UnorderedIntervalIterator(List<IntervalIterator> subIterators) {
+    UnorderedIntervalIterator(List<IntervalIterator> subIterators, boolean allowOverlaps) {
       super(subIterators);
       this.queue = new PriorityQueue<IntervalIterator>(subIterators.size()) {
         @Override
@@ -185,6 +196,7 @@ abstract class IntervalFunction {
         }
       };
       this.subIterators = new IntervalIterator[subIterators.size()];
+      this.allowOverlaps = allowOverlaps;
 
       for (int i = 0; i < subIterators.size(); i++) {
         this.subIterators[i] = subIterators.get(i);
@@ -210,15 +222,23 @@ abstract class IntervalFunction {
 
     @Override
     public int nextInterval() throws IOException {
+      // first, find a matching interval
       while (this.queue.size() == subIterators.length && queue.top().start() == start) {
         IntervalIterator it = queue.pop();
         if (it != null && it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
+          if (allowOverlaps == false) {
+            while (hasOverlaps(it)) {
+              if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
+                return IntervalIterator.NO_MORE_INTERVALS;
+            }
+          }
           queue.add(it);
           updateRightExtreme(it);
         }
       }
       if (this.queue.size() < subIterators.length)
         return IntervalIterator.NO_MORE_INTERVALS;
+      // then, minimize it
       do {
         start = queue.top().start();
         end = queueEnd;
@@ -226,6 +246,13 @@ abstract class IntervalFunction {
           return start;
         IntervalIterator it = queue.pop();
         if (it != null && it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
+          if (allowOverlaps == false) {
+            while (hasOverlaps(it)) {
+              if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
+                return start;
+              }
+            }
+          }
           queue.add(it);
           updateRightExtreme(it);
         }
@@ -237,13 +264,38 @@ abstract class IntervalFunction {
     protected void reset() throws IOException {
       queueEnd = start = end = -1;
       this.queue.clear();
-      for (IntervalIterator it : subIterators) {
+      loop: for (IntervalIterator it : subIterators) {
         if (it.nextInterval() == NO_MORE_INTERVALS) {
           break;
+        }
+        if (allowOverlaps == false) {
+          while (hasOverlaps(it)) {
+            if (it.nextInterval() == NO_MORE_INTERVALS) {
+              break loop;
+            }
+          }
         }
         queue.add(it);
         updateRightExtreme(it);
       }
+    }
+
+    private boolean hasOverlaps(IntervalIterator candidate) {
+      for (IntervalIterator it : queue) {
+        if (it.start() < candidate.start()) {
+          if (it.end() >= candidate.start()) {
+            return true;
+          }
+          continue;
+        }
+        if (it.start() == candidate.start()) {
+          return true;
+        }
+        if (it.start() <= candidate.end()) {
+          return true;
+        }
+      }
+      return false;
     }
 
   }
