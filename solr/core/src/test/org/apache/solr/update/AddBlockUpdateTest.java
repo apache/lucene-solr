@@ -269,37 +269,27 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSolrNestedFieldsList() throws Exception {
-    SolrInputDocument document1 = new SolrInputDocument() {
-      {
-        final String id = id();
-        addField("id", id);
-        addField("parent_s", "X");
-        addField("children",
-            new ArrayList<SolrInputDocument>()
-            {
-              {
-                add(sdoc("id", id(), "child_s", "y"));
-                add(sdoc("id", id(), "child_s", "z"));
-              }
-            });
-      }
-    };
 
-    SolrInputDocument document2 = new SolrInputDocument() {
-      {
-        final String id = id();
-        addField("id", id);
-        addField("parent_s", "A");
-        addField("children",
-            new ArrayList<SolrInputDocument>()
-            {
-              {
-                add(sdoc("id", id(), "child_s", "b"));
-                add(sdoc("id", id(), "child_s", "c"));
-              }
-            });
-      }
-    };
+    final String id1 = id();
+    List<SolrInputDocument> children1 = new ArrayList<SolrInputDocument>()
+    {{
+        add(sdoc("id", id(), child, "y"));
+        add(sdoc("id", id(), child, "z"));
+    }};
+
+    SolrInputDocument document1 = sdoc("id", id1, parent, "X",
+        "children", children1);
+
+    final String id2 = id();
+    List<SolrInputDocument> children2 = new ArrayList<SolrInputDocument>()
+    {{
+        add(sdoc("id", id(), child, "b"));
+        add(sdoc("id", id(), child, "c"));
+    }};
+
+    SolrInputDocument document2 = sdoc("id", id2, parent, "A",
+        "children", children2);
+
     List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>() {
       {
         add(document1);
