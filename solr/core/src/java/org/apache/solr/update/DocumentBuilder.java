@@ -133,6 +133,7 @@ public class DocumentBuilder {
     
     // Load fields from SolrDocument to Document
     for( SolrInputField field : doc ) {
+      // Skip nested documents, as they are extracted by AddUpdateCommand.flatten
       if (field.getFirstValue() instanceof SolrDocumentBase) {
         continue;
       }
