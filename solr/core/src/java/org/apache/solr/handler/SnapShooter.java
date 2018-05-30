@@ -168,11 +168,10 @@ public class SnapShooter {
   private IndexCommit getIndexCommit() throws IOException {
     IndexDeletionPolicyWrapper delPolicy = solrCore.getDeletionPolicy();
     IndexCommit indexCommit = delPolicy.getLatestCommit();
-
-    if (indexCommit == null) {
-      indexCommit = solrCore.getSearcher().get().getIndexReader().getIndexCommit();
+    if (indexCommit != null) {
+      return indexCommit;
     }
-    return indexCommit;
+    return solrCore.withSearcher(searcher -> searcher.getIndexReader().getIndexCommit());
   }
 
   private IndexCommit getIndexCommitFromName() throws IOException {

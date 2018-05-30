@@ -157,6 +157,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.PropertiesOutputStream;
@@ -1841,15 +1842,39 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   /**
-  * Return a registered {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
-  * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
-  * This method should not be called from SolrCoreAware.inform() since it can result
-  * in a deadlock if useColdSearcher==false.
-  * If handling a normal request, the searcher should be obtained from
+   * Return a registered {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
+   * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
+   * This method should not be called from SolrCoreAware.inform() since it can result
+   * in a deadlock if useColdSearcher==false.
+   * If handling a normal request, the searcher should be obtained from
    * {@link org.apache.solr.request.SolrQueryRequest#getSearcher()} instead.
-  */
+   * If you still think you need to call this, consider {@link #withSearcher(IOFunction)} instead which is easier to
+   * use.
+   * @see SolrQueryRequest#getSearcher()
+   * @see #withSearcher(IOFunction)
+   */
   public RefCounted<SolrIndexSearcher> getSearcher() {
     return getSearcher(false,true,null);
+  }
+
+  /**
+   * Executes the lambda with the {@link SolrIndexSearcher}.  This is more convenient than using
+   * {@link #getSearcher()} since there is no ref-counting business to worry about.
+   * Example:
+   * <pre class="prettyprint">
+   *   IndexReader reader = h.getCore().withSearcher(SolrIndexSearcher::getIndexReader);
+   * </pre>
+   * Warning: although a lambda is concise, it may be inappropriate to simply return the IndexReader because it might
+   * be closed soon after this method returns; it really depends.
+   */
+  @SuppressWarnings("unchecked")
+  public <R> R withSearcher(IOFunction<SolrIndexSearcher,R> lambda) throws IOException {
+    final RefCounted<SolrIndexSearcher> refCounted = getSearcher();
+    try {
+      return lambda.apply(refCounted.get());
+    } finally {
+      refCounted.decref();
+    }
   }
 
   /**
