@@ -96,6 +96,8 @@ New Features
 * SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log .
   (Shawn Heisey, Remko Popma, Varun Thacker)
 
+* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy) 
+
 Bug Fixes
 ----------------------
 
