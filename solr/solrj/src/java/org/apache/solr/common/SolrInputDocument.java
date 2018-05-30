@@ -260,18 +260,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     }
   }
 
-  public Map<String, SolrInputField> getChildDocumentsMap() {
-    Map<String, SolrInputField> childDocs = new HashMap<>();
-    for (SolrInputField field: values()) {
-      Object value = field.getFirstValue();
-      if (value instanceof SolrInputDocument) {
-        childDocs.put(field.getName(), field);
-      }
-    }
-    return childDocs.size() > 0 ? childDocs: null;
-  }
-
-  /** Returns the list of child documents, or null if none. */
+  /** Returns the list of anonymous child documents, or null if none. */
   public List<SolrInputDocument> getChildDocuments() {
     return _childDocuments;
   }

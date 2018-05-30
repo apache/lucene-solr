@@ -374,23 +374,6 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
     return _fields.values();
   }
 
-  public Map<String, Object> getChildDocumentsMap() {
-    Map<String, Object> childDocs = new HashMap<>();
-    for (Entry<String, Object> field: entrySet()) {
-      Object fieldVal = field.getValue();
-      if (field instanceof Collection) {
-        Collection fieldVals = ((Collection) fieldVal);
-        if (fieldVals.size() > 0 && fieldVals.iterator().next() instanceof SolrDocument) {
-          childDocs.put(field.getKey(), fieldVal);
-        }
-      }
-      else if (fieldVal instanceof SolrDocument) {
-        childDocs.put(field.getKey(), fieldVal);
-      }
-    }
-    return childDocs.size() > 0 ? childDocs: null;
-  }
-
   @Override
   public void addChildDocument(SolrDocument child) {
     if (_childDocuments == null) {

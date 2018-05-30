@@ -18,8 +18,9 @@ package org.apache.solr.update;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
@@ -228,11 +229,24 @@ public class AddUpdateCommand extends UpdateCommand {
     return unwrappedDocs;
   }
 
+  private static Collection<String> getChildDocumentsKeys(SolrInputDocument doc) {
+    Set<String> childDocsKeys = new HashSet<>();
+    // filter out child documents and add keys to the set
+    for (SolrInputField field: doc.values()) {
+      Object value = field.getFirstValue();
+      if (value instanceof SolrInputDocument) {
+        childDocsKeys.add(field.getName());
+      }
+    }
+
+    return childDocsKeys.size() > 0 ? childDocsKeys: null;
+  }
+
   private void recUnwrapRelations(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
-    Map<String, SolrInputField> childDocsRelations = currentDoc.getChildDocumentsMap();
-    if (childDocsRelations != null) {
-      for (Map.Entry<String, SolrInputField> childEntry : childDocsRelations.entrySet()) {
-        Object val = childEntry.getValue().getValue();
+    Collection<String> childDocKeys = getChildDocumentsKeys(currentDoc);
+    if (childDocKeys != null) {
+      for (String childEntry : childDocKeys) {
+        Object val = currentDoc.get(childEntry).getValue();
         if (!(val instanceof Collection)) {
           recUnwrapRelations(unwrappedDocs, ((SolrInputDocument) val));
           continue;
