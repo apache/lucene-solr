@@ -246,7 +246,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
         req.process(httpSolrClient);
         fail("An exception should be thrown when ZooKeeper is not connected and shards.tolerant=requireZkConnected");
       } catch (Exception e) {
-        assertTrue(e.getMessage().contains("no servers hosting shard:"));
+        assertTrue("Exception message is missing 'no servers hosting shard:': " + e, e.getMessage().contains("no servers hosting shard:"));
       }
     }
     finally {
