@@ -23,11 +23,11 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.17
-Carrot2 3.15.0
+Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
-Jetty 9.4.10.v20180503
+Jetty 9.3.20.v20170531
 
 Upgrade Notes
 ----------------------
@@ -46,6 +46,7 @@ Upgrade Notes
 
 New Features
 ----------------------
+* SOLR-12396: Upgrade Carrot2 to 3.16.0, HPPC to 0.8.1, morfologik to 2.1.5. (Dawid Weiss)
 
 * SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
   ConcurrentMergeSchedule.doAutoIOThrottle. (Amrit Sarkar, Nawab Zada Asad iqbal via Dawid Weiss)
@@ -96,10 +97,29 @@ New Features
 * SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log .
   (Shawn Heisey, Remko Popma, Varun Thacker)
 
-* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy) 
+* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
+
+* SOLR-12378: Support missing versionField on indexed docs in DocBasedVersionConstraintsURP.
+  (Oliver Bates, Michael Braun via Mark Miller)
+
+* SOLR-12388: Enable a strict ZooKeeper-connected search request mode, in which search
+  requests will fail when the coordinating node can't communicate with ZooKeeper,
+  by setting the "shards.tolerant" param to "requireZkConnected".  (Steve Rowe)
+
+* SOLR-9685: #Tagging queries in JSON Query DSL, equivalent to LocalParams based query/filter
+  tagging.  Multiple tags are comma separated.
+  LocalParams Example     : {!tag=colorfilt}color:blue
+  Equivalent JSON Example : { "#colorfilt" : "color:blue" }
+  (Dmitry Tikhonov, Mikhail Khludnev, yonik)
+
+* SOLR-12328: JSON Facet API: Domain change with graph query.
+  (Daniel Meehl, Kevin Watters, yonik)
 
 Bug Fixes
 ----------------------
+* SOLR-5351: Fixed More Like This Handler to use all fields provided in mlt.fl when used with
+  content stream. The similarity is calculated between the content stream's value and all
+  fields listed in mlt.fl. (Dawid Weiss)
 
 * SOLR-12103: Raise CryptoKeys.DEFAULT_KEYPAIR_LENGTH from 1024 to 2048. (Mark Miller)
 
@@ -128,7 +148,12 @@ Bug Fixes
   
 * SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe) 
 
-* SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure: 
+* SOLR-11882: SolrMetric registries retained references to SolrCores when closed. A
+  change of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics
+  method signatures was required to fix it. Third party components may continue to use the old API
+  but should be updated to avoid this bug (Eros Taborelli, Erick Erickson, ab)
+
+* SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure:
   Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
 
 * SOLR-12096: Fixed inconsistent results format of subquery transformer for distributed search (multi-shard).
@@ -255,6 +280,11 @@ Optimizations
   Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
 
 * SOLR-12338: Replay buffering tlog in parallel. (Cao Manh Dat, David Smiley)
+
+* SOLR-12375: Optimize Lucene needsScore / ScoreMode use:
+  A non-cached filter query could be told incorrectly that scores were needed.
+  The /export (ExportQParserPlugin) would declare incorrectly that scores are needed.
+  Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
 
 Other Changes
 ----------------------
