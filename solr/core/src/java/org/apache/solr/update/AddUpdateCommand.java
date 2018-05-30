@@ -182,13 +182,13 @@ public class AddUpdateCommand extends UpdateCommand {
   public List<SolrInputDocument> computeFlattenedDocs() {
     List<SolrInputDocument> all = flatten(solrDoc);
 
-    String idField = getHashableId();
+    String rootId = getHashableId();
 
     boolean isVersion = version != 0;
 
     for (SolrInputDocument sdoc : all) {
       if (all.size() > 1) {
-        sdoc.setField(IndexSchema.ROOT_FIELD_NAME, idField);
+        sdoc.setField(IndexSchema.ROOT_FIELD_NAME, rootId);
       }
       if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);
       // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
@@ -199,9 +199,7 @@ public class AddUpdateCommand extends UpdateCommand {
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
     List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
-    if(root.hasChildDocuments()) {
-      recUnwrapAnonymous(unwrappedDocs, root, true);
-    }
+    recUnwrapAnonymous(unwrappedDocs, root, true);
     recUnwrapRelations(unwrappedDocs, root, true);
     if (1 < unwrappedDocs.size() && ! req.getSchema().isUsableForChildDocs()) {
       throw new SolrException
