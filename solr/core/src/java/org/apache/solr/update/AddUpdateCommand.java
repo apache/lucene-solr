@@ -18,9 +18,7 @@ package org.apache.solr.update;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
@@ -63,8 +61,6 @@ public class AddUpdateCommand extends UpdateCommand {
    public int commitWithin = -1;
 
    public boolean isLastDocInBatch = false;
-
-   private List<SolrInputDocument> docsList = null;
    
    public AddUpdateCommand(SolrQueryRequest req) {
      super(req);
@@ -80,7 +76,6 @@ public class AddUpdateCommand extends UpdateCommand {
      solrDoc = null;
      indexedId = null;
      updateTerm = null;
-     docsList = null;
      isLastDocInBatch = false;
      version = 0;
      prevVersion = -1;
@@ -184,14 +179,7 @@ public class AddUpdateCommand extends UpdateCommand {
     return getHashableId(solrDoc);
   }
 
-  public List<SolrInputDocument> getDocsList() {
-    if (docsList == null) {
-      buildDocsList();
-    }
-    return docsList;
-  }
-
-  private void buildDocsList() {
+  public List<SolrInputDocument> computeFlattenedDocs() {
     List<SolrInputDocument> all = flatten(solrDoc);
 
     String idField = getHashableId();
@@ -206,13 +194,13 @@ public class AddUpdateCommand extends UpdateCommand {
       // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
       // then we could add this field to the generated lucene document instead.
     }
-    docsList = all;
+    return all;
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
     List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
     if(root.hasChildDocuments()) {
-      recUnwrapp(unwrappedDocs, root, true);
+      recUnwrapAnonymous(unwrappedDocs, root, true);
     }
     recUnwrapRelations(unwrappedDocs, root, true);
     if (1 < unwrappedDocs.size() && ! req.getSchema().isUsableForChildDocs()) {
@@ -225,25 +213,13 @@ public class AddUpdateCommand extends UpdateCommand {
     return unwrappedDocs;
   }
 
-  private static Collection<String> getChildDocumentsKeys(SolrInputDocument doc) {
-    Set<String> childDocsKeys = new HashSet<>();
-    // filter out child documents and add keys to the set
-    for (SolrInputField field: doc.values()) {
-      Object value = field.getFirstValue();
-      if (value instanceof SolrInputDocument) {
-        childDocsKeys.add(field.getName());
-      }
-    }
-
-    return childDocsKeys.size() > 0 ? childDocsKeys: null;
-  }
-
   /** Extract all child documents from parent that are saved in keys. */
   private void recUnwrapRelations(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
-    Collection<String> childDocKeys = getChildDocumentsKeys(currentDoc);
-    if (childDocKeys != null) {
-      for (String childEntry : childDocKeys) {
-        Object val = currentDoc.get(childEntry).getValue();
+    for (SolrInputField field: currentDoc.values()) {
+      Object value = field.getFirstValue();
+      // check if value is a childDocument
+      if (value instanceof SolrInputDocument) {
+        Object val = field.getValue();
         if (!(val instanceof Collection)) {
           recUnwrapRelations(unwrappedDocs, ((SolrInputDocument) val));
           continue;
@@ -254,6 +230,7 @@ public class AddUpdateCommand extends UpdateCommand {
         }
       }
     }
+
     if (!isRoot) unwrappedDocs.add(currentDoc);
   }
 
@@ -262,18 +239,18 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   /** Extract all anonymous child documents from parent. */
-  private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
+  private void recUnwrapAnonymous(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
     List<SolrInputDocument> children = currentDoc.getChildDocuments();
     if (children != null) {
       for (SolrInputDocument child : children) {
-        recUnwrapp(unwrappedDocs, child);
+        recUnwrapAnonymous(unwrappedDocs, child);
       }
     }
     if(!isRoot) unwrappedDocs.add(currentDoc);
   }
 
-  private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
-    recUnwrapp(unwrappedDocs, currentDoc, false);
+  private void recUnwrapAnonymous(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+    recUnwrapAnonymous(unwrappedDocs, currentDoc, false);
   }
 
   @Override

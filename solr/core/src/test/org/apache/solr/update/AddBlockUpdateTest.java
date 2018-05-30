@@ -271,34 +271,20 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   public void testSolrNestedFieldsList() throws Exception {
 
     final String id1 = id();
-    List<SolrInputDocument> children1 = new ArrayList<SolrInputDocument>()
-    {{
-        add(sdoc("id", id(), child, "y"));
-        add(sdoc("id", id(), child, "z"));
-    }};
+    List<SolrInputDocument> children1 = Arrays.asList(sdoc("id", id(), child, "y"), sdoc("id", id(), child, "z"));
 
     SolrInputDocument document1 = sdoc("id", id1, parent, "X",
         "children", children1);
 
     final String id2 = id();
-    List<SolrInputDocument> children2 = new ArrayList<SolrInputDocument>()
-    {{
-        add(sdoc("id", id(), child, "b"));
-        add(sdoc("id", id(), child, "c"));
-    }};
+    List<SolrInputDocument> children2 = Arrays.asList(sdoc("id", id(), child, "b"), sdoc("id", id(), child, "c"));
 
     SolrInputDocument document2 = sdoc("id", id2, parent, "A",
         "children", children2);
 
-    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>() {
-      {
-        add(document1);
-        add(document2);
-      }
-    };
+    List<SolrInputDocument> docs = Arrays.asList(document1, document2);
 
     indexSolrInputDocumentsDirectly(docs);
-    assertU(commit());
 
     final SolrIndexSearcher searcher = getSearcher();
     assertJQ(req("q","*:*",
@@ -339,7 +325,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     };
 
     indexSolrInputDocumentsDirectly(docs);
-    assertU(commit());
 
     final SolrIndexSearcher searcher = getSearcher();
     assertJQ(req("q","*:*",
@@ -668,6 +653,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       h.getCore().getUpdateHandler().addDoc(updateCmd);
       updateCmd.clear();
     }
+    assertU(commit());
   }
 
   private long getNewClock() {
