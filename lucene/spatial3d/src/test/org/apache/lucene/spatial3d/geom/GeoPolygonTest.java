@@ -1817,7 +1817,7 @@ shape:
   }
   
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8337")  
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8337")  
   public void testLUCENE8337() {
     /*
    {planetmodel=PlanetModel.WGS84, number of shapes=1, address=c865f21d, 
@@ -1843,6 +1843,8 @@ shape:
     final GeoPolygon smallPolygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, description);
     
     final GeoPoint thePoint = new GeoPoint(PlanetModel.WGS84, -6.499661194605612E-10, -2.0286460544410216);
+    
+    System.out.println("large inset: "+largePolygon.isWithin(thePoint));
     
     assertTrue(largePolygon.isWithin(thePoint) == smallPolygon.isWithin(thePoint));
     
