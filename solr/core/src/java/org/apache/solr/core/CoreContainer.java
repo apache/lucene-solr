@@ -105,6 +105,7 @@ import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -154,6 +155,8 @@ public class CoreContainer {
 
   private ExecutorService coreContainerWorkExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new DefaultSolrThreadFactory("coreContainerWorkExecutor") );
+
+  private final OrderedExecutor replayUpdatesExecutor;
 
   protected LogWatcher logging = null;
 
@@ -294,6 +297,11 @@ public class CoreContainer {
     this.coresLocator = locator;
     this.containerProperties = new Properties(properties);
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
+    this.replayUpdatesExecutor = new OrderedExecutor(
+        cfg.getReplayUpdatesThreads(),
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            cfg.getReplayUpdatesThreads(),
+            new DefaultSolrThreadFactory("replayUpdatesExecutor")));
   }
 
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
@@ -435,6 +443,7 @@ public class CoreContainer {
     coresLocator = null;
     cfg = null;
     containerProperties = null;
+    replayUpdatesExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -469,6 +478,10 @@ public class CoreContainer {
 
   public SolrMetricManager getMetricManager() {
     return metricManager;
+  }
+
+  public OrderedExecutor getReplayUpdatesExecutor() {
+    return replayUpdatesExecutor;
   }
 
   //-------------------------------------------------------------------
@@ -739,6 +752,7 @@ public class CoreContainer {
     isShutDown = true;
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
+    replayUpdatesExecutor.shutdownAndAwaitTermination();
     if (metricManager != null) {
       metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
       metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
