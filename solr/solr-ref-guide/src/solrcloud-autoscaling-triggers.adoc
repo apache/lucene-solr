@@ -78,7 +78,7 @@ The metric trigger can be used to monitor any metric exposed by the <<metrics-re
 
 This trigger supports the following configuration:
 
-`metric`:: (string, required) The metric property name to be watched in the format metrics:group:prefix, e.g., `metric:solr.node:CONTAINER.fs.coreRoot.usableSpace`.
+`metric`:: (string, required) The metric property name to be watched in the format metric:group:prefix, e.g `metric:solr.node:CONTAINER.fs.coreRoot.usableSpace`.
 
 `below`:: (double, optional) The lower threshold for the metric value. The trigger produces a metric breached event if the metric's value falls below this value.
 
