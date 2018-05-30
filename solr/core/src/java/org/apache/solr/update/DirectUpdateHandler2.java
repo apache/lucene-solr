@@ -319,7 +319,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     try {
       IndexWriter writer = iw.get();
       List<SolrInputDocument> docs = cmd.getDocsList();
-      if (cmd.isBlock()) {
+      if (docs.size() > 1) {
         writer.addDocuments(toDocumentsIter(docs, cmd.req.getSchema()));
       } else {
         writer.addDocument(cmd.getLuceneDocument());
@@ -417,7 +417,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private Term getIdTerm(AddUpdateCommand cmd) {
-    return new Term(cmd.isBlock() ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
+    boolean isBlock = cmd.getDocsList().size() > 1;
+    return new Term(isBlock ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
   }
 
   private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
@@ -978,7 +979,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   private void updateDocument(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
     List<SolrInputDocument> docs = cmd.getDocsList();
 
-    if (cmd.isBlock()) {
+    if (docs.size() > 1) {
       log.debug("updateDocuments({})", docs);
       writer.updateDocuments(updateTerm, toDocumentsIter(docs, cmd.req.getSchema()));
     } else {

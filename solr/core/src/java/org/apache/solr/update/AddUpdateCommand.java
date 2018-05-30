@@ -184,10 +184,6 @@ public class AddUpdateCommand extends UpdateCommand {
     return getHashableId(solrDoc);
   }
 
-  public boolean isBlock() {
-    return getDocsList().size() > 1;
-  }
-
   public List<SolrInputDocument> getDocsList() {
     if (docsList == null) {
       buildDocsList();
