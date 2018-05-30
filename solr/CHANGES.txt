@@ -143,6 +143,8 @@ New Features
 * SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log .
   (Shawn Heisey, Remko Popma, Varun Thacker)
 
+* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy) 
+
 * SOLR-11779: Basic long-term collection of aggregated metrics. Historical data is
   maintained as multi-resolution time series using round-robin databases in the '.system'
   collection. New /admin/metrics/history API allows retrieval of this data in numeric
