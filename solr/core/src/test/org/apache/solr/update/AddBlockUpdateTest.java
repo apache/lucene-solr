@@ -308,6 +308,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     };
 
     indexSolrInputDocumentsDirectly(docs);
+    assertU(commit());
 
     final SolrIndexSearcher searcher = getSearcher();
     assertJQ(req("q","*:*",
@@ -332,25 +333,14 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSolrNestedFieldsSingleVal() throws Exception {
-    SolrInputDocument document1 = new SolrInputDocument() {
-      {
-        final String id = id();
-        addField("id", id);
-        addField("parent_s", "X");
-        addField("child1_s", sdoc("id", id(), "child_s", "y"));
-        addField("child2_s", sdoc("id", id(), "child_s", "z"));
-      }
-    };
+    SolrInputDocument document1 = sdoc("id", id(), parent, "X",
+        "child1_s", sdoc("id", id(), "child_s", "y"),
+        "child2_s", sdoc("id", id(), "child_s", "z"));
 
-    SolrInputDocument document2 = new SolrInputDocument() {
-      {
-        final String id = id();
-        addField("id", id);
-        addField("parent_s", "A");
-        addField("child1_s", sdoc("id", id(), "child_s", "b"));
-        addField("child2_s", sdoc("id", id(), "child_s", "c"));
-      }
-    };
+    SolrInputDocument document2 = sdoc("id", id(), parent, "A",
+        "child1_s", sdoc("id", id(), "child_s", "b"),
+        "child2_s", sdoc("id", id(), "child_s", "c"));
+
     List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>() {
       {
         add(document1);
@@ -359,6 +349,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     };
 
     indexSolrInputDocumentsDirectly(docs);
+    assertU(commit());
 
     final SolrIndexSearcher searcher = getSearcher();
     assertJQ(req("q","*:*",
@@ -550,14 +541,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     try (JavaBinCodec jbc = new JavaBinCodec(); InputStream is = new ByteArrayInputStream(buffer)) {
       result = (SolrInputDocument) jbc.unmarshal(is);
     }
-    assertEquals(2 + childsNum, result.size());
-    assertEquals("v1", result.getFieldValue("parent_f1"));
-    assertEquals("v2", result.getFieldValue("parent_f2"));
 
-    for(Map.Entry<String, SolrInputDocument> entry: children.entrySet()) {
-      compareSolrInputDocument(entry.getValue(), result.getFieldValue(entry.getKey()));
-    }
-
+    assertTrue(compareSolrInputDocument(topDocument, result));
   }
 
   
@@ -693,7 +678,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       h.getCore().getUpdateHandler().addDoc(updateCmd);
       updateCmd.clear();
     }
-    assertU(commit());
   }
 
   private long getNewClock() {
