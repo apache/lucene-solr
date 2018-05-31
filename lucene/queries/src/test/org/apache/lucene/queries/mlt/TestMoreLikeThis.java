@@ -42,6 +42,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
+import static org.hamcrest.core.Is.is;
+
 public class TestMoreLikeThis extends LuceneTestCase {
 
   private static final String SHOP_TYPE = "type";
@@ -182,6 +184,32 @@ public class TestMoreLikeThis extends LuceneTestCase {
     for (BooleanClause clause : clauses) {
       Term term = ((TermQuery) clause.getQuery()).getTerm();
       assertTrue(Arrays.asList(new Term("text", "lucene"), new Term("text", "apache")).contains(term));
+    }
+    analyzer.close();
+  }
+
+  public void testLiveMapDocument_minTermFrequencySet_shouldBuildQueryAccordingToCorrectTermFrequencies() throws Exception {
+    MoreLikeThis mlt = new MoreLikeThis(reader);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt.setAnalyzer(analyzer);
+    mlt.setMinDocFreq(0);
+    mlt.setMinTermFreq(3);
+    mlt.setMinWordLen(1);
+    String sampleField1 = "text";
+    String sampleField2 = "text2";
+    mlt.setFieldNames(new String[]{sampleField1, sampleField2});
+
+    Map<String, Collection<Object>> filteredDocument = new HashMap<>();
+    String textValue = "apache apache lucene lucene lucene";
+    filteredDocument.put(sampleField1, Arrays.asList(textValue));
+    filteredDocument.put(sampleField2, Arrays.asList(textValue));
+
+    BooleanQuery query = (BooleanQuery) mlt.like(filteredDocument);
+    Collection<BooleanClause> clauses = query.clauses();
+    assertEquals("Expected 1 clauses only!", 1, clauses.size());
+    for (BooleanClause clause : clauses) {
+      Term term = ((TermQuery) clause.getQuery()).getTerm();
+      assertThat(term, is(new Term(sampleField1, "lucene")));
     }
     analyzer.close();
   }

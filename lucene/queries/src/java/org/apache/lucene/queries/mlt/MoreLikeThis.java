@@ -763,15 +763,13 @@ public final class MoreLikeThis {
       IOException {
     Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
-      for (String field : field2fieldValues.keySet()) {
-        Collection<Object> fieldValues = field2fieldValues.get(field);
-        if(fieldValues == null)
-          continue;
-        for(Object fieldValue:fieldValues) {
-          if (fieldValue != null) {
-            addTermFrequencies(new StringReader(String.valueOf(fieldValue)), field2termFreqMap,
-                fieldName);
-          }
+      Collection<Object> fieldValues = field2fieldValues.get(fieldName);
+      if (fieldValues == null)
+        continue;
+      for (Object fieldValue : fieldValues) {
+        if (fieldValue != null) {
+          addTermFrequencies(new StringReader(String.valueOf(fieldValue)), field2termFreqMap,
+              fieldName);
         }
       }
     }
