@@ -279,6 +279,11 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     }
 
     @Override
+    protected void copyFromClusterProp(Map<String, Object> props, String prop) {
+
+    }
+
+    @Override
     void invokeAction(SolrQueryRequest req, SolrQueryResponse rsp,
                       CoreContainer cores,
                       CollectionParams.CollectionAction action,
