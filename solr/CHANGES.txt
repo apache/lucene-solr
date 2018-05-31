@@ -120,6 +120,10 @@ New Features
   collection. New /admin/metrics/history API allows retrieval of this data in numeric
   or graph formats. (ab)
 
+* SOLR-12387: cluster-wide defaults for numShards, nrtReplicas, tlogReplicas, pullReplicas (noble)
+
+* SOLR-12389: support deeply nested json objects in clusterprops.json (noble)
+
 Bug Fixes
 ----------------------
 * SOLR-5351: Fixed More Like This Handler to use all fields provided in mlt.fl when used with
