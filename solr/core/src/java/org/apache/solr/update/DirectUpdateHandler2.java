@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
 
 import com.codahale.metrics.Meter;
-import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CodecReader;
@@ -318,7 +318,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
-      List<SolrInputDocument> docs = cmd.computeFlattenedDocs();
+      List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
       if (docs.size() > 1) {
         writer.addDocuments(toDocumentsIter(docs, cmd.req.getSchema()));
       } else {
@@ -417,7 +417,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private Term getIdTerm(AddUpdateCommand cmd) {
-    boolean isBlock = cmd.computeFlattenedDocs().size() > 1;
+    boolean isBlock = cmd.computeFinalFlattenedSolrDocs().size() > 1;
     return new Term(isBlock ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
   }
 
@@ -977,7 +977,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void updateDocument(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
-    List<SolrInputDocument> docs = cmd.computeFlattenedDocs();
+    List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
 
     if (docs.size() > 1) {
       log.debug("updateDocuments({})", docs);
@@ -990,7 +990,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private Iterable<Document> toDocumentsIter(Collection<SolrInputDocument> docs, IndexSchema schema) {
-    return FluentIterable.from(docs).transform((SolrInputDocument doc) -> DocumentBuilder.toDocument(doc, schema));
+    return Iterables.transform(docs, (SolrInputDocument doc) -> DocumentBuilder.toDocument(doc, schema));
   }
 
 

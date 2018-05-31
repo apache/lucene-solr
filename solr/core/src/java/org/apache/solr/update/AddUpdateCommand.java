@@ -146,13 +146,16 @@ public class AddUpdateCommand extends UpdateCommand {
      return "(null)";
    }
 
-  public String getHashableId(SolrInputDocument doc) {
+  /**
+   * @return String id to hash
+   */
+  public String getHashableId() {
     String id = null;
     IndexSchema schema = req.getSchema();
     SchemaField sf = schema.getUniqueKeyField();
     if (sf != null) {
-      if (doc != null) {
-        SolrInputField field = doc.getField(sf.getName());
+      if (solrDoc != null) {
+        SolrInputField field = solrDoc.getField(sf.getName());
 
         int count = field == null ? 0 : field.getValueCount();
         if (count == 0) {
@@ -172,14 +175,7 @@ public class AddUpdateCommand extends UpdateCommand {
     return id;
   }
 
-  /**
-   * @return String id to hash
-   */
-  public String getHashableId() {
-    return getHashableId(solrDoc);
-  }
-
-  public List<SolrInputDocument> computeFlattenedDocs() {
+  public List<SolrInputDocument> computeFinalFlattenedSolrDocs() {
     List<SolrInputDocument> all = flatten(solrDoc);
 
     String rootId = getHashableId();
@@ -201,13 +197,13 @@ public class AddUpdateCommand extends UpdateCommand {
     List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
     recUnwrapAnonymous(unwrappedDocs, root, true);
     recUnwrapRelations(unwrappedDocs, root, true);
+    unwrappedDocs.add(root);
     if (1 < unwrappedDocs.size() && ! req.getSchema().isUsableForChildDocs()) {
       throw new SolrException
-        (SolrException.ErrorCode.BAD_REQUEST, "Unable to index docs with children: the schema must " +
-         "include definitions for both a uniqueKey field and the '" + IndexSchema.ROOT_FIELD_NAME +
-         "' field, using the exact same fieldType");
+          (SolrException.ErrorCode.BAD_REQUEST, "Unable to index docs with children: the schema must " +
+              "include definitions for both a uniqueKey field and the '" + IndexSchema.ROOT_FIELD_NAME +
+              "' field, using the exact same fieldType");
     }
-    unwrappedDocs.add(root);
     return unwrappedDocs;
   }
 
