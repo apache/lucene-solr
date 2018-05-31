@@ -231,7 +231,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
           if (deState == null) {
             deState = new SolrIndexSearcher.DocsEnumState();
             deState.fieldName = sf.getName();
-            deState.liveDocs = fcontext.searcher.getSlowAtomicReader().getLiveDocs();
+            deState.liveDocs = fcontext.searcher.getLiveDocsBits();
             deState.termsEnum = termsEnum;
             deState.postingsEnum = postingsEnum;
             deState.minSetSizeCached = minDfFilterCache;
