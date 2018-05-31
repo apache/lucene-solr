@@ -224,6 +224,8 @@ public class AddUpdateCommand extends UpdateCommand {
         }
       }
     }
+
+    if (!isRoot) unwrappedDocs.add(currentDoc);
   }
 
   private void recUnwrapRelations(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
@@ -232,7 +234,6 @@ public class AddUpdateCommand extends UpdateCommand {
           (SolrException.ErrorCode.BAD_REQUEST, "Unable to index nested docs with anonymous children: " +
               currentDoc.toString());
     }
-    unwrappedDocs.add(currentDoc);
     recUnwrapRelations(unwrappedDocs, currentDoc, false);
   }
 
@@ -244,6 +245,7 @@ public class AddUpdateCommand extends UpdateCommand {
         recUnwrapAnonymous(unwrappedDocs, child);
       }
     }
+
     if(!isRoot) unwrappedDocs.add(currentDoc);
   }
 
