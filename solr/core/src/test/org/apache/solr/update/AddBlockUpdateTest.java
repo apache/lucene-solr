@@ -317,12 +317,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
         "child1_s", sdoc("id", id(), "child_s", "b"),
         "child2_s", sdoc("id", id(), "child_s", "c"));
 
-    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>() {
-      {
-        add(document1);
-        add(document2);
-      }
-    };
+    List<SolrInputDocument> docs = Arrays.asList(document1, document2);
 
     indexSolrInputDocumentsDirectly(docs);
 
