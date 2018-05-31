@@ -224,11 +224,15 @@ public class AddUpdateCommand extends UpdateCommand {
         }
       }
     }
-
-    if (!isRoot) unwrappedDocs.add(currentDoc);
   }
 
   private void recUnwrapRelations(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+    if(currentDoc.hasChildDocuments()) {
+      throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST, "Unable to index nested docs with anonymous children: " +
+              currentDoc.toString());
+    }
+    unwrappedDocs.add(currentDoc);
     recUnwrapRelations(unwrappedDocs, currentDoc, false);
   }
 

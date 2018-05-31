@@ -50,6 +50,7 @@ import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -67,7 +68,9 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -88,6 +91,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -268,6 +274,21 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testExceptionThrownChildDocWAnonymousChildren() throws Exception {
+    SolrInputDocument document1 = sdoc("id", id(), parent, "X",
+        "child1_s", sdoc("id", id(), "child_s", "y"),
+        "child2_s", sdoc("id", id(), "child_s", "z"));
+
+    SolrInputDocument exceptionChildDoc = (SolrInputDocument) document1.get("child1_s").getValue();
+    addChildren("child", exceptionChildDoc, 0, false);
+
+    thrown.expect(SolrException.class);
+    final String expectedMessage = "Unable to index nested docs with anonymous children: " + exceptionChildDoc.toString();
+    thrown.expectMessage(expectedMessage);
+    indexSolrInputDocumentsDirectly(document1);
+  }
+
+  @Test
   public void testSolrNestedFieldsList() throws Exception {
 
     final String id1 = id();
@@ -282,9 +303,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     SolrInputDocument document2 = sdoc("id", id2, parent, "A",
         "children", children2);
 
-    List<SolrInputDocument> docs = Arrays.asList(document1, document2);
-
-    indexSolrInputDocumentsDirectly(docs);
+    indexSolrInputDocumentsDirectly(document1, document2);
 
     final SolrIndexSearcher searcher = getSearcher();
     assertJQ(req("q","*:*",
@@ -317,9 +336,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
         "child1_s", sdoc("id", id(), "child_s", "b"),
         "child2_s", sdoc("id", id(), "child_s", "c"));
 
-    List<SolrInputDocument> docs = Arrays.asList(document1, document2);
-
-    indexSolrInputDocumentsDirectly(docs);
+    indexSolrInputDocumentsDirectly(document1, document2);
 
     final SolrIndexSearcher searcher = getSearcher();
     assertJQ(req("q","*:*",
@@ -638,7 +655,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void indexSolrInputDocumentsDirectly(List<SolrInputDocument> docs) throws IOException {
+  private void indexSolrInputDocumentsDirectly(SolrInputDocument ... docs) throws IOException {
     SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
     AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
     for (SolrInputDocument doc: docs) {
