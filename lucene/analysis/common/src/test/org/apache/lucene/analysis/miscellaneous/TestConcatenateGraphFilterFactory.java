@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
@@ -33,15 +34,42 @@ public class TestConcatenateGraphFilterFactory extends BaseTokenStreamFactoryTes
       tokenizer.setReader(reader);
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = tokenizer;
-      stream = tokenFilterFactory("Concatenate"//nocommit test an arg
-      ).create(stream);
-      assertTokenStreamContents(stream, new String[]{input.replace(' ', ConcatenateGraphFilter.SEP_CHAR)});
+      stream = tokenFilterFactory("ConcatenateGraph").create(stream);
+      assertTokenStreamContents(stream, new String[]{input.replace(' ', (char) ConcatenateGraphFilter.SEP_LABEL)});
     }
+  }
+
+  public void testPreserveSep() throws Exception {
+    final String input = "A1 B2 A1 D4 C3";
+    final String output = "A1A1D4C3";
+    Reader reader = new StringReader(input);
+    MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenizer.setReader(reader);
+    TokenStream stream = tokenizer;
+    stream = new StopFilter(stream, StopFilter.makeStopSet("B2"));
+    stream = tokenFilterFactory("ConcatenateGraph",
+        "preserveSep", "false"
+    ).create(stream);
+    assertTokenStreamContents(stream, new String[]{output});
+  }
+
+  public void testPreservePositionIncrements() throws Exception {
+    final String input = "A1 B2 A1 D4 C3";
+    final String output = "A1 A1 D4 C3";
+    Reader reader = new StringReader(input);
+    MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenizer.setReader(reader);
+    TokenStream stream = tokenizer;
+    stream = new StopFilter(stream, StopFilter.makeStopSet("B2"));
+    stream = tokenFilterFactory("ConcatenateGraph",
+        "preservePositionIncrements", "false"
+        ).create(stream);
+    assertTokenStreamContents(stream, new String[]{output.replace(' ', (char) ConcatenateGraphFilter.SEP_LABEL)});
   }
 
   public void testRequired() throws Exception {
     // no params are required
-    tokenFilterFactory("Concatenate");
+    tokenFilterFactory("ConcatenateGraph");
   }
 
   /**
@@ -49,7 +77,7 @@ public class TestConcatenateGraphFilterFactory extends BaseTokenStreamFactoryTes
    */
   public void testBogusArguments() throws Exception {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () ->
-        tokenFilterFactory("Concatenate", "bogusArg", "bogusValue"));
+        tokenFilterFactory("ConcatenateGraph", "bogusArg", "bogusValue"));
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

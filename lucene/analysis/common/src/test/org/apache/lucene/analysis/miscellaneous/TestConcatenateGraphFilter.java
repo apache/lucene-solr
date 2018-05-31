@@ -23,12 +23,9 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -36,28 +33,24 @@ import org.junit.Test;
 
 public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
 
+  private static final char SEP_LABEL = (char) ConcatenateGraphFilter.SEP_LABEL;
+  
   @Test
   public void testBasic() throws Exception {
     Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     String input = "mykeyword";
-    BytesRef payload = new BytesRef("payload");
     tokenStream.setReader(new StringReader(input));
-    ConcatenateGraphFilter concatStream = new ConcatenateGraphFilter(tokenStream);
-    concatStream.setPayload(payload);
-    PayloadAttrToTypeAttrFilter stream = new PayloadAttrToTypeAttrFilter(concatStream);
-    assertTokenStreamContents(stream, new String[] {input}, null, null, new String[] {payload.utf8ToString()}, new int[] { 1 }, null, null);
+    ConcatenateGraphFilter stream = new ConcatenateGraphFilter(tokenStream);
+    assertTokenStreamContents(stream, new String[] {input}, null, null, new int[] { 1 });
   }
 
   @Test
   public void testWithNoPreserveSep() throws Exception {
     Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     String input = "mykeyword another keyword";
-    BytesRef payload = new BytesRef("payload");
     tokenStream.setReader(new StringReader(input));
-    ConcatenateGraphFilter concatStream = new ConcatenateGraphFilter(tokenStream, false, false, 100);
-    concatStream.setPayload(payload);
-    PayloadAttrToTypeAttrFilter stream = new PayloadAttrToTypeAttrFilter(concatStream);
-    assertTokenStreamContents(stream, new String[] {"mykeywordanotherkeyword"}, null, null, new String[] {payload.utf8ToString()}, new int[] { 1 }, null, null);
+    ConcatenateGraphFilter stream = new ConcatenateGraphFilter(tokenStream, false, false, 100);
+    assertTokenStreamContents(stream, new String[] {"mykeywordanotherkeyword"}, null, null, new int[] { 1 });
   }
 
   @Test
@@ -65,17 +58,14 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     String input = "mykeyword another keyword";
     tokenStream.setReader(new StringReader(input));
-    BytesRef payload = new BytesRef("payload");
-    ConcatenateGraphFilter concatStream = new ConcatenateGraphFilter(tokenStream);
-    concatStream.setPayload(payload);
-    PayloadAttrToTypeAttrFilter stream = new PayloadAttrToTypeAttrFilter(concatStream);
+    ConcatenateGraphFilter stream = new ConcatenateGraphFilter(tokenStream);
     CharsRefBuilder builder = new CharsRefBuilder();
     builder.append("mykeyword");
-    builder.append((ConcatenateGraphFilter.SEP_CHAR));
+    builder.append(SEP_LABEL);
     builder.append("another");
-    builder.append((ConcatenateGraphFilter.SEP_CHAR));
+    builder.append(SEP_LABEL);
     builder.append("keyword");
-    assertTokenStreamContents(stream, new String[]{builder.toCharsRef().toString()}, null, null, new String[]{payload.utf8ToString()}, new int[]{1}, null, null);
+    assertTokenStreamContents(stream, new String[]{builder.toCharsRef().toString()}, null, null, new int[]{1});
   }
 
   @Test
@@ -85,11 +75,8 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     tokenizer.setReader(new StringReader("mykeyword"));
     SynonymFilter filter = new SynonymFilter(tokenizer, builder.build(), true);
-    ConcatenateGraphFilter concatStream = new ConcatenateGraphFilter(filter);
-    BytesRef payload = new BytesRef("payload");
-    concatStream.setPayload(payload);
-    PayloadAttrToTypeAttrFilter stream = new PayloadAttrToTypeAttrFilter(concatStream);
-    assertTokenStreamContents(stream, new String[] {"mykeyword", "mysynonym"}, null, null, new String[] {payload.utf8ToString(), payload.utf8ToString()}, new int[] { 1, 0 }, null, null);
+    ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter);
+    assertTokenStreamContents(stream, new String[] {"mykeyword", "mysynonym"}, null, null, new int[] { 1, 0 });
   }
 
   @Test
@@ -101,25 +88,23 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     tokenStream.setReader(new StringReader(input));
     SynonymFilter filter = new SynonymFilter(tokenStream, builder.build(), true);
     BytesRef payload = new BytesRef("payload");
-    ConcatenateGraphFilter concatStream = new ConcatenateGraphFilter(filter, true, false, 100);
-    concatStream.setPayload(payload);
-    PayloadAttrToTypeAttrFilter stream = new PayloadAttrToTypeAttrFilter(concatStream);
+    ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter, true, false, 100);
     String[] expectedOutputs = new String[2];
     CharsRefBuilder expectedOutput = new CharsRefBuilder();
     expectedOutput.append("mykeyword");
-    expectedOutput.append(ConcatenateGraphFilter.SEP_CHAR);
+    expectedOutput.append(SEP_LABEL);
     expectedOutput.append("another");
-    expectedOutput.append(ConcatenateGraphFilter.SEP_CHAR);
+    expectedOutput.append(SEP_LABEL);
     expectedOutput.append("keyword");
     expectedOutputs[0] = expectedOutput.toCharsRef().toString();
     expectedOutput.clear();
     expectedOutput.append("mysynonym");
-    expectedOutput.append(ConcatenateGraphFilter.SEP_CHAR);
+    expectedOutput.append(SEP_LABEL);
     expectedOutput.append("another");
-    expectedOutput.append(ConcatenateGraphFilter.SEP_CHAR);
+    expectedOutput.append(SEP_LABEL);
     expectedOutput.append("keyword");
     expectedOutputs[1] = expectedOutput.toCharsRef().toString();
-    assertTokenStreamContents(stream, expectedOutputs, null, null, new String[]{payload.utf8ToString(), payload.utf8ToString()}, new int[]{1, 0}, null, null);
+    assertTokenStreamContents(stream, expectedOutputs, null, null, new int[]{1, 0});
   }
 
   @Test
@@ -132,16 +117,16 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
       ConcatenateGraphFilter concatStream = new ConcatenateGraphFilter(tokenFilter, true, preservePosInc, 10);
       CharsRefBuilder builder = new CharsRefBuilder();
       if (preservePosInc) {
-        builder.append((ConcatenateGraphFilter.SEP_CHAR));
+        builder.append(SEP_LABEL);
       }
       builder.append("mykeyword");
-      builder.append((ConcatenateGraphFilter.SEP_CHAR));
+      builder.append(SEP_LABEL);
       if (preservePosInc) {
-        builder.append((ConcatenateGraphFilter.SEP_CHAR));
+        builder.append(SEP_LABEL);
       }
       builder.append("keyword");
       if (preservePosInc) {
-        builder.append((ConcatenateGraphFilter.SEP_CHAR));
+        builder.append(SEP_LABEL);
       }
       assertTokenStreamContents(concatStream, new String[]{builder.toCharsRef().toString()});
     }
@@ -162,18 +147,17 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     tokenizer.setReader(new StringReader(valueBuilder.toString()));
     SynonymFilter filter = new SynonymFilter(tokenizer, builder.build(), true);
 
-    ConcatenateGraphFilter concatStream = new ConcatenateGraphFilter(filter);
-    concatStream.setPayload(new BytesRef());
-    PayloadAttrToTypeAttrFilter stream = new PayloadAttrToTypeAttrFilter(concatStream);
-    stream.reset();
-    ConcatenateGraphFilter.BytesRefBuilderTermAttribute attr = stream.addAttribute(ConcatenateGraphFilter.BytesRefBuilderTermAttribute.class);
-    int count = 0;
-    while(stream.incrementToken()) {
-      count++;
-      assertNotNull(attr.getBytesRef());
-      assertTrue(attr.getBytesRef().length > 0);
+    int count;
+    try (ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter)) {
+      stream.reset();
+      ConcatenateGraphFilter.BytesRefBuilderTermAttribute attr = stream.addAttribute(ConcatenateGraphFilter.BytesRefBuilderTermAttribute.class);
+      count = 0;
+      while (stream.incrementToken()) {
+        count++;
+        assertNotNull(attr.getBytesRef());
+        assertTrue(attr.getBytesRef().length > 0);
+      }
     }
-    stream.close();
     assertEquals(count, 256);
   }
 
@@ -183,22 +167,4 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter, new String[0]);
   }
 
-  public final static class PayloadAttrToTypeAttrFilter extends TokenFilter {
-    private PayloadAttribute payload = addAttribute(PayloadAttribute.class);
-    private TypeAttribute type = addAttribute(TypeAttribute.class);
-
-    protected PayloadAttrToTypeAttrFilter(TokenStream input) {
-      super(input);
-    }
-
-    @Override
-    public boolean incrementToken() throws IOException {
-      if (input.incrementToken()) {
-        // we move them over so we can assert them more easily in the tests
-        type.setType(payload.getPayload().utf8ToString());
-        return true;
-      }
-      return false;
-    }
-  }
 }

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreMode;
@@ -145,7 +144,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    ConcatenateGraphFilter stream = (ConcatenateGraphFilter) analyzer.tokenStream(getField(), getTerm().text());
+    CompletionTokenStream stream = (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text());
     Set<IntsRef> refs = new HashSet<>();
     Automaton automaton = toLevenshteinAutomata(stream.toAutomaton(unicodeAware), refs);
     if (unicodeAware) {

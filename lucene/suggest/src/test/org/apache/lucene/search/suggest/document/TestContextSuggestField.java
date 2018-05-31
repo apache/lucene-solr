@@ -110,13 +110,13 @@ public class TestContextSuggestField extends LuceneTestCase {
     CharsRefBuilder builder = new CharsRefBuilder();
     builder.append("context1");
     builder.append(((char) ContextSuggestField.CONTEXT_SEPARATOR));
-    builder.append(ConcatenateGraphFilter.SEP_CHAR);
+    builder.append((char) ConcatenateGraphFilter.SEP_LABEL);
     builder.append("input");
     expectedOutputs[0] = builder.toCharsRef().toString();
     builder.clear();
     builder.append("context2");
     builder.append(((char) ContextSuggestField.CONTEXT_SEPARATOR));
-    builder.append(ConcatenateGraphFilter.SEP_CHAR);
+    builder.append((char) ConcatenateGraphFilter.SEP_LABEL);
     builder.append("input");
     expectedOutputs[1] = builder.toCharsRef().toString();
     TokenStream stream = new TestSuggestField.PayloadAttrToTypeAttrFilter(field.tokenStream(analyzer, null));

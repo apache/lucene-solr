@@ -103,7 +103,7 @@ public class TestSuggestField extends LuceneTestCase {
   public void testReservedChars() throws Exception {
     CharsRefBuilder charsRefBuilder = new CharsRefBuilder();
     charsRefBuilder.append("sugg");
-    charsRefBuilder.setCharAt(2, ConcatenateGraphFilter.SEP_CHAR);
+    charsRefBuilder.setCharAt(2, (char) ConcatenateGraphFilter.SEP_LABEL);
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new SuggestField("name", charsRefBuilder.toString(), 1);
     });

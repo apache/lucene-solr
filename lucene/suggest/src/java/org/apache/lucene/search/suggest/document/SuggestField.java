@@ -101,7 +101,7 @@ public class SuggestField extends Field {
 
   @Override
   public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
-    ConcatenateGraphFilter completionStream = wrapTokenStream(super.tokenStream(analyzer, reuse));
+    CompletionTokenStream completionStream = wrapTokenStream(super.tokenStream(analyzer, reuse));
     completionStream.setPayload(buildSuggestPayload());
     return completionStream;
   }
@@ -111,11 +111,11 @@ public class SuggestField extends Field {
    *
    * Subclasses can override this method to change the indexing pipeline.
    */
-  protected ConcatenateGraphFilter wrapTokenStream(TokenStream stream) {
-    if (stream instanceof ConcatenateGraphFilter) {
-      return (ConcatenateGraphFilter) stream;
+  protected CompletionTokenStream wrapTokenStream(TokenStream stream) {
+    if (stream instanceof CompletionTokenStream) {
+      return (CompletionTokenStream) stream;
     } else {
-      return new ConcatenateGraphFilter(stream);
+      return new CompletionTokenStream(stream);
     }
   }
 
@@ -141,7 +141,7 @@ public class SuggestField extends Field {
 
   private boolean isReserved(char c) {
     switch (c) {
-      case ConcatenateGraphFilter.SEP_CHAR:
+      case ConcatenateGraphFilter.SEP_LABEL:
       case CompletionAnalyzer.HOLE_CHARACTER:
       case NRTSuggesterBuilder.END_BYTE:
         return true;

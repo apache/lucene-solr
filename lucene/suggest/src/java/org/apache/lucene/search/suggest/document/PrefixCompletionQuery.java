@@ -19,7 +19,6 @@ package org.apache.lucene.search.suggest.document;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreMode;
@@ -69,7 +68,7 @@ public class PrefixCompletionQuery extends CompletionQuery {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    ConcatenateGraphFilter stream = (ConcatenateGraphFilter) analyzer.tokenStream(getField(), getTerm().text());
+    CompletionTokenStream stream = (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text());
     return new CompletionWeight(this, stream.toAutomaton());
   }
 

@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
@@ -84,22 +83,22 @@ public class ContextSuggestField extends SuggestField {
   }
 
   @Override
-  protected ConcatenateGraphFilter wrapTokenStream(TokenStream stream) {
+  protected CompletionTokenStream wrapTokenStream(TokenStream stream) {
     final Iterable<CharSequence> contexts = contexts();
     for (CharSequence context : contexts) {
       validate(context);
     }
-    ConcatenateGraphFilter concatStream;
-    if (stream instanceof ConcatenateGraphFilter) {
-      //nocommit this is awkward; is there a better way avoiding re-creating the chain?
-      concatStream = (ConcatenateGraphFilter) stream;
-      PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(concatStream.getInput(), (char) CONTEXT_SEPARATOR, contexts);
-      concatStream = new ConcatenateGraphFilter(prefixTokenFilter,
+    CompletionTokenStream concatStream;
+    if (stream instanceof CompletionTokenStream) {
+      //TODO this is awkward; is there a better way avoiding re-creating the chain?
+      concatStream = (CompletionTokenStream) stream;
+      PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(concatStream.inputTokenStream, (char) CONTEXT_SEPARATOR, contexts);
+      concatStream = new CompletionTokenStream(prefixTokenFilter,
           concatStream.preserveSep,
           concatStream.preservePositionIncrements,
           concatStream.maxGraphExpansions);
     } else {
-      concatStream = new ConcatenateGraphFilter(new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
+      concatStream = new CompletionTokenStream(new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
     }
     return concatStream;
   }

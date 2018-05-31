@@ -130,7 +130,7 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
 
   @Override
   protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-    ConcatenateGraphFilter tokenStream = new ConcatenateGraphFilter(components.getTokenStream(),
+    CompletionTokenStream tokenStream = new CompletionTokenStream(components.getTokenStream(),
         preserveSep, preservePositionIncrements, maxGraphExpansions);
     return new TokenStreamComponents(components.getTokenizer(), tokenStream);
   }
