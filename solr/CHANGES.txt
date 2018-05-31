@@ -292,10 +292,8 @@ Optimizations
 
 * SOLR-12338: Replay buffering tlog in parallel. (Cao Manh Dat, David Smiley)
 
-* SOLR-12375: Optimize Lucene needsScore / ScoreMode use:
-  A non-cached filter query could be told incorrectly that scores were needed.
-  The /export (ExportQParserPlugin) would declare incorrectly that scores are needed.
-  Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
+* SOLR-12366: A slow "live docs" implementation was being used instead of a bitset.  Affects classic faceting
+  enum method, JSON Facets enum method, UnInvertedField faceting, GraphTermsQParser, JoinQParser.  (David Smiley)
 
 Other Changes
 ----------------------

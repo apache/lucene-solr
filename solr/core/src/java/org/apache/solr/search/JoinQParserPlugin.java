@@ -373,8 +373,8 @@ class JoinQuery extends Query {
         }
       }
 
-      Bits fromLiveDocs = fromSearcher.getSlowAtomicReader().getLiveDocs();
-      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getSlowAtomicReader().getLiveDocs();
+      Bits fromLiveDocs = fromSearcher.getLiveDocsBits();
+      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getLiveDocsBits();
 
       fromDeState = new SolrIndexSearcher.DocsEnumState();
       fromDeState.fieldName = fromField;

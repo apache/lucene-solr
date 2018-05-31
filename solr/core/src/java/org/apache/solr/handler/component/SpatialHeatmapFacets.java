@@ -174,7 +174,7 @@ public class SpatialHeatmapFacets {
   }
 
   private static Bits getTopAcceptDocs(DocSet docSet, SolrIndexSearcher searcher) throws IOException {
-    if (searcher.getLiveDocs() == docSet) {
+    if (searcher.getLiveDocSet() == docSet) {
       return null; // means match everything (all live docs). This can speedup things a lot.
     } else if (docSet.size() == 0) {
       return new Bits.MatchNoBits(searcher.maxDoc()); // can speedup things a lot
