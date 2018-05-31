@@ -26,3 +26,5 @@ pom.xml
 /nbproject
 /nb-build
 .pydevproject
+.DS_Store
+/temp

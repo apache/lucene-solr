@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -26,7 +25,6 @@ import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.QueryElevationComponent.ElevationObj;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Before;
@@ -360,17 +358,17 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       SolrQueryRequest req = req();
       IndexReader reader = req.getSearcher().getIndexReader();
-      Map<String, ElevationObj> map = comp.getElevationMap(reader, core);
+      QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
       req.close();
 
       // Make sure the boosts loaded properly
-      assertEquals(7, map.size());
-      assertEquals(1, map.get("XXXX").priority.size());
-      assertEquals(2, map.get("YYYY").priority.size());
-      assertEquals(3, map.get("ZZZZ").priority.size());
-      assertEquals(null, map.get("xxxx"));
-      assertEquals(null, map.get("yyyy"));
-      assertEquals(null, map.get("zzzz"));
+      assertEquals(7, elevationProvider.size());
+      assertEquals(1, elevationProvider.getElevationForQuery("XXXX").priorities.size());
+      assertEquals(2, elevationProvider.getElevationForQuery("YYYY").priorities.size());
+      assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").priorities.size());
+      assertEquals(null, elevationProvider.getElevationForQuery("xxxx"));
+      assertEquals(null, elevationProvider.getElevationForQuery("yyyy"));
+      assertEquals(null, elevationProvider.getElevationForQuery("zzzz"));
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
       args = new NamedList<>();
@@ -380,17 +378,17 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       comp = new QueryElevationComponent();
       comp.init(args);
       comp.inform(core);
-      map = comp.getElevationMap(reader, core);
-      assertEquals(7, map.size());
-      assertEquals(null, map.get("XXXX"));
-      assertEquals(null, map.get("YYYY"));
-      assertEquals(null, map.get("ZZZZ"));
-      assertEquals(1, map.get("xxxx").priority.size());
-      assertEquals(2, map.get("yyyy").priority.size());
-      assertEquals(3, map.get("zzzz").priority.size());
+      elevationProvider = comp.getElevationProvider(reader, core);
+      assertEquals(7, elevationProvider.size());
+      assertEquals(1, elevationProvider.getElevationForQuery("XXXX").priorities.size());
+      assertEquals(2, elevationProvider.getElevationForQuery("YYYY").priorities.size());
+      assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").priorities.size());
+      assertEquals(1, elevationProvider.getElevationForQuery("xxxx").priorities.size());
+      assertEquals(2, elevationProvider.getElevationForQuery("yyyy").priorities.size());
+      assertEquals(3, elevationProvider.getElevationForQuery("zzzz").priorities.size());
 
-      assertEquals("xxxx", comp.getAnalyzedQuery("XXXX"));
-      assertEquals("xxxxyyyy", comp.getAnalyzedQuery("XXXX YYYY"));
+      assertEquals("xxxx", comp.analyzeQuery("XXXX"));
+      assertEquals("xxxx yyyy", comp.analyzeQuery("XXXX YYYY"));
 
       assertQ("Make sure QEC handles null queries", req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
           "//*[@numFound='0']");
@@ -555,9 +553,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       );
 
       // Explicitly set what gets boosted
-      booster.elevationCache.clear();
-      booster.setTopQueryResults(reader, query, new String[]{"x", "y", "z"}, null);
-
+      booster.setTopQueryResults(reader, query, false, new String[]{"x", "y", "z"}, null);
 
       req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
       assertQ("All six should make it", req
@@ -570,11 +566,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//result/doc[6]/str[@name='id'][.='a']"
       );
 
-      booster.elevationCache.clear();
-
       // now switch the order:
       req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      booster.setTopQueryResults(reader, query, new String[]{"a", "x"}, null);
+      booster.setTopQueryResults(reader, query, false, new String[]{"a", "x"}, null);
       assertQ("All four should make it", req
           , "//*[@numFound='4']"
           , "//result/doc[1]/str[@name='id'][.='a']"
@@ -631,7 +625,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       //Test exclusive (not to be confused with exclusion)
       args.put(QueryElevationParams.EXCLUSIVE, "true");
       req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      booster.setTopQueryResults(reader, query, new String[]{"x", "a"}, new String[]{});
+      booster.setTopQueryResults(reader, query, false, new String[]{"x", "a"}, new String[]{});
       assertQ(null, req
           , "//*[@numFound='2']"
           , "//result/doc[1]/str[@name='id'][.='x']"
@@ -639,11 +633,10 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       );
 
       // Test exclusion
-      booster.elevationCache.clear();
       args.remove(CommonParams.SORT);
       args.remove(QueryElevationParams.EXCLUSIVE);
       req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      booster.setTopQueryResults(reader, query, new String[]{"x"}, new String[]{"a"});
+      booster.setTopQueryResults(reader, query, false, new String[]{"x"}, new String[]{"a"});
       assertQ(null, req
           , "//*[@numFound='3']"
           , "//result/doc[1]/str[@name='id'][.='x']"
@@ -654,7 +647,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       // Test setting ids and excludes from http parameters
 
-      booster.elevationCache.clear();
+      booster.clearElevationProviderCache();
       args.put(QueryElevationParams.IDS, "x,y,z");
       args.put(QueryElevationParams.EXCLUDE, "b");
       req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
@@ -706,8 +699,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     try {
       init("schema12.xml");
       String testfile = "data-elevation.xml";
-      File f = new File(h.getCore().getDataDir(), testfile);
-      writeFile(f, "aaa", "A");
+      File configFile = new File(h.getCore().getDataDir(), testfile);
+      writeFile(configFile, "aaa", "A");
 
       QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
       NamedList<String> args = new NamedList<>();
@@ -717,21 +710,46 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       SolrQueryRequest req = req();
       IndexReader reader = req.getSearcher().getIndexReader();
-      Map<String, ElevationObj> map = comp.getElevationMap(reader, h.getCore());
-      assertTrue(map.get("aaa").priority.containsKey(new BytesRef("A")));
-      assertNull(map.get("bbb"));
+      QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, h.getCore());
+      assertTrue(elevationProvider.getElevationForQuery("aaa").elevatedIds.contains("A"));
+      assertNull(elevationProvider.getElevationForQuery("bbb"));
       req.close();
 
       // now change the file
-      writeFile(f, "bbb", "B");
-      assertU(adoc("id", "10000")); // will get same reader if no index change
-      assertU(commit());
+      writeFile(configFile, "bbb", "B");
 
+      // With no index change, we get the same index reader, so the elevationProviderCache returns the previous ElevationProvider without the change.
       req = req();
       reader = req.getSearcher().getIndexReader();
-      map = comp.getElevationMap(reader, h.getCore());
-      assertNull(map.get("aaa"));
-      assertTrue(map.get("bbb").priority.containsKey(new BytesRef("B")));
+      elevationProvider = comp.getElevationProvider(reader, h.getCore());
+      assertTrue(elevationProvider.getElevationForQuery("aaa").elevatedIds.contains("A"));
+      assertNull(elevationProvider.getElevationForQuery("bbb"));
+      req.close();
+
+      // Index a new doc to get a new index reader.
+      assertU(adoc("id", "10000"));
+      assertU(commit());
+
+      // Check that we effectively reload a new ElevationProvider for a different index reader (so two entries in elevationProviderCache).
+      req = req();
+      reader = req.getSearcher().getIndexReader();
+      elevationProvider = comp.getElevationProvider(reader, h.getCore());
+      assertNull(elevationProvider.getElevationForQuery("aaa"));
+      assertTrue(elevationProvider.getElevationForQuery("bbb").elevatedIds.contains("B"));
+      req.close();
+
+      // Now change the config file again.
+      writeFile(configFile, "ccc", "C");
+
+      // Without index change, but calling a different method that clears the elevationProviderCache, so we should load a new ElevationProvider.
+      int elevationRuleNumber = comp.loadElevationConfiguration(h.getCore());
+      assertEquals(1, elevationRuleNumber);
+      req = req();
+      reader = req.getSearcher().getIndexReader();
+      elevationProvider = comp.getElevationProvider(reader, h.getCore());
+      assertNull(elevationProvider.getElevationForQuery("aaa"));
+      assertNull(elevationProvider.getElevationForQuery("bbb"));
+      assertTrue(elevationProvider.getElevationForQuery("ccc").elevatedIds.contains("C"));
       req.close();
     } finally {
       delete();
