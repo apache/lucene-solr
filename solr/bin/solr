@@ -224,6 +224,10 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     fi
   fi
 
+  if [ -n "$SOLR_SSL_CHECK_PEER_NAME" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.ssl.checkPeerName=$SOLR_SSL_CHECK_PEER_NAME"
+  fi
+
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE"
 
@@ -347,7 +351,7 @@ function print_usage() {
     echo "                  on which example is run. The default value is server/solr. If passed relative dir,"
     echo "                  validation with current dir will be done, before trying default server/<dir>"
     echo ""
-    echo "  -t <dir>      Sets the solr.data.home system property, where Solr will store data (index)."
+    echo "  -t <dir>      Sets the solr.data.home system property, where Solr will store index data in <instance_dir>/data subdirectories."
     echo "                  If not set, Solr uses solr.solr.home for config and data."
     echo ""
     echo "  -e <example>  Name of the example to run; available examples:"
@@ -370,7 +374,7 @@ function print_usage() {
     echo ""
     echo "  -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO"
     echo ""
-    echo "  -V or -verbose Verbose messages from this script"
+    echo "  -V/-verbose   Verbose messages from this script"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
@@ -381,6 +385,8 @@ function print_usage() {
     echo "  -p <port>     Specify the port the Solr HTTP listener is bound to"
     echo ""
     echo "  -all          Find and stop all running Solr servers on this host"
+    echo ""
+    echo "  -V/-verbose   Verbose messages from this script"
     echo ""
     echo "  NOTE: To see if any Solr servers are running, do: solr status"
     echo ""
@@ -572,7 +578,7 @@ function print_usage() {
     echo ""
     echo "             Only the node names are listed, not data"
     echo ""
-    echo "         mkroot makes a znode on Zookeeper with no data. Can be used to make a path of arbitrary"
+    echo "         mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary"
     echo "             depth but primarily intended to create a 'chroot'."
     echo ""
     echo "             <path>: The Zookeeper path to create. Leading slash is assumed if not present."
@@ -1449,13 +1455,13 @@ if [ -z "$SOLR_ULIMIT_CHECKS" ] || [ "$SOLR_ULIMIT_CHECKS" != "false" ]; then
     if hash ulimit 2>/dev/null; then
        openFiles=$(ulimit -n)
        maxProcs=$(ulimit -u)
-       if [ $openFiles -lt "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
+       if [ $openFiles != "unlimited" ] && [ $openFiles -lt "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
            echo "*** [WARN] *** Your open file limit is currently $openFiles.  "
            echo " It should be set to $SOLR_RECOMMENDED_OPEN_FILES to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
        fi
 
-       if [ $maxProcs -lt "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
+       if [ $maxProcs != "unlimited" ] && [ $maxProcs -lt "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
            echo "*** [WARN] ***  Your Max Processes Limit is currently $maxProcs. "
            echo " It should be set to $SOLR_RECOMMENDED_MAX_PROCESSES to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"

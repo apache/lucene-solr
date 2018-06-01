@@ -231,7 +231,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
 
     @Override
     public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimScorer(collectionStats.field()) {
+      return new SimScorer() {
         @Override
         public float score(float freq, long norm) {
           return freq;

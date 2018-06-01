@@ -38,6 +38,9 @@ final class BlockMaxConjunctionScorer extends Scorer {
   BlockMaxConjunctionScorer(Weight weight, Collection<Scorer> scorersList) throws IOException {
     super(weight);
     this.scorers = scorersList.toArray(new Scorer[scorersList.size()]);
+    for (Scorer scorer : scorers) {
+      scorer.advanceShallow(0);
+    }
     this.maxScorePropagator = new MaxScoreSumPropagator(scorersList);
 
     // Put scorers with the higher max scores first

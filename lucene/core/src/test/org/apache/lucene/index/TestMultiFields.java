@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
@@ -51,7 +52,7 @@ public class TestMultiFields extends LuceneTestCase {
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                              .setMergePolicy(new FilterMergePolicy(NoMergePolicy.INSTANCE) {
                                                @Override
-                                               public boolean keepFullyDeletedSegment(CodecReader reader) {
+                                               public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
                                                  // we can do this because we use NoMergePolicy (and dont merge to "nothing")
                                                  return true;
                                                }

@@ -16,11 +16,18 @@
  */
 package org.apache.lucene.index;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,13 +40,13 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.IntToLongFunction;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -54,12 +61,6 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil.RandomAcceptedStrings;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 /** Helper class extracted from BasePostingsFormatTestCase to exercise a postings format. */
 public class RandomPostingsTester {
@@ -608,7 +609,7 @@ public class RandomPostingsTester {
     }
 
     @Override
-    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    public ImpactsEnum impacts(int flags) throws IOException {
       throw new UnsupportedOperationException();
     }
   }
@@ -1055,126 +1056,146 @@ public class RandomPostingsTester {
       } else {
         docToNorm = doc -> 1L;
       }
-      for (int s = 0; s < 3; ++s) {
-        final int scoreMode = s;
-        SimScorer scorer = new SimScorer(field) {
-          @Override
-          public float score(float freq, long norm) {
-            switch (scoreMode) {
-              case 0:
-                return freq; // make sure the postings record the best freq
-              case 1:
-                return 1f / norm; // make sure the postings record the best norm
-              default:
-                return freq - norm + MAX_NORM; // now a combination that could make intermediate pairs more competitive
-            }
-          }
-        };
 
-        // First check max scores and block uptos
-        int max = -1;
-        float maxScore = 0;
-        int flags = PostingsEnum.FREQS;
-        if (doCheckPositions) {
-          flags |= PostingsEnum.POSITIONS;
+      // First check impacts and block uptos
+      int max = -1;
+      List<Impact> impactsCopy = null;
+      int flags = PostingsEnum.FREQS;
+      if (doCheckPositions) {
+        flags |= PostingsEnum.POSITIONS;
+        if (doCheckOffsets) {
+          flags |= PostingsEnum.OFFSETS;
+        }
+        if (doCheckPayloads) {
+          flags |= PostingsEnum.PAYLOADS;
+        }
+      }
+
+      ImpactsEnum impactsEnum = termsEnum.impacts(flags);
+      PostingsEnum postings = termsEnum.postings(null, flags);
+      for (int doc = impactsEnum.nextDoc(); ; doc = impactsEnum.nextDoc()) {
+        assertEquals(postings.nextDoc(), doc);
+        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
+        }
+        int freq = postings.freq();
+        assertEquals("freq is wrong", freq, impactsEnum.freq());
+        for (int i = 0; i < freq; ++i) {
+          int pos = postings.nextPosition();
+          assertEquals("position is wrong", pos, impactsEnum.nextPosition());
           if (doCheckOffsets) {
-            flags |= PostingsEnum.OFFSETS;
+            assertEquals("startOffset is wrong", postings.startOffset(), impactsEnum.startOffset());
+            assertEquals("endOffset is wrong", postings.endOffset(), impactsEnum.endOffset());
           }
           if (doCheckPayloads) {
-            flags |= PostingsEnum.PAYLOADS;
+            assertEquals("payload is wrong", postings.getPayload(), impactsEnum.getPayload());
+          }
+        }
+        if (doc > max) {
+          impactsEnum.advanceShallow(doc);
+          Impacts impacts = impactsEnum.getImpacts();
+          CheckIndex.checkImpacts(impacts, doc);
+          impactsCopy = impacts.getImpacts(0)
+              .stream()
+              .map(i -> new Impact(i.freq, i.norm))
+              .collect(Collectors.toList());
+        }
+        freq = impactsEnum.freq();
+        long norm = docToNorm.applyAsLong(doc);
+        int idx = Collections.binarySearch(impactsCopy, new Impact(freq, norm), Comparator.comparing(i -> i.freq));
+        if (idx < 0) {
+          idx = -1 - idx;
+        }
+        assertTrue("Got " + new Impact(freq, norm) + " in postings, but no impact triggers equal or better scores in " + impactsCopy,
+            idx <= impactsCopy.size() && impactsCopy.get(idx).norm <= norm);
+      }
+
+      // Now check advancing
+      impactsEnum = termsEnum.impacts(flags);
+      postings = termsEnum.postings(postings, flags);
+
+      max = -1;
+      while (true) {
+        int doc = impactsEnum.docID();
+        boolean advance;
+        int target;
+        if (random.nextBoolean()) {
+          advance = false;
+          target = doc + 1;
+        } else {
+          advance = true;
+          int delta = Math.min(1 + random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - doc);
+          target = impactsEnum.docID() + delta;
+        }
+
+        if (target > max && random.nextBoolean()) {
+          int delta = Math.min(random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - target);
+          max = target + delta;
+          
+          impactsEnum.advanceShallow(target);
+          Impacts impacts = impactsEnum.getImpacts();
+          CheckIndex.checkImpacts(impacts, target);
+          impactsCopy = Collections.singletonList(new Impact(Integer.MAX_VALUE, 1L));
+          for (int level = 0; level < impacts.numLevels(); ++level) {
+            if (impacts.getDocIdUpTo(level) >= max) {
+              impactsCopy = impacts.getImpacts(level)
+                  .stream()
+                  .map(i -> new Impact(i.freq, i.norm))
+                  .collect(Collectors.toList());
+              break;
+            }
           }
         }
 
-        ImpactsEnum impacts = termsEnum.impacts(scorer, flags);
-        PostingsEnum postings = termsEnum.postings(null, flags);
-        for (int doc = impacts.nextDoc(); ; doc = impacts.nextDoc()) {
-          assertEquals(postings.nextDoc(), doc);
-          if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-            break;
-          }
-          int freq = postings.freq();
-          assertEquals("freq is wrong", freq, impacts.freq());
-          for (int i = 0; i < freq; ++i) {
-            int pos = postings.nextPosition();
-            assertEquals("position is wrong", pos, impacts.nextPosition());
-            if (doCheckOffsets) {
-              assertEquals("startOffset is wrong", postings.startOffset(), impacts.startOffset());
-              assertEquals("endOffset is wrong", postings.endOffset(), impacts.endOffset());
-            }
-            if (doCheckPayloads) {
-              assertEquals("payload is wrong", postings.getPayload(), impacts.getPayload());
-            }
-          }
-          if (doc > max) {
-            max = impacts.advanceShallow(doc);
-            assertTrue(max >= doc);
-            maxScore = impacts.getMaxScore(max);
-          }
-          assertEquals(max, impacts.advanceShallow(doc));
-          assertTrue(scorer.score(impacts.freq(), docToNorm.applyAsLong(doc)) <= maxScore);
+        if (advance) {
+          doc = impactsEnum.advance(target);
+        } else {
+          doc = impactsEnum.nextDoc();
         }
 
-        // Now check advancing
-        impacts = termsEnum.impacts(scorer, flags);
-        postings = termsEnum.postings(postings, flags);
-
-        max = -1;
-        while (true) {
-          int doc = impacts.docID();
-          boolean advance;
-          int target;
-          if (random.nextBoolean()) {
-            advance = false;
-            target = doc + 1;
-          } else {
-            advance = true;
-            int delta = Math.min(1 + random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - doc);
-            target = impacts.docID() + delta;
-          }
-
-          if (target > max && random.nextBoolean()) {
-            int delta = Math.min(random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - target);
-            max = target + delta;
-            int m = impacts.advanceShallow(target);
-            assertTrue(m >= target);
-            maxScore = impacts.getMaxScore(max);
-          }
-
-          if (advance) {
-            doc = impacts.advance(target);
-          } else {
-            doc = impacts.nextDoc();
-          }
-
-          assertEquals(postings.advance(target), doc);
-          if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-            break;
-          }
-          int freq = postings.freq();
-          assertEquals("freq is wrong", freq, impacts.freq());
-          for (int i = 0; i < postings.freq(); ++i) {
-            int pos = postings.nextPosition();
-            assertEquals("position is wrong", pos, impacts.nextPosition());
-            if (doCheckOffsets) {
-              assertEquals("startOffset is wrong", postings.startOffset(), impacts.startOffset());
-              assertEquals("endOffset is wrong", postings.endOffset(), impacts.endOffset());
-            }
-            if (doCheckPayloads) {
-              assertEquals("payload is wrong", postings.getPayload(), impacts.getPayload());
-            }
-          }
-
-          if (doc > max) {
-            int delta = Math.min(1 + random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - doc);
-            max = doc + delta;
-            int m = impacts.advanceShallow(doc);
-            assertTrue(m >= doc);
-            maxScore = impacts.getMaxScore(max);
-          }
-
-          float score = scorer.score(impacts.freq(), docToNorm.applyAsLong(doc));
-          assertTrue(score <= maxScore);
+        assertEquals(postings.advance(target), doc);
+        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
         }
+        int freq = postings.freq();
+        assertEquals("freq is wrong", freq, impactsEnum.freq());
+        for (int i = 0; i < postings.freq(); ++i) {
+          int pos = postings.nextPosition();
+          assertEquals("position is wrong", pos, impactsEnum.nextPosition());
+          if (doCheckOffsets) {
+            assertEquals("startOffset is wrong", postings.startOffset(), impactsEnum.startOffset());
+            assertEquals("endOffset is wrong", postings.endOffset(), impactsEnum.endOffset());
+          }
+          if (doCheckPayloads) {
+            assertEquals("payload is wrong", postings.getPayload(), impactsEnum.getPayload());
+          }
+        }
+
+        if (doc > max) {
+          int delta = Math.min(1 + random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - doc);
+          max = doc + delta;
+          Impacts impacts = impactsEnum.getImpacts();
+          CheckIndex.checkImpacts(impacts, doc);
+          impactsCopy = Collections.singletonList(new Impact(Integer.MAX_VALUE, 1L));
+          for (int level = 0; level < impacts.numLevels(); ++level) {
+            if (impacts.getDocIdUpTo(level) >= max) {
+              impactsCopy = impacts.getImpacts(level)
+                  .stream()
+                  .map(i -> new Impact(i.freq, i.norm))
+                  .collect(Collectors.toList());
+              break;
+            }
+          }
+        }
+
+        freq = impactsEnum.freq();
+        long norm = docToNorm.applyAsLong(doc);
+        int idx = Collections.binarySearch(impactsCopy, new Impact(freq, norm), Comparator.comparing(i -> i.freq));
+        if (idx < 0) {
+          idx = -1 - idx;
+        }
+        assertTrue("Got " + new Impact(freq, norm) + " in postings, but no impact triggers equal or better scores in " + impactsCopy,
+            idx <= impactsCopy.size() && impactsCopy.get(idx).norm <= norm);
       }
     }
   }

@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.IntFunction;
 
 import com.tdunning.math.stats.AVLTreeDigest;
 import org.apache.lucene.queries.function.ValueSource;
@@ -109,7 +110,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       digests = new AVLTreeDigest[numSlots];
     }
 
-    public void collect(int doc, int slotNum) throws IOException {
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
       if (!values.exists(doc)) return;
       double val = values.doubleVal(doc);
 

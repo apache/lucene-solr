@@ -100,10 +100,10 @@ public final class StandardDirectoryReader extends DirectoryReader {
         // IndexWriter's segmentInfos:
         final SegmentCommitInfo info = infos.info(i);
         assert info.info.dir == dir;
-        final ReadersAndUpdates rld = writer.readerPool.get(info, true);
+        final ReadersAndUpdates rld = writer.getPooledInstance(info, true);
         try {
           final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
-          if (reader.numDocs() > 0 || writer.getConfig().mergePolicy.keepFullyDeletedSegment(reader)) {
+          if (reader.numDocs() > 0 || writer.getConfig().mergePolicy.keepFullyDeletedSegment(() -> reader)) {
             // Steal the ref:
             readers.add(reader);
             infosUpto++;
@@ -112,7 +112,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
             segmentInfos.remove(infosUpto);
           }
         } finally {
-          writer.readerPool.release(rld);
+          writer.release(rld);
         }
       }
 

@@ -33,8 +33,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 
@@ -63,9 +61,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     SchemaField schemaField = fields.get("string_disk_f");
     PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField(schemaField.getName()).getName());
-    schemaField = fields.get("string_memory_f");
-    assertEquals("Memory",
-        format.getDocValuesFormatForField(schemaField.getName()).getName());
+    schemaField = fields.get("string_direct_f");
+    assertEquals("Direct", format.getDocValuesFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_f");
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(),
         format.getDocValuesFormatForField(schemaField.getName()).getName());
@@ -87,8 +84,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("foo_disk").getName());
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("bar_disk").getName());
-    assertEquals("Memory", format.getDocValuesFormatForField("foo_memory").getName());
-    assertEquals("Memory", format.getDocValuesFormatForField("bar_memory").getName());
+    assertEquals("Direct", format.getDocValuesFormatForField("foo_direct").getName());
+    assertEquals("Direct", format.getDocValuesFormatForField("bar_direct").getName());
   }
   
   private void reloadCoreAndRecreateIndex() {
@@ -112,22 +109,17 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   }
 
   protected void assertCompressionMode(String expectedModeString, SolrCore core) throws IOException {
-    RefCounted<SolrIndexSearcher> ref = null;
-    SolrIndexSearcher searcher = null;
-    try {
-      ref = core.getSearcher();
-      searcher = ref.get();
+    h.getCore().withSearcher(searcher -> {
       SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
       SegmentInfo info = infos.info(infos.size() - 1).info;
-      assertEquals("Expecting compression mode string to be " + expectedModeString + 
-          " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) +
-          "\n SegmentInfo: " + info +
-          "\n SegmentInfos: " + infos + 
-          "\n Codec: " + core.getCodec(),
+      assertEquals("Expecting compression mode string to be " + expectedModeString +
+              " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) +
+              "\n SegmentInfo: " + info +
+              "\n SegmentInfos: " + infos +
+              "\n Codec: " + core.getCodec(),
           expectedModeString, info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY));
-    } finally {
-      if (ref != null) ref.decref();
-    }
+      return null;
+    });
   }
   
   public void testCompressionMode() throws Exception {

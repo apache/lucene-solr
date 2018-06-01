@@ -76,7 +76,7 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);

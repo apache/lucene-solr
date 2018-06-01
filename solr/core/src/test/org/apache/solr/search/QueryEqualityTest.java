@@ -1015,6 +1015,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                      "currency(amount,USD)",
                      "currency('amount',USD)");
   }
+  public void testFuncRelatedness() throws Exception {
+    SolrQueryRequest req = req("fore","foo_s:front", "back","foo_s:back");
+    try {
+      assertFuncEquals(req,
+                       "agg_relatedness({!query v='foo_s:front'}, {!query v='foo_s:back'})", 
+                       "agg_relatedness($fore, $back)");
+    } finally {
+      req.close();
+    }
+  }
 
   public void testTestFuncs() throws Exception {
     assertFuncEquals("sleep(1,5)", "sleep(1,5)");
@@ -1162,6 +1172,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("agg_sum(foo_i)", "agg_sum(foo_i)");
     assertFuncEquals("agg_count()", "agg_count()");
     assertFuncEquals("agg_unique(foo_i)", "agg_unique(foo_i)");
+    assertFuncEquals("agg_uniqueBlock(foo_i)", "agg_uniqueBlock(foo_i)");
     assertFuncEquals("agg_hll(foo_i)", "agg_hll(foo_i)");
     assertFuncEquals("agg_sumsq(foo_i)", "agg_sumsq(foo_i)");
     assertFuncEquals("agg_percentile(foo_i,50)", "agg_percentile(foo_i,50)");

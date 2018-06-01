@@ -1,6 +1,6 @@
 {
   "documentation": "https://lucene.apache.org/solr/guide/configsets-api.html#configsets-delete",
-  "description": "Delete ConfigSets. The name of the ConfigSet to delete must be provided as a path parameter.",
+  "description": "Delete configsets. The name of the configset to delete must be provided as a path parameter.",
   "methods": [
     "DELETE"
   ],

@@ -78,6 +78,7 @@ org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilterFactory
 org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilterFactory
 org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilterFactory
+org.apache.lucene.analysis.miscellaneous.ProtectedTermFilterFactory
 org.apache.lucene.analysis.miscellaneous.TrimFilterFactory
 org.apache.lucene.analysis.miscellaneous.TruncateTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.TypeAsSynonymFilterFactory

@@ -43,3 +43,12 @@ the same index options for that field.
 
 Instead use IndexSearcher.createWeight(), rewriting the query first, and using
 a boost of 1f.
+
+## Memory codecs removed (LUCENE-8267) ##
+
+Memory codecs have been removed from the codebase (MemoryPostings, MemoryDocValues).
+
+## QueryCachingPolicy.ALWAYS_CACHE removed (LUCENE-8144) ##
+
+Caching everything is discouraged as it disables the ability to skip non-interesting documents.
+ALWAYS_CACHE can be replaced by a UsageTrackingQueryCachingPolicy with an appropriate config.

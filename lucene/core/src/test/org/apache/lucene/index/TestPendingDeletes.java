@@ -52,18 +52,16 @@ public class TestPendingDeletes extends LuceneTestCase {
     assertFalse(liveDocs.get(docToDelete));
     assertFalse(deletes.delete(docToDelete)); // delete again
 
-    // make sure we are live ie. mutable
     assertTrue(liveDocs.get(8));
     assertTrue(deletes.delete(8));
-    assertFalse(liveDocs.get(8));
+    assertTrue(liveDocs.get(8)); // we have a snapshot
     assertEquals(2, deletes.numPendingDeletes());
 
-    deletes.liveDocsShared();
-
-    // make sure we are live ie. mutable
     assertTrue(liveDocs.get(9));
     assertTrue(deletes.delete(9));
     assertTrue(liveDocs.get(9));
+
+    // now make sure new live docs see the deletions
     liveDocs = deletes.getLiveDocs();
     assertFalse(liveDocs.get(9));
     assertFalse(liveDocs.get(8));
@@ -83,7 +81,7 @@ public class TestPendingDeletes extends LuceneTestCase {
     boolean secondDocDeletes = random().nextBoolean();
     deletes.delete(5);
     if (secondDocDeletes) {
-      deletes.liveDocsShared();
+      deletes.getLiveDocs();
       deletes.delete(2);
     }
     assertEquals(-1, commitInfo.getDelGen());
@@ -134,13 +132,15 @@ public class TestPendingDeletes extends LuceneTestCase {
     SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 3, false, Codec.getDefault(),
         Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, -1, -1, -1);
+    FieldInfos fieldInfos = new FieldInfos(new FieldInfo[0]);
+    si.getCodec().fieldInfosFormat().write(dir, si, "", fieldInfos, IOContext.DEFAULT);
     PendingDeletes deletes = newPendingDeletes(commitInfo);
     for (int i = 0; i < 3; i++) {
       assertTrue(deletes.delete(i));
       if (random().nextBoolean()) {
         assertTrue(deletes.writeLiveDocs(dir));
       }
-      assertEquals(i == 2, deletes.isFullyDeleted());
+      assertEquals(i == 2, deletes.isFullyDeleted(() -> null));
     }
   }
 }

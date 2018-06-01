@@ -39,7 +39,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 @TimeoutSuite(millis = 8 * TimeUnits.HOUR)
 public class TestIndexWriterMaxDocs extends LuceneTestCase {
 

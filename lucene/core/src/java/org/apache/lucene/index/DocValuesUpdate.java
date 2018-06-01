@@ -16,11 +16,16 @@
  */
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /** An in-place update to a DocValues field. */
@@ -38,21 +43,24 @@ abstract class DocValuesUpdate {
   final DocValuesType type;
   final Term term;
   final String field;
-  final Object value;
-  int docIDUpto = -1; // unassigned until applied, and confusing that it's here, when it's just used in BufferedDeletes...
+  // used in BufferedDeletes to apply this update only to a slice of docs. It's initialized to BufferedUpdates.MAX_INT
+  // since it's safe and most often used this way we safe object creations.
+  final int docIDUpto;
+  final boolean hasValue;
 
   /**
    * Constructor.
    * 
    * @param term the {@link Term} which determines the documents that will be updated
    * @param field the {@link NumericDocValuesField} to update
-   * @param value the updated value
    */
-  protected DocValuesUpdate(DocValuesType type, Term term, String field, Object value) {
+  protected DocValuesUpdate(DocValuesType type, Term term, String field, int docIDUpto, boolean hasValue) {
+    assert docIDUpto >= 0 : docIDUpto + "must be >= 0";
     this.type = type;
     this.term = term;
     this.field = field;
-    this.value = value;
+    this.docIDUpto = docIDUpto;
+    this.hasValue = hasValue;
   }
 
   abstract long valueSizeInBytes();
@@ -63,40 +71,126 @@ abstract class DocValuesUpdate {
     sizeInBytes += term.bytes.bytes.length;
     sizeInBytes += field.length() * Character.BYTES;
     sizeInBytes += valueSizeInBytes();
+    sizeInBytes += 1; // hasValue
     return sizeInBytes;
+  }
+
+  protected abstract String valueToString();
+
+  abstract void writeTo(DataOutput output) throws IOException;
+
+  boolean hasValue() {
+    return hasValue;
   }
   
   @Override
   public String toString() {
-    return "term=" + term + ",field=" + field + ",value=" + value + ",docIDUpto=" + docIDUpto;
+    return "term=" + term + ",field=" + field + ",value=" + valueToString() + ",docIDUpto=" + docIDUpto;
   }
   
   /** An in-place update to a binary DocValues field */
   static final class BinaryDocValuesUpdate extends DocValuesUpdate {
-    
+    private final BytesRef value;
+
     /* Size of BytesRef: 2*INT + ARRAY_HEADER + PTR */
     private static final long RAW_VALUE_SIZE_IN_BYTES = NUM_BYTES_ARRAY_HEADER + 2*Integer.BYTES + NUM_BYTES_OBJECT_REF;
-    
+
     BinaryDocValuesUpdate(Term term, String field, BytesRef value) {
-      super(DocValuesType.BINARY, term, field, value);
+      this(term, field, value, BufferedUpdates.MAX_INT);
+    }
+    
+    private BinaryDocValuesUpdate(Term term, String field, BytesRef value, int docIDUpTo) {
+      super(DocValuesType.BINARY, term, field, docIDUpTo, value != null);
+      this.value = value;
+    }
+
+    BinaryDocValuesUpdate prepareForApply(int docIDUpto) {
+      if (docIDUpto == this.docIDUpto) {
+        return this; // it's a final value so we can safely reuse this instance
+      }
+      return new BinaryDocValuesUpdate(term, field, value, docIDUpto);
     }
 
     @Override
     long valueSizeInBytes() {
-      return RAW_VALUE_SIZE_IN_BYTES + ((BytesRef) value).bytes.length;
+      return RAW_VALUE_SIZE_IN_BYTES + (value == null ? 0 : value.bytes.length);
+    }
+
+    @Override
+    protected String valueToString() {
+      return value.toString();
+    }
+
+    BytesRef getValue() {
+      assert hasValue : "getValue should only be called if this update has a value";
+      return value;
+    }
+
+    @Override
+    void writeTo(DataOutput out) throws IOException {
+      assert hasValue;
+      out.writeVInt(value.length);
+      out.writeBytes(value.bytes, value.offset, value.length);
+    }
+
+    static BytesRef readFrom(DataInput in, BytesRef scratch) throws IOException {
+      scratch.length = in.readVInt();
+      if (scratch.bytes.length < scratch.length) {
+        scratch.bytes = ArrayUtil.grow(scratch.bytes, scratch.length);
+      }
+      in.readBytes(scratch.bytes, 0, scratch.length);
+      return scratch;
     }
   }
 
   /** An in-place update to a numeric DocValues field */
   static final class NumericDocValuesUpdate extends DocValuesUpdate {
+    private final long value;
+
+    NumericDocValuesUpdate(Term term, String field, long value) {
+      this(term, field, value, BufferedUpdates.MAX_INT, true);
+    }
 
     NumericDocValuesUpdate(Term term, String field, Long value) {
-      super(DocValuesType.NUMERIC, term, field, value);
+      this(term, field, value != null ? value.longValue() : -1, BufferedUpdates.MAX_INT, value != null);
+    }
+
+
+    private NumericDocValuesUpdate(Term term, String field, long value, int docIDUpTo, boolean hasValue) {
+      super(DocValuesType.NUMERIC, term, field, docIDUpTo, hasValue);
+      this.value = value;
+    }
+
+    NumericDocValuesUpdate prepareForApply(int docIDUpto) {
+      if (docIDUpto == this.docIDUpto) {
+        return this;
+      }
+      return new NumericDocValuesUpdate(term, field, value, docIDUpto, hasValue);
     }
 
     @Override
     long valueSizeInBytes() {
       return Long.BYTES;
+    }
+
+    @Override
+    protected String valueToString() {
+      return hasValue ? Long.toString(value) : "null";
+    }
+
+    @Override
+    void writeTo(DataOutput out) throws IOException {
+      assert hasValue;
+      out.writeZLong(value);
+    }
+
+    static long readFrom(DataInput in) throws IOException {
+      return in.readZLong();
+    }
+
+    long getValue() {
+      assert hasValue : "getValue should only be called if this update has a value";
+      return value;
     }
   }
 }

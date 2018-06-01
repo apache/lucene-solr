@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
@@ -195,12 +196,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   PublicKey getRemotePublicKey(String nodename) {
     if (!cores.getZkController().getZkStateReader().getClusterState().getLiveNodes().contains(nodename)) return null;
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
+    HttpEntity entity = null;
     try {
       String uri = url + PATH + "?wt=json&omitHeader=true";
       log.debug("Fetching fresh public key from : {}",uri);
-      HttpResponse rsp = cores.getUpdateShardHandler().getHttpClient()
+      HttpResponse rsp = cores.getUpdateShardHandler().getDefaultHttpClient()
           .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
-      byte[] bytes = EntityUtils.toByteArray(rsp.getEntity());
+      entity  = rsp.getEntity();
+      byte[] bytes = EntityUtils.toByteArray(entity);
       Map m = (Map) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
       if (key == null) {
@@ -215,6 +218,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     } catch (Exception e) {
       log.error("Exception trying to get public key from : " + url, e);
       return null;
+    } finally {
+      Utils.consumeFully(entity);
     }
 
   }

@@ -43,6 +43,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.UpdateShardHandler;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -68,6 +69,15 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
         false, true, 30);
+
+    //SOLR-12314 : assert that these values are from the solr.xml file and not UpdateShardHandlerConfig#DEFAULT
+    for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+      UpdateShardHandler shardHandler = jettySolrRunner.getCoreContainer().getUpdateShardHandler();
+      int socketTimeout = shardHandler.getSocketTimeout();
+      int connectionTimeout = shardHandler.getConnectionTimeout();
+      assertEquals(340000, socketTimeout);
+      assertEquals(45000, connectionTimeout);
+    }
   }
 
   @Before
@@ -77,7 +87,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  // Removed BadApple on 18-May-2018
   public void leaderRecoverFromLogOnStartupTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     DirectUpdateHandler2.commitOnClose = false;
@@ -153,32 +163,34 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     assertEquals(0, resp.getResults().getNumFound());
 
     int logHeaderSize = Integer.MAX_VALUE;
-    Map<File, byte[]> contentFiles = new HashMap<>();
+    Map<String, byte[]> contentFiles = new HashMap<>();
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
         File tlogFolder = new File(solrCore.getUlogDir(), UpdateLog.TLOG_NAME);
         String[] tLogFiles = tlogFolder.list();
         Arrays.sort(tLogFiles);
-        File lastTLogFile = new File(tlogFolder.getAbsolutePath() + "/" + tLogFiles[tLogFiles.length - 1]);
-        byte[] tlogBytes = IOUtils.toByteArray(new FileInputStream(lastTLogFile));
-        contentFiles.put(lastTLogFile, tlogBytes);
-        logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
+        String lastTLogFile = tlogFolder.getAbsolutePath() + "/" + tLogFiles[tLogFiles.length - 1];
+        try (FileInputStream inputStream = new FileInputStream(lastTLogFile)){
+          byte[] tlogBytes = IOUtils.toByteArray(inputStream);
+          contentFiles.put(lastTLogFile, tlogBytes);
+          logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
+        }
       }
     }
 
     ChaosMonkey.stop(cluster.getJettySolrRunners());
     assertTrue("Timeout waiting for all not live", ClusterStateUtil.waitForAllReplicasNotLive(cloudClient.getZkStateReader(), 45000));
 
-    for (Map.Entry<File, byte[]> entry : contentFiles.entrySet()) {
+    for (Map.Entry<String, byte[]> entry : contentFiles.entrySet()) {
       byte[] tlogBytes = entry.getValue();
 
       if (tlogBytes.length <= logHeaderSize) continue;
-      FileOutputStream stream = new FileOutputStream(entry.getKey());
-      int skipLastBytes = Math.max(random().nextInt(tlogBytes.length - logHeaderSize), 2);
-      for (int i = 0; i < entry.getValue().length - skipLastBytes; i++) {
-        stream.write(tlogBytes[i]);
+      try (FileOutputStream stream = new FileOutputStream(entry.getKey())) {
+        int skipLastBytes = Math.max(random().nextInt(tlogBytes.length - logHeaderSize), 2);
+        for (int i = 0; i < entry.getValue().length - skipLastBytes; i++) {
+          stream.write(tlogBytes[i]);
+        }
       }
-      stream.close();
     }
 
     ChaosMonkey.start(cluster.getJettySolrRunners());

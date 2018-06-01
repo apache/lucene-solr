@@ -46,6 +46,7 @@ import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
+import org.apache.solr.cloud.autoscaling.SearchRateTrigger;
 import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
@@ -549,7 +550,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
         "'name' : 'search_rate_trigger'," +
         "'event' : 'searchRate'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
-        "'rate' : 1.0," +
+        "'aboveRate' : 1.0," +
         "'enabled' : true," +
         "'actions' : [" +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
@@ -581,7 +582,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     assertEquals(listenerEvents.toString(), 1, listenerEvents.get("srt").size());
     CapturedEvent ev = listenerEvents.get("srt").get(0);
     assertEquals(TriggerEventType.SEARCHRATE, ev.event.getEventType());
-    Map<String, Number> m = (Map<String, Number>)ev.event.getProperty("node");
+    Map<String, Number> m = (Map<String, Number>)ev.event.getProperty(SearchRateTrigger.HOT_NODES);
     assertNotNull(m);
     assertEquals(nodes.size(), m.size());
     assertEquals(nodes, m.keySet());

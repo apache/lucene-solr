@@ -135,7 +135,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           Pair<String, ReplicaInfo> p = keyVsReplica.get(k);
           Suggestion.ConditionType validator = Suggestion.getTagType(p.first());
           if (validator != null) o = validator.convertVal(o);
-          if (p != null) p.second().getVariables().put(p.first(), o);
+          if (p.second() != null) p.second().getVariables().put(p.first(), o);
         });
 
       }
@@ -145,7 +145,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   static void fetchMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("key", metricsKeyVsTag.keySet().toArray(new String[metricsKeyVsTag.size()]));
+    params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
     try {
       SimpleSolrResponse rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
       metricsKeyVsTag.forEach((key, tag) -> {

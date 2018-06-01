@@ -16,23 +16,27 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Collections;
 
 import com.google.common.base.Strings;
-
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter.BAOS;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -126,7 +130,19 @@ public class EmbeddedSolrServer extends SolrClient {
     SolrRequestHandler handler = coreContainer.getRequestHandler(path);
     if (handler != null) {
       try {
-        SolrQueryRequest req = _parser.buildRequestFrom(null, request.getParams(), request.getContentStreams());
+        SolrQueryRequest req = _parser.buildRequestFrom(null, request.getParams(), Collections.singleton(new ContentStreamBase() {
+          @Override
+          public InputStream getStream() throws IOException {
+            BAOS baos = new BAOS();
+            new BinaryRequestWriter().write(request, baos);
+            return new ByteArrayInputStream(baos.getbuf());
+          }
+          @Override
+          public String getContentType() {
+            return CommonParams.JAVABIN_MIME;
+
+          }
+        }));
         req.getContext().put(PATH, path);
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(req, resp);
@@ -201,10 +217,10 @@ public class EmbeddedSolrServer extends SolrClient {
               };
 
 
-          try(ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+          try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             createJavaBinCodec(callback, resolver).setWritableDocFields(resolver).marshal(rsp.getValues(), out);
 
-            try(InputStream in = out.toInputStream()){
+            try (InputStream in = out.toInputStream()) {
               return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
             }
           }

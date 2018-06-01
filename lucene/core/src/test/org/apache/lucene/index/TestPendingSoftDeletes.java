@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
@@ -45,7 +46,11 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testDeleteSoft() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("_soft_deletes"));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
+        .setSoftDeletesField("_soft_deletes")
+        // make sure all docs will end up in the same segment
+        .setMaxBufferedDocs(10)
+        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     writer.softUpdateDocument(new Term("id", "1"), doc,
@@ -69,9 +74,9 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertTrue(pendingSoftDeletes.getLiveDocs().get(0));
     assertFalse(pendingSoftDeletes.getLiveDocs().get(1));
     assertTrue(pendingSoftDeletes.getLiveDocs().get(2));
+    assertNull(pendingSoftDeletes.getHardLiveDocs());
     // pass reader again
     Bits liveDocs = pendingSoftDeletes.getLiveDocs();
-    pendingSoftDeletes.liveDocsShared();
     pendingSoftDeletes.onNewReader(segmentReader, segmentInfo);
     assertEquals(1, pendingSoftDeletes.numPendingDeletes());
     assertSame(liveDocs, pendingSoftDeletes.getLiveDocs());
@@ -90,6 +95,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertFalse(pendingSoftDeletes.getLiveDocs().get(0));
     assertFalse(pendingSoftDeletes.getLiveDocs().get(1));
     assertTrue(pendingSoftDeletes.getLiveDocs().get(2));
+    assertNotNull(pendingSoftDeletes.getHardLiveDocs());
+    assertFalse(pendingSoftDeletes.getHardLiveDocs().get(0));
+    assertTrue(pendingSoftDeletes.getHardLiveDocs().get(1));
+    assertTrue(pendingSoftDeletes.getHardLiveDocs().get(2));
     IOUtils.close(reader, writer, dir);
   }
 
@@ -113,11 +122,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     writer.close();
     FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 0, Collections.emptyMap(), 0, 0);
     List<Integer> docsDeleted = Arrays.asList(1, 3, 7, 8, DocIdSetIterator.NO_MORE_DOCS);
-    List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 10));
+    List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 10, true));
     for (DocValuesFieldUpdates update : updates) {
-      deletes.onDocValuesUpdate(update.field, update.iterator());
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
-    deletes.onDocValuesUpdate(fieldInfo);
     assertEquals(4, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -131,12 +139,11 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertTrue(deletes.getLiveDocs().get(9));
 
     docsDeleted = Arrays.asList(1, 2, DocIdSetIterator.NO_MORE_DOCS);
-    updates = Arrays.asList(singleUpdate(docsDeleted, 10));
+    updates = Arrays.asList(singleUpdate(docsDeleted, 10, true));
     fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 1, Collections.emptyMap(), 0, 0);
     for (DocValuesFieldUpdates update : updates) {
-      deletes.onDocValuesUpdate(update.field, update.iterator());
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
-    deletes.onDocValuesUpdate(fieldInfo);
     assertEquals(5, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
@@ -152,7 +159,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testUpdateAppliedOnlyOnce() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("_soft_deletes"));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
+        .setSoftDeletesField("_soft_deletes")
+        .setMaxBufferedDocs(3) // make sure we write one segment
+        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     writer.softUpdateDocument(new Term("id", "1"), doc,
@@ -174,16 +184,14 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     deletes.onNewReader(segmentReader, segmentInfo);
     FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0);
     List<Integer> docsDeleted = Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS);
-    List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 3));
+    List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 3, true));
     for (DocValuesFieldUpdates update : updates) {
-      deletes.onDocValuesUpdate(update.field, update.iterator());
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
-    deletes.onDocValuesUpdate(fieldInfo);
     assertEquals(1, deletes.numPendingDeletes());
     assertTrue(deletes.getLiveDocs().get(0));
     assertFalse(deletes.getLiveDocs().get(1));
     assertTrue(deletes.getLiveDocs().get(2));
-    deletes.liveDocsShared();
     Bits liveDocs = deletes.getLiveDocs();
     deletes.onNewReader(segmentReader, segmentInfo);
     // no changes we don't apply updates twice
@@ -195,57 +203,118 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     IOUtils.close(reader, writer, dir);
   }
 
-  private DocValuesFieldUpdates singleUpdate(List<Integer> docsDeleted, int maxDoc) {
+  public void testResetOnUpdate() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
+        .setSoftDeletesField("_soft_deletes")
+        .setMaxBufferedDocs(3) // make sure we write one segment
+        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    writer.softUpdateDocument(new Term("id", "1"), doc,
+        new NumericDocValuesField("_soft_deletes", 1));
+    doc = new Document();
+    doc.add(new StringField("id", "2", Field.Store.YES));
+    writer.softUpdateDocument(new Term("id", "2"), doc,
+        new NumericDocValuesField("_soft_deletes", 1));
+    doc = new Document();
+    doc.add(new StringField("id", "2", Field.Store.YES));
+    writer.softUpdateDocument(new Term("id", "2"), doc,
+        new NumericDocValuesField("_soft_deletes", 1));
+    writer.commit();
+    DirectoryReader reader = writer.getReader();
+    assertEquals(1, reader.leaves().size());
+    SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
+    SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
+    PendingDeletes deletes = newPendingDeletes(segmentInfo);
+    deletes.onNewReader(segmentReader, segmentInfo);
+    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0);
+    List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(Arrays.asList(0, 1, DocIdSetIterator.NO_MORE_DOCS), 3, false));
+    for (DocValuesFieldUpdates update : updates) {
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
+    }
+    assertEquals(0, deletes.numPendingDeletes());
+    assertTrue(deletes.getLiveDocs().get(0));
+    assertTrue(deletes.getLiveDocs().get(1));
+    assertTrue(deletes.getLiveDocs().get(2));
+    Bits liveDocs = deletes.getLiveDocs();
+    deletes.onNewReader(segmentReader, segmentInfo);
+    // no changes we keep this update
+    assertSame(liveDocs, deletes.getLiveDocs());
+    assertTrue(deletes.getLiveDocs().get(0));
+    assertTrue(deletes.getLiveDocs().get(1));
+    assertTrue(deletes.getLiveDocs().get(2));
+    assertEquals(0, deletes.numPendingDeletes());
+
+    segmentInfo.advanceDocValuesGen();
+    fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0);
+    updates = Arrays.asList(singleUpdate(Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS), 3, true));
+    for (DocValuesFieldUpdates update : updates) {
+      deletes.onDocValuesUpdate(fieldInfo, update.iterator());
+    }
+    // no changes we keep this update
+    assertNotSame(liveDocs, deletes.getLiveDocs());
+    assertTrue(deletes.getLiveDocs().get(0));
+    assertFalse(deletes.getLiveDocs().get(1));
+    assertTrue(deletes.getLiveDocs().get(2));
+    assertEquals(1, deletes.numPendingDeletes());
+    IOUtils.close(reader, writer, dir);
+
+  }
+
+  private DocValuesFieldUpdates singleUpdate(List<Integer> docsChanged, int maxDoc, boolean hasValue) {
     return new DocValuesFieldUpdates(maxDoc, 0, "_soft_deletes", DocValuesType.NUMERIC) {
       @Override
-      public void add(int doc, Object value) {
+      public void add(int doc, long value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int doc, BytesRef value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int docId, Iterator iterator) {
+        throw new UnsupportedOperationException();
       }
 
       @Override
       public Iterator iterator() {
         return new Iterator() {
-          java.util.Iterator<Integer> iter = docsDeleted.iterator();
+          java.util.Iterator<Integer> iter = docsChanged.iterator();
           int doc = -1;
 
           @Override
-          int nextDoc() {
+          public int nextDoc() {
             return doc = iter.next();
           }
 
           @Override
-          int doc() {
-            return doc;
+          long longValue() {
+            return 1;
           }
 
           @Override
-          Object value() {
-            return 1;
+          BytesRef binaryValue() {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public int docID() {
+            return doc;
           }
 
           @Override
           long delGen() {
             return 0;
           }
+
+          @Override
+          boolean hasValue() {
+            return hasValue;
+          }
         };
-      }
-
-      @Override
-      public void finish() {
-      }
-
-      @Override
-      public boolean any() {
-        return true;
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public int size() {
-        return 1;
       }
     };
   }

@@ -71,13 +71,16 @@ import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.analysis.hunspell.TestHunspellStemFilter;
+import org.apache.lucene.analysis.minhash.MinHashFilter;
+import org.apache.lucene.analysis.miscellaneous.ConditionalTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilter;
+import org.apache.lucene.analysis.miscellaneous.FingerprintFilter;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilter;
-import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
+import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter;
 import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
@@ -113,6 +116,14 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   static List<Constructor<? extends CharFilter>> charfilters;
 
   private static final Predicate<Object[]> ALWAYS = (objects -> true);
+
+  private static final Set<Class<?>> avoidConditionals = new HashSet<>();
+  static {
+    // Fingerprint filter needs to consume the whole tokenstream, so conditionals don't make sense here
+    avoidConditionals.add(FingerprintFilter.class);
+    // Ditto MinHashFilter
+    avoidConditionals.add(MinHashFilter.class);
+  }
 
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
   static {
@@ -205,6 +216,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       for (final Constructor<?> ctor : c.getConstructors()) {
         // don't test synthetic or deprecated ctors, they likely have known bugs:
         if (ctor.isSynthetic() || ctor.isAnnotationPresent(Deprecated.class) || brokenConstructors.get(ctor) == ALWAYS) {
+          continue;
+        }
+        // conditional filters are tested elsewhere
+        if (ConditionalTokenFilter.class.isAssignableFrom(c)) {
           continue;
         }
         if (Tokenizer.class.isAssignableFrom(c)) {
@@ -696,15 +711,45 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
 
         while (true) {
           final Constructor<? extends TokenFilter> ctor = tokenfilters.get(random.nextInt(tokenfilters.size()));
-          
-          final Object args[] = newFilterArgs(random, spec.stream, ctor.getParameterTypes());
-          if (broken(ctor, args)) {
-            continue;
-          }
-          final TokenFilter flt = createComponent(ctor, args, descr);
-          if (flt != null) {
-            spec.stream = flt;
+          if (random.nextBoolean() && avoidConditionals.contains(ctor.getDeclaringClass()) == false) {
+            long seed = random.nextLong();
+            spec.stream = new ConditionalTokenFilter(spec.stream, in -> {
+              final Object args[] = newFilterArgs(random, in, ctor.getParameterTypes());
+              if (broken(ctor, args)) {
+                return in;
+              }
+              descr.append("ConditionalTokenFilter: ");
+              TokenStream ts = createComponent(ctor, args, descr);
+              if (ts == null) {
+                return in;
+              }
+              return ts;
+            }) {
+              Random random = new Random(seed);
+
+              @Override
+              public void reset() throws IOException {
+                super.reset();
+                random = new Random(seed);
+              }
+
+              @Override
+              protected boolean shouldFilter() throws IOException {
+                return random.nextBoolean();
+              }
+            };
             break;
+          }
+          else {
+            final Object args[] = newFilterArgs(random, spec.stream, ctor.getParameterTypes());
+            if (broken(ctor, args)) {
+              continue;
+            }
+            final TokenFilter flt = createComponent(ctor, args, descr);
+            if (flt != null) {
+              spec.stream = flt;
+              break;
+            }
           }
         }
       }

@@ -18,7 +18,6 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -37,6 +36,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
@@ -227,23 +227,23 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
   }
 
-  int collectFirstPhase(DocSet docs, int slot) throws IOException {
+  int collectFirstPhase(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     int num = -1;
     if (collectAcc != null) {
-      num = collectAcc.collect(docs, slot);
+      num = collectAcc.collect(docs, slot, slotContext);
     }
     if (allBucketsAcc != null) {
-      num = allBucketsAcc.collect(docs, slot);
+      num = allBucketsAcc.collect(docs, slot, slotContext);
     }
     return num >= 0 ? num : docs.size();
   }
 
-  void collectFirstPhase(int segDoc, int slot) throws IOException {
+  void collectFirstPhase(int segDoc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     if (collectAcc != null) {
-      collectAcc.collect(segDoc, slot);
+      collectAcc.collect(segDoc, slot, slotContext);
     }
     if (allBucketsAcc != null) {
-      allBucketsAcc.collect(segDoc, slot);
+      allBucketsAcc.collect(segDoc, slot, slotContext);
     }
   }
 
@@ -374,7 +374,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       Comparable val = bucketValFromSlotNumFunc.apply(slotNum);
       bucket.add("val", val);
 
-      Query filter = needFilter ? sf.getType().getFieldQuery(null, sf, fieldQueryValFunc.apply(val)) : null;
+      Query filter = needFilter ? makeBucketQuery(fieldQueryValFunc.apply(val)) : null;
 
       fillBucket(bucket, countAcc.getCount(slotNum), slotNum, null, filter);
 
@@ -389,6 +389,15 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     return res;
   }
 
+  /**
+   * Trivial helper method for building up a bucket query given the (Stringified) bucket value
+   */
+  protected Query makeBucketQuery(final String bucketValue) {
+    // TODO: this isn't viable for things like text fields w/ analyzers that are non-idempotent (ie: stemmers)
+    // TODO: but changing it to just use TermQuery isn't safe for things like numerics, dates, etc...
+    return sf.getType().getFieldQuery(null, sf, bucketValue);
+  }
+
   private void calculateNumBuckets(SimpleOrderedMap<Object> target) throws IOException {
     DocSet domain = fcontext.base;
     if (freq.prefix != null) {
@@ -398,7 +407,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     HLLAgg agg = new HLLAgg(freq.field);
     SlotAcc acc = agg.createSlotAcc(fcontext, domain.size(), 1);
-    acc.collect(domain, 0);
+    acc.collect(domain, 0, null); // we know HLL doesn't care about the bucket query
     acc.key = "numBuckets";
     acc.setValues(target, 0);
   }
@@ -434,7 +443,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       // do acc at a time (traversing domain each time) or do all accs for each doc?
       for (SlotAcc acc : otherAccs) {
         acc.reset(); // TODO: only needed if we previously used for allBuckets or missing
-        acc.collect(subDomain, 0);
+        acc.collect(subDomain, 0, slot -> { return new SlotContext(filter); });
         acc.setValues(target, 0);
       }
     }
@@ -443,13 +452,14 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   @Override
-  protected void processStats(SimpleOrderedMap<Object> bucket, DocSet docs, int docCount) throws IOException {
+  protected void processStats(SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, int docCount) throws IOException {
     if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }
     createAccs(docCount, 1);
-    int collected = collect(docs, 0);
+    assert null != bucketQ;
+    int collected = collect(docs, 0, slotNum -> { return new SlotContext(bucketQ); });
 
     // countAcc.incrementCount(0, collected);  // should we set the counton the acc instead of just passing it?
 
@@ -500,9 +510,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     @Override
-    public void collect(int doc, int slot) throws IOException {
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
       for (SlotAcc acc : subAccs) {
-        acc.collect(doc, slot);
+        acc.collect(doc, slot, slotContext);
       }
     }
 
@@ -562,15 +572,15 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     @Override
-    public void collect(int doc, int slot) throws IOException {
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
       assert slot != collectAccSlot || slot < 0;
       count++;
       if (collectAcc != null) {
-        collectAcc.collect(doc, collectAccSlot);
+        collectAcc.collect(doc, collectAccSlot, slotContext);
       }
       if (otherAccs != null) {
         for (SlotAcc otherAcc : otherAccs) {
-          otherAcc.collect(doc, otherAccsSlot);
+          otherAcc.collect(doc, otherAccsSlot, slotContext);
         }
       }
     }
@@ -708,7 +718,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     bucket.add("val", bucketVal);
 
     // fieldQuery currently relies on a string input of the value...
-    String bucketStr = bucketVal instanceof Date ? Instant.ofEpochMilli(((Date)bucketVal).getTime()).toString() : bucketVal.toString();
+    String bucketStr = bucketVal instanceof Date ? ((Date)bucketVal).toInstant().toString() : bucketVal.toString();
     Query domainQ = ft.getFieldQuery(null, sf, bucketStr);
 
     fillBucket(bucket, domainQ, null, skip, facetInfo);

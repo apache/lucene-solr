@@ -17,7 +17,6 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -245,7 +244,7 @@ public class FacetModule extends SearchComponent {
         public void handleUnknownClass(Object o) {
           // handle date formatting correctly
           if (o instanceof Date) {
-            String s = Instant.ofEpochMilli(((Date)o).getTime()).toString();
+            String s = ((Date)o).toInstant().toString();
             writeString(s);
             return;
           }
@@ -308,6 +307,7 @@ public class FacetModule extends SearchComponent {
         return;
       }
 
+      // System.err.println("MERGING FACET RESULT FROM SHARD = " + facet);
       facetState.mcontext.root = facet;
       facetState.mcontext.newShard(shardRsp.getShard());
       facetState.merger.merge(facet , facetState.mcontext);

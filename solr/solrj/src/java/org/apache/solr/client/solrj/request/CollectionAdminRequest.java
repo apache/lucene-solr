@@ -320,7 +320,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * @param numTlogReplicas the number of {@link org.apache.solr.common.cloud.Replica.Type#TLOG} replicas
    * @param numPullReplicas the number of {@link org.apache.solr.common.cloud.Replica.Type#PULL} replicas
    */
-  public static Create createCollection(String collection, String config, int numShards, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
+  public static Create createCollection(String collection, String config, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) {
     return new Create(collection, config, numShards, numNrtReplicas, numTlogReplicas, numPullReplicas);
   }
   
@@ -551,6 +551,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private Reload(String collection) {
       super(CollectionAction.RELOAD, collection);
     }
+  }
+
+  /**
+   * Returns a SolrRequest to delete a node.
+   */
+  public static DeleteNode deleteNode(String node) {
+    return new DeleteNode(node);
   }
 
   public static class DeleteNode extends AsyncCollectionAdminRequest {
@@ -1665,6 +1672,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static DeleteReplica deleteReplica(String collection, String shard, String replica) {
     return new DeleteReplica(collection, checkNotNull(CoreAdminParams.SHARD, shard),
         checkNotNull(CoreAdminParams.REPLICA, replica));
+  }
+
+  public static DeleteReplica deleteReplica(String collection, String shard, int count) {
+    return new DeleteReplica(collection, checkNotNull(CoreAdminParams.SHARD, shard), count);
   }
 
   /**

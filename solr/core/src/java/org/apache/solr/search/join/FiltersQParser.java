@@ -17,8 +17,6 @@
 
 package org.apache.solr.search.join;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -36,30 +34,9 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 
 public class FiltersQParser extends QParser {
-
-  private static final class FiltersQuery extends SolrConstantScoreQuery {
-    
-    private Set<Query> filters;
-
-    private FiltersQuery(SolrQueryRequest req, Set<Query> filters) throws IOException {
-      super(req.getSearcher().getDocSet(new ArrayList<>(filters)).getTopFilter());
-      this.filters = filters;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return sameClassAs(other) && filters.equals(((FiltersQuery)other).filters);
-    }
-    
-    @Override
-    public int hashCode() {
-      return 31 * classHash() + filters.hashCode();
-    }
-  }
 
   protected String getFiltersParamName() {
     return "param";
@@ -104,21 +81,14 @@ public class FiltersQParser extends QParser {
 
   /** @return number of added clauses */
   protected int addFilters(BooleanQuery.Builder builder, Map<Query,Occur> clauses) throws SyntaxError {
-    Set<Query> filters = new HashSet<>();
+    int count=0;
     for (Map.Entry<Query, Occur> clause: clauses.entrySet()) {
       if (clause.getValue() == Occur.FILTER) {
-        filters.add(clause.getKey());
+        builder.add( clause.getKey(), Occur.FILTER);
+        count++;
       }
     }
-    if (!filters.isEmpty()) {
-      try {
-        final SolrConstantScoreQuery intersQuery = new FiltersQuery(req, filters);
-        builder.add( intersQuery, Occur.FILTER);
-      } catch (IOException e) {
-        throw new SyntaxError("Exception occurs while parsing " + stringIncludingLocalParams, e);
-      }
-    }
-    return filters.size();
+    return count;
   }
 
   protected void exclude(Map<Query,Occur> clauses) {

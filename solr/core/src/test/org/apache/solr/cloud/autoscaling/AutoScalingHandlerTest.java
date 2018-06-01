@@ -475,7 +475,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'event' : 'searchRate'," +
         "'waitFor' : '10m'," +
         "'enabled' : true," +
-        "'rate': 'foo'," +
+        "'aboveRate': 'foo'," +
         "'actions' : [" +
         "{" +
         "'name' : 'compute_plan'," +
@@ -489,7 +489,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
       assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
-          false, "error/details[0]/errorMessages[0]")).contains("rate=Invalid 'rate' configuration value: 'foo'"));
+          false, "error/details[0]/errorMessages[0]")).contains("aboveRate=Invalid configuration value: 'foo'"));
     }
 
     // unknown trigger action properties
@@ -757,14 +757,14 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
 
     Map<String, Object> diagnostics = (Map<String, Object>) response.get("diagnostics");
-    List sortedNodes = (List) diagnostics.get("sortedNodes");
+    List sortedNodes = (List) Utils.getObjectByPath(response, false, "diagnostics/sortedNodes");
     assertNotNull(sortedNodes);
 
     assertEquals(2, sortedNodes.size());
     for (int i = 0; i < 2; i++) {
       Map node = (Map) sortedNodes.get(i);
       assertNotNull(node);
-      assertEquals(5, node.size());
+      assertEquals(6, node.size());
       assertNotNull(node.get("node"));
       assertNotNull(node.get("cores"));
       assertEquals(0L, node.get("cores"));

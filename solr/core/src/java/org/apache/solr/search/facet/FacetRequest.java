@@ -16,28 +16,20 @@
  */
 package org.apache.solr.search.facet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.DocSet;
-import org.apache.solr.search.JoinQParserPlugin;
-import org.apache.solr.search.FunctionQParser;
-import org.apache.solr.search.FunctionQParserPlugin;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryContext;
-import org.apache.solr.search.SolrConstantScoreQuery;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.*;
+import org.apache.solr.search.join.GraphQuery;
+import org.apache.solr.search.join.GraphQueryParser;
+
+import java.io.IOException;
+import java.util.*;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
@@ -87,8 +79,18 @@ public abstract class FacetRequest {
 
   // domain changes
   public static class Domain {
+    /** 
+     * An explicit query domain, <em>ignoring all parent context</em>, expressed in JSON query format.
+     * Mutually exclusive to {@link #excludeTags}
+     */
+    public List<Object> explicitQueries; // list of symbolic filters (JSON query format)
+    /**
+     * Specifies query/filter tags that should be excluded to re-compute the domain from the parent context.
+     * Mutually exclusive to {@link #explicitQueries}
+     */
     public List<String> excludeTags;
     public JoinField joinField;
+    public GraphField graphField;
     public boolean toParent;
     public boolean toChildren;
     public String parents; // identifies the parent filter... the full set of parent documents for any block join operation
@@ -96,30 +98,31 @@ public abstract class FacetRequest {
 
     // True if a starting set of documents can be mapped onto a different set of documents not originally in the starting set.
     public boolean canTransformDomain() {
-      return toParent || toChildren || (excludeTags != null) || (joinField != null);
+      return toParent || toChildren
+        || (explicitQueries != null) || (excludeTags != null) || (joinField != null);
     }
 
     // Can this domain become non-empty if the input domain is empty?  This does not check any sub-facets (see canProduceFromEmpty for that)
     public boolean canBecomeNonEmpty() {
-      return excludeTags != null;
+      return (explicitQueries != null) || (excludeTags != null);
     }
 
     /** Are we doing a query time join across other documents */
     public static class JoinField {
       public final String from;
       public final String to;
-      
+
       private JoinField(String from, String to) {
         assert null != from;
         assert null != to;
-        
+
         this.from = from;
         this.to = to;
       }
 
       /**
        * Given a <code>Domain</code>, and a (JSON) map specifying the configuration for that Domain,
-       * validates if a '<code>join</code>' is specified, and if so creates a <code>JoinField</code> 
+       * validates if a '<code>join</code>' is specified, and if so creates a <code>JoinField</code>
        * and sets it on the <code>Domain</code>.
        *
        * (params must not be null)
@@ -127,46 +130,109 @@ public abstract class FacetRequest {
       public static void createJoinField(FacetRequest.Domain domain, Map<String,Object> domainMap) {
         assert null != domain;
         assert null != domainMap;
-        
+
         final Object queryJoin = domainMap.get("join");
         if (null != queryJoin) {
           // TODO: maybe allow simple string (instead of map) to mean "self join on this field name" ?
           if (! (queryJoin instanceof Map)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "'join' domain change requires a map containing the 'from' and 'to' fields");
+                "'join' domain change requires a map containing the 'from' and 'to' fields");
           }
           final Map<String,String> join = (Map<String,String>) queryJoin;
-          if (! (join.containsKey("from") && join.containsKey("to") && 
-                 null != join.get("from") && null != join.get("to")) ) {
+          if (! (join.containsKey("from") && join.containsKey("to") &&
+              null != join.get("from") && null != join.get("to")) ) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "'join' domain change requires non-null 'from' and 'to' field names");
+                "'join' domain change requires non-null 'from' and 'to' field names");
           }
           if (2 != join.size()) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "'join' domain change contains unexpected keys, only 'from' and 'to' supported: "
-                                    + join.toString());
+                "'join' domain change contains unexpected keys, only 'from' and 'to' supported: "
+                    + join.toString());
           }
           domain.joinField = new JoinField(join.get("from"), join.get("to"));
         }
       }
 
       /**
-       * Creates a Query that can be used to recompute the new "base" for this domain, realtive to the 
+       * Creates a Query that can be used to recompute the new "base" for this domain, relative to the
        * current base of the FacetContext.
        */
       public Query createDomainQuery(FacetContext fcontext) throws IOException {
         // NOTE: this code lives here, instead of in FacetProcessor.handleJoin, in order to minimize
         // the number of classes that have to know about the number of possible settings on the join
         // (ie: if we add a score mode, or some other modifier to how the joins are done)
-        
+
         final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.getTopFilter());
         // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
-        fromQuery.setCache(false); 
+        fromQuery.setCache(false);
 
         return JoinQParserPlugin.createJoinQuery(fromQuery, this.from, this.to);
       }
-      
-      
+
+
+    }
+
+    /** Are we doing a query time graph across other documents */
+    public static class GraphField {
+      public final SolrParams localParams;
+
+      private GraphField(SolrParams localParams) {
+        assert null != localParams;
+
+        this.localParams = localParams;
+      }
+
+      /**
+       * Given a <code>Domain</code>, and a (JSON) map specifying the configuration for that Domain,
+       * validates if a '<code>graph</code>' is specified, and if so creates a <code>GraphField</code>
+       * and sets it on the <code>Domain</code>.
+       *
+       * (params must not be null)
+       */
+      public static void createGraphField(FacetRequest.Domain domain, Map<String,Object> domainMap) {
+        assert null != domain;
+        assert null != domainMap;
+        
+        final Object queryGraph = domainMap.get("graph");
+        if (null != queryGraph) {
+          if (! (queryGraph instanceof Map)) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "'graph' domain change requires a map containing the 'from' and 'to' fields");
+          }
+          final Map<String,String> graph = (Map<String,String>) queryGraph;
+          if (! (graph.containsKey("from") && graph.containsKey("to") &&
+                 null != graph.get("from") && null != graph.get("to")) ) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "'graph' domain change requires non-null 'from' and 'to' field names");
+          }
+
+          NamedList<String> graphParams = new NamedList<>();
+          graphParams.addAll(graph);
+          SolrParams localParams = SolrParams.toSolrParams(graphParams);
+          domain.graphField = new GraphField(localParams);
+        }
+      }
+
+      /**
+       * Creates a Query that can be used to recompute the new "base" for this domain, relative to the
+       * current base of the FacetContext.
+       */
+      public Query createDomainQuery(FacetContext fcontext) throws IOException {
+        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.getTopFilter());
+        // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
+        fromQuery.setCache(false);
+
+        GraphQueryParser graphParser = new GraphQueryParser(null, localParams, null, fcontext.req);
+        try {
+          GraphQuery graphQuery = (GraphQuery)graphParser.parse();
+          graphQuery.setQ(fromQuery);
+          return graphQuery;
+        } catch (SyntaxError syntaxError) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+        }
+      }
+
+
     }
     
   }
@@ -197,6 +263,7 @@ public abstract class FacetRequest {
    * This is normally true only for facets with a limit.
    */
   public boolean returnsPartial() {
+    // TODO: should the default impl check processEmpty ?
     return false;
   }
 
@@ -242,6 +309,7 @@ class FacetContext {
   public static final int IS_REFINEMENT=0x02;
   public static final int SKIP_FACET=0x04;  // refinement: skip calculating this immediate facet, but proceed to specific sub-facets based on facetInfo
 
+  FacetProcessor processor;
   Map<String,Object> facetInfo; // refinement info for this node
   QueryContext qcontext;
   SolrQueryRequest req;  // TODO: replace with params?
@@ -459,6 +527,17 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
           domain.excludeTags = excludeTags;
         }
 
+        if (domainMap.containsKey("query")) {
+          domain.explicitQueries = parseJSONQueryStruct(domainMap.get("query"));
+          if (null == domain.explicitQueries) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "'query' domain can not be null or empty");
+          } else if (null != domain.excludeTags) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "'query' domain can not be combined with 'excludeTags'");
+          }
+        }
+        
         String blockParent = (String)domainMap.get("blockParent");
         String blockChildren = (String)domainMap.get("blockChildren");
 
@@ -471,25 +550,34 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
         }
           
         FacetRequest.Domain.JoinField.createJoinField(domain, domainMap);
+        FacetRequest.Domain.GraphField.createGraphField(domain, domainMap);
 
         Object filterOrList = domainMap.get("filter");
         if (filterOrList != null) {
           assert domain.filters == null;
-          if (filterOrList instanceof List) {
-            domain.filters = (List<Object>)filterOrList;
-          } else {
-            domain.filters = new ArrayList<>(1);
-            domain.filters.add(filterOrList);
-          }
+          domain.filters = parseJSONQueryStruct(filterOrList);
         }
 
-
       } // end "domain"
-
-
     }
   }
 
+  /** returns null on null input, otherwise returns a list of the JSON query structures -- either
+   * directly from the raw (list) input, or if raw input is a not a list then it encapsulates 
+   * it in a new list.
+   */
+  private List<Object> parseJSONQueryStruct(Object raw) {
+    List<Object> result = null;
+    if (null == raw) {
+      return result;
+    } else if (raw instanceof List) {
+      result = (List<Object>) raw;
+    } else {
+      result = new ArrayList<>(1);
+      result.add(raw);
+    }
+    return result;
+  }
 
   public String getField(Map<String,Object> args) {
     Object fieldName = args.get("field"); // TODO: pull out into defined constant

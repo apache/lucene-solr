@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,12 @@ public class Policy implements MapWriter {
       Arrays.asList(
           new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")),
           new Preference((Map<String, Object>) Utils.fromJSONString("{maximize : freedisk}"))));
+
+  /**
+   * These parameters are always fetched for all nodes regardless of whether they are used in preferences or not
+   */
+  private static final List<String> DEFAULT_PARAMS_OF_INTEREST = Arrays.asList(ImplicitSnitch.DISK, ImplicitSnitch.CORES);
+
   final Map<String, List<Clause>> policies;
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
@@ -87,6 +94,7 @@ public class Policy implements MapWriter {
     this(Collections.emptyMap());
   }
 
+  @SuppressWarnings("unchecked")
   public Policy(Map<String, Object> jsonMap) {
     int[] idx = new int[1];
     List<Preference> initialClusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCES, emptyList())).stream()
@@ -100,9 +108,7 @@ public class Policy implements MapWriter {
       initialClusterPreferences.addAll(DEFAULT_PREFERENCES);
     }
     this.clusterPreferences = Collections.unmodifiableList(initialClusterPreferences);
-    final SortedSet<String> paramsOfInterest = new TreeSet<>();
-    paramsOfInterest.add(ImplicitSnitch.DISK);//always get freedisk anyway.
-    paramsOfInterest.add(ImplicitSnitch.CORES);//always get cores anyway.
+    final SortedSet<String> paramsOfInterest = new TreeSet<>(DEFAULT_PARAMS_OF_INTEREST);
     clusterPreferences.forEach(preference -> paramsOfInterest.add(preference.name.toString()));
     List<String> newParams = new ArrayList<>(paramsOfInterest);
     clusterPolicy = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_POLICY, emptyList())).stream()
@@ -149,9 +155,7 @@ public class Policy implements MapWriter {
       paramsOfInterest.add(p.name.toString());
     });
     List<String> newParams = new ArrayList<>(paramsOfInterest);
-    policy.forEach(c -> {
-      c.addTags(newParams);
-    });
+    policy.forEach(c -> c.addTags(newParams));
     policies.values().forEach(clauses -> clauses.forEach(c -> c.addTags(newParams)));
     return newParams;
   }
@@ -212,8 +216,7 @@ public class Policy implements MapWriter {
 
     if (!getPolicies().equals(policy.getPolicies())) return false;
     if (!getClusterPolicy().equals(policy.getClusterPolicy())) return false;
-    if (!getClusterPreferences().equals(policy.getClusterPreferences())) return false;
-    return true;
+    return getClusterPreferences().equals(policy.getClusterPreferences());
   }
 
   /*This stores the logical state of the system, given a policy and
@@ -332,8 +335,7 @@ public class Policy implements MapWriter {
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put("znodeVersion", znodeVersion);
-      for (int i = 0; i < matrix.size(); i++) {
-        Row row = matrix.get(i);
+      for (Row row : matrix) {
         ew.put(row.node, row);
       }
     }
@@ -358,24 +360,52 @@ public class Policy implements MapWriter {
   }
 
   static void setApproxValuesAndSortNodes(List<Preference> clusterPreferences, List<Row> matrix) {
+    List<Row> deadNodes = null;
+    Iterator<Row> it =matrix.iterator();
+    while (it.hasNext()){
+      Row row = it.next();
+      if(!row.isLive){
+        if(deadNodes == null) deadNodes = new ArrayList<>();
+        deadNodes.add(row);
+        it.remove();
+      }
+    }
+
     if (!clusterPreferences.isEmpty()) {
       //this is to set the approximate value according to the precision
       ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
+      Row[] lastComparison = new Row[2];
       for (Preference p : clusterPreferences) {
         try {
-          Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
+          tmpMatrix.sort((r1, r2) -> {
+            lastComparison[0] = r1;
+            lastComparison[1] = r2;
+            return p.compare(r1, r2, false);
+          });
         } catch (Exception e) {
-          LOG.error("Exception! prefs = {}, matrix = {}", clusterPreferences, matrix);
+          LOG.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, compare : {} matrix = {}",
+              clusterPreferences,
+              lastComparison[0].node,
+              lastComparison[1].node,
+              p.compare(lastComparison[0],lastComparison[1], false ),
+              Utils.toJSONString(Utils.getDeepCopy(tmpMatrix, 6, false)));
           throw e;
         }
         p.setApproxVal(tmpMatrix);
       }
-      //approximate values are set now. Let's do recursive sorting
-      Collections.sort(matrix, (Row r1, Row r2) -> {
+      // the tmpMatrix was needed only to set the approximate values, now we sort the real matrix
+      // recursing through each preference
+      matrix.sort((Row r1, Row r2) -> {
         int result = clusterPreferences.get(0).compare(r1, r2, true);
         if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
         return result;
       });
+
+      if(deadNodes != null){
+        for (Row deadNode : deadNodes) {
+          matrix.add(0, deadNode);
+        }
+      }
     }
   }
 
@@ -465,11 +495,13 @@ public class Policy implements MapWriter {
   private static final Map<CollectionAction, Supplier<Suggester>> ops = new HashMap<>();
 
   static {
-    ops.put(CollectionAction.ADDREPLICA, () -> new AddReplicaSuggester());
-    ops.put(CollectionAction.DELETEREPLICA, () -> new UnsupportedSuggester(CollectionAction.DELETEREPLICA));
-    ops.put(CollectionAction.MOVEREPLICA, () -> new MoveReplicaSuggester());
-    ops.put(CollectionAction.SPLITSHARD, () -> new SplitShardSuggester());
+    ops.put(CollectionAction.ADDREPLICA, AddReplicaSuggester::new);
+    ops.put(CollectionAction.DELETEREPLICA, DeleteReplicaSuggester::new);
+    ops.put(CollectionAction.DELETENODE, DeleteNodeSuggester::new);
+    ops.put(CollectionAction.MOVEREPLICA, MoveReplicaSuggester::new);
+    ops.put(CollectionAction.SPLITSHARD, SplitShardSuggester::new);
     ops.put(CollectionAction.MERGESHARDS, () -> new UnsupportedSuggester(CollectionAction.MERGESHARDS));
+    ops.put(CollectionAction.NONE, () -> new UnsupportedSuggester(CollectionAction.NONE));
   }
 
   public Map<String, List<Clause>> getPolicies() {

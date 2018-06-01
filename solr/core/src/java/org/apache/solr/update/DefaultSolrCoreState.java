@@ -360,11 +360,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // have to 'wait in line' a bit or bail if a recovery is 
       // already queued up - the recovery execution itself is run
       // in another thread on another 'recovery' executor.
-      // The update executor is interrupted on shutdown and should 
-      // not do disk IO.
-      // The recovery executor is not interrupted on shutdown.
       //
-      // avoid deadlock: we can't use the recovery executor here
+      // avoid deadlock: we can't use the recovery executor here!
       cc.getUpdateShardHandler().getUpdateExecutor().submit(recoveryTask);
     } catch (RejectedExecutionException e) {
       // fine, we are shutting down

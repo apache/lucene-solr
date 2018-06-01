@@ -42,6 +42,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
@@ -55,6 +58,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -69,9 +73,11 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -290,6 +296,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     }
     return size;
+  }
+
+  /**
+   * @return the current transaction log's size (based on its output stream)
+   */
+  public synchronized long getCurrentLogSizeFromStream() {
+    return tlog == null ? 0 : tlog.getLogSizeFromStream();
   }
 
   public long getTotalLogsNumber() {
@@ -1660,11 +1673,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       this.inSortedOrder = inSortedOrder;
     }
 
-
-
     private SolrQueryRequest req;
     private SolrQueryResponse rsp;
-
 
     @Override
     public void run() {
@@ -1676,7 +1686,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));    // setting request info will help logging
 
       try {
-        for(;;) {
+        for (; ; ) {
           TransactionLog translog = translogs.pollFirst();
           if (translog == null) break;
           doReplay(translog);
@@ -1736,6 +1746,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
         UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
         UpdateRequestProcessor proc = processorChain.createProcessor(req, rsp);
+        OrderedExecutor executor = inSortedOrder ? null : req.getCore().getCoreContainer().getReplayUpdatesExecutor();
+        AtomicInteger pendingTasks = new AtomicInteger(0);
+        AtomicReference<SolrException> exceptionOnExecuteUpdate = new AtomicReference<>();
 
         long commitVersion = 0;
         int operationAndFlags = 0;
@@ -1764,6 +1777,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             o = tlogReader.next();
             if (o == null && activeLog) {
               if (!finishing) {
+                // about to block all the updates including the tasks in the executor
+                // therefore we must wait for them to be finished
+                waitForAllUpdatesGetExecuted(pendingTasks);
+                // from this point, remain updates will be executed in a single thread
+                executor = null;
                 // block to prevent new adds, but don't immediately unlock since
                 // we could be starved from ever completing recovery.  Only unlock
                 // after we've finished this recovery.
@@ -1788,6 +1806,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           }
 
           if (o == null) break;
+          // fail fast
+          if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
 
           try {
 
@@ -1804,7 +1824,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
-                proc.processAdd(cmd);
+                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
                 break;
               }
               case UpdateLog.DELETE: {
@@ -1815,7 +1835,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("delete " + cmd);
-                proc.processDelete(cmd);
+                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
                 break;
               }
 
@@ -1827,7 +1847,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("deleteByQuery " + cmd);
-                proc.processDelete(cmd);
+                waitForAllUpdatesGetExecuted(pendingTasks);
+                // DBQ will be executed in the same thread
+                execute(cmd, null, pendingTasks, proc, exceptionOnExecuteUpdate);
                 break;
               }
               case UpdateLog.COMMIT: {
@@ -1850,29 +1872,20 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             } else {
               // XXX should not happen?
             }
-          } catch (IOException ex) {
-            recoveryInfo.errors++;
-            loglog.warn("REPLAY_ERR: IOException reading log", ex);
-            // could be caused by an incomplete flush if recovering from log
           } catch (ClassCastException cl) {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Unexpected log entry or corrupt log.  Entry=" + o, cl);
             // would be caused by a corrupt transaction log
-          } catch (SolrException ex) {
-            if (ex.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
-              throw ex;
-            }
-            recoveryInfo.errors++;
-            loglog.warn("REPLAY_ERR: IOException reading log", ex);
-            // could be caused by an incomplete flush if recovering from log
           } catch (Exception ex) {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Exception replaying log", ex);
             // something wrong with the request?
           }
           assert TestInjection.injectUpdateLogReplayRandomPause();
-          
         }
+
+        waitForAllUpdatesGetExecuted(pendingTasks);
+        if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
 
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
         cmd.setVersion(commitVersion);
@@ -1910,6 +1923,93 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         translog.decref();
       }
     }
+
+    private void waitForAllUpdatesGetExecuted(AtomicInteger pendingTasks) {
+      TimeOut timeOut = new TimeOut(Integer.MAX_VALUE, TimeUnit.MILLISECONDS, TimeSource.CURRENT_TIME);
+      try {
+        timeOut.waitFor("Timeout waiting for replay updates finish", () -> {
+          //TODO handle the case when there are no progress after a long time
+          return pendingTasks.get() == 0;
+        });
+      } catch (TimeoutException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+
+    }
+
+    private Integer getBucketHash(UpdateCommand cmd) {
+      if (cmd instanceof AddUpdateCommand) {
+        BytesRef idBytes = ((AddUpdateCommand)cmd).getIndexedId();
+        if (idBytes == null) return null;
+        return DistributedUpdateProcessor.bucketHash(idBytes);
+      }
+
+      if (cmd instanceof DeleteUpdateCommand) {
+        BytesRef idBytes = ((DeleteUpdateCommand)cmd).getIndexedId();
+        if (idBytes == null) return null;
+        return DistributedUpdateProcessor.bucketHash(idBytes);
+      }
+
+      return null;
+    }
+
+    private void execute(UpdateCommand cmd, OrderedExecutor executor,
+                         AtomicInteger pendingTasks, UpdateRequestProcessor proc,
+                         AtomicReference<SolrException> exceptionHolder) {
+      assert cmd instanceof AddUpdateCommand || cmd instanceof DeleteUpdateCommand;
+
+      if (executor != null) {
+        // by using the same hash as DUP, independent updates can avoid waiting for same bucket
+        executor.execute(getBucketHash(cmd), () -> {
+          try {
+            // fail fast
+            if (exceptionHolder.get() != null) return;
+            if (cmd instanceof AddUpdateCommand) {
+              proc.processAdd((AddUpdateCommand) cmd);
+            } else {
+              proc.processDelete((DeleteUpdateCommand) cmd);
+            }
+          } catch (IOException e) {
+            recoveryInfo.errors++;
+            loglog.warn("REPLAY_ERR: IOException reading log", e);
+            // could be caused by an incomplete flush if recovering from log
+          } catch (SolrException e) {
+            if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
+              exceptionHolder.compareAndSet(null, e);
+              return;
+            }
+            recoveryInfo.errors++;
+            loglog.warn("REPLAY_ERR: IOException reading log", e);
+          } finally {
+            pendingTasks.decrementAndGet();
+          }
+        });
+        pendingTasks.incrementAndGet();
+      } else {
+        try {
+          if (cmd instanceof AddUpdateCommand) {
+            proc.processAdd((AddUpdateCommand) cmd);
+          } else {
+            proc.processDelete((DeleteUpdateCommand) cmd);
+          }
+        } catch (IOException e) {
+          recoveryInfo.errors++;
+          loglog.warn("REPLAY_ERR: IOException replaying log", e);
+          // could be caused by an incomplete flush if recovering from log
+        } catch (SolrException e) {
+          if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
+            throw e;
+          }
+          recoveryInfo.errors++;
+          loglog.warn("REPLAY_ERR: IOException replaying log", e);
+        }
+      }
+    }
+
+
   }
 
   /**

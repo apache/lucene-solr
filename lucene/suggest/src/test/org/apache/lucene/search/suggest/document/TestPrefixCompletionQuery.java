@@ -41,6 +41,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
@@ -137,6 +138,29 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab"));
     TopSuggestDocs lookupDocs = suggestIndexSearcher.suggest(query, 3, false);
     assertSuggestions(lookupDocs, new Entry("abcdd", 5), new Entry("abd", 4), new Entry("abc", 3));
+
+    reader.close();
+    iw.close();
+  }
+
+  @Test
+  public void testEmptyPrefixQuery() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    Document document = new Document();
+    document.add(new SuggestField("suggest_field", "suggestion1", 1));
+    iw.addDocument(document);
+
+    if (rarely()) {
+      iw.commit();
+    }
+
+    DirectoryReader reader = iw.getReader();
+    SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
+    PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", ""));
+
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
+    assertEquals(0, suggest.scoreDocs.length);
 
     reader.close();
     iw.close();
@@ -333,6 +357,29 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
 
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field2", "app"));
     assertSuggestions(indexSearcher.suggest(query, 3, false), new Entry("apples", 3));
+
+    reader.close();
+    iw.close();
+  }
+
+  public void testEmptyPrefixContextQuery() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    Document document = new Document();
+    document.add(new ContextSuggestField("suggest_field", "suggestion", 1, "type"));
+    iw.addDocument(document);
+
+    if (rarely()) {
+      iw.commit();
+    }
+
+    DirectoryReader reader = iw.getReader();
+    SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
+    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "")));
+    query.addContext("type", 1);
+
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
+    assertEquals(0, suggest.scoreDocs.length);
 
     reader.close();
     iw.close();

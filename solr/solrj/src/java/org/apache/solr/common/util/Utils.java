@@ -456,6 +456,48 @@ public class Utils {
     }
   }
 
+  /**Applies one json over other. The 'input' is applied over the sink
+   * The values in input isapplied over the values in 'sink' . If a value is 'null'
+   * that value is removed from sink
+   *
+   * @param sink the original json object to start with. Ensure that this Map is mutable
+   * @param input the json with new values
+   * @return whether there was any change made to sink or not.
+   */
+
+  public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
+    boolean isModified = false;
+    for (Map.Entry<String, Object> e : input.entrySet()) {
+      if (sink.get(e.getKey()) != null) {
+        Object sinkVal = sink.get(e.getKey());
+        if (e.getValue() == null) {
+          sink.remove(e.getKey());
+          isModified = true;
+        } else {
+          if (e.getValue() instanceof Map) {
+            Map<String, Object> mapInputVal = (Map<String, Object>) e.getValue();
+            if (sinkVal instanceof Map) {
+              if (mergeJson((Map<String, Object>) sinkVal, mapInputVal)) isModified = true;
+            } else {
+              sink.put(e.getKey(), mapInputVal);
+              isModified = true;
+            }
+          } else {
+            sink.put(e.getKey(), e.getValue());
+            isModified = true;
+          }
+
+        }
+      } else if (e.getValue() != null) {
+        sink.put(e.getKey(), e.getValue());
+        isModified = true;
+      }
+
+    }
+
+    return isModified;
+  }
+
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
