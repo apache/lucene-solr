@@ -34,6 +34,7 @@ public interface QueryElevationParams {
    * See http://wiki.apache.org/solr/DocTransformers
    */
   String EDITORIAL_MARKER_FIELD_NAME = "editorialMarkerFieldName";
+
   /**
    * The name of the field that excluded editorial results will be written out as when using the QueryElevationComponent, which
    * automatically configures the EditorialMarkerFactory.  The default name is "excluded".  This is only used
@@ -50,8 +51,8 @@ public interface QueryElevationParams {
   String MARK_EXCLUDES = "markExcludes";
 
   /**
-   * Whether the priority order between elevated documents is kept, based on the definition order in the configuration file.
-   * This parameter is only taken into account if {@link QueryElevationParams#FORCE_ELEVATION} is <code>true</code>.
+   * When multiple docs are elevated, should their relative order be the order in the configuration file or should
+   * they be subject to whatever the sort criteria is?  True by default.
    */
-  String KEEP_ELEVATION_PRIORITY = "keepElevationPriority";
+  String USE_CONFIGURED_ELEVATED_ORDER = "useConfiguredElevatedOrder";
 }

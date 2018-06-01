@@ -24,38 +24,47 @@ import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.function.UnaryOperator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
 import com.google.common.annotations.VisibleForTesting;
-
 import com.google.common.base.Throwables;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.SentinelIntSet;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
@@ -65,6 +74,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
 import org.apache.solr.schema.FieldType;
@@ -90,6 +100,7 @@ import org.xml.sax.SAXException;
  * @since solr 1.3
  */
 public class QueryElevationComponent extends SearchComponent implements SolrCoreAware {
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // Constants used in solrconfig.xml
@@ -98,32 +109,33 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   @VisibleForTesting
   static final String CONFIG_FILE = "config-file";
   private static final String EXCLUDE = "exclude";
-  public static final String BOOSTED = "BOOSTED";
-  private static final String BOOSTED_DOCIDS = "BOOSTED_DOCIDS";
-  public static final String BOOSTED_PRIORITY = "BOOSTED_PRIORITY";
 
+  /** @see #getBoostDocs(SolrIndexSearcher, Set, Map) */
+  private static final String BOOSTED_DOCIDS = "BOOSTED_DOCIDS";
+
+  /** Key to {@link SolrQueryRequest#getContext()} for a {@code Set<BytesRef>} of included IDs in configured
+   * order (so-called priority). */
+  public static final String BOOSTED = "BOOSTED";
+  /** Key to {@link SolrQueryRequest#getContext()} for a {@code Set<BytesRef>} of excluded IDs. */
   public static final String EXCLUDED = "EXCLUDED";
 
   private static final boolean DEFAULT_FORCE_ELEVATION = false;
-  private static final boolean DEFAULT_KEEP_ELEVATION_PRIORITY = true;
+  private static final boolean DEFAULT_USE_CONFIGURED_ELEVATED_ORDER = true;
   private static final boolean DEFAULT_SUBSET_MATCH = false;
   private static final String DEFAULT_EXCLUDE_MARKER_FIELD_NAME = "excluded";
   private static final String DEFAULT_EDITORIAL_MARKER_FIELD_NAME = "elevated";
 
   private static final Collector<CharSequence, ?, String> QUERY_EXACT_JOINER = Collectors.joining(" ");
 
-  // Runtime param
   private SolrParams initArgs;
   private Analyzer queryAnalyzer;
-  private String uniqueKeyFieldName;
-  private FieldType uniqueKeyFieldType;
-  /**
-   * Provides the indexed value corresponding to a readable value.
-   */
-  private UnaryOperator<String> indexedValueProvider;
+  private SchemaField uniqueKeyField;
+  /** @see QueryElevationParams#FORCE_ELEVATION */
   @VisibleForTesting
   boolean forceElevation;
-  private boolean keepElevationPriority;
+  /** @see QueryElevationParams#USE_CONFIGURED_ELEVATED_ORDER */
+  private boolean useConfiguredElevatedOrder;
+
   private boolean initialized;
 
   /**
@@ -146,7 +158,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       parseExcludedMarkerFieldName(core);
       parseEditorialMarkerFieldName(core);
       parseForceElevation();
-      parseKeepElevationPriority();
+      parseUseConfiguredOrderForElevations();
       loadElevationConfiguration(core);
       initialized = true;
     } catch (InitializationException e) {
@@ -170,13 +182,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   private void setUniqueKeyField(SolrCore core) throws InitializationException {
-    SchemaField sf = core.getLatestSchema().getUniqueKeyField();
-    if (sf == null) {
+    uniqueKeyField = core.getLatestSchema().getUniqueKeyField();
+    if (uniqueKeyField == null) {
       throw new InitializationException("This component requires the schema to have a uniqueKeyField", InitializationExceptionCause.MISSING_UNIQUE_KEY_FIELD);
     }
-    uniqueKeyFieldType = sf.getType();
-    uniqueKeyFieldName = sf.getName();
-    indexedValueProvider = readableValue -> uniqueKeyFieldType.readableToIndexed(readableValue);
   }
 
   private void parseExcludedMarkerFieldName(SolrCore core) {
@@ -190,11 +199,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   private void parseForceElevation() {
-    forceElevation = initArgs.getBool(QueryElevationParams.FORCE_ELEVATION, getDefaultForceElevation());
+    forceElevation = initArgs.getBool(QueryElevationParams.FORCE_ELEVATION, DEFAULT_FORCE_ELEVATION);
   }
 
-  private void parseKeepElevationPriority() {
-    keepElevationPriority = initArgs.getBool(QueryElevationParams.KEEP_ELEVATION_PRIORITY, getDefaultKeepElevationPriority());
+  private void parseUseConfiguredOrderForElevations() {
+    useConfiguredElevatedOrder = initArgs.getBool(QueryElevationParams.USE_CONFIGURED_ELEVATED_ORDER, DEFAULT_USE_CONFIGURED_ELEVATED_ORDER);
   }
 
   /**
@@ -276,15 +285,15 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   /**
    * Handles an exception that occurred while loading the configuration resource.
    *
-   * @param e The exception caught.
+   * @param e                   The exception caught.
    * @param resourceAccessIssue <code>true</code> if the exception has been thrown
    *                            because the resource could not be accessed (missing or cannot be read)
    *                            or the config file is empty; <code>false</code> if the resource has
    *                            been found and accessed but the error occurred while loading the resource
    *                            (invalid format, incomplete or corrupted).
    * @return The {@link ElevationProvider} to use if the exception is absorbed. If {@code null}
-   * is returned, the {@link #NO_OP_ELEVATION_PROVIDER} is used but not cached in
-   * the {@link ElevationProvider} cache.
+   *         is returned, the {@link #NO_OP_ELEVATION_PROVIDER} is used but not cached in
+   *         the {@link ElevationProvider} cache.
    * @throws E If the exception is not absorbed.
    */
   protected <E extends Exception> ElevationProvider handleConfigLoadingException(E e, boolean resourceAccessIssue) throws E {
@@ -377,8 +386,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    */
   @SuppressWarnings("WeakerAccess")
   protected ElevationProvider loadElevationProvider(Config config) throws IOException {
-    Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = keepElevationPriority ?
-            new LinkedHashMap<>() : new HashMap<>();
+    Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
     XPath xpath = XPathFactory.newInstance().newXPath();
     NodeList nodes = (NodeList) config.evaluate("elevate/query", XPathConstants.NODESET);
     for (int i = 0; i < nodes.getLength(); i++) {
@@ -395,6 +403,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             "query requires '<doc .../>' child");
       }
 
+      if (children.getLength() == 0) { // weird
+        continue;
+      }
       ElevationBuilder elevationBuilder = new ElevationBuilder();
       for (int j = 0; j < children.getLength(); j++) {
         Node child = children.item(j);
@@ -402,11 +413,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         String e = DOMUtil.getAttr(child, EXCLUDE, null);
         if (e != null) {
           if (Boolean.valueOf(e)) {
-            elevationBuilder.addExcludedId(id);
+            elevationBuilder.addExcludedIds(Collections.singleton(id));
             continue;
           }
         }
-        elevationBuilder.addElevatedId(id);
+        elevationBuilder.addElevatedIds(Collections.singletonList(id));
       }
 
       // It is allowed to define multiple times different elevations for the same query. In this case the elevations
@@ -423,7 +434,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   private boolean parseMatchPolicy(String matchString) {
     if (matchString == null) {
-      return getDefaultSubsetMatch();
+      return DEFAULT_SUBSET_MATCH;
     } else if (matchString.equalsIgnoreCase("exact")) {
       return false;
     } else if (matchString.equalsIgnoreCase("subset")) {
@@ -486,7 +497,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   private void setQuery(ResponseBuilder rb, Elevation elevation) {
     rb.req.getContext().put(BOOSTED, elevation.elevatedIds);
-    rb.req.getContext().put(BOOSTED_PRIORITY, elevation.priorities);
 
     // Change the query to insert forced documents
     SolrParams params = rb.req.getParams();
@@ -504,7 +514,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           rb.req.getContext().put(EXCLUDED, elevation.excludedIds);
         } else {
           for (TermQuery tq : elevation.excludeQueries) {
-            queryBuilder.add(new BooleanClause(tq, BooleanClause.Occur.MUST_NOT));
+            queryBuilder.add(tq, BooleanClause.Occur.MUST_NOT);
           }
         }
       }
@@ -512,9 +522,14 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
   }
 
-  private void setSort(ResponseBuilder rb, Elevation elevation) {
+  private void setSort(ResponseBuilder rb, Elevation elevation) throws IOException {
+    if (elevation.elevatedIds.isEmpty()) {
+      return;
+    }
     boolean forceElevation = rb.req.getParams().getBool(QueryElevationParams.FORCE_ELEVATION, this.forceElevation);
-    ElevationComparatorSource comparator = new ElevationComparatorSource(elevation);
+    boolean useConfigured = rb.req.getParams().getBool(QueryElevationParams.USE_CONFIGURED_ELEVATED_ORDER, this.useConfiguredElevatedOrder);
+    final IntIntHashMap elevatedWithPriority = getBoostDocs(rb.req.getSearcher(), elevation.elevatedIds, rb.req.getContext());
+    ElevationComparatorSource comparator = new ElevationComparatorSource(elevatedWithPriority, useConfigured);
     setSortSpec(rb, forceElevation, comparator);
     setGroupingSpec(rb, forceElevation, comparator);
   }
@@ -607,43 +622,49 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   // Boosted docs helper
   //---------------------------------------------------------------------------------
 
-  public static IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Map<BytesRef, Integer> boosted, Map context) throws IOException {
+  /**
+   * Returns a map of docIds elevated with a priority value &gt; 0. The mapping is looked up and cached in {@code context} when
+   * not null.  {@code boosted} are the set of uniqueKey values to be boosted in priority order.
+   */
+  public static IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Set<BytesRef> boosted, Map context) throws IOException {
 
-      IntIntHashMap boostDocs = null;
+    IntIntHashMap boostDocs = null;
 
-      if (boosted != null) {
+    if (boosted != null) {
 
-        //First see if it's already in the request context. Could have been put there by another caller.
-        if (context != null) {
-          boostDocs = (IntIntHashMap) context.get(BOOSTED_DOCIDS);
-          if (boostDocs != null) {
-            return boostDocs;
-          }
-        }
-
-        //Not in the context yet so load it.
-        boostDocs = new IntIntHashMap(boosted.size()); // docId to boost
-        for (Map.Entry<BytesRef,Integer> keyAndBoostPair : boosted.entrySet()) {
-          final BytesRef uniqueKey = keyAndBoostPair.getKey();
-          long segAndId = indexSearcher.lookupId(uniqueKey); // higher 32 bits == segment ID, low 32 bits == doc ID
-          if (segAndId == -1) { // not found
-            continue;
-          }
-          int seg = (int) (segAndId >> 32);
-          int localDocId = (int) segAndId;
-          final IndexReaderContext indexReaderContext = indexSearcher.getTopReaderContext().children().get(seg);
-          int docId = indexReaderContext.docBaseInParent + localDocId;
-          boostDocs.put(docId, keyAndBoostPair.getValue());
-        }
-      }
-
+      //First see if it's already in the request context. Could have been put there by another caller.
       if (context != null) {
-        //noinspection unchecked
-        context.put(BOOSTED_DOCIDS, boostDocs);
+        boostDocs = (IntIntHashMap) context.get(BOOSTED_DOCIDS);
+        if (boostDocs != null) {
+          return boostDocs;
+        }
       }
 
-      return boostDocs;
+      //Not in the context yet so load it.
+      boostDocs = new IntIntHashMap(boosted.size()); // docId to boost
+      int priority = boosted.size() + 1; // the corresponding priority for each boosted key (starts at this; decrements down)
+      for (BytesRef uniqueKey : boosted) {
+        priority--; // therefore first == bosted.size(); last will be 1
+        long segAndId = indexSearcher.lookupId(uniqueKey); // higher 32 bits == segment ID, low 32 bits == doc ID
+        if (segAndId == -1) { // not found
+          continue;
+        }
+        int seg = (int) (segAndId >> 32);
+        int localDocId = (int) segAndId;
+        final IndexReaderContext indexReaderContext = indexSearcher.getTopReaderContext().children().get(seg);
+        int docId = indexReaderContext.docBaseInParent + localDocId;
+        boostDocs.put(docId, priority);
+      }
+      assert priority == 1; // the last priority (lowest)
     }
+
+    if (context != null) {
+      //noinspection unchecked
+      context.put(BOOSTED_DOCIDS, boostDocs);
+    }
+
+    return boostDocs;
+  }
 
   //---------------------------------------------------------------------------------
   // SolrInfoBean
@@ -657,30 +678,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   //---------------------------------------------------------------------------------
   // Overrides
   //---------------------------------------------------------------------------------
-
-  /**
-   * Gets the default value for {@link org.apache.solr.common.params.QueryElevationParams#FORCE_ELEVATION} parameter.
-   */
-  @SuppressWarnings("WeakerAccess")
-  protected boolean getDefaultForceElevation() {
-    return DEFAULT_FORCE_ELEVATION;
-  }
-
-  /**
-   * Gets the default value for {@link #DEFAULT_KEEP_ELEVATION_PRIORITY} parameter.
-   */
-  @SuppressWarnings("WeakerAccess")
-  protected boolean getDefaultKeepElevationPriority() {
-    return DEFAULT_KEEP_ELEVATION_PRIORITY;
-  }
-
-  /**
-   * Gets the default subset match policy.
-   */
-  @SuppressWarnings("WeakerAccess")
-  protected boolean getDefaultSubsetMatch() {
-    return DEFAULT_SUBSET_MATCH;
-  }
 
   /**
    * Creates the {@link ElevationProvider} to set during configuration loading. The same instance will be used later
@@ -717,15 +714,14 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   private static void splitQueryTermsWithAnalyzer(String queryString, Analyzer queryAnalyzer, Collection<String> tokenCollector) {
-    try (TokenStream tokens = queryAnalyzer.tokenStream("", new StringReader(queryString))) {
+    try (TokenStream tokens = queryAnalyzer.tokenStream("", queryString)) {
       tokens.reset();
       CharTermAttribute termAttribute = tokens.addAttribute(CharTermAttribute.class);
       while (tokens.incrementToken()) {
-        tokenCollector.add(new String(termAttribute.buffer(), 0, termAttribute.length()));
+        tokenCollector.add(termAttribute.toString());
       }
       tokens.end();
     } catch (IOException e) {
-      // Will never be thrown since we read a StringReader.
       throw Throwables.propagate(e);
     }
   }
@@ -737,7 +733,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   /**
    * Helpful for testing without loading config.xml.
    *
-   *
    * @param reader      The {@link org.apache.lucene.index.IndexReader}.
    * @param queryString The query for which to elevate some documents. If the query has already been defined an
    *                    elevation, this method overwrites it.
@@ -747,19 +742,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @throws java.io.IOException If there is a low-level I/O error.
    */
   @VisibleForTesting
-  void setTopQueryResults(IndexReader reader, String queryString, boolean subsetMatch, String[] elevatedIds,
-                          String[] excludedIds) throws IOException {
+  void setTopQueryResults(IndexReader reader, String queryString, boolean subsetMatch,
+                          String[] elevatedIds, String[] excludedIds) throws IOException {
     clearElevationProviderCache();
-    if (elevatedIds == null) {
-      elevatedIds = new String[0];
-    }
-    if (excludedIds == null) {
-      excludedIds = new String[0];
-    }
     ElevatingQuery elevatingQuery = new ElevatingQuery(queryString, subsetMatch);
-    ElevationBuilder elevationBuilder = new ElevationBuilder()
-        .addElevatedIds(Arrays.asList(elevatedIds))
-        .addExcludedIds(Arrays.asList(excludedIds));
+    ElevationBuilder elevationBuilder = new ElevationBuilder();
+    elevationBuilder.addElevatedIds(elevatedIds == null ? Collections.emptyList() : Arrays.asList(elevatedIds));
+    elevationBuilder.addExcludedIds(excludedIds == null ? Collections.emptyList() : Arrays.asList(excludedIds));
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = ImmutableMap.of(elevatingQuery, elevationBuilder);
     synchronized (elevationProviderCache) {
       elevationProviderCache.computeIfAbsent(reader, k -> createElevationProvider(queryAnalyzer, elevationBuilderMap));
@@ -788,45 +777,35 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   protected enum InitializationExceptionCause {
-        /**
-         * The component parameter {@link #FIELD_TYPE} defines an unknown field type.
-         */
-        UNKNOWN_FIELD_TYPE,
-        /**
-         * This component requires the schema to have a uniqueKeyField, which it does not have.
-         */
-        MISSING_UNIQUE_KEY_FIELD,
-        /**
-         * Missing component parameter {@link #CONFIG_FILE} - it has to define the path to the elevation configuration file (e.g. elevate.xml).
-         */
-        NO_CONFIG_FILE_DEFINED,
-        /**
-         * The elevation configuration file (e.g. elevate.xml) cannot be found, or is defined in both conf/ and data/ directories.
-         */
-        MISSING_CONFIG_FILE,
-        /**
-         * The elevation configuration file (e.g. elevate.xml) is empty.
-         */
-        EMPTY_CONFIG_FILE,
-        /**
-         * Unclassified exception cause.
-         */
-        OTHER,
-      }
+    /**
+     * The component parameter {@link #FIELD_TYPE} defines an unknown field type.
+     */
+    UNKNOWN_FIELD_TYPE,
+    /**
+     * This component requires the schema to have a uniqueKeyField, which it does not have.
+     */
+    MISSING_UNIQUE_KEY_FIELD,
+    /**
+     * Missing component parameter {@link #CONFIG_FILE} - it has to define the path to the elevation configuration file (e.g. elevate.xml).
+     */
+    NO_CONFIG_FILE_DEFINED,
+    /**
+     * The elevation configuration file (e.g. elevate.xml) cannot be found, or is defined in both conf/ and data/ directories.
+     */
+    MISSING_CONFIG_FILE,
+    /**
+     * The elevation configuration file (e.g. elevate.xml) is empty.
+     */
+    EMPTY_CONFIG_FILE,
+    /**
+     * Unclassified exception cause.
+     */
+    OTHER,
+  }
 
   //---------------------------------------------------------------------------------
   // Elevation classes
   //---------------------------------------------------------------------------------
-
-  /**
-   * Creates an elevation.
-   *
-   * @param elevatedIds The ids of the elevated documents that should appear on top of search results; can be <code>null</code>.
-   * @param excludedIds The ids of the excluded documents that should not appear in search results; can be <code>null</code>.
-   */
-  private Elevation createElevation(Collection<String> elevatedIds, Collection<String> excludedIds) {
-    return new Elevation(elevatedIds, excludedIds, indexedValueProvider, uniqueKeyFieldName, keepElevationPriority);
-  }
 
   /**
    * Provides the elevations defined for queries.
@@ -896,7 +875,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         Elevation elevation = entry.getValue().build();
         Elevation duplicateElevation = elevationMap.put(analyzedQuery, elevation);
         if (duplicateElevation != null) {
-          throw new IllegalArgumentException("Duplicate elevation for query \"" + analyzedQuery + "\"");
+          throw new IllegalArgumentException("Duplicate elevation for query.  Analyzed: \"" + analyzedQuery + "\"" +
+              " Original: \"" + elevatingQuery.queryString + "\"");
         }
       }
       return Collections.unmodifiableMap(elevationMap);
@@ -957,41 +937,40 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     /**
      * The ids of the elevated documents that should appear on top of search results; can be <code>null</code>.
+     * The order is retained.
      */
-    private Set<String> elevatedIds;
+    private LinkedHashSet<BytesRef> elevatedIds;
     /**
      * The ids of the excluded documents that should not appear in search results; can be <code>null</code>.
      */
-    private Set<String> excludedIds;
+    private Set<BytesRef> excludedIds;
 
-    ElevationBuilder addElevatedId(String id) {
-      if (elevatedIds == null) {
-        elevatedIds = createIdSet();
-      }
-      elevatedIds.add(id);
-      return this;
-    }
+    // for temporary/transient use when adding an elevated or excluded ID
+    private final BytesRefBuilder scratch = new BytesRefBuilder();
 
     ElevationBuilder addElevatedIds(List<String> ids) {
+      if (elevatedIds == null) {
+        elevatedIds = new LinkedHashSet<>(Math.max(10, ids.size()));
+      }
       for (String id : ids) {
-        addElevatedId(id);
+        elevatedIds.add(toBytesRef(id));
       }
       return this;
     }
 
-    ElevationBuilder addExcludedId(String id) {
+    ElevationBuilder addExcludedIds(Collection<String> ids) {
       if (excludedIds == null) {
-        excludedIds = createIdSet();
+        excludedIds = new LinkedHashSet<>(Math.max(10, ids.size()));
       }
-      excludedIds.add(id);
+      for (String id : ids) {
+        excludedIds.add(toBytesRef(id));
+      }
       return this;
     }
 
-    ElevationBuilder addExcludedIds(List<String> ids) {
-      for (String id : ids) {
-        addExcludedId(id);
-      }
-      return this;
+    private BytesRef toBytesRef(String id) {
+      uniqueKeyField.getType().readableToIndexed(id, scratch);
+      return scratch.toBytesRef();
     }
 
     ElevationBuilder merge(ElevationBuilder elevationBuilder) {
@@ -1009,12 +988,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     Elevation build() {
-      return createElevation(elevatedIds, excludedIds);
+      return new Elevation(elevatedIds, excludedIds, uniqueKeyField.getName());
     }
 
-    private Set<String> createIdSet() {
-      return (keepElevationPriority ? new LinkedHashSet<>() : new HashSet<>());
-    }
   }
 
   /**
@@ -1025,82 +1001,73 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     private static final BooleanQuery EMPTY_QUERY = new BooleanQuery.Builder().build();
 
     @VisibleForTesting
-    final Set<String> elevatedIds;
-    private final BooleanQuery includeQuery;
-    @VisibleForTesting
-    final Map<BytesRef, Integer> priorities;
-    private final Set<String> excludedIds;
-    private final TermQuery[] excludeQueries;//just keep the term query, b/c we will not always explicitly exclude the item based on markExcludes query time param
+    final Set<BytesRef> elevatedIds; // in configured order; not null
+    private final BooleanQuery includeQuery; // not null
+    private final Set<BytesRef> excludedIds; // not null
+    //just keep the term query, b/c we will not always explicitly exclude the item based on markExcludes query time param
+    private final TermQuery[] excludeQueries; //may be null
 
     /**
      * Constructs an elevation.
-     *
      * @param elevatedIds           The ids of the elevated documents that should appear on top of search results; can be <code>null</code>.
+     *                              In configured order.
      * @param excludedIds           The ids of the excluded documents that should not appear in search results; can be <code>null</code>.
-     * @param indexedValueProvider  Provides the indexed value corresponding to a readable value..
      * @param queryFieldName        The field name to use to create query terms.
-     * @param keepElevationPriority Whether to keep the elevation priority order.
      */
-    private Elevation(Collection<String> elevatedIds, Collection<String> excludedIds,
-                        UnaryOperator<String> indexedValueProvider, String queryFieldName,
-                        boolean keepElevationPriority) {
+    private Elevation(Set<BytesRef> elevatedIds, Set<BytesRef> excludedIds,
+                      String queryFieldName) {
       if (elevatedIds == null || elevatedIds.isEmpty()) {
-        this.elevatedIds = Collections.emptySet();
         includeQuery = EMPTY_QUERY;
-        priorities = Collections.emptyMap();
+        this.elevatedIds = Collections.emptySet();
       } else {
-        ImmutableSet.Builder<String> elevatedIdsBuilder = ImmutableSet.builder();
+        this.elevatedIds = new LinkedHashSet<>(elevatedIds);
         BooleanQuery.Builder includeQueryBuilder = new BooleanQuery.Builder();
-        ImmutableMap.Builder<BytesRef, Integer> prioritiesBuilder = null;
-        if (keepElevationPriority) {
-          prioritiesBuilder = ImmutableMap.builder();
+        for (BytesRef elevatedId : elevatedIds) {
+          includeQueryBuilder.add(new TermQuery(new Term(queryFieldName, elevatedId)), BooleanClause.Occur.SHOULD);
         }
-        int priorityLevel = elevatedIds.size();
-        for (String elevatedId : elevatedIds) {
-          elevatedIdsBuilder.add(indexedValueProvider.apply(elevatedId));
-          TermQuery tq = new TermQuery(new Term(queryFieldName, elevatedId));
-          includeQueryBuilder.add(tq, BooleanClause.Occur.SHOULD);
-          if (keepElevationPriority) {
-            prioritiesBuilder.put(new BytesRef(elevatedId), priorityLevel--);
-          }
-        }
-        this.elevatedIds = elevatedIdsBuilder.build();
         includeQuery = includeQueryBuilder.build();
-        priorities = keepElevationPriority ? prioritiesBuilder.build() : null;
       }
 
       if (excludedIds == null || excludedIds.isEmpty()) {
         this.excludedIds = Collections.emptySet();
         excludeQueries = null;
       } else {
-        ImmutableSet.Builder<String> excludedIdsBuilder = ImmutableSet.builder();
+        this.excludedIds = ImmutableSet.copyOf(excludedIds);
         List<TermQuery> excludeQueriesBuilder = new ArrayList<>(excludedIds.size());
-        for (String excludedId : excludedIds) {
-          excludedIdsBuilder.add(indexedValueProvider.apply(excludedId));
+        for (BytesRef excludedId : excludedIds) {
           excludeQueriesBuilder.add(new TermQuery(new Term(queryFieldName, excludedId)));
         }
-        this.excludedIds = excludedIdsBuilder.build();
         excludeQueries = excludeQueriesBuilder.toArray(new TermQuery[excludeQueriesBuilder.size()]);
       }
     }
 
     @Override
     public String toString() {
-      return "{elevatedIds=" + elevatedIds + ", excludedIds=" + excludedIds + "}";
+      return "{elevatedIds=" + Collections2.transform(elevatedIds, BytesRef::utf8ToString) +
+          ", excludedIds=" + Collections2.transform(excludedIds, BytesRef::utf8ToString) + "}";
     }
   }
 
+  /** Elevates certain docs to the top. */
   private class ElevationComparatorSource extends FieldComparatorSource {
 
-    private final Elevation elevation;
-    private final SentinelIntSet ordSet; //the key half of the map
-    private final BytesRef[] termValues; //the value half of the map
+    private final IntIntHashMap elevatedWithPriority;
+    private final boolean useConfiguredElevatedOrder;
+    private final int[] sortedElevatedDocIds;
 
-    private ElevationComparatorSource(Elevation elevation) {
-      this.elevation = elevation;
-      int size = elevation.elevatedIds.size();
-      ordSet = new SentinelIntSet(size, -1);
-      termValues = keepElevationPriority ? new BytesRef[ordSet.keys.length] : null;
+    private ElevationComparatorSource(IntIntHashMap elevatedWithPriority, boolean useConfiguredElevatedOrder) {
+      this.elevatedWithPriority = elevatedWithPriority;
+      this.useConfiguredElevatedOrder = useConfiguredElevatedOrder;
+
+      // copy elevatedWithPriority keys (doc IDs) into sortedElevatedDocIds, sorted
+      sortedElevatedDocIds = new int[elevatedWithPriority.size()];
+      final Iterator<IntIntCursor> iterator = elevatedWithPriority.iterator();
+      for (int i = 0; i < sortedElevatedDocIds.length; i++) {
+        IntIntCursor next = iterator.next();
+        sortedElevatedDocIds[i] = next.key;
+      }
+      assert iterator.hasNext() == false;
+      Arrays.sort(sortedElevatedDocIds);
     }
 
     @Override
@@ -1109,8 +1076,28 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         final int[] values = new int[numHits];
         int bottomVal;
         int topVal;
-        PostingsEnum postingsEnum;
-        final Set<String> seen = new HashSet<>(elevation.elevatedIds.size());
+
+        int docBase;
+        boolean hasElevatedDocsThisSegment;
+
+        @Override
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
+          docBase = context.docBase;
+          // ascertain if hasElevatedDocsThisSegment
+          final int idx = Arrays.binarySearch(sortedElevatedDocIds, docBase);
+          if (idx < 0) {
+            //first doc in segment isn't elevated (typical).  Maybe another is?
+            int nextIdx = -idx - 1;
+            if (nextIdx < sortedElevatedDocIds.length) {
+              int nextElevatedDocId = sortedElevatedDocIds[nextIdx];
+              if (nextElevatedDocId > docBase + context.reader().maxDoc()) {
+                hasElevatedDocsThisSegment = false;
+                return;
+              }
+            }
+          }
+          hasElevatedDocsThisSegment = true;
+        }
 
         @Override
         public int compare(int slot1, int slot2) {
@@ -1128,16 +1115,14 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         }
 
         private int docVal(int doc) {
-          if (ordSet.size() > 0) {
-            int slot = ordSet.find(doc);
-            if (slot >= 0) {
-              if (!keepElevationPriority)
-                return 1;
-              BytesRef id = termValues[slot];
-              return elevation.priorities.getOrDefault(id, 0);
-            }
+          if (!hasElevatedDocsThisSegment) {
+            assert elevatedWithPriority.containsKey(docBase + doc) == false;
+            return -1;
+          } else if (useConfiguredElevatedOrder) {
+            return elevatedWithPriority.getOrDefault(docBase + doc, -1);
+          } else {
+            return elevatedWithPriority.containsKey(docBase + doc) ? 1 : -1;
           }
-          return 0;
         }
 
         @Override
@@ -1148,35 +1133,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         @Override
         public void copy(int slot, int doc) {
           values[slot] = docVal(doc);
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          //convert the ids to Lucene doc ids, the ordSet and termValues needs to be the same size as the number of elevation docs we have
-          ordSet.clear();
-          Terms terms = context.reader().terms(uniqueKeyFieldName);
-          if (terms == null) return;
-          TermsEnum termsEnum = terms.iterator();
-          BytesRefBuilder term = new BytesRefBuilder();
-          Bits liveDocs = context.reader().getLiveDocs();
-
-          for (String id : elevation.elevatedIds) {
-            term.copyChars(id);
-            if (seen.contains(id) == false && termsEnum.seekExact(term.get())) {
-              postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
-              int docId = postingsEnum.nextDoc();
-              while (docId != DocIdSetIterator.NO_MORE_DOCS && liveDocs != null && !liveDocs.get(docId)) {
-                docId = postingsEnum.nextDoc();
-              }
-              if (docId == DocIdSetIterator.NO_MORE_DOCS ) continue;  // must have been deleted
-              int slot = ordSet.put(docId);
-              if (keepElevationPriority) {
-                termValues[slot] = term.toBytesRef();
-              }
-              seen.add(id);
-              assert postingsEnum.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
-            }
-          }
         }
 
         @Override
