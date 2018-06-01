@@ -287,6 +287,9 @@ Bug Fixes
 
 * SOLR-12271: Fixed bug in how Analytics component reads negative values from float and double fields. (Houston Putman)
 
+* SOLR-12433: Recovering flag of a replica is set equals to leader even it failed to receive update 
+  on recovering. (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
