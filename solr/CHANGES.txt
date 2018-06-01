@@ -321,6 +321,10 @@ Optimizations
 * SOLR-12366: A slow "live docs" implementation was being used instead of a bitset.  Affects classic faceting
   enum method, JSON Facets enum method, UnInvertedField faceting, GraphTermsQParser, JoinQParser.  (David Smiley)
 
+* SOLR-12337: Remove the obsolete QueryWrapperFilter intermediate wrapper, which also removed some needless uses of
+  SolrConstantScoreQuery as well.  QWF since v5.4.0 sometimes needlessly internally executed and cached the query.
+  Affects ExpandComponent, ChildDocTransformer, CurrencyFieldType, TermsQParser.  (David Smiley)
+
 Other Changes
 ----------------------
 
