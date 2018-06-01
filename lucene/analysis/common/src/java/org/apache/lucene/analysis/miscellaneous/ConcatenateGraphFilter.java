@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -28,7 +29,6 @@ import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.LimitedFiniteStringsIterator;
@@ -66,6 +66,7 @@ public final class ConcatenateGraphFilter extends TokenStream {
 
   private final BytesRefBuilderTermAttribute bytesAtt = addAttribute(BytesRefBuilderTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   private final TokenStream inputTokenStream;
   private final boolean preserveSep;
@@ -75,6 +76,7 @@ public final class ConcatenateGraphFilter extends TokenStream {
   private LimitedFiniteStringsIterator finiteStrings;
   private CharTermAttribute charTermAttribute;
   private boolean wasReset = false;
+  private int endOffset;
 
   /**
    * Creates a token stream to convert <code>input</code> to a token stream
@@ -128,8 +130,10 @@ public final class ConcatenateGraphFilter extends TokenStream {
         throw new IllegalStateException("reset() missing before incrementToken");
       }
       // lazy init/consume
-      Automaton automaton = toAutomaton(); // calls reset(), incrementToken() repeatedly, end(), and close() on inputTokenStream
+      Automaton automaton = toAutomaton(); // calls reset(), incrementToken() repeatedly, and end() on inputTokenStream
       finiteStrings = new LimitedFiniteStringsIterator(automaton, maxGraphExpansions);
+      //note: would be nice to know the startOffset but toAutomaton doesn't capture it.  We'll assume 0
+      endOffset = inputTokenStream.getAttribute(OffsetAttribute.class).endOffset();
     }
 
     IntsRef string = finiteStrings.next();
@@ -143,6 +147,8 @@ public final class ConcatenateGraphFilter extends TokenStream {
       posIncrAtt.setPositionIncrement(0); // stacked
     }
 
+    offsetAtt.setOffset(0, endOffset);
+
     Util.toBytesRef(string, bytesAtt.builder()); // now we have UTF-8
     if (charTermAttribute != null) {
       charTermAttribute.setLength(0);
@@ -155,58 +161,47 @@ public final class ConcatenateGraphFilter extends TokenStream {
   @Override
   public void end() throws IOException {
     super.end();
-    //nocommit I think we don't need to delegate this under any condition
-    if (finiteStrings == null) {
-      //toAutomaton not called yet, so delegate lifecycle
-      inputTokenStream.end();
-    }
+    offsetAtt.setOffset(0, endOffset);
   }
 
   @Override
   public void close() throws IOException {
     super.close();
-    if (finiteStrings == null) {
-      //toAutomaton not called yet, so delegate lifecycle
-      inputTokenStream.close();
-    } else {
-      finiteStrings = null;
-    }
+    //delegate lifecycle.  Note toAutomaton does not close the stream
+    inputTokenStream.close();
     wasReset = false;//reset
+    endOffset = -1;//reset
   }
 
   /**
-   * Converts the tokenStream to an automaton, treating the transition labels as utf-8.  Closes it.
+   * Converts the tokenStream to an automaton, treating the transition labels as utf-8.  Does *not* close it.
    */
   public Automaton toAutomaton() throws IOException {
     return toAutomaton(false);
   }
 
   /**
-   * Converts the tokenStream to an automaton.  Closes it.
+   * Converts the tokenStream to an automaton.  Does *not* close it.
    */
   public Automaton toAutomaton(boolean unicodeAware) throws IOException {
     // TODO refactor this
     // maybe we could hook up a modified automaton from TermAutomatonQuery here?
-    Automaton automaton;
-    try {
-      // Create corresponding automaton: labels are bytes
-      // from each analyzed token, with byte 0 used as
-      // separator between tokens:
-      final TokenStreamToAutomaton tsta;
-      if (preserveSep) {
-        tsta = new EscapingTokenStreamToAutomaton(SEP_LABEL);
-      } else {
-        // When we're not preserving sep, we don't steal 0xff
-        // byte, so we don't need to do any escaping:
-        tsta = new TokenStreamToAutomaton();
-      }
-      tsta.setPreservePositionIncrements(preservePositionIncrements);
-      tsta.setUnicodeArcs(unicodeAware);
 
-      automaton = tsta.toAutomaton(inputTokenStream);
-    } finally {
-      IOUtils.closeWhileHandlingException(inputTokenStream);
+    // Create corresponding automaton: labels are bytes
+    // from each analyzed token, with byte 0 used as
+    // separator between tokens:
+    final TokenStreamToAutomaton tsta;
+    if (preserveSep) {
+      tsta = new EscapingTokenStreamToAutomaton(SEP_LABEL);
+    } else {
+      // When we're not preserving sep, we don't steal 0xff
+      // byte, so we don't need to do any escaping:
+      tsta = new TokenStreamToAutomaton();
     }
+    tsta.setPreservePositionIncrements(preservePositionIncrements);
+    tsta.setUnicodeArcs(unicodeAware);
+
+    Automaton automaton = tsta.toAutomaton(inputTokenStream);
 
     // TODO: we can optimize this somewhat by determinizing
     // while we convert
