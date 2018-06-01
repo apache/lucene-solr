@@ -27,7 +27,7 @@ Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
-Jetty 9.3.20.v20170531
+Jetty 9.4.10.v20180503
 
 Upgrade Notes
 ----------------------
