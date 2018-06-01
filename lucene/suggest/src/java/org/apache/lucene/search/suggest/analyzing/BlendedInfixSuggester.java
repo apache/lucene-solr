@@ -224,8 +224,11 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
       } else {
         coefficient = createCoefficient(searcher, fd.doc, matchedTokens, prefixToken);
       }
-
-      long score = (long) (weight * coefficient);
+      if (weight == 0) {
+        weight = 1;
+      }
+      long scaledCoefficient = (long) (coefficient * 10);
+      long score = weight * scaledCoefficient;
 
       LookupResult result;
       if (doHighlight) {
