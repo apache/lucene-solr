@@ -88,18 +88,19 @@ public class ContextSuggestField extends SuggestField {
     for (CharSequence context : contexts) {
       validate(context);
     }
-    CompletionTokenStream completionTokenStream;
+    CompletionTokenStream concatStream;
     if (stream instanceof CompletionTokenStream) {
-      completionTokenStream = (CompletionTokenStream) stream;
-      PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(completionTokenStream.inputTokenStream, (char) CONTEXT_SEPARATOR, contexts);
-      completionTokenStream = new CompletionTokenStream(prefixTokenFilter,
-          completionTokenStream.preserveSep,
-          completionTokenStream.preservePositionIncrements,
-          completionTokenStream.maxGraphExpansions);
+      //TODO this is awkward; is there a better way avoiding re-creating the chain?
+      concatStream = (CompletionTokenStream) stream;
+      PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(concatStream.inputTokenStream, (char) CONTEXT_SEPARATOR, contexts);
+      concatStream = new CompletionTokenStream(prefixTokenFilter,
+          concatStream.preserveSep,
+          concatStream.preservePositionIncrements,
+          concatStream.maxGraphExpansions);
     } else {
-      completionTokenStream = new CompletionTokenStream(new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
+      concatStream = new CompletionTokenStream(new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
     }
-    return completionTokenStream;
+    return concatStream;
   }
 
   @Override

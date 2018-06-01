@@ -214,6 +214,8 @@ public class TokenStreamToAutomaton {
 
     if (endPosInc == 0 && finalOffsetGapAsHole && offsetAtt.endOffset() > maxOffset) {
       endPosInc = 1;
+    } else if (endPosInc > 0 && preservePositionIncrements==false) {
+      endPosInc = 0;
     }
     
     if (endPosInc > 0) {
