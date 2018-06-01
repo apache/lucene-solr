@@ -73,6 +73,8 @@ public class NodeConfig {
 
   private final MetricsConfig metricsConfig;
 
+  private final SynchronizedDisruptionConfig synchronizedDisruptionConfig;
+
   private final PluginInfo transientCacheConfig;
 
   private NodeConfig(String nodeName, Path coreRootDirectory, Path solrDataHome, Path configSetBaseDirectory, String sharedLibDirectory,
@@ -82,7 +84,8 @@ public class NodeConfig {
                      LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads, int replayUpdatesThreads,
                      int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
-                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig) {
+                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig,
+                     SynchronizedDisruptionConfig synchronizedDisruptionConfig) {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.solrDataHome = solrDataHome;
@@ -107,6 +110,7 @@ public class NodeConfig {
     this.backupRepositoryPlugins = backupRepositoryPlugins;
     this.metricsConfig = metricsConfig;
     this.transientCacheConfig = transientCacheConfig;
+    this.synchronizedDisruptionConfig = synchronizedDisruptionConfig;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -213,6 +217,8 @@ public class NodeConfig {
 
   public PluginInfo getTransientCachePluginInfo() { return transientCacheConfig; }
 
+  public SynchronizedDisruptionConfig getSynchronizedDisruptionConfig() { return synchronizedDisruptionConfig; }
+
   public static class NodeConfigBuilder {
 
     private Path coreRootDirectory;
@@ -239,6 +245,7 @@ public class NodeConfig {
     private PluginInfo[] backupRepositoryPlugins;
     private MetricsConfig metricsConfig;
     private PluginInfo transientCacheConfig;
+    private SynchronizedDisruptionConfig synchronizedDisruptionConfig;
 
     private final SolrResourceLoader loader;
     private final String nodeName;
@@ -274,6 +281,7 @@ public class NodeConfig {
       }
       this.configSetBaseDirectory = loader.getInstancePath().resolve("configsets");
       this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
+      this.synchronizedDisruptionConfig = new SynchronizedDisruptionConfig.SynchronizedDisruptionConfigBuilder().build();
     }
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
@@ -391,11 +399,16 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setSynchronizedDisruptionConfig(SynchronizedDisruptionConfig config) {
+      this.synchronizedDisruptionConfig = config;
+      return this;
+    }
+
     public NodeConfig build() {
       return new NodeConfig(nodeName, coreRootDirectory, solrDataHome, configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, synchronizedDisruptionConfig);
     }
   }
 }
