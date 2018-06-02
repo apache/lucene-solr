@@ -203,6 +203,9 @@ New Features
   now use to also take pending deletes into account which ensures that all file
   generations per segment always go forward. (Simon Willnauer)
 
+* LUCENE-8335: Enforce soft-deletes field up-front. Soft deletes field must be marked
+  as such once it's introduced and can't be changed after the fact. (Nhat Nguyen via Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-8221: MoreLikeThis.setMaxDocFreqPct can easily int-overflow on larger
