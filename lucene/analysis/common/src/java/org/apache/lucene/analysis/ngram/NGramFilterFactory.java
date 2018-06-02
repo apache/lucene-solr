@@ -36,12 +36,16 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 public class NGramFilterFactory extends TokenFilterFactory {
   private final int maxGramSize;
   private final int minGramSize;
+  private final boolean keepShortTerm;
+  private final boolean keepLongTerm;
 
   /** Creates a new NGramFilterFactory */
   public NGramFilterFactory(Map<String, String> args) {
     super(args);
     minGramSize = getInt(args, "minGramSize", NGramTokenFilter.DEFAULT_MIN_NGRAM_SIZE);
     maxGramSize = getInt(args, "maxGramSize", NGramTokenFilter.DEFAULT_MAX_NGRAM_SIZE);
+    keepShortTerm = getBoolean(args, "keepShortTerm", NGramTokenFilter.DEFAULT_KEEP_SHORT_TERM);
+    keepLongTerm = getBoolean(args, "keepLongTerm", NGramTokenFilter.DEFAULT_KEEP_LONG_TERM);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -49,6 +53,6 @@ public class NGramFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenFilter create(TokenStream input) {
-    return new NGramTokenFilter(input, minGramSize, maxGramSize);
+    return new NGramTokenFilter(input, minGramSize, maxGramSize, keepShortTerm, keepLongTerm);
   }
 }
