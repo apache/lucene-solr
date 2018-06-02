@@ -797,8 +797,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
               fieldInfo.getDocValuesGen(),
               fieldInfo.attributes(),
               fieldInfo.getPointDimensionCount(),
-              fieldInfo.getPointNumBytes(),
-              fieldInfo.isSoftDeletesField());
+              fieldInfo.getPointNumBytes());
           newInfos.add(f);
 
         } else {

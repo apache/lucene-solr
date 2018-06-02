@@ -77,8 +77,7 @@ public class MismatchedLeafReader extends FilterLeafReader {
                                         oldInfo.getDocValuesGen(),   // dvGen
                                         oldInfo.attributes(),        // attributes
                                         oldInfo.getPointDimensionCount(),      // dimension count
-                                        oldInfo.getPointNumBytes(),  // dimension numBytes
-                                        oldInfo.isSoftDeletesField()); // used as soft-deletes field
+                                        oldInfo.getPointNumBytes());  // dimension numBytes
       shuffled.set(i, newInfo);
     }
     

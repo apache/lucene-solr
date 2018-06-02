@@ -53,17 +53,14 @@ public final class FieldInfo {
   private int pointDimensionCount;
   private int pointNumBytes;
 
-  // whether this field is used as the soft-deletes field
-  private final boolean softDeletesField;
-
   /**
    * Sole constructor.
    *
    * @lucene.experimental
    */
-  public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, boolean storePayloads,
-                   IndexOptions indexOptions, DocValuesType docValues, long dvGen, Map<String,String> attributes,
-                   int pointDimensionCount, int pointNumBytes, boolean softDeletesField) {
+  public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, 
+                   boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
+                   long dvGen, Map<String,String> attributes, int pointDimensionCount, int pointNumBytes) {
     this.name = Objects.requireNonNull(name);
     this.number = number;
     this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType must not be null (field: \"" + name + "\")");
@@ -81,7 +78,6 @@ public final class FieldInfo {
     this.attributes = Objects.requireNonNull(attributes);
     this.pointDimensionCount = pointDimensionCount;
     this.pointNumBytes = pointNumBytes;
-    this.softDeletesField = softDeletesField;
     assert checkConsistency();
   }
 
@@ -335,13 +331,5 @@ public final class FieldInfo {
    */
   public Map<String,String> attributes() {
     return attributes;
-  }
-
-  /**
-   * Returns true if this field is configured and used as the soft-deletes field.
-   * See {@link IndexWriterConfig#softDeletesField}
-   */
-  public boolean isSoftDeletesField() {
-    return softDeletesField;
   }
 }
