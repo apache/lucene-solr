@@ -19,7 +19,6 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
@@ -27,7 +26,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
 
 import com.codahale.metrics.Meter;
-import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CodecReader;
@@ -320,7 +318,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       IndexWriter writer = iw.get();
       List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
       if (docs.size() > 1) {
-        writer.addDocuments(toDocumentsIter(docs, cmd.req.getSchema()));
+        writer.addDocuments(cmd.toDocumentsIter(docs, cmd.req.getSchema()));
       } else {
         writer.addDocument(cmd.getLuceneDocument());
       }
@@ -974,16 +972,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   private void updateDocument(AddUpdateCommand cmd, List<SolrInputDocument> docs, IndexWriter writer, Term updateTerm, boolean isBlock) throws IOException {
     if (isBlock) {
       log.debug("updateDocuments({})", docs);
-      writer.updateDocuments(updateTerm, toDocumentsIter(docs, cmd.req.getSchema()));
+      writer.updateDocuments(updateTerm, cmd.toDocumentsIter(docs, cmd.req.getSchema()));
     } else {
       Document luceneDocument = cmd.getLuceneDocument(false);
       log.debug("updateDocument({})", cmd);
       writer.updateDocument(updateTerm, luceneDocument);
     }
-  }
-
-  private Iterable<Document> toDocumentsIter(Collection<SolrInputDocument> docs, IndexSchema schema) {
-    return Iterables.transform(docs, (SolrInputDocument doc) -> DocumentBuilder.toDocument(doc, schema));
   }
 
 

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
@@ -65,6 +66,10 @@ public class AddUpdateCommand extends UpdateCommand {
    public AddUpdateCommand(SolrQueryRequest req) {
      super(req);
    }
+
+  public static Iterable<Document> toDocumentsIter(Collection<SolrInputDocument> docs, IndexSchema schema) {
+    return Iterables.transform(docs, (SolrInputDocument doc) -> DocumentBuilder.toDocument(doc, schema));
+  }
 
   @Override
   public String name() {
