@@ -78,7 +78,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     // Make sure it throws an error for invalid objects
     Object[] invalid = new Object[] {
         // new NGramTokenFilter( null ),
-        "hello",  new Float( 12.3f ),
+        "hello", 12.3f,
         new LukeRequestHandler(),
         new JSONResponseWriter()
     };
@@ -100,7 +100,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     // Make sure it throws an error for invalid objects
     invalid = new Object[] {
         new NGramFilterFactory(new HashMap<>()),
-        "hello",  new Float( 12.3f ),
+        "hello", 12.3f,
         new KeywordTokenizerFactory(new HashMap<>())
     };
     for( Object obj : invalid ) {

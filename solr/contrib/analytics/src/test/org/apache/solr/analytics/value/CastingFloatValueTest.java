@@ -67,11 +67,11 @@ public class CastingFloatValueTest extends SolrTestCaseJ4 {
     AnalyticsValue casted = (AnalyticsValue)val;
 
     val.setValue(20F).setExists(true);
-    assertEquals(new Float(20F), casted.getObject());
+    assertEquals(20F, casted.getObject());
     assertTrue(casted.exists());
 
     val.setValue(1234F).setExists(true);
-    assertEquals(new Float(1234F), casted.getObject());
+    assertEquals(1234F, casted.getObject());
     assertTrue(casted.exists());
   }
 
@@ -159,7 +159,7 @@ public class CastingFloatValueTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValue(20F).setExists(true);
-    Iterator<Object> values = Arrays.<Object>asList(new Float(20F)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(20F).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

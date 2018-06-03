@@ -144,7 +144,7 @@ public class TestPriorityQueue extends LuceneTestCase {
     // Basic insertion of new content
     ArrayList<Integer> sds = new ArrayList<Integer>(numDocsInPQ);
     for (int i = 0; i < numDocsInPQ * 10; i++) {
-      Integer newEntry = new Integer(Math.abs(random.nextInt()));
+      Integer newEntry = Math.abs(random.nextInt());
       sds.add(newEntry);
       Integer evicted = pq.insertWithOverflow(newEntry);
       pq.checkValidity();
@@ -174,7 +174,7 @@ public class TestPriorityQueue extends LuceneTestCase {
       assertTrue(sds.remove(element) == objectToRemove);
       assertTrue(pq.remove(objectToRemove));
       pq.checkValidity();
-      Integer newEntry = new Integer(Math.abs(random.nextInt()));
+      Integer newEntry = Math.abs(random.nextInt());
       sds.add(newEntry);
       assertNull(pq.insertWithOverflow(newEntry));
       pq.checkValidity();
@@ -237,7 +237,7 @@ public class TestPriorityQueue extends LuceneTestCase {
     final List<Integer> expected = new ArrayList<>();
     for (int iter = 0; iter < iters; ++iter) {
       if (queue.size() == 0 || (queue.size() < maxSize && random().nextBoolean())) {
-        final Integer value = new Integer(random().nextInt(10));
+        final Integer value = random().nextInt(10);
         queue.add(value);
         expected.add(value);
       } else {

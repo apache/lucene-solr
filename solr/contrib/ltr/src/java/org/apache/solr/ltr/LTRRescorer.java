@@ -177,7 +177,7 @@ public class LTRRescorer extends Rescorer {
       scorer.docID();
       scorer.iterator().advance(targetDoc);
 
-      scorer.getDocInfo().setOriginalDocScore(new Float(hit.score));
+      scorer.getDocInfo().setOriginalDocScore(hit.score);
       hit.score = scorer.score();
       if (hitUpto < topN) {
         reranked[hitUpto] = hit;

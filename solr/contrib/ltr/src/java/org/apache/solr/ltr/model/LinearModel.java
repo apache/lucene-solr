@@ -78,7 +78,7 @@ public class LinearModel extends LTRScoringModel {
     for (int ii = 0; ii < features.size(); ++ii) {
       final String key = features.get(ii).getName();
       final Double val = modelWeights.get(key);
-      featureToWeight[ii] = (val == null ? null : new Float(val.floatValue()));
+      featureToWeight[ii] = (val == null ? null : val.floatValue());
     }
   }
 

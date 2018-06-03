@@ -132,7 +132,7 @@ public class CastingIntValueStreamTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValues(20, -3, 42);
-    Iterator<Object> values = Arrays.<Object>asList(new Integer(20), new Integer(-3), new Integer(42)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(20, -3, 42).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

@@ -269,7 +269,7 @@ public abstract class TextResponseWriter implements PushWriter {
     DocList ids = res.getDocList();
     Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
     writeStartDocumentList(name, ids.offset(), ids.size(), ids.matches(),
-        res.wantsScores() ? new Float(ids.maxScore()) : null);
+        res.wantsScores() ? ids.maxScore() : null);
 
     int idx = 0;
     while (docsStreamer.hasNext()) {
