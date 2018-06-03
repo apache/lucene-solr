@@ -270,4 +270,8 @@ public class AddUpdateCommand extends UpdateCommand {
   public boolean isInPlaceUpdate() {
     return (prevVersion >= 0);
   }
+
+  public boolean hasUpdateTerm() {
+    return updateTerm != null;
+  }
 }

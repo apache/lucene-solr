@@ -333,25 +333,18 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void doNormalUpdate(AddUpdateCommand cmd) throws IOException {
-    Term updateTerm;
-    Term idTerm = getIdTerm(cmd);
-    boolean del = false;
-    if (cmd.updateTerm == null) {
-      updateTerm = idTerm;
-    } else {
-      // this is only used by the dedup update processor
-      del = true;
-      updateTerm = cmd.updateTerm;
-    }
+    boolean del = cmd.hasUpdateTerm();
 
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
 
-      updateDocOrDocValues(cmd, writer, updateTerm);
+      Term idTerm = updateDocOrDocValues(cmd, writer);
+      Term updateTerm = !del ? idTerm : cmd.updateTerm;
 
       if (del) { // ensure id remains unique
         BooleanQuery.Builder bq = new BooleanQuery.Builder();
+
         bq.add(new BooleanClause(new TermQuery(updateTerm),
             Occur.MUST_NOT));
         bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
@@ -392,7 +385,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
     }
 
-    Term idTerm = getIdTerm(cmd);
 
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
@@ -400,7 +392,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       // see comment in deleteByQuery
       synchronized (solrCoreState.getUpdateLock()) {
-        updateDocOrDocValues(cmd, writer, idTerm);
+        updateDocOrDocValues(cmd, writer);
 
         if (cmd.isInPlaceUpdate() && ulog != null) {
           ulog.openRealtimeSearcher(); // This is needed due to LUCENE-7344.
@@ -416,8 +408,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   }
 
-  private Term getIdTerm(AddUpdateCommand cmd) {
-    boolean isBlock = cmd.computeFinalFlattenedSolrDocs().size() > 1;
+  private Term getIdTerm(AddUpdateCommand cmd, boolean isBlock) {
     return new Term(isBlock ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
   }
 
@@ -952,12 +943,15 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    *
    * @param cmd - cmd apply to IndexWriter
    * @param writer - IndexWriter to use
-   * @param updateTerm - used if this cmd results in calling {@link IndexWriter#updateDocument}
    */
-  private void updateDocOrDocValues(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
+  private Term updateDocOrDocValues(AddUpdateCommand cmd, IndexWriter writer) throws IOException {
     assert null != cmd;
     final SchemaField uniqueKeyField = cmd.req.getSchema().getUniqueKeyField();
     final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
+    List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
+    boolean isBlock = docs.size() > 1;
+    Term idTerm = getIdTerm(cmd, isBlock);
+    Term updateTerm = cmd.hasUpdateTerm() ? cmd.updateTerm: idTerm;
 
     if (cmd.isInPlaceUpdate()) {
       Document luceneDocument = cmd.getLuceneDocument(true);
@@ -972,14 +966,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       log.debug("updateDocValues({})", cmd);
       writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[fieldsToUpdate.size()]));
     } else {
-      updateDocument(cmd, writer, updateTerm);
+      updateDocument(cmd, docs, writer, updateTerm, isBlock);
     }
+    return idTerm;
   }
 
-  private void updateDocument(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
-    List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
-
-    if (docs.size() > 1) {
+  private void updateDocument(AddUpdateCommand cmd, List<SolrInputDocument> docs, IndexWriter writer, Term updateTerm, boolean isBlock) throws IOException {
+    if (isBlock) {
       log.debug("updateDocuments({})", docs);
       writer.updateDocuments(updateTerm, toDocumentsIter(docs, cmd.req.getSchema()));
     } else {
