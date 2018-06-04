@@ -944,17 +944,19 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    */
   private Term updateDocOrDocValues(AddUpdateCommand cmd, IndexWriter writer) throws IOException {
     assert null != cmd;
+    Term idTerm;
     final SchemaField uniqueKeyField = cmd.req.getSchema().getUniqueKeyField();
     final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
-    List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
-    boolean isBlock = docs.size() > 1;
-    Term idTerm = getIdTerm(cmd, isBlock);
-    Term updateTerm = cmd.updateTerm != null ? cmd.updateTerm: idTerm;
+    boolean hasUpdateTerm = cmd.updateTerm != null;
 
     if (cmd.isInPlaceUpdate()) {
-      inlineUpdateDocument(cmd, writer, uniqueKeyFieldName, updateTerm);
+      idTerm = getIdTerm(cmd, false);
+      inlineUpdateDocument(cmd, writer, uniqueKeyFieldName, hasUpdateTerm ? cmd.updateTerm: idTerm);
     } else {
-      updateDocument(cmd, docs, writer, updateTerm, isBlock);
+      List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
+      boolean isBlock = docs.size() > 1;
+      idTerm = getIdTerm(cmd, isBlock);
+      updateDocument(cmd, docs, writer, hasUpdateTerm ? cmd.updateTerm: idTerm, isBlock);
     }
     return idTerm;
   }
