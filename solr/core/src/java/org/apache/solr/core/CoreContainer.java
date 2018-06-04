@@ -54,6 +54,8 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
+import org.apache.solr.cloud.synchronizeddisruption.SynchronizedDisruptionManager;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -202,6 +204,7 @@ public class CoreContainer {
 
   protected AutoscalingHistoryHandler autoscalingHistoryHandler;
 
+  protected SynchronizedDisruptionManager synchronizedDisruptionManager;
 
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;
@@ -659,6 +662,8 @@ public class CoreContainer {
       metricManager.loadClusterReporters(metricReporters, this);
     }
 
+    synchronizedDisruptionManager = new SynchronizedDisruptionManager(loader, cfg.getSynchronizedDisruptionConfig());
+
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
         ExecutorUtil.newMDCAwareFixedThreadPool(
@@ -817,6 +822,7 @@ public class CoreContainer {
       if (metricManager != null) {
         metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
       }
+      synchronizedDisruptionManager.closeAll();
     }
 
     try {

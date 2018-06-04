@@ -105,6 +105,7 @@ public class SolrXmlConfig {
       configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
     configBuilder.setMetricsConfig(getMetricsConfig(config));
+    configBuilder.setSynchronizedDisruptionConfig(getSynchronizedDisruptionConfig(config));
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -548,5 +549,25 @@ public class SolrXmlConfig {
   private static PluginInfo getTransientCoreCacheFactoryPluginInfo(Config config) {
     Node node = config.getNode("solr/transientCoreCacheFactory", false);
     return (node == null) ? null : new PluginInfo(node, "transientCoreCacheFactory", false, true);
+  }
+
+  private static SynchronizedDisruptionConfig getSynchronizedDisruptionConfig(Config config) {
+    SynchronizedDisruptionConfig.SynchronizedDisruptionConfigBuilder builder = new SynchronizedDisruptionConfig.SynchronizedDisruptionConfigBuilder();
+    PluginInfo[] sdPlugins = getSynchronizedDisruptionPluginInfos(config);
+    return builder
+        .setSynchronizedDisruptions(sdPlugins)
+        .build();
+  }
+
+  private static PluginInfo[] getSynchronizedDisruptionPluginInfos(Config config) {
+    NodeList nodes = (NodeList) config.evaluate("solr/synchronizeddisruption/disruption", XPathConstants.NODESET);
+    List<PluginInfo> configs = new ArrayList<>();
+    if (nodes != null && nodes.getLength() > 0) {
+      for (int i = 0; i < nodes.getLength(); i++) {
+        PluginInfo info = new PluginInfo(nodes.item(i), "SynchronizedDisruption", true,false);
+        configs.add(info);
+      }
+    }
+    return configs.toArray(new PluginInfo[configs.size()]);
   }
 }
