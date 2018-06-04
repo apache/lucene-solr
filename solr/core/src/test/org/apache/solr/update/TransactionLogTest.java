@@ -35,7 +35,7 @@ public class TransactionLogTest extends LuceneTestCase {
       transactionLog.lastAddSize = 2000000000;
       AddUpdateCommand updateCommand = new AddUpdateCommand(null);
       updateCommand.solrDoc = new SolrInputDocument();
-      transactionLog.write(updateCommand, 0);
+      transactionLog.write(updateCommand);
     }
   }
 
