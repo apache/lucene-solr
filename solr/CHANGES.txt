@@ -143,10 +143,16 @@ New Features
 * SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log .
   (Shawn Heisey, Remko Popma, Varun Thacker)
 
+* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
+
 * SOLR-11779: Basic long-term collection of aggregated metrics. Historical data is
   maintained as multi-resolution time series using round-robin databases in the '.system'
   collection. New /admin/metrics/history API allows retrieval of this data in numeric
   or graph formats. (ab)
+
+* SOLR-12387: cluster-wide defaults for numShards, nrtReplicas, tlogReplicas, pullReplicas (noble)
+
+* SOLR-12389: support deeply nested json objects in clusterprops.json (noble)
 
 Bug Fixes
 ----------------------
@@ -236,7 +242,7 @@ Bug Fixes
   non-boolean queries. (James Dyer)
 
 * SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
-  and devs. (Mark Miller)
+  and devs. (Mark Miller, janhoy, Andrzej Bialecki)
 
 * SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
   recoveries. (Mark Miller)
@@ -274,6 +280,18 @@ Bug Fixes
 * SOLR-12314: Use http timeout's defined in solr.xml for creating ConcurrentUpdateSolrClient during
   indexing requests between leader and replica ( Mark Miller, Varun Thacker)
 
+* SOLR-12374: SnapShooter.getIndexCommit can forget to decref the searcher; though it's not clear in practice when.
+  (David Smiley)
+
+* SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (yonik)
+
+* SOLR-12271: Fixed bug in how Analytics component reads negative values from float and double fields. (Houston Putman)
+
+* SOLR-12433: Recovering flag of a replica is set equals to leader even it failed to receive update 
+  on recovering. (Cao Manh Dat)
+
+* SOLR-12354: Register the /admin/info/key end-point at the startup time to avoid 404 (noble)
+
 Optimizations
 ----------------------
 
@@ -301,6 +319,15 @@ Optimizations
   Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
 
 * SOLR-12338: Replay buffering tlog in parallel. (Cao Manh Dat, David Smiley)
+
+* SOLR-12366: A slow "live docs" implementation was being used instead of a bitset.  Affects classic faceting
+  enum method, JSON Facets enum method, UnInvertedField faceting, GraphTermsQParser, JoinQParser.  (David Smiley)
+
+* SOLR-12337: Remove the obsolete QueryWrapperFilter intermediate wrapper, which also removed some needless uses of
+  SolrConstantScoreQuery as well.  QWF since v5.4.0 sometimes needlessly internally executed and cached the query.
+  Affects ExpandComponent, ChildDocTransformer, CurrencyFieldType, TermsQParser.  (David Smiley)
+
+* SOLR-9922: Write buffering updates to another tlog. (Cao Manh Dat)
 
 Other Changes
 ----------------------
@@ -360,6 +387,9 @@ Other Changes
 * SOLR-12288: Add more MDC logging information to core admin requests (Varun Thacker)
 
 * SOLR-12265: Upgrade Jetty to 9.4.10.v20180503 (Varun Thacker, Steve Rowe)
+
+* SOLR-12374: Added SolrCore.withSearcher(lambda) to make grabbing the searcher easier than the more awkward
+  RefCounted API.  (David Smiley)
 
 ==================  7.3.1 ==================
 

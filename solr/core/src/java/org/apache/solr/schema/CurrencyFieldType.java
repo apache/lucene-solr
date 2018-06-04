@@ -33,16 +33,14 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryWrapperFilter;
-import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
@@ -337,17 +335,15 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
 
     // ValueSourceRangeFilter doesn't check exists(), so we have to
-    final Filter docsWithValues = new QueryWrapperFilter(new DocValuesFieldExistsQuery(getAmountField(field).getName()));
-    final Filter vsRangeFilter = new ValueSourceRangeFilter
+    final Query docsWithValues = new DocValuesFieldExistsQuery(getAmountField(field).getName());
+    final Query vsRangeFilter = new ValueSourceRangeFilter
         (new RawCurrencyValueSource(field, currencyCode, parser),
             p1 == null ? null : p1.getAmount() + "",
             p2 == null ? null : p2.getAmount() + "",
             minInclusive, maxInclusive);
-    final BooleanQuery.Builder docsInRange = new BooleanQuery.Builder();
-    docsInRange.add(docsWithValues, Occur.FILTER);
-    docsInRange.add(vsRangeFilter, Occur.FILTER);
-
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(docsInRange.build()));
+    return new ConstantScoreQuery(new BooleanQuery.Builder()
+        .add(docsWithValues, Occur.FILTER)
+        .add(vsRangeFilter, Occur.FILTER).build());
   }
 
   @Override

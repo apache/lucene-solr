@@ -145,9 +145,9 @@ New Features
 
 * LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
 
-* LUCENE-8196: A new IntervalQuery in the sandbox allows efficient proximity
+* LUCENE-8196, LUCENE-8300: A new IntervalQuery in the sandbox allows efficient proximity
   searches based on minimum-interval semantics. (Alan Woodward, Adrien Grand,
-  Jim Ferenczi, Simon Willnauer)
+  Jim Ferenczi, Simon Willnauer, Matt Weber)
 
 * LUCENE-8233: Add support for soft deletes to IndexWriter delete accounting. 
   Soft deletes are accounted for inside the index writer and therefor also
@@ -202,6 +202,10 @@ New Features
   IndexFileDeleter already accounts for that for existing files which we can
   now use to also take pending deletes into account which ensures that all file
   generations per segment always go forward. (Simon Willnauer)
+
+* LUCENE-8335: Enforce soft-deletes field up-front. Soft deletes field must be marked
+  as such once it's introduced and can't be changed after the fact.
+  (Nhat Nguyen via Simon Willnauer)
 
 Bug Fixes
 

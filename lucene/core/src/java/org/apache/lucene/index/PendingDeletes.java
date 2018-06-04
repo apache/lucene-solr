@@ -118,7 +118,7 @@ class PendingDeletes {
   /**
    * Returns the number of pending deletes that are not written to disk.
    */
-  int numPendingDeletes() {
+  protected int numPendingDeletes() {
     return pendingDeleteCount;
   }
 
@@ -220,7 +220,7 @@ class PendingDeletes {
    * Returns <code>true</code> iff the segment represented by this {@link PendingDeletes} is fully deleted
    */
   boolean isFullyDeleted(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
-    return info.getDelCount() + numPendingDeletes() == info.info.maxDoc();
+    return getDelCount() == info.info.maxDoc();
   }
 
   /**
@@ -232,7 +232,51 @@ class PendingDeletes {
   }
 
   int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier) throws IOException {
-    return policy.numDeletesToMerge(info, numPendingDeletes(), readerIOSupplier);
+    return policy.numDeletesToMerge(info, getDelCount(), readerIOSupplier);
   }
 
+  /**
+   * Returns true if the given reader needs to be refreshed in order to see the latest deletes
+   */
+  final boolean needsRefresh(CodecReader reader) {
+    return reader.getLiveDocs() != getLiveDocs() || reader.numDeletedDocs() != getDelCount();
+  }
+
+  /**
+   * Returns the number of deleted docs in the segment.
+   */
+  final int getDelCount() {
+    int delCount = info.getDelCount() + info.getSoftDelCount() + numPendingDeletes();
+    return delCount;
+  }
+
+  /**
+   * Returns the number of live documents in this segment
+   */
+  final int numDocs() {
+    return info.info.maxDoc() - getDelCount();
+  }
+
+  // Call only from assert!
+  boolean verifyDocCounts(CodecReader reader) {
+    int count = 0;
+    Bits liveDocs = getLiveDocs();
+    if (liveDocs != null) {
+      for(int docID = 0; docID < info.info.maxDoc(); docID++) {
+        if (liveDocs.get(docID)) {
+          count++;
+        }
+      }
+    } else {
+      count = info.info.maxDoc();
+    }
+    assert numDocs() == count: "info.maxDoc=" + info.info.maxDoc() + " info.getDelCount()=" + info.getDelCount() +
+        " info.getSoftDelCount()=" + info.getSoftDelCount() +
+        " pendingDeletes=" + toString() + " count=" + count + " numDocs: " + numDocs();
+    assert reader.numDocs() == numDocs() : "reader.numDocs() = " + reader.numDocs() + " numDocs() " + numDocs();
+    assert reader.numDeletedDocs() <= info.info.maxDoc(): "delCount=" + reader.numDeletedDocs() + " info.maxDoc=" +
+        info.info.maxDoc() + " rld.pendingDeleteCount=" + numPendingDeletes() +
+        " info.getDelCount()=" + info.getDelCount();
+    return true;
+  }
 }

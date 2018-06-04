@@ -798,7 +798,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
             graphDef.setWidth(500);
             graphDef.setHeight(175);
             graphDef.setTimeZone(TimeZone.getDefault());
-            graphDef.setLocale(Locale.getDefault());
+            graphDef.setLocale(Locale.ROOT);
             // redraw immediately
             graphDef.setLazy(false);
             // area with a border

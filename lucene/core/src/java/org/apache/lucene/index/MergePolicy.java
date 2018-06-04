@@ -638,12 +638,12 @@ public abstract class MergePolicy {
    * @see IndexWriter#softUpdateDocument(Term, Iterable, Field...)
    * @see IndexWriterConfig#setSoftDeletesField(String)
    * @param info the segment info that identifies the segment
-   * @param pendingDeleteCount the number of pending deletes for this segment
+   * @param delCount the number deleted documents for this segment
    * @param readerSupplier a supplier that allows to obtain a {@link CodecReader} for this segment
    */
-  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount,
+  public int numDeletesToMerge(SegmentCommitInfo info, int delCount,
                                IOSupplier<CodecReader> readerSupplier) throws IOException {
-    return info.getDelCount() + pendingDeleteCount;
+    return delCount;
   }
 
   /**

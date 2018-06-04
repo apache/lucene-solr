@@ -58,6 +58,7 @@ final class PendingSoftDeletes extends PendingDeletes {
       } else {
         // if it was deleted subtract the delCount
         pendingDeleteCount--;
+        assert assertPendingDeletes();
       }
       return true;
     }
@@ -65,7 +66,7 @@ final class PendingSoftDeletes extends PendingDeletes {
   }
 
   @Override
-  int numPendingDeletes() {
+  protected int numPendingDeletes() {
     return super.numPendingDeletes() + hardDeletes.numPendingDeletes();
   }
 
@@ -75,20 +76,31 @@ final class PendingSoftDeletes extends PendingDeletes {
     hardDeletes.onNewReader(reader, info);
     if (dvGeneration < info.getDocValuesGen()) { // only re-calculate this if we haven't seen this generation
       final DocIdSetIterator iterator = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(field, reader);
+      int newDelCount;
       if (iterator != null) { // nothing is deleted we don't have a soft deletes field in this segment
         assert info.info.maxDoc() > 0 : "maxDoc is 0";
-        pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
+        newDelCount = applySoftDeletes(iterator, getMutableBits());
+        assert newDelCount >= 0 : " illegal pending delete count: " + newDelCount;
+      } else {
+        newDelCount = 0;
       }
+      assert info.getSoftDelCount() == newDelCount : "softDeleteCount doesn't match " + info.getSoftDelCount() + " != " + newDelCount;
       dvGeneration = info.getDocValuesGen();
     }
-    assert numPendingDeletes() + info.getDelCount() <= info.info.maxDoc() :
-        numPendingDeletes() + " + " + info.getDelCount() + " > " + info.info.maxDoc();
+    assert getDelCount() <= info.info.maxDoc() : getDelCount() + " > " + info.info.maxDoc();
   }
 
   @Override
   boolean writeLiveDocs(Directory dir) throws IOException {
+    // we need to set this here to make sure our stats in SCI are up-to-date otherwise we might hit an assertion
+    // when the hard deletes are set since we need to account for docs that used to be only soft-delete but now hard-deleted
+    this.info.setSoftDelCount(this.info.getSoftDelCount() + pendingDeleteCount);
+    super.dropChanges();
     // delegate the write to the hard deletes - it will only write if somebody used it.
-    return hardDeletes.writeLiveDocs(dir);
+    if (hardDeletes.writeLiveDocs(dir)) {
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -133,10 +145,19 @@ final class PendingSoftDeletes extends PendingDeletes {
   void onDocValuesUpdate(FieldInfo info, DocValuesFieldUpdates.Iterator iterator) throws IOException {
     if (this.field.equals(info.name)) {
       pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
+      assert assertPendingDeletes();
       assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
       assert dvGeneration != -2 : "docValues generation is still uninitialized";
       dvGeneration = info.getDocValuesGen();
+      this.info.setSoftDelCount(this.info.getSoftDelCount() + pendingDeleteCount);
+      super.dropChanges();
     }
+  }
+
+  private boolean assertPendingDeletes() {
+    assert pendingDeleteCount + info.getSoftDelCount() >= 0 : " illegal pending delete count: " + pendingDeleteCount + info.getSoftDelCount();
+    assert info.info.maxDoc() >= getDelCount();
+    return true;
   }
 
   @Override
@@ -209,4 +230,16 @@ final class PendingSoftDeletes extends PendingDeletes {
     return hardDeletes.getLiveDocs();
   }
 
+  static int countSoftDeletes(DocIdSetIterator softDeletedDocs, Bits hardDeletes) throws IOException {
+    int count = 0;
+    if (softDeletedDocs != null) {
+      int doc;
+      while ((doc = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        if (hardDeletes == null || hardDeletes.get(doc)) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
 }

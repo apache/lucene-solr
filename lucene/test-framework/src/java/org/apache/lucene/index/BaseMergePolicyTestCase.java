@@ -116,7 +116,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
             Collections.emptyMap(), // attributes
             null /* indexSort */);
         info.setFiles(Collections.emptyList());
-        infos.add(new SegmentCommitInfo(info, random().nextInt(1), -1, -1, -1));
+        infos.add(new SegmentCommitInfo(info, random().nextInt(1), 0, -1, -1, -1));
       }
       MergePolicy.MergeSpecification forcedDeletesMerges = mp.findForcedDeletesMerges(infos, context);
       if (forcedDeletesMerges != null) {

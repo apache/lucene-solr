@@ -81,8 +81,8 @@ public final class NoMergePolicy extends MergePolicy {
   }
 
   @Override
-  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
-    return  super.numDeletesToMerge(info, pendingDeleteCount, readerSupplier);
+  public int numDeletesToMerge(SegmentCommitInfo info, int delCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+    return  super.numDeletesToMerge(info, delCount, readerSupplier);
   }
 
   @Override

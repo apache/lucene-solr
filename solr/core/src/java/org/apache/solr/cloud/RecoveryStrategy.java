@@ -449,7 +449,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
   final public void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
-    boolean replayed = false;
     boolean successfulRecovery = false;
 
     UpdateLog ulog;
@@ -500,8 +499,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // when we went down.  We may have received updates since then.
       recentVersions = startingVersions;
       try {
-        if ((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0) {
-          // last operation at the time of startup had the GAP flag set...
+        if (ulog.existOldBufferLog()) {
           // this means we were previously doing a full index replication
           // that probably didn't complete and buffering updates in the
           // meantime.
@@ -542,9 +540,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
 
         LOG.info("Begin buffering updates. core=[{}]", coreName);
+        // recalling buffer updates will drop the old buffer tlog
         ulog.bufferUpdates();
-        replayed = false;
-        
+
         LOG.info("Publishing state of core [{}] as recovering, leader is [{}] and I am [{}]", core.getName(), leader.getCoreUrl(),
             ourUrl);
         zkController.publish(core.getCoreDescriptor(), Replica.State.RECOVERING);
@@ -603,8 +601,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             
             LOG.info("Replaying updates buffered during PeerSync.");
             replay(core);
-            replayed = true;
-            
+
             // sync success
             successfulRecovery = true;
             return;
@@ -630,8 +627,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           }
 
           replayFuture = replay(core);
-          replayed = true;
-          
+
           if (isClosed()) {
             LOG.info("RecoveryStrategy has been closed");
             break;
@@ -650,21 +646,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
       } catch (Exception e) {
         SolrException.log(LOG, "Error while trying to recover. core=" + coreName, e);
       } finally {
-        if (!replayed) {
-          // dropBufferedUpdate()s currently only supports returning to ACTIVE state, which risks additional updates
-          // being added w/o UpdateLog.FLAG_GAP, hence losing the info on restart that we are not up-to-date.
-          // For now, ulog will simply remain in BUFFERING state, and an additional call to bufferUpdates() will
-          // reset our starting point for playback.
-          LOG.info("Replay not started, or was not successful... still buffering updates.");
-
-          /** this prev code is retained in case we want to switch strategies.
-          try {
-            ulog.dropBufferedUpdates();
-          } catch (Exception e) {
-            SolrException.log(log, "", e);
-          }
-          **/
-        }
         if (successfulRecovery) {
           LOG.info("Registering as Active after recovery.");
           try {

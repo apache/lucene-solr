@@ -18,6 +18,7 @@
 package org.apache.solr.common.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,6 +28,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Interact with solr cluster properties
@@ -36,6 +39,8 @@ import org.apache.zookeeper.data.Stat;
  * {@link ZkStateReader#getClusterProperty(String, Object)}
  */
 public class ClusterProperties {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
   private final SolrZkClient client;
 
@@ -48,7 +53,7 @@ public class ClusterProperties {
 
   /**
    * Read the value of a cluster property, returning a default if it is not set
-   * @param key           the property name
+   * @param key           the property name or the full path to the property.
    * @param defaultValue  the default value
    * @param <T>           the type of the property
    * @return the property value
@@ -56,7 +61,7 @@ public class ClusterProperties {
    */
   @SuppressWarnings("unchecked")
   public <T> T getClusterProperty(String key, T defaultValue) throws IOException {
-    T value = (T) getClusterProperties().get(key);
+    T value = (T) Utils.getObjectByPath(getClusterProperties(), false, key);
     if (value == null)
       return defaultValue;
     return value;
@@ -75,6 +80,15 @@ public class ClusterProperties {
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error reading cluster property", SolrZkClient.checkInterrupted(e));
     }
+  }
+
+  public void setClusterProperties(Map<String, Object> properties) throws IOException, KeeperException, InterruptedException {
+    client.atomicUpdate(ZkStateReader.CLUSTER_PROPS, zkData -> {
+      if (zkData == null) return Utils.toJSON(properties);
+      Map<String, Object> zkJson = (Map<String, Object>) Utils.fromJSON(zkData);
+      boolean modified = Utils.mergeJson(zkJson, properties);
+      return modified ? Utils.toJSON(zkJson) : null;
+    });
   }
 
   /**
