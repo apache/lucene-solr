@@ -338,9 +338,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       IndexWriter writer = iw.get();
 
       Term idTerm = updateDocOrDocValues(cmd, writer);
-      Term updateTerm = !del ? idTerm : cmd.updateTerm;
 
       if (del) { // ensure id remains unique
+        Term updateTerm = cmd.updateTerm;
         BooleanQuery.Builder bq = new BooleanQuery.Builder();
 
         bq.add(new BooleanClause(new TermQuery(updateTerm),
@@ -952,21 +952,25 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     Term updateTerm = cmd.updateTerm != null ? cmd.updateTerm: idTerm;
 
     if (cmd.isInPlaceUpdate()) {
-      Document luceneDocument = cmd.getLuceneDocument(true);
-
-      final List<IndexableField> origDocFields = luceneDocument.getFields();
-      final List<Field> fieldsToUpdate = new ArrayList<>(origDocFields.size());
-      for (IndexableField field : origDocFields) {
-        if (! field.name().equals(uniqueKeyFieldName) ) {
-          fieldsToUpdate.add((Field)field);
-        }
-      }
-      log.debug("updateDocValues({})", cmd);
-      writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[fieldsToUpdate.size()]));
+      inlineUpdateDocument(cmd, writer, uniqueKeyFieldName, updateTerm);
     } else {
       updateDocument(cmd, docs, writer, updateTerm, isBlock);
     }
     return idTerm;
+  }
+
+  private void inlineUpdateDocument(AddUpdateCommand cmd, IndexWriter writer, String uniqueKeyFieldName, Term updateTerm) throws IOException {
+    Document luceneDocument = cmd.getLuceneDocument(true);
+
+    final List<IndexableField> origDocFields = luceneDocument.getFields();
+    final List<Field> fieldsToUpdate = new ArrayList<>(origDocFields.size());
+    for (IndexableField field : origDocFields) {
+      if (! field.name().equals(uniqueKeyFieldName) ) {
+        fieldsToUpdate.add((Field)field);
+      }
+    }
+    log.debug("updateDocValues({})", cmd);
+    writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[fieldsToUpdate.size()]));
   }
 
   private void updateDocument(AddUpdateCommand cmd, List<SolrInputDocument> docs, IndexWriter writer, Term updateTerm, boolean isBlock) throws IOException {
