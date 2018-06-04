@@ -331,7 +331,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void doNormalUpdate(AddUpdateCommand cmd) throws IOException {
-    boolean del = cmd.hasUpdateTerm();
+    boolean del = cmd.updateTerm != null;
 
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
@@ -949,7 +949,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
     boolean isBlock = docs.size() > 1;
     Term idTerm = getIdTerm(cmd, isBlock);
-    Term updateTerm = cmd.hasUpdateTerm() ? cmd.updateTerm: idTerm;
+    Term updateTerm = cmd.updateTerm != null ? cmd.updateTerm: idTerm;
 
     if (cmd.isInPlaceUpdate()) {
       Document luceneDocument = cmd.getLuceneDocument(true);
