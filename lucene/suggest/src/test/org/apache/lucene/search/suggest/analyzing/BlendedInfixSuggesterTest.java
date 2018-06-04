@@ -36,9 +36,121 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import static org.hamcrest.core.Is.is;
+
 public class BlendedInfixSuggesterTest extends LuceneTestCase {
 
+  public void testSinglePositionalCoefficient_linearBlendingType_shouldCalculateLinearCoefficient() throws IOException {
+    BlendedInfixSuggester linearSuggester = this.getBlendedInfixSuggester(new Input[]{}, BlendedInfixSuggester.BlenderType.POSITION_LINEAR);
+    int inputPosition = 5;
 
+    double positionalCoefficient = linearSuggester.calculatePositionalCoefficient(inputPosition);
+
+    assertEquals(1 - 0.1 * inputPosition, positionalCoefficient, 0.01);
+
+    linearSuggester.close();
+  }
+
+  public void testSinglePositionalCoefficient_reciprocalBlendingType_shouldCalculateLinearCoefficient() throws IOException {
+    BlendedInfixSuggester reciprocalSuggester = this.getBlendedInfixSuggester(new Input[]{}, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL);
+    int inputPosition = 5;
+
+    double positionalCoefficient = reciprocalSuggester.calculatePositionalCoefficient(inputPosition);
+
+    assertEquals(1. / (inputPosition + 1.0), positionalCoefficient, 0.01);
+
+    reciprocalSuggester.close();
+  }
+
+  public void testSinglePositionalCoefficient_exponentialBlendingType_shouldCalculateLinearCoefficient() throws IOException {
+    BlendedInfixSuggester exponentialReciprocalSuggester = this.getBlendedInfixSuggester(new Input[]{}, BlendedInfixSuggester.BlenderType.POSITION_EXPONENTIAL_RECIPROCAL);
+    int inputPosition = 5;
+
+    double positionalCoefficient = exponentialReciprocalSuggester.calculatePositionalCoefficient(inputPosition);
+
+    assertEquals(1. / Math.pow((inputPosition + 1.0), 2), positionalCoefficient, 0.01);
+
+    exponentialReciprocalSuggester.close();
+  }
+
+  public void testProductDiscontinuedPositionalCoefficient_linearBlendingType_shouldCalculateLinearCoefficient() throws IOException {
+    BlendedInfixSuggester linearSuggester = this.getBlendedInfixSuggester(new Input[]{}, BlendedInfixSuggester.BlenderType.POSITION_LINEAR);
+    int[] inputPosition1 = new int[]{0, 1, 2};
+    int[] inputPosition2 = new int[]{0, 1, 3};
+    int[] inputPosition3 = new int[]{0, 1, 4};
+    int[] inputPosition4 = new int[]{0, 2, 3};
+    int[] inputPosition5 = new int[]{1, 2, 3};
+
+    double positionalCoefficient1 = linearSuggester.calculateProductPositionalCoefficient(inputPosition1);
+    double positionalCoefficient2 = linearSuggester.calculateProductPositionalCoefficient(inputPosition2);
+    double positionalCoefficient3 = linearSuggester.calculateProductPositionalCoefficient(inputPosition3);
+    double positionalCoefficient4 = linearSuggester.calculateProductPositionalCoefficient(inputPosition4);
+    double positionalCoefficient5 = linearSuggester.calculateProductPositionalCoefficient(inputPosition5);
+
+    assertTrue(positionalCoefficient1 > positionalCoefficient2);
+    assertTrue(positionalCoefficient2 > positionalCoefficient3);
+    assertTrue(positionalCoefficient3 > positionalCoefficient4);
+    assertTrue(positionalCoefficient4 > positionalCoefficient5);
+
+    linearSuggester.close();
+  }
+
+  public void testProductDiscontinuedPositionalCoefficient_reciprocalBlendingType_shouldCalculateLinearCoefficient() throws IOException {
+    BlendedInfixSuggester reciprocalSuggester = this.getBlendedInfixSuggester(new Input[]{}, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL);
+    int[] inputPosition1 = new int[]{0, 1, 2};
+    int[] inputPosition2 = new int[]{0, 1, 3};
+    int[] inputPosition3 = new int[]{0, 1, 4};
+    int[] inputPosition4 = new int[]{0, 2, 3};
+    int[] inputPosition5 = new int[]{1, 2, 3};
+
+    double positionalCoefficient1 = reciprocalSuggester.calculateProductPositionalCoefficient(inputPosition1);
+    double positionalCoefficient2 = reciprocalSuggester.calculateProductPositionalCoefficient(inputPosition2);
+    double positionalCoefficient3 = reciprocalSuggester.calculateProductPositionalCoefficient(inputPosition3);
+    double positionalCoefficient4 = reciprocalSuggester.calculateProductPositionalCoefficient(inputPosition4);
+    double positionalCoefficient5 = reciprocalSuggester.calculateProductPositionalCoefficient(inputPosition5);
+
+    assertTrue(positionalCoefficient1 > positionalCoefficient2);
+    assertTrue(positionalCoefficient2 > positionalCoefficient3);
+    assertTrue(positionalCoefficient3 > positionalCoefficient4);
+    assertTrue(positionalCoefficient4 > positionalCoefficient5);
+
+    reciprocalSuggester.close();
+  }
+
+  /**
+   * An exponential reciprocal approach will penalise less based on the first position of the first mismatched, favouring consecutive matches that happen
+   * a little bit later on the field content.
+   *
+   * @throws IOException
+   */
+  public void testProductDiscontinuedPositionalCoefficient_exponentialBlendingType_shouldCalculateLinearCoefficient() throws IOException {
+    BlendedInfixSuggester exponentialReciprocalSuggester = this.getBlendedInfixSuggester(new Input[]{}, BlendedInfixSuggester.BlenderType.POSITION_EXPONENTIAL_RECIPROCAL);
+    int[] inputPosition1 = new int[]{0, 1, 2};
+    int[] inputPosition2 = new int[]{0, 1, 3};
+    int[] inputPosition3 = new int[]{0, 2, 3};
+    int[] inputPosition4 = new int[]{0, 1, 4};
+    int[] inputPosition5 = new int[]{1, 2, 3};
+    int[] inputPosition6 = new int[]{0, 2, 4};
+    int[] inputPosition7 = new int[]{2, 3, 4};
+
+    double positionalCoefficient1 = exponentialReciprocalSuggester.calculateProductPositionalCoefficient(inputPosition1);
+    double positionalCoefficient2 = exponentialReciprocalSuggester.calculateProductPositionalCoefficient(inputPosition2);
+    double positionalCoefficient3 = exponentialReciprocalSuggester.calculateProductPositionalCoefficient(inputPosition3);
+    double positionalCoefficient4 = exponentialReciprocalSuggester.calculateProductPositionalCoefficient(inputPosition4);
+    double positionalCoefficient5 = exponentialReciprocalSuggester.calculateProductPositionalCoefficient(inputPosition5);
+    double positionalCoefficient6 = exponentialReciprocalSuggester.calculateProductPositionalCoefficient(inputPosition6);
+    double positionalCoefficient7 = exponentialReciprocalSuggester.calculateProductPositionalCoefficient(inputPosition7);
+
+    assertTrue(positionalCoefficient1 > positionalCoefficient2);
+    assertTrue(positionalCoefficient2 > positionalCoefficient3);
+    assertTrue(positionalCoefficient3 > positionalCoefficient4);
+    assertTrue(positionalCoefficient4 > positionalCoefficient5);
+    assertTrue(positionalCoefficient5 > positionalCoefficient6);
+    assertTrue(positionalCoefficient6 > positionalCoefficient7);
+
+    exponentialReciprocalSuggester.close();
+  }
+  
   /**
    * Test the weight transformation depending on the position
    * of the matching term.
@@ -48,7 +160,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     Input keys[] = new Input[]{
         new Input("star wars: episode v - the empire strikes back", 8, payload)
     };
-    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys);
+    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys, BlendedInfixSuggester.BlenderType.POSITION_LINEAR);
 
     assertSuggestionsRanking(payload, suggester);
   }
@@ -62,7 +174,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     Input keys[] = new Input[]{
         new Input("star wars: episode v - the empire strikes back", 1, payload)
     };
-    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys);
+    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys, BlendedInfixSuggester.BlenderType.POSITION_LINEAR);
 
     assertSuggestionsRanking(payload, suggester);
   }
@@ -76,9 +188,53 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     Input keys[] = new Input[]{
         new Input("star wars: episode v - the empire strikes back", 0, payload)
     };
-    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys);
+    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys, BlendedInfixSuggester.BlenderType.POSITION_LINEAR);
 
     assertSuggestionsRanking(payload, suggester);
+  }
+
+  /**
+   * Test the weight transformation depending on the position
+   * of the matching term.
+   */
+  public void testBlendedSort_multiTermQuery_shouldRankSuggestionsAccordinEachTermPosition() throws IOException {
+
+    BytesRef payload = new BytesRef("star");
+
+    Input keys[] = new Input[]{
+        new Input("Mini Bar something Fridge", 1, payload),
+        new Input("Mini Bar Fridge something", 1, payload),
+        new Input("Mini Bar something else Fridge", 1, payload),
+        new Input("something Mini Bar Fridge", 1, payload),
+        new Input("something else Mini Bar Fridge", 1, payload),
+        new Input("Mini Bar Fridge something else", 1, payload),
+        new Input("Mini something Bar Fridge", 1, payload),
+        new Input("Mini Bar Fridge a a a a a a a a a a a a a a a a a a a a a a", 1, payload)
+    };
+
+    BlendedInfixSuggester linearSuggester = getBlendedInfixSuggester(keys, BlendedInfixSuggester.BlenderType.POSITION_LINEAR);
+
+    // we query for star wars and check that the weight
+    // is smaller when we search for tokens that are far from the beginning
+
+    List<Lookup.LookupResult> responses = linearSuggester.lookup("Mini Bar Fridge", 8, true, false);
+    assertThat(responses.get(0).key, is("Mini Bar Fridge something"));
+    assertThat(responses.get(1).key, is("Mini Bar Fridge something else"));
+    assertThat(responses.get(2).key, is("Mini Bar Fridge a a a a a a a a a a a a a a a a a a a a a a"));
+    assertThat(responses.get(3).key, is("Mini Bar something Fridge"));
+    assertThat(responses.get(4).key, is("Mini Bar something else Fridge"));
+    assertThat(responses.get(5).key, is("Mini something Bar Fridge"));
+    assertThat(responses.get(6).key, is("something Mini Bar Fridge"));
+    assertThat(responses.get(7).key, is("something else Mini Bar Fridge"));
+
+    assertTrue(responses.get(1).value < responses.get(0).value);
+    assertTrue(responses.get(2).value < responses.get(1).value);
+    assertTrue(responses.get(3).value < responses.get(2).value);
+    assertTrue(responses.get(4).value < responses.get(3).value);
+    assertTrue(responses.get(5).value < responses.get(4).value);
+    assertTrue(responses.get(6).value < responses.get(5).value);
+    assertTrue(responses.get(7).value < responses.get(6).value);
+    linearSuggester.close();
   }
 
   private void assertSuggestionsRanking(BytesRef payload, BlendedInfixSuggester suggester) throws IOException {
@@ -87,79 +243,30 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
 
     long w0 = getInResults(suggester, "star ", payload, 1);
     long w1 = getInResults(suggester, "war", payload, 1);
-    long w2 = getInResults(suggester, "empire ba", payload, 1);
+    long w2 = getInResults(suggester, "empire stri", payload, 1);
     long w3 = getInResults(suggester, "back", payload, 1);
-    long w4 = getInResults(suggester, "bacc", payload, 1);
+    long w4 = getInResults(suggester, "empire bac", payload, 1);
+    long w5 = getInResults(suggester, "bacc", payload, 1);
 
     assertTrue(w0 > w1);
     assertTrue(w1 > w2);
-    assertTrue(w2 > w3);
-
-    assertTrue(w4 < 0);
+    assertTrue(w2 > w3); // consecutive terms "empire stri" with first mach position better than "back"
+    assertTrue(w3 > w4); // "empire" is occurring before "back", but "stri" is also not positioned correctly
+    assertTrue(w5 < 0);
 
     suggester.close();
   }
 
-  private BlendedInfixSuggester getBlendedInfixSuggester(Input[] keys) throws IOException {
+  private BlendedInfixSuggester getBlendedInfixSuggester(Input[] keys, BlendedInfixSuggester.BlenderType type) throws IOException {
     Path tempDir = createTempDir("BlendedInfixSuggesterTest");
 
     Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a, a,
         AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
-        BlendedInfixSuggester.BlenderType.POSITION_LINEAR,
+        type,
         BlendedInfixSuggester.DEFAULT_NUM_FACTOR, false);
     suggester.build(new InputArrayIterator(keys));
     return suggester;
-  }
-
-  /**
-   * Verify the different flavours of the blender types
-   */
-  public void testBlendingType() throws IOException {
-
-    BytesRef pl = new BytesRef("lake");
-    long w = 20;
-
-    Input keys[] = new Input[]{
-        new Input("top of the lake", w, pl)
-    };
-
-    Path tempDir = createTempDir("BlendedInfixSuggesterTest");
-    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
-
-    // BlenderType.LINEAR is used by default (remove position*10%)
-    BlendedInfixSuggester suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a);
-    suggester.build(new InputArrayIterator(keys));
-
-    assertEquals(10 * w, getInResults(suggester, "top", pl, 1));
-    assertEquals(w * (long) (10 * (1 - 0.10 * 2)), getInResults(suggester, "the", pl, 1));
-    assertEquals(w * (long) (10 * (1 - 0.10 * 3)), getInResults(suggester, "lake", pl, 1));
-
-    suggester.close();
-
-    // BlenderType.RECIPROCAL is using 1/(1+p) * w where w is weight and p the position of the word
-    suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a, a,
-                                          AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
-                                          BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 1, false);
-    suggester.build(new InputArrayIterator(keys));
-
-    assertEquals(10 * w, getInResults(suggester, "top", pl, 1));
-    assertEquals(w * (long) (10 * 1 / (1 + 2)), getInResults(suggester, "the", pl, 1));
-    assertEquals(w * (long) (10 * 1 / (1 + 3)), getInResults(suggester, "lake", pl, 1));
-    suggester.close();
-
-    // BlenderType.EXPONENTIAL_RECIPROCAL is using 1/(pow(1+p, exponent)) * w where w is weight and p the position of the word
-    suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a, a,
-        AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
-        BlendedInfixSuggester.BlenderType.POSITION_EXPONENTIAL_RECIPROCAL, 1, 4.0, false, true, false);
-
-    suggester.build(new InputArrayIterator(keys));
-
-    assertEquals(10 * w, getInResults(suggester, "top", pl, 1));
-    assertEquals(w * (long) (10 * 1 / (Math.pow(1 + 2, 4.0))), getInResults(suggester, "the", pl, 1));
-    assertEquals(w * (long) (10 * 1 / (Math.pow(1 + 3, 4.0))), getInResults(suggester, "lake", pl, 1));
-
-    suggester.close();
   }
 
   /**
@@ -229,7 +336,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("top of the lake", 8, payload)
     };
 
-    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys);
+    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys, BlendedInfixSuggester.BlenderType.POSITION_LINEAR);
 
     getInResults(suggester, "of ", payload, 1);
     getInResults(suggester, "the ", payload, 1);
