@@ -325,6 +325,8 @@ Optimizations
   SolrConstantScoreQuery as well.  QWF since v5.4.0 sometimes needlessly internally executed and cached the query.
   Affects ExpandComponent, ChildDocTransformer, CurrencyFieldType, TermsQParser.  (David Smiley)
 
+* SOLR-9922: Write buffering updates to another tlog. (Cao Manh Dat)
+
 Other Changes
 ----------------------
 
