@@ -88,7 +88,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
     SegmentMerger merger = new SegmentMerger(Arrays.<CodecReader>asList(reader1, reader2),
                                              si, InfoStream.getDefault(), mergedDir,
-                                             new FieldInfos.FieldNumbers(),
+                                             new FieldInfos.FieldNumbers(null),
                                              newIOContext(random(), new IOContext(new MergeInfo(-1, -1, false, -1))));
     MergeState mergeState = merger.merge();
     int docsMerged = mergeState.segmentInfo.maxDoc();
