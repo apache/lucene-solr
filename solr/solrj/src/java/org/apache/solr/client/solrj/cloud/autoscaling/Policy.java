@@ -383,11 +383,10 @@ public class Policy implements MapWriter {
             return p.compare(r1, r2, false);
           });
         } catch (Exception e) {
-          LOG.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, compare : {} matrix = {}",
+          LOG.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, matrix = {}",
               clusterPreferences,
-              lastComparison[0].node,
-              lastComparison[1].node,
-              p.compare(lastComparison[0],lastComparison[1], false ),
+              lastComparison[0],
+              lastComparison[1],
               Utils.toJSONString(Utils.getDeepCopy(tmpMatrix, 6, false)));
           throw e;
         }

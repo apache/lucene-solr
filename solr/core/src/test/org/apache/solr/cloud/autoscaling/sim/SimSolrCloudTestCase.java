@@ -84,6 +84,10 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
       // clear any persisted configuration
       cluster.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
       cluster.getDistribStateManager().setData(ZkStateReader.ROLES, Utils.toJSON(new HashMap<>()), -1);
+      cluster.getSimClusterStateProvider().simDeleteAllCollections();
+      cluster.simClearSystemCollection();
+      cluster.getSimNodeStateProvider().simRemoveDeadNodes();
+      cluster.getSimClusterStateProvider().simRemoveDeadNodes();
       // restore the expected number of nodes
       int currentSize = cluster.getLiveNodesSet().size();
       if (currentSize < clusterNodeCount) {
@@ -99,10 +103,6 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
       removeChildren(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
       removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
       removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
-      cluster.getSimClusterStateProvider().simDeleteAllCollections();
-      cluster.simClearSystemCollection();
-      // clear any dead nodes
-      cluster.getSimNodeStateProvider().simRemoveDeadNodes();
       cluster.getSimClusterStateProvider().simResetLeaderThrottles();
       cluster.simRestartOverseer(null);
       cluster.getTimeSource().sleep(5000);
