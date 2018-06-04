@@ -242,7 +242,7 @@ Bug Fixes
   non-boolean queries. (James Dyer)
 
 * SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
-  and devs. (Mark Miller)
+  and devs. (Mark Miller, janhoy, Andrzej Bialecki)
 
 * SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
   recoveries. (Mark Miller)
@@ -287,6 +287,11 @@ Bug Fixes
 
 * SOLR-12271: Fixed bug in how Analytics component reads negative values from float and double fields. (Houston Putman)
 
+* SOLR-12433: Recovering flag of a replica is set equals to leader even it failed to receive update 
+  on recovering. (Cao Manh Dat)
+
+* SOLR-12354: Register the /admin/info/key end-point at the startup time to avoid 404 (noble)
+
 Optimizations
 ----------------------
 
@@ -317,6 +322,12 @@ Optimizations
 
 * SOLR-12366: A slow "live docs" implementation was being used instead of a bitset.  Affects classic faceting
   enum method, JSON Facets enum method, UnInvertedField faceting, GraphTermsQParser, JoinQParser.  (David Smiley)
+
+* SOLR-12337: Remove the obsolete QueryWrapperFilter intermediate wrapper, which also removed some needless uses of
+  SolrConstantScoreQuery as well.  QWF since v5.4.0 sometimes needlessly internally executed and cached the query.
+  Affects ExpandComponent, ChildDocTransformer, CurrencyFieldType, TermsQParser.  (David Smiley)
+
+* SOLR-9922: Write buffering updates to another tlog. (Cao Manh Dat)
 
 Other Changes
 ----------------------

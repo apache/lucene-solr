@@ -420,7 +420,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                       DocValuesType.NONE,
                                       fieldInfo.getDocValuesGen(),
                                       fieldInfo.attributes(),
-                                      0, 0);
+                                      0, 0, fieldInfo.isSoftDeletesField());
           newInfos.add(f);
 
         } else {

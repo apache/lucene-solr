@@ -487,13 +487,13 @@ public class ZkShardTerms implements AutoCloseable{
 
       HashMap<String, Long> newValues = new HashMap<>(values);
       long leaderTerm = newValues.get(leader);
-      for (String replica : newValues.keySet()) {
-        if (replicasNeedingRecovery.contains(replica)) foundReplicasInLowerTerms = true;
-        if (Objects.equals(newValues.get(replica), leaderTerm)) {
-          if(replicasNeedingRecovery.contains(replica)) {
+      for (String key : newValues.keySet()) {
+        if (replicasNeedingRecovery.contains(key)) foundReplicasInLowerTerms = true;
+        if (Objects.equals(newValues.get(key), leaderTerm)) {
+          if(skipIncreaseTermOf(key, replicasNeedingRecovery)) {
             changed = true;
           } else {
-            newValues.put(replica, leaderTerm+1);
+            newValues.put(key, leaderTerm+1);
           }
         }
       }
@@ -502,6 +502,14 @@ public class ZkShardTerms implements AutoCloseable{
       // this may indicate that the current value is stale
       if (!changed && foundReplicasInLowerTerms) return null;
       return new Terms(newValues, version);
+    }
+
+    private boolean skipIncreaseTermOf(String key, Set<String> replicasNeedingRecovery) {
+      if (key.endsWith("_recovering")) {
+        key = key.substring(0, key.length() - "_recovering".length());
+        return replicasNeedingRecovery.contains(key);
+      }
+      return replicasNeedingRecovery.contains(key);
     }
 
     /**

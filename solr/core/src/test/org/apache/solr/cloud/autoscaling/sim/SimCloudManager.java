@@ -392,8 +392,8 @@ public class SimCloudManager implements SolrCloudManager {
   public String simAddNode() throws Exception {
     Map<String, Object> values = createNodeValues(null);
     String nodeId = (String)values.get(ImplicitSnitch.NODE);
-    clusterStateProvider.simAddNode(nodeId);
     nodeStateProvider.simSetNodeValues(nodeId, values);
+    clusterStateProvider.simAddNode(nodeId);
     LOG.trace("-- added node " + nodeId);
     // initialize history handler if this is the first node
     if (historyHandler == null && liveNodesSet.size() == 1) {

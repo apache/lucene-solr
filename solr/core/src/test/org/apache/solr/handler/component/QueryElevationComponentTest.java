@@ -120,22 +120,22 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "7", "text", "AAAA AAAA ZZZZ", "str_s", "g"));
       assertU(adoc("id", "8", "text", "XXXX", "str_s", "h"));
       assertU(adoc("id", "9", "text", "YYYY ZZZZ", "str_s", "i"));
-      
+
       assertU(adoc("id", "22", "text", "XXXX ZZZZ AAAA", "str_s", "b"));
       assertU(adoc("id", "66", "text", "XXXX ZZZZ AAAA", "str_s", "f"));
       assertU(adoc("id", "77", "text", "XXXX ZZZZ AAAA", "str_s", "g"));
-     
+
       assertU(commit());
 
       final String groups = "//arr[@name='groups']";
 
-      assertQ("non-elevated group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("non-elevated group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   QueryElevationParams.ENABLE, "false",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
@@ -157,13 +157,13 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
-      assertQ("elevated group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("elevated group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
                   GroupParams.GROUP_TOTAL_COUNT, "true",
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -184,14 +184,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
-      assertQ("non-elevated because sorted group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("non-elevated because sorted group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
                   CommonParams.SORT, "id asc",
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -212,15 +212,15 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
-      assertQ("force-elevated sorted group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("force-elevated sorted group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
                   CommonParams.SORT, "id asc",
-                  QueryElevationParams.FORCE_ELEVATION, "true", 
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  QueryElevationParams.FORCE_ELEVATION, "true",
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -242,15 +242,15 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               );
 
 
-      assertQ("non-elevated because of sort within group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("non-elevated because of sort within group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
                   CommonParams.SORT, "id asc",
-                  GroupParams.GROUP_SORT, "id desc", 
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_SORT, "id desc",
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -272,16 +272,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               );
 
 
-      assertQ("force elevated sort within sorted group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("force elevated sort within sorted group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
                   CommonParams.SORT, "id asc",
-                  GroupParams.GROUP_SORT, "id desc", 
-                  QueryElevationParams.FORCE_ELEVATION, "true", 
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_SORT, "id desc",
+                  QueryElevationParams.FORCE_ELEVATION, "true",
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -453,11 +453,11 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "5", "title", "YYYY YYYY", "str_s1", "y"));
       assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
       assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
-      
+
       assertU(adoc("id", "8", "title", " QQQQ trash trash", "str_s1", "q"));
       assertU(adoc("id", "9", "title", " QQQQ QQQQ  trash", "str_s1", "r"));
       assertU(adoc("id", "10", "title", "QQQQ QQQQ  QQQQ ", "str_s1", "s"));
-      
+
       assertU(commit());
 
       assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
@@ -474,7 +474,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[3]/bool[@name='[excluded]'][.='false']",
           "//result/doc[4]/bool[@name='[excluded]'][.='true']"
       );
-      
+
       //ask for excluded as a field, but don't actually request the MARK_EXCLUDES
       //thus, number 6 should not be returned, b/c it is excluded
       assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
@@ -488,7 +488,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[2]/bool[@name='[excluded]'][.='false']",
           "//result/doc[3]/bool[@name='[excluded]'][.='false']"
       );
-      
+
       // test that excluded results are on the same positions in the result list
       // as when elevation component is disabled
       // (i.e. test that elevation component with MARK_EXCLUDES does not boost
