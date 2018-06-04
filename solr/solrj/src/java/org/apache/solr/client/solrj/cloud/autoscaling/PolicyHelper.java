@@ -190,6 +190,7 @@ public class PolicyHelper {
     List<Map<String, Object>> sortedNodes = new ArrayList<>(sorted.size());
     for (Row row : sorted) {
       Map<String, Object> map = Utils.makeMap("node", row.node);
+      map.put("isLive", row.isLive);
       for (Cell cell : row.getCells()) {
         for (Preference clusterPreference : clusterPreferences) {
           Policy.SortParam name = clusterPreference.getName();

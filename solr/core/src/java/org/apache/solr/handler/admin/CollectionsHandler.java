@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -122,6 +123,7 @@ import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_DEF;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -147,6 +149,7 @@ import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_METRICS_HISTORY;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
@@ -201,6 +204,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    */
   public CoreContainer getCoreContainer() {
     return this.coreContainer;
+  }
+
+  protected void copyFromClusterProp(Map<String, Object> props, String prop) {
+    if (props.get(prop) != null) return;//if it's already specified , return
+    Object defVal = coreContainer.getZkController().getZkStateReader().getClusterProperty(ImmutableList.of(COLLECTION_DEF, prop), null);
+    if (defVal != null) props.put(prop, String.valueOf(defVal));
   }
 
   @Override
@@ -489,6 +498,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         createSysConfigSet(h.coreContainer);
 
       }
+      if (shardsParam == null) h.copyFromClusterProp(props, NUM_SLICES);
+      for (String prop : ImmutableSet.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
+        h.copyFromClusterProp(props, prop);
       copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
       return copyPropertiesWithPrefix(req.getParams(), props, "router.");
 
@@ -642,7 +654,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copy(req.getParams(), map,
           DELETE_INDEX,
           DELETE_DATA_DIR,
-          DELETE_INSTANCE_DIR);
+          DELETE_INSTANCE_DIR,
+          DELETE_METRICS_HISTORY);
       return map;
     }),
     FORCELEADER_OP(FORCELEADER, (req, rsp, h) -> {
@@ -671,6 +684,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
+          DELETE_METRICS_HISTORY,
               COUNT_PROP, REPLICA_PROP,
               SHARD_ID_PROP,
           ONLY_IF_DOWN);

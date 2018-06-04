@@ -25,8 +25,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 
 class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
   @Override
@@ -45,12 +43,7 @@ class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
       String indexDirPath = core.getIndexDir();
       IndexCommit ic = core.getDeletionPolicy().getLatestCommit();
       if (ic == null) {
-        RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-        try {
-          ic = searcher.get().getIndexReader().getIndexCommit();
-        } finally {
-          searcher.decref();
-        }
+        ic = core.withSearcher(searcher -> searcher.getIndexReader().getIndexCommit());
       }
       SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
       mgr.snapshot(commitName, indexDirPath, ic.getGeneration());

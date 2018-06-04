@@ -42,7 +42,7 @@ abstract class FacetRequestSorted extends FacetRequest {
 
   @Override
   public boolean returnsPartial() {
-    return limit > 0;
+    return super.returnsPartial() || (limit > 0);
   }
 
 }

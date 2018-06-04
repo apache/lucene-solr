@@ -181,8 +181,10 @@ final class DocumentsWriter implements Closeable, Accountable {
   
   /** If buffered deletes are using too much heap, resolve them and write disk and return true. */
   private boolean applyAllDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
-    if (flushControl.getAndResetApplyAllDeletes()) {
+    if (flushControl.isFullFlush() == false // never apply deletes during full flush this breaks happens before relationship
+        && flushControl.getAndResetApplyAllDeletes()) {
       if (deleteQueue != null) {
+        assert assertTicketQueueModification(deleteQueue);
         ticketQueue.addDeletes(deleteQueue);
       }
       flushNotifications.onDeletesApplied(); // apply deletes event forces a purge
@@ -542,6 +544,7 @@ final class DocumentsWriter implements Closeable, Accountable {
          * might miss to deletes documents in 'A'.
          */
         try {
+          assert assertTicketQueueModification(flushingDWPT.deleteQueue);
           // Each flush is assigned a ticket in the order they acquire the ticketQueue lock
           ticket = ticketQueue.addFlushTicket(flushingDWPT);
           final int flushingDocsInRam = flushingDWPT.getNumDocsInRAM();
@@ -673,6 +676,14 @@ final class DocumentsWriter implements Closeable, Accountable {
     currentFullFlushDelQueue = session;
     return true;
   }
+
+  private boolean assertTicketQueueModification(DocumentsWriterDeleteQueue deleteQueue) {
+    // assign it then we don't need to sync on DW
+    DocumentsWriterDeleteQueue currentFullFlushDelQueue = this.currentFullFlushDelQueue;
+    assert currentFullFlushDelQueue == null || currentFullFlushDelQueue == deleteQueue:
+        "only modifications from the current flushing queue are permitted while doing a full flush";
+    return true;
+  }
   
   /*
    * FlushAllThreads is synced by IW fullFlushLock. Flushing all threads is a
@@ -713,6 +724,7 @@ final class DocumentsWriter implements Closeable, Accountable {
         if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", Thread.currentThread().getName() + ": flush naked frozen global deletes");
         }
+        assertTicketQueueModification(flushingDeleteQueue);
         ticketQueue.addDeletes(flushingDeleteQueue);
       }
       // we can't assert that we don't have any tickets in teh queue since we might add a DocumentsWriterDeleteQueue
@@ -728,7 +740,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
   
-  void finishFullFlush(boolean success) {
+  void finishFullFlush(boolean success) throws IOException {
     try {
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", Thread.currentThread().getName() + " finishFullFlush success=" + success);
@@ -742,6 +754,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       }
     } finally {
       pendingChangesInCurrentFullFlush = false;
+      applyAllDeletes(deleteQueue); // make sure we do execute this since we block applying deletes during full flush
     }
   }
 

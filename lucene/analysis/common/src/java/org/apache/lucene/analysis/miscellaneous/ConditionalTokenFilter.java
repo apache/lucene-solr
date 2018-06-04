@@ -22,38 +22,52 @@ import java.util.function.Function;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 /**
  * Allows skipping TokenFilters based on the current set of attributes.
  *
- * To use, implement the {@link #shouldFilter()} method.  If it returns {@code false},
- * then calling {@link #incrementToken()} will use the wrapped TokenFilter to
- * make changes to the tokenstream.  If it returns {@code true}, then the wrapped
- * filter will be skipped
+ * To use, implement the {@link #shouldFilter()} method.  If it returns {@code true},
+ * then calling {@link #incrementToken()} will use the wrapped TokenFilter(s) to
+ * make changes to the tokenstream.  If it returns {@code false}, then the wrapped
+ * filter(s) will be skipped.
  */
 public abstract class ConditionalTokenFilter extends TokenFilter {
 
   private enum TokenState {
-    READING, PREBUFFERING, BUFFERING, DELEGATING
+    READING, PREBUFFERING, DELEGATING
   }
 
   private final class OneTimeWrapper extends TokenStream {
 
+    private final OffsetAttribute offsetAtt;
+
     public OneTimeWrapper(AttributeSource attributeSource) {
       super(attributeSource);
+      this.offsetAtt = attributeSource.addAttribute(OffsetAttribute.class);
     }
 
     @Override
     public boolean incrementToken() throws IOException {
       if (state == TokenState.PREBUFFERING) {
-        state = TokenState.BUFFERING;
+        state = TokenState.DELEGATING;
         return true;
       }
-      if (state == TokenState.DELEGATING) {
-        return false;
+      assert state == TokenState.DELEGATING;
+      boolean more = input.incrementToken();
+      if (more && shouldFilter()) {
+        return true;
       }
-      return ConditionalTokenFilter.this.incrementToken();
+      if (more) {
+        endOffset = offsetAtt.endOffset();
+        bufferedState = captureState();
+      }
+      else {
+        exhausted = true;
+      }
+      return false;
     }
 
     @Override
@@ -64,28 +78,41 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
 
     @Override
     public void end() throws IOException {
-      endCalled = true;
-      ConditionalTokenFilter.this.end();
+      // imitate Tokenizer.end() call - endAttributes, set final offset
+      if (exhausted) {
+        if (endState == null) {
+          input.end();
+          endState = captureState();
+        }
+        endOffset = offsetAtt.endOffset();
+      }
+      endAttributes();
+      offsetAtt.setOffset(endOffset, endOffset);
     }
   }
 
   private final TokenStream delegate;
   private TokenState state = TokenState.READING;
   private boolean lastTokenFiltered;
-  private boolean endCalled;
+  private State bufferedState = null;
+  private boolean exhausted;
+  private State endState = null;
+  private int endOffset;
+
+  private PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
 
   /**
-   * Create a new BypassingTokenFilter
+   * Create a new ConditionalTokenFilter
    * @param input         the input TokenStream
-   * @param inputFactory  a factory function to create a new instance of the TokenFilter to wrap
+   * @param inputFactory  a factory function to create the wrapped filter(s)
    */
   protected ConditionalTokenFilter(TokenStream input, Function<TokenStream, TokenStream> inputFactory) {
     super(input);
-    this.delegate = inputFactory.apply(new OneTimeWrapper(this));
+    this.delegate = inputFactory.apply(new OneTimeWrapper(this.input));
   }
 
   /**
-   * Whether or not to execute the wrapped TokenFilter for the current token
+   * Whether or not to execute the wrapped TokenFilter(s) for the current token
    */
   protected abstract boolean shouldFilter() throws IOException;
 
@@ -95,14 +122,25 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
     this.delegate.reset();
     this.state = TokenState.READING;
     this.lastTokenFiltered = false;
-    this.endCalled = false;
+    this.bufferedState = null;
+    this.exhausted = false;
+    this.endOffset = -1;
+    this.endState = null;
   }
 
   @Override
   public void end() throws IOException {
-    super.end();
-    if (endCalled == false && lastTokenFiltered) {
+    if (endState == null) {
+      super.end();
+      endState = captureState();
+    }
+    else {
+      restoreState(endState);
+    }
+    endOffset = getAttribute(OffsetAttribute.class).endOffset();
+    if (lastTokenFiltered) {
       this.delegate.end();
+      endState = captureState();
     }
   }
 
@@ -116,10 +154,30 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
   public final boolean incrementToken() throws IOException {
     while (true) {
       if (state == TokenState.READING) {
+        if (bufferedState != null) {
+          restoreState(bufferedState);
+          bufferedState = null;
+          lastTokenFiltered = false;
+          return true;
+        }
+        if (exhausted == true) {
+          return false;
+        }
         if (input.incrementToken() == false) {
+          exhausted = true;
           return false;
         }
         if (shouldFilter()) {
+          // we're chopping the underlying Tokenstream up into fragments, and presenting
+          // only those parts of it that pass the filter to the delegate, so the delegate is
+          // in effect seeing multiple tokenstream snippets.  Tokenstreams can't have an initial
+          // position increment of 0, so if the snippet starts on a stacked token we need to
+          // offset it here and then correct the increment back again after delegation
+          boolean adjustPosition = false;
+          if (posIncAtt.getPositionIncrement() == 0) {
+            posIncAtt.setPositionIncrement(1);
+            adjustPosition = true;
+          }
           lastTokenFiltered = true;
           state = TokenState.PREBUFFERING;
           // we determine that the delegate has emitted all the tokens it can at the current
@@ -128,17 +186,31 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
           // to ensure that it can continue to emit more tokens
           delegate.reset();
           boolean more = delegate.incrementToken();
-          state = TokenState.DELEGATING;
-          return more;
+          if (more) {
+            state = TokenState.DELEGATING;
+            if (adjustPosition) {
+              int posInc = posIncAtt.getPositionIncrement();
+              posIncAtt.setPositionIncrement(posInc - 1);
+            }
+          }
+          else {
+            lastTokenFiltered = false;
+            state = TokenState.READING;
+            if (bufferedState != null) {
+              delegate.end();
+              int posInc = posIncAtt.getPositionIncrement();
+              restoreState(bufferedState);
+              posIncAtt.setPositionIncrement(posIncAtt.getPositionIncrement() + posInc);
+              bufferedState = null;
+              return true;
+            }
+          }
+          return more || bufferedState != null;
         }
         lastTokenFiltered = false;
         return true;
       }
-      if (state == TokenState.BUFFERING) {
-        return input.incrementToken();
-      }
       if (state == TokenState.DELEGATING) {
-        clearAttributes();
         if (delegate.incrementToken()) {
           return true;
         }

@@ -361,7 +361,7 @@ class TermAutomatonScorer extends Scorer {
 
   @Override
   public float getMaxScore(int upTo) throws IOException {
-    return docScorer.maxScore();
+    return docScorer.getSimScorer().score(Float.MAX_VALUE, 1L);
   }
 
   static class TermRunAutomaton extends RunAutomaton {

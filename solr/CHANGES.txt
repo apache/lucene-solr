@@ -23,7 +23,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.16
-Carrot2 3.15.0
+Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
@@ -52,7 +52,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.17
-Carrot2 3.15.0
+Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
@@ -70,8 +70,13 @@ Upgrade Notes
   To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication
   handler configuration, or pass it to the fetchindex command.
 
+* SOLR-11453: Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log .
+  Previously they would get logged in the solr.xml file
+
 New Features
 ----------------------
+
+* SOLR-12396: Upgrade Carrot2 to 3.16.0, HPPC to 0.8.1, morfologik to 2.1.5. (Dawid Weiss)
 
 * SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
   ConcurrentMergeSchedule.doAutoIOThrottle. (Amrit Sarkar, Nawab Zada Asad iqbal via Dawid Weiss)
@@ -116,8 +121,45 @@ New Features
 
 * SOLR-11277: Add auto hard-commit settings based on tlog size (Rupa Shankar, Anshum Gupta)
 
+* SOLR-9480: A new 'relatedness()' aggregate function for JSON Faceting to enable building Semantic
+  Knowledge Graphs. (Trey Grainger, hossman)
+
+* SOLR-12378: Support missing versionField on indexed docs in DocBasedVersionConstraintsURP.
+  (Oliver Bates, Michael Braun via Mark Miller)
+  
+* SOLR-12388: Enable a strict ZooKeeper-connected search request mode, in which search
+  requests will fail when the coordinating node can't communicate with ZooKeeper, 
+  by setting the "shards.tolerant" param to "requireZkConnected".  (Steve Rowe)
+
+* SOLR-9685: #Tagging queries in JSON Query DSL, equivalent to LocalParams based query/filter
+  tagging.  Multiple tags are comma separated.
+  LocalParams Example     : {!tag=colorfilt}color:blue
+  Equivalent JSON Example : { "#colorfilt" : "color:blue" } 
+  (Dmitry Tikhonov, Mikhail Khludnev, yonik)
+
+* SOLR-12328: JSON Facet API: Domain change with graph query.
+  (Daniel Meehl, Kevin Watters, yonik)
+
+* SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log .
+  (Shawn Heisey, Remko Popma, Varun Thacker)
+
+* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
+
+* SOLR-11779: Basic long-term collection of aggregated metrics. Historical data is
+  maintained as multi-resolution time series using round-robin databases in the '.system'
+  collection. New /admin/metrics/history API allows retrieval of this data in numeric
+  or graph formats. (ab)
+
+* SOLR-12387: cluster-wide defaults for numShards, nrtReplicas, tlogReplicas, pullReplicas (noble)
+
+* SOLR-12389: support deeply nested json objects in clusterprops.json (noble)
+
 Bug Fixes
 ----------------------
+
+* SOLR-5351: Fixed More Like This Handler to use all fields provided in mlt.fl when used with
+  content stream. The similarity is calculated between the content stream's value and all 
+  fields listed in mlt.fl. (Dawid Weiss)
 
 * SOLR-12103: Raise CryptoKeys.DEFAULT_KEYPAIR_LENGTH from 1024 to 2048. (Mark Miller)
 
@@ -125,9 +167,6 @@ Bug Fixes
 
 * SOLR-12108: Fixed the fallback behavior of [raw] and [xml] transformers when an incompatble 'wt' was
   specified, the field value was lost if documentCache was not used.  (hossman)
-
-* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
-  state (Cao Manh Dat)
 
 * SOLR-11551: Standardize CoreAdmin API success/failure status codes (Jason Gerlowski, Steve Rowe)
 
@@ -168,15 +207,9 @@ Bug Fixes
 
 * SOLR-12214: Leader may skip publish itself as ACTIVE when its last published state is DOWN (Cao Manh Dat)
 
-* SOLR-12065: A successful restore collection should mark the shard state as active and not buffering
-  (Rohit, Varun Thacker)
-
 * SOLR-12150: Fix a test bug in CdcrBidirectionalTest.testBiDir (Steve Rowe, Amrit Sarkar via Varun Thacker)
 
 * SOLR-10513: ConjunctionSolrSpellChecker did not work with LuceneLevenshteinDistance (Amrit Sarkar via James Dyer)
-
-* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
-  (Amrit Sarkar, Varun Thacker)
 
 * SOLR-11840: Fix bin/solr help-text inconsistencies (Jason Gerlowski)
 
@@ -208,16 +241,11 @@ Bug Fixes
 * SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
   non-boolean queries. (James Dyer)
 
-* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
-
 * SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
-  and devs. (Mark Miller)
+  and devs. (Mark Miller, janhoy, Andrzej Bialecki)
 
 * SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
   recoveries. (Mark Miller)
-
-* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
-  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
 
 * SOLR-12308: LISTALIASES is now assured to return an up-to-date response.  Also, the test utility
   MiniSolrCloudCluster.deleteAllCollections will now first delete aliases since a collection cannot be deleted if an
@@ -232,6 +260,36 @@ Bug Fixes
 * SOLR-12170: JSON Facet API: Terms facet on a date field sometimes failed with an exception complaining
   about "Invalid Date String". (yonik)
 
+* SOLR-12307: exiting OverseerTriggerThread without endless noise in log when Zookeeper session is expired
+  (Mikhail Khludnev) 
+
+* SOLR-12200: abandon OverseerExitThread when ZkController is closed. (Mikhail Khludnev) 
+
+* SOLR-12355: Fixes hash conflict in HashJoinStream and OuterHashJoinStream (Dennis Gove)
+
+* SOLR-12377: Don't spin off overseer when Zk controller is closed (Mikhail Khludnev)
+
+* SOLR-3567: Spellcheck custom parameters not being passed through due to wrong prefix creation.
+  (Josh Lucas via shalin)
+
+* SOLR-12358: Autoscaling suggestions fail randomly with sorting (noble)
+
+* SOLR-12294: update processors loaded from runtime jars fail to load if they are specified
+  in an update processor chain (noble)
+
+* SOLR-12314: Use http timeout's defined in solr.xml for creating ConcurrentUpdateSolrClient during
+  indexing requests between leader and replica ( Mark Miller, Varun Thacker)
+
+* SOLR-12374: SnapShooter.getIndexCommit can forget to decref the searcher; though it's not clear in practice when.
+  (David Smiley)
+
+* SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (yonik)
+
+* SOLR-12271: Fixed bug in how Analytics component reads negative values from float and double fields. (Houston Putman)
+
+* SOLR-12433: Recovering flag of a replica is set equals to leader even it failed to receive update 
+  on recovering. (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
@@ -245,12 +303,29 @@ Optimizations
 * SOLR-11891: DocStreamer now respects the ReturnFields when populating a SolrDocument, reducing the
   number of unneccessary fields a ResponseWriter will see if documentCache is used (wei wang, hossman)
 
-* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
-
-* SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
-
 * SOLR-12312: Replication IndexFetcher should cap its internal buffer size when the file being transferred is small.
   (Jeff Miller, David Smiley)
+
+* SOLR-12333: Removed redundant lines for handling lists in JSON reponse writers. (David Smiley via Mikhail Khludnev)
+
+* SOLR-11880: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor by distributed
+  search and update operations. (Varun Thacker, shalin)
+
+* SOLR-12375: Optimize Lucene ScoreMode use:
+  A non-cached filter query could be told incorrectly that scores were needed.
+  The /export (ExportQParserPlugin) would declare incorrectly that scores are needed.
+  Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
+
+* SOLR-12338: Replay buffering tlog in parallel. (Cao Manh Dat, David Smiley)
+
+* SOLR-12366: A slow "live docs" implementation was being used instead of a bitset.  Affects classic faceting
+  enum method, JSON Facets enum method, UnInvertedField faceting, GraphTermsQParser, JoinQParser.  (David Smiley)
+
+* SOLR-12337: Remove the obsolete QueryWrapperFilter intermediate wrapper, which also removed some needless uses of
+  SolrConstantScoreQuery as well.  QWF since v5.4.0 sometimes needlessly internally executed and cached the query.
+  Affects ExpandComponent, ChildDocTransformer, CurrencyFieldType, TermsQParser.  (David Smiley)
+
+* SOLR-9922: Write buffering updates to another tlog. (Cao Manh Dat)
 
 Other Changes
 ----------------------
@@ -311,6 +386,9 @@ Other Changes
 
 * SOLR-12265: Upgrade Jetty to 9.4.10.v20180503 (Varun Thacker, Steve Rowe)
 
+* SOLR-12374: Added SolrCore.withSearcher(lambda) to make grabbing the searcher easier than the more awkward
+  RefCounted API.  (David Smiley)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -330,6 +408,24 @@ Bug Fixes
 * SOLR-12204: Upgrade commons-fileupload dependency to 1.3.3 to address CVE-2016-1000031.  (Steve Rowe)
 
 * SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
+
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
+  state (Cao Manh Dat)
+
+* SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
+
+* SOLR-12066: Cleanup deleted core when node start (Cao Manh Dat)
+
+* SOLR-12065: A successful restore collection should mark the shard state as active and not buffering
+  (Rohit, Varun Thacker)
+
+* SOLR-11724: Cdcr bootstrapping should ensure that non-leader replicas should sync with the leader
+  (Amrit Sarkar, Varun Thacker)
+
+* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml
+  and schema parsing (CVE-2018-8010).  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)  
 
 ==================  7.3.0 ==================
 
@@ -389,6 +485,7 @@ Upgrade Notes
 
 New Features
 ----------------------
+
 * SOLR-11285: Simulation framework for autoscaling. (ab)
 
 * LUCENE-2899: In the Solr analysis-extras contrib, added support for the
@@ -2045,6 +2142,25 @@ Other Changes
   (Uwe Schindler)
 
 * SOLR-11324: Clean up mention of trie fields in documentation and source comments. (Steve Rowe)
+
+==================  6.6.4 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.17
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.11
+Jetty 9.4.10.v20180503
+
+Bug Fixes
+----------------------
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml and schema parsing.
+  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
 
 ==================  6.6.3 ==================
 

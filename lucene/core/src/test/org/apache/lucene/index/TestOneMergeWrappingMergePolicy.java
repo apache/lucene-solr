@@ -48,19 +48,19 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
     }
 
     @Override
-    public MergePolicy.MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer)
+    public MergePolicy.MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
         throws IOException {
       return merges;
     }
 
     @Override
     public MergePolicy.MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount,
-        Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) throws IOException {
+                                                           Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
       return forcedMerges;
     }
 
     @Override
-    public MergePolicy.MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
+    public MergePolicy.MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext)
         throws IOException {
       return forcedDeletesMerges;
     }

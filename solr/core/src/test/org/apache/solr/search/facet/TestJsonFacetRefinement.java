@@ -407,6 +407,75 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
               "}"
       );
 
+      // test that SKG stat reflects merged refinement
+      client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
+                           "json.facet", "{"
+                           + "   cat0:{ ${terms} type:terms, field: ${cat_s}, "
+                           + "          sort:'count desc', limit:1, overrequest:0, refine:true, "
+                           + "          facet:{ s:'relatedness($fore,$back)'} } }")
+                    , "facets=={ count:8, cat0:{ buckets:[ "
+                    + "   { val:A, count:4, "
+                    + "     s : { relatedness: 0.00496, "
+                    //+ "           foreground_count: 3, "
+                    //+ "           foreground_size: 5, "
+                    //+ "           background_count: 2, "
+                    //+ "           background_size: 4, "
+                    + "           foreground_popularity: 0.75, "
+                    + "           background_popularity: 0.5, "
+                    + "         } } ] }" +
+                    "}"
+                    );
+      
+      // SKG under nested facet where some terms only exist on one shard
+      { 
+        // sub-bucket order should change as sort direction changes
+        final String jsonFacet = ""
+          + "{ processEmpty:true, "
+          + " cat0:{ ${terms} type:terms, field: ${cat_s}, "
+          + "        sort:'count desc', limit:1, overrequest:0, refine:true, "
+          + "        facet:{ processEmpty:true, "
+          + "                qw1: { ${terms} type:terms, field: ${qw_s}, mincount:0, "
+          + "                       sort:'${skg_sort}', limit:100, overrequest:0, refine:true, "
+          + "                       facet:{ processEmpty:true, skg:'relatedness($fore,$back)' } } } } }";
+        final String bucketQ = ""
+          + "             { val:Q, count:1, "
+          + "               skg : { relatedness: 1.0, "
+          + "                       foreground_popularity: 0.25, "
+          + "                       background_popularity: 0.0, "
+          // + "                       foreground_count: 1, "
+          // + "                       foreground_size: 3, "
+          // + "                       background_count: 0, "
+          // + "                       background_size: 4, "
+          + "               } },";
+        final String bucketW = ""
+          + "             { val:W, count:1, "
+          + "               skg : { relatedness: 0.0037, "
+          + "                       foreground_popularity: 0.25, "
+          + "                       background_popularity: 0.25, "
+          // + "                       foreground_count: 1, "
+          // + "                       foreground_size: 3, "
+          // + "                       background_count: 1, "
+          // + "                       background_size: 4, "
+          + "               } },";
+        
+        client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
+                             "skg_sort", "skg desc", "json.facet", jsonFacet)
+                      , "facets=={ count:8, cat0:{ buckets:[ "
+                      + "   { val:A, count:4, "
+                      + "     qw1 : { buckets:["
+                      + bucketQ
+                      + bucketW
+                      + "  ] } } ] } }");
+        client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
+                             "skg_sort", "skg asc", "json.facet", jsonFacet)
+                      , "facets=={ count:8, cat0:{ buckets:[ "
+                      + "   { val:A, count:4, "
+                      + "     qw1 : { buckets:["
+                      + bucketW
+                      + bucketQ
+                      + "  ] } } ] } }");
+      }
+    
       // test partial buckets (field facet within field facet)
       client.testJQ(params(p, "q", "*:*",
           "json.facet", "{" +

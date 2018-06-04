@@ -19,11 +19,19 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NullInfoStream;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.ToIntFunction;
 
 /**
  * Base test case for {@link MergePolicy}.
@@ -78,6 +86,74 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
         writer.forceMerge(maxNumSegments);
       }
       writer.close();
+    }
+  }
+
+  public void testFindForcedDeletesMerges() throws IOException {
+    MergePolicy mp = mergePolicy();
+    if (mp instanceof FilterMergePolicy) {
+      assumeFalse("test doesn't work with MockRandomMP",
+          ((FilterMergePolicy) mp).in instanceof MockRandomMergePolicy);
+    }
+    SegmentInfos infos = new SegmentInfos(Version.LATEST.major);
+    try (Directory directory = newDirectory()) {
+      MergePolicy.MergeContext context = new MockMergeContext(s -> 0);
+      int numSegs = random().nextInt(10);
+      for (int i = 0; i < numSegs; i++) {
+        SegmentInfo info = new SegmentInfo(
+            directory, // dir
+            Version.LATEST, // version
+            Version.LATEST, // min version
+            TestUtil.randomSimpleString(random()), // name
+            random().nextInt(Integer.MAX_VALUE), // maxDoc
+            random().nextBoolean(), // isCompoundFile
+            null, // codec
+            Collections.emptyMap(), // diagnostics
+            TestUtil.randomSimpleString(// id
+                random(),
+                StringHelper.ID_LENGTH,
+                StringHelper.ID_LENGTH).getBytes(StandardCharsets.US_ASCII),
+            Collections.emptyMap(), // attributes
+            null /* indexSort */);
+        info.setFiles(Collections.emptyList());
+        infos.add(new SegmentCommitInfo(info, random().nextInt(1), -1, -1, -1));
+      }
+      MergePolicy.MergeSpecification forcedDeletesMerges = mp.findForcedDeletesMerges(infos, context);
+      if (forcedDeletesMerges != null) {
+        assertEquals(0, forcedDeletesMerges.merges.size());
+      }
+    }
+  }
+
+  /**
+   * Simple mock merge context for tests
+   */
+  public static final class MockMergeContext implements MergePolicy.MergeContext {
+    private final ToIntFunction<SegmentCommitInfo> numDeletesFunc;
+    private final InfoStream infoStream = new NullInfoStream();
+
+    public MockMergeContext(ToIntFunction<SegmentCommitInfo> numDeletesFunc) {
+      this.numDeletesFunc = numDeletesFunc;
+    }
+
+    @Override
+    public int numDeletesToMerge(SegmentCommitInfo info) {
+      return numDeletesFunc.applyAsInt(info);
+    }
+
+    @Override
+    public int numDeletedDocs(SegmentCommitInfo info) {
+      return numDeletesToMerge(info);
+    }
+
+    @Override
+    public InfoStream getInfoStream() {
+      return infoStream;
+    }
+
+    @Override
+    public Set<SegmentCommitInfo> getMergingSegments() {
+      return Collections.emptySet();
     }
   }
   

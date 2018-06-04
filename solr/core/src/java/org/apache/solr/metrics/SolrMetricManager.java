@@ -423,14 +423,14 @@ public class SolrMetricManager {
     } else {
       swapLock.lock();
       try {
-        return getOrCreate(registries, registry);
+        return getOrCreateRegistry(registries, registry);
       } finally {
         swapLock.unlock();
       }
     }
   }
 
-  private static MetricRegistry getOrCreate(ConcurrentMap<String, MetricRegistry> map, String registry) {
+  private static MetricRegistry getOrCreateRegistry(ConcurrentMap<String, MetricRegistry> map, String registry) {
     final MetricRegistry existing = map.get(registry);
     if (existing == null) {
       final MetricRegistry created = new MetricRegistry();

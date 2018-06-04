@@ -1149,7 +1149,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           out.getFilePointer(); // just fake access to prevent compiler warning
         }
         fsDir.deleteFile(candidate);
-        if (fsDir.checkPendingDeletions()) {
+        if (fsDir.getPendingDeletions().size() > 0) {
           // good: virus checker struck and prevented deletion of fileName
           fileName = candidate;
           break;

@@ -515,6 +515,12 @@ public final class FixedBitSet extends BitSet implements Bits, Accountable {
    * Make a copy of the given bits.
    */
   public static FixedBitSet copyOf(Bits bits) {
+    if (bits instanceof FixedBits) {
+      // restore the original FixedBitSet
+      FixedBits fixedBits = (FixedBits) bits;
+      bits = new FixedBitSet(fixedBits.bits, fixedBits.length);
+    }
+
     if (bits instanceof FixedBitSet) {
       return ((FixedBitSet)bits).clone();
     } else {
@@ -528,5 +534,17 @@ public final class FixedBitSet extends BitSet implements Bits, Accountable {
       }
       return bitSet;
     }
+  }
+
+  /**
+   * Convert this instance to read-only {@link Bits}.
+   * This is useful in the case that this {@link FixedBitSet} is returned as a
+   * {@link Bits} instance, to make sure that consumers may not get write access
+   * back by casting to a {@link FixedBitSet}.
+   * NOTE: Changes to this {@link FixedBitSet} will be reflected on the returned
+   * {@link Bits}.
+   */
+  public Bits asReadOnlyBits() {
+    return new FixedBits(bits, numBits);
   }
 }

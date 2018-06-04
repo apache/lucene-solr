@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.CommandOperation;
@@ -39,6 +40,9 @@ import org.apache.solr.common.util.Utils;
 import org.junit.Assert;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_DEF;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.NUM_SHARDS_PROP;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
@@ -228,7 +232,7 @@ public class TestUtils extends SolrTestCaseJ4 {
   }
 
   public void testUtilsJSPath(){
-    
+
     String json = "{\n" +
         "  'authorization':{\n" +
         "    'class':'solr.RuleBasedAuthorizationPlugin',\n" +
@@ -246,6 +250,26 @@ public class TestUtils extends SolrTestCaseJ4 {
         "    '':{'v':4}}}";
     Map m = (Map) fromJSONString(json);
     assertEquals("x-update", Utils.getObjectByPath(m,false, "authorization/permissions[1]/name"));
-    
+
+  }
+
+  public void testMergeJson() {
+    Map<String, Object> sink = (Map<String, Object>) Utils.fromJSONString("{k2:v2, k1: {a:b, p:r, k21:{xx:yy}}}");
+    assertTrue(Utils.mergeJson(sink, (Map<String, Object>) Utils.fromJSONString("k1:{a:c, e:f, p :null, k11:{a1:b1}, k21:{pp : qq}}")));
+
+    assertEquals("v2", Utils.getObjectByPath(sink, true, "k2"));
+    assertEquals("c", Utils.getObjectByPath(sink, true, "k1/a"));
+    assertEquals("yy", Utils.getObjectByPath(sink, true, "k1/k21/xx"));
+    assertEquals("qq", Utils.getObjectByPath(sink, true, "k1/k21/pp"));
+    assertEquals("f", Utils.getObjectByPath(sink, true, "k1/e"));
+    assertEquals("b1", Utils.getObjectByPath(sink, true, "k1/k11/a1"));
+
+    sink = new HashMap<>();
+    sink.put("legacyCloud", "false");
+    assertTrue(Utils.mergeJson(sink, (Map<String, Object>) Utils.fromJSONString("collectionDefaults:{numShards:3 , nrtReplicas:2}")));
+    assertEquals(3l, Utils.getObjectByPath(sink, true, ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP)));
+    assertEquals(2l, Utils.getObjectByPath(sink, true, ImmutableList.of(COLLECTION_DEF, NRT_REPLICAS)));
+
+
   }
 }

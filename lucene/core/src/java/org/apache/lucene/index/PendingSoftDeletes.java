@@ -58,6 +58,7 @@ final class PendingSoftDeletes extends PendingDeletes {
       } else {
         // if it was deleted subtract the delCount
         pendingDeleteCount--;
+        assert pendingDeleteCount >= 0 : " illegal pending delete count: " + pendingDeleteCount;
       }
       return true;
     }
@@ -65,7 +66,7 @@ final class PendingSoftDeletes extends PendingDeletes {
   }
 
   @Override
-  int numPendingDeletes() {
+  protected int numPendingDeletes() {
     return super.numPendingDeletes() + hardDeletes.numPendingDeletes();
   }
 
@@ -78,11 +79,11 @@ final class PendingSoftDeletes extends PendingDeletes {
       if (iterator != null) { // nothing is deleted we don't have a soft deletes field in this segment
         assert info.info.maxDoc() > 0 : "maxDoc is 0";
         pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
+        assert pendingDeleteCount >= 0 : " illegal pending delete count: " + pendingDeleteCount;
       }
       dvGeneration = info.getDocValuesGen();
     }
-    assert numPendingDeletes() + info.getDelCount() <= info.info.maxDoc() :
-        numPendingDeletes() + " + " + info.getDelCount() + " > " + info.info.maxDoc();
+    assert getDelCount() <= info.info.maxDoc() : getDelCount() + " > " + info.info.maxDoc();
   }
 
   @Override
@@ -133,6 +134,7 @@ final class PendingSoftDeletes extends PendingDeletes {
   void onDocValuesUpdate(FieldInfo info, DocValuesFieldUpdates.Iterator iterator) throws IOException {
     if (this.field.equals(info.name)) {
       pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
+      assert pendingDeleteCount >= 0 : " illegal pending delete count: " + pendingDeleteCount;
       assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
       assert dvGeneration != -2 : "docValues generation is still uninitialized";
       dvGeneration = info.getDocValuesGen();
@@ -208,5 +210,4 @@ final class PendingSoftDeletes extends PendingDeletes {
   Bits getHardLiveDocs() {
     return hardDeletes.getLiveDocs();
   }
-
 }

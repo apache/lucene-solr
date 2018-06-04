@@ -639,6 +639,56 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     }
     IOUtils.close(writer, dir);
   }
-  
+
+  public void testUpdateNotExistingFieldDV() throws IOException {
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    try (Directory dir = newDirectory(); IndexWriter writer = new IndexWriter(dir, conf)) {
+      Document doc = new Document();
+      doc.add(new StringField("id", "1", Store.YES));
+      doc.add(new NumericDocValuesField("test", 1));
+      writer.addDocument(doc);
+      if (random().nextBoolean()) {
+        writer.commit();
+      }
+      writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField("not_existing", 1));
+
+      Document doc1 = new Document();
+      doc1.add(new StringField("id", "2", Store.YES));
+      doc1.add(new BinaryDocValuesField("not_existing", new BytesRef()));
+      IllegalArgumentException iae = expectThrows(IllegalArgumentException.class, () ->
+          writer.addDocument(doc1)
+      );
+      assertEquals("cannot change DocValues type from NUMERIC to BINARY for field \"not_existing\"", iae.getMessage());
+
+      iae = expectThrows(IllegalArgumentException.class, () ->
+          writer.updateDocValues(new Term("id", "1"), new BinaryDocValuesField("not_existing", new BytesRef()))
+      );
+      assertEquals("cannot change DocValues type from NUMERIC to BINARY for field \"not_existing\"", iae.getMessage());
+    }
+  }
+
+  public void testUpdateFieldWithNoPreviousDocValues() throws IOException {
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    try (Directory dir = newDirectory(); IndexWriter writer = new IndexWriter(dir, conf)) {
+      Document doc = new Document();
+      doc.add(new StringField("id", "1", Store.YES));
+      writer.addDocument(doc);
+      if (random().nextBoolean()) {
+        try (DirectoryReader reader = writer.getReader()) {
+          NumericDocValues id = reader.leaves().get(0).reader().getNumericDocValues("id");
+          assertNull(id);
+        }
+      } else if (random().nextBoolean()) {
+        writer.commit();
+      }
+      writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField("id", 1));
+      try (DirectoryReader reader = writer.getReader()) {
+        NumericDocValues id = reader.leaves().get(0).reader().getNumericDocValues("id");
+        assertNotNull(id);
+        assertTrue(id.advanceExact(0));
+        assertEquals(1, id.longValue());
+      }
+    }
+  }
 }
 

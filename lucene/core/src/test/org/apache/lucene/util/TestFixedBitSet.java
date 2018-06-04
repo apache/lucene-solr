@@ -503,11 +503,14 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
     for (int e : bits) {
       fixedBitSet.set(e);
     }
-    FixedBitSet mutableCopy = FixedBitSet.copyOf(fixedBitSet);
-    assertNotSame(mutableCopy, fixedBitSet);
-    assertEquals(mutableCopy, fixedBitSet);
+    for (boolean readOnly : new boolean[] {false, true}) {
+      Bits bitsToCopy = readOnly ? fixedBitSet.asReadOnlyBits() : fixedBitSet;
+      FixedBitSet mutableCopy = FixedBitSet.copyOf(bitsToCopy);
+      assertNotSame(mutableCopy, bitsToCopy);
+      assertEquals(mutableCopy, fixedBitSet);
+    }
 
-    FixedBitSet mutableCopy1 = FixedBitSet.copyOf(new Bits() {
+    final Bits bitsToCopy = new Bits() {
 
       @Override
       public boolean get(int index) {
@@ -518,11 +521,27 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
       public int length() {
         return fixedBitSet.length();
       }
-    });
+    };
+    FixedBitSet mutableCopy = FixedBitSet.copyOf(bitsToCopy);
 
-    assertNotSame(mutableCopy, mutableCopy1);
-    assertNotSame(fixedBitSet, mutableCopy1);
-    assertEquals(mutableCopy1, mutableCopy);
-    assertEquals(mutableCopy1, fixedBitSet);
+    assertNotSame(bitsToCopy, mutableCopy);
+    assertNotSame(fixedBitSet, mutableCopy);
+    assertEquals(mutableCopy, fixedBitSet);
+  }
+
+  public void testAsBits() {
+    FixedBitSet set = new FixedBitSet(10);
+    set.set(3);
+    set.set(4);
+    set.set(9);
+    Bits bits = set.asReadOnlyBits();
+    assertFalse(bits instanceof FixedBitSet);
+    assertEquals(set.length(), bits.length());
+    for (int i = 0; i < set.length(); ++i) {
+      assertEquals(set.get(i), bits.get(i));
+    }
+    // Further changes are reflected
+    set.set(5);
+    assertTrue(bits.get(5));
   }
 }

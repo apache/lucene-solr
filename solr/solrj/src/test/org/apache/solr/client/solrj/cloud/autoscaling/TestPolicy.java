@@ -2160,5 +2160,313 @@ public void testUtilizeNodeFailure2() throws Exception {
     assertEquals("count = "+count ,1,count);
   }
 
-  
+  //SOLR-12358
+  public void testSortError() {
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString("{cluster-preferences: [{minimize : cores, precision:1}, " +
+        "{maximize : freedisk, precision: 50}, " +
+        "{minimize: sysLoadAvg}]}"));
+    String rowsData = "{'sortedNodes':[" +
+        "    {" +
+        "      'node':'solr-01:8983_solr'," +
+        "      'replicas':{}," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':2}," +
+        "        {'freedisk':1734.5261459350586}," +
+        "        {'sysLoadAvg':35.0}," +
+        "        {'node':'solr-01:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-07:8983_solr'," +
+        "      'replicas':{}," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1721.5669250488281}," +
+        "        {'sysLoadAvg':10.0}," +
+        "        {'node':'solr-07:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-08:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1764.9518203735352}," +
+        "        {'sysLoadAvg':330.0}," +
+        "        {'node':'solr-08:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-25:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1779.7792778015137}," +
+        "        {'sysLoadAvg':304.0}," +
+        "        {'node':'solr-25:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-15:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1697.5930519104004}," +
+        "        {'sysLoadAvg':277.0}," +
+        "        {'node':'solr-15:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-13:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':2}," +
+        "        {'freedisk':1755.1909484863281}," +
+        "        {'sysLoadAvg':265.0}," +
+        "        {'node':'solr-13:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-14:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1757.6035423278809}," +
+        "        {'sysLoadAvg':61.0}," +
+        "        {'node':'solr-14:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-16:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1746.081386566162}," +
+        "        {'sysLoadAvg':260.0}," +
+        "        {'node':'solr-16:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-04:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':2}," +
+        "        {'freedisk':1708.7230529785156}," +
+        "        {'sysLoadAvg':216.0}," +
+        "        {'node':'solr-04:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-06:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1688.3182678222656}," +
+        "        {'sysLoadAvg':385.0}," +
+        "        {'node':'solr-06:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-02:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':6}," +
+        "        {'freedisk':1778.226963043213}," +
+        "        {'sysLoadAvg':369.0}," +
+        "        {'node':'solr-02:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-05:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1741.9401931762695}," +
+        "        {'sysLoadAvg':354.0}," +
+        "        {'node':'solr-05:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-23:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1718.854579925537}," +
+        "        {'sysLoadAvg':329.0}," +
+        "        {'node':'solr-23:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-24:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1733.6669311523438}," +
+        "        {'sysLoadAvg':327.0}," +
+        "        {'node':'solr-24:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-09:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1714.6191711425781}," +
+        "        {'sysLoadAvg':278.0}," +
+        "        {'node':'solr-09:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-10:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1755.3038482666016}," +
+        "        {'sysLoadAvg':266.0}," +
+        "        {'node':'solr-10:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-28:8983_solr'," +
+        "      'isLive':false," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1691.3830909729004}," +
+        "        {'sysLoadAvg':261.0}," +
+        "        {'node':'solr-28:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-29:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':2}," +
+        "        {'freedisk':1706.797966003418}," +
+        "        {'sysLoadAvg':252.99999999999997}," +
+        "        {'node':'solr-29:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-32:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1762.432300567627}," +
+        "        {'sysLoadAvg':221.0}," +
+        "        {'node':'solr-32:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-21:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1760.9801979064941}," +
+        "        {'sysLoadAvg':213.0}," +
+        "        {'node':'solr-21:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-22:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1780.5297241210938}," +
+        "        {'sysLoadAvg':209.0}," +
+        "        {'node':'solr-22:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-31:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1700.1481628417969}," +
+        "        {'sysLoadAvg':211.0}," +
+        "        {'node':'solr-31:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-33:8983_solr'," +
+        "      'isLive':false," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1748.1132926940918}," +
+        "        {'sysLoadAvg':199.0}," +
+        "        {'node':'solr-33:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-36:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1776.197639465332}," +
+        "        {'sysLoadAvg':193.0}," +
+        "        {'node':'solr-36:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-35:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1746.7729606628418}," +
+        "        {'sysLoadAvg':191.0}," +
+        "        {'node':'solr-35:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-12:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1713.287540435791}," +
+        "        {'sysLoadAvg':175.0}," +
+        "        {'node':'solr-12:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-11:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1736.784511566162}," +
+        "        {'sysLoadAvg':169.0}," +
+        "        {'node':'solr-11:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-35:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1766.9416885375977}," +
+        "        {'sysLoadAvg':155.0}," +
+        "        {'node':'solr-35:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-17:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1764.3425407409668}," +
+        "        {'sysLoadAvg':139.0}," +
+        "        {'node':'solr-17:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-18:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':2}," +
+        "        {'freedisk':1757.0613975524902}," +
+        "        {'sysLoadAvg':132.0}," +
+        "        {'node':'solr-18:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-20:8983_solr'," +
+        "      'isLive':false," +
+        "      'attributes':[" +
+        "        {'cores':3}," +
+        "        {'freedisk':1747.4205322265625}," +
+        "        {'sysLoadAvg':126.0}," +
+        "        {'node':'solr-20:8983_solr'}]}," +
+        "    {" +
+        "      'node':'solr-27:8983_solr'," +
+        "      'isLive':true," +
+        "      'attributes':[" +
+        "        {'cores':4}," +
+        "        {'freedisk':1721.0442085266113}," +
+        "        {'sysLoadAvg':118.0}," +
+        "        {'node':'solr-27:8983_solr'}]}]}";
+
+    List l = (List) ((Map) Utils.fromJSONString(rowsData)).get("sortedNodes");
+    List<Suggestion.ConditionType> params = new ArrayList<>();
+    params.add(Suggestion.ConditionType.CORES);
+    params.add(Suggestion.ConditionType.FREEDISK);
+    params.add(Suggestion.ConditionType.SYSLOADAVG);
+    params.add(Suggestion.ConditionType.NODE);
+    List<Row> rows = new ArrayList<>();
+    for (Object o : l) {
+      Map m = (Map) o;
+      Cell[] c = new Cell[params.size()];
+      List attrs = (List) m.get("attributes");
+      for (int i = 0; i < params.size(); i++) {
+        Suggestion.ConditionType param = params.get(i);
+        for (Object attr : attrs) {
+          Object o1 = ((Map) attr).get(param.tagName);
+          if (o1 != null) {
+            o1 = param.validate(param.tagName, o1, false);
+            c[i] = new Cell(i, param.tagName, o1, o1, param, null);
+          }
+        }
+      }
+      rows.add(new Row((String) m.get("node"), c, false,
+          new HashMap<>(),
+          (Boolean) m.get("isLive"), null));
+    }
+    int deadNodes = 0;
+    for (Row row : rows) {
+      if (!row.isLive) deadNodes++;
+    }
+
+    Policy.setApproxValuesAndSortNodes(policy.clusterPreferences, rows);
+
+    for (int i = 0; i < deadNodes; i++) {
+      assertFalse(rows.get(i).isLive);
+    }
+
+    for (int i = deadNodes; i < rows.size(); i++) {
+      assertTrue(rows.get(i).isLive);
+    }
+
+
+  }
+
+
 }

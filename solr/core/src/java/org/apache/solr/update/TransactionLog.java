@@ -85,9 +85,6 @@ public class TransactionLog implements Closeable {
   Map<String,Integer> globalStringMap = new HashMap<>();
   List<String> globalStringList = new ArrayList<>();
 
-  long snapshot_size;
-  int snapshot_numRecords;
-
   // write a BytesRef as a byte array
   static final JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
     @Override
@@ -153,7 +150,7 @@ public class TransactionLog implements Closeable {
 
       // Parse tlog id from the filename
       String filename = tlogFile.getName();
-      id = Long.parseLong(filename.substring(filename.indexOf('.') + 1, filename.indexOf('.') + 20));
+      id = Long.parseLong(filename.substring(filename.lastIndexOf('.')+1));
 
       this.tlogFile = tlogFile;
       raf = new RandomAccessFile(this.tlogFile, "rw");
@@ -231,29 +228,6 @@ public class TransactionLog implements Closeable {
       if (buf[i] != END_MESSAGE.charAt(i)) return false;
     }
     return true;
-  }
-
-  /** takes a snapshot of the current position and number of records
-   * for later possible rollback, and returns the position */
-  public long snapshot() {
-    synchronized (this) {
-      snapshot_size = fos.size();
-      snapshot_numRecords = numRecords;
-      return snapshot_size;
-    }
-  }
-
-  // This could mess with any readers or reverse readers that are open, or anything that might try to do a log lookup.
-  // This should only be used to roll back buffered updates, not actually applied updates.
-  public void rollback(long pos) throws IOException {
-    synchronized (this) {
-      assert snapshot_size == pos;
-      fos.flush();
-      raf.setLength(pos);
-      fos.setWritten(pos);
-      assert fos.size() == pos;
-      numRecords = snapshot_numRecords;
-    }
   }
 
   public long writeData(Object o) {
@@ -346,17 +320,16 @@ public class TransactionLog implements Closeable {
 
   /**
    * Writes an add update command to the transaction log. This is not applicable for
-   * in-place updates; use {@link #write(AddUpdateCommand, long, int)}.
+   * in-place updates; use {@link #write(AddUpdateCommand, long)}.
    * (The previous pointer (applicable for in-place updates) is set to -1 while writing
    * the command to the transaction log.)
    * @param cmd The add update command to be written
-   * @param flags Options for writing the command to the transaction log
    * @return Returns the position pointer of the written update command
    * 
-   * @see #write(AddUpdateCommand, long, int)
+   * @see #write(AddUpdateCommand, long)
    */
-  public long write(AddUpdateCommand cmd, int flags) {
-    return write(cmd, -1, flags);
+  public long write(AddUpdateCommand cmd) {
+    return write(cmd, -1);
   }
 
   /**
@@ -365,10 +338,9 @@ public class TransactionLog implements Closeable {
    * @param cmd The add update command to be written
    * @param prevPointer The pointer in the transaction log which this update depends 
    * on (applicable for in-place updates)
-   * @param flags Options for writing the command to the transaction log
    * @return Returns the position pointer of the written update command
    */
-  public long write(AddUpdateCommand cmd, long prevPointer, int flags) {
+  public long write(AddUpdateCommand cmd, long prevPointer) {
     assert (-1 <= prevPointer && (cmd.isInPlaceUpdate() || (-1 == prevPointer)));
     
     LogCodec codec = new LogCodec(resolver);
@@ -386,14 +358,14 @@ public class TransactionLog implements Closeable {
       codec.init(out);
       if (cmd.isInPlaceUpdate()) {
         codec.writeTag(JavaBinCodec.ARR, 5);
-        codec.writeInt(UpdateLog.UPDATE_INPLACE | flags);  // should just take one byte
+        codec.writeInt(UpdateLog.UPDATE_INPLACE);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeLong(prevPointer);
         codec.writeLong(cmd.prevVersion);
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
       } else {
         codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.ADD | flags);  // should just take one byte
+        codec.writeInt(UpdateLog.ADD);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
       }
@@ -422,7 +394,7 @@ public class TransactionLog implements Closeable {
     }
   }
 
-  public long writeDelete(DeleteUpdateCommand cmd, int flags) {
+  public long writeDelete(DeleteUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
 
     try {
@@ -433,7 +405,7 @@ public class TransactionLog implements Closeable {
       MemOutputStream out = new MemOutputStream(new byte[20 + br.length]);
       codec.init(out);
       codec.writeTag(JavaBinCodec.ARR, 3);
-      codec.writeInt(UpdateLog.DELETE | flags);  // should just take one byte
+      codec.writeInt(UpdateLog.DELETE);  // should just take one byte
       codec.writeLong(cmd.getVersion());
       codec.writeByteArray(br.bytes, br.offset, br.length);
 
@@ -452,7 +424,7 @@ public class TransactionLog implements Closeable {
 
   }
 
-  public long writeDeleteByQuery(DeleteUpdateCommand cmd, int flags) {
+  public long writeDeleteByQuery(DeleteUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
     try {
       checkWriteHeader(codec, null);
@@ -460,7 +432,7 @@ public class TransactionLog implements Closeable {
       MemOutputStream out = new MemOutputStream(new byte[20 + (cmd.query.length())]);
       codec.init(out);
       codec.writeTag(JavaBinCodec.ARR, 3);
-      codec.writeInt(UpdateLog.DELETE_BY_QUERY | flags);  // should just take one byte
+      codec.writeInt(UpdateLog.DELETE_BY_QUERY);  // should just take one byte
       codec.writeLong(cmd.getVersion());
       codec.writeStr(cmd.query);
 
@@ -478,7 +450,7 @@ public class TransactionLog implements Closeable {
   }
 
 
-  public long writeCommit(CommitUpdateCommand cmd, int flags) {
+  public long writeCommit(CommitUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
     synchronized (this) {
       try {
@@ -490,7 +462,7 @@ public class TransactionLog implements Closeable {
         }
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.COMMIT | flags);  // should just take one byte
+        codec.writeInt(UpdateLog.COMMIT);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeStr(END_MESSAGE);  // ensure these bytes are (almost) last in the file
 

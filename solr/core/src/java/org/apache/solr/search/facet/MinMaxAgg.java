@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -142,7 +143,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slotNum) throws IOException {
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
       double val = values.doubleVal(doc);
       if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
 
@@ -171,7 +172,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slotNum) throws IOException {
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
       long val = values.longVal(doc);
       if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
 
@@ -230,7 +231,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slotNum) throws IOException {
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
       long val = values.longVal(doc);
       if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
 
@@ -334,7 +335,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slotNum) throws IOException {
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
       if (subDv.advanceExact(doc)) {
         int segOrd = subDv.ordValue();
         int ord = toGlobal==null ? segOrd : (int)toGlobal.get(segOrd);

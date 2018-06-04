@@ -142,7 +142,7 @@ public final class IntervalQuery extends Query {
       if (intervals == null)
         return null;
       LeafSimScorer leafScorer = simScorer == null ? null
-          : new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE);
+          : new LeafSimScorer(simScorer, context.reader(), field, scoreMode.needsScores());
       return new IntervalScorer(this, intervals, leafScorer);
     }
 

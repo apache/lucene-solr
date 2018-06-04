@@ -101,6 +101,8 @@ public abstract class CoreAdminParams
 
   public static final String DELETE_INSTANCE_DIR = "deleteInstanceDir";
 
+  public static final String DELETE_METRICS_HISTORY = "deleteMetricsHistory";
+
   public static final String LOAD_ON_STARTUP = "loadOnStartup";
   
   public static final String TRANSIENT = "transient";

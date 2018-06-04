@@ -73,7 +73,8 @@ public class IndexSizeTrigger extends TriggerBase {
   private long aboveBytes, aboveDocs, belowBytes, belowDocs;
   private CollectionParams.CollectionAction aboveOp, belowOp;
   private final Set<String> collections = new HashSet<>();
-  private final Map<String, Long> lastEventMap = new ConcurrentHashMap<>();
+  private final Map<String, Long> lastAboveEventMap = new ConcurrentHashMap<>();
+  private final Map<String, Long> lastBelowEventMap = new ConcurrentHashMap<>();
 
   public IndexSizeTrigger(String name) {
     super(TriggerEventType.INDEXSIZE, name);
@@ -154,16 +155,22 @@ public class IndexSizeTrigger extends TriggerBase {
   @Override
   protected Map<String, Object> getState() {
     Map<String, Object> state = new HashMap<>();
-    state.put("lastEventMap", lastEventMap);
+    state.put("lastAboveEventMap", lastAboveEventMap);
+    state.put("lastBelowEventMap", lastBelowEventMap);
     return state;
   }
 
   @Override
   protected void setState(Map<String, Object> state) {
-    this.lastEventMap.clear();
-    Map<String, Long> replicaVsTime = (Map<String, Long>)state.get("lastEventMap");
+    this.lastAboveEventMap.clear();
+    this.lastBelowEventMap.clear();
+    Map<String, Long> replicaVsTime = (Map<String, Long>)state.get("lastAboveEventMap");
     if (replicaVsTime != null) {
-      this.lastEventMap.putAll(replicaVsTime);
+      this.lastAboveEventMap.putAll(replicaVsTime);
+    }
+    replicaVsTime = (Map<String, Long>)state.get("lastBelowEventMap");
+    if (replicaVsTime != null) {
+      this.lastBelowEventMap.putAll(replicaVsTime);
     }
   }
 
@@ -171,6 +178,12 @@ public class IndexSizeTrigger extends TriggerBase {
   public void restoreState(AutoScaling.Trigger old) {
     assert old.isClosed();
     if (old instanceof IndexSizeTrigger) {
+      IndexSizeTrigger that = (IndexSizeTrigger)old;
+      assert this.name.equals(that.name);
+      this.lastAboveEventMap.clear();
+      this.lastBelowEventMap.clear();
+      this.lastAboveEventMap.putAll(that.lastAboveEventMap);
+      this.lastBelowEventMap.putAll(that.lastBelowEventMap);
     } else {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
           "Unable to restore state from an unknown type of trigger");
@@ -275,44 +288,54 @@ public class IndexSizeTrigger extends TriggerBase {
 
     // collection / list(info)
     Map<String, List<ReplicaInfo>> aboveSize = new HashMap<>();
-    currentSizes.entrySet().stream()
-        .filter(e -> (
-            (Long)e.getValue().getVariable(BYTES_SIZE_PROP) > aboveBytes ||
-            (Long)e.getValue().getVariable(DOCS_SIZE_PROP) > aboveDocs
-            ) && waitForElapsed(e.getKey(), now, lastEventMap))
-        .forEach(e -> {
-          ReplicaInfo info = e.getValue();
+
+    currentSizes.forEach((coreName, info) -> {
+      if ((Long)info.getVariable(BYTES_SIZE_PROP) > aboveBytes ||
+          (Long)info.getVariable(DOCS_SIZE_PROP) > aboveDocs) {
+        if (waitForElapsed(coreName, now, lastAboveEventMap)) {
           List<ReplicaInfo> infos = aboveSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
           if (!infos.contains(info)) {
-            if ((Long)e.getValue().getVariable(BYTES_SIZE_PROP) > aboveBytes) {
+            if ((Long)info.getVariable(BYTES_SIZE_PROP) > aboveBytes) {
               info.getVariables().put(VIOLATION_PROP, ABOVE_BYTES_PROP);
             } else {
               info.getVariables().put(VIOLATION_PROP, ABOVE_DOCS_PROP);
             }
             infos.add(info);
           }
-        });
+        }
+      } else {
+        // no violation - clear waitForElapsed
+        lastAboveEventMap.remove(coreName);
+      }
+    });
+
     // collection / list(info)
     Map<String, List<ReplicaInfo>> belowSize = new HashMap<>();
-    currentSizes.entrySet().stream()
-        .filter(e -> (
-            (Long)e.getValue().getVariable(BYTES_SIZE_PROP) < belowBytes ||
-            (Long)e.getValue().getVariable(DOCS_SIZE_PROP) < belowDocs
-            ) && waitForElapsed(e.getKey(), now, lastEventMap))
-        .forEach(e -> {
-          ReplicaInfo info = e.getValue();
+
+    currentSizes.forEach((coreName, info) -> {
+      if ((Long)info.getVariable(BYTES_SIZE_PROP) < belowBytes ||
+          (Long)info.getVariable(DOCS_SIZE_PROP) < belowDocs) {
+        if (waitForElapsed(coreName, now, lastBelowEventMap)) {
           List<ReplicaInfo> infos = belowSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
           if (!infos.contains(info)) {
-            if ((Long)e.getValue().getVariable(BYTES_SIZE_PROP) < belowBytes) {
+            if ((Long)info.getVariable(BYTES_SIZE_PROP) < belowBytes) {
               info.getVariables().put(VIOLATION_PROP, BELOW_BYTES_PROP);
             } else {
               info.getVariables().put(VIOLATION_PROP, BELOW_DOCS_PROP);
             }
             infos.add(info);
           }
-        });
+        }
+      } else {
+        // no violation - clear waitForElapsed
+        lastBelowEventMap.remove(coreName);
+      }
+    });
 
     if (aboveSize.isEmpty() && belowSize.isEmpty()) {
+      log.trace("NO VIOLATIONS: Now={}", now);
+      log.trace("lastAbove={}", lastAboveEventMap);
+      log.trace("lastBelow={}", lastBelowEventMap);
       return;
     }
 
@@ -326,7 +349,7 @@ public class IndexSizeTrigger extends TriggerBase {
         TriggerEvent.Op op = new TriggerEvent.Op(aboveOp);
         op.addHint(Suggester.Hint.COLL_SHARD, new Pair<>(coll, r.getShard()));
         ops.add(op);
-        Long time = lastEventMap.get(r.getCore());
+        Long time = lastAboveEventMap.get(r.getCore());
         if (time != null && eventTime.get() > time) {
           eventTime.set(time);
         }
@@ -360,11 +383,11 @@ public class IndexSizeTrigger extends TriggerBase {
       op.addHint(Suggester.Hint.COLL_SHARD, new Pair(coll, replicas.get(0).getShard()));
       op.addHint(Suggester.Hint.COLL_SHARD, new Pair(coll, replicas.get(1).getShard()));
       ops.add(op);
-      Long time = lastEventMap.get(replicas.get(0).getCore());
+      Long time = lastBelowEventMap.get(replicas.get(0).getCore());
       if (time != null && eventTime.get() > time) {
         eventTime.set(time);
       }
-      time = lastEventMap.get(replicas.get(1).getCore());
+      time = lastBelowEventMap.get(replicas.get(1).getCore());
       if (time != null && eventTime.get() > time) {
         eventTime.set(time);
       }
@@ -376,11 +399,11 @@ public class IndexSizeTrigger extends TriggerBase {
     if (processor.process(new IndexSizeEvent(getName(), eventTime.get(), ops, aboveSize, belowSize))) {
       // update last event times
       aboveSize.forEach((coll, replicas) -> {
-        replicas.forEach(r -> lastEventMap.put(r.getCore(), now));
+        replicas.forEach(r -> lastAboveEventMap.put(r.getCore(), now));
       });
       belowSize.forEach((coll, replicas) -> {
-        lastEventMap.put(replicas.get(0).getCore(), now);
-        lastEventMap.put(replicas.get(1).getCore(), now);
+        lastBelowEventMap.put(replicas.get(0).getCore(), now);
+        lastBelowEventMap.put(replicas.get(1).getCore(), now);
       });
     }
   }

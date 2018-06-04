@@ -1015,6 +1015,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                      "currency(amount,USD)",
                      "currency('amount',USD)");
   }
+  public void testFuncRelatedness() throws Exception {
+    SolrQueryRequest req = req("fore","foo_s:front", "back","foo_s:back");
+    try {
+      assertFuncEquals(req,
+                       "agg_relatedness({!query v='foo_s:front'}, {!query v='foo_s:back'})", 
+                       "agg_relatedness($fore, $back)");
+    } finally {
+      req.close();
+    }
+  }
 
   public void testTestFuncs() throws Exception {
     assertFuncEquals("sleep(1,5)", "sleep(1,5)");

@@ -104,7 +104,7 @@ public class TestTryDelete extends LuceneTestCase
     }
 
     assertTrue(writer.hasDeletions());
-    
+
     mgr.maybeRefresh();
 
     searcher = mgr.acquire();

@@ -27,11 +27,11 @@ Even if some nodes in the cluster are offline or unreachable, a Solr node will b
 
 === zkConnected
 
-A Solr node will return the results of a search request as long as it can communicate with at least one replica of every shard that it knows about, even if it can _not_ communicate with ZooKeeper at the time it receives the request. This is normally the preferred behavior from a fault tolerance standpoint, but may result in stale or incorrect results if there have been major changes to the collection structure that the node has not been informed of via ZooKeeper (i.e., shards may have been added or removed, or split into sub-shards)
+A Solr node will return the results of a search request as long as it can communicate with at least one replica of every shard that it knows about, even if it can _not_ communicate with ZooKeeper at the time it receives the request. This is normally the preferred behavior from a fault tolerance standpoint, but may result in stale or incorrect results if there have been major changes to the collection structure that the node has not been informed of via ZooKeeper (i.e., shards may have been added or removed, or split into sub-shards).
 
 A `zkConnected` header is included in every search response indicating if the node that processed the request was connected with ZooKeeper at the time:
 
-.Solr Response with partialResults
+.Solr Response with zkConnected
 [source,json]
 ----
 {
@@ -51,11 +51,15 @@ A `zkConnected` header is included in every search response indicating if the no
 }
 ----
 
+To prevent stale or incorrect results in the event that the request-serving node can't communicate with ZooKeeper, set the <<shards-tolerant,`shards.tolerant`>> parameter to `requireZkConnected`.  This will cause requests to fail rather than setting a `zkConnected` header to `false`.
+
 === shards.tolerant
 
-In the event that one or more shards queried are completely unavailable, then Solr's default behavior is to fail the request. However, there are many use-cases where partial results are acceptable and so Solr provides a boolean `shards.tolerant` parameter (default `false`).
+In the event that one or more shards queried are completely unavailable, then Solr's default behavior is to fail the request. However, there are many use-cases where partial results are acceptable and so Solr provides a boolean `shards.tolerant` parameter (default `false`).  In addition to `true` and `false`, `shards.tolerant` may also be set to `requireZkConnected` - see below.
 
 If `shards.tolerant=true` then partial results may be returned. If the returned response does not contain results from all the appropriate shards then the response header contains a special flag called `partialResults`.
+
+If `shards.tolerant=requireZkConnected` and the node serving the search request cannot communicate with ZooKeeper, the request will fail, rather than returning potentially stale or incorrect results.  This will also cause requests to fail when one or more queried shards are completely unavailable, just like when `shards.tolerant=false`.
 
 The client can specify '<<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,`shards.info`>>' along with the `shards.tolerant` parameter to retrieve more fine-grained details.
 

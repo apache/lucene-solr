@@ -17,10 +17,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeTrigger;
-import org.apache.lucene.index.SegmentInfos;
 
 /**
  * A {@link MergePolicy} that only returns forced merges.
@@ -38,7 +34,7 @@ public final class ForceMergePolicy extends FilterMergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer)
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
       throws IOException {
     return null;
   }

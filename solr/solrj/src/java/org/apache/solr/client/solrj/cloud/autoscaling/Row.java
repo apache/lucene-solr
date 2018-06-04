@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +28,6 @@ import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -81,10 +81,10 @@ public class Row implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    ew.put(node, (IteratorWriter) iw -> {
-      iw.add((MapWriter) e -> e.put("replicas", collectionVsShardVsReplicas));
-      for (Cell cell : cells) iw.add(cell);
-    });
+    ew.put(NODE, node);
+    ew.put("replicas", collectionVsShardVsReplicas);
+    ew.put("isLive", isLive);
+    ew.put("attributes", Arrays.asList(cells));
   }
 
   Row copy(Policy.Session session) {

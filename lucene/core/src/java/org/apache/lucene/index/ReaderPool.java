@@ -87,8 +87,8 @@ final class ReaderPool implements Closeable {
         SegmentReader segReader = (SegmentReader) leaf.reader();
         SegmentReader newReader = new SegmentReader(segmentInfos.info(i), segReader, segReader.getLiveDocs(),
             segReader.numDocs());
-        readerMap.put(newReader.getSegmentInfo(), new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(),
-            newReader, newPendingDeletes(newReader, newReader.getSegmentInfo())));
+        readerMap.put(newReader.getOriginalSegmentInfo(), new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(),
+            newReader, newPendingDeletes(newReader, newReader.getOriginalSegmentInfo())));
       }
     }
   }
@@ -132,7 +132,7 @@ final class ReaderPool implements Closeable {
    */
   synchronized boolean anyPendingDeletes() {
     for(ReadersAndUpdates rld : readerMap.values()) {
-      if (rld.getPendingDeleteCount() != 0) {
+      if (rld.anyPendingDeletes()) {
         return true;
       }
     }
@@ -321,7 +321,6 @@ final class ReaderPool implements Closeable {
 
   /**
    * Returns <code>true</code> iff there are any buffered doc values updates. Otherwise <code>false</code>.
-   * @see #anyPendingDeletes()
    */
   synchronized boolean anyDocValuesChanges() {
     for (ReadersAndUpdates rld : readerMap.values()) {

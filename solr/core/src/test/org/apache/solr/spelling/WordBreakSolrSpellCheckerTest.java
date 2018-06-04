@@ -65,6 +65,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     params.add(WordBreakSolrSpellChecker.PARAM_MAX_CHANGES, "10");
     checker.init(params, core);
 
+    //TODO can we use core.withSearcher ? refcounting here is confusing; not sure if intentional
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     QueryConverter qc = new SpellingQueryConverter();
     qc.setAnalyzer(new MockAnalyzer(random()));

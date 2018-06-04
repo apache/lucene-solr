@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
@@ -39,6 +39,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestTermScorer extends LuceneTestCase {
   protected Directory directory;
@@ -218,7 +219,10 @@ public class TestTermScorer extends LuceneTestCase {
       int numValues = random().nextInt(1 << random().nextInt(5));
       int start = random().nextInt(10);
       for (int j = 0; j < numValues; ++j) {
-        doc.add(new StringField("foo", Integer.toString(start + j), Store.NO));
+        int freq = TestUtil.nextInt(random(), 1, 1 << random().nextInt(3));
+        for (int k = 0; k < freq; ++k) {
+          doc.add(new TextField("foo", Integer.toString(start + j), Store.NO));
+        }
       }
       w.addDocument(doc);
     }
@@ -234,7 +238,7 @@ public class TestTermScorer extends LuceneTestCase {
       
       searcher.search(query, collector1);
       searcher.search(query, collector2);
-      assertTopDocsEquals(collector1.topDocs(), collector2.topDocs());
+      CheckHits.checkEqual(query, collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
 
       int filterTerm = random().nextInt(15);
       Query filteredQuery = new BooleanQuery.Builder()
@@ -246,19 +250,10 @@ public class TestTermScorer extends LuceneTestCase {
       collector2 = TopScoreDocCollector.create(10, null, false); // TOP_SCORES
       searcher.search(filteredQuery, collector1);
       searcher.search(filteredQuery, collector2);
-      assertTopDocsEquals(collector1.topDocs(), collector2.topDocs());
+      CheckHits.checkEqual(query, collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
     }
     reader.close();
     dir.close();
   }
 
-  private static void assertTopDocsEquals(TopDocs td1, TopDocs td2) {
-    assertEquals(td1.scoreDocs.length, td2.scoreDocs.length);
-    for (int i = 0; i < td1.scoreDocs.length; ++i) {
-      ScoreDoc sd1 = td1.scoreDocs[i];
-      ScoreDoc sd2 = td2.scoreDocs[i];
-      assertEquals(sd1.doc, sd2.doc);
-      assertEquals(sd1.score, sd2.score, 0f);
-    }
-  }
 }

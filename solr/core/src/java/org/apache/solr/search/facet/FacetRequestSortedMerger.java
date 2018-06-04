@@ -162,7 +162,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
     // TODO: add information in sub-shard response about dropped buckets (i.e. not all returned due to limit)
     // If we know we've seen all the buckets from a shard, then we don't have to add to leafBuckets or partialBuckets, only skipBuckets
-    boolean isCommandPartial = freq.returnsPartial();
+    boolean isCommandPartial = freq.returnsPartial() || freq.processEmpty; // TODO: should returnsPartial() check processEmpty internally?
     boolean returnedAllBuckets = !isCommandPartial && !thisMissing;  // did the shard return all of the possible buckets?
 
     if (returnedAllBuckets && tags.isEmpty() && tagsWithPartial.isEmpty()) {

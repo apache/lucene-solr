@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -42,6 +43,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.util.RTimer;
 
 public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
@@ -78,6 +80,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
     this.fcontext = fcontext;
     this.freq = freq;
+    fcontext.processor = this;
   }
 
   public Object getResponse() {
@@ -90,10 +93,13 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
   private void evalFilters() throws IOException {
     if (freq.domain.filters == null || freq.domain.filters.isEmpty()) return;
-
-    List<Query> qlist = new ArrayList<>(freq.domain.filters.size());
+    this.filter = fcontext.searcher.getDocSet(evalJSONFilterQueryStruct(fcontext, freq.domain.filters));
+  }
+  
+  private static List<Query> evalJSONFilterQueryStruct(FacetContext fcontext, List<Object> filters) throws IOException {
+    List<Query> qlist = new ArrayList<>(filters.size());
     // TODO: prevent parsing filters each time!
-    for (Object rawFilter : freq.domain.filters) {
+    for (Object rawFilter : filters) {
       if (rawFilter instanceof String) {
         QParser parser = null;
         try {
@@ -149,20 +155,38 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       }
 
     }
-
-    this.filter = fcontext.searcher.getDocSet(qlist);
+    return qlist;
   }
 
   private void handleDomainChanges() throws IOException {
     if (freq.domain == null) return;
-    handleFilterExclusions();
+
+    if (null != freq.domain.explicitQueries) {
+      try {
+        final List<Query> domainQs = evalJSONFilterQueryStruct(fcontext, freq.domain.explicitQueries);
+        if (domainQs.isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                  "'query' domain must not evaluate to an empty list of queries");
+        }
+        fcontext.base = fcontext.searcher.getDocSet(domainQs);
+      } catch (SolrException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                "Unable to parse domain 'query': " + freq.domain.explicitQueries +
+                                " -- reason: " + e.getMessage(),
+                                e);
+      }
+    } else {
+      // mutualy exclusive to freq.domain.explicitQueries
+      handleFilterExclusions();
+    }
 
     // Check filters... if we do have filters they apply after domain changes.
     // We still calculate them first because we can use it in a parent->child domain change.
     evalFilters();
 
     handleJoinField();
-    
+    handleGraphField();
+
     boolean appliedFilters = handleBlockJoin();
 
     if (this.filter != null && !appliedFilters) {
@@ -238,7 +262,15 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     final Query domainQuery = freq.domain.joinField.createDomainQuery(fcontext);
     fcontext.base = fcontext.searcher.getDocSet(domainQuery);
   }
-    
+
+  /** modifies the context base if there is a graph field domain change */
+  private void handleGraphField() throws IOException {
+    if (null == freq.domain.graphField) return;
+
+    final Query domainQuery = freq.domain.graphField.createDomainQuery(fcontext);
+    fcontext.base = fcontext.searcher.getDocSet(domainQuery);
+  }
+
   // returns "true" if filters were applied to fcontext.base already
   private boolean handleBlockJoin() throws IOException {
     boolean appliedFilters = false;
@@ -264,7 +296,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       // We need to remember to not redundantly re-apply these filters after.
       DocSet acceptDocs = this.filter;
       if (acceptDocs == null) {
-        acceptDocs = fcontext.searcher.getLiveDocs();
+        acceptDocs = fcontext.searcher.getLiveDocSet();
       } else {
         appliedFilters = true;
       }
@@ -277,13 +309,13 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     return appliedFilters;
   }
 
-  protected void processStats(SimpleOrderedMap<Object> bucket, DocSet docs, int docCount) throws IOException {
+  protected void processStats(SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, int docCount) throws IOException {
     if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }
     createAccs(docCount, 1);
-    int collected = collect(docs, 0);
+    int collected = collect(docs, 0, slotNum -> { return new SlotContext(bucketQ); });
     countAcc.incrementCount(0, collected);
     assert collected == docCount;
     addStats(bucket, 0);
@@ -319,10 +351,22 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  int collect(DocSet docs, int slot) throws IOException {
+  int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     int count = 0;
     SolrIndexSearcher searcher = fcontext.searcher;
 
+    if (0 == docs.size()) {
+      // we may be in a "processEmpty" type situation where the client still cares about this bucket
+      // either way, we should let our accumulators know about the empty set, so they can collect &
+      // compute the slot (ie: let them decide if they care even when it's size==0)
+      if (accs != null) {
+        for (SlotAcc acc : accs) {
+          acc.collect(docs, slot, slotContext); // NOT per-seg collectors
+        }
+      }
+      return count;
+    }
+    
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
     LeafReaderContext ctx = null;
@@ -346,15 +390,15 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
         setNextReader(ctx);
       }
       count++;
-      collect(doc - segBase, slot);  // per-seg collectors
+      collect(doc - segBase, slot, slotContext);  // per-seg collectors
     }
     return count;
   }
 
-  void collect(int segDoc, int slot) throws IOException {
+  void collect(int segDoc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     if (accs != null) {
       for (SlotAcc acc : accs) {
-        acc.collect(segDoc, slot);
+        acc.collect(segDoc, slot, slotContext);
       }
     }
   }
@@ -402,7 +446,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
     try {
       if (!skip) {
-        processStats(bucket, result, count);
+        processStats(bucket, q, result, count);
       }
       processSubs(bucket, q, result, skip, facetInfo);
     } finally {

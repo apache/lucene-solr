@@ -20,7 +20,9 @@ import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.http.client.HttpClient;
@@ -52,8 +54,13 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
    * and then undetected shard inconsistency as a result.
    * Therefore this thread pool is left unbounded. See SOLR-8205
    */
-  private ExecutorService updateExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
-      new SolrjNamedThreadFactory("updateExecutor"));
+  private ExecutorService updateExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
+      60L, TimeUnit.SECONDS,
+      new SynchronousQueue<>(),
+      new SolrjNamedThreadFactory("updateExecutor"),
+      // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
+      // see SOLR-11880 for more details
+      false);
   
   private ExecutorService recoveryExecutor;
   
@@ -71,6 +78,9 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
+  private int socketTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
+  private int connectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
+
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
     updateOnlyConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
     defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
@@ -85,6 +95,8 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     if (cfg != null)  {
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
       clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
+      socketTimeout = cfg.getDistributedSocketTimeout();
+      connectionTimeout = cfg.getDistributedConnectionTimeout();
     }
     HttpClientMetricNameStrategy metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
     if (cfg != null)  {
@@ -201,6 +213,14 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
       updateOnlyConnectionManager.close();
       defaultConnectionManager.close();
     }
+  }
+
+  public int getSocketTimeout() {
+    return socketTimeout;
+  }
+
+  public int getConnectionTimeout() {
+    return connectionTimeout;
   }
 
 }

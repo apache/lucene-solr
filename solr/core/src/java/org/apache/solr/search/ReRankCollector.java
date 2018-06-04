@@ -65,6 +65,7 @@ public class ReRankCollector extends TopDocsCollector {
       this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
     } else {
       sort = sort.rewrite(searcher);
+      //scores are needed for Rescorer (regardless of whether sort needs it)
       this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true, true);
     }
     this.searcher = searcher;
@@ -82,7 +83,7 @@ public class ReRankCollector extends TopDocsCollector {
 
   @Override
   public ScoreMode scoreMode() {
-    return ScoreMode.COMPLETE;
+    return ScoreMode.COMPLETE; // since the scores will be needed by Rescorer as input regardless of mainCollector
   }
 
   public TopDocs topDocs(int start, int howMany) {

@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.Document;
@@ -28,6 +30,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NullInfoStream;
@@ -175,12 +178,9 @@ public class TestReaderPool extends LuceneTestCase {
       boolean expectUpdate = false;
       int doc = -1;
       if (postings != null && postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-        readersAndUpdates.delete(doc = postings.docID());
+        assertTrue(readersAndUpdates.delete(doc = postings.docID()));
         expectUpdate = true;
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
-        assertTrue(pool.anyPendingDeletes());
-      } else {
-        assertFalse(pool.anyPendingDeletes());
       }
       assertFalse(pool.anyDocValuesChanges()); // deletes are not accounted here
       readOnlyClone.close();
@@ -202,6 +202,64 @@ public class TestReaderPool extends LuceneTestCase {
         assertFalse(pool.release(readersAndUpdates, random().nextBoolean()));
       }
     }
+    IOUtils.close(pool, reader, directory);
+  }
+
+  public void testPassReaderToMergePolicyConcurrently() throws Exception {
+    Directory directory = newDirectory();
+    FieldInfos.FieldNumbers fieldNumbers = buildIndex(directory);
+    StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
+    SegmentInfos segmentInfos = reader.segmentInfos.clone();
+    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0L,
+        new NullInfoStream(), null, null);
+    if (random().nextBoolean()) {
+      pool.enableReaderPooling();
+    }
+    AtomicBoolean isDone = new AtomicBoolean();
+    CountDownLatch latch = new CountDownLatch(1);
+    Thread refresher = new Thread(() -> {
+      try {
+        latch.countDown();
+        while (isDone.get() == false) {
+          for (SegmentCommitInfo commitInfo : segmentInfos) {
+            ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
+            SegmentReader segmentReader = readersAndUpdates.getReader(IOContext.READ);
+            readersAndUpdates.release(segmentReader);
+            pool.release(readersAndUpdates, random().nextBoolean());
+          }
+        }
+      } catch (Exception ex) {
+        throw new AssertionError(ex);
+      }
+    });
+    refresher.start();
+    MergePolicy mergePolicy = new FilterMergePolicy(newMergePolicy()) {
+      @Override
+      public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+        CodecReader reader = readerIOSupplier.get();
+        assert reader.maxDoc() > 0; // just try to access the reader
+        return true;
+      }
+    };
+    latch.await();
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      for (SegmentCommitInfo commitInfo : segmentInfos) {
+        ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
+        SegmentReader sr = readersAndUpdates.getReadOnlyClone(IOContext.READ);
+        PostingsEnum postings = sr.postings(new Term("id", "" + i));
+        sr.decRef();
+        if (postings != null) {
+          for (int docId = postings.nextDoc(); docId != DocIdSetIterator.NO_MORE_DOCS; docId = postings.nextDoc()) {
+            readersAndUpdates.delete(docId);
+            assertTrue(readersAndUpdates.keepFullyDeletedSegment(mergePolicy));
+          }
+        }
+        assertTrue(readersAndUpdates.keepFullyDeletedSegment(mergePolicy));
+        pool.release(readersAndUpdates, random().nextBoolean());
+      }
+    }
+    isDone.set(true);
+    refresher.join();
     IOUtils.close(pool, reader, directory);
   }
 

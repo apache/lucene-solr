@@ -2285,6 +2285,37 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(row2.get(5).doubleValue(), 606.0, 0.0);
   }
 
+
+  @Test
+  public void testSetAndGetValue() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=describe(array(1,2,3,4,5,6,7))," +
+        "               b=getValue(a, geometricMean)," +
+        "               c=setValue(a, \"test\", add(b, 1))," +
+        "               d=getValue(c, test)," +
+        "               e=setValue(c, blah, array(8.11,9.55,10.1))," +
+        "               f=getValue(e, \"blah\"))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number mean = (Number)tuples.get(0).get("b");
+    assertEquals(mean.doubleValue(), 3.3800151591412964, 0.0);
+    Number mean1 = (Number)tuples.get(0).get("d");
+    assertEquals(mean1.doubleValue(), 4.3800151591412964, 0.0);
+    List<Number> vals = (List<Number>)tuples.get(0).get("f");
+    assertEquals(vals.size(), 3);
+    assertEquals(vals.get(0).doubleValue(), 8.11, 0);
+    assertEquals(vals.get(1).doubleValue(), 9.55, 0);
+    assertEquals(vals.get(2).doubleValue(), 10.1, 0);
+  }
+
+
   @Test
   public void testEbeDivide() throws Exception {
     String cexpr = "ebeDivide(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";

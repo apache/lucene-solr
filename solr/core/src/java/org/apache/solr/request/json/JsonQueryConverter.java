@@ -68,8 +68,21 @@ class JsonQueryConverter {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Error when parsing json query, expect only one query parser here, but found : "+map.keySet());
       }
+
       String qtype = map.keySet().iterator().next();
-      Object subVal = map.get(qtype);
+      String tagName = null;
+      if (qtype.startsWith("#")) {
+        Object taggedQueryObject = map.get(qtype);
+        tagName = qtype.substring(1);
+        if (taggedQueryObject instanceof String) {
+          builder.append("{!tag=").append(tagName).append("}");
+          builder.append(taggedQueryObject);
+          return;
+        } else if (taggedQueryObject instanceof Map) {
+          map = (Map<String, Object>) taggedQueryObject;
+          qtype = map.keySet().iterator().next();
+        }
+      }
 
       // We don't want to introduce unnecessary variable at root level
       boolean useSubBuilder = builder.length() > 0;
@@ -77,11 +90,17 @@ class JsonQueryConverter {
 
       if (useSubBuilder) subBuilder = new StringBuilder();
 
-      subBuilder = subBuilder.append("{!").append(qtype).append(' ');;
+      Object subVal = map.get(qtype);
+      subBuilder = subBuilder.append("{!").append(qtype).append(' ');
+      if (tagName != null) {
+        subBuilder.append("tag=").append(tagName).append(' ');
+      }
       buildLocalParams(subBuilder, subVal, false, additionalParams);
       subBuilder.append("}");
 
-      if (useSubBuilder) builder.append('$').append(putParam(subBuilder.toString(), additionalParams));
+      if (useSubBuilder) {
+        builder.append('$').append(putParam(subBuilder.toString(), additionalParams));
+      }
     } else {
       for (Map.Entry<String, Object> entry : map.entrySet()) {
         String key = entry.getKey();

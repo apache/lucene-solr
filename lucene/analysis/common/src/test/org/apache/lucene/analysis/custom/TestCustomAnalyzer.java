@@ -31,9 +31,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory;
 import org.apache.lucene.analysis.charfilter.MappingCharFilterFactory;
-import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
+import org.apache.lucene.analysis.core.LowerCaseTokenizerFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
@@ -432,7 +432,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
 
     @Override
     public AbstractAnalysisFactory getMultiTermComponent() {
-      return new KeywordTokenizerFactory(getOriginalArgs());
+      return new DummyTokenFilterFactory(Collections.emptyMap());
     }
     
   }
@@ -500,6 +500,14 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
         .build();
     assertEquals(new BytesRef("e f c"), analyzer.normalize("dummy", "a b c"));
   }
+  
+  /** test normalize where the TokenizerFactory returns a filter to normalize the text */
+  public void testNormalizationWithLowerCaseTokenizer() throws IOException {
+    CustomAnalyzer analyzer1 = CustomAnalyzer.builder()
+        .withTokenizer(LowerCaseTokenizerFactory.class, Collections.emptyMap())
+        .build();
+    assertEquals(new BytesRef("abc"), analyzer1.normalize("dummy", "ABC"));
+  }
 
   public void testConditions() throws IOException {
     CustomAnalyzer analyzer = CustomAnalyzer.builder()
@@ -520,7 +528,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     CustomAnalyzer analyzer = CustomAnalyzer.builder()
         .withTokenizer("whitespace")
         .addTokenFilter("lowercase")
-        .when("termexclusion", "protected", "org/apache/lucene/analysis/custom/teststop.txt")
+        .when("protectedterm", "protected", "org/apache/lucene/analysis/custom/teststop.txt")
           .addTokenFilter("reversestring")
         .endwhen()
         .build();

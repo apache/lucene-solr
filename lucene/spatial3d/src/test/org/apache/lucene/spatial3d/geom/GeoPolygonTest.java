@@ -1816,4 +1816,38 @@ shape:
     
   }
   
+  @Test
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8337")  
+  public void testLUCENE8337() {
+    /*
+   {planetmodel=PlanetModel.WGS84, number of shapes=1, address=c865f21d, 
+   testPoint=[lat=2.114284741800425E-5, lon=-3.141516973708951([X=-1.0011188509002849, Y=-7.57645554894811E-5, Z=2.1166503175641402E-5])], testPointInSet=true, shapes={ 
+{[lat=1.4379241972924144E-5, lon=-3.141520309370815([X=-1.0011188512685139, Y=-7.24251615257059E-5, Z=1.4395330244708275E-5])], 
+[lat=-1.858900171939205E-5, lon=-3.1415059739464217([X=-1.001118850057461, Y=-8.677662511280753E-5, Z=-1.860980009708855E-5])], 
+[lat=2.7071641284581073E-5, lon=-3.141469177092562([X=-1.001118845991408, Y=-1.2361464904363391E-4, Z=2.7101930495137982E-5])], 
+[lat=8.285235549000288E-5, lon=-3.1414967545451287([X=-1.0011188459297669, Y=-9.600634121467467E-5, Z=8.29450550819143E-5])], 
+[lat=-8.956596846349593E-303, lon=-3.1415926535897922([X=-1.0011188539924791, Y=-1.0117738616818362E-15, Z=-8.966617970490158E-303])]}}
+
+   [junit4]    > Point: [lat=-6.499661194605612E-10, lon=-2.0286460544410216([X=-0.4425148814082194, Y=-0.8980086522698344, Z=-6.506933366482957E-10])]
+    */
+    
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, 1.4379241972924144E-5, -3.141520309370815));
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.858900171939205E-5, -3.1415059739464217));
+    points.add(new GeoPoint(PlanetModel.WGS84, 2.7071641284581073E-5, -3.141469177092562));
+    points.add(new GeoPoint(PlanetModel.WGS84, 8.285235549000288E-5, -3.1414967545451287));
+    points.add(new GeoPoint(PlanetModel.WGS84, -8.956596846349593E-303, -3.1415926535897922));
+    final GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points);
+
+    final GeoPolygon largePolygon = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.WGS84, Collections.singletonList(description));
+    final GeoPolygon smallPolygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, description);
+    
+    final GeoPoint thePoint = new GeoPoint(PlanetModel.WGS84, -6.499661194605612E-10, -2.0286460544410216);
+    
+    System.out.println("large inset: "+largePolygon.isWithin(thePoint));
+    
+    assertTrue(largePolygon.isWithin(thePoint) == smallPolygon.isWithin(thePoint));
+    
+  }
+  
 }

@@ -71,8 +71,10 @@ import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.analysis.hunspell.TestHunspellStemFilter;
+import org.apache.lucene.analysis.minhash.MinHashFilter;
 import org.apache.lucene.analysis.miscellaneous.ConditionalTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilter;
+import org.apache.lucene.analysis.miscellaneous.FingerprintFilter;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilter;
@@ -93,7 +95,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
@@ -108,7 +109,6 @@ import org.tartarus.snowball.SnowballProgram;
 import org.xml.sax.InputSource;
 
 /** tests random analysis chains */
-@LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8273")
 public class TestRandomChains extends BaseTokenStreamTestCase {
 
   static List<Constructor<? extends Tokenizer>> tokenizers;
@@ -116,6 +116,14 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   static List<Constructor<? extends CharFilter>> charfilters;
 
   private static final Predicate<Object[]> ALWAYS = (objects -> true);
+
+  private static final Set<Class<?>> avoidConditionals = new HashSet<>();
+  static {
+    // Fingerprint filter needs to consume the whole tokenstream, so conditionals don't make sense here
+    avoidConditionals.add(FingerprintFilter.class);
+    // Ditto MinHashFilter
+    avoidConditionals.add(MinHashFilter.class);
+  }
 
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
   static {
@@ -703,7 +711,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
 
         while (true) {
           final Constructor<? extends TokenFilter> ctor = tokenfilters.get(random.nextInt(tokenfilters.size()));
-          if (random.nextBoolean()) {
+          if (random.nextBoolean() && avoidConditionals.contains(ctor.getDeclaringClass()) == false) {
             long seed = random.nextLong();
             spec.stream = new ConditionalTokenFilter(spec.stream, in -> {
               final Object args[] = newFilterArgs(random, in, ctor.getParameterTypes());

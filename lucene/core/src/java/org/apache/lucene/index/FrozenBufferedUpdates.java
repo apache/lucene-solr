@@ -390,14 +390,14 @@ final class FrozenBufferedUpdates {
     final List<BufferedUpdatesStream.SegmentState> segmentStates = Arrays.asList(segStates);
     for (BufferedUpdatesStream.SegmentState segState : segmentStates) {
       if (success) {
-        totDelCount += segState.rld.getPendingDeleteCount() - segState.startDelCount;
-        int fullDelCount = segState.rld.info.getDelCount() + segState.rld.getPendingDeleteCount();
+        totDelCount += segState.rld.getDelCount() - segState.startDelCount;
+        int fullDelCount = segState.rld.getDelCount();
         assert fullDelCount <= segState.rld.info.info.maxDoc() : fullDelCount + " > " + segState.rld.info.info.maxDoc();
         if (segState.rld.isFullyDeleted() && writer.getConfig().getMergePolicy().keepFullyDeletedSegment(() -> segState.reader) == false) {
           if (allDeleted == null) {
             allDeleted = new ArrayList<>();
           }
-          allDeleted.add(segState.reader.getSegmentInfo());
+          allDeleted.add(segState.reader.getOriginalSegmentInfo());
         }
       }
     }
@@ -452,7 +452,7 @@ final class FrozenBufferedUpdates {
 
     if (privateSegment != null) {
       assert segStates.length == 1;
-      assert privateSegment == segStates[0].reader.getSegmentInfo();
+      assert privateSegment == segStates[0].reader.getOriginalSegmentInfo();
     }
 
     totalDelCount += applyTermDeletes(segStates);
