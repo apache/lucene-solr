@@ -166,20 +166,6 @@ public class HdfsTransactionLog extends TransactionLog {
     }
     return true;
   }
-  
-  // This could mess with any readers or reverse readers that are open, or anything that might try to do a log lookup.
-  // This should only be used to roll back buffered updates, not actually applied updates.
-  @Override
-  public void rollback(long pos) throws IOException {
-    synchronized (this) {
-      assert snapshot_size == pos;
-      ensureFlushed();
-      // TODO: how do we rollback with hdfs?? We need HDFS-3107
-      fos.setWritten(pos);
-      assert fos.size() == pos;
-      numRecords = snapshot_numRecords;
-    }
-  }
 
   private void readHeader(FastInputStream fis) throws IOException {
     // read existing header
@@ -210,7 +196,7 @@ public class HdfsTransactionLog extends TransactionLog {
   }
 
   @Override
-  public long writeCommit(CommitUpdateCommand cmd, int flags) {
+  public long writeCommit(CommitUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
     synchronized (this) {
       try {
@@ -223,7 +209,7 @@ public class HdfsTransactionLog extends TransactionLog {
         
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.COMMIT | flags);  // should just take one byte
+        codec.writeInt(UpdateLog.COMMIT);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeStr(END_MESSAGE);  // ensure these bytes are (almost) last in the file
 

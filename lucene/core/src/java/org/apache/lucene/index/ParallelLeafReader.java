@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -101,9 +102,11 @@ public class ParallelLeafReader extends LeafReader {
         throw new IllegalArgumentException("All readers must have same maxDoc: "+maxDoc+"!="+reader.maxDoc());
       }
     }
-    
+    final String softDeletesField = completeReaderSet.stream()
+        .map(r -> r.getFieldInfos().getSoftDeletesField())
+        .filter(Objects::nonNull).findAny().orElse(null);
     // TODO: make this read-only in a cleaner way?
-    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(softDeletesField));
 
     Sort indexSort = null;
     int createdVersionMajor = -1;

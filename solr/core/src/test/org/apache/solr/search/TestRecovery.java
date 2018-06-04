@@ -24,7 +24,9 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.TimeOut;
 import org.noggit.ObjectBuilder;
 
 import org.slf4j.Logger;
@@ -820,6 +822,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           +"]"
       );
 
+      // Note that the v101->v103 are dropped, therefore it does not present in RTG
       assertJQ(req("qt","/get", "getVersions","6")
           ,"=={'versions':["+String.join(",",v206,v205,v201,v200,v105,v104)+"]}"
       );
@@ -929,7 +932,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
           ,"=={'versions':["+v105+","+v104+"]}"
       );
 
-      // this time add some docs first before buffering starts (so tlog won't be at pos 0)
       updateJ(jsonAdd(sdoc("id","c100", "_version_",v200)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
       updateJ(jsonAdd(sdoc("id","c101", "_version_",v201)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
@@ -957,10 +959,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 +""              +"]"
       );
 
-      // The updates that were buffered (but never applied) still appear in recent versions!
-      // This is good for some uses, but may not be good for others.
-      assertJQ(req("qt","/get", "getVersions","11")
-          ,"=={'versions':["+String.join(",",v206,v205,v204,v203,v201,v200,v105,v104,v103,v102,v101)+"]}"
+      assertJQ(req("qt","/get", "getVersions","6")
+          ,"=={'versions':["+String.join(",",v206,v205,v201,v200,v105,v104)+"]}"
       );
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
@@ -1008,13 +1008,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
 
     @Test
-  public void testBufferingFlags() throws Exception {
+  public void testExistOldBufferLog() throws Exception {
 
     DirectUpdateHandler2.commitOnClose = false;
-    final Semaphore logReplayFinish = new Semaphore(0);
-
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
-
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -1024,9 +1020,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       String v101 = getNextVersion();
       String v102 = getNextVersion();
       String v103 = getNextVersion();
-      String v114 = getNextVersion();
-      String v115 = getNextVersion();
-      String v116 = getNextVersion();
       String v117 = getNextVersion();
       
       clearIndex();
@@ -1049,14 +1042,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       uhandler = req.getCore().getUpdateHandler();
       ulog = uhandler.getUpdateLog();
 
-      logReplayFinish.acquire();  // wait for replay to finish
+      // the core does not replay updates from buffer tlog on startup
+      assertTrue(ulog.existOldBufferLog());   // since we died while buffering, we should see this last
 
-      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0);   // since we died while buffering, we should see this last
-
-      //
-      // Try again to ensure that the previous log replay didn't wipe out our flags
-      //
-
+      // buffer tlog won't be removed on restart
       req.close();
       h.close();
       createCore();
@@ -1065,26 +1054,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       uhandler = req.getCore().getUpdateHandler();
       ulog = uhandler.getUpdateLog();
 
-      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0);
-
-      // now do some normal non-buffered adds
-      updateJ(jsonAdd(sdoc("id","Q4", "_version_",v114)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-      updateJ(jsonAdd(sdoc("id","Q5", "_version_",v115)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-      updateJ(jsonAdd(sdoc("id","Q6", "_version_",v116)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-      assertU(commit());
-
-      req.close();
-      h.close();
-      createCore();
-
-      req = req();
-      uhandler = req.getCore().getUpdateHandler();
-      ulog = uhandler.getUpdateLog();
-
-      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) == 0);
+      assertTrue(ulog.existOldBufferLog());
 
       ulog.bufferUpdates();
-      // simulate receiving no updates
       ulog.applyBufferedUpdates();
       updateJ(jsonAdd(sdoc("id","Q7", "_version_",v117)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER)); // do another add to make sure flags are back to normal
 
@@ -1096,10 +1068,12 @@ public class TestRecovery extends SolrTestCaseJ4 {
       uhandler = req.getCore().getUpdateHandler();
       ulog = uhandler.getUpdateLog();
 
-      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) == 0); // check flags on Q7
-
-      logReplayFinish.acquire();
-      assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
+      assertFalse(ulog.existOldBufferLog());
+      // Timeout for Q7 get replayed, because it was added on tlog, therefore it will be replayed on restart
+      TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      timeout.waitFor("Timeout waiting for finish replay updates",
+          () -> h.getCore().getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);
+      assertJQ(req("qt","/get", "id", "Q7") ,"/doc/id==Q7");
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;

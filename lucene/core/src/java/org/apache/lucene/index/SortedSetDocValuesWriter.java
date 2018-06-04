@@ -315,4 +315,8 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
       return scratch;
     }
   }
+  @Override
+  DocIdSetIterator getDocIdSet() {
+    return docsWithField.iterator();
+  }
 }
