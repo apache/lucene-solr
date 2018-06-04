@@ -41,6 +41,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
@@ -67,13 +69,15 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String ALL = "all";
 
   private static final Pattern KEY_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
+  private CoreContainer cc;
 
   public MetricsHandler() {
     this.metricManager = null;
   }
 
-  public MetricsHandler(SolrMetricManager metricManager) {
+  public MetricsHandler(SolrMetricManager metricManager, CoreContainer coreContainer) {
     this.metricManager = metricManager;
+    this.cc = coreContainer;
   }
 
   @Override
@@ -87,7 +91,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "SolrMetricManager instance not initialized");
     }
 
-    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, container)) {
+    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req, req.getCore()))) {
       return; // Request was proxied to other node
     }
 
@@ -163,6 +167,16 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     if (errors.size() > 0) {
       consumer.accept("errors", errors);
     }
+  }
+
+  private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {
+    CoreContainer coreContainer;
+    if (core != null) {
+       coreContainer = req.getCore().getCoreContainer();
+    } else {
+      coreContainer = cc;
+    }
+    return coreContainer;
   }
 
   private static String unescape(String s) {
