@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -54,6 +53,7 @@ import org.apache.solr.cloud.autoscaling.CapturedEvent;
 import org.apache.solr.cloud.autoscaling.TriggerValidationException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -74,7 +74,7 @@ import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAut
 @TimeoutSuite(millis = 4 * 3600 * 1000)
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @ThreadLeakLingering(linger = 20000) // ComputePlanAction may take significant time to complete
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12075")
+//@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12075")
 public class TestLargeCluster extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -94,7 +94,6 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
-
     waitForSeconds = 5;
     triggerFiredCount.set(0);
     triggerFiredLatch = new CountDownLatch(1);
@@ -107,6 +106,13 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     SolrClient solrClient = cluster.simGetSolrClient();
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    // do this in advance if missing
+    if (!cluster.getSimClusterStateProvider().simListCollections().contains(CollectionAdminParams.SYSTEM_COLL)) {
+      cluster.getSimClusterStateProvider().createSystemCollection();
+      CloudTestUtils.waitForState(cluster, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
+          CloudTestUtils.clusterShape(1, 1));
+    }
   }
 
   public static class TestTriggerListener extends TriggerListenerBase {
@@ -520,8 +526,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
-  // JIRA closed 24-Feb-2018. Still apparently a problem.
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
+  //@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String collectionName = "testSearchRate";
@@ -575,7 +580,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
 
-    boolean await = triggerFiredLatch.await(40000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFiredLatch.await(waitForSeconds * 20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
     cluster.getTimeSource().sleep(2000);
