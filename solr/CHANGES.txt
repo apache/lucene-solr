@@ -154,6 +154,9 @@ New Features
 
 * SOLR-12389: support deeply nested json objects in clusterprops.json (noble)
 
+* SOLR-12376: Added the TaggerRequestHandler (AKA SolrTextTagger) for tagging text.  It's used as a component of
+  NER/ERD systems including query-understanding.  See the ref guide for more info.  (David Smiley
+
 Bug Fixes
 ----------------------
 
