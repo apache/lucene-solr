@@ -260,7 +260,7 @@ Bug Fixes
 * SOLR-12374: SnapShooter.getIndexCommit can forget to decref the searcher; though it's not clear in practice when.
   (David Smiley)
 
-* SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (yonik)
+* SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (Mano Kovacs, yonik)
 
 * SOLR-12271: Fixed bug in how Analytics component reads negative values from float and double fields. (Houston Putman)
 
