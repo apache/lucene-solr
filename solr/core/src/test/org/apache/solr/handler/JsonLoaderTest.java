@@ -946,5 +946,87 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void testRelationalChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"children\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"2\",\n" +
+        "                    \"foo_s\": \"Yaz\"\n" +
+        "                },\n" +
+        "                {\n" +
+        "                    \"id\": \"3\",\n" +
+        "                    \"foo_s\": \"Bar\"\n" +
+        "                }\n" +
+        "            ]\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument one = add.solrDoc;
+    assertEquals("1", one.getFieldValue("id"));
+
+    List<SolrInputDocument> children = (List) one.getFieldValues("children");
+    SolrInputDocument two = children.get(0);
+    assertEquals("2", two.getFieldValue("id"));
+    assertEquals("Yaz", two.getFieldValue("foo_s"));
+
+    SolrInputDocument three = children.get(1);
+    assertEquals("3", three.getFieldValue("id"));
+    assertEquals("Bar", three.getFieldValue("foo_s"));
+
+    req.close();
+
+  }
+
+  @Test
+  public void testSingleRelationalChildDoc() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"child1\": \n" +
+        "                {\n" +
+        "                    \"id\": \"2\",\n" +
+        "                    \"foo_s\": \"Yaz\"\n" +
+        "                },\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument one = add.solrDoc;
+    assertEquals("1", one.getFieldValue("id"));
+
+    assertTrue(one.keySet().contains("child1"));
+
+    SolrInputDocument two = (SolrInputDocument) one.getField("child1").getValue();
+    assertEquals("2", two.getFieldValue("id"));
+    assertEquals("Yaz", two.getFieldValue("foo_s"));
+
+    req.close();
+
+  }
+
 
 }
