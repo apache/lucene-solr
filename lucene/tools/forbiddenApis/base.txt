@@ -41,7 +41,7 @@ java.util.Collections#shuffle(java.util.List) @ Use shuffle(List, Random) instea
 java.util.Locale#forLanguageTag(java.lang.String) @ use new Locale.Builder().setLanguageTag(...).build() which has error handling
 java.util.Locale#toString() @ use Locale#toLanguageTag() for a standardized BCP47 locale name
 
-@defaultMessage Constructors for wrapper classes of Java primitives should be avoided in favor of the public static methods available or autoboxingT
+@defaultMessage Constructors for wrapper classes of Java primitives should be avoided in favor of the public static methods available or autoboxing
 java.lang.Integer#<init>(int)
 java.lang.Integer#<init>(java.lang.String)
 java.lang.Byte#<init>(byte)
