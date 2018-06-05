@@ -58,11 +58,14 @@ public class AdminHandlersProxy {
   public static boolean maybeProxyToNodes(SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
       throws IOException, SolrServerException, InterruptedException {
     String nodeNames = req.getParams().get(PARAM_NODES);
-        
     if (nodeNames == null || nodeNames.isEmpty()) {
       return false; // local request
     }
 
+    if (!container.isZooKeeperAware()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter " + PARAM_NODES + " only supported in Cloud mode");
+    }
+    
     Set<String> nodes;
     String pathStr = req.getPath();
     
@@ -87,13 +90,8 @@ public class AdminHandlersProxy {
       }       
       log.debug("Nodes requested: {}", nodes);
     }
-
-    boolean solrCloudMode = container.isZooKeeperAware();
-    
     log.debug(PARAM_NODES + " parameter {} specified on {} request", nodeNames, pathStr);
-    if (!solrCloudMode) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter " + PARAM_NODES + " only supported in Cloud mode");
-    }
+    
     Map<String, Pair<Future<NamedList<Object>>, SolrClient>> responses = new HashMap<>();
     for (String node : nodes) {
       responses.put(node, callRemoteNode(node, pathStr, params, container.getZkController()));
