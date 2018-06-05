@@ -30,6 +30,12 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
+  <updateRequestProcessorChain name="deeply-nested">
+    <processor class="solr.DeeplyNestedUpdateProcessorFactory">
+      <str name="fields">_nestLevel_,_nestParent_,_nestPath_</str>
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="comprehensive">
     <processor class="solr.FieldLengthUpdateProcessorFactory">
       <arr name="typeClass">
