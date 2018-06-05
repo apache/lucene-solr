@@ -104,7 +104,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
   }
 
   private boolean isWrapped(LeafReader reader) {
-    return reader instanceof SoftDeletesDirectoryReaderWrapper.SoftDeletesFilterLeafReader;
+    return reader instanceof SoftDeletesDirectoryReaderWrapper.SoftDeletesFilterLeafReader
+        || reader instanceof SoftDeletesDirectoryReaderWrapper.SoftDeletesFilterCodecReader;
   }
 
   public void testMixSoftAndHardDeletes() throws IOException {

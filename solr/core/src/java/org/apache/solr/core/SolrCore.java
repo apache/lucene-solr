@@ -958,7 +958,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       initIndex(prev != null, reload);
 
       initWriters();
-      qParserPlugins.init(createInstances(QParserPlugin.standardPlugins), this);
+      qParserPlugins.init(QParserPlugin.standardPlugins, this);
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       loadSearchComponents();

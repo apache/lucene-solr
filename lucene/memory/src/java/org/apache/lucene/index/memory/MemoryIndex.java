@@ -501,7 +501,7 @@ public class MemoryIndex {
     IndexOptions indexOptions = storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     return new FieldInfo(fieldName, ord, fieldType.storeTermVectors(), fieldType.omitNorms(), storePayloads,
         indexOptions, fieldType.docValuesType(), -1, Collections.emptyMap(),
-        fieldType.pointDimensionCount(), fieldType.pointNumBytes());
+        fieldType.pointDimensionCount(), fieldType.pointNumBytes(), false);
   }
 
   private void storePointValues(Info info, BytesRef pointValue) {
@@ -520,7 +520,7 @@ public class MemoryIndex {
       info.fieldInfo = new FieldInfo(
           info.fieldInfo.name, info.fieldInfo.number, info.fieldInfo.hasVectors(), info.fieldInfo.hasPayloads(),
           info.fieldInfo.hasPayloads(), info.fieldInfo.getIndexOptions(), docValuesType, -1, info.fieldInfo.attributes(),
-          info.fieldInfo.getPointDimensionCount(), info.fieldInfo.getPointNumBytes()
+          info.fieldInfo.getPointDimensionCount(), info.fieldInfo.getPointNumBytes(), info.fieldInfo.isSoftDeletesField()
       );
     } else if (existingDocValuesType != docValuesType) {
       throw new IllegalArgumentException("Can't add [" + docValuesType + "] doc values field [" + fieldName + "], because [" + existingDocValuesType + "] doc values field already exists");

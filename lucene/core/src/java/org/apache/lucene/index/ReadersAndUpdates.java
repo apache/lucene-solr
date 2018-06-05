@@ -406,10 +406,6 @@ final class ReadersAndUpdates {
     }
   }
 
-  synchronized boolean anyPendingDeletes() {
-    return pendingDeletes.numPendingDeletes() != 0;
-  }
-
   /**
    * This class merges the current on-disk DV with an incoming update DV instance and merges the two instances
    * giving the incoming update precedence in terms of values, in other words the values of the update always
@@ -713,8 +709,6 @@ final class ReadersAndUpdates {
       reader = createNewReaderWithLatestLiveDocs(reader);
     }
     assert pendingDeletes.verifyDocCounts(reader);
-
-
     return new MergeReader(reader, pendingDeletes.getHardLiveDocs());
   }
   
