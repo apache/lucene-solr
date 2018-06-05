@@ -32,16 +32,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * supplementary characters.
  */
 public final class EdgeNGramTokenFilter extends TokenFilter {
-  /**
-   * @deprecated since 7.4 - this value will be required.
-   */
-  @Deprecated
-  public static final int DEFAULT_MAX_GRAM_SIZE = 1;
-  /**
-   * @deprecated since 7.4 - this value will be required.
-   */
-  @Deprecated
-  public static final int DEFAULT_MIN_GRAM_SIZE = 1;
   public static final boolean DEFAULT_PRESERVE_ORIGINAL = false;
 
   private final int minGram;
@@ -96,27 +86,6 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
    */
   public EdgeNGramTokenFilter(TokenStream input, int gramSize) {
     this(input, gramSize, gramSize, DEFAULT_PRESERVE_ORIGINAL);
-  }
-
-  /**
-   * Creates an EdgeNGramTokenFilter that, for a given input term, produces all
-   * edge n-grams with lengths &gt;= minGram and &lt;= maxGram.
-   * 
-   * <p>
-   * Behaves the same as
-   * {@link #EdgeNGramTokenFilter(TokenStream, int, int, boolean)
-   * NGramTokenFilter(input, minGram, maxGram, false)}
-   *
-   * @param input {@link TokenStream} holding the input to be tokenized
-   * @param minGram the minimum length of the generated n-grams
-   * @param maxGram the maximum length of the generated n-grams
-   *
-   * @deprecated since 7.4. Use
-   * {@link #EdgeNGramTokenFilter(TokenStream, int, int, boolean)} instead.
-   */
-  @Deprecated
-  public EdgeNGramTokenFilter(TokenStream input, int minGram, int maxGram) {
-    this(input, minGram, maxGram, DEFAULT_PRESERVE_ORIGINAL);
   }
 
   @Override

@@ -39,17 +39,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * override {@link NGramTokenizer#isTokenChar(int)} to perform pre-tokenization.
  */
 public final class NGramTokenFilter extends TokenFilter {
-  /**
-   * @deprecated since 7.4 - this value will be required.
-   */
-  @Deprecated
-  public static final int DEFAULT_MIN_NGRAM_SIZE = 1;
-
-  /**
-   * @deprecated since 7.4 - this value will be required.
-   */
-  @Deprecated
-  public static final int DEFAULT_MAX_NGRAM_SIZE = 2;
   public static final boolean DEFAULT_PRESERVE_ORIGINAL = false;
 
   private final int minGram;
@@ -104,44 +93,6 @@ public final class NGramTokenFilter extends TokenFilter {
    */
   public NGramTokenFilter(TokenStream input, int gramSize) {
     this(input, gramSize, gramSize, DEFAULT_PRESERVE_ORIGINAL);
-  }
-
-  /**
-   * Creates an NGramTokenFilter that, for a given input term, produces all
-   * contained n-grams with lengths &gt;= minGram and &lt;= maxGram.
-   * 
-   * <p>
-   * Behaves the same as
-   * {@link #NGramTokenFilter(TokenStream, int, int, boolean)
-   * NGramTokenFilter(input, minGram, maxGram, false)}
-   * 
-   * @param input {@link TokenStream} holding the input to be tokenized
-   * @param minGram the minimum length of the generated n-grams
-   * @param maxGram the maximum length of the generated n-grams
-   *
-   * @deprecated since 7.4. Use
-   * {@link #NGramTokenFilter(TokenStream, int, int, boolean)} instead.
-   */
-  @Deprecated
-  public NGramTokenFilter(TokenStream input, int minGram, int maxGram) {
-    this(input, minGram, maxGram, DEFAULT_PRESERVE_ORIGINAL);
-  }
-
-  /**
-   * Creates NGramTokenFilter with default min and max n-grams.
-   * 
-   * <p>
-   * Behaves the same as
-   * {@link #NGramTokenFilter(TokenStream, int, int, boolean)
-   * NGramTokenFilter(input, 1, 2, false)}
-   * 
-   * @param input {@link TokenStream} holding the input to be tokenized
-   * @deprecated since 7.4. Use
-   * {@link #NGramTokenFilter(TokenStream, int, int, boolean)} instead.
-   */
-  @Deprecated
-  public NGramTokenFilter(TokenStream input) {
-    this(input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE, DEFAULT_PRESERVE_ORIGINAL);
   }
 
   @Override
