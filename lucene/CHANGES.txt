@@ -210,6 +210,11 @@ New Features
   as such once it's introduced and can't be changed after the fact.
   (Nhat Nguyen via Simon Willnauer)
 
+* LUCENE-8332: New ConcatenateGraphFilter for concatenating all tokens into one (or more
+  in the event of a graph input).  This is useful for fast analyzed exact-match lookup,
+  suggesters, and as a component of a named entity recognition system.  This was excised
+  out of CompletionTokenStream in the NRT doc suggester.  (David Smiley, Jim Ferenczi)
+
 Bug Fixes
 
 * LUCENE-8221: MoreLikeThis.setMaxDocFreqPct can easily int-overflow on larger
