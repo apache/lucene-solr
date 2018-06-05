@@ -290,6 +290,8 @@ Bug Fixes
 * SOLR-12433: Recovering flag of a replica is set equals to leader even it failed to receive update 
   on recovering. (Cao Manh Dat)
 
+* SOLR-12354: Register the /admin/info/key end-point at the startup time to avoid 404 (noble)
+
 Optimizations
 ----------------------
 
@@ -1309,6 +1311,8 @@ Bug Fixes
 
 * SOLR-11477: Disallow resolving of external entities in the XML query parser (defType=xmlparser).
   (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
+* SOLR-12444: Updating a cluster policy fails (noble)
 
 Optimizations
 ----------------------

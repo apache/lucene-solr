@@ -72,6 +72,7 @@ import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.analysis.hunspell.TestHunspellStemFilter;
 import org.apache.lucene.analysis.minhash.MinHashFilter;
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.analysis.miscellaneous.ConditionalTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.FingerprintFilter;
@@ -119,10 +120,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
 
   private static final Set<Class<?>> avoidConditionals = new HashSet<>();
   static {
-    // Fingerprint filter needs to consume the whole tokenstream, so conditionals don't make sense here
+    // These filters needs to consume the whole tokenstream, so conditionals don't make sense here
     avoidConditionals.add(FingerprintFilter.class);
-    // Ditto MinHashFilter
     avoidConditionals.add(MinHashFilter.class);
+    avoidConditionals.add(ConcatenateGraphFilter.class);
   }
 
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
@@ -156,7 +157,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
               return !((Boolean) args[2]); // args are broken if consumeAllTokens is false
           });
       for (Class<?> c : Arrays.<Class<?>>asList(
-          // doesn't actual reset itself!
+          // doesn't actual reset itself!  TODO this statement is probably obsolete as of LUCENE-6121 ?
           CachingTokenFilter.class,
           // LUCENE-8092: doesn't handle graph inputs
           CJKBigramFilter.class,
