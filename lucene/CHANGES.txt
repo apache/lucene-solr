@@ -99,7 +99,7 @@ New Features
   now use to also take pending deletes into account which ensures that all file
   generations per segment always go forward. (Simon Willnauer)
   
-* LUCENE-7690: Add preserveOriginal option to the NGram and EdgeNGram filters.
+* LUCENE-7960: Add preserveOriginal option to the NGram and EdgeNGram filters.
   (Ingomar Wesp, Shawn Heisey via Robert Muir)
 
 * LUCENE-8335: Enforce soft-deletes field up-front. Soft deletes field must be marked
