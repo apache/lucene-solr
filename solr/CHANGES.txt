@@ -1288,6 +1288,8 @@ Bug Fixes
 * SOLR-11477: Disallow resolving of external entities in the XML query parser (defType=xmlparser).
   (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
 
+* SOLR-12444: Updating a cluster policy fails (noble)
+
 Optimizations
 ----------------------
 
