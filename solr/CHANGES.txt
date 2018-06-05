@@ -125,7 +125,7 @@ New Features
 * SOLR-12389: support deeply nested json objects in clusterprops.json (noble)
 
 * SOLR-12376: Added the TaggerRequestHandler (AKA SolrTextTagger) for tagging text.  It's used as a component of
-  NER/ERD systems including query-understanding.  See the ref guide for more info.  (David Smiley
+  NER/ERD systems including query-understanding.  See the ref guide for more info.  (David Smiley)
 
 Bug Fixes
 ----------------------
@@ -310,6 +310,10 @@ Optimizations
   Affects ExpandComponent, ChildDocTransformer, CurrencyFieldType, TermsQParser.  (David Smiley)
 
 * SOLR-9922: Write buffering updates to another tlog. (Cao Manh Dat)
+
+* SOLR-12233: QParserPlugin's built-in static registry now holds actual QParserPlugin instances instead of class
+  references.  This is consistent with other plugin registries and allows a SolrCore to load faster.
+  (Jeff Miller, David Smiley)
 
 Other Changes
 ----------------------
