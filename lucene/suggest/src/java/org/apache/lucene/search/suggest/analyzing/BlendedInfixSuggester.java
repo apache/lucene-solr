@@ -229,7 +229,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
       if (weight == 0) {
         weight = 1;
       }
-      long score = (long) (weight * (100 * positionalCoefficient) + (10 * tokenCountCoefficient));
+      long score = (long) (weight * (97 * positionalCoefficient) + (3 * tokenCountCoefficient));
 
       LookupResult result;
       if (doHighlight) {
