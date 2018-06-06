@@ -20,20 +20,27 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -55,6 +62,7 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @Test
   public void testDeeplyNestedURP() throws Exception {
+    final String grandChildId = "4";
     final String jDoc = "{\n" +
         "    \"add\": {\n" +
         "        \"doc\": {\n" +
@@ -65,7 +73,7 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
         "                    \"foo_s\": \"Yaz\"\n" +
         "                    \"grandChild\": \n" +
         "                          {\n" +
-        "                             \"id\": \"4\",\n" +
+        "                             \"id\": \""+ grandChildId + "\",\n" +
         "                             \"foo_s\": \"Jazz\"\n" +
         "                          },\n" +
         "                },\n" +
@@ -81,7 +89,7 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
     List<ContentStream> streams = new ArrayList<>( 1 );
     streams.add( new ContentStreamBase.StringStream( jDoc ) );
 
-    SolrQueryRequest req;
+    SolrQueryRequest req = null;
     try {
       req = new SolrRequestParsers(h.getCore().getSolrConfig()).buildRequestFrom( h.getCore(), params("update.chain", "deeply-nested"), streams );
       SolrQueryResponse rsp = new SolrQueryResponse();
@@ -90,9 +98,23 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
       if( rsp.getException() != null ) {
         throw rsp.getException();
       }
-    } catch (Exception e) {
-      throw e;
+    } finally {
+      if (req != null) {
+        req.close();
+        SolrRequestInfo.clearRequestInfo();
+      }
     }
-    System.out.println();
+    assertU(commit());
+    assertJQ(req("q", IndexSchema.LEVEL_FIELD_NAME + ":2",
+        "fl","*",
+        "sort","id desc",
+        "wt","json"),
+        "/response/docs/[0]/id=='" + grandChildId + "'");
+
+    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*.grandChild",
+        "fl","*",
+        "sort","id desc",
+        "wt","json"),
+        "/response/docs/[0]/id=='" + grandChildId + "'");
   }
 }

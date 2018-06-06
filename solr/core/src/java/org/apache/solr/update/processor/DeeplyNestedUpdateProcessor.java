@@ -43,7 +43,7 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument doc = cmd.getSolrInputDocument();
     processDocChildren(doc, null);
-    return;
+    super.processAdd(cmd);
   }
 
   private void processDocChildren(SolrInputDocument doc, String fullPath) {
@@ -53,7 +53,7 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
         fullPath = Objects.isNull(fullPath) ? field.getName(): String.format("%s.%s", fullPath, field.getName());
         if (val instanceof Collection) {
           for(Object childDoc: (Collection) val) {
-            if(val instanceof SolrInputDocument) {
+            if(childDoc instanceof SolrInputDocument) {
               processChildDoc((SolrInputDocument) childDoc, doc, fullPath);
             }
           }

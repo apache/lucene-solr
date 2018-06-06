@@ -34,6 +34,7 @@
     <processor class="solr.DeeplyNestedUpdateProcessorFactory">
       <str name="fields">_nestLevel_,_nestParent_,_nestPath_</str>
     </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="comprehensive">
