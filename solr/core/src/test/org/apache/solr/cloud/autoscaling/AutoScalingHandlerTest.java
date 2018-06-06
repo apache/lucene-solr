@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -1009,6 +1011,25 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(10L, properties.get(AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS));
     assertEquals(10L, properties.get(AutoScalingParams.TRIGGER_CORE_POOL_SIZE));
     assertEquals(5L, properties.get(AutoScalingParams.ACTION_THROTTLE_PERIOD_SECONDS));
+  }
+
+  public void testUpdatePolicy() throws IOException, SolrServerException {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setPropertiesCommand = "{'set-cluster-policy': [" +
+        "{'cores': '<4','node': '#ANY'}]}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals("<4", Utils.getObjectByPath(response,false,"cluster-policy[0]/cores"));
+    assertEquals("#ANY", Utils.getObjectByPath(response,false,"cluster-policy[0]/node"));
+    setPropertiesCommand = "{'set-cluster-policy': [" +
+        "{'cores': '<3','node': '#ANY'}]}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    response = solrClient.request(req);
+    assertEquals("<3", Utils.getObjectByPath(response,false,"cluster-policy[0]/cores"));
+    assertEquals("#ANY", Utils.getObjectByPath(response,false,"cluster-policy[0]/node"));
+
   }
 
   static class AutoScalingRequest extends SolrRequest {

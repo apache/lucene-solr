@@ -206,9 +206,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return this.coreContainer;
   }
 
-  protected void copyFromClusterProp(Map<String, Object> props, String prop) {
+  protected void copyFromClusterProp(Map<String, Object> props, String prop) throws IOException {
     if (props.get(prop) != null) return;//if it's already specified , return
-    Object defVal = coreContainer.getZkController().getZkStateReader().getClusterProperty(ImmutableList.of(COLLECTION_DEF, prop), null);
+    Object defVal = new ClusterProperties(coreContainer.getZkController().getZkStateReader().getZkClient())
+        .getClusterProperty(ImmutableList.of(COLLECTION_DEF, prop), null);
     if (defVal != null) props.put(prop, String.valueOf(defVal));
   }
 

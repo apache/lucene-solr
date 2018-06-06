@@ -70,8 +70,8 @@ Upgrade Notes
   To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication
   handler configuration, or pass it to the fetchindex command.
 
-* SOLR-11453: Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log .
-  Previously they would get logged in the solr.xml file
+* SOLR-11453: Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log.
+  Previously they would get logged in the solr.log file.
 
 New Features
 ----------------------
@@ -140,7 +140,7 @@ New Features
 * SOLR-12328: JSON Facet API: Domain change with graph query.
   (Daniel Meehl, Kevin Watters, yonik)
 
-* SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log .
+* SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log.
   (Shawn Heisey, Remko Popma, Varun Thacker)
 
 * SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
@@ -153,6 +153,9 @@ New Features
 * SOLR-12387: cluster-wide defaults for numShards, nrtReplicas, tlogReplicas, pullReplicas (noble)
 
 * SOLR-12389: support deeply nested json objects in clusterprops.json (noble)
+
+* SOLR-12376: Added the TaggerRequestHandler (AKA SolrTextTagger) for tagging text.  It's used as a component of
+  NER/ERD systems including query-understanding.  See the ref guide for more info.  (David Smiley)
 
 Bug Fixes
 ----------------------
@@ -283,7 +286,7 @@ Bug Fixes
 * SOLR-12374: SnapShooter.getIndexCommit can forget to decref the searcher; though it's not clear in practice when.
   (David Smiley)
 
-* SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (yonik)
+* SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (Mano Kovacs, yonik)
 
 * SOLR-12271: Fixed bug in how Analytics component reads negative values from float and double fields. (Houston Putman)
 
@@ -328,6 +331,10 @@ Optimizations
   Affects ExpandComponent, ChildDocTransformer, CurrencyFieldType, TermsQParser.  (David Smiley)
 
 * SOLR-9922: Write buffering updates to another tlog. (Cao Manh Dat)
+
+* SOLR-12233: QParserPlugin's built-in static registry now holds actual QParserPlugin instances instead of class
+  references.  This is consistent with other plugin registries and allows a SolrCore to load faster.
+  (Jeff Miller, David Smiley)
 
 Other Changes
 ----------------------
@@ -1311,6 +1318,8 @@ Bug Fixes
 
 * SOLR-11477: Disallow resolving of external entities in the XML query parser (defType=xmlparser).
   (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
+* SOLR-12444: Updating a cluster policy fails (noble)
 
 Optimizations
 ----------------------

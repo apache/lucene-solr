@@ -87,7 +87,7 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final Tokenizer tokenizer = new KeywordTokenizer();
-      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20)));
+      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20, false)));
     }
   }
 

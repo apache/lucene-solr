@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
@@ -61,6 +62,23 @@ public class ClusterProperties {
    */
   @SuppressWarnings("unchecked")
   public <T> T getClusterProperty(String key, T defaultValue) throws IOException {
+    T value = (T) Utils.getObjectByPath(getClusterProperties(), false, key);
+    if (value == null)
+      return defaultValue;
+    return value;
+  }
+
+  /**
+   * Read the value of a cluster property, returning a default if it is not set
+   *
+   * @param key          the property name or the full path to the property as a list of parts.
+   * @param defaultValue the default value
+   * @param <T>          the type of the property
+   * @return the property value
+   * @throws IOException if there is an error reading the value from the cluster
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getClusterProperty(List<String> key, T defaultValue) throws IOException {
     T value = (T) Utils.getObjectByPath(getClusterProperties(), false, key);
     if (value == null)
       return defaultValue;

@@ -16,14 +16,14 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /**
  * Check standard query parsers for class loading problems during initialization (NAME field is final and static).
@@ -50,9 +50,9 @@ public class TestStandardQParsers extends LuceneTestCase {
     List<String> notFinal = new ArrayList<>(QParserPlugin.standardPlugins.size());
     List<String> mismatch = new ArrayList<>(QParserPlugin.standardPlugins.size());
 
-    for (Map.Entry<String, Class<? extends QParserPlugin>> pair : QParserPlugin.standardPlugins.entrySet()) {
+    for (Map.Entry<String, QParserPlugin> pair : QParserPlugin.standardPlugins.entrySet()) {
       String regName = pair.getKey();
-      Class<? extends QParserPlugin> clazz = pair.getValue();
+      Class<? extends QParserPlugin> clazz = pair.getValue().getClass();;
 
       Field nameField = clazz.getField(FIELD_NAME);
       int modifiers = nameField.getModifiers();

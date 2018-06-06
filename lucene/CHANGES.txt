@@ -202,10 +202,18 @@ New Features
   IndexFileDeleter already accounts for that for existing files which we can
   now use to also take pending deletes into account which ensures that all file
   generations per segment always go forward. (Simon Willnauer)
+  
+* LUCENE-7960: Add preserveOriginal option to the NGram and EdgeNGram filters.
+  (Ingomar Wesp, Shawn Heisey via Robert Muir)
 
 * LUCENE-8335: Enforce soft-deletes field up-front. Soft deletes field must be marked
   as such once it's introduced and can't be changed after the fact.
   (Nhat Nguyen via Simon Willnauer)
+
+* LUCENE-8332: New ConcatenateGraphFilter for concatenating all tokens into one (or more
+  in the event of a graph input).  This is useful for fast analyzed exact-match lookup,
+  suggesters, and as a component of a named entity recognition system.  This was excised
+  out of CompletionTokenStream in the NRT doc suggester.  (David Smiley, Jim Ferenczi)
 
 Bug Fixes
 
@@ -258,6 +266,9 @@ Bug Fixes
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
+
+* LUCENE-8299: Geo3D wrapper uses new polygon method factory that gives better
+  support for polygons with many points (>100). (Ignacio vera)
 
 * LUCENE-8261: InterpolatedProperties.interpolate and recursive property
   references. (Steve Rowe, Dawid Weiss)
