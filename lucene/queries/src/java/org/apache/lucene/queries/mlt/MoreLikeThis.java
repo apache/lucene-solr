@@ -166,9 +166,6 @@ public final class MoreLikeThis {
     this.similarity = sim;
   }
 
-  public MoreLikeThisParameters getParameters() {
-    return parameters;
-  }
 
   public TFIDFSimilarity getSimilarity() {
     return similarity;
@@ -233,7 +230,7 @@ public final class MoreLikeThis {
    * many docs.
    *
    * @param minDocFreq the frequency at which words will be ignored which do not occur in at
-   *                   least this many docs.
+   * least this many docs.
    */
   public void setMinDocFreq(int minDocFreq) {
     parameters.minDocFreq = minDocFreq;
@@ -256,7 +253,7 @@ public final class MoreLikeThis {
    * in more than this many docs will be ignored.
    *
    * @param maxFreq the maximum count of documents that a term may appear
-   *                in to be still considered relevant
+   * in to be still considered relevant
    */
   public void setMaxDocFreq(int maxFreq) {
     parameters.maxDocFreq = maxFreq;
@@ -265,12 +262,12 @@ public final class MoreLikeThis {
   /**
    * Set the maximum percentage in which words may still appear. Words that appear
    * in more than this many percent of all docs will be ignored.
-   * <p>
+   *
    * This method calls {@link #setMaxDocFreq(int)} internally (both conditions cannot
    * be used at the same time).
    *
    * @param maxPercentage the maximum percentage of documents (0-100) that a term may appear
-   *                      in to be still considered relevant.
+   * in to be still considered relevant.
    */
   public void setMaxDocFreqPct(int maxPercentage) {
     setMaxDocFreq(Math.toIntExact((long) maxPercentage * ir.maxDoc() / 100));
@@ -302,7 +299,7 @@ public final class MoreLikeThis {
    * provided in the constructor.
    *
    * @param fieldNames the field names that will be used when generating the 'More Like This'
-   *                   query.
+   * query.
    */
   public void setFieldNames(String[] fieldNames) {
     parameters.setFieldNamesRemovingBoost(fieldNames);
@@ -383,7 +380,7 @@ public final class MoreLikeThis {
    * Sets the maximum number of query terms that will be included in any generated query.
    *
    * @param maxQueryTerms the maximum number of query terms that will be included in any
-   *                      generated query.
+   * generated query.
    */
   public void setMaxQueryTerms(int maxQueryTerms) {
     parameters.maxQueryTerms = maxQueryTerms;

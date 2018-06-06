@@ -15,14 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.search.mlt;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.apache.lucene.index.Term;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.queries.mlt.MoreLikeThisParameters;
 import org.apache.lucene.search.BooleanClause;
@@ -35,13 +29,18 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class SimpleMLTQParser extends QParser {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
@@ -68,7 +67,6 @@ public class SimpleMLTQParser extends QParser {
           SolrException.ErrorCode.BAD_REQUEST, "Error completing MLT request. Could not fetch " +
           "document with id [" + uniqueValue + "]");
       ScoreDoc[] scoreDocs = td.scoreDocs;
-
       MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
       MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
 
@@ -80,7 +78,6 @@ public class SimpleMLTQParser extends QParser {
       mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThisParameters.DEFAULT_MAX_NUM_TOKENS_PARSED));
       mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThisParameters.DEFAULT_MAX_DOC_FREQ));
       boostConfiguration.setBoost(localParams.getBool("boost", MoreLikeThisParameters.BoostProperties.DEFAULT_BOOST));
-
 
       String[] fieldNames;
       

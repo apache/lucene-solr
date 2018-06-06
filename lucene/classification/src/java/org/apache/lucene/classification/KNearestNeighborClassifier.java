@@ -27,8 +27,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.queries.mlt.MoreLikeThisParameters;
@@ -101,10 +101,8 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     this.textFieldNames = textFieldNames;
     this.classFieldName = classFieldName;
     this.mlt = new MoreLikeThis(indexReader);
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
-
-    mlt.setAnalyzer(analyzer);
-    mlt.setFieldNames(textFieldNames);
+    this.mlt.setAnalyzer(analyzer);
+    this.mlt.setFieldNames(textFieldNames);
     this.indexSearcher = new IndexSearcher(indexReader);
     if (similarity != null) {
       this.indexSearcher.setSimilarity(similarity);
