@@ -37,6 +37,7 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.request.SolrQueryRequest;
@@ -109,7 +110,9 @@ public class EmbeddedSolrServer extends SolrClient {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core name cannot be empty");
     this.coreContainer = coreContainer;
     this.coreName = coreName;
-    _parser = new SolrRequestParsers(null);
+    SolrCore core = coreContainer.getCore(coreName);
+    SolrConfig config = core != null ? core.getSolrConfig() : null;
+    _parser = new SolrRequestParsers(config);
   }
 
   // TODO-- this implementation sends the response to XML and then parses it.
