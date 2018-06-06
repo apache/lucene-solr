@@ -121,7 +121,6 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
    * An exponential reciprocal approach will penalise less based on the first position of the first mismatched, favouring consecutive matches that happen
    * a little bit later on the field content.
    *
-   * @throws IOException
    */
   public void testProductDiscontinuedPositionalCoefficient_exponentialBlendingType_shouldCalculateLinearCoefficient() throws IOException {
     BlendedInfixSuggester exponentialReciprocalSuggester = this.getBlendedInfixSuggester(new Input[]{}, BlendedInfixSuggester.BlenderType.POSITION_EXPONENTIAL_RECIPROCAL);
