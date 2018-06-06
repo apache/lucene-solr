@@ -30,10 +30,9 @@ public class PassageBuilder {
   private static final int PAD_WIDTH = 10;
 
   private final int snippetWidth;
-  private final String markupStart = "<b>";
-  private final String markupEnd = "</b>";
-
-  private final BreakIterator wordBreakIterator = BreakIterator.getWordInstance(Locale.ROOT);
+  private final String markupStart;
+  private final String markupEnd;
+  private final BreakIterator passageBreaker;
 
   private final List<String> passages = new ArrayList<>();
 
@@ -41,8 +40,15 @@ public class PassageBuilder {
   private int passageStart;
   private int passageEnd;
 
-  public PassageBuilder(int snippetWidth) {
+  public PassageBuilder(int snippetWidth, BreakIterator passageBreaker, String markupStart, String markupEnd) {
     this.snippetWidth = snippetWidth;
+    this.passageBreaker = passageBreaker;
+    this.markupStart = markupStart;
+    this.markupEnd = markupEnd;
+  }
+
+  public PassageBuilder(int snippetWidth) {
+    this(snippetWidth, BreakIterator.getWordInstance(Locale.ROOT), "<b>", "</b>");
   }
 
   public Iterable<String> getTopPassages(int topN) {
@@ -52,7 +58,7 @@ public class PassageBuilder {
   public boolean build(String source, MatchesIterator mi, int offset) throws IOException {
     currentPassage = new StringBuilder();
     passageStart = passageEnd = 0;
-    wordBreakIterator.setText(source);
+    passageBreaker.setText(source);
     do {
       int startOffset = mi.startOffset() - offset;
       if (startOffset >= 0) {
@@ -102,14 +108,14 @@ public class PassageBuilder {
     int endPadWidth = padWidth - (passageStart - start) + padWidth;
     int end = Math.min(source.length(), passageEnd + endPadWidth);
     if (end != source.length()) {
-      end = wordBreakIterator.preceding(end);
+      end = passageBreaker.preceding(end);
     }
     String passage = source.substring(start, passageStart) + currentPassage.toString() + source.substring(passageEnd, end);
     passages.add(passage);
   }
 
   private int nextWordStartAfter(int position, int maxLength, String source) {
-    int start = wordBreakIterator.following(position);
+    int start = passageBreaker.following(position);
     while (start <= maxLength) {
       if (Character.isLetter(source.codePointAt(start))) {
         break;
