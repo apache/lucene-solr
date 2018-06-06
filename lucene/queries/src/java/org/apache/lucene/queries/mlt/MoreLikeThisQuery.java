@@ -16,17 +16,17 @@
  */
 package org.apache.lucene.queries.mlt;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.Objects;
 
 /**
  * A simple wrapper for MoreLikeThis for use in scenarios where a Query object is required eg
@@ -58,16 +58,15 @@ public class MoreLikeThisQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
 
-    mltParameters.setFieldNames(moreLikeFields);
-    mltParameters.setAnalyzer(analyzer);
-    mltParameters.setMinTermFreq(minTermFrequency);
+    mlt.setFieldNames(moreLikeFields);
+    mlt.setAnalyzer(analyzer);
+    mlt.setMinTermFreq(minTermFrequency);
     if (minDocFreq >= 0) {
-      mltParameters.setMinDocFreq(minDocFreq);
+      mlt.setMinDocFreq(minDocFreq);
     }
-    mltParameters.setMaxQueryTerms(maxQueryTerms);
-    mltParameters.setStopWords(stopWords);
+    mlt.setMaxQueryTerms(maxQueryTerms);
+    mlt.setStopWords(stopWords);
     BooleanQuery bq = (BooleanQuery) mlt.like(fieldName, new StringReader(likeText));
     BooleanQuery.Builder newBq = new BooleanQuery.Builder();
     for (BooleanClause clause : bq) {

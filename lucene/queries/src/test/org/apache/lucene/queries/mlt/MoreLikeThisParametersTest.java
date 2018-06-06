@@ -34,9 +34,9 @@ public class MoreLikeThisParametersTest extends LuceneTestCase {
   public void testMLTParameters_setFieldNames_shouldRemoveBoosts() {
     String[] fieldNames = new String[]{"field1", "field2^5.0", "field3^1.0", "field4"};
 
-    toTest.setFieldNames(fieldNames);
+    toTest.setFieldNamesRemovingBoost(fieldNames);
 
-    assertThat(toTest.getFieldNames(), is(new String[]{"field1", "field2", "field3", "field4"}));
+    assertThat(toTest.fieldNames, is(new String[]{"field1", "field2", "field3", "field4"}));
   }
 
   public void testMLTParameters_fieldNamesNotInitialised_shouldFetchThemFromIndex() throws IOException {
@@ -53,7 +53,7 @@ public class MoreLikeThisParametersTest extends LuceneTestCase {
 
     toTest.getFieldNamesOrInit(reader);
 
-    assertThat(toTest.getFieldNames(), is(new String[]{"field1", "field2"}));
+    assertThat(toTest.fieldNames, is(new String[]{"field1", "field2"}));
 
     reader.close();
     directory.close();
@@ -61,7 +61,7 @@ public class MoreLikeThisParametersTest extends LuceneTestCase {
 
   public void testMLTParameters_describeParams_shouldReturnParamsDescriptionString() {
     String[] fieldNames = new String[]{"field1", "field2^5.0", "field3^1.0", "field4"};
-    toTest.setFieldNames(fieldNames);
+    toTest.setFieldNamesRemovingBoost(fieldNames);
 
     String paramsDescription = toTest.describeParams();
 
@@ -77,31 +77,28 @@ public class MoreLikeThisParametersTest extends LuceneTestCase {
 
   public void testMLTParameters_setBoostFields_shouldParseBoosts() {
     String[] fieldNames = new String[]{"field1", "field2^2.0", "field3^3.0", "field4"};
-    MoreLikeThisParameters.BoostProperties boostConfiguration = toTest.getBoostConfiguration();
 
     for (String fieldWithBoost : fieldNames) {
-      boostConfiguration.addFieldWithBoost(fieldWithBoost);
+      toTest.boostConfiguration.addFieldWithBoost(fieldWithBoost);
     }
 
-    assertThat(boostConfiguration.getFieldBoost("field1"), is(1.0F));
-    assertThat(boostConfiguration.getFieldBoost("field2"), is(2.0F));
-    assertThat(boostConfiguration.getFieldBoost("field3"), is(3.0F));
-    assertThat(boostConfiguration.getFieldBoost("field4"), is(1.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field1"), is(1.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field2"), is(2.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field3"), is(3.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field4"), is(1.0F));
   }
 
   public void testMLTParameters_noBoostConfiguration_shouldReturnDefaultBoost() {
-    MoreLikeThisParameters.BoostProperties boostConfiguration = toTest.getBoostConfiguration();
+    assertThat(toTest.boostConfiguration.getFieldBoost("field1"), is(1.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field2"), is(1.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field3"), is(1.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field4"), is(1.0F));
 
-    assertThat(boostConfiguration.getFieldBoost("field1"), is(1.0F));
-    assertThat(boostConfiguration.getFieldBoost("field2"), is(1.0F));
-    assertThat(boostConfiguration.getFieldBoost("field3"), is(1.0F));
-    assertThat(boostConfiguration.getFieldBoost("field4"), is(1.0F));
+    toTest.boostConfiguration.setBoostFactor(5.0f);
 
-    boostConfiguration.setBoostFactor(5.0f);
-
-    assertThat(boostConfiguration.getFieldBoost("field1"), is(5.0F));
-    assertThat(boostConfiguration.getFieldBoost("field2"), is(5.0F));
-    assertThat(boostConfiguration.getFieldBoost("field3"), is(5.0F));
-    assertThat(boostConfiguration.getFieldBoost("field4"), is(5.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field1"), is(5.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field2"), is(5.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field3"), is(5.0F));
+    assertThat(toTest.boostConfiguration.getFieldBoost("field4"), is(5.0F));
   }
 }

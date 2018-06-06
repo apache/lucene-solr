@@ -376,7 +376,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     SimpleOrderedMap<Object> interestingTermsResponse = null;
     MoreLikeThisParams.TermStyle termStyle = MoreLikeThisParams.TermStyle.get(p.get(MoreLikeThisParams.INTERESTING_TERMS));
     List<MoreLikeThisHandler.InterestingTerm> interestingTerms = (termStyle == MoreLikeThisParams.TermStyle.NONE)
-        ? null : new ArrayList<>(mltHelper.getMoreLikeThis().getParameters().getMaxQueryTerms());
+        ? null : new ArrayList<>(mltHelper.getMoreLikeThis().getMaxQueryTerms());
     
     if (interestingTerms!=null) {
       interestingTermsResponse = new SimpleOrderedMap<>();

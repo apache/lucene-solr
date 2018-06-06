@@ -149,7 +149,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         // Hold on to the interesting terms if relevant
         TermStyle termStyle = TermStyle.get(params.get(MoreLikeThisParams.INTERESTING_TERMS));
         List<InterestingTerm> interesting = (termStyle == TermStyle.NONE)
-            ? null : new ArrayList<>(mltHelper.mlt.getParameters().getMaxQueryTerms());
+            ? null : new ArrayList<>(mltHelper.mlt.getMaxQueryTerms());
 
         DocListAndSet mltDocs = null;
 
@@ -331,28 +331,25 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       }
       
       this.mlt = new MoreLikeThis( reader ); // TODO -- after LUCENE-896, we can use , searcher.getSimilarity() );
-      MoreLikeThisParameters mltParameters = mlt.getParameters();
-      MoreLikeThisParameters.BoostProperties boostConfiguration = mltParameters.getBoostConfiguration();
-      
-      mltParameters.setFieldNames(fields);
-      mltParameters.setAnalyzer( searcher.getSchema().getIndexAnalyzer() );
+      MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
+      mlt.setFieldNames(fields);
+      mlt.setAnalyzer(searcher.getSchema().getIndexAnalyzer());
       
       // configurable params
 
-      mltParameters.setMinTermFreq(       params.getInt(MoreLikeThisParams.MIN_TERM_FREQ,         MoreLikeThisParameters.DEFAULT_MIN_TERM_FREQ));
-      mltParameters.setMinDocFreq(        params.getInt(MoreLikeThisParams.MIN_DOC_FREQ,          MoreLikeThisParameters.DEFAULT_MIN_DOC_FREQ));
-      mltParameters.setMaxDocFreq(        params.getInt(MoreLikeThisParams.MAX_DOC_FREQ,          MoreLikeThisParameters.DEFAULT_MAX_DOC_FREQ));
-      mltParameters.setMinWordLen(        params.getInt(MoreLikeThisParams.MIN_WORD_LEN,          MoreLikeThisParameters.DEFAULT_MIN_WORD_LENGTH));
-      mltParameters.setMaxWordLen(        params.getInt(MoreLikeThisParams.MAX_WORD_LEN,          MoreLikeThisParameters.DEFAULT_MAX_WORD_LENGTH));
-      mltParameters.setMaxQueryTerms(     params.getInt(MoreLikeThisParams.MAX_QUERY_TERMS,       MoreLikeThisParameters.DEFAULT_MAX_QUERY_TERMS));
-      mltParameters.setMaxNumTokensParsed(params.getInt(MoreLikeThisParams.MAX_NUM_TOKENS_PARSED, MoreLikeThisParameters.DEFAULT_MAX_NUM_TOKENS_PARSED));
-      
-      boostConfiguration.setBoost(            params.getBool(MoreLikeThisParams.BOOST, false ) );
+      mlt.setMinTermFreq(params.getInt(MoreLikeThisParams.MIN_TERM_FREQ, MoreLikeThisParameters.DEFAULT_MIN_TERM_FREQ));
+      mlt.setMinDocFreq(params.getInt(MoreLikeThisParams.MIN_DOC_FREQ, MoreLikeThisParameters.DEFAULT_MIN_DOC_FREQ));
+      mlt.setMaxDocFreq(params.getInt(MoreLikeThisParams.MAX_DOC_FREQ, MoreLikeThisParameters.DEFAULT_MAX_DOC_FREQ));
+      mlt.setMinWordLen(params.getInt(MoreLikeThisParams.MIN_WORD_LEN, MoreLikeThisParameters.DEFAULT_MIN_WORD_LENGTH));
+      mlt.setMaxWordLen(params.getInt(MoreLikeThisParams.MAX_WORD_LEN, MoreLikeThisParameters.DEFAULT_MAX_WORD_LENGTH));
+      mlt.setMaxQueryTerms(params.getInt(MoreLikeThisParams.MAX_QUERY_TERMS, MoreLikeThisParameters.DEFAULT_MAX_QUERY_TERMS));
+      mlt.setMaxNumTokensParsed(params.getInt(MoreLikeThisParams.MAX_NUM_TOKENS_PARSED, MoreLikeThisParameters.DEFAULT_MAX_NUM_TOKENS_PARSED));
+      boostConfiguration.setBoost(params.getBool(MoreLikeThisParams.BOOST, MoreLikeThisParameters.BoostProperties.DEFAULT_BOOST));
       
       // There is no default for maxDocFreqPct. Also, it's a bit oddly expressed as an integer value 
       // (percentage of the collection's documents count). We keep Lucene's convention here. 
       if (params.getInt(MoreLikeThisParams.MAX_DOC_FREQ_PCT) != null) {
-        mltParameters.setMaxDocFreqPct(reader,params.getInt(MoreLikeThisParams.MAX_DOC_FREQ_PCT));
+        mlt.setMaxDocFreqPct(params.getInt(MoreLikeThisParams.MAX_DOC_FREQ_PCT));
       }
 
       String[] fieldsWithBoost = params.getParams(MoreLikeThisParams.QF);
@@ -400,7 +397,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       // SOLR-5351: if only check against a single field, use the reader directly. Otherwise we
       // repeat the stream's content for multiple fields so that query terms can be pulled from any
       // of those fields.
-      String[] fields = mlt.getParameters().getFieldNames();
+      String[] fields = mlt.getFieldNames();
       if (fields.length == 1) {
         boostedMLTQuery = mlt.like(fields[0], reader);
       } else {
@@ -448,6 +445,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         // exclude current document from results
         BooleanQuery.Builder mltQuery = new BooleanQuery.Builder();
         mltQuery.add(mltquery, BooleanClause.Occur.MUST);
+
         mltQuery.add(
             new TermQuery(new Term(uniqueKeyField.getName(), uniqueId)), BooleanClause.Occur.MUST_NOT);
         result.add(uniqueId, mltQuery.build());

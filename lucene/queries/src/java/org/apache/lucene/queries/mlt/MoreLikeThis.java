@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -107,7 +108,23 @@ import org.apache.lucene.util.PriorityQueue;
  * <br>
  * <h3>More Advanced Usage</h3>
  * <p>
- * You may want to see the parameters class
+ * You may want to use {@link #setFieldNames setFieldNamesRemovingBoost(...)} so you can examine
+ * multiple fields (e.g. body and title) for similarity.
+ * <p>
+ * Depending on the size of your index and the size and makeup of your documents you
+ * may want to call the other set methods to control how the similarity queries are
+ * generated:
+ * <ul>
+ * <li> {@link #setMinTermFreq setMinTermFreq(...)}
+ * <li> {@link #setMinDocFreq setMinDocFreq(...)}
+ * <li> {@link #setMaxDocFreq setMaxDocFreq(...)}
+ * <li> {@link #setMaxDocFreqPct setMaxDocFreqPct(...)}
+ * <li> {@link #setMinWordLen setMinWordLen(...)}
+ * <li> {@link #setMaxWordLen setMaxWordLen(...)}
+ * <li> {@link #setMaxQueryTerms setMaxQueryTerms(...)}
+ * <li> {@link #setMaxNumTokensParsed setMaxNumTokensParsed(...)}
+ * <li> {@link #setStopWords setStopWord(...)}
+ * </ul>
  * <br>
  * <hr>
  * <pre>
@@ -162,6 +179,233 @@ public final class MoreLikeThis {
   }
 
   /**
+   * Returns an analyzer that will be used to parse source doc with. The default analyzer
+   * is not set.
+   *
+   * @return the analyzer that will be used to parse source doc with.
+   */
+  public Analyzer getAnalyzer() {
+    return parameters.analyzer;
+  }
+
+  /**
+   * Sets the analyzer to use. An analyzer is not required for generating a query with the
+   * {@link #like(int)} method, all other 'like' methods require an analyzer.
+   *
+   * @param analyzer the analyzer to use to tokenize text.
+   */
+  public void setAnalyzer(Analyzer analyzer) {
+    parameters.analyzer = analyzer;
+  }
+
+  /**
+   * Returns the frequency below which terms will be ignored in the source doc. The default
+   * frequency is the {@link MoreLikeThisParameters#DEFAULT_MIN_TERM_FREQ}.
+   *
+   * @return the frequency below which terms will be ignored in the source doc.
+   */
+  public int getMinTermFreq() {
+    return parameters.minTermFreq;
+  }
+
+  /**
+   * Sets the frequency below which terms will be ignored in the source doc.
+   *
+   * @param minTermFreq the frequency below which terms will be ignored in the source doc.
+   */
+  public void setMinTermFreq(int minTermFreq) {
+    parameters.minTermFreq = minTermFreq;
+  }
+
+  /**
+   * Returns the frequency at which words will be ignored which do not occur in at least this
+   * many docs. The default frequency is {@link MoreLikeThisParameters#DEFAULT_MIN_DOC_FREQ}.
+   *
+   * @return the frequency at which words will be ignored which do not occur in at least this
+   * many docs.
+   */
+  public int getMinDocFreq() {
+    return parameters.minDocFreq;
+  }
+
+  /**
+   * Sets the frequency at which words will be ignored which do not occur in at least this
+   * many docs.
+   *
+   * @param minDocFreq the frequency at which words will be ignored which do not occur in at
+   *                   least this many docs.
+   */
+  public void setMinDocFreq(int minDocFreq) {
+    parameters.minDocFreq = minDocFreq;
+  }
+
+  /**
+   * Returns the maximum frequency in which words may still appear.
+   * Words that appear in more than this many docs will be ignored. The default frequency is
+   * {@link MoreLikeThisParameters#DEFAULT_MAX_DOC_FREQ}.
+   *
+   * @return get the maximum frequency at which words are still allowed,
+   * words which occur in more docs than this are ignored.
+   */
+  public int getMaxDocFreq() {
+    return parameters.maxDocFreq;
+  }
+
+  /**
+   * Set the maximum frequency in which words may still appear. Words that appear
+   * in more than this many docs will be ignored.
+   *
+   * @param maxFreq the maximum count of documents that a term may appear
+   *                in to be still considered relevant
+   */
+  public void setMaxDocFreq(int maxFreq) {
+    parameters.maxDocFreq = maxFreq;
+  }
+
+  /**
+   * Set the maximum percentage in which words may still appear. Words that appear
+   * in more than this many percent of all docs will be ignored.
+   * <p>
+   * This method calls {@link #setMaxDocFreq(int)} internally (both conditions cannot
+   * be used at the same time).
+   *
+   * @param maxPercentage the maximum percentage of documents (0-100) that a term may appear
+   *                      in to be still considered relevant.
+   */
+  public void setMaxDocFreqPct(int maxPercentage) {
+    setMaxDocFreq(Math.toIntExact((long) maxPercentage * ir.maxDoc() / 100));
+  }
+
+  /**
+   * Returns all the configurations that affect how boost is applied to the
+   * More Like This query
+   *
+   * @return the boost properties
+   */
+  public MoreLikeThisParameters.BoostProperties getBoostConfiguration() {
+    return parameters.boostConfiguration;
+  }
+
+  /**
+   * Returns the field names that will be used when generating the 'More Like This' query.
+   * The default field names that will be used is {@link MoreLikeThisParameters#DEFAULT_FIELD_NAMES}.
+   *
+   * @return the field names that will be used when generating the 'More Like This' query.
+   */
+  public String[] getFieldNames() {
+    return parameters.fieldNames;
+  }
+
+  /**
+   * Sets the field names that will be used when generating the 'More Like This' query.
+   * Set this to null for the field names to be determined at runtime from the IndexReader
+   * provided in the constructor.
+   *
+   * @param fieldNames the field names that will be used when generating the 'More Like This'
+   *                   query.
+   */
+  public void setFieldNames(String[] fieldNames) {
+    parameters.setFieldNamesRemovingBoost(fieldNames);
+  }
+
+  /**
+   * Returns the minimum word length below which words will be ignored. Set this to 0 for no
+   * minimum word length. The default is {@link MoreLikeThisParameters#DEFAULT_MIN_WORD_LENGTH}.
+   *
+   * @return the minimum word length below which words will be ignored.
+   */
+  public int getMinWordLen() {
+    return parameters.minWordLen;
+  }
+
+  /**
+   * Sets the minimum word length below which words will be ignored.
+   *
+   * @param minWordLen the minimum word length below which words will be ignored.
+   */
+  public void setMinWordLen(int minWordLen) {
+    parameters.minWordLen = minWordLen;
+  }
+
+  /**
+   * Returns the maximum word length above which words will be ignored. Set this to 0 for no
+   * maximum word length. The default is {@link MoreLikeThisParameters#DEFAULT_MAX_WORD_LENGTH}.
+   *
+   * @return the maximum word length above which words will be ignored.
+   */
+  public int getMaxWordLen() {
+    return parameters.maxWordLen;
+  }
+
+  /**
+   * Sets the maximum word length above which words will be ignored.
+   *
+   * @param maxWordLen the maximum word length above which words will be ignored.
+   */
+  public void setMaxWordLen(int maxWordLen) {
+    parameters.maxWordLen = maxWordLen;
+  }
+
+  /**
+   * Set the set of stopwords.
+   * Any word in this set is considered "uninteresting" and ignored.
+   * Even if your Analyzer allows stopwords, you might want to tell the MoreLikeThis code to ignore them, as
+   * for the purposes of document similarity it seems reasonable to assume that "a stop word is never interesting".
+   *
+   * @param stopWords set of stopwords, if null it means to allow stop words
+   * @see #getStopWords
+   */
+  public void setStopWords(Set<?> stopWords) {
+    parameters.stopWords = stopWords;
+  }
+
+  /**
+   * Get the current stop words being used.
+   *
+   * @see #setStopWords
+   */
+  public Set<?> getStopWords() {
+    return parameters.stopWords;
+  }
+
+
+  /**
+   * Returns the maximum number of query terms that will be included in any generated query.
+   * The default is {@link MoreLikeThisParameters#DEFAULT_MAX_QUERY_TERMS}.
+   *
+   * @return the maximum number of query terms that will be included in any generated query.
+   */
+  public int getMaxQueryTerms() {
+    return parameters.maxQueryTerms;
+  }
+
+  /**
+   * Sets the maximum number of query terms that will be included in any generated query.
+   *
+   * @param maxQueryTerms the maximum number of query terms that will be included in any
+   *                      generated query.
+   */
+  public void setMaxQueryTerms(int maxQueryTerms) {
+    parameters.maxQueryTerms = maxQueryTerms;
+  }
+
+  /**
+   * @return The maximum number of tokens to parse in each example doc field that is not stored with TermVector support
+   * @see MoreLikeThisParameters#DEFAULT_MAX_NUM_TOKENS_PARSED
+   */
+  public int getMaxNumTokensParsed() {
+    return parameters.maxNumTokensParsed;
+  }
+
+  /**
+   * @param i The maximum number of tokens to parse in each example doc field that is not stored with TermVector support
+   */
+  public void setMaxNumTokensParsed(int i) {
+    parameters.maxNumTokensParsed = i;
+  }
+
+
+  /**
    * Return a query that will return docs like the passed lucene document ID.
    *
    * @param docNum the documentID of the lucene doc to generate the 'More Like This" query for.
@@ -199,19 +443,18 @@ public final class MoreLikeThis {
    */
   private Query createQuery(PriorityQueue<ScoreTerm> q) {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    MoreLikeThisParameters.BoostProperties boostConfiguration = parameters.getBoostConfiguration();
     ScoreTerm scoreTerm;
     float bestScore = -1;
 
     while ((scoreTerm = q.pop()) != null) {
       Query tq = new TermQuery(new Term(scoreTerm.topField, scoreTerm.word));
 
-      if (boostConfiguration.isBoostByTermScore()) {
+      if (parameters.boostConfiguration.isBoostByTermScore()) {
         if (bestScore == -1) {
           bestScore = (scoreTerm.score);
         }
         float myScore = (scoreTerm.score);
-        float fieldBoost = boostConfiguration.getFieldBoost(scoreTerm.topField);
+        float fieldBoost = parameters.boostConfiguration.getFieldBoost(scoreTerm.topField);
         tq = new BoostQuery(tq, fieldBoost * myScore / bestScore);
       }
 
@@ -233,13 +476,8 @@ public final class MoreLikeThis {
   private PriorityQueue<ScoreTerm> createQueue(Map<String, Map<String, Int>> perFieldTermFrequencies) throws IOException {
     // have collected all words in doc and their freqs
     int numDocs = ir.numDocs();
-    int maxQueryTerms = parameters.getMaxQueryTerms();
-    int minTermFreq = parameters.getMinTermFreq();
-    int minDocFreq = parameters.getMinDocFreq();
-    int maxDocFreq = parameters.getMaxDocFreq();
-    final int limit = Math.min(maxQueryTerms, this.getTermsCount(perFieldTermFrequencies));
+    final int limit = Math.min(parameters.maxQueryTerms, this.getTermsCount(perFieldTermFrequencies));
     FreqQ queue = new FreqQ(limit); // will order words by score
-    
     for (Map.Entry<String, Map<String, Int>> entry : perFieldTermFrequencies.entrySet()) {
       Map<String, Int> perWordTermFrequencies = entry.getValue();
       String fieldName = entry.getKey();
@@ -247,17 +485,17 @@ public final class MoreLikeThis {
       for (Map.Entry<String, Int> tfEntry : perWordTermFrequencies.entrySet()) { // for every word
         String word = tfEntry.getKey();
         int tf = tfEntry.getValue().x; // term freq in the source doc
-        if (minTermFreq > 0 && tf < minTermFreq) {
+        if (parameters.minTermFreq > 0 && tf < parameters.minTermFreq) {
           continue; // filter out words that don't occur enough times in the source
         }
 
         int docFreq = ir.docFreq(new Term(fieldName, word));
 
-        if (minDocFreq > 0 && docFreq < minDocFreq) {
+        if (parameters.minDocFreq > 0 && docFreq < parameters.minDocFreq) {
           continue; // filter out words that don't occur in enough docs
         }
 
-        if (docFreq > maxDocFreq) {
+        if (docFreq > parameters.maxDocFreq) {
           continue; // filter out words that occur in too many docs
         }
 
@@ -290,6 +528,13 @@ public final class MoreLikeThis {
       totalTermsCount += perWordTermFrequencies.size();
     }
     return totalTermsCount;
+  }
+
+  /**
+   * Describe the parameters that control how the "more like this" query is formed.
+   */
+  public String describeParams() {
+    return parameters.describeParams();
   }
 
   /**
@@ -385,13 +630,12 @@ public final class MoreLikeThis {
    */
   private void addTermFrequencies(Reader r, Map<String, Map<String, Int>> perFieldTermFrequencies, String fieldName)
       throws IOException {
-    Analyzer analyzer = parameters.getAnalyzer();
-    if (analyzer == null) {
+    if (parameters.analyzer == null) {
       throw new UnsupportedOperationException("To use MoreLikeThis without " +
           "term vectors, you must provide an Analyzer");
     }
     Map<String, Int> termFreqMap = perFieldTermFrequencies.computeIfAbsent(fieldName, k -> new HashMap<>());
-    try (TokenStream ts = analyzer.tokenStream(fieldName, r)) {
+    try (TokenStream ts = parameters.analyzer.tokenStream(fieldName, r)) {
       int tokenCount = 0;
       // for every token
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
@@ -399,7 +643,7 @@ public final class MoreLikeThis {
       while (ts.incrementToken()) {
         String word = termAtt.toString();
         tokenCount++;
-        if (tokenCount > parameters.getMaxNumTokensParsed()) {
+        if (tokenCount > parameters.maxNumTokensParsed) {
           break;
         }
         if (isNoiseWord(word)) {
@@ -427,13 +671,13 @@ public final class MoreLikeThis {
    */
   private boolean isNoiseWord(String term) {
     int len = term.length();
-    if (parameters.getMinWordLen() > 0 && len < parameters.getMinWordLen()) {
+    if (parameters.minWordLen > 0 && len < parameters.minWordLen) {
       return true;
     }
-    if (parameters.getMaxWordLen() > 0 && len > parameters.getMaxWordLen()) {
+    if (parameters.maxWordLen > 0 && len > parameters.maxWordLen) {
       return true;
     }
-    return parameters.getStopWords() != null && parameters.getStopWords().contains(term);
+    return parameters.stopWords != null && parameters.stopWords.contains(term);
   }
 
 
@@ -469,11 +713,10 @@ public final class MoreLikeThis {
    * @see #retrieveInterestingTerms(java.io.Reader, String)
    */
   public String[] retrieveInterestingTerms(int docNum) throws IOException {
-    int maxQueryTerms = parameters.getMaxQueryTerms();
-    ArrayList<String> al = new ArrayList<>(maxQueryTerms);
+    ArrayList<String> al = new ArrayList<>(parameters.maxQueryTerms);
     PriorityQueue<ScoreTerm> pq = retrieveTerms(docNum);
     ScoreTerm scoreTerm;
-    int lim = maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...
+    int lim = parameters.maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...
     // we just want to return the top words
     while (((scoreTerm = pq.pop()) != null) && lim-- > 0) {
       al.add(scoreTerm.word); // the 1st entry is the interesting word
@@ -490,13 +733,13 @@ public final class MoreLikeThis {
    * @param fieldName field passed to analyzer to use when analyzing the content
    * @return the most interesting words in the document
    * @see #retrieveTerms(java.io.Reader, String)
+   * @see #setMaxQueryTerms
    */
   public String[] retrieveInterestingTerms(Reader r, String fieldName) throws IOException {
-    int maxQueryTerms = parameters.getMaxQueryTerms();
-    ArrayList<String> al = new ArrayList<>(maxQueryTerms);
+    ArrayList<String> al = new ArrayList<>(parameters.maxQueryTerms);
     PriorityQueue<ScoreTerm> pq = retrieveTerms(r, fieldName);
     ScoreTerm scoreTerm;
-    int lim = maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...
+    int lim = parameters.maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...
     // we just want to return the top words
     while (((scoreTerm = pq.pop()) != null) && lim-- > 0) {
       al.add(scoreTerm.word); // the 1st entry is the interesting word

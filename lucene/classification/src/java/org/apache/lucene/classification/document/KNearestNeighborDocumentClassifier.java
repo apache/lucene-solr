@@ -104,15 +104,14 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
    */
   private TopDocs knnSearch(Document document) throws IOException {
     BooleanQuery.Builder mltQuery = new BooleanQuery.Builder();
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
-    MoreLikeThisParameters.BoostProperties boostConfiguration = mltParameters.getBoostConfiguration();
+    MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
     boostConfiguration.setBoost(true);
     for (String fieldNameWithBoost : textFieldNames) {
       boostConfiguration.addFieldWithBoost(fieldNameWithBoost);
     }
-    for (String fieldName : mltParameters.getFieldNames()) {
+    for (String fieldName : mlt.getFieldNames()) {
       String[] fieldValues = document.getValues(fieldName);
-      mltParameters.setAnalyzer(field2analyzer.get(fieldName));
+      mlt.setAnalyzer(field2analyzer.get(fieldName));
       for (String fieldContent : fieldValues) {
         mltQuery.add(new BooleanClause(mlt.like(fieldName, new StringReader(fieldContent)), BooleanClause.Occur.SHOULD));
       }

@@ -25,9 +25,8 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.mlt.MoreLikeThisParameters;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
+import org.apache.lucene.queries.mlt.MoreLikeThisParameters;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -40,6 +39,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
@@ -72,21 +72,18 @@ public class CloudMLTQParser extends QParser {
     String[] qf = localParams.getParams("qf");
     Map<String,Float> boostFields = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
-    MoreLikeThisParameters.BoostProperties boostConfiguration = mltParameters.getBoostConfiguration();
+    MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
 
-    mltParameters.setMinTermFreq(localParams.getInt("mintf", MoreLikeThisParameters.DEFAULT_MIN_TERM_FREQ));
-    mltParameters.setMinDocFreq(localParams.getInt("mindf", 0));
-    mltParameters.setMinWordLen(localParams.getInt("minwl", MoreLikeThisParameters.DEFAULT_MIN_WORD_LENGTH));
-    mltParameters.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThisParameters.DEFAULT_MAX_WORD_LENGTH));
-    mltParameters.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThisParameters.DEFAULT_MAX_QUERY_TERMS));
-    mltParameters.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThisParameters.DEFAULT_MAX_NUM_TOKENS_PARSED));
-    mltParameters.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThisParameters.DEFAULT_MAX_DOC_FREQ));
+    mlt.setMinTermFreq(localParams.getInt("mintf", MoreLikeThisParameters.DEFAULT_MIN_TERM_FREQ));
+    mlt.setMinDocFreq(localParams.getInt("mindf", 0));
+    mlt.setMinWordLen(localParams.getInt("minwl", MoreLikeThisParameters.DEFAULT_MIN_WORD_LENGTH));
+    mlt.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThisParameters.DEFAULT_MAX_WORD_LENGTH));
+    mlt.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThisParameters.DEFAULT_MAX_QUERY_TERMS));
+    mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThisParameters.DEFAULT_MAX_NUM_TOKENS_PARSED));
+    mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThisParameters.DEFAULT_MAX_DOC_FREQ));
+    boostConfiguration.setBoost(localParams.getBool("boost", MoreLikeThisParameters.BoostProperties.DEFAULT_BOOST));
 
-    Boolean boost = localParams.getBool("boost",MoreLikeThisParameters.BoostProperties.DEFAULT_BOOST);
-    boostConfiguration.setBoost(boost);
-
-    mltParameters.setAnalyzer(req.getSchema().getIndexAnalyzer());
+    mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
     Map<String, Collection<Object>> filteredDocument = new HashMap<>();
     String[] fieldNames;
@@ -126,7 +123,7 @@ public class CloudMLTQParser extends QParser {
           "MoreLikeThis requires at least one similarity field: qf" );
     }
 
-    mltParameters.setFieldNames(fieldNames);
+    mlt.setFieldNames(fieldNames);
     for (String field : fieldNames) {
       Collection<Object> fieldValues = doc.getFieldValues(field);
       if (fieldValues != null) {

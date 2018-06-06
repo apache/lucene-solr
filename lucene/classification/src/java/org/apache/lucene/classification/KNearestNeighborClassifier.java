@@ -27,8 +27,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.queries.mlt.MoreLikeThisParameters;
@@ -102,9 +102,9 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     this.classFieldName = classFieldName;
     this.mlt = new MoreLikeThis(indexReader);
     MoreLikeThisParameters mltParameters = mlt.getParameters();
-    
-    mltParameters.setAnalyzer(analyzer);
-    mltParameters.setFieldNames(textFieldNames);
+
+    mlt.setAnalyzer(analyzer);
+    mlt.setFieldNames(textFieldNames);
     this.indexSearcher = new IndexSearcher(indexReader);
     if (similarity != null) {
       this.indexSearcher.setSimilarity(similarity);
@@ -112,10 +112,10 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
       this.indexSearcher.setSimilarity(new BM25Similarity());
     }
     if (minDocsFreq > 0) {
-      mltParameters.setMinDocFreq(minDocsFreq);
+      mlt.setMinDocFreq(minDocsFreq);
     }
     if (minTermFreq > 0) {
-      mltParameters.setMinTermFreq(minTermFreq);
+      mlt.setMinTermFreq(minTermFreq);
     }
     this.query = query;
     this.k = k;
@@ -161,8 +161,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
 
   private TopDocs knnSearch(String text) throws IOException {
     BooleanQuery.Builder mltQuery = new BooleanQuery.Builder();
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
-    MoreLikeThisParameters.BoostProperties boostConfiguration = mltParameters.getBoostConfiguration();
+    MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
     boostConfiguration.setBoost(true); //terms boost actually helps in MLT queries
     for (String fieldName : textFieldNames) {
       boostConfiguration.addFieldWithBoost(fieldName);

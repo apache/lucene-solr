@@ -94,19 +94,19 @@ public class TestMoreLikeThis extends LuceneTestCase {
     Map<String,Float> originalValues = getOriginalValues();
     
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
+    MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    mltParameters.setAnalyzer(analyzer);
-    mltParameters.setMinDocFreq(1);
-    mltParameters.setMinTermFreq(1);
-    mltParameters.setMinWordLen(1);
-    mltParameters.setFieldNames(new String[] {"text"});
-    mltParameters.getBoostConfiguration().setBoost(true);
+    mlt.setAnalyzer(analyzer);
+    mlt.setMinDocFreq(1);
+    mlt.setMinTermFreq(1);
+    mlt.setMinWordLen(1);
+    mlt.setFieldNames(new String[]{"text"});
+    boostConfiguration.setBoost(true);
     
     // this mean that every term boost factor will be multiplied by this
     // number
     float boostFactor = 5;
-    mltParameters.getBoostConfiguration().setBoostFactor(boostFactor);
+    boostConfiguration.setBoostFactor(boostFactor);
     
     BooleanQuery query = (BooleanQuery) mlt.like("text", new StringReader(
         "lucene release"));
@@ -132,14 +132,14 @@ public class TestMoreLikeThis extends LuceneTestCase {
   private Map<String,Float> getOriginalValues() throws IOException {
     Map<String,Float> originalValues = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
+    MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    mltParameters.setAnalyzer(analyzer);
-    mltParameters.setMinDocFreq(1);
-    mltParameters.setMinTermFreq(1);
-    mltParameters.setMinWordLen(1);
-    mltParameters.setFieldNames(new String[] {"text"});
-    mltParameters.getBoostConfiguration().setBoost(true);
+    mlt.setAnalyzer(analyzer);
+    mlt.setMinDocFreq(1);
+    mlt.setMinTermFreq(1);
+    mlt.setMinWordLen(1);
+    mlt.setFieldNames(new String[]{"text"});
+    boostConfiguration.setBoost(true);
     BooleanQuery query = (BooleanQuery) mlt.like("text", new StringReader(
         "lucene release"));
     Collection<BooleanClause> clauses = query.clauses();
@@ -156,13 +156,12 @@ public class TestMoreLikeThis extends LuceneTestCase {
   // LUCENE-3326
   public void testMultiFields() throws Exception {
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    mltParameters.setAnalyzer(analyzer);
-    mltParameters.setMinDocFreq(1);
-    mltParameters.setMinTermFreq(1);
-    mltParameters.setMinWordLen(1);
-    mltParameters.setFieldNames(new String[] {"text", "foobar"});
+    mlt.setAnalyzer(analyzer);
+    mlt.setMinDocFreq(1);
+    mlt.setMinTermFreq(1);
+    mlt.setMinWordLen(1);
+    mlt.setFieldNames(new String[]{"text", "foobar"});
     mlt.like("foobar", new StringReader("this is a test"));
     analyzer.close();
   }
@@ -170,13 +169,12 @@ public class TestMoreLikeThis extends LuceneTestCase {
   // LUCENE-5725
   public void testMultiValues() throws Exception {
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    mltParameters.setAnalyzer(analyzer);
-    mltParameters.setMinDocFreq(1);
-    mltParameters.setMinTermFreq(1);
-    mltParameters.setMinWordLen(1);
-    mltParameters.setFieldNames(new String[] {"text"});
+    mlt.setAnalyzer(analyzer);
+    mlt.setMinDocFreq(1);
+    mlt.setMinTermFreq(1);
+    mlt.setMinWordLen(1);
+    mlt.setFieldNames(new String[]{"text"});
 
     BooleanQuery query = (BooleanQuery) mlt.like("text",
         new StringReader("lucene"), new StringReader("lucene release"),
@@ -213,14 +211,13 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
     // setup MLT query
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    MoreLikeThisParameters mltParameters = mlt.getParameters();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    mltParameters.setAnalyzer(analyzer);
-    mltParameters.setMaxQueryTerms(topN);
-    mltParameters.setMinDocFreq(1);
-    mltParameters.setMinTermFreq(1);
-    mltParameters.setMinWordLen(1);
-    mltParameters.setFieldNames(new String[]{"text"});
+    mlt.setAnalyzer(analyzer);
+    mlt.setMaxQueryTerms(topN);
+    mlt.setMinDocFreq(1);
+    mlt.setMinTermFreq(1);
+    mlt.setMinWordLen(1);
+    mlt.setFieldNames(new String[]{"text"});
 
     // perform MLT query
     String likeText = "";
@@ -299,14 +296,13 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
       // setup MLT query
       MoreLikeThis mlt = new MoreLikeThis(reader);
-      MoreLikeThisParameters mltParameters = mlt.getParameters();
 
-      mltParameters.setAnalyzer(analyzer);
-      mltParameters.setMaxQueryTerms(maxQueryTerms);
-      mltParameters.setMinDocFreq(1);
-      mltParameters.setMinTermFreq(1);
-      mltParameters.setMinWordLen(1);
-      mltParameters.setFieldNames(new String[]{FOR_SALE, NOT_FOR_SALE});
+      mlt.setAnalyzer(analyzer);
+      mlt.setMaxQueryTerms(maxQueryTerms);
+      mlt.setMinDocFreq(1);
+      mlt.setMinTermFreq(1);
+      mlt.setMinWordLen(1);
+      mlt.setFieldNames(new String[]{FOR_SALE, NOT_FOR_SALE});
 
       // perform MLT query
       BooleanQuery query = (BooleanQuery) mlt.like(inputDocId);
