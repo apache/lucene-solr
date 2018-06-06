@@ -267,6 +267,9 @@ Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
 
+* LUCENE-8299: Geo3D wrapper uses new polygon method factory that gives better
+  support for polygons with many points (>100). (Ignacio vera)
+
 * LUCENE-8261: InterpolatedProperties.interpolate and recursive property
   references. (Steve Rowe, Dawid Weiss)
 
