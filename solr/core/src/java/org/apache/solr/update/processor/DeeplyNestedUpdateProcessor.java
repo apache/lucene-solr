@@ -32,27 +32,30 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
 
 public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
-  String[] fields;
+  List<String> fields;
 
   protected DeeplyNestedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, List<String> fields, UpdateRequestProcessor next) {
     super(next);
-    this.fields = fields.toArray(new String[0]);
+    this.fields = fields;
   }
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument doc = cmd.getSolrInputDocument();
     processDocChildren(doc, null);
+    return;
   }
 
   private void processDocChildren(SolrInputDocument doc, String fullPath) {
     for(SolrInputField field: doc.values()) {
       if(field.getFirstValue() instanceof SolrInputDocument) {
         Object val = field.getValue();
-        fullPath = String.format("%s%s", Objects.toString(fullPath + ".", ""), field.getName());
+        fullPath = Objects.isNull(fullPath) ? field.getName(): String.format("%s.%s", fullPath, field.getName());
         if (val instanceof Collection) {
           for(Object childDoc: (Collection) val) {
-            processChildDoc((SolrInputDocument) childDoc, doc, fullPath);
+            if(val instanceof SolrInputDocument) {
+              processChildDoc((SolrInputDocument) childDoc, doc, fullPath);
+            }
           }
         } else {
           processChildDoc((SolrInputDocument) val, doc, fullPath);
@@ -62,9 +65,10 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
-    sdoc.addField(IndexSchema.PATH_FIELD_NAME, fullPath);
-    sdoc.addField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue("id"));
-    sdoc.addField(IndexSchema.LEVEL_FIELD_NAME, fullPath.split(".").length +1);
+    if(fields.contains(IndexSchema.PATH_FIELD_NAME)) sdoc.addField(IndexSchema.PATH_FIELD_NAME, fullPath);
+    if(fields.contains(IndexSchema.PARENT_FIELD_NAME)) sdoc.addField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue("id"));
+    if(fields.contains(IndexSchema.LEVEL_FIELD_NAME)) sdoc.addField(IndexSchema.LEVEL_FIELD_NAME, fullPath.split("\\.").length);
+    processDocChildren(sdoc, fullPath);
   }
 
 }

@@ -55,15 +55,31 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @Test
   public void testDeeplyNestedURP() throws Exception {
-    SolrInputDocument document1 = sdoc("id", 1, "parent_s", "X",
-        "child1_s", sdoc("id", 2, "child_s", "y"),
-        "child2_s", sdoc("id", 3, "child_s", "z"));
+    final String jDoc = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"children\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"2\",\n" +
+        "                    \"foo_s\": \"Yaz\"\n" +
+        "                    \"grandChild\": \n" +
+        "                          {\n" +
+        "                             \"id\": \"4\",\n" +
+        "                             \"foo_s\": \"Jazz\"\n" +
+        "                          },\n" +
+        "                },\n" +
+        "                {\n" +
+        "                    \"id\": \"3\",\n" +
+        "                    \"foo_s\": \"Bar\"\n" +
+        "                }\n" +
+        "            ]\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
 
     List<ContentStream> streams = new ArrayList<>( 1 );
-    final String xmlDoc = ClientUtils.toXML(document1);
-    if( xmlDoc.length() > 1 ) {
-      streams.add( new ContentStreamBase.StringStream( xmlDoc ) );
-    }
+    streams.add( new ContentStreamBase.StringStream( jDoc ) );
 
     SolrQueryRequest req;
     try {
@@ -77,29 +93,6 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
     } catch (Exception e) {
       throw e;
     }
-
-    indexDeeplyNestedSolrInputDocumentsDirectly(document1);
-  }
-
-  private long getNewClock() {
-    long time = System.currentTimeMillis();
-    return time << 20;
-  }
-
-  private void indexDeeplyNestedSolrInputDocumentsDirectly(SolrInputDocument... docs) throws IOException {
-//    final String value = "Kittens!!! \u20AC";
-//    final String reqDoc = "<add><doc><field name=\"id\">42</field><field name=\"subject\">"+value+"</field></doc></add>";
-//    .request( "/update?"+CommonParams.STREAM_BODY+"="+URLEncoder.encode(reqDoc, "UTF-8"), null );
-//    h.getCore().execute(new UpdateRequestHandler(), , new SolrQueryResponse());
-    SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), params("update.chain", "deeply-nested"));
-    AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
-    for (SolrInputDocument doc: docs) {
-      long version = getNewClock();
-      updateCmd.setVersion(Math.abs(version));
-      updateCmd.solrDoc = doc;
-      h.getCore().getUpdateHandler().addDoc(updateCmd);
-      updateCmd.clear();
-    }
-    assertU(commit());
+    System.out.println();
   }
 }
