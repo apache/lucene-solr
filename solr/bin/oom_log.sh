@@ -22,11 +22,7 @@ shift
 SOLR_LOGS_DIR="$1"
 shift
 NOW=$(date +"%F_%H-%M-%S")
-# Kill the PID with the -KILL signal.  OOM makes program operation
-# completely unpredictable, so we can't be sure that shutdown hooks
-# will work.  The process could be unresponsive.
 (
-echo "Running OOM killer script for Solr process $SOLR_PID, port $SOLR_PORT"
-kill -9 $SOLR_PID
-echo "Killed process $SOLR_PID"
-) | tee $SOLR_LOGS_DIR/solr_oom_killer-$SOLR_PORT-$NOW.log
+echo "Logging OOM event for Solr process $SOLR_PID, port $SOLR_PORT"
+echo "Process has been terminated"
+) | tee $SOLR_LOGS_DIR/solr_oom_log-$SOLR_PORT-$NOW.log
