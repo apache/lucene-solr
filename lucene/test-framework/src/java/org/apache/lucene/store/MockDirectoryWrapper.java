@@ -804,7 +804,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   // NOTE: This is off by default; see LUCENE-5574
-  private boolean assertNoUnreferencedFilesOnClose;
+  private volatile boolean assertNoUnreferencedFilesOnClose;
 
   public void setAssertNoUnrefencedFilesOnClose(boolean v) {
     assertNoUnreferencedFilesOnClose = v;

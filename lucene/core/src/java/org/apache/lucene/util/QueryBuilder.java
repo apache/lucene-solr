@@ -346,9 +346,9 @@ public class QueryBuilder {
 
   /**
    * Creates a span query from the tokenstream.  In the case of a single token, a simple <code>SpanTermQuery</code> is
-   * returned.  When multiple tokens, an ordered <code>SpanNearQuery</code> with slop of 0 is returned.
+   * returned.  When multiple tokens, an ordered <code>SpanNearQuery</code> with slop 0 is returned.
    */
-  protected final SpanQuery createSpanQuery(TokenStream in, String field) throws IOException {
+  protected SpanQuery createSpanQuery(TokenStream in, String field) throws IOException {
     TermToBytesRefAttribute termAtt = in.getAttribute(TermToBytesRefAttribute.class);
     if (termAtt == null) {
       return null;

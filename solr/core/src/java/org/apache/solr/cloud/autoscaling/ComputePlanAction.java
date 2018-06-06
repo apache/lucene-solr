@@ -168,7 +168,13 @@ public class ComputePlanAction extends TriggerActionBase {
     // estimate a maximum default limit that should be sufficient for most purposes:
     // number of nodes * total number of replicas * 3
     AtomicInteger totalRF = new AtomicInteger();
-    clusterState.forEachCollection(coll -> totalRF.addAndGet(coll.getReplicationFactor() * coll.getSlices().size()));
+    clusterState.forEachCollection(coll -> {
+      Integer rf = coll.getReplicationFactor();
+      if (rf == null) {
+        rf = coll.getReplicas().size() / coll.getSlices().size();
+      }
+      totalRF.addAndGet(rf * coll.getSlices().size());
+    });
     int totalMax = clusterState.getLiveNodes().size() * totalRF.get() * 3;
     int maxOp = (Integer) autoScalingConfig.getProperties().getOrDefault(AutoScalingParams.MAX_COMPUTE_OPERATIONS, totalMax);
     Object o = event.getProperty(AutoScalingParams.MAX_COMPUTE_OPERATIONS, maxOp);

@@ -130,9 +130,9 @@ final class ReaderPool implements Closeable {
   /**
    * Returns <code>true</code> iff any of the buffered readers and updates has at least one pending delete
    */
-  synchronized boolean anyPendingDeletes() {
+  synchronized boolean anyDeletions() {
     for(ReadersAndUpdates rld : readerMap.values()) {
-      if (rld.anyPendingDeletes()) {
+      if (rld.getDelCount() > 0) {
         return true;
       }
     }
