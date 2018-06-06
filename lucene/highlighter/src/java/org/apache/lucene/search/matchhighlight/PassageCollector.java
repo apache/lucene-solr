@@ -29,7 +29,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 
-public class PassageCollector implements HighlightCollector {
+public class PassageCollector {
 
   private final Set<String> fields;
   private final int maxPassagesPerField;
@@ -37,7 +37,16 @@ public class PassageCollector implements HighlightCollector {
   private final Map<String, PassageBuilder> builders = new HashMap<>();
 
   private Matches matches;
-  private final Map<String, MatchesIterator> iterators = new HashMap<>();
+  private final Map<String, Iterator> iterators = new HashMap<>();
+
+  private static class Iterator {
+    final MatchesIterator mi;
+    boolean exhausted = false;
+
+    private Iterator(MatchesIterator mi) {
+      this.mi = mi;
+    }
+  }
 
   public PassageCollector(Set<String> fields, int maxPassagesPerField, Supplier<PassageBuilder> passageSource) {
     this.fields = fields;
@@ -45,12 +54,10 @@ public class PassageCollector implements HighlightCollector {
     this.passageSource = passageSource;
   }
 
-  @Override
   public void setMatches(Matches matches) {
     this.matches = matches;
   }
 
-  @Override
   public Document getHighlights() {
     Document document = new Document();
     for (Map.Entry<String, PassageBuilder> passages : builders.entrySet()) {
@@ -61,33 +68,34 @@ public class PassageCollector implements HighlightCollector {
     return document;
   }
 
-  @Override
   public Set<String> requiredFields() {
     return fields;
   }
 
-  @Override
   public void collectHighlights(String field, String text, int offset) throws IOException {
 
-    MatchesIterator mi = iterators.get(field);
+    Iterator mi = iterators.get(field);
     if (mi == null) {
-      mi = matches.getMatches(field);
-      if (mi == null) {
-        return;
+      mi = new Iterator(matches.getMatches(field));
+      if (mi.mi == null) {
+        mi.exhausted = true;
       }
       iterators.put(field, mi);
-      if (mi.next() == false) {
-        return;
+      if (mi.exhausted == false) {
+        assert mi.mi != null;
+        if (mi.mi.next() == false) {
+          mi.exhausted = true;
+        }
       }
     }
-    PassageBuilder passageBuilder = builders.computeIfAbsent(field, t -> passageSource.get());
-    passageBuilder.addSource(text);
+    if (mi.exhausted) {
+      return;
+    }
 
-    do {
-      if (passageBuilder.addMatch(mi.startOffset() - offset, mi.endOffset() - offset) == false) {
-        break;
-      }
-    } while (mi.next());
+    PassageBuilder passageBuilder = builders.computeIfAbsent(field, t -> passageSource.get());
+    if (passageBuilder.build(text, mi.mi, offset) == false) {
+      mi.exhausted = true;
+    }
 
   }
 

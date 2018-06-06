@@ -52,12 +52,12 @@ public class MatchHighlighter {
     this.analyzer = analyzer;
   }
 
-  public TopHighlights highlight(Query query, TopDocs docs, Supplier<HighlightCollector> collectorSupplier) throws IOException {
+  public TopHighlights highlight(Query query, TopDocs docs, Supplier<PassageCollector> collectorSupplier) throws IOException {
     HighlightDoc[] highlights = new HighlightDoc[docs.scoreDocs.length];
     Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
     int i = 0;
     for (ScoreDoc doc : docs.scoreDocs) {
-      HighlightCollector collector = collectorSupplier.get();
+      PassageCollector collector = collectorSupplier.get();
       LeafReaderContext ctx = getReaderContext(doc.doc, collector);
       Matches matches = weight.matches(ctx, doc.doc - ctx.docBase);
       collector.setMatches(matches);
@@ -68,7 +68,7 @@ public class MatchHighlighter {
     return new TopHighlights(highlights);
   }
 
-  private LeafReaderContext getReaderContext(int doc, HighlightCollector collector) throws IOException {
+  private LeafReaderContext getReaderContext(int doc, PassageCollector collector) throws IOException {
 
     // If we have offsets stored in the index for the relevant fields, we can just use the
     // default reader context to get Matches from.  Otherwise, we need to replace the
@@ -106,10 +106,10 @@ public class MatchHighlighter {
 
   private class HighlightingFieldVisitor extends StoredFieldVisitor {
 
-    final HighlightCollector collector;
+    final PassageCollector collector;
     final Map<String, Integer> offsets = new HashMap<>();
 
-    private HighlightingFieldVisitor(HighlightCollector collector) {
+    private HighlightingFieldVisitor(PassageCollector collector) {
       this.collector = collector;
     }
 
@@ -119,7 +119,7 @@ public class MatchHighlighter {
 
     @Override
     public Status needsField(FieldInfo fieldInfo) {
-      return collector.needsField(fieldInfo.name) ? Status.YES : Status.NO;
+      return collector.requiredFields().contains(fieldInfo.name) ? Status.YES : Status.NO;
     }
 
     @Override

@@ -77,11 +77,11 @@ public class TestMatchHighlighter extends LuceneTestCase {
 
     MatchHighlighter highlighter = new MatchHighlighter(searcher, indexAnalyzer);
     TopHighlights highlights = highlighter.highlight(query, topDocs,
-        () -> new PassageCollector(Collections.singleton("body"), 1, SentencePassageBuilder::new));
+        () -> new PassageCollector(Collections.singleton("body"), 1, () -> new PassageBuilder(45)));
 
     assertEquals(2, highlights.docs.length);
     assertEquals("Just a test <b>highlighting</b> from postings. ", highlights.docs[0].fields.get("body"));
-    assertEquals("<b>Highlighting</b> the first term. ", highlights.docs[1].fields.get("body"));
+    assertEquals("<b>Highlighting</b> the first term. Hope it works.", highlights.docs[1].fields.get("body"));
 
     ir.close();
   }
@@ -108,7 +108,7 @@ public class TestMatchHighlighter extends LuceneTestCase {
 
     MatchHighlighter highlighter = new MatchHighlighter(searcher, indexAnalyzer);
     TopHighlights highlights = highlighter.highlight(query, topDocs,
-        () -> new PassageCollector(Collections.singleton("body"), 1, SentencePassageBuilder::new));
+        () -> new PassageCollector(Collections.singleton("body"), 1, () -> new PassageBuilder(60)));
     assertEquals(1, highlights.docs.length);
     assertEquals("This is a <b>test</b>", highlights.docs[0].fields.get("body"));
 
@@ -122,6 +122,7 @@ public class TestMatchHighlighter extends LuceneTestCase {
     doc.add(new TextField("body", "This is the first sentence, and a fine sentence it is too", Field.Store.YES));
     doc.add(new TextField("body", "And this is the second sentence", Field.Store.YES));
     doc.add(new TextField("body", "And a third sentence too!", Field.Store.YES));
+    doc.add(new TextField("body", "And then a final entry without a highlight", Field.Store.YES));
     iw.addDocument(doc);
 
     IndexReader ir = iw.getReader();
@@ -134,7 +135,7 @@ public class TestMatchHighlighter extends LuceneTestCase {
 
     MatchHighlighter highlighter = new MatchHighlighter(searcher, indexAnalyzer);
     TopHighlights highlights = highlighter.highlight(query, topDocs,
-        () -> new PassageCollector(Collections.singleton("body"), 3, SentencePassageBuilder::new));
+        () -> new PassageCollector(Collections.singleton("body"), 3, () -> new PassageBuilder(70)));
     assertEquals(1, highlights.docs.length);
     String[] values = highlights.docs[0].fields.getValues("body");
     assertEquals(3, values.length);
@@ -144,7 +145,7 @@ public class TestMatchHighlighter extends LuceneTestCase {
 
     // again, this time with only one passage per field
     highlights = highlighter.highlight(query, topDocs,
-        () -> new PassageCollector(Collections.singleton("body"), 1, SentencePassageBuilder::new));
+        () -> new PassageCollector(Collections.singleton("body"), 1, () -> new PassageBuilder(60)));
     assertEquals(1, highlights.docs[0].fields.getValues("body").length);
 
     ir.close();
