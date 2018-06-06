@@ -271,8 +271,8 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    *
    * @param doc                id of the document
    * @param matchedTokensCount number of tokens found in the query
-   * @return the coefficient 0<x<1
-   * @throws IOException
+   * @return the coefficient
+   * @throws IOException If there are problems reading term vectors from the underlying Lucene index.
    */
   protected double getMatchedTokenCountCoefficient(IndexSearcher searcher, int matchedTokensCount, int doc) throws IOException {
     Terms tv = searcher.getIndexReader().getTermVector(doc, TEXT_FIELD_NAME);
