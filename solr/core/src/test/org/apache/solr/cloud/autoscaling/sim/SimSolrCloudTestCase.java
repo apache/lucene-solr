@@ -80,40 +80,38 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    if (cluster != null) {
-      // clear any persisted configuration
-      cluster.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
-      cluster.getDistribStateManager().setData(ZkStateReader.ROLES, Utils.toJSON(new HashMap<>()), -1);
-      cluster.getSimClusterStateProvider().simDeleteAllCollections();
-      cluster.simClearSystemCollection();
-      cluster.getSimNodeStateProvider().simRemoveDeadNodes();
-      cluster.getSimClusterStateProvider().simRemoveDeadNodes();
-      // restore the expected number of nodes
-      int currentSize = cluster.getLiveNodesSet().size();
-      if (currentSize < clusterNodeCount) {
-        int addCnt = clusterNodeCount - currentSize;
-        while (addCnt-- > 0) {
-          cluster.simAddNode();
-        }
-      } else if (currentSize > clusterNodeCount) {
-        cluster.simRemoveRandomNodes(currentSize - clusterNodeCount, true, random());
-      }
-      // clean any persisted trigger state or events
-      removeChildren(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
-      removeChildren(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
-      removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
-      removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
-      cluster.getSimClusterStateProvider().simResetLeaderThrottles();
-      cluster.simRestartOverseer(null);
-      cluster.getTimeSource().sleep(5000);
-      cluster.simResetOpCounts();
-    }
   }
 
   @Before
-  public void checkClusterConfiguration() {
+  public void checkClusterConfiguration() throws Exception {
     if (cluster == null)
       throw new RuntimeException("SimCloudManager not configured - have you called configureCluster()?");
+    // clear any persisted configuration
+    cluster.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
+    cluster.getDistribStateManager().setData(ZkStateReader.ROLES, Utils.toJSON(new HashMap<>()), -1);
+    cluster.getSimClusterStateProvider().simDeleteAllCollections();
+    cluster.simClearSystemCollection();
+    cluster.getSimNodeStateProvider().simRemoveDeadNodes();
+    cluster.getSimClusterStateProvider().simRemoveDeadNodes();
+    // restore the expected number of nodes
+    int currentSize = cluster.getLiveNodesSet().size();
+    if (currentSize < clusterNodeCount) {
+      int addCnt = clusterNodeCount - currentSize;
+      while (addCnt-- > 0) {
+        cluster.simAddNode();
+      }
+    } else if (currentSize > clusterNodeCount) {
+      cluster.simRemoveRandomNodes(currentSize - clusterNodeCount, true, random());
+    }
+    // clean any persisted trigger state or events
+    removeChildren(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
+    removeChildren(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
+    removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
+    removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+    cluster.getSimClusterStateProvider().simResetLeaderThrottles();
+    cluster.simRestartOverseer(null);
+    cluster.getTimeSource().sleep(5000);
+    cluster.simResetOpCounts();
   }
 
   protected void removeChildren(String path) throws Exception {
