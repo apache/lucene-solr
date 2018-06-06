@@ -20,6 +20,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -809,6 +810,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         "    }\n" +
         "}";
     checkTwoAnonymousChildDocs(str);
+    tearDown();
+    setUp();
+    checkTwoAnonymousChildDocs(str, false);
   }
 
   @Test
@@ -833,10 +837,17 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         "    }\n" +
         "}";
     checkTwoAnonymousChildDocs(str);
+    tearDown();
+    setUp();
+    checkTwoAnonymousChildDocs(str, false);
   }
 
   private void checkTwoAnonymousChildDocs(String rawJsonStr) throws Exception {
-    SolrQueryRequest req = req("commit","true");
+    checkTwoAnonymousChildDocs(rawJsonStr, true);
+  }
+
+  private void checkTwoAnonymousChildDocs(String rawJsonStr, boolean anonChildDocs) throws Exception {
+    SolrQueryRequest req = req("commit","true", CommonParams.ANONYMOUS_CHILD_DOCS_FLAG, Boolean.toString(anonChildDocs));
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     JsonLoader loader = new JsonLoader();
@@ -849,11 +860,20 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrInputField f = d.getField( "id" );
     assertEquals("1", f.getValue());
 
-    SolrInputDocument cd = d.getChildDocuments().get(0);
+    SolrInputDocument cd;
+    if (anonChildDocs) {
+      cd = d.getChildDocuments().get(0);
+    } else {
+      cd = (SolrInputDocument) (d.getField("_childDocuments_")).getFirstValue();
+    }
     SolrInputField cf = cd.getField( "id" );
     assertEquals("2", cf.getValue());
 
-    cd = d.getChildDocuments().get(1);
+    if (anonChildDocs) {
+      cd = d.getChildDocuments().get(1);
+    } else {
+      cd = (SolrInputDocument)((List)(d.getField("_childDocuments_")).getValue()).get(1);
+    }
     cf = cd.getField( "id" );
     assertEquals("3", cf.getValue());
     cf = cd.getField( "foo_i" );

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.base.Objects;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -530,7 +531,8 @@ public class JsonLoader extends ContentStreamLoader {
         }
         String fieldName = parser.getString();
 
-        if (fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
+        boolean anonChildDocFlag = Objects.firstNonNull(req.getParams().getBool(CommonParams.ANONYMOUS_CHILD_DOCS_FLAG), true);
+        if (anonChildDocFlag && fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
           ev = parser.nextEvent();
           assertEvent(ev, JSONParser.ARRAY_START);
           while ((ev = parser.nextEvent()) != JSONParser.ARRAY_END) {
@@ -564,12 +566,12 @@ public class JsonLoader extends ContentStreamLoader {
     private void parseExtendedFieldValue(SolrInputField sif, int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
 
-      Map<String, Object> extendedValueMap = generateExtendedValueMap(ev);
+      SolrInputDocument extendedSolrDocument = generateExtendedValueMap(ev);
 
-      if (isChildDoc(extendedValueMap)) {
+      if (isChildDoc(extendedSolrDocument)) {
         SolrInputDocument cDoc = new SolrInputDocument();
-        for (Map.Entry<String, Object> extendedEntry: extendedValueMap.entrySet()) {
-          cDoc.setField(extendedEntry.getKey(), extendedEntry.getValue());
+        for (Map.Entry<String, SolrInputField> extendedEntry: extendedSolrDocument.entrySet()) {
+          cDoc.setField(extendedEntry.getKey(), extendedEntry.getValue().getValue());
         }
         sif.addValue(cDoc);
         return;
@@ -578,9 +580,10 @@ public class JsonLoader extends ContentStreamLoader {
       Object normalFieldValue = null;
       Map<String, Object> extendedInfo = null;
 
-      for (String label: extendedValueMap.keySet() ) {
+      for (String label: extendedSolrDocument.keySet() ) {
+        Object fieldVal = extendedSolrDocument.get(label).getValue();
         if ("boost".equals(label)) {
-          Object boostVal = extendedValueMap.get(label);
+          Object boostVal = fieldVal;
           if (!(boostVal instanceof Double)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Boost should have number. "
                 + "Unexpected value: " + boostVal.toString() + "field=" + label);
@@ -593,7 +596,7 @@ public class JsonLoader extends ContentStreamLoader {
             log.debug(message);
           }
         } else if ("value".equals(label)) {
-          normalFieldValue = extendedValueMap.get(label);
+          normalFieldValue = fieldVal;
         } else {
           // If we encounter other unknown map keys, then use a map
           if (extendedInfo == null) {
@@ -601,7 +604,7 @@ public class JsonLoader extends ContentStreamLoader {
           }
           // for now, the only extended info will be field values
           // we could either store this as an Object or a SolrInputField
-          extendedInfo.put(label, extendedValueMap.get(label));
+          extendedInfo.put(label, fieldVal);
         }
         if (extendedInfo != null) {
           if (normalFieldValue != null) {
@@ -661,13 +664,13 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    private boolean isChildDoc(Map<String, Object> extendedMap) {
+    private boolean isChildDoc(SolrInputDocument extendedMap) {
       return extendedMap.containsKey(req.getSchema().getUniqueKeyField().getName());
     }
 
-    private Map<String, Object> generateExtendedValueMap(int ev) throws IOException {
+    private SolrInputDocument generateExtendedValueMap(int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
-      Map<String, Object> extendedInfo = new HashMap<>();
+      SolrInputDocument extendedInfo = new SolrInputDocument();
 
       while(true) {
         ev = parser.nextEvent();
@@ -677,7 +680,7 @@ public class JsonLoader extends ContentStreamLoader {
         String label = parser.getString();
         SolrInputField sif = new SolrInputField(label);
         parseFieldValue(sif);
-        extendedInfo.put(label, sif.getValue());
+        extendedInfo.addField(label, sif.getValue());
       }
     }
   }

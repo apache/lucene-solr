@@ -288,5 +288,7 @@ public interface CommonParams {
   String JSON_MIME = "application/json";
 
   String JAVABIN_MIME = "application/javabin";
+
+  String ANONYMOUS_CHILD_DOCS_FLAG = "anonChildDocsFlag";
 }
 
