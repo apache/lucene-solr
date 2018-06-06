@@ -178,12 +178,9 @@ public class TestReaderPool extends LuceneTestCase {
       boolean expectUpdate = false;
       int doc = -1;
       if (postings != null && postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-        readersAndUpdates.delete(doc = postings.docID());
+        assertTrue(readersAndUpdates.delete(doc = postings.docID()));
         expectUpdate = true;
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
-        assertTrue(pool.anyPendingDeletes());
-      } else {
-        assertFalse(pool.anyPendingDeletes());
       }
       assertFalse(pool.anyDocValuesChanges()); // deletes are not accounted here
       readOnlyClone.close();

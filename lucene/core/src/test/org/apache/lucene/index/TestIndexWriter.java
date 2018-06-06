@@ -3137,7 +3137,11 @@ public class TestIndexWriter extends LuceneTestCase {
     searcher = new IndexSearcher(reader);
     topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
     assertEquals(0, topDocs.totalHits);
-
+    int numSoftDeleted = 0;
+    for (SegmentCommitInfo info : writer.segmentInfos) {
+     numSoftDeleted += info.getSoftDelCount();
+    }
+    assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
     writer.close();
     reader.close();
     dir.close();
@@ -3267,6 +3271,20 @@ public class TestIndexWriter extends LuceneTestCase {
         assertEquals(1, reader.docFreq(new Term("id", id)));
       }
     }
+    int numSoftDeleted = 0;
+    for (SegmentCommitInfo info : writer.segmentInfos) {
+      numSoftDeleted += info.getSoftDelCount() + info.getDelCount();
+    }
+    assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
+    writer.commit();
+    try (DirectoryReader dirReader = DirectoryReader.open(dir)) {
+      int delCount = 0;
+      for (LeafReaderContext ctx : dirReader.leaves()) {
+        SegmentCommitInfo segmentInfo = ((SegmentReader) ctx.reader()).getSegmentInfo();
+        delCount += segmentInfo.getSoftDelCount() + segmentInfo.getDelCount();
+      }
+      assertEquals(numSoftDeleted, delCount);
+    }
     IOUtils.close(reader, writer, dir);
   }
 
@@ -3324,9 +3342,9 @@ public class TestIndexWriter extends LuceneTestCase {
         .filter(filter).collect(Collectors.toSet());
     Set<String> dirFiles = new HashSet<>(Arrays.asList(writer.getDirectory().listAll()))
         .stream().filter(filter).collect(Collectors.toSet());
-    Set<String> s = new HashSet<>(segFiles);
-    s.removeAll(dirFiles);
-    assertEquals(segFiles.toString() + " vs "+ dirFiles.toString(), segFiles.size(), dirFiles.size());
+    // ExtraFS might add an extra0 file, ignore it
+    dirFiles.remove("extra0");
+    assertEquals(segFiles.size(), dirFiles.size());
   }
 
   public void testFullyDeletedSegmentsReleaseFiles() throws IOException {
@@ -3352,4 +3370,134 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(writer, dir);
   }
 
+  public void testSegmentInfoIsSnapshot() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig();
+    config.setRAMBufferSizeMB(Integer.MAX_VALUE);
+    config.setMaxBufferedDocs(2); // no auto flush
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "doc-0", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "doc-1", Field.Store.YES));
+    writer.addDocument(d);
+    DirectoryReader reader = writer.getReader();
+    SegmentCommitInfo segmentInfo = ((SegmentReader) reader.leaves().get(0).reader()).getSegmentInfo();
+    SegmentCommitInfo originalInfo = ((SegmentReader) reader.leaves().get(0).reader()).getOriginalSegmentInfo();
+    assertEquals(0, originalInfo.getDelCount());
+    assertEquals(0, segmentInfo.getDelCount());
+    writer.deleteDocuments(new Term("id", "doc-0"));
+    writer.commit();
+    assertEquals(0, segmentInfo.getDelCount());
+    assertEquals(1, originalInfo.getDelCount());
+    IOUtils.close(reader, writer, dir);
+  }
+
+  public void testPreventChangingSoftDeletesField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("my_deletes"));
+    Document v1 = new Document();
+    v1.add(new StringField("id", "1", Field.Store.YES));
+    v1.add(new StringField("version", "1", Field.Store.YES));
+    writer.addDocument(v1);
+    Document v2 = new Document();
+    v2.add(new StringField("id", "1", Field.Store.YES));
+    v2.add(new StringField("version", "2", Field.Store.YES));
+    writer.softUpdateDocument(new Term("id", "1"), v2, new NumericDocValuesField("my_deletes", 1));
+    writer.commit();
+    writer.close();
+    for (SegmentCommitInfo si : SegmentInfos.readLatestCommit(dir)) {
+      FieldInfos fieldInfos = IndexWriter.readFieldInfos(si);
+      assertEquals("my_deletes", fieldInfos.getSoftDeletesField());
+      assertTrue(fieldInfos.fieldInfo("my_deletes").isSoftDeletesField());
+    }
+
+    IllegalArgumentException illegalError = expectThrows(IllegalArgumentException.class, () -> {
+      new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("your_deletes"));
+    });
+    assertEquals("cannot configure [your_deletes] as soft-deletes; " +
+        "this index uses [my_deletes] as soft-deletes already", illegalError.getMessage());
+
+    IndexWriterConfig softDeleteConfig = newIndexWriterConfig().setSoftDeletesField("my_deletes")
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("my_deletes", () -> new MatchAllDocsQuery(), newMergePolicy()));
+    writer = new IndexWriter(dir, softDeleteConfig);
+    Document tombstone = new Document();
+    tombstone.add(new StringField("id", "tombstone", Field.Store.YES));
+    tombstone.add(new NumericDocValuesField("my_deletes", 1));
+    writer.addDocument(tombstone);
+    writer.flush();
+    for (SegmentCommitInfo si : writer.segmentInfos) {
+      FieldInfos fieldInfos = IndexWriter.readFieldInfos(si);
+      assertEquals("my_deletes", fieldInfos.getSoftDeletesField());
+      assertTrue(fieldInfos.fieldInfo("my_deletes").isSoftDeletesField());
+    }
+    writer.close();
+    // reopen writer without soft-deletes field should be prevented
+    IllegalArgumentException reopenError = expectThrows(IllegalArgumentException.class, () -> {
+      new IndexWriter(dir, newIndexWriterConfig());
+    });
+    assertEquals("this index has [my_deletes] as soft-deletes already" +
+        " but soft-deletes field is not configured in IWC", reopenError.getMessage());
+    dir.close();
+  }
+
+  public void testPreventAddingIndexesWithDifferentSoftDeletesField() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig().setSoftDeletesField("soft_deletes_1"));
+    for (int i = 0; i < 2; i++) {
+      Document d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      d.add(new StringField("version", Integer.toString(i), Field.Store.YES));
+      w1.softUpdateDocument(new Term("id", "1"), d, new NumericDocValuesField("soft_deletes_1", 1));
+    }
+    w1.commit();
+    w1.close();
+
+    Directory dir2 = newDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig().setSoftDeletesField("soft_deletes_2"));
+    IllegalArgumentException error = expectThrows(IllegalArgumentException.class, () -> w2.addIndexes(dir1));
+    assertEquals("cannot configure [soft_deletes_2] as soft-deletes; this index uses [soft_deletes_1] as soft-deletes already",
+        error.getMessage());
+    w2.close();
+
+    Directory dir3 = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("soft_deletes_1");
+    IndexWriter w3 = new IndexWriter(dir3, config);
+    w3.addIndexes(dir1);
+    for (SegmentCommitInfo si : w3.segmentInfos) {
+      FieldInfo softDeleteField = IndexWriter.readFieldInfos(si).fieldInfo("soft_deletes_1");
+      assertTrue(softDeleteField.isSoftDeletesField());
+    }
+    w3.close();
+    IOUtils.close(dir1, dir2, dir3);
+  }
+
+  public void testNotAllowUsingExistingFieldAsSoftDeletes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    for (int i = 0; i < 2; i++) {
+      Document d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      if (random().nextBoolean()) {
+        d.add(new NumericDocValuesField("dv_field", 1));
+        w.updateDocument(new Term("id", "1"), d);
+      } else {
+        w.softUpdateDocument(new Term("id", "1"), d, new NumericDocValuesField("dv_field", 1));
+      }
+    }
+    w.commit();
+    w.close();
+    String softDeletesField = random().nextBoolean() ? "id" : "dv_field";
+    IllegalArgumentException error = expectThrows(IllegalArgumentException.class, () -> {
+      IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField(softDeletesField);
+      new IndexWriter(dir, config);
+    });
+    assertEquals("cannot configure [" + softDeletesField + "] as soft-deletes;" +
+        " this index uses [" + softDeletesField + "] as non-soft-deletes already", error.getMessage());
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("non-existing-field");
+    w = new IndexWriter(dir, config);
+    w.close();
+    dir.close();
+  }
 }

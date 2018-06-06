@@ -168,6 +168,16 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
           return false;
         }
         if (shouldFilter()) {
+          // we're chopping the underlying Tokenstream up into fragments, and presenting
+          // only those parts of it that pass the filter to the delegate, so the delegate is
+          // in effect seeing multiple tokenstream snippets.  Tokenstreams can't have an initial
+          // position increment of 0, so if the snippet starts on a stacked token we need to
+          // offset it here and then correct the increment back again after delegation
+          boolean adjustPosition = false;
+          if (posIncAtt.getPositionIncrement() == 0) {
+            posIncAtt.setPositionIncrement(1);
+            adjustPosition = true;
+          }
           lastTokenFiltered = true;
           state = TokenState.PREBUFFERING;
           // we determine that the delegate has emitted all the tokens it can at the current
@@ -178,6 +188,10 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
           boolean more = delegate.incrementToken();
           if (more) {
             state = TokenState.DELEGATING;
+            if (adjustPosition) {
+              int posInc = posIncAtt.getPositionIncrement();
+              posIncAtt.setPositionIncrement(posInc - 1);
+            }
           }
           else {
             lastTokenFiltered = false;

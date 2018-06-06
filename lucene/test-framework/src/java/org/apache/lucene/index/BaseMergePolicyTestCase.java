@@ -91,6 +91,10 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
 
   public void testFindForcedDeletesMerges() throws IOException {
     MergePolicy mp = mergePolicy();
+    if (mp instanceof FilterMergePolicy) {
+      assumeFalse("test doesn't work with MockRandomMP",
+          ((FilterMergePolicy) mp).in instanceof MockRandomMergePolicy);
+    }
     SegmentInfos infos = new SegmentInfos(Version.LATEST.major);
     try (Directory directory = newDirectory()) {
       MergePolicy.MergeContext context = new MockMergeContext(s -> 0);
@@ -112,7 +116,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
             Collections.emptyMap(), // attributes
             null /* indexSort */);
         info.setFiles(Collections.emptyList());
-        infos.add(new SegmentCommitInfo(info, random().nextInt(1), -1, -1, -1));
+        infos.add(new SegmentCommitInfo(info, random().nextInt(1), 0, -1, -1, -1));
       }
       MergePolicy.MergeSpecification forcedDeletesMerges = mp.findForcedDeletesMerges(infos, context);
       if (forcedDeletesMerges != null) {

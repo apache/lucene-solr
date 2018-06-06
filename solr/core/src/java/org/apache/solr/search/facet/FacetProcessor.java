@@ -185,7 +185,8 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     evalFilters();
 
     handleJoinField();
-    
+    handleGraphField();
+
     boolean appliedFilters = handleBlockJoin();
 
     if (this.filter != null && !appliedFilters) {
@@ -261,7 +262,15 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     final Query domainQuery = freq.domain.joinField.createDomainQuery(fcontext);
     fcontext.base = fcontext.searcher.getDocSet(domainQuery);
   }
-    
+
+  /** modifies the context base if there is a graph field domain change */
+  private void handleGraphField() throws IOException {
+    if (null == freq.domain.graphField) return;
+
+    final Query domainQuery = freq.domain.graphField.createDomainQuery(fcontext);
+    fcontext.base = fcontext.searcher.getDocSet(domainQuery);
+  }
+
   // returns "true" if filters were applied to fcontext.base already
   private boolean handleBlockJoin() throws IOException {
     boolean appliedFilters = false;
@@ -287,7 +296,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       // We need to remember to not redundantly re-apply these filters after.
       DocSet acceptDocs = this.filter;
       if (acceptDocs == null) {
-        acceptDocs = fcontext.searcher.getLiveDocs();
+        acceptDocs = fcontext.searcher.getLiveDocSet();
       } else {
         appliedFilters = true;
       }

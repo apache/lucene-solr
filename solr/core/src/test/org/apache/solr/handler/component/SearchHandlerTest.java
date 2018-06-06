@@ -241,16 +241,21 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       Replica connectedReplica = connectedSlice.getReplicas().iterator().next();
       try (HttpSolrClient httpSolrClient = new HttpSolrClient.Builder(connectedReplica.getCoreUrl()).build()) {
         ignoreException("ZooKeeper is not connected");
+        ignoreException("no servers hosting shard:");
         JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
         disconnectedJetty.getCoreContainer().getZkController().getZkClient().close();
         req.process(httpSolrClient);
         fail("An exception should be thrown when ZooKeeper is not connected and shards.tolerant=requireZkConnected");
       } catch (Exception e) {
-        assertTrue(e.getMessage().contains("no servers hosting shard:"));
+        assertTrue("Unrecognized exception message: " + e, 
+            e.getMessage().contains("no servers hosting shard:") 
+                || e.getMessage().contains("ZooKeeper is not connected"));
       }
     }
     finally {
       miniCluster.shutdown();
+      unIgnoreException("no servers hosting shard:");
+      unIgnoreException("ZooKeeper is not connected");
     }
   }
 

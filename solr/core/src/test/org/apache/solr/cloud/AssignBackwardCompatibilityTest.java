@@ -56,6 +56,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void test() throws IOException, SolrServerException, KeeperException, InterruptedException {
     Set<String> coreNames = new HashSet<>();
     Set<String> coreNodeNames = new HashSet<>();

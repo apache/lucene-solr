@@ -26,11 +26,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
@@ -47,6 +49,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -56,7 +59,6 @@ import org.junit.Test;
  *
  */
 public class SearchRateTriggerTest extends SolrCloudTestCase {
-
   private static final String PREFIX = SearchRateTriggerTest.class.getSimpleName() + "-";
   private static final String COLL1 = PREFIX + "collection1";
   private static final String COLL2 = PREFIX + "collection2";
@@ -83,9 +85,10 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
 
   @Test
   public void testTrigger() throws Exception {
+    JettySolrRunner targetNode = cluster.getJettySolrRunner(0);
     SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
-    SolrResourceLoader loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
-    CoreContainer container = cluster.getJettySolrRunner(0).getCoreContainer();
+    SolrResourceLoader loader = targetNode.getCoreContainer().getResourceLoader();
+    CoreContainer container = targetNode.getCoreContainer();
     SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), cluster.getSolrClient());
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
@@ -102,7 +105,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
     CloudTestUtils.waitForState(cloudManager, COLL2, 60, TimeUnit.SECONDS, clusterShape(2, 2));
 
     double rate = 1.0;
-    URL baseUrl = cluster.getJettySolrRunners().get(1).getBaseUrl();
+    URL baseUrl = targetNode.getBaseUrl();
     long waitForSeconds = 5 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(Arrays.asList(COLL1, COLL2), waitForSeconds, rate, -1);
     final List<TriggerEvent> events = new ArrayList<>();
@@ -122,11 +125,16 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
         for (int i = 0; i < 500; i++) {
           simpleClient.query(query);
         }
+        String registryCoreName = coreName.replaceFirst("_", ".").replaceFirst("_", ".");
+        SolrMetricManager manager = targetNode.getCoreContainer().getMetricManager();
+        MetricRegistry registry = manager.registry("solr.core."+registryCoreName);
+        TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        // If we getting the rate too early, it will return 0
+        timeOut.waitFor("Timeout waiting for rate is not zero",
+            () -> registry.timer("QUERY./select.requestTimes").getOneMinuteRate()!=0.0);
         trigger.run();
         // waitFor delay
         assertEquals(0, events.size());
-        Thread.sleep(waitForSeconds * 1000);
-        trigger.run();
         Thread.sleep(waitForSeconds * 1000);
         // should generate replica event
         trigger.run();

@@ -83,6 +83,7 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testFSThreadSafety() throws Exception {
 
     final SolrQueryRequest req = req();

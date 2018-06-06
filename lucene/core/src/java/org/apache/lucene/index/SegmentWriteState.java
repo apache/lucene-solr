@@ -47,7 +47,9 @@ public class SegmentWriteState {
   /** Number of deleted documents set while flushing the
    *  segment. */
   public int delCountOnFlush;
-
+  /** Number of only soft deleted documents set while flushing the
+   *  segment. */
+  public int softDelCountOnFlush;
   /**
    * Deletes and updates to apply while we are flushing the segment. A Term is
    * enrolled in here if it was deleted/updated at one point, and it's mapped to

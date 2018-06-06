@@ -221,6 +221,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   @Slow
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     raceConditionOnDeleteAndRegisterReplica("true");
     raceConditionOnDeleteAndRegisterReplica("false");

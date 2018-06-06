@@ -69,7 +69,7 @@ public class TestLang extends LuceneTestCase {
        TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, "abs", "add", "div", "mult", "sub", "log", "pow",
       "mod", "ceil", "floor", "sin", "asin", "sinh", "cos", "acos", "cosh", "tan", "atan", "tanh", "round", "sqrt",
       "cbrt", "coalesce", "uuid", "if", "convert", "valueAt", "memset", "fft", "ifft", "euclidean","manhattan",
-      "earthMovers", "canberra", "chebyshev", "ones", "zeros"};
+      "earthMovers", "canberra", "chebyshev", "ones", "zeros", "setValue", "getValue"};
 
   @Test
   public void testLang() {

@@ -127,6 +127,7 @@ public class ZkStateReader implements Closeable {
   public final static String CONFIGNAME_PROP="configName";
 
   public static final String LEGACY_CLOUD = "legacyCloud";
+  public static final String COLLECTION_DEF = "collectionDefaults";
 
   public static final String URL_SCHEME = "urlScheme";
   
@@ -954,7 +955,20 @@ public class ZkStateReader implements Closeable {
    */
   @SuppressWarnings("unchecked")
   public <T> T getClusterProperty(String key, T defaultValue) {
-    T value = (T) clusterProperties.get(key);
+    T value = (T) Utils.getObjectByPath( clusterProperties, false, key);
+    if (value == null)
+      return defaultValue;
+    return value;
+  }
+
+  /**Same as the above but allows a full json path as a list of parts
+   *
+   * @param keyPath path to the property example ["collectionDefauls", "numShards"]
+   * @param defaultValue a default value to use if no such property exists
+   * @return the cluster property, or a default if the property is not set
+   */
+  public <T> T getClusterProperty(List<String> keyPath, T defaultValue) {
+    T value = (T) Utils.getObjectByPath( clusterProperties, false, keyPath);
     if (value == null)
       return defaultValue;
     return value;

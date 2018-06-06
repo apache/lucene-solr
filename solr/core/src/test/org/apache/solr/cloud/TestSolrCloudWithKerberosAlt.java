@@ -120,6 +120,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
   }
   
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testBasics() throws Exception {
     testCollectionCreateSearchDelete();
     // sometimes run a second test e.g. to test collection create-delete-create scenario

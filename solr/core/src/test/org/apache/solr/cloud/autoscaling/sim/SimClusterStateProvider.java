@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,10 +51,12 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.ActionThrottle;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.AddReplicaCmd;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.cloud.api.collections.CreateShardCmd;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
@@ -69,11 +72,14 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.zookeeper.CreateMode;
 import org.junit.Assert;
 import org.slf4j.Logger;
@@ -105,11 +111,11 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class SimClusterStateProvider implements ClusterStateProvider {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, List<ReplicaInfo>> nodeReplicaMap = new ConcurrentHashMap<>();
   private final LiveNodesSet liveNodes;
   private final SimDistribStateManager stateManager;
   private final SimCloudManager cloudManager;
 
+  private final Map<String, List<ReplicaInfo>> nodeReplicaMap = new ConcurrentHashMap<>();
   private final Map<String, Object> clusterProperties = new ConcurrentHashMap<>();
   private final Map<String, Map<String, Object>> collProperties = new ConcurrentHashMap<>();
   private final Map<String, Map<String, Map<String, Object>>> sliceProperties = new ConcurrentHashMap<>();
@@ -125,6 +131,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
 
   private volatile int clusterStateVersion = 0;
+  private volatile String overseerLeader = null;
+
   private Map<String, Object> lastSavedProperties = null;
 
   private AtomicReference<Map<String, DocCollection>> collectionsStatesRef = new AtomicReference<>();
@@ -234,6 +242,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     liveNodes.add(nodeId);
     createEphemeralLiveNode(nodeId);
+    updateOverseerLeader();
     nodeReplicaMap.putIfAbsent(nodeId, new ArrayList<>());
   }
 
@@ -248,13 +257,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     try {
       Set<String> collections = new HashSet<>();
       // mark every replica on that node as down
-      setReplicaStates(nodeId, Replica.State.DOWN, collections);
       boolean res = liveNodes.remove(nodeId);
+      setReplicaStates(nodeId, Replica.State.DOWN, collections);
       if (!collections.isEmpty()) {
         collectionsStatesRef.set(null);
       }
       // remove ephemeral nodes
       stateManager.getRoot().removeEphemeralChildren(nodeId);
+      updateOverseerLeader();
       // create a nodeLost marker if needed
       AutoScalingConfig cfg = stateManager.getAutoScalingConfig(null);
       if (cfg.hasTriggerForEvents(TriggerEventType.NODELOST)) {
@@ -266,6 +276,49 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       return res;
     } finally {
       lock.unlock();
+    }
+  }
+
+  /**
+   * Remove all replica information related to dead nodes.
+   */
+  public void simRemoveDeadNodes() throws Exception {
+    lock.lockInterruptibly();
+    try {
+      Set<String> myNodes = new HashSet<>(nodeReplicaMap.keySet());
+      myNodes.removeAll(liveNodes.get());
+      collectionsStatesRef.set(null);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  private synchronized void updateOverseerLeader() throws Exception {
+    if (overseerLeader != null && liveNodes.contains(overseerLeader)) {
+      return;
+    }
+    String path = Overseer.OVERSEER_ELECT + "/leader";
+    if (liveNodes.isEmpty()) {
+      overseerLeader = null;
+      // remove it from ZK
+      try {
+        cloudManager.getDistribStateManager().removeData(path, -1);
+      } catch (NoSuchElementException e) {
+        // ignore
+      }
+      return;
+    }
+    // pick first
+    overseerLeader = liveNodes.iterator().next();
+    LOG.debug("--- new Overseer leader: " + overseerLeader);
+    // record it in ZK
+    Map<String, Object> id = new HashMap<>();
+    id.put("id", cloudManager.getTimeSource().getTimeNs() +
+        "-" + overseerLeader + "-n_0000000000");
+    try {
+      cloudManager.getDistribStateManager().makePath(path, Utils.toJSON(id), CreateMode.EPHEMERAL, false);
+    } catch (Exception e) {
+      LOG.warn("Exception saving overseer leader id", e);
     }
   }
 
@@ -397,6 +450,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
       opDelay(replicaInfo.getCollection(), CollectionParams.CollectionAction.ADDREPLICA.name());
 
+      // at this point nuke our cached DocCollection state
+      collectionsStatesRef.set(null);
       List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, n -> new ArrayList<>());
       // mark replica as active
       replicaInfo.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
@@ -406,8 +461,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       replicaInfo.getVariables().put(Suggestion.coreidxsize, 1);
 
       replicas.add(replicaInfo);
-      // at this point nuke our cached DocCollection state
-      collectionsStatesRef.set(null);
       LOG.trace("-- simAddReplica {}", replicaInfo);
 
       Map<String, Object> values = cloudManager.getSimNodeStateProvider().simGetAllNodeValues()
@@ -423,6 +476,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         disk = SimCloudManager.DEFAULT_DISK;
       }
       cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk - 1);
+      // fake metrics
+      String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, replicaInfo.getCollection(),
+          replicaInfo.getShard(),
+          Utils.parseMetricsReplicaName(replicaInfo.getCollection(), replicaInfo.getCore()));
+      cloudManager.getMetricManager().registry(registry).counter("UPDATE./update.requests");
+      cloudManager.getMetricManager().registry(registry).counter("QUERY./select.requests");
+      cloudManager.getMetricManager().registerGauge(null, registry, () -> 1000, "", true, "INDEX.sizeInBytes");
       if (runLeaderElection) {
         simRunLeaderElection(Collections.singleton(replicaInfo.getCollection()), true);
       }
@@ -437,8 +497,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param coreNodeName coreNodeName
    */
   public void simRemoveReplica(String nodeId, String coreNodeName) throws Exception {
-    List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, n -> new ArrayList<>());
     lock.lockInterruptibly();
+    List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, n -> new ArrayList<>());
     try {
       for (int i = 0; i < replicas.size(); i++) {
         if (coreNodeName.equals(replicas.get(i).getName())) {
@@ -526,7 +586,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     });
   }
 
-  private void simRunLeaderElection(String collection, Slice s, boolean saveClusterState) throws Exception {
+  private void simRunLeaderElection(String collection, Slice s, boolean saveState) throws Exception {
     AtomicBoolean stateChanged = new AtomicBoolean(Boolean.FALSE);
     Replica leader = s.getLeader();
     if (leader == null || !liveNodes.contains(leader.getNodeName())) {
@@ -590,8 +650,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     } else {
       LOG.trace("-- already has leader for {} / {}", collection, s.getName());
     }
-    if (stateChanged.get()) {
+    if (stateChanged.get() || saveState) {
       collectionsStatesRef.set(null);
+      saveClusterState.set(true);
     }
   }
 
@@ -608,6 +669,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     List<String> nodeList = new ArrayList<>();
     List<String> shardNames = new ArrayList<>();
     final String collectionName = props.getStr(NAME);
+    // always force getting fresh state
+    collectionsStatesRef.set(null);
     ClusterState clusterState = getClusterState();
     ZkWriteCommand cmd = new ClusterStateMutator(cloudManager).createCollection(clusterState, props);
     if (cmd.noop) {
@@ -712,12 +775,18 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               if (cores == 0) {
                 throw new RuntimeException("Unexpected value of 'cores' (" + cores + ") on node: " + n);
               }
-              cloudManager.getSimNodeStateProvider().simSetNodeValue(n, "cores", cores - 1);
+              try {
+                cloudManager.getSimNodeStateProvider().simSetNodeValue(n, "cores", cores - 1);
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("interrupted");
+              }
             }
           }
         }
       });
       collectionsStatesRef.set(null);
+      saveClusterState.set(true);
       results.add("success", "");
     } catch (Exception e) {
       LOG.warn("Exception", e);
@@ -741,6 +810,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         values.put(ImplicitSnitch.DISK, 1000);
       });
       collectionsStatesRef.set(null);
+      saveClusterState.set(true);
     } finally {
       lock.unlock();
     }
@@ -1011,6 +1081,23 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
+  public void createSystemCollection() throws IOException {
+    try {
+      if (simListCollections().contains(CollectionAdminParams.SYSTEM_COLL)) {
+        return;
+      }
+      ZkNodeProps props = new ZkNodeProps(
+          NAME, CollectionAdminParams.SYSTEM_COLL,
+          REPLICATION_FACTOR, "1",
+          OverseerCollectionMessageHandler.NUM_SLICES, "1",
+          CommonAdminParams.WAIT_FOR_FINAL_STATE, "true"
+      );
+      simCreateCollection(props, new NamedList());
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
+  }
+
   /**
    * Simulate an update by modifying replica metrics.
    * The following core metrics are updated:
@@ -1035,7 +1122,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not set");
     }
     if (!simListCollections().contains(collection)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '" + collection + "' doesn't exist");
+      if (CollectionAdminParams.SYSTEM_COLL.equals(collection)) {
+        // auto-create
+        createSystemCollection();
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '" + collection + "' doesn't exist");
+      }
     }
     // always reset first to get the current metrics - it's easier than to keep matching
     // Replica with ReplicaInfo where the current real counts are stored
@@ -1057,6 +1149,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             LOG.debug("-- no leader in " + s);
             continue;
           }
+          cloudManager.getMetricManager().registry(createRegistryName(collection, s.getName(), leader)).counter("UPDATE./update.requests").inc();
           String numDocsStr = leader.getStr("SEARCHER.searcher.numDocs");
           if (numDocsStr == null) {
             LOG.debug("-- no docs in " + leader);
@@ -1085,7 +1178,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             throw new UnsupportedOperationException("Only '*:*' query is supported in deleteByQuery");
           }
           for (Slice s : coll.getSlices()) {
-            String numDocsStr = s.getLeader().getStr("SEARCHER.searcher.numDocs");
+            Replica leader = s.getLeader();
+            if (leader == null) {
+              LOG.debug("-- no leader in " + s);
+              continue;
+            }
+
+            cloudManager.getMetricManager().registry(createRegistryName(collection, s.getName(), leader)).counter("UPDATE./update.requests").inc();
+            String numDocsStr = leader.getStr("SEARCHER.searcher.numDocs");
             if (numDocsStr == null) {
               continue;
             }
@@ -1111,6 +1211,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Document without id: " + doc);
           }
           Slice s = router.getTargetSlice(id, null, null, req.getParams(), coll);
+          Replica leader = s.getLeader();
+          if (leader != null) {
+            cloudManager.getMetricManager().registry(createRegistryName(collection, s.getName(), leader)).counter("UPDATE./update.requests").inc();
+          }
           modified = true;
           try {
             simSetShardValue(collection, s.getName(), "SEARCHER.searcher.numDocs", 1, true, false);
@@ -1130,6 +1234,11 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       lock.unlock();
     }
     return new UpdateResponse();
+  }
+
+  private static String createRegistryName(String collection, String shard, Replica r) {
+    return SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, collection, shard,
+        Utils.parseMetricsReplicaName(collection, r.getCoreName()));
   }
 
   /**
@@ -1305,7 +1414,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       });
     });
     if (infos.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection " + collection + " doesn't exist.");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection " + collection + " doesn't exist (shard=" + shard + ").");
     }
     if (divide && value != null && (value instanceof Number)) {
       if ((value instanceof Long) || (value instanceof Integer)) {
@@ -1371,6 +1480,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       nodeReplicaMap.forEach((n, replicas) -> {
         replicas.forEach(ri -> collections.add(ri.getCollection()));
       });
+      // check collProps and sliceProps too
+      collProperties.forEach((coll, props) -> collections.add(coll));
+      sliceProperties.forEach((coll, slices) -> collections.add(coll));
       return new ArrayList<>(collections);
     } finally {
       lock.unlock();

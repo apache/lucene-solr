@@ -66,6 +66,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
   static final BytesRef ATT_VALUE       =  new BytesRef("    value ");
   static final BytesRef DIM_COUNT       =  new BytesRef("  dimensional count ");
   static final BytesRef DIM_NUM_BYTES   =  new BytesRef("  dimensional num bytes ");
+  static final BytesRef SOFT_DELETES    =  new BytesRef("  soft-deletes ");
   
   @Override
   public FieldInfos read(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, IOContext iocontext) throws IOException {
@@ -140,9 +141,13 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         assert StringHelper.startsWith(scratch.get(), DIM_NUM_BYTES);
         int dimensionalNumBytes = Integer.parseInt(readString(DIM_NUM_BYTES.length, scratch));
 
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch.get(), SOFT_DELETES);
+        boolean isSoftDeletesField = Boolean.parseBoolean(readString(SOFT_DELETES.length, scratch));
+
         infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, 
                                  omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(atts),
-                                 dimensionalCount, dimensionalNumBytes);
+                                 dimensionalCount, dimensionalNumBytes, isSoftDeletesField);
       }
 
       SimpleTextUtil.checkFooter(input);
@@ -237,6 +242,10 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         
         SimpleTextUtil.write(out, DIM_NUM_BYTES);
         SimpleTextUtil.write(out, Integer.toString(fi.getPointNumBytes()), scratch);
+        SimpleTextUtil.writeNewline(out);
+
+        SimpleTextUtil.write(out, SOFT_DELETES);
+        SimpleTextUtil.write(out, Boolean.toString(fi.isSoftDeletesField()), scratch);
         SimpleTextUtil.writeNewline(out);
       }
       SimpleTextUtil.writeChecksum(out, scratch);

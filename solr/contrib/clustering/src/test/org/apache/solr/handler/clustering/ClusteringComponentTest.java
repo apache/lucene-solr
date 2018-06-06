@@ -36,8 +36,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -109,9 +107,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
         "val_dynamic", "quick brown fox"));
     assertU("", commit());
 
-    RefCounted<SolrIndexSearcher> holder = h.getCore().getSearcher();
-    try {
-      SolrIndexSearcher srchr = holder.get();
+    h.getCore().withSearcher(srchr -> {
       QueryResult qr = new QueryResult();
       QueryCommand cmd = new QueryCommand();
       cmd.setQuery(new MatchAllDocsQuery());
@@ -140,9 +136,8 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
         assertNotNull("dyn copy field null", document.get("dynamic_val"));
         assertNotNull("copy field null", document.get("range_facet_l"));
       }
-    } finally {
-      if (null != holder) holder.decref();
-    }
+      return null;
+    });
   }
 
 }

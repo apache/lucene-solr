@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 
 /** Tests that NoOpRegenerator does what it should */
@@ -35,32 +34,27 @@ public class TestNoOpRegenerator extends SolrTestCaseJ4 {
     assertU(commit());
     
     // add some items
-    RefCounted<SolrIndexSearcher> ref = h.getCore().getSearcher();
-    try {
-      SolrIndexSearcher searcher = ref.get();
+    h.getCore().withSearcher(searcher -> {
       assertEquals(2, searcher.maxDoc());
       SolrCache<Object,Object> cache = searcher.getCache("myPerSegmentCache");
       assertEquals(0, cache.size());
       cache.put("key1", "value1");
       cache.put("key2", "value2");
       assertEquals(2, cache.size());
-    } finally {
-      ref.decref();
-    }
+      return null;
+    });
     
     // add a doc and commit: we should see our cached items still there
     assertU(adoc("id", "3"));
     assertU(commit());
-    ref = h.getCore().getSearcher();
-    try {
-      SolrIndexSearcher searcher = ref.get();
+
+    h.getCore().withSearcher(searcher -> {
       assertEquals(3, searcher.maxDoc());
       SolrCache<Object,Object> cache = searcher.getCache("myPerSegmentCache");
       assertEquals(2, cache.size());
       assertEquals("value1", cache.get("key1"));
       assertEquals("value2", cache.get("key2"));
-    } finally {
-      ref.decref();
-    }
+      return null;
+    });
   }
 }

@@ -40,6 +40,7 @@ import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -946,9 +947,6 @@ public class SimpleFacets {
     IndexSchema schema = searcher.getSchema();
     FieldType ft = schema.getFieldType(field);
     assert !ft.isPointField(): "Point Fields don't support enum method";
-    
-    LeafReader r = searcher.getSlowAtomicReader();
-    
 
     boolean sortByCount = sort.equals("count") || sort.equals("true");
     final int maxsize = limit>=0 ? offset+limit : Integer.MAX_VALUE-1;
@@ -965,7 +963,7 @@ public class SimpleFacets {
       prefixTermBytes = new BytesRef(indexedPrefix);
     }
 
-    Terms terms = r.terms(field);
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;
@@ -1011,7 +1009,7 @@ public class SimpleFacets {
               if (deState == null) {
                 deState = new SolrIndexSearcher.DocsEnumState();
                 deState.fieldName = field;
-                deState.liveDocs = r.getLiveDocs();
+                deState.liveDocs = searcher.getLiveDocsBits();
                 deState.termsEnum = termsEnum;
                 deState.postingsEnum = postingsEnum;
               }
