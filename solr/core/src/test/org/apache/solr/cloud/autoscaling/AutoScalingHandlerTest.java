@@ -1027,8 +1027,8 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
     req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
     response = solrClient.request(req);
-    System.out.println(response);
-
+    assertEquals("<3", Utils.getObjectByPath(response,false,"cluster-policy[0]/cores"));
+    assertEquals("#ANY", Utils.getObjectByPath(response,false,"cluster-policy[0]/node"));
 
   }
 
