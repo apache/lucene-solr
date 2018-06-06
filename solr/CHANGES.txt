@@ -28,6 +28,7 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
 Jetty 9.4.10.v20180503
+Apache Hadoop 2.7.6
 
 Upgrade Notes
 ----------------------
@@ -46,6 +47,8 @@ Upgrade Notes
 
 New Features
 ----------------------
+* SOLR-12452: Upgrade Hadoop to 2.7.6 (Grzegorz Lebek)
+
 * SOLR-12396: Upgrade Carrot2 to 3.16.0, HPPC to 0.8.1, morfologik to 2.1.5. (Dawid Weiss)
 
 * SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
