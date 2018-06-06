@@ -17,13 +17,11 @@
 
 package org.apache.lucene.search.matchhighlight;
 
-import org.apache.lucene.util.BytesRef;
-
 public interface PassageBuilder {
 
   void addSource(String source);
 
-  boolean addMatch(BytesRef term, int startOffset, int endOffset);
+  boolean addMatch(int startOffset, int endOffset);
 
   Iterable<String> getTopPassages(int topN);
 

@@ -26,7 +26,8 @@ import java.util.function.Supplier;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesIterator;
 
 public class PassageCollector implements HighlightCollector {
 
@@ -35,10 +36,18 @@ public class PassageCollector implements HighlightCollector {
   private final Supplier<PassageBuilder> passageSource;
   private final Map<String, PassageBuilder> builders = new HashMap<>();
 
+  private Matches matches;
+  private final Map<String, MatchesIterator> iterators = new HashMap<>();
+
   public PassageCollector(Set<String> fields, int maxPassagesPerField, Supplier<PassageBuilder> passageSource) {
     this.fields = fields;
     this.maxPassagesPerField = maxPassagesPerField;
     this.passageSource = passageSource;
+  }
+
+  @Override
+  public void setMatches(Matches matches) {
+    this.matches = matches;
   }
 
   @Override
@@ -53,22 +62,32 @@ public class PassageCollector implements HighlightCollector {
   }
 
   @Override
-  public boolean needsField(String name) {
-    return fields.contains(name);
+  public Set<String> requiredFields() {
+    return fields;
   }
 
   @Override
-  public void collectHighlights(SourceAwareMatches matches, FieldInfo field, String text) throws IOException {
+  public void collectHighlights(String field, String text, int offset) throws IOException {
 
-    SourceAwareMatchesIterator mi = matches.getMatches(field, text);
-    PassageBuilder passageBuilder = builders.computeIfAbsent(field.name, t -> passageSource.get());
-    passageBuilder.addSource(text);
-
-    while (mi.next()) {
-      if (passageBuilder.addMatch(mi.term(), mi.startOffset(), mi.endOffset()) == false) {
-        break;
+    MatchesIterator mi = iterators.get(field);
+    if (mi == null) {
+      mi = matches.getMatches(field);
+      if (mi == null) {
+        return;
+      }
+      iterators.put(field, mi);
+      if (mi.next() == false) {
+        return;
       }
     }
+    PassageBuilder passageBuilder = builders.computeIfAbsent(field, t -> passageSource.get());
+    passageBuilder.addSource(text);
+
+    do {
+      if (passageBuilder.addMatch(mi.startOffset() - offset, mi.endOffset() - offset) == false) {
+        break;
+      }
+    } while (mi.next());
 
   }
 

@@ -18,16 +18,22 @@
 package org.apache.lucene.search.matchhighlight;
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.search.Matches;
 
 public interface HighlightCollector {
 
   Document getHighlights();
 
-  boolean needsField(String name);
+  Set<String> requiredFields();
 
-  void collectHighlights(SourceAwareMatches matches, FieldInfo field, String text) throws IOException;
+  default boolean needsField(String field) {
+    return requiredFields().contains(field);
+  }
 
+  void collectHighlights(String field, String text, int offset) throws IOException;
+
+  void setMatches(Matches matches);
 }

@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.lucene.util.BytesRef;
-
 public class SentencePassageBuilder implements PassageBuilder {
 
   private final BreakIterator breakIterator;
@@ -49,7 +47,7 @@ public class SentencePassageBuilder implements PassageBuilder {
   }
 
   @Override
-  public boolean addMatch(BytesRef term, int startOffset, int endOffset) {
+  public boolean addMatch(int startOffset, int endOffset) {
     if (startOffset > source.length()) {
       return false;
     }

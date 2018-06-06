@@ -18,14 +18,22 @@
 package org.apache.lucene.search.matchhighlight;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
@@ -49,25 +57,59 @@ public class MatchHighlighter {
     Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
     int i = 0;
     for (ScoreDoc doc : docs.scoreDocs) {
-      int contextOrd = ReaderUtil.subIndex(doc.doc, searcher.getIndexReader().leaves());
-      LeafReaderContext ctx = searcher.getIndexReader().leaves().get(contextOrd);
+      HighlightCollector collector = collectorSupplier.get();
+      LeafReaderContext ctx = getReaderContext(doc.doc, collector);
       Matches matches = weight.matches(ctx, doc.doc - ctx.docBase);
-      try (SourceAwareMatches m = new SourceAwareMatches(matches, analyzer)) {
-        HighlightingFieldVisitor visitor = new HighlightingFieldVisitor(m, collectorSupplier.get());
-        ctx.reader().document(doc.doc, visitor);
-        highlights[i++] = new HighlightDoc(doc.doc, visitor.getHighlights());
-      }
+      collector.setMatches(matches);
+      HighlightingFieldVisitor visitor = new HighlightingFieldVisitor(collector);
+      ctx.reader().document(doc.doc, visitor);
+      highlights[i++] = new HighlightDoc(doc.doc, visitor.getHighlights());
     }
     return new TopHighlights(highlights);
   }
 
+  private LeafReaderContext getReaderContext(int doc, HighlightCollector collector) throws IOException {
+
+    // If we have offsets stored in the index for the relevant fields, we can just use the
+    // default reader context to get Matches from.  Otherwise, we need to replace the
+    // Terms from the default context with one built either from term vectors, or from
+    // the re-analyzed source
+
+    int contextOrd = ReaderUtil.subIndex(doc, searcher.getIndexReader().leaves());
+    LeafReaderContext defaultContext = searcher.getIndexReader().leaves().get(contextOrd);
+    FieldInfos fis = defaultContext.reader().getFieldInfos();
+
+    Map<String, Terms> fromTermVectors = new HashMap<>();
+    Set<String> fromAnalysis = new HashSet<>();
+
+    for (String field : collector.requiredFields()) {
+      FieldInfo fi = fis.fieldInfo(field);
+      if (fi != null && fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+        if (fi.hasVectors()) {
+          Terms terms = defaultContext.reader().getTermVector(doc, field);
+          if (terms != null && terms.hasOffsets()) {
+            fromTermVectors.put(field, terms);
+            continue;
+          }
+        }
+        fromAnalysis.add(field);
+      }
+    }
+
+    if (fromTermVectors.size() == 0 && fromAnalysis.size() == 0) {
+      return defaultContext;
+    }
+
+    LeafReader reader = new OffsetsReader(defaultContext.reader(), doc - defaultContext.docBase, fromTermVectors, fromAnalysis, analyzer);
+    return new LeafReaderContext(defaultContext.parent, reader, 0, 0, 0, 0);
+  }
+
   private class HighlightingFieldVisitor extends StoredFieldVisitor {
 
-    final SourceAwareMatches matches;
     final HighlightCollector collector;
+    final Map<String, Integer> offsets = new HashMap<>();
 
-    private HighlightingFieldVisitor(SourceAwareMatches matches, HighlightCollector collector) {
-      this.matches = matches;
+    private HighlightingFieldVisitor(HighlightCollector collector) {
       this.collector = collector;
     }
 
@@ -76,13 +118,20 @@ public class MatchHighlighter {
     }
 
     @Override
-    public Status needsField(FieldInfo fieldInfo) throws IOException {
+    public Status needsField(FieldInfo fieldInfo) {
       return collector.needsField(fieldInfo.name) ? Status.YES : Status.NO;
     }
 
     @Override
     public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
-      collector.collectHighlights(matches, fieldInfo, new String(value));
+      String text = new String(value);
+      collector.collectHighlights(fieldInfo.name, text, offsets.getOrDefault(fieldInfo.name, 0));
+      offsets.compute(fieldInfo.name, (n, i) -> {
+        if (i == null) {
+          i = 0;
+        }
+        return i + text.length() + analyzer.getOffsetGap(n);
+      });
     }
   }
 

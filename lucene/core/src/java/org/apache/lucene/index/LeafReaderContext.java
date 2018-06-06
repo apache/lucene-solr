@@ -35,7 +35,7 @@ public final class LeafReaderContext extends IndexReaderContext {
   /**
    * Creates a new {@link LeafReaderContext} 
    */    
-  LeafReaderContext(CompositeReaderContext parent, LeafReader reader,
+  public LeafReaderContext(CompositeReaderContext parent, LeafReader reader,
                     int ord, int docBase, int leafOrd, int leafDocBase) {
     super(parent, ord, docBase);
     this.ord = leafOrd;
