@@ -1,4 +1,4 @@
-/*
+  /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -112,8 +113,8 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       if (doc == null) return 0L;
       long size = 0;
       if (doc.getFieldNames() != null) {
-        for (String fieldName : doc.getFieldNames()) {
-          size += fastEstimate(fieldName) + fastEstimate(doc.getField(fieldName).getValue());
+        for (SolrInputField field : doc.values()) {
+          size += fastEstimate(field.getName()) + fastEstimate(field.getValue());
         }
       }
       if (doc.hasChildDocuments()) {
