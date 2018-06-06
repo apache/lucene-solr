@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.base.Objects;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -94,11 +93,13 @@ public class JsonLoader extends ContentStreamLoader {
     protected JSONParser parser;
     protected final int commitWithin;
     protected final boolean overwrite;
+    protected final boolean anonChildDocFlag;
 
     public SingleThreadedJsonLoader(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
       this.processor = processor;
       this.req = req;
       this.rsp = rsp;
+      this.anonChildDocFlag = req.getParams().getBool(CommonParams.ANONYMOUS_CHILD_DOCS_FLAG, true);
 
       commitWithin = req.getParams().getInt(UpdateParams.COMMIT_WITHIN, -1);
       overwrite = req.getParams().getBool(UpdateParams.OVERWRITE, true);
@@ -531,7 +532,6 @@ public class JsonLoader extends ContentStreamLoader {
         }
         String fieldName = parser.getString();
 
-        boolean anonChildDocFlag = Objects.firstNonNull(req.getParams().getBool(CommonParams.ANONYMOUS_CHILD_DOCS_FLAG), true);
         if (anonChildDocFlag && fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
           ev = parser.nextEvent();
           assertEvent(ev, JSONParser.ARRAY_START);
@@ -566,7 +566,7 @@ public class JsonLoader extends ContentStreamLoader {
     private void parseExtendedFieldValue(SolrInputField sif, int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
 
-      SolrInputDocument extendedSolrDocument = generateExtendedValueMap(ev);
+      SolrInputDocument extendedSolrDocument = generateExtendedValueDoc(ev);
 
       if (isChildDoc(extendedSolrDocument)) {
         SolrInputDocument cDoc = new SolrInputDocument();
@@ -668,7 +668,7 @@ public class JsonLoader extends ContentStreamLoader {
       return extendedMap.containsKey(req.getSchema().getUniqueKeyField().getName());
     }
 
-    private SolrInputDocument generateExtendedValueMap(int ev) throws IOException {
+    private SolrInputDocument generateExtendedValueDoc(int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
       SolrInputDocument extendedInfo = new SolrInputDocument();
 
