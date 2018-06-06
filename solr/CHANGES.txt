@@ -272,6 +272,8 @@ Bug Fixes
 
 * SOLR-12354: Register the /admin/info/key end-point at the startup time to avoid 404 (noble)
 
+* SOLR-12445: Upgrade Dropwizard Metrics to version 3.2.6. (ab)
+
 Optimizations
 ----------------------
 
