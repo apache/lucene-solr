@@ -561,34 +561,6 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    private Map<String, Object> generateExtendedValueMap(int ev) throws IOException {
-      assert ev == JSONParser.OBJECT_START;
-      Map<String, Object> extendedInfo = new HashMap<>();
-
-      for(; ; ) {
-        ev = parser.nextEvent();
-        if (ev == JSONParser.OBJECT_END) {
-          return extendedInfo;
-        }
-        String label = parser.getString();
-        SolrInputField sif = new SolrInputField(label);
-        parseFieldValue(sif);
-        extendedInfo.put(label, sif.getValue());
-      }
-    }
-
-    private boolean isChildDoc(Map<String, Object> extendedMap) {
-      if (extendedMap.containsKey("value") && extendedMap.containsKey("boost")) {
-        return false;
-      }
-      if (extendedMap.containsKey("add")) {
-        return false;
-      }
-      return true;
-    }
-
-
-
     private void parseExtendedFieldValue(SolrInputField sif, int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
 
@@ -614,7 +586,7 @@ public class JsonLoader extends ContentStreamLoader {
                 + "Unexpected value: " + boostVal.toString() + "field=" + label);
           }
 
-          String message = "Ignoring field boost: " + boostVal + " as index-time boosts are not supported anymore";
+          String message = "Ignoring field boost: " + boostVal.toString() + " as index-time boosts are not supported anymore";
           if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
             log.warn(message);
           } else {
@@ -644,15 +616,8 @@ public class JsonLoader extends ContentStreamLoader {
 
 
     private Object parseNormalFieldValue(int ev, SolrInputField sif) throws IOException {
-      if (ev == JSONParser.ARRAY_START) {
-        List<Object> val = parseArrayFieldValue(ev, sif);
-        return val;
-      } else {
-        Object val = parseSingleFieldValue(ev, sif);
-        return val;
-      }
+      return ev == JSONParser.ARRAY_START ? parseArrayFieldValue(ev, sif): parseSingleFieldValue(ev, sif);
     }
-
 
     private Object parseSingleFieldValue(int ev, SolrInputField sif) throws IOException {
       switch (ev) {
@@ -693,6 +658,26 @@ public class JsonLoader extends ContentStreamLoader {
         Object val = parseSingleFieldValue(ev, sif);
         lst.add(val);
         sif.setValue(null);
+      }
+    }
+
+    private boolean isChildDoc(Map<String, Object> extendedMap) {
+      return extendedMap.containsKey(req.getSchema().getUniqueKeyField().getName());
+    }
+
+    private Map<String, Object> generateExtendedValueMap(int ev) throws IOException {
+      assert ev == JSONParser.OBJECT_START;
+      Map<String, Object> extendedInfo = new HashMap<>();
+
+      while(true) {
+        ev = parser.nextEvent();
+        if (ev == JSONParser.OBJECT_END) {
+          return extendedInfo;
+        }
+        String label = parser.getString();
+        SolrInputField sif = new SolrInputField(label);
+        parseFieldValue(sif);
+        extendedInfo.put(label, sif.getValue());
       }
     }
   }
