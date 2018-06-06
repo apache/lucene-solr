@@ -791,7 +791,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSimpleChildDocs() throws Exception {
+  public void testSimpleAnonymousChildDocs() throws Exception {
     String str = "{\n" +
         "    \"add\": {\n" +
         "        \"doc\": {\n" +
@@ -808,11 +808,11 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         "        }\n" +
         "    }\n" +
         "}";
-    checkTwoChildDocs(str);
+    checkTwoAnonymousChildDocs(str);
   }
 
   @Test
-  public void testDupKeysChildDocs() throws Exception {
+  public void testDupKeysAnonymousChildDocs() throws Exception {
     String str = "{\n" +
         "    \"add\": {\n" +
         "        \"doc\": {\n" +
@@ -832,10 +832,10 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         "        }\n" +
         "    }\n" +
         "}";
-    checkTwoChildDocs(str);
+    checkTwoAnonymousChildDocs(str);
   }
 
-  private void checkTwoChildDocs(String rawJsonStr) throws Exception {
+  private void checkTwoAnonymousChildDocs(String rawJsonStr) throws Exception {
     SolrQueryRequest req = req("commit","true");
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
@@ -865,7 +865,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEmptyChildDocs() throws Exception {
+  public void testEmptyAnonymousChildDocs() throws Exception {
     String str = "{\n" +
         "    \"add\": {\n" +
         "        \"doc\": {\n" +
@@ -893,7 +893,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGrandChildDocs() throws Exception {
+  public void testAnonymousGrandChildDocs() throws Exception {
     String str = "{\n" +
         "    \"add\": {\n" +
         "        \"doc\": {\n" +
@@ -947,7 +947,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRelationalChildDocs() throws Exception {
+  public void testChildDocs() throws Exception {
     String str = "{\n" +
         "    \"add\": {\n" +
         "        \"doc\": {\n" +
