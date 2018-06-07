@@ -22,6 +22,7 @@ import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -250,14 +251,27 @@ public class JsonLoader extends ContentStreamLoader {
     private SolrInputDocument buildDoc(Map<String, Object> m) {
       SolrInputDocument result = new SolrInputDocument();
       for (Map.Entry<String, Object> e : m.entrySet()) {
-        if (e.getKey() == null) {// special case. JsonRecordReader emits child docs with null key
+        if (entryIsChildDoc(e.getValue())) {// special case. JsonRecordReader emits child docs with null key
           if (e.getValue() instanceof List) {
             List value = (List) e.getValue();
             for (Object o : value) {
-              if (o instanceof Map) result.addChildDocument(buildDoc((Map) o));
+              if (o instanceof Map) {
+                if (anonChildDocFlag) {
+                  result.addChildDocument(buildDoc((Map) o));
+                } else {
+                  if(!result.containsKey(e.getKey())) {
+                    result.setField(e.getKey(), new ArrayList<>(1));
+                  }
+                  safeAddValue(result, e.getKey(), buildDoc((Map) o));
+                }
+              }
             }
           } else if (e.getValue() instanceof Map) {
-            result.addChildDocument(buildDoc((Map) e.getValue()));
+            if (anonChildDocFlag) {
+              result.addChildDocument(buildDoc((Map) e.getValue()));
+            } else {
+              safeAddValue(result, e.getKey(), buildDoc((Map) e.getValue()));
+            }
           }
         } else {
           result.setField(e.getKey(), e.getValue());
@@ -666,6 +680,39 @@ public class JsonLoader extends ContentStreamLoader {
 
     private boolean isChildDoc(SolrInputDocument extendedMap) {
       return extendedMap.containsKey(req.getSchema().getUniqueKeyField().getName());
+    }
+
+    private boolean entryIsChildDoc(Object val) {
+      if(val instanceof List) {
+        List listVal = (List) val;
+        if (listVal.size() == 0) return false;
+        return  listVal.get(0) instanceof Map;
+      }
+      return val instanceof Map;
+    }
+
+    private void safeAddValue(SolrInputDocument doc, String fieldName, Object value) {
+      SolrInputField field = doc.getField(fieldName);
+      if(field == null || field.getValue() == null) {
+        doc.setField(fieldName, value);
+      } else if(field.getValue() instanceof List) {
+        List fieldVal = (List) field.getValue();
+        if(value instanceof Collection) {
+          fieldVal.addAll((Collection) value);
+        } else {
+          fieldVal.add(value);
+        }
+      } else {
+        List vals = new ArrayList<>(2);
+        if(value instanceof Collection) {
+          vals.add(field.getValue());
+          vals.addAll((Collection) value);
+        } else {
+          vals.add(field.getValue());
+          vals.add(value);
+        }
+        doc.setField(fieldName, vals);
+      }
     }
 
     private SolrInputDocument generateExtendedValueDoc(int ev) throws IOException {

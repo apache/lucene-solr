@@ -288,13 +288,13 @@ public class JsonRecordReader {
         event = parser.nextEvent();
         if (event == EOF) break;
         if (event == OBJECT_START) {
-          handleObjectStart(parser, handler, values, new Stack<>(), recordStarted, null);
+          handleObjectStart(parser, handler, new LinkedHashMap<>(), new Stack<>(), recordStarted, null);
         } else if (event == ARRAY_START) {
           for (; ; ) {
             event = parser.nextEvent();
             if (event == ARRAY_END) break;
             if (event == OBJECT_START) {
-              handleObjectStart(parser, handler, values, new Stack<>(), recordStarted, null);
+              handleObjectStart(parser, handler, new LinkedHashMap<>(), new Stack<>(), recordStarted, null);
             }
           }
         }
@@ -350,6 +350,10 @@ public class JsonRecordReader {
               event = parser.nextEvent();
               if (event == ARRAY_END) break;
               if (event == OBJECT_START) {
+                // if single item in array will still be added as array
+                if(!values.containsKey(name)) {
+                  values.put(name, new ArrayList<>());
+                }
                 walkObject();
               }
             }
@@ -359,7 +363,7 @@ public class JsonRecordReader {
         void walkObject() throws IOException {
           if (node.isChildRecord) {
             node.handleObjectStart(parser,
-                (record, path) -> addChildDoc2ParentDoc(record, values),
+                (record, path) -> addChildDoc2ParentDoc(record, values, path),
                 new LinkedHashMap<>(),
                 new Stack<>(),
                 true,
@@ -438,18 +442,19 @@ public class JsonRecordReader {
       }
     }
 
-    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values) {
+    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values, String path) {
+      String trimmedPath = trimPath(path);
       record =  Utils.getDeepCopy(record, 2);
-      Object oldVal = values.get(null);
+      Object oldVal = values.get(trimmedPath);
       if (oldVal == null) {
-        values.put(null, record);
+        values.put(trimmedPath, record);
       } else if (oldVal instanceof List) {
         ((List) oldVal).add(record);
       } else {
         ArrayList l = new ArrayList();
         l.add(oldVal);
         l.add(record);
-        values.put(null, l);
+        values.put(trimmedPath, l);
       }
     }
 
@@ -486,6 +491,11 @@ public class JsonRecordReader {
       values.put(fieldName, l);
     }
 
+    private String trimPath(String path) {
+      int indexOf = path.lastIndexOf("/");
+      if (indexOf == -1) return path;
+      return path.substring(indexOf + 1);
+    }
 
     @Override
     public String toString() {
