@@ -227,8 +227,10 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
       if (weight == 0) {
         weight = 1;
       }
-      long scaledCoefficient = (long) (coefficient * 10);
-      long score = weight * scaledCoefficient;
+      if (weight < 1 / LINEAR_COEF && weight > -1 / LINEAR_COEF) {
+        weight *= 1 / LINEAR_COEF;
+      }
+      long score = (long) (weight * coefficient);
 
       LookupResult result;
       if (doHighlight) {
