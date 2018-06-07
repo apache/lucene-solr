@@ -157,6 +157,20 @@ New Features
 * SOLR-12376: Added the TaggerRequestHandler (AKA SolrTextTagger) for tagging text.  It's used as a component of
   NER/ERD systems including query-understanding.  See the ref guide for more info.  (David Smiley)
 
+* SOLR-12266: Add discrete Fourier transform Stream Evaluators (Joel Bernstein)
+
+* SOLR-12158: Allow the monteCarlo Stream Evaluator to support variables (Joel Bernstein)
+
+* SOLR-11734: Add ones and zeros Stream Evaluators (Joel Bernstein)
+
+* SOLR-12273: Create Stream Evaluators for distance measures (Joel Bernstein)
+
+* SOLR-12159: Add memset Stream Evaluator (Joel Bernstein)
+
+* SOLR-12221: Add valueAt Stream Evaluator (Joel Bernstein)
+
+* SOLR-12175: Add random field type and dynamic field to the default managed-schema (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
@@ -338,6 +352,8 @@ Optimizations
   references.  This is consistent with other plugin registries and allows a SolrCore to load faster.
   (Jeff Miller, David Smiley)
 
+* SOLR-12198: Stream Evaluators should not copy matrices needlessly (Joel Bernstein)
+
 Other Changes
 ----------------------
 
@@ -399,6 +415,8 @@ Other Changes
 
 * SOLR-12374: Added SolrCore.withSearcher(lambda) to make grabbing the searcher easier than the more awkward
   RefCounted API.  (David Smiley)
+
+* SOLR-12183: Refactor Streaming Expression test cases (Joel Bernstein)
 
 ==================  7.3.1 ==================
 
