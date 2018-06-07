@@ -334,7 +334,7 @@ Optimizations
 Other Changes
 ----------------------
 
-* SOLR-12018: Remove comments.apache.org integration for the Ref Guide; the comments system has been down since December 2017 and there is no concrete plan to bring it back.
+* SOLR-12018: Remove comments.apache.org integration for the Ref Guide; the comments system has been down since December 2017 and there is no concrete plan to bring it back. (Cassandra Targett)
 
 * SOLR-12076: Remove unnecessary printLayout usage in CDCR tests (Varun Thacker)
 
