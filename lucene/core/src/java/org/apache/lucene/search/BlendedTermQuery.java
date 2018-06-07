@@ -102,9 +102,9 @@ public final class BlendedTermQuery extends Query {
     /** Build the {@link BlendedTermQuery}. */
     public BlendedTermQuery build() {
       return new BlendedTermQuery(
-          Arrays.copyOf(terms, numTerms),
-          Arrays.copyOf(boosts, numTerms),
-          Arrays.copyOf(contexts, numTerms),
+          ArrayUtil.copyOfSubArray(terms, 0, numTerms),
+          ArrayUtil.copyOfSubArray(boosts, 0, numTerms),
+          ArrayUtil.copyOfSubArray(contexts, 0, numTerms),
           rewriteMethod);
     }
 
@@ -263,7 +263,7 @@ public final class BlendedTermQuery extends Query {
 
   @Override
   public final Query rewrite(IndexReader reader) throws IOException {
-    final TermStates[] contexts = Arrays.copyOf(this.contexts, this.contexts.length);
+    final TermStates[] contexts = ArrayUtil.copyOfSubArray(this.contexts, 0, this.contexts.length);
     for (int i = 0; i < contexts.length; ++i) {
       if (contexts[i] == null || contexts[i].wasBuiltFor(reader.getContext()) == false) {
         contexts[i] = TermStates.build(reader.getContext(), terms[i], true);

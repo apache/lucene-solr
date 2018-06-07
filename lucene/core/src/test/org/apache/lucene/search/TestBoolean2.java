@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
@@ -38,6 +37,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -227,7 +227,7 @@ public class TestBoolean2 extends LuceneTestCase {
 
     // adjust the expected doc numbers according to our filler docs
     if (0 < NUM_FILLER_DOCS) {
-      expDocNrs = Arrays.copyOf(expDocNrs, expDocNrs.length);
+      expDocNrs = ArrayUtil.copyOfSubArray(expDocNrs, 0, expDocNrs.length);
       for (int i=0; i < expDocNrs.length; i++) {
         expDocNrs[i] = PRE_FILLER_DOCS + ((NUM_FILLER_DOCS + 1) * expDocNrs[i]);
       }

@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -372,7 +371,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
       // fast path: if we currently have nothing in the block, just copy the data
       // this especially happens all the time if you call OR on an empty set
       indices[i4096] = index;
-      this.bits[i4096] = Arrays.copyOf(bits, nonZeroLongCount);
+      this.bits[i4096] = ArrayUtil.copyOfSubArray(bits, 0, nonZeroLongCount);
       this.nonZeroLongCount += nonZeroLongCount;
       return;
     }

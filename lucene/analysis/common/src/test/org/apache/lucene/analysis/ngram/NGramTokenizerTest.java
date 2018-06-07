@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
@@ -179,7 +180,7 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
           }
         }
         assertTrue(grams.incrementToken());
-        assertArrayEquals(Arrays.copyOfRange(codePoints, start, end), toCodePoints(termAtt));
+        assertArrayEquals(ArrayUtil.copyOfSubArray(codePoints, start, end), toCodePoints(termAtt));
         assertEquals(1, posIncAtt.getPositionIncrement());
         assertEquals(1, posLenAtt.getPositionLength());
         assertEquals(offsets[start], offsetAtt.startOffset());

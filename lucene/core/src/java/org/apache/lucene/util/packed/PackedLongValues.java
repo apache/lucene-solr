@@ -19,8 +19,6 @@ package org.apache.lucene.util.packed;
 
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 
-import java.util.Arrays;
-
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
@@ -194,7 +192,7 @@ public class PackedLongValues extends LongValues implements Accountable {
     public PackedLongValues build() {
       finish();
       pending = null;
-      final PackedInts.Reader[] values = Arrays.copyOf(this.values, valuesOff);
+      final PackedInts.Reader[] values = ArrayUtil.copyOfSubArray(this.values, 0, valuesOff);
       final long ramBytesUsed = PackedLongValues.BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(values);
       return new PackedLongValues(pageShift, pageMask, values, size, ramBytesUsed);
     }
@@ -273,7 +271,7 @@ public class PackedLongValues extends LongValues implements Accountable {
 
     void grow(int newBlockCount) {
       ramBytesUsed -= RamUsageEstimator.shallowSizeOf(values);
-      values = Arrays.copyOf(values, newBlockCount);
+      values = ArrayUtil.growExact(values, newBlockCount);
       ramBytesUsed += RamUsageEstimator.shallowSizeOf(values);
     }
 

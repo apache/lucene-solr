@@ -16,44 +16,32 @@
  */
 package org.apache.lucene.util;
 
-
-public class TestBytesRef extends LuceneTestCase {
+public class TestLongsRef extends LuceneTestCase {
   public void testEmpty() {
-    BytesRef b = new BytesRef();
-    assertEquals(BytesRef.EMPTY_BYTES, b.bytes);
-    assertEquals(0, b.offset);
-    assertEquals(0, b.length);
+    LongsRef i = new LongsRef();
+    assertEquals(LongsRef.EMPTY_LONGS, i.longs);
+    assertEquals(0, i.offset);
+    assertEquals(0, i.length);
   }
   
-  public void testFromBytes() {
-    byte bytes[] = new byte[] { (byte)'a', (byte)'b', (byte)'c', (byte)'d' };
-    BytesRef b = new BytesRef(bytes);
-    assertEquals(bytes, b.bytes);
-    assertEquals(0, b.offset);
-    assertEquals(4, b.length);
+  public void testFromLongs() {
+    long longs[] = new long[] { 1, 2, 3, 4 };
+    LongsRef i = new LongsRef(longs, 0, 4);
+    assertEquals(longs, i.longs);
+    assertEquals(0, i.offset);
+    assertEquals(4, i.length);
     
-    BytesRef b2 = new BytesRef(bytes, 1, 3);
-    assertEquals("bcd", b2.utf8ToString());
+    LongsRef i2 = new LongsRef(longs, 1, 3);
+    assertEquals(new LongsRef(new long[] { 2, 3, 4 }, 0, 3), i2);
     
-    assertFalse(b.equals(b2));
+    assertFalse(i.equals(i2));
   }
   
-  public void testFromChars() {
-    for (int i = 0; i < 100; i++) {
-      String s = TestUtil.randomUnicodeString(random());
-      String s2 = new BytesRef(s).utf8ToString();
-      assertEquals(s, s2);
-    }
-    
-    // only for 4.x
-    assertEquals("\uFFFF", new BytesRef("\uFFFF").utf8ToString());
-  }
-
   public void testInvalidDeepCopy() {
-    BytesRef from = new BytesRef(new byte[] { 1, 2 });
+    LongsRef from = new LongsRef(new long[] { 1, 2 }, 0, 2);
     from.offset += 1; // now invalid
     expectThrows(IndexOutOfBoundsException.class, () -> {
-      BytesRef.deepCopyOf(from);
+      LongsRef.deepCopyOf(from);
     });
   }
 }
