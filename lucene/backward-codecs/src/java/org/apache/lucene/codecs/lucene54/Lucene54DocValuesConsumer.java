@@ -39,6 +39,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
@@ -687,7 +688,7 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
       if (totalDictSize > 256) {
         return null;
       }
-      uniqueValueSet.add(new LongsRef(Arrays.copyOf(docValues.longs, docValues.length), 0, docValues.length));
+      uniqueValueSet.add(new LongsRef(ArrayUtil.copyOfSubArray(docValues.longs, 0, docValues.length), 0, docValues.length));
     }
     assert valueIterator.hasNext() == false;
     return new TreeSet<>(uniqueValueSet);

@@ -18,7 +18,6 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -34,6 +33,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * A query that retrieves documents containing intervals returned from an
@@ -87,7 +87,7 @@ public final class IntervalQuery extends Query {
       return null;
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(field);
-    return searcher.getSimilarity(needsScores).computeWeight(boost, collectionStats, Arrays.copyOf(termStats, termUpTo));
+    return searcher.getSimilarity(needsScores).computeWeight(boost, collectionStats, ArrayUtil.copyOfSubArray(termStats, 0, termUpTo));
   }
 
   @Override

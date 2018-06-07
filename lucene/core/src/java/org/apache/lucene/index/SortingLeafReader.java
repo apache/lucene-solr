@@ -890,8 +890,8 @@ class SortingLeafReader extends FilterLeafReader {
       while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         if (i == docs.length) {
           final int newLength = ArrayUtil.oversize(i + 1, 4);
-          docs = Arrays.copyOf(docs, newLength);
-          offsets = Arrays.copyOf(offsets, newLength);
+          docs = ArrayUtil.growExact(docs, newLength);
+          offsets = ArrayUtil.growExact(offsets, newLength);
         }
         docs[i] = docMap.oldToNew(doc);
         offsets[i] = out.getFilePointer();
@@ -1230,7 +1230,7 @@ class SortingLeafReader extends FilterLeafReader {
             }
             docOrds[upto++] = ord;
           }
-          ords[newDocID] = Arrays.copyOfRange(docOrds, 0, upto);
+          ords[newDocID] = ArrayUtil.copyOfSubArray(docOrds, 0, upto);
         }
         cachedSortedSetDVs.put(field, ords);
       }

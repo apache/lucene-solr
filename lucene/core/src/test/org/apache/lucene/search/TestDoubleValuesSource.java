@@ -31,6 +31,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -122,7 +123,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     };
     Collections.shuffle(Arrays.asList(fields), random());
     int numSorts = TestUtil.nextInt(random(), 1, fields.length);
-    return new Sort(Arrays.copyOfRange(fields, 0, numSorts));
+    return new Sort(ArrayUtil.copyOfSubArray(fields, 0, numSorts));
   }
 
   // Take a Sort, and replace any field sorts with Sortables

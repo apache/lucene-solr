@@ -89,7 +89,7 @@ public class TestHalfFloatPoint extends LuceneTestCase {
         values[o++] = v;
       }
     }
-    values = Arrays.copyOf(values, o);
+    values = ArrayUtil.copyOfSubArray(values, 0, o);
 
     int iters = atLeast(1000000);
     for (int iter = 0; iter < iters; ++iter) {

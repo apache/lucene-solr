@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
@@ -427,9 +426,9 @@ public final class WordDelimiterFilter extends TokenFilter {
   private void buffer() {
     if (bufferedLen == buffered.length) {
       int newSize = ArrayUtil.oversize(bufferedLen+1, 8);
-      buffered = Arrays.copyOf(buffered, newSize);
-      startOff = Arrays.copyOf(startOff, newSize);
-      posInc = Arrays.copyOf(posInc, newSize);
+      buffered = ArrayUtil.growExact(buffered, newSize);
+      startOff = ArrayUtil.growExact(startOff, newSize);
+      posInc = ArrayUtil.growExact(posInc, newSize);
     }
     startOff[bufferedLen] = offsetAttribute.startOffset();
     posInc[bufferedLen] = posIncAttribute.getPositionIncrement();

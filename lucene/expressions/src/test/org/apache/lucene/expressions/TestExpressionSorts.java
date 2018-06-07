@@ -40,6 +40,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -109,7 +110,7 @@ public class TestExpressionSorts extends LuceneTestCase {
       };
       Collections.shuffle(Arrays.asList(fields), random());
       int numSorts = TestUtil.nextInt(random(), 1, fields.length);
-      assertQuery(query, new Sort(Arrays.copyOfRange(fields, 0, numSorts)));
+      assertQuery(query, new Sort(ArrayUtil.copyOfSubArray(fields, 0, numSorts)));
     }
   }
 

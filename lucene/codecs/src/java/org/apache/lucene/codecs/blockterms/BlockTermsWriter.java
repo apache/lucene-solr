@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.blockterms;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -43,7 +42,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO: currently we encode all terms between two indexed
 // terms as a block; but, we could decouple the two, ie
@@ -259,11 +257,9 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
         //System.out.println("  index term!");
       }
 
-      if (pendingTerms.length == pendingCount) {
-        pendingTerms = Arrays.copyOf(pendingTerms, ArrayUtil.oversize(pendingCount+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
-        for(int i=pendingCount;i<pendingTerms.length;i++) {
-          pendingTerms[i] = new TermEntry();
-        }
+      pendingTerms = ArrayUtil.grow(pendingTerms, pendingCount + 1);
+      for (int i = pendingCount; i < pendingTerms.length; i++) {
+        pendingTerms[i] = new TermEntry();
       }
       final TermEntry te = pendingTerms[pendingCount];
       te.term.copyBytes(text);

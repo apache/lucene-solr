@@ -333,7 +333,7 @@ public abstract class PointInSetQuery extends Query {
 
             upto++;
             BytesRef next = iterator.next();
-            return Arrays.copyOfRange(next.bytes, next.offset, next.length);
+            return BytesRef.deepCopyOf(next).bytes;
           }
         };
       }
