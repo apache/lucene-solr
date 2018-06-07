@@ -18,7 +18,6 @@ package org.apache.lucene.search.suggest.analyzing;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -184,7 +183,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
 
   @Override
   protected List<Lookup.LookupResult> createResults(IndexSearcher searcher, TopFieldDocs hits, int num, CharSequence key,
-                                                    boolean doHighlight, Set<String> matchedTokens, String prefixToken)
+                                                    boolean doHighlight, List<String> matchedTokens, String prefixToken)
       throws IOException {
 
     TreeSet<Lookup.LookupResult> results = new TreeSet<>(LOOKUP_COMP);
@@ -289,27 +288,36 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    * @return the coefficient
    * @throws IOException If there are problems reading term vectors from the underlying Lucene index.
    */
-  protected double calculatePositionalCoefficient(IndexSearcher searcher, int doc, Set<String> matchedTokens, String prefixToken, int matchedTokensCount) throws IOException {
+  protected double calculatePositionalCoefficient(IndexSearcher searcher, int doc, List<String> matchedTokens, String prefixToken, int matchedTokensCount) throws IOException {
     Terms tv = searcher.getIndexReader().getTermVector(doc, TEXT_FIELD_NAME);
     TermsEnum it = tv.iterator();
     BytesRef term;
-    int[] matchedTokensPositions;
-    matchedTokensPositions = new int[matchedTokensCount];
-    int positionIndex = 0;
-    // find the closest token position
+    int[] matchedTermSuggestionPositions;
+    matchedTermSuggestionPositions = new int[matchedTokensCount];
     while ((term = it.next()) != null) {
       String docTerm = term.utf8ToString();
-      if (matchedTokens.contains(docTerm) || (prefixToken != null && docTerm.startsWith(prefixToken))) {
-        PostingsEnum docPosEnum = it.postings(null, PostingsEnum.OFFSETS);
-        docPosEnum.nextDoc();
-        // use the first occurrence of the term
-        int matchedTermFirstPosition = docPosEnum.nextPosition();
-        matchedTokensPositions[positionIndex] = matchedTermFirstPosition;
-        positionIndex++;
+      int matchedTermQueryPosition;
+      if ((matchedTermQueryPosition = matchedTokens.indexOf(docTerm)) > -1) {
+        int matchedTermSuggestionPosition = getMatchedTermPositionInSuggestion(it, matchedTermQueryPosition);
+        matchedTermSuggestionPositions[matchedTermQueryPosition] = matchedTermSuggestionPosition;
+      }
+      if (prefixToken != null && docTerm.startsWith(prefixToken)) {
+        matchedTermQueryPosition = matchedTokensCount - 1;
+        int matchedTermSuggestionPosition = getMatchedTermPositionInSuggestion(it, matchedTermQueryPosition);
+        matchedTermSuggestionPositions[matchedTermQueryPosition] = matchedTermSuggestionPosition;
       }
     }
-    Arrays.sort(matchedTokensPositions);
-    return calculateProductPositionalCoefficient(matchedTokensPositions);
+    return calculateProductPositionalCoefficient(matchedTermSuggestionPositions);
+  }
+
+  private int getMatchedTermPositionInSuggestion(TermsEnum it, int matchedTermQueryPosition) throws IOException {
+    PostingsEnum docPosEnum = it.postings(null, PostingsEnum.OFFSETS);
+    docPosEnum.nextDoc();
+    int matchedTermSuggestionPosition = docPosEnum.nextPosition();
+    while (matchedTermSuggestionPosition < matchedTermQueryPosition && matchedTermSuggestionPosition < docPosEnum.freq() - 1) {
+      matchedTermSuggestionPosition = docPosEnum.nextPosition();
+    }
+    return matchedTermSuggestionPosition;
   }
 
   /**

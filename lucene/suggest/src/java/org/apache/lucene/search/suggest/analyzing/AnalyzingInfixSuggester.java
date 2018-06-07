@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -563,7 +564,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
 
     BooleanQuery.Builder query;
-    Set<String> matchedTokens;
+    List<String> matchedTokens;
     String prefixToken = null;
 
     try (TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()))) {
@@ -574,7 +575,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       String lastToken = null;
       query = new BooleanQuery.Builder();
       int maxEndOffset = -1;
-      matchedTokens = new HashSet<>();
+      matchedTokens = new LinkedList<>();
       while (ts.incrementToken()) {
         if (lastToken != null) {  
           matchedTokens.add(lastToken);
@@ -685,7 +686,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    */
   protected List<LookupResult> createResults(IndexSearcher searcher, TopFieldDocs hits, int num,
                                              CharSequence charSequence,
-                                             boolean doHighlight, Set<String> matchedTokens, String prefixToken)
+                                             boolean doHighlight, List<String> matchedTokens, String prefixToken)
       throws IOException {
 
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
@@ -755,7 +756,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  representing a single highlighted suggestions; the
    *  result is set on each {@link
    *  org.apache.lucene.search.suggest.Lookup.LookupResult#highlightKey} member. */
-  protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
+  protected Object highlight(String text, List<String> matchedTokens, String prefixToken) throws IOException {
     try (TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text))) {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);

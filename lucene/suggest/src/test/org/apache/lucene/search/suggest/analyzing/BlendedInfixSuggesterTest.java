@@ -208,7 +208,8 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("something else Mini Bar Fridge", 1, payload),
         new Input("Mini Bar Fridge something else", 1, payload),
         new Input("Mini something Bar Fridge", 1, payload),
-        new Input("Mini Bar Fridge a a a a a a a a a a a a a a a a a a a a a a", 1, payload)
+        new Input("Mini Bar Fridge a a a a a a a a a a a a a a a a a a a a a a", 1, payload),
+        new Input("Bar Fridge Mini", 1, payload)
     };
 
     BlendedInfixSuggester linearSuggester = getBlendedInfixSuggester(keys, BlendedInfixSuggester.BlenderType.POSITION_LINEAR);
@@ -216,7 +217,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     // we query for star wars and check that the weight
     // is smaller when we search for tokens that are far from the beginning
 
-    List<Lookup.LookupResult> responses = linearSuggester.lookup("Mini Bar Fridge", 8, true, false);
+    List<Lookup.LookupResult> responses = linearSuggester.lookup("Mini Bar Fridge", 10, true, false);
     assertThat(responses.get(0).key, is("Mini Bar Fridge something"));
     assertThat(responses.get(1).key, is("Mini Bar Fridge something else"));
     assertThat(responses.get(2).key, is("Mini Bar Fridge a a a a a a a a a a a a a a a a a a a a a a"));
@@ -225,6 +226,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     assertThat(responses.get(5).key, is("Mini something Bar Fridge"));
     assertThat(responses.get(6).key, is("something Mini Bar Fridge"));
     assertThat(responses.get(7).key, is("something else Mini Bar Fridge"));
+    assertThat(responses.get(8).key, is("Bar Fridge Mini"));
 
     assertTrue(responses.get(1).value < responses.get(0).value);
     assertTrue(responses.get(2).value < responses.get(1).value);
@@ -233,6 +235,54 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     assertTrue(responses.get(5).value < responses.get(4).value);
     assertTrue(responses.get(6).value < responses.get(5).value);
     assertTrue(responses.get(7).value < responses.get(6).value);
+    assertTrue(responses.get(8).value < responses.get(7).value);
+    linearSuggester.close();
+  }
+
+  /**
+   * Test the weight transformation depending on the position
+   * of the matching term.
+   */
+  public void testBlendedSort_multiTermQueryWithRepetitions_shouldRankSuggestionsAccordinEachTermPosition() throws IOException {
+
+    BytesRef payload = new BytesRef("star");
+
+    Input keys[] = new Input[]{
+        new Input("Mini Bar something Fridge Bar", 1, payload),
+        new Input("Mini Bar Fridge Bar something", 1, payload),
+        new Input("Mini Bar something else Fridge Bar", 1, payload),
+        new Input("something Mini Bar Fridge Bar", 1, payload),
+        new Input("something else Mini Bar Fridge Bar", 1, payload),
+        new Input("Mini Bar Fridge Bar something else", 1, payload),
+        new Input("Mini something Bar Fridge Bar", 1, payload),
+        new Input("Mini Bar Fridge Bar a a a a a a a a a a a a a a a a a a a a a a", 1, payload),
+        new Input("Bar Fridge Mini Bar", 1, payload)
+    };
+
+    BlendedInfixSuggester linearSuggester = getBlendedInfixSuggester(keys, BlendedInfixSuggester.BlenderType.POSITION_LINEAR);
+
+    // we query for star wars and check that the weight
+    // is smaller when we search for tokens that are far from the beginning
+
+    List<Lookup.LookupResult> responses = linearSuggester.lookup("Mini Bar Fridge Bar", 10, true, false);
+    assertThat(responses.get(0).key, is("Mini Bar Fridge Bar something"));
+    assertThat(responses.get(1).key, is("Mini Bar Fridge Bar something else"));
+    assertThat(responses.get(2).key, is("Mini Bar Fridge Bar a a a a a a a a a a a a a a a a a a a a a a"));
+    assertThat(responses.get(3).key, is("Mini Bar something Fridge Bar"));
+    assertThat(responses.get(4).key, is("Mini Bar something else Fridge Bar"));
+    assertThat(responses.get(5).key, is("Mini something Bar Fridge Bar"));
+    assertThat(responses.get(6).key, is("something Mini Bar Fridge Bar"));
+    assertThat(responses.get(7).key, is("something else Mini Bar Fridge Bar"));
+    assertThat(responses.get(8).key, is("Bar Fridge Mini Bar"));
+
+    assertTrue(responses.get(1).value < responses.get(0).value);
+    assertTrue(responses.get(2).value < responses.get(1).value);
+    assertTrue(responses.get(3).value < responses.get(2).value);
+    assertTrue(responses.get(4).value < responses.get(3).value);
+    assertTrue(responses.get(5).value < responses.get(4).value);
+    assertTrue(responses.get(6).value < responses.get(5).value);
+    assertTrue(responses.get(7).value < responses.get(6).value);
+    assertTrue(responses.get(8).value < responses.get(7).value);
     linearSuggester.close();
   }
 
