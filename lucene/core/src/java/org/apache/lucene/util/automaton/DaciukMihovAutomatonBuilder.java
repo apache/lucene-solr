@@ -137,8 +137,8 @@ public final class DaciukMihovAutomatonBuilder {
       assert Arrays.binarySearch(labels, label) < 0 : "State already has transition labeled: "
           + label;
       
-      labels = Arrays.copyOf(labels, labels.length + 1);
-      states = Arrays.copyOf(states, states.length + 1);
+      labels = ArrayUtil.growExact(labels, labels.length + 1);
+      states = ArrayUtil.growExact(states, states.length + 1);
 
       labels[labels.length - 1] = label;
       return states[states.length - 1] = new State();

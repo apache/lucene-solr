@@ -220,7 +220,7 @@ class PendingDeletes {
    * Returns <code>true</code> iff the segment represented by this {@link PendingDeletes} is fully deleted
    */
   boolean isFullyDeleted(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
-    return info.getDelCount() + numPendingDeletes() == info.info.maxDoc();
+    return getDelCount() == info.info.maxDoc();
   }
 
   /**
@@ -246,7 +246,8 @@ class PendingDeletes {
    * Returns the number of deleted docs in the segment.
    */
   final int getDelCount() {
-    return info.getDelCount() + numPendingDeletes();
+    int delCount = info.getDelCount() + info.getSoftDelCount() + numPendingDeletes();
+    return delCount;
   }
 
   /**
@@ -270,7 +271,8 @@ class PendingDeletes {
       count = info.info.maxDoc();
     }
     assert numDocs() == count: "info.maxDoc=" + info.info.maxDoc() + " info.getDelCount()=" + info.getDelCount() +
-        " pendingDeletes=" + toString() + " count=" + count;
+        " info.getSoftDelCount()=" + info.getSoftDelCount() +
+        " pendingDeletes=" + toString() + " count=" + count + " numDocs: " + numDocs();
     assert reader.numDocs() == numDocs() : "reader.numDocs() = " + reader.numDocs() + " numDocs() " + numDocs();
     assert reader.numDeletedDocs() <= info.info.maxDoc(): "delCount=" + reader.numDeletedDocs() + " info.maxDoc=" +
         info.info.maxDoc() + " rld.pendingDeleteCount=" + numPendingDeletes() +

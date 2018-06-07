@@ -961,6 +961,12 @@ public class ZkStateReader implements Closeable {
     return value;
   }
 
+  /**Same as the above but allows a full json path as a list of parts
+   *
+   * @param keyPath path to the property example ["collectionDefauls", "numShards"]
+   * @param defaultValue a default value to use if no such property exists
+   * @return the cluster property, or a default if the property is not set
+   */
   public <T> T getClusterProperty(List<String> keyPath, T defaultValue) {
     T value = (T) Utils.getObjectByPath( clusterProperties, false, keyPath);
     if (value == null)

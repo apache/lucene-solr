@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
@@ -238,7 +237,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
       docs = ArrayUtil.grow(docs, numDocs + 1);
       docs[numDocs + 1] = docID;
     }
-    return Arrays.copyOf(docs, numDocs);
+    return ArrayUtil.copyOfSubArray(docs, 0, numDocs);
   }
 
   public static class RangeMergePolicy extends MergePolicy {

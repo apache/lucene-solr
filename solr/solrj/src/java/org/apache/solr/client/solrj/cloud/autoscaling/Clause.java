@@ -140,7 +140,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Clause that = (Clause)o;
-    return compareTo(that) == 0;
+    return  Objects.equals(this.original, that.original);
   }
 
   void addTags(Collection<String> params) {

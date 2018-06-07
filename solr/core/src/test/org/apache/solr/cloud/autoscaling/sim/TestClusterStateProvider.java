@@ -109,7 +109,11 @@ public class TestClusterStateProvider extends SolrCloudTestCase {
       simCloudManager.getSimClusterStateProvider().simSetClusterProperties(clusterProperties);
       simCloudManager.getSimDistribStateManager().simSetAutoScalingConfig(autoScalingConfig);
       nodeValues.forEach((n, values) -> {
-        simCloudManager.getSimNodeStateProvider().simSetNodeValues(n, values);
+        try {
+          simCloudManager.getSimNodeStateProvider().simSetNodeValues(n, values);
+        } catch (InterruptedException e) {
+          fail("Interrupted:" + e);
+        }
       });
       simCloudManager.getSimClusterStateProvider().simSetClusterState(realState);
       ClusterState simState = simCloudManager.getClusterStateProvider().getClusterState();

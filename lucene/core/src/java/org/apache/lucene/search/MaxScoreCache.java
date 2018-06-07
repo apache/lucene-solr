@@ -53,7 +53,7 @@ final class MaxScoreCache {
     if (maxScoreCache.length < size) {
       int oldLength = maxScoreCache.length;
       maxScoreCache = ArrayUtil.grow(maxScoreCache, size);
-      maxScoreCacheUpTo = Arrays.copyOf(maxScoreCacheUpTo, maxScoreCache.length);
+      maxScoreCacheUpTo = ArrayUtil.growExact(maxScoreCacheUpTo, maxScoreCache.length);
       Arrays.fill(maxScoreCacheUpTo, oldLength, maxScoreCacheUpTo.length, -1);
     }
   }

@@ -45,6 +45,23 @@ Upgrade Notes
   MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
   switch to "Direct" instead. (Dawid Weiss)
 
+==================  7.5.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.17
+Carrot2 3.16.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.11
+Jetty 9.4.10.v20180503
+
+
+(No Changes)
+
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -70,15 +87,15 @@ Upgrade Notes
   To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication
   handler configuration, or pass it to the fetchindex command.
 
-* SOLR-11453: Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log .
-  Previously they would get logged in the solr.xml file
+* SOLR-11453: Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log.
+  Previously they would get logged in the solr.log file.
 
 New Features
 ----------------------
 
 * SOLR-12396: Upgrade Carrot2 to 3.16.0, HPPC to 0.8.1, morfologik to 2.1.5. (Dawid Weiss)
 
-* SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
+* SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable
   ConcurrentMergeSchedule.doAutoIOThrottle. (Amrit Sarkar, Nawab Zada Asad iqbal via Dawid Weiss)
 
 * SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
@@ -92,7 +109,7 @@ New Features
 
 * SOLR-12139: The "eq" (equals) function query now works with string fields, string literals, and perhaps anything.
   (Andrey Kudryavtsev, David Smiley)
-  
+
 * SOLR-10783: Add support for Hadoop Credential Provider as SSL/TLS store password source.
   (Mano Kovacs via Mark Miller)
 
@@ -126,21 +143,21 @@ New Features
 
 * SOLR-12378: Support missing versionField on indexed docs in DocBasedVersionConstraintsURP.
   (Oliver Bates, Michael Braun via Mark Miller)
-  
+
 * SOLR-12388: Enable a strict ZooKeeper-connected search request mode, in which search
-  requests will fail when the coordinating node can't communicate with ZooKeeper, 
+  requests will fail when the coordinating node can't communicate with ZooKeeper,
   by setting the "shards.tolerant" param to "requireZkConnected".  (Steve Rowe)
 
 * SOLR-9685: #Tagging queries in JSON Query DSL, equivalent to LocalParams based query/filter
   tagging.  Multiple tags are comma separated.
   LocalParams Example     : {!tag=colorfilt}color:blue
-  Equivalent JSON Example : { "#colorfilt" : "color:blue" } 
+  Equivalent JSON Example : { "#colorfilt" : "color:blue" }
   (Dmitry Tikhonov, Mikhail Khludnev, yonik)
 
 * SOLR-12328: JSON Facet API: Domain change with graph query.
   (Daniel Meehl, Kevin Watters, yonik)
 
-* SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log .
+* SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log.
   (Shawn Heisey, Remko Popma, Varun Thacker)
 
 * SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
@@ -154,11 +171,28 @@ New Features
 
 * SOLR-12389: support deeply nested json objects in clusterprops.json (noble)
 
+* SOLR-12376: Added the TaggerRequestHandler (AKA SolrTextTagger) for tagging text.  It's used as a component of
+  NER/ERD systems including query-understanding.  See the ref guide for more info.  (David Smiley)
+
+* SOLR-12266: Add discrete Fourier transform Stream Evaluators (Joel Bernstein)
+
+* SOLR-12158: Allow the monteCarlo Stream Evaluator to support variables (Joel Bernstein)
+
+* SOLR-11734: Add ones and zeros Stream Evaluators (Joel Bernstein)
+
+* SOLR-12273: Create Stream Evaluators for distance measures (Joel Bernstein)
+
+* SOLR-12159: Add memset Stream Evaluator (Joel Bernstein)
+
+* SOLR-12221: Add valueAt Stream Evaluator (Joel Bernstein)
+
+* SOLR-12175: Add random field type and dynamic field to the default managed-schema (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
 * SOLR-5351: Fixed More Like This Handler to use all fields provided in mlt.fl when used with
-  content stream. The similarity is calculated between the content stream's value and all 
+  content stream. The similarity is calculated between the content stream's value and all
   fields listed in mlt.fl. (Dawid Weiss)
 
 * SOLR-12103: Raise CryptoKeys.DEFAULT_KEYPAIR_LENGTH from 1024 to 2048. (Mark Miller)
@@ -185,10 +219,10 @@ Bug Fixes
 
 * SOLR-12172: Fixed race condition that could cause an invalid set of collection properties to be kept in
   memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe)
-  
-* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe) 
 
-* SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure: 
+* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe)
+
+* SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure:
   Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
 
 * SOLR-12096: Fixed inconsistent results format of subquery transformer for distributed search (multi-shard).
@@ -237,12 +271,12 @@ Bug Fixes
 
 * SOLR-12275: wrong caching for {!filters} as well as for `filters` local param in {!parent} and {!child}
   (David Smiley, Mikhail Khluldnev)
-  
-* SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
+
+* SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in
   non-boolean queries. (James Dyer)
 
 * SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
-  and devs. (Mark Miller)
+  and devs. (Mark Miller, janhoy, Andrzej Bialecki)
 
 * SOLR-12293: Updates need to use their own connection pool to maintain connection reuse and prevent spurious
   recoveries. (Mark Miller)
@@ -261,9 +295,9 @@ Bug Fixes
   about "Invalid Date String". (yonik)
 
 * SOLR-12307: exiting OverseerTriggerThread without endless noise in log when Zookeeper session is expired
-  (Mikhail Khludnev) 
+  (Mikhail Khludnev)
 
-* SOLR-12200: abandon OverseerExitThread when ZkController is closed. (Mikhail Khludnev) 
+* SOLR-12200: abandon OverseerExitThread when ZkController is closed. (Mikhail Khludnev)
 
 * SOLR-12355: Fixes hash conflict in HashJoinStream and OuterHashJoinStream (Dennis Gove)
 
@@ -283,12 +317,16 @@ Bug Fixes
 * SOLR-12374: SnapShooter.getIndexCommit can forget to decref the searcher; though it's not clear in practice when.
   (David Smiley)
 
-* SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (yonik)
+* SOLR-12417: velocity response writer should enforce valid function name for v.json parameter (Mano Kovacs, yonik)
 
 * SOLR-12271: Fixed bug in how Analytics component reads negative values from float and double fields. (Houston Putman)
 
-* SOLR-12433: Recovering flag of a replica is set equals to leader even it failed to receive update 
+* SOLR-12433: Recovering flag of a replica is set equals to leader even it failed to receive update
   on recovering. (Cao Manh Dat)
+
+* SOLR-12354: Register the /admin/info/key end-point at the startup time to avoid 404 (noble)
+
+* SOLR-12445: Upgrade Dropwizard Metrics to version 3.2.6. (ab)
 
 Optimizations
 ----------------------
@@ -321,8 +359,22 @@ Optimizations
 * SOLR-12366: A slow "live docs" implementation was being used instead of a bitset.  Affects classic faceting
   enum method, JSON Facets enum method, UnInvertedField faceting, GraphTermsQParser, JoinQParser.  (David Smiley)
 
+* SOLR-12337: Remove the obsolete QueryWrapperFilter intermediate wrapper, which also removed some needless uses of
+  SolrConstantScoreQuery as well.  QWF since v5.4.0 sometimes needlessly internally executed and cached the query.
+  Affects ExpandComponent, ChildDocTransformer, CurrencyFieldType, TermsQParser.  (David Smiley)
+
+* SOLR-9922: Write buffering updates to another tlog. (Cao Manh Dat)
+
+* SOLR-12233: QParserPlugin's built-in static registry now holds actual QParserPlugin instances instead of class
+  references.  This is consistent with other plugin registries and allows a SolrCore to load faster.
+  (Jeff Miller, David Smiley)
+
+* SOLR-12198: Stream Evaluators should not copy matrices needlessly (Joel Bernstein)
+
 Other Changes
 ----------------------
+
+* SOLR-12018: Remove comments.apache.org integration for the Ref Guide; the comments system has been down since December 2017 and there is no concrete plan to bring it back.
 
 * SOLR-12076: Remove unnecessary printLayout usage in CDCR tests (Varun Thacker)
 
@@ -383,6 +435,8 @@ Other Changes
 * SOLR-12374: Added SolrCore.withSearcher(lambda) to make grabbing the searcher easier than the more awkward
   RefCounted API.  (David Smiley)
 
+* SOLR-12183: Refactor Streaming Expression test cases (Joel Bernstein)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -403,7 +457,7 @@ Bug Fixes
 
 * SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
 
-* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down
   state (Cao Manh Dat)
 
 * SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
@@ -419,7 +473,7 @@ Bug Fixes
 * SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
 
 * SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml
-  and schema parsing (CVE-2018-8010).  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)  
+  and schema parsing (CVE-2018-8010).  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
 
 ==================  7.3.0 ==================
 
@@ -583,7 +637,7 @@ New Features
 
 * SOLR-12077: Add support for autoAddReplicas in the collection creation dialog in Admin UI. (shalin)
 
-* SOLR-9510: introducing {!filters param=$fq excludeTags=f} query parser. 
+* SOLR-9510: introducing {!filters param=$fq excludeTags=f} query parser.
   Introducing {!.. filters=$fq excludeTags=t,q} in {!parent} and {!child} (Dr. Oleg Savrasov via Mikhail Khludnev)
 
 Bug Fixes
@@ -1303,6 +1357,8 @@ Bug Fixes
 
 * SOLR-11477: Disallow resolving of external entities in the XML query parser (defType=xmlparser).
   (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
+* SOLR-12444: Updating a cluster policy fails (noble)
 
 Optimizations
 ----------------------
