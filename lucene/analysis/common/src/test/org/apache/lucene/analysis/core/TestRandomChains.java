@@ -88,6 +88,7 @@ import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.snowball.TestSnowball;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymMap;
@@ -124,6 +125,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     avoidConditionals.add(FingerprintFilter.class);
     avoidConditionals.add(MinHashFilter.class);
     avoidConditionals.add(ConcatenateGraphFilter.class);
+    // ShingleFilter doesn't handle input graphs correctly, so wrapping it in a condition can
+    // expose inconsistent offsets
+    // https://issues.apache.org/jira/browse/LUCENE-4170
+    avoidConditionals.add(ShingleFilter.class);
   }
 
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
