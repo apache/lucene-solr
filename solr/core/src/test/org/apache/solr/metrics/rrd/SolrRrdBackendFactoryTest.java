@@ -17,13 +17,13 @@
 
 package org.apache.solr.metrics.rrd;
 
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.MockSearchableSolrClient;
 import org.junit.After;
@@ -78,15 +78,15 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
   @Test
   public void testBasic() throws Exception {
     RrdDb db = new RrdDb(createDef(), factory);
-    List<String> list = factory.list(100);
+    List<Pair<String, Long>> list = factory.list(100);
     assertEquals(list.toString(), 1, list.size());
-    assertEquals(list.toString(), "foo", list.get(0));
+    assertEquals(list.toString(), "foo", list.get(0).first());
     timeSource.sleep(2000);
     // there should be one sync data
     assertEquals(solrClient.docs.toString(), 1, solrClient.docs.size());
     String id = SolrRrdBackendFactory.ID_PREFIX + SolrRrdBackendFactory.ID_SEP + "foo";
     SolrInputDocument doc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
-    long timestamp = ((Date)doc.getFieldValue("timestamp")).getTime();
+    long timestamp = (Long)doc.getFieldValue("timestamp_l");
     timeSource.sleep(2000);
     SolrInputDocument newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertEquals(newDoc.toString(), newDoc, doc);
@@ -104,7 +104,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     timeSource.sleep(3000);
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertFalse(newDoc.toString(), newDoc.equals(doc));
-    long newTimestamp = ((Date)newDoc.getFieldValue("timestamp")).getTime();
+    long newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
     assertNotSame(newTimestamp, timestamp);
     FetchRequest fr = db.createFetchRequest(ConsolFun.AVERAGE, firstTimestamp + 60, lastTimestamp - 60, 60);
     FetchData fd = fr.fetchData();
@@ -126,7 +126,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     // should still be listed
     list = factory.list(100);
     assertEquals(list.toString(), 1, list.size());
-    assertEquals(list.toString(), "foo", list.get(0));
+    assertEquals(list.toString(), "foo", list.get(0).first());
 
     // re-open read-write
     db = new RrdDb("solr:foo", factory);
@@ -141,7 +141,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     doc = newDoc;
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertFalse(newDoc.toString(), newDoc.equals(doc));
-    newTimestamp = ((Date)newDoc.getFieldValue("timestamp")).getTime();
+    newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
     assertNotSame(newTimestamp, timestamp);
     fr = db.createFetchRequest(ConsolFun.AVERAGE, firstTimestamp + 60, lastTimestamp, 60);
     fd = fr.fetchData();
@@ -174,7 +174,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     timestamp = newTimestamp;
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertTrue(newDoc.toString(), newDoc.equals(doc));
-    newTimestamp = ((Date)newDoc.getFieldValue("timestamp")).getTime();
+    newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
     assertEquals(newTimestamp, timestamp);
     readOnly.close();
   }

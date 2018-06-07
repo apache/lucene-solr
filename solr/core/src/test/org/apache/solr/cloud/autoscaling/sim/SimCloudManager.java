@@ -665,6 +665,7 @@ public class SimCloudManager implements SolrCloudManager {
         }
         queryRequest.getContext().put("httpMethod", req.getMethod().toString());
         SolrQueryResponse queryResponse = new SolrQueryResponse();
+        queryResponse.addResponseHeader(new SimpleOrderedMap<>());
         if (autoscaling) {
           autoScalingHandler.handleRequest(queryRequest, queryResponse);
         } else {
