@@ -48,7 +48,7 @@ New Features
 ----------------------
 * SOLR-12396: Upgrade Carrot2 to 3.16.0, HPPC to 0.8.1, morfologik to 2.1.5. (Dawid Weiss)
 
-* SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
+* SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable
   ConcurrentMergeSchedule.doAutoIOThrottle. (Amrit Sarkar, Nawab Zada Asad iqbal via Dawid Weiss)
 
 * SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
@@ -62,7 +62,7 @@ New Features
 
 * SOLR-12139: The "eq" (equals) function query now works with string fields, string literals, and perhaps anything.
   (Andrey Kudryavtsev, David Smiley)
-  
+
 * SOLR-10783: Add support for Hadoop Credential Provider as SSL/TLS store password source.
   (Mano Kovacs via Mark Miller)
 
@@ -171,8 +171,8 @@ Bug Fixes
 
 * SOLR-12172: Fixed race condition that could cause an invalid set of collection properties to be kept in
   memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe)
-  
-* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe) 
+
+* SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe)
 
 * SOLR-11882: SolrMetric registries retained references to SolrCores when closed. A
   change of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics
@@ -228,8 +228,8 @@ Bug Fixes
 
 * SOLR-12275: wrong caching for {!filters} as well as for `filters` local param in {!parent} and {!child}
   (David Smiley, Mikhail Khluldnev)
-  
-* SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
+
+* SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in
   non-boolean queries. (James Dyer)
 
 * SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
@@ -252,9 +252,9 @@ Bug Fixes
   about "Invalid Date String". (yonik)
 
 * SOLR-12307: exiting OverseerTriggerThread without endless noise in log when Zookeeper session is expired
-  (Mikhail Khludnev) 
+  (Mikhail Khludnev)
 
-* SOLR-12200: abandon OverseerExitThread when ZkController is closed. (Mikhail Khludnev) 
+* SOLR-12200: abandon OverseerExitThread when ZkController is closed. (Mikhail Khludnev)
 
 * SOLR-12355: Fixes hash conflict in HashJoinStream and OuterHashJoinStream (Dennis Gove)
 
@@ -281,7 +281,7 @@ Bug Fixes
 
 * SOLR-12271: Fixed bug in how Analytics component reads negative values from float and double fields. (Houston Putman)
 
-* SOLR-12433: Recovering flag of a replica is set equals to leader even it failed to receive update 
+* SOLR-12433: Recovering flag of a replica is set equals to leader even it failed to receive update
   on recovering. (Cao Manh Dat)
 
 * SOLR-12354: Register the /admin/info/key end-point at the startup time to avoid 404 (noble)
@@ -333,6 +333,8 @@ Optimizations
 
 Other Changes
 ----------------------
+
+* SOLR-12018: Remove comments.apache.org integration for the Ref Guide; the comments system has been down since December 2017 and there is no concrete plan to bring it back.
 
 * SOLR-12076: Remove unnecessary printLayout usage in CDCR tests (Varun Thacker)
 
@@ -415,7 +417,7 @@ Bug Fixes
 
 * SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
 
-* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down 
+* SOLR-12087: Deleting replicas sometimes fails and causes the replicas to exist in the down
   state (Cao Manh Dat)
 
 * SOLR-12146: LIR should skip deleted replicas (Cao Manh Dat)
@@ -431,7 +433,7 @@ Bug Fixes
 * SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
 
 * SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml
-  and schema parsing (CVE-2018-8010).  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)  
+  and schema parsing (CVE-2018-8010).  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)
 
 ==================  7.3.0 ==================
 
@@ -594,7 +596,7 @@ New Features
 
 * SOLR-12077: Add support for autoAddReplicas in the collection creation dialog in Admin UI. (shalin)
 
-* SOLR-9510: introducing {!filters param=$fq excludeTags=f} query parser. 
+* SOLR-9510: introducing {!filters param=$fq excludeTags=f} query parser.
   Introducing {!.. filters=$fq excludeTags=t,q} in {!parent} and {!child} (Dr. Oleg Savrasov via Mikhail Khludnev)
 
 Bug Fixes
