@@ -162,7 +162,7 @@ New Features
 
 * SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
 
-* SOLR-11779: Basic long-term collection of aggregated metrics. Historical data is
+* SOLR-11779, SOLR-12438: Basic long-term collection of aggregated metrics. Historical data is
   maintained as multi-resolution time series using round-robin databases in the '.system'
   collection. New /admin/metrics/history API allows retrieval of this data in numeric
   or graph formats. (ab)
