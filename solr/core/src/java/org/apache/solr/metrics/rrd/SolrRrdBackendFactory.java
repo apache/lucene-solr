@@ -22,14 +22,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -47,6 +45,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.rrd4j.core.RrdBackend;
@@ -112,6 +111,10 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
         timeSource.convertDelay(TimeUnit.SECONDS, syncPeriod, TimeUnit.MILLISECONDS),
         timeSource.convertDelay(TimeUnit.SECONDS, syncPeriod, TimeUnit.MILLISECONDS),
         TimeUnit.MILLISECONDS);
+  }
+
+  public TimeSource getTimeSource() {
+    return timeSource;
   }
 
   private void ensureOpen() throws IOException {
@@ -181,7 +184,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     }
   }
 
-  byte[] getData(String path) throws IOException {
+  SolrRrdBackend.SyncData getData(String path) throws IOException {
     if (!persistent) {
       return null;
     }
@@ -203,7 +206,8 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
         return null;
       }
       if (o instanceof byte[]) {
-        return (byte[])o;
+        Long time = (Long)doc.getFieldValue("timestamp_l");
+        return new SolrRrdBackend.SyncData((byte[])o, time);
       } else {
         throw new SolrServerException("Unexpected value of '" + DATA_FIELD + "' field: " + o.getClass().getName() + ": " + o);
       }
@@ -216,34 +220,58 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     backends.remove(path);
   }
 
+  private static final class DbComparator implements Comparator<Pair<String, Long>> {
+    static final DbComparator INSTANCE = new DbComparator();
+
+    @Override
+    public int compare(Pair<String, Long> o1, Pair<String, Long> o2) {
+      return o1.first().compareTo(o2.first());
+    }
+  }
+
   /**
    * List all available databases created by this node name
    * @param maxLength maximum number of results to return
-   * @return list of database names, or empty
+   * @return list of database names and their last update times, or empty
    * @throws IOException on server errors
    */
-  public List<String> list(int maxLength) throws IOException {
-    Set<String> names = new HashSet<>();
+  public List<Pair<String, Long>> list(int maxLength) throws IOException {
+    Map<String, Pair<String, Long>> byName = new HashMap<>();
     if (persistent) {
       try {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.add(CommonParams.Q, "*:*");
         params.add(CommonParams.FQ, CommonParams.TYPE + ":" + DOC_TYPE);
-        params.add(CommonParams.FL, "id");
+        params.add(CommonParams.FL, "id,timestamp_l");
         params.add(CommonParams.ROWS, String.valueOf(maxLength));
         QueryResponse rsp = solrClient.query(collection, params);
         SolrDocumentList docs = rsp.getResults();
         if (docs != null) {
-          docs.forEach(d -> names.add(((String)d.getFieldValue("id")).substring(idPrefixLength)));
+          docs.forEach(d -> {
+            Long time = (Long)d.getFieldValue("timestamp_l");
+            Pair<String, Long> p = new Pair<>(((String)d.getFieldValue("id")).substring(idPrefixLength), time);
+            byName.put(p.first(), p);
+          });
         }
       } catch (SolrServerException e) {
         log.warn("Error retrieving RRD list", e);
       }
     }
-    // add in-memory backends not yet stored
-    names.addAll(backends.keySet());
-    ArrayList<String> list = new ArrayList<>(names);
-    Collections.sort(list);
+    // add in-memory backends not yet stored, or replace with more recent versions
+    backends.forEach((name, db) -> {
+      long lastModifiedTime = db.getLastModifiedTime();
+      Pair<String, Long> stored = byName.get(name);
+      Pair<String, Long> inMemory = new Pair(name, lastModifiedTime);
+      if (stored != null) {
+        if (stored.second() < lastModifiedTime) {
+          byName.put(name, inMemory);
+        }
+      } else {
+        byName.put(name, inMemory);
+      }
+    });
+    ArrayList<Pair<String, Long>> list = new ArrayList<>(byName.values());
+    Collections.sort(list, DbComparator.INSTANCE);
     return list;
   }
 
@@ -301,25 +329,25 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       return;
     }
     log.debug("-- maybe sync backends: " + backends.keySet());
-    Map<String, byte[]> syncData = new HashMap<>();
+    Map<String, SolrRrdBackend.SyncData> syncDatas = new HashMap<>();
     backends.forEach((path, backend) -> {
-      byte[] data = backend.getSyncData();
-      if (data != null) {
-        syncData.put(backend.getPath(), data);
+      SolrRrdBackend.SyncData syncData = backend.getSyncData();
+      if (syncData != null) {
+        syncDatas.put(backend.getPath(), syncData);
       }
     });
-    if (syncData.isEmpty()) {
+    if (syncDatas.isEmpty()) {
       return;
     }
-    log.debug("-- syncing " + syncData.keySet());
+    log.debug("-- syncing " + syncDatas.keySet());
     // write updates
     try {
-      syncData.forEach((path, data) -> {
+      syncDatas.forEach((path, syncData) -> {
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField("id", ID_PREFIX + ID_SEP + path);
         doc.addField(CommonParams.TYPE, DOC_TYPE);
-        doc.addField(DATA_FIELD, data);
-        doc.setField("timestamp", new Date(TimeUnit.MILLISECONDS.convert(timeSource.getEpochTimeNs(), TimeUnit.NANOSECONDS)));
+        doc.addField(DATA_FIELD, syncData.data);
+        doc.setField("timestamp_l", syncData.timestamp);
         try {
           solrClient.add(collection, doc);
         } catch (SolrServerException | IOException e) {
@@ -334,7 +362,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       } catch (SolrServerException e) {
         log.warn("Error committing RRD data updates", e);
       }
-      syncData.forEach((path, data) -> {
+      syncDatas.forEach((path, data) -> {
         SolrRrdBackend backend = backends.get(path);
         if (backend != null) {
           backend.markClean();

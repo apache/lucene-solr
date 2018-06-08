@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.request.schema;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -25,7 +27,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -706,10 +710,29 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     protected abstract NamedList<Object> getRequestParameters();
 
     @Override
+    @Deprecated
     public Collection<ContentStream> getContentStreams() throws IOException {
       CharArr json = new CharArr();
       new SchemaRequestJSONWriter(json).write(getRequestParameters());
       return Collections.singletonList(new ContentStreamBase.StringStream(json.toString()));
+    }
+
+    @Override
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      return new RequestWriter.ContentWriter() {
+        @Override
+        public void write(OutputStream os) throws IOException {
+          //TODO :  find a way to do streaming write
+          CharArr json = new CharArr();
+          new SchemaRequestJSONWriter(json).write(getRequestParameters());
+          os.write(json.toString().getBytes(StandardCharsets.UTF_8));
+        }
+
+        @Override
+        public String getContentType() {
+          return CommonParams.JSON_MIME;
+        }
+      };
     }
 
     @Override

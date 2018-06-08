@@ -18,15 +18,16 @@
 
 == Design
 === Round-robin databases
-When Solr runs in "cloud" mode it collects long-term history of certain key metrics. This information
-can be used for very simple monitoring and troubleshooting, but also some Solr Cloud components
-(eg. autoscaling) can use this data for making informed decisions based on long-term
-trends of selected metrics.
+Solr collects long-term history of certain key metrics both in SolrCloud and in standalone mode.
+This information can be used for very simple monitoring and troubleshooting, but also some
+Solr Cloud components (eg. autoscaling) can use this data for making informed decisions based on
+long-term trends of selected metrics.
 
 [IMPORTANT]
 ====
-Metrics history is available ONLY in SolrCloud mode, it's not supported in standalone Solr. Also,
-the `.system` collection must exist if metrics history should be persisted.
+The `.system` collection must exist if metrics history should be persisted. If this collection
+is absent then metrics history will still be collected and kept in memory but it will be lost
+on node restart.
 ====
 
 This data is maintained as multi-resolution time series, with a fixed total number of data points
@@ -61,14 +62,16 @@ update operations than storing each data point in a separate Solr document. Metr
 detailed data from each database, including retrieval of all individual datapoints.
 
 Databases are identified primarily by their corresponding metric registry name, so for databases that
-keep track of aggregated metrics this will be eg. `solr.jvm`, `solr.node`, `solr.collection.gettingstarted`,
-and for databases with non-aggregated metrics this will be eg. `solr.jvm.localhost:8983_solr`,
-`solr.node.localhost:7574_solr`, `solr.core.gettingstarted.shard1.replica_n1`.
+keep track of aggregated metrics this will be eg. `solr.jvm`, `solr.node`, `solr.collection.gettingstarted`.
+For databases with non-aggregated metrics the name consists of the registry name, optionally with a node name
+to identify databases with the same name coming from different nodes. For example, per-node databases are
+name like this: `solr.jvm.localhost:8983_solr`, `solr.node.localhost:7574_solr`, but per-replica names are
+already unique across the cluster so they are named like this: `solr.core.gettingstarted.shard1.replica_n1`.
 
 === Collected metrics
 Currently the following selected metrics are tracked:
 
-* `solr.core` and `solr.collection` metrics:
+* Non-aggregated `solr.core` and aggregated `solr.collection` metrics:
 ** `QUERY./select.requests`
 ** `UPDATE./update.requests`
 ** `INDEX.sizeInBytes`
@@ -78,6 +81,7 @@ Currently the following selected metrics are tracked:
 * `solr.node` metrics:
 ** `CONTAINER.fs.coreRoot.usableSpace`
 ** `numNodes` (aggregated, number of live nodes)
+
 * `solr.jvm` metrics:
 ** `memory.heap.used`
 ** `os.processCpuLoad`
@@ -85,6 +89,10 @@ Currently the following selected metrics are tracked:
 
 Separate databases are created for each of these groups, and each database keeps data for
 all metrics listed in that group.
+
+NOTE: Currently this list is not configurable. Also, if you change this list in the code then
+all existing databases must be first removed from the `.system` collection because RRD4j doesn't allow
+adding new datasources once the database is created.
 
 === SolrRrdBackendFactory
 This component is responsible for managing in-memory databases and periodically saving them
@@ -101,7 +109,8 @@ collecting and periodically updating the in-memory databases.
 This handler also performs aggregation of metrics on per-collection level, and on a cluster level.
 By default only these aggregated metrics are tracked - historic data from each node and each replica
 in each collection is not collected separately. Aggregated databases are managed on the Overseer leader
-node.
+node but they are still accessible from other nodes even if they are not persisted - the handler redirects
+the call from originating node to the current Overseer leader.
 
 The handler assumes that a simple aggregation (sum of partial metric values from each resource) is
 sufficient. This happens to make sense for the default built-in sets of metrics. Future extensions will
@@ -135,6 +144,7 @@ databases.
 
 `collectPeriod`:: integer, in seconds, default is 60. Metrics values will be collected and respective
 databases updated every `collectPeriod` seconds.
+
 [IMPORTANT]
 ====
 Value of `collectPeriod` must be at least 1, and if it's changed then all previously existing databases
@@ -142,9 +152,9 @@ with their historic data must be manually removed (new databases will be created
 ====
 
 `syncPeriod`:: integer, in seconds, default is 60. Data from modified databases will be saved to Solr
-every `syncPeriod` seconds. When accessing the databases via REST API the visibility of most recent
-data depends on this period, because requests accessing the data from other nodes see only the
-version of the data that is stored in the `.system` collection.
+every `syncPeriod` seconds. When accessing the databases via REST API in `index` mode the visibility of
+most recent data depends on this period, because requests accessing the data from other nodes see only
+the version of the data that is stored in the `.system` collection.
 
 === Example configuration
 Example `/clusterprops.json` file with metrics history configuration that turns on the collection of
@@ -154,6 +164,7 @@ properties unrelated to metrics history API.
 [source,json]
 ----
 {
+...
   "metrics" : {
     "history" : {
       "enable" : true,
@@ -161,41 +172,85 @@ properties unrelated to metrics history API.
       "syncPeriod" : 300
     }
   }
+...
 }
 ----
 
 == Metrics History API
-Main entry point for accessing metrics history is `/admin/metrics/history` (or `/api/cluster/metrics/history` for
-v2 API).
+Main entry point for accessing metrics history is `/admin/metrics/history` (or `/api/cluster/metrics/history`
+for v2 API).
 
 The following sections describe actions available in this API. All calls have at least one
 required parameter `action`.
 
+All responses contain a section named `state`, which reports the current internal state of the API:
+
+`enableReplicas`:: boolean, corresponds to the `enableReplicas` configuration setting.
+`enableNodes`:: boolean, corresponds to the `enableNodes` configuration setting.
+`mode`:: one of the following values:
+* `inactive` - when metrics collection is disabled (but access to existing metrics history is still available).
+* `memory` - when metrics history is kept only in memory because `.system` collection doesn't exist. In this mode
+clients can access metrics history available on the node that received the reuqest and on the Overseer leader.
+* `index` - when metrics history is periodically stored in the `.system` collection. Data available in memory on
+the node that accepted the request is retrieved from memory, any other data is retrieved from the
+`.system` collection (so it's at least `syncPeriod` old).
+
+Also, the response header section (`responseHeader`) contains `zkConnected` boolean property that indicates
+whether the current node is a part of SolrCloud cluster.
+
 === List databases (`action=list`)
 This call produces a list of available databases. It supports the following parameters:
 
-`rows`:: optional integer, default is 500. Maximum number of results to return
+`rows`:: optional integer, default is 500. Maximum number of results to return.
 
 Example:
+In this SolrCloud example the API is in `memory` mode, and the request was made to a node that is
+not Overseer leader. The API transparently forwarded the request to Overseer leader.
 [source,bash]
 ----
-curl http://localhost:8983/solr/admin/metrics/history?action=list&rows=10
+curl http://localhost:7574/solr/admin/metrics/history?action=list&rows=10
 ----
 [source,json]
 ----
 {
-    "responseHeader": {
-        "status": 0,
-        "QTime": 16
+  "responseHeader": {
+    "zkConnected": true,
+    "status": 0,
+    "QTime": 9
+  },
+  "metrics": {
+    "solr.collection..system": {
+      "lastModified": 1528360138,
+      "node": "127.0.0.1:8983_solr"
     },
-    "metrics": [
-        "solr.collection..system",
-        "solr.collection.gettingstarted",
-        "solr.jvm",
-        "solr.node"
-    ]
+    "solr.collection.gettingstarted": {
+      "lastModified": 1528360138,
+      "node": "127.0.0.1:8983_solr"
+    },
+    "solr.jvm": {
+      "lastModified": 1528360138,
+      "node": "127.0.0.1:8983_solr"
+    },
+    "solr.node": {
+      "lastModified": 1528360138,
+      "node": "127.0.0.1:8983_solr"
+    }
+  },
+  "state": {
+    "enableReplicas": false,
+    "enableNodes": false,
+    "mode": "memory"
+  }
 }
 ----
+
+Note the presence of the `node` element in each section, which shows where the information is coming
+from - when API is in `memory` mode this indicates which results are local and which ones are retrieved
+from the Overseer leader node. When the API is in `index` mode this element always shows the node name that
+received the request (because the data is retrieved from the `.system` collection anyway).
+
+Each section also contains a `lastModified` element, which contains the last modification time when the
+database was update. All timestamps returned from this API correspond to Unix epoch time in seconds.
 
 === Database status (`action=status`)
 This call provides detailed status of the selected database.
@@ -207,66 +262,71 @@ The following parameters are supported:
 Example:
 [source,bash]
 ----
-curl http://localhost:8983/solr/admin/metrics/history?action=status&name=solr.collection.gettingstarted
+curl http://localhost:7574/solr/admin/metrics/history?action=status&name=solr.collection.gettingstarted
 ----
 [source,json]
 ----
 {
-    "responseHeader": {
-        "status": 0,
-        "QTime": 38
-    },
-    "metrics": [
-        "solr.collection.gettingstarted",
-        [
-            "status",
-            {
-                "lastModified": 1527268438,
-                "step": 60,
-                "datasourceCount": 5,
-                "archiveCount": 5,
-                "datasourceNames": [
-                    "numShards",
-                    "numReplicas",
-                    "QUERY./select.requests",
-                    "UPDATE./update.requests",
-                    "INDEX.sizeInBytes"
-                ],
-                "datasources": [
-                    {
-                        "datasource": "DS:numShards:GAUGE:120:U:U",
-                        "lastValue": 2
-                    },
-                    {
-                        "datasource": "DS:QUERY./select.requests:COUNTER:120:U:U",
-                        "lastValue": 8786
-                    },
-                    ...
-                ],
-                "archives": [
-                    {
-                        "archive": "RRA:AVERAGE:0.5:1:240",
-                        "steps": 1,
-                        "consolFun": "AVERAGE",
-                        "xff": 0.5,
-                        "startTime": 1527254040,
-                        "endTime": 1527268380,
-                        "rows": 240
-                    },
-                    {
-                        "archive": "RRA:AVERAGE:0.5:10:288",
-                        "steps": 10,
-                        "consolFun": "AVERAGE",
-                        "xff": 0.5,
-                        "startTime": 1527096000,
-                        "endTime": 1527268200,
-                        "rows": 288
-                    },
-                    ...
-                ]
-            }
+  "responseHeader": {
+    "zkConnected": true,
+    "status": 0,
+    "QTime": 46
+  },
+  "metrics": {
+    "solr.collection.gettingstarted": {
+      "status": {
+        "lastModified": 1528318361,
+        "step": 60,
+        "datasourceCount": 5,
+        "archiveCount": 5,
+        "datasourceNames": [
+          "numShards",
+          "numReplicas",
+          "QUERY./select.requests",
+          "UPDATE./update.requests",
+          "INDEX.sizeInBytes"
+        ],
+        "datasources": [
+          {
+            "datasource": "DS:numShards:GAUGE:120:U:U",
+            "lastValue": 2
+          },
+          {
+            "datasource": "DS:numReplicas:GAUGE:120:U:U",
+            "lastValue": 4
+          },
+          ...
+        ],
+        "archives": [
+          {
+            "archive": "RRA:AVERAGE:0.5:1:240",
+            "steps": 1,
+            "consolFun": "AVERAGE",
+            "xff": 0.5,
+            "startTime": 1528303980,
+            "endTime": 1528318320,
+            "rows": 240
+          },
+          {
+            "archive": "RRA:AVERAGE:0.5:10:288",
+            "steps": 10,
+            "consolFun": "AVERAGE",
+            "xff": 0.5,
+            "startTime": 1528146000,
+            "endTime": 1528318200,
+            "rows": 288
+          },
+          ...
         ]
-    ]
+      },
+      "node": "127.0.0.1:7574_solr"
+    }
+  },
+  "state": {
+    "enableReplicas": false,
+    "enableNodes": false,
+    "mode": "index"
+  }
 }
 ----
 
@@ -286,7 +346,7 @@ values (because points from all datasources in a given time series share the sam
 * `graph` - data is returned as PNG images, Base64-encoded, containing graphs of each time series values over time.
 
 In each case the response is structured in a similar way: archive identifiers are keys in a JSON map,
-and timestamps / datapoints / graphs are values.
+all data is placed in a `data` element, with timestamps / datapoints / graphs as values in lists or maps.
 
 ==== Examples
 This is the output using the default `list` format:
@@ -297,37 +357,49 @@ curl http://localhost:8983/solr/admin/metrics/history?action=get&name=solr.colle
 [source,json]
 ----
 {
-    "responseHeader": {
-        "status": 0,
-        "QTime": 36
-    },
-    "metrics": [
-        "solr.collection.gettingstarted",
-        [
-            "data",
-            {
-                "RRA:AVERAGE:0.5:1:240": {
-                    "timestamps":1527254460,
-                    "timestamps":1527254520,
-                    "timestamps":1527254580,
-                    ...
-                    "values": {
-                        "numShards": "NaN",
-                        "numShards": 2.0,
-                        "numShards": 2.0,
-                        ...
-                        "numReplicas": "NaN",
-                        "numReplicas": 4.0,
-                        "numReplicas": 4.0,
-                        ...
-                        "QUERY./select.requests": "NaN",
-                        "QUERY./select.requests": 123,
-                        "QUERY./select.requests": 456,
-                        ...
-                    }
-                },
-                "RRA:AVERAGE:0.5:10:288": {
-...
+  "responseHeader": {
+    "zkConnected": true,
+    "status": 0,
+    "QTime": 4
+  },
+  "metrics": {
+    "solr.collection.gettingstarted": {
+      "data": {
+        "RRA:AVERAGE:0.5:1:240": {
+          "timestamps": [
+            1528304160,
+            1528304220,
+            ...
+          ],
+          "values": {
+            "numShards": [
+              "NaN",
+              2.0,
+              ...
+            ],
+            "numReplicas": [
+              "NaN",
+              4.0,
+              ...
+            ],
+            ...
+          }
+        },
+        "RRA:AVERAGE:0.5:10:288": {
+          "timestamps": [
+            1528145400,
+            1528146000,
+          ...
+      "lastModified": 1528318606,
+      "node": "127.0.0.1:8983_solr"
+    }
+  },
+  "state": {
+    "enableReplicas": false,
+    "enableNodes": false,
+    "mode": "index"
+  }
+}
 ----
 
 This is the output when using the `string` format:
@@ -338,25 +410,24 @@ curl http://localhost:8983/solr/admin/metrics/history?action=get&name=solr.colle
 [source,json]
 ----
 {
-    "responseHeader": {
-        "status": 0,
-        "QTime": 11
-    },
-    "metrics": [
-        "solr.collection.gettingstarted",
-        [
-            "data",
-            {
-                "RRA:AVERAGE:0.5:1:240": {
-                    "timestamps": "1527254820\n1527254880\n1527254940\n...",
-                    "values": {
-                        "numShards": "NaN\n2.0\n2.0\n2.0\n2.0\n2.0\n2.0\n...",
-                        "numReplicas": "NaN\n4.0\n4.0\n4.0\n4.0\n4.0\n4.0\n...",
-                        "QUERY./select.requests": "NaN\n123\n456\n789\n...",
-                        ...
-                    }
-                },
-                "RRA:AVERAGE:0.5:10:288": {
+  "responseHeader": {
+    "zkConnected": true,
+    "status": 0,
+    "QTime": 2
+  },
+  "metrics": {
+    "solr.collection.gettingstarted": {
+      "data": {
+        "RRA:AVERAGE:0.5:1:240": {
+          "timestamps": "1527254820\n1527254880\n1527254940\n...",
+          "values": {
+            "numShards": "NaN\n2.0\n2.0\n2.0\n2.0\n2.0\n2.0\n...",
+            "numReplicas": "NaN\n4.0\n4.0\n4.0\n4.0\n4.0\n4.0\n...",
+            "QUERY./select.requests": "NaN\n123\n456\n789\n...",
+            ...
+          }
+        },
+        "RRA:AVERAGE:0.5:10:288": {
                 ...
 ----
 
@@ -368,29 +439,28 @@ curl http://localhost:8983/solr/admin/metrics/history?action=get&name=solr.colle
 [source,json]
 ----
 {
-    "responseHeader": {
-        "status": 0,
-        "QTime": 2275
-    },
-    "metrics": [
-        "solr.collection.gettingstarted",
-        [
-            "data",
-            {
-                "RRA:AVERAGE:0.5:1:240": {
-                    "values": {
-                        "numShards": "iVBORw0KGgoAAAANSUhEUgAAAkQAAA...",
-                        "numReplicas": "iVBORw0KGgoAAAANSUhEUgAAAkQA...",
-                        "QUERY./select.requests": "iVBORw0KGgoAAAANS...",
-                        ...
-                    }
-                },
-                "RRA:AVERAGE:0.5:10:288": {
-                    "values": {
-                        "numShards": "iVBORw0KGgoAAAANSUhEUgAAAkQAAA...",
-                        ...
-                },
-                ...
+  "responseHeader": {
+    "zkConnected": true,
+    "status": 0,
+    "QTime": 2
+  },
+  "metrics": {
+    "solr.collection.gettingstarted": {
+      "data": {
+        "RRA:AVERAGE:0.5:1:240": {
+          "values": {
+            "numShards": "iVBORw0KGgoAAAANSUhEUgAAAkQAAA...",
+            "numReplicas": "iVBORw0KGgoAAAANSUhEUgAAAkQA...",
+            "QUERY./select.requests": "iVBORw0KGgoAAAANS...",
+            ...
+          }
+        },
+        "RRA:AVERAGE:0.5:10:288": {
+          "values": {
+            "numShards": "iVBORw0KGgoAAAANSUhEUgAAAkQAAA...",
+            ...
+          },
+        ...
 ----
 
 .Example 60 sec resolution history graph for `QUERY./select.requests` metric

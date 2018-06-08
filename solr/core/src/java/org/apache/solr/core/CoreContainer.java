@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -43,6 +44,9 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -59,6 +63,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
@@ -570,21 +575,7 @@ public class CoreContainer {
     containerHandlers.put(METRICS_PATH, metricsHandler);
     metricsHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_PATH);
 
-    if (isZooKeeperAware()) {
-      PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
-      Map<String, Object> initArgs;
-      if (plugin != null && plugin.initArgs != null) {
-        initArgs = plugin.initArgs.asMap(5);
-        initArgs.put(MetricsHistoryHandler.ENABLE_PROP, plugin.isEnabled());
-      } else {
-        initArgs = Collections.emptyMap();
-      }
-      metricsHistoryHandler = new MetricsHistoryHandler(getZkController().getNodeName(), metricsHandler,
-          new CloudSolrClient.Builder(Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
-      .withHttpClient(updateShardHandler.getDefaultHttpClient()).build(), getZkController().getSolrCloudManager(), initArgs);
-      containerHandlers.put(METRICS_HISTORY_PATH, metricsHistoryHandler);
-      metricsHistoryHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_HISTORY_PATH);
-    }
+    createMetricsHistoryHandler();
 
     autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);
     metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
@@ -748,6 +739,49 @@ public class CoreContainer {
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
   }
 
+  // MetricsHistoryHandler supports both cloud and standalone configs
+  private void createMetricsHistoryHandler() {
+    PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
+    Map<String, Object> initArgs;
+    if (plugin != null && plugin.initArgs != null) {
+      initArgs = plugin.initArgs.asMap(5);
+      initArgs.put(MetricsHistoryHandler.ENABLE_PROP, plugin.isEnabled());
+    } else {
+      initArgs = new HashMap<>();
+    }
+    String name;
+    SolrCloudManager cloudManager;
+    SolrClient client;
+    if (isZooKeeperAware()) {
+      name = getZkController().getNodeName();
+      cloudManager = getZkController().getSolrCloudManager();
+      client = new CloudSolrClient.Builder(Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
+          .withHttpClient(updateShardHandler.getDefaultHttpClient()).build();
+    } else {
+      name = getNodeConfig().getNodeName();
+      if (name == null || name.isEmpty()) {
+        name = "localhost";
+      }
+      cloudManager = null;
+      client = new EmbeddedSolrServer(this, CollectionAdminParams.SYSTEM_COLL) {
+        @Override
+        public void close() throws IOException {
+          // do nothing - we close the container ourselves
+        }
+      };
+      // enable local metrics unless specifically set otherwise
+      if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_NODES_PROP)) {
+        initArgs.put(MetricsHistoryHandler.ENABLE_NODES_PROP, true);
+      }
+      if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_REPLICAS_PROP)) {
+        initArgs.put(MetricsHistoryHandler.ENABLE_REPLICAS_PROP, true);
+      }
+    }
+    metricsHistoryHandler = new MetricsHistoryHandler(name, metricsHandler,
+        client, cloudManager, initArgs);
+    containerHandlers.put(METRICS_HISTORY_PATH, metricsHistoryHandler);
+    metricsHistoryHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_HISTORY_PATH);
+  }
 
   public void securityNodeChanged() {
     log.info("Security node changed, reloading security.json");
@@ -792,6 +826,12 @@ public class CoreContainer {
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
     replayUpdatesExecutor.shutdownAndAwaitTermination();
+
+    if (metricsHistoryHandler != null) {
+      IOUtils.closeQuietly(metricsHistoryHandler.getSolrClient());
+      metricsHistoryHandler.close();
+    }
+
     if (metricManager != null) {
       metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
       metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
@@ -809,10 +849,6 @@ public class CoreContainer {
         zkSys.zkController.removeEphemeralLiveNode();
       } catch (Exception e) {
         log.warn("Error removing live node. Continuing to close CoreContainer", e);
-      }
-      if (metricsHistoryHandler != null) {
-        IOUtils.closeQuietly(metricsHistoryHandler.getSolrClient());
-        metricsHistoryHandler.close();
       }
       if (metricManager != null) {
         metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
