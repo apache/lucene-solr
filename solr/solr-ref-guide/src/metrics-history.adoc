@@ -20,7 +20,7 @@
 === Round-robin databases
 Solr collects long-term history of certain key metrics both in SolrCloud and in standalone mode.
 This information can be used for very simple monitoring and troubleshooting, but also some
-Solr Cloud components (eg. autoscaling) can use this data for making informed decisions based on
+Solr Cloud components (e.g., autoscaling) can use this data for making informed decisions based on
 long-term trends of selected metrics.
 
 [IMPORTANT]
@@ -62,7 +62,7 @@ update operations than storing each data point in a separate Solr document. Metr
 detailed data from each database, including retrieval of all individual datapoints.
 
 Databases are identified primarily by their corresponding metric registry name, so for databases that
-keep track of aggregated metrics this will be eg. `solr.jvm`, `solr.node`, `solr.collection.gettingstarted`.
+keep track of aggregated metrics this will be e.g., `solr.jvm`, `solr.node`, `solr.collection.gettingstarted`.
 For databases with non-aggregated metrics the name consists of the registry name, optionally with a node name
 to identify databases with the same name coming from different nodes. For example, per-node databases are
 name like this: `solr.jvm.localhost:8983_solr`, `solr.node.localhost:7574_solr`, but per-replica names are
@@ -138,7 +138,7 @@ is collected for each collection.
 
 `enableNodes`:: boolean, default is false. When this is true then non-aggregated history will be
 collected separately for each node (for node and JVM metrics), with database names consisting of
-base registry name with appended node name, eg. `solr.jvm.localhost:8983_solr`. When this is false
+base registry name with appended node name, e.g., `solr.jvm.localhost:8983_solr`. When this is false
 then only aggregated history will be collected in a single `solr.jvm` and `solr.node` cluster-wide
 databases.
 

@@ -343,8 +343,8 @@ Aggregation functions, also called *facet functions, analytic functions,* or **m
 |avg |`avg(popularity)` |average of numeric values
 |min |`min(salary)` |minimum value
 |max |`max(mul(price,popularity))` |maximum value
-|unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate 
-|uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly requires <<uploading-data-with-index-handlers.adoc#nested-child-documents, block index>>. The given field is expected to be unique across blocks, now only singlevalued string fields are supported, docValues are recommended. 
+|unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate
+|uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly requires <<uploading-data-with-index-handlers.adoc#nested-child-documents, block index>>. The given field is expected to be unique across blocks, now only singlevalued string fields are supported, docValues are recommended.
 |hll |`hll(author)` |distributed cardinality estimate via hyper-log-log algorithm
 |percentile |`percentile(salary,50,75,99,99.9)` |Percentile estimates via t-digest algorithm. When sorting by this metric, the first percentile listed is used as the sort value.
 |sumsq |`sumsq(rent)` |sum of squares of field or function
@@ -447,7 +447,6 @@ And the response will look something like:
           }
         },
         [...]
-
 ----
 
 By default "top authors" is defined by simple document count descending, but we could use our aggregation functions to sort by more interesting metrics.
@@ -474,7 +473,6 @@ Suppose we have products with multiple SKUs, and we want to count products for e
       { "id": "14", "type": "SKU", "color": "Blue", "size": "S" }
     ]
   }
-
 ----
 
 For *SKU domain* we can request
@@ -489,8 +487,6 @@ For *SKU domain* we can request
       productsCount: "uniqueBlock(_root_)"
     }
   }
-
-
 ----
 
 and get
@@ -585,7 +581,7 @@ curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:
 <1> Use the entire collection as our "Background Set"
 <2> Use a query for "age >= 35" to define our (initial) "Foreground Set"
 <3> For both the top level `hobbies` facet & the sub-facet on `state` we will be sorting on the `relatedness(...)` values
-<4> In both calls to the `relatedness(...)` function, we use <<local-parameters-in-queries.adoc#parameter-dereferencing,Parameter Variables>> to refer to the previously defined `fore` and `back` queries. 
+<4> In both calls to the `relatedness(...)` function, we use <<local-parameters-in-queries.adoc#parameter-dereferencing,Parameter Variables>> to refer to the previously defined `fore` and `back` queries.
 
 .The Facet Response
 [source,javascript,subs="verbatim,callouts"]
@@ -626,11 +622,11 @@ curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:
           "buckets":[{
             ...
 ----
-<1> Even though `hobbies:golf` has a lower total facet `count` then `hobbies:painting`, it has a higher `relatedness` score, indicating that relative to the Background Set (the entire collection) Golf has a stronger correlation to our Foreground Set (people age 35+) then Painting. 
+<1> Even though `hobbies:golf` has a lower total facet `count` then `hobbies:painting`, it has a higher `relatedness` score, indicating that relative to the Background Set (the entire collection) Golf has a stronger correlation to our Foreground Set (people age 35+) then Painting.
 <2> The number of documents matching `age:[35 TO *]` _and_ `hobbies:golf` is 31.25% of the total number of documents in the Background Set
 <3> 37.5% of the documents in the Background Set match `hobbies:golf`
-<4> The state of Arizona (AZ) has a _positive_ relatedness correlation with the _nested_ Foreground Set (people ages 35+ who play Golf) compared to the Background Set -- ie: "People in Arizona are statistically more likely to be '35+ year old Golfers' then the country as a whole."
-<5> The state of Colorado (CO) has a _negative_ correlation with the nested Foreground Set -- ie: "People in Colorado are statistically less likely to be '35+ year old Golfers' then the country as a whole."
+<4> The state of Arizona (AZ) has a _positive_ relatedness correlation with the _nested_ Foreground Set (people ages 35+ who play Golf) compared to the Background Set -- i.e., "People in Arizona are statistically more likely to be '35+ year old Golfers' then the country as a whole."
+<5> The state of Colorado (CO) has a _negative_ correlation with the nested Foreground Set -- i.e., "People in Colorado are statistically less likely to be '35+ year old Golfers' then the country as a whole."
 <6> The number documents matching `age:[35 TO *]` _and_ `hobbies:golf` _and_ `state:AZ` is 18.75% of the total number of documents in the Background Set
 <7> 50% of the documents in the Background Set match `state:AZ`
 
