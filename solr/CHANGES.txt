@@ -29,8 +29,18 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
 Jetty 9.4.10.v20180503
 
+New Features
+----------------------
 
-(No Changes)
+
+Bug Fixes
+----------------------
+
+* SOLR-12449: Response /autoscaling/diagnostics shows improper json (noble)
+
+
+Optimizations
+----------------------
 
 
 ==================  7.4.0 ==================
