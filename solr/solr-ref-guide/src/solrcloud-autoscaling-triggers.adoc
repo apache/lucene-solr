@@ -37,7 +37,7 @@ Currently the following event types (and corresponding trigger implementations) 
 * `indexSize`: generated when a shard size (defined as index size in bytes or number of documents)
 exceeds upper or lower threshold values
 * `searchRate`: generated when the search rate exceeds configured upper or lower thresholds
-* `scheduled`: generated according to a scheduled time period such as every 24 hours etc
+* `scheduled`: generated according to a scheduled time period such as every 24 hours, etc
 
 Events are not necessarily generated immediately after the corresponding state change occurred - the
 maximum rate of events is controlled by the `waitFor` configuration parameter (see below).
