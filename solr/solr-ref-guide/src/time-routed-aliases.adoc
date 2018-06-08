@@ -20,7 +20,7 @@ The name of each collection is comprised of the TRA name and the start timestamp
 Ideally, as a user of this feature, you needn't concern yourself with the particulars of the collection naming pattern
   since both queries and updates may be done via the alias.
 
-When adding data, you should usually direct documents to the alias (e.g. reference the alias name instead of any collection).
+When adding data, you should usually direct documents to the alias (e.g., reference the alias name instead of any collection).
 The Solr server and CloudSolrClient will direct an update request to the first collection that an alias points to.
 The collections list for a TRA is always reverse sorted, and thus the connection path of the request will route to the
   lead collection.  Using CloudSolrClient is preferable as it can reduce the number of underlying physical HTTP requests by one.
@@ -39,7 +39,7 @@ TRUP first reads TRA configuration from the alias properties when it is initiali
 
 * If TRUP needs to send it to a time segment represented by a collection other than the one that
   the client chose to communicate with, then it will do so using mechanisms shared with DUP.
-  Once the document is forwarded to the correct collection (i.e. the correct TRA time segment), it skips directly to
+  Once the document is forwarded to the correct collection (i.e., the correct TRA time segment), it skips directly to
   DUP on the target collection and continues normally, potentially being routed again to the correct shard & replica
   within the target collection.
 
@@ -81,7 +81,7 @@ Some _potential_ areas for improvement that _are not implemented yet_ are:
 == Limitations & Assumptions
 
 * Only *time* routed aliases are supported.  If you instead have some other sequential number, you could fake it
-  as a time (e.g. convert to a timestamp assuming some epoch and increment).
+  as a time (e.g., convert to a timestamp assuming some epoch and increment).
   The smallest possible interval is one second.
   No other routing scheme is supported, although this feature was developed with considerations that it could be
   extended/improved to other schemes.

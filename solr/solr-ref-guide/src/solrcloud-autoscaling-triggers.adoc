@@ -54,7 +54,7 @@ The following properties are common to all event types:
 `nodeAdded` event this will be the time when the node was added and not when the event was actually
 generated, which may significantly differ due to the rate limits set by `waitFor`.
 
-`properties`:: (map, optional) Any additional properties. Currently includes eg. `nodeNames` property that
+`properties`:: (map, optional) Any additional properties. Currently includes e.g., `nodeNames` property that
 indicates the nodes that were lost or added.
 
 == Auto Add Replicas Trigger
@@ -216,7 +216,7 @@ metric value, and it may use the colon syntax for selecting one property of a co
 requested in a single autoscaling event. The default value is 3 and it helps to smooth out
 the changes to the number of replicas during periods of large search rate fluctuations.
 
-`minReplicas`:: (integer, optional) minimum acceptable number of searchable replicas (ie. replicas other
+`minReplicas`:: (integer, optional) minimum acceptable number of searchable replicas (i.e., replicas other
 than `PULL` type). The trigger will not generate any DELETEREPLICA requests when the number of
 searchable replicas in a shard reaches this threshold. When this value is not set (the default)
 the `replicationFactor` property of the collection is used, and if that property is not set then
@@ -247,7 +247,7 @@ to effectively disable the action but still report it to the listeners.
 `belowNodeOp`:: action to request when the lower threshold for a node is exceeded.
 Default action is null (not set) and the condition is ignored, because in many cases the
 trigger will monitor only some selected resources (replicas from selected
-collections / shards) so setting this by default to eg. `DELETENODE` could interfere with
+collections / shards) so setting this by default to e.g., `DELETENODE` could interfere with
 these non-monitored resources. The trigger will request 1 operation per cold node per event.
 If both `belowOp` and `belowNodeOp` operations are requested then `belowOp` operations are
 always requested first.
