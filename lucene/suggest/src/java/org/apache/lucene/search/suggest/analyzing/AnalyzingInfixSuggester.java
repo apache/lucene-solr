@@ -120,6 +120,17 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  StringField and a SortedSetDVField, for filtering. */
   protected final static String CONTEXTS_FIELD_NAME = "contexts";
 
+  /**
+   * Field name used for the indexed weight, as a
+   * NumeriDocValues.
+   */
+  protected final static String WEIGHT_FIELD_NAME = "weight";
+
+  /**
+   * Field name used for the indexed payload.
+   */
+  protected final static String PAYLOADS_FIELD_NAME = "payloads";
+
   /** Analyzer used at search time */
   protected final Analyzer queryAnalyzer;
   /** Analyzer used at index time */
@@ -391,7 +402,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  After adding or updating a batch of new suggestions,
    *  you must call {@link #refresh} in the end in order to
    *  see the suggestions in {@link #lookup} */
-  public void add(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
+  public void add(BytesRef text, Set<BytesRef> contexts, Long weight, BytesRef payload) throws IOException {
     ensureOpen();
     writer.addDocument(buildDocument(text, contexts, weight, payload));
   }
@@ -403,13 +414,13 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  #add} instead.  After adding or updating a batch of
    *  new suggestions, you must call {@link #refresh} in the
    *  end in order to see the suggestions in {@link #lookup} */
-  public void update(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
+  public void update(BytesRef text, Set<BytesRef> contexts, Long weight, BytesRef payload) throws IOException {
     ensureOpen();
     writer.updateDocument(new Term(EXACT_TEXT_FIELD_NAME, text.utf8ToString()),
                           buildDocument(text, contexts, weight, payload));
   }
 
-  private Document buildDocument(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
+  private Document buildDocument(BytesRef text, Set<BytesRef> contexts, Long weight, BytesRef payload) throws IOException {
     String textString = text.utf8ToString();
     Document doc = new Document();
     FieldType ft = getTextFieldType();
@@ -419,9 +430,11 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
     doc.add(new StringField(EXACT_TEXT_FIELD_NAME, textString, Field.Store.NO));
     doc.add(new BinaryDocValuesField(TEXT_FIELD_NAME, text));
-    doc.add(new NumericDocValuesField("weight", weight));
+    if (weight != null) {
+      doc.add(new NumericDocValuesField(WEIGHT_FIELD_NAME, weight));
+    }
     if (payload != null) {
-      doc.add(new BinaryDocValuesField("payloads", payload));
+      doc.add(new BinaryDocValuesField(PAYLOADS_FIELD_NAME, payload));
     }
     if (contexts != null) {
       for(BytesRef context : contexts) {

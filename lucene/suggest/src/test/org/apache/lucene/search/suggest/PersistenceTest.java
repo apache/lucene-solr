@@ -29,6 +29,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import static java.lang.Math.toIntExact;
+
 public class PersistenceTest extends LuceneTestCase {
   public final String[] keys = new String[] {
       "one", 
@@ -77,7 +79,7 @@ public class PersistenceTest extends LuceneTestCase {
     }
     Input[] keys = new Input[this.keys.length];
     for (int i = 0; i < keys.length; i++)
-      keys[i] = new Input(this.keys[i], i);
+      keys[i] = new Input(this.keys[i], new Long(i));
     lookup.build(new InputArrayIterator(keys));
 
     // Store the suggester.
@@ -90,15 +92,15 @@ public class PersistenceTest extends LuceneTestCase {
 
     // Assert validity.
     Random random = random();
-    long previous = Long.MIN_VALUE;
+    double previous = Long.MIN_VALUE;
     for (Input k : keys) {
       List<LookupResult> list = lookup.lookup(TestUtil.bytesToCharSequence(k.term, random), false, 1);
       assertEquals(1, list.size());
       LookupResult lookupResult = list.get(0);
       assertNotNull(k.term.utf8ToString(), lookupResult.key);
 
-      if (supportsExactWeights) { 
-        assertEquals(k.term.utf8ToString(), k.v, lookupResult.value);
+      if (supportsExactWeights) {
+        assertEquals(k.term.utf8ToString(), toIntExact(k.v), lookupResult.value, 0.01F);
       } else {
         assertTrue(lookupResult.value + ">=" + previous, lookupResult.value >= previous);
         previous = lookupResult.value;

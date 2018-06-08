@@ -31,7 +31,7 @@ import org.apache.lucene.util.*;
 public class FSTCompletionTest extends LuceneTestCase {
 
   public static Input tf(String t, int v) {
-    return new Input(t, v);
+    return new Input(t, new Long(v));
   }
 
   private FSTCompletion completion;
@@ -43,7 +43,7 @@ public class FSTCompletionTest extends LuceneTestCase {
 
     FSTCompletionBuilder builder = new FSTCompletionBuilder();
     for (Input tf : evalKeys()) {
-      builder.add(tf.term, (int) tf.v);
+      builder.add(tf.term, Math.toIntExact(tf.v));
     }
     completion = builder.build();
     completionAlphabetical = new FSTCompletion(completion.getFST(), false, true);
@@ -162,7 +162,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     Random r = random();
     List<Input> keys = new ArrayList<>();
     for (int i = 0; i < 5000; i++) {
-      keys.add(new Input(TestUtil.randomSimpleString(r), -1));
+      keys.add(new Input(TestUtil.randomSimpleString(r), -1L));
     }
 
     lookup.build(new InputArrayIterator(keys));
@@ -208,7 +208,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     List<Input> freqs = new ArrayList<>();
     Random rnd = random();
     for (int i = 0; i < 2500 + rnd.nextInt(2500); i++) {
-      int weight = rnd.nextInt(100); 
+      long weight = rnd.nextInt(100); 
       freqs.add(new Input("" + rnd.nextLong(), weight));
     }
 

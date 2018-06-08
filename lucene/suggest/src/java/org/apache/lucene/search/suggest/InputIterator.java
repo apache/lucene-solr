@@ -34,7 +34,7 @@ import org.apache.lucene.util.BytesRefIterator;
 public interface InputIterator extends BytesRefIterator {
 
   /** A term's weight, higher numbers mean better suggestions. */
-  public long weight();
+  public Long weight();
   
   /** An arbitrary byte[] to record per suggestion.  See
    *  {@link LookupResult#payload} to retrieve the payload
@@ -73,8 +73,8 @@ public interface InputIterator extends BytesRefIterator {
     }
 
     @Override
-    public long weight() {
-      return 1;
+    public Long weight() {
+      return 1L;
     }
 
     @Override

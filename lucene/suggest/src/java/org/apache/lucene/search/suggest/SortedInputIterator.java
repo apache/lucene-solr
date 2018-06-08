@@ -108,7 +108,7 @@ public class SortedInputIterator implements InputIterator {
   }
   
   @Override
-  public long weight() {
+  public Long weight() {
     return weight;
   }
 

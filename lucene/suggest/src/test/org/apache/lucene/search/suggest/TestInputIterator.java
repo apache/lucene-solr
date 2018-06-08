@@ -84,7 +84,7 @@ public class TestInputIterator extends LuceneTestCase {
         Map.Entry<BytesRef,SimpleEntry<Long, BytesRef>> entry = expected.next();
       
         assertEquals(entry.getKey(), wrapper.next());
-        assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
+        assertEquals((Long) entry.getValue().getKey().longValue(), wrapper.weight());
         assertEquals(entry.getValue().getValue(), wrapper.payload());
       }
       assertNull(wrapper.next());
@@ -97,7 +97,7 @@ public class TestInputIterator extends LuceneTestCase {
       while (actualEntries.hasNext()) {
         Map.Entry<BytesRef, SimpleEntry<Long, Set<BytesRef>>> entry = actualEntries.next();
         assertEquals(entry.getKey(), wrapper.next());
-        assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
+        assertEquals((Long) entry.getValue().getKey().longValue(), wrapper.weight());
         Set<BytesRef> actualCtxs = entry.getValue().getValue();
         assertEquals(actualCtxs, wrapper.contexts());
       }
@@ -111,7 +111,7 @@ public class TestInputIterator extends LuceneTestCase {
       while (expectedPayloadContextEntries.hasNext()) {
         Map.Entry<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>> entry = expectedPayloadContextEntries.next();
         assertEquals(entry.getKey(), wrapper.next());
-        assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
+        assertEquals((Long) entry.getValue().getKey().longValue(), wrapper.weight());
         Set<BytesRef> actualCtxs = entry.getValue().getValue().getValue();
         assertEquals(actualCtxs, wrapper.contexts());
         BytesRef actualPayload = entry.getValue().getValue().getKey();
@@ -139,7 +139,7 @@ public class TestInputIterator extends LuceneTestCase {
         Map.Entry<BytesRef, Long> entry = expectedWithoutPayload.next();
       
         assertEquals(entry.getKey(), wrapperWithoutPayload.next());
-        assertEquals(entry.getValue().longValue(), wrapperWithoutPayload.weight());
+        assertEquals((Long) entry.getValue().longValue(), wrapperWithoutPayload.weight());
         assertNull(wrapperWithoutPayload.payload());
       }
       assertNull(wrapperWithoutPayload.next());

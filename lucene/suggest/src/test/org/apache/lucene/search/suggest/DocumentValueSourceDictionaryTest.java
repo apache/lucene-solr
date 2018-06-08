@@ -74,7 +74,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     InputIterator inputIterator = dictionary.getEntryIterator();
 
     assertNull(inputIterator.next());
-    assertEquals(inputIterator.weight(), 0);
+    assertNull(inputIterator.weight());
     assertNull(inputIterator.payload());
 
     IOUtils.close(ir, analyzer, dir);
@@ -95,7 +95,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     InputIterator inputIterator = dictionary.getEntryIterator();
 
     assertNull(inputIterator.next());
-    assertEquals(inputIterator.weight(), 0);
+    assertNull(inputIterator.weight());
     assertNull(inputIterator.payload());
 
     IOUtils.close(ir, analyzer, dir);
@@ -126,7 +126,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), (w1 + w2 + w3));
+      assertEquals(inputIterator.weight(), (Long) (w1 + w2 + w3));
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -225,7 +225,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), (w1 + w2 + w3));
+      assertEquals(inputIterator.weight(), (Long) (w1 + w2 + w3));
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -259,7 +259,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), (w1 + w2 + w3));
+      assertEquals(inputIterator.weight(), (Long) (w1 + w2 + w3));
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -298,7 +298,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), (w1 + w2 + w3));
+      assertEquals(inputIterator.weight(), (Long) (w1 + w2 + w3));
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -337,7 +337,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), (w1 + w2 + w3));
+      assertEquals(inputIterator.weight(), (Long) (w1 + w2 + w3));
       assertNull(inputIterator.payload());
     }
     assertTrue(docs.isEmpty());
@@ -369,7 +369,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), (w1 + w2 + w3));
+      assertEquals(inputIterator.weight(), (Long) (w1 + w2 + w3));
       assertNull(inputIterator.payload());
     }
     assertTrue(docs.isEmpty());
@@ -421,7 +421,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), w2+w1);
+      assertEquals(inputIterator.weight(), (Long) (w2 + w1));
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -475,7 +475,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), w2+w1);
+      assertEquals(inputIterator.weight(), (Long) (w2 + w1));
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -505,7 +505,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), 10);
+      assertEquals(inputIterator.weight(), new Long(10));
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -535,7 +535,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), 10);
+      assertEquals(inputIterator.weight(), new Long(10));
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());

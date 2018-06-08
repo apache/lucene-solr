@@ -52,8 +52,8 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
-        new Input("foo bar baz blah", 50),
-        new Input("boo foo bar foo bee", 20)
+        new Input("foo bar baz blah", 50L),
+        new Input("boo foo bar foo bee", 20L)
     );
 
     Analyzer a = new MockAnalyzer(random());
@@ -101,7 +101,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     // Default separator is INFORMATION SEPARATOR TWO
     // (0x1e), so no input token is allowed to contain it
     Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
-        new Input("foo\u001ebar baz", 50)
+        new Input("foo\u001ebar baz", 50L)
     );
     Analyzer analyzer = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(analyzer);
@@ -116,7 +116,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     // Default separator is INFORMATION SEPARATOR TWO
     // (0x1e), so no input token is allowed to contain it
     Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
-        new Input("foo bar baz", 50)
+        new Input("foo bar baz", 50L)
     );
     Analyzer analyzer = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(analyzer);
@@ -141,8 +141,8 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         private int count;
 
         @Override
-        public long weight() {
-          return 1;
+        public Long weight() {
+          return 1L;
         }
 
         @Override
@@ -197,7 +197,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   // Make sure you can suggest based only on unigram model:
   public void testUnigrams() throws Exception {
     Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
-        new Input("foo bar baz blah boo foo bar foo bee", 50)
+        new Input("foo bar baz blah boo foo bar foo bee", 50L)
     );
 
     Analyzer a = new MockAnalyzer(random());
@@ -212,7 +212,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   // Make sure the last token is not duplicated
   public void testNoDupsAcrossGrams() throws Exception {
     Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
-        new Input("foo bar bar bar bar", 50)
+        new Input("foo bar bar bar bar", 50L)
     );
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
@@ -225,7 +225,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   // Lookup of just empty string produces unicode only matches:
   public void testEmptyString() throws Exception {
     Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
-        new Input("foo bar bar bar bar", 50)
+        new Input("foo bar bar bar bar", 50L)
     );
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
@@ -251,7 +251,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       };
 
     Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
-        new Input("wizard of oz", 50)
+        new Input("wizard of oz", 50L)
     );
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
     sug.build(new InputArrayIterator(keys));
@@ -280,7 +280,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       };
 
     Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
-        new Input("wizard of of oz", 50)
+        new Input("wizard of of oz", 50L)
     );
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
     sug.build(new InputArrayIterator(keys));
@@ -363,7 +363,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         }
 
         @Override
-        public long weight() {
+        public Long weight() {
           return random().nextLong();
         }
 

@@ -53,7 +53,7 @@ public abstract class Lookup implements Accountable {
     public final Object highlightKey;
 
     /** the key's weight */
-    public final long value;
+    public final double value;
 
     /** the key's payload (null if not present) */
     public final BytesRef payload;
@@ -71,35 +71,35 @@ public abstract class Lookup implements Accountable {
     /**
      * Create a new result from a key+weight+payload triple.
      */
-    public LookupResult(CharSequence key, long value, BytesRef payload) {
+    public LookupResult(CharSequence key, double value, BytesRef payload) {
       this(key, null, value, payload, null);
     }
     
     /**
      * Create a new result from a key+highlightKey+weight+payload triple.
      */
-    public LookupResult(CharSequence key, Object highlightKey, long value, BytesRef payload) {
+    public LookupResult(CharSequence key, Object highlightKey, double value, BytesRef payload) {
       this(key, highlightKey, value, payload, null);
     }
     
     /**
      * Create a new result from a key+weight+payload+contexts triple.
      */
-    public LookupResult(CharSequence key, long value, BytesRef payload, Set<BytesRef> contexts) {
+    public LookupResult(CharSequence key, double value, BytesRef payload, Set<BytesRef> contexts) {
       this(key, null, value, payload, contexts);
     }
 
     /**
      * Create a new result from a key+weight+contexts triple.
      */
-    public LookupResult(CharSequence key, long value, Set<BytesRef> contexts) {
+    public LookupResult(CharSequence key, double value, Set<BytesRef> contexts) {
       this(key, null, value, null, contexts);
     }
     
     /**
      * Create a new result from a key+highlightKey+weight+payload+contexts triple.
      */
-    public LookupResult(CharSequence key, Object highlightKey, long value, BytesRef payload, Set<BytesRef> contexts) {
+    public LookupResult(CharSequence key, Object highlightKey, double value, BytesRef payload, Set<BytesRef> contexts) {
       this.key = key;
       this.highlightKey = highlightKey;
       this.value = value;

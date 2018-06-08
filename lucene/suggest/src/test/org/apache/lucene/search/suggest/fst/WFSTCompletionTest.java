@@ -30,10 +30,10 @@ public class WFSTCompletionTest extends LuceneTestCase {
   
   public void testBasic() throws Exception {
     Input keys[] = new Input[] {
-        new Input("foo", 50),
-        new Input("bar", 10),
-        new Input("barbar", 12),
-        new Input("barbara", 6)
+        new Input("foo", 50L),
+        new Input("bar", 10L),
+        new Input("barbar", 12L),
+        new Input("barbara", 6L)
     };
     
     Random random = new Random(random().nextLong());
@@ -85,8 +85,8 @@ public class WFSTCompletionTest extends LuceneTestCase {
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", true);
 
     suggester.build(new InputArrayIterator(new Input[] {
-          new Input("x y", 20),
-          new Input("x", 2),
+        new Input("x y", 20L),
+        new Input("x", 2L),
         }));
 
     for(int topN=1;topN<4;topN++) {
@@ -95,11 +95,11 @@ public class WFSTCompletionTest extends LuceneTestCase {
       assertEquals(Math.min(topN, 2), results.size());
 
       assertEquals("x", results.get(0).key);
-      assertEquals(2, results.get(0).value);
+      assertEquals(2, results.get(0).value, 0.01F);
 
       if (topN > 1) {
         assertEquals("x y", results.get(1).key);
-        assertEquals(20, results.get(1).value);
+        assertEquals(20, results.get(1).value, 0.01F);
       }
     }
     tempDir.close();
@@ -111,8 +111,8 @@ public class WFSTCompletionTest extends LuceneTestCase {
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", false);
 
     suggester.build(new InputArrayIterator(new Input[] {
-          new Input("x y", 20),
-          new Input("x", 2),
+        new Input("x y", 20L),
+        new Input("x", 2L),
         }));
 
     for(int topN=1;topN<4;topN++) {
@@ -121,11 +121,11 @@ public class WFSTCompletionTest extends LuceneTestCase {
       assertEquals(Math.min(topN, 2), results.size());
 
       assertEquals("x y", results.get(0).key);
-      assertEquals(20, results.get(0).value);
+      assertEquals(20, results.get(0).value, 0.01F);
 
       if (topN > 1) {
         assertEquals("x", results.get(1).key);
-        assertEquals(2, results.get(1).value);
+        assertEquals(2, results.get(1).value, 0.01F);
       }
     }
     tempDir.close();
@@ -154,8 +154,8 @@ public class WFSTCompletionTest extends LuceneTestCase {
         allPrefixes.add(s.substring(0, j));
       }
       // we can probably do Integer.MAX_VALUE here, but why worry.
-      int weight = random().nextInt(1<<24);
-      slowCompletor.put(s, (long)weight);
+      long weight = random().nextInt(1 << 24);
+      slowCompletor.put(s, weight);
       keys[i] = new Input(s, weight);
     }
 
@@ -183,7 +183,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
       Collections.sort(matches, new Comparator<LookupResult>() {
         @Override
         public int compare(LookupResult left, LookupResult right) {
-          int cmp = Float.compare(right.value, left.value);
+          int cmp = Double.compare(right.value, left.value);
           if (cmp == 0) {
             return left.compareTo(right);
           } else {
@@ -216,8 +216,8 @@ public class WFSTCompletionTest extends LuceneTestCase {
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", false);
 
     suggester.build(new InputArrayIterator(new Input[] {
-          new Input(key1, 50),
-          new Input(key2, 50),
+        new Input(key1, 50L),
+        new Input(key2, 50L),
         }));
     tempDir.close();
   }

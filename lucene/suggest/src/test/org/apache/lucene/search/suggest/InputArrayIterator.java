@@ -55,7 +55,7 @@ public final class InputArrayIterator implements InputIterator {
   }
   
   @Override
-  public long weight() {
+  public Long weight() {
     return current.v;
   }
 

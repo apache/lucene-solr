@@ -147,7 +147,7 @@ public class FileDictionary implements Dictionary {
     }
     
     @Override
-    public long weight() {
+    public Long weight() {
       return curWeight;
     }
 

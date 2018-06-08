@@ -30,6 +30,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -200,7 +201,13 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
       textDV.advance(fd.doc);
 
       final String text = textDV.binaryValue().utf8ToString();
-      long weight = (Long) fd.fields[0];
+
+      NumericDocValues weightDV = MultiDocValues.getNumericValues(searcher.getIndexReader(), WEIGHT_FIELD_NAME);
+      Long weight = null;
+      if (weightDV != null) {
+        boolean weightPresent = weightDV.advanceExact(fd.doc);
+        if (weightPresent) weight = weightDV.longValue();
+      }
 
       // This will just be null if app didn't pass payloads to build():
       // TODO: maybe just stored fields?  they compress...
@@ -224,13 +231,10 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
       } else {
         coefficient = createCoefficient(searcher, fd.doc, matchedTokens, prefixToken);
       }
-      if (weight == 0) {
-        weight = 1;
+      double score = coefficient;
+      if (weight != null) {
+        score *= weight;
       }
-      if (weight < 1 / LINEAR_COEF && weight > -1 / LINEAR_COEF) {
-        weight *= 1 / LINEAR_COEF;
-      }
-      long score = (long) (weight * coefficient);
 
       LookupResult result;
       if (doHighlight) {

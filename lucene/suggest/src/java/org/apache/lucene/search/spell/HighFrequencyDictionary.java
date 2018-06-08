@@ -81,7 +81,7 @@ public class HighFrequencyDictionary implements Dictionary {
     }
     
     @Override
-    public long weight() {
+    public Long weight() {
       return freq;
     }
 

@@ -54,7 +54,7 @@ public class UnsortedInputIterator extends BufferedInputIterator {
   }
   
   @Override
-  public long weight() {
+  public Long weight() {
     assert currentOrd == ords[curPos];
     return freqs[currentOrd];
   }

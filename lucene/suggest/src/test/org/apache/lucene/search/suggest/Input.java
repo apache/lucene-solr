@@ -23,48 +23,47 @@ import org.apache.lucene.util.BytesRef;
 /** corresponds to {@link InputIterator}'s entries */
 public final class Input {
   public final BytesRef term;
-  public final long v;
+  public final Long v;
   public final BytesRef payload;
   public final boolean hasPayloads;
   public final Set<BytesRef> contexts;
   public final boolean hasContexts;
 
-  public Input(BytesRef term, long v, BytesRef payload) {
+  public Input(BytesRef term, Long v, BytesRef payload) {
     this(term, v, payload, true, null, false);
   }
-  
-  public Input(String term, long v, BytesRef payload) {
+
+  public Input(String term, Long v, BytesRef payload) {
     this(new BytesRef(term), v, payload);
   }
-  
-  public Input(BytesRef term, long v, Set<BytesRef> contexts) {
+
+  public Input(BytesRef term, Long v, Set<BytesRef> contexts) {
     this(term, v, null, false, contexts, true);
   }
-  
-  public Input(String term, long v, Set<BytesRef> contexts) {
+
+  public Input(String term, Long v, Set<BytesRef> contexts) {
     this(new BytesRef(term), v, null, false, contexts, true);
   }
-  
-  public Input(BytesRef term, long v) {
+
+  public Input(BytesRef term, Long v) {
     this(term, v, null, false, null, false);
   }
-  
-  public Input(String term, long v) {
+
+  public Input(String term, Long v) {
     this(new BytesRef(term), v, null, false, null, false);
   }
   
   public Input(String term, int v, BytesRef payload, Set<BytesRef> contexts) {
-    this(new BytesRef(term), v, payload, true, contexts, true);
+    this(new BytesRef(term), new Long(v), payload, true, contexts, true);
   }
 
-  public Input(BytesRef term, long v, BytesRef payload, Set<BytesRef> contexts) {
+  public Input(BytesRef term, Long v, BytesRef payload, Set<BytesRef> contexts) {
     this(term, v, payload, true, contexts, true);
   }
-  
 
-  
-  public Input(BytesRef term, long v, BytesRef payload, boolean hasPayloads, Set<BytesRef> contexts, 
-      boolean hasContexts) {
+
+  public Input(BytesRef term, Long v, BytesRef payload, boolean hasPayloads, Set<BytesRef> contexts,
+               boolean hasContexts) {
     this.term = term;
     this.v = v;
     this.payload = payload;

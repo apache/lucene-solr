@@ -111,7 +111,7 @@ public class DocumentDictionary implements Dictionary {
     private final boolean hasContexts;
     private final Bits liveDocs;
     private int currentDocId = -1;
-    private long currentWeight = 0;
+    private Long currentWeight;
     private BytesRef currentPayload = null;
     private Set<BytesRef> currentContexts;
     private final NumericDocValues weightValues;
@@ -133,7 +133,7 @@ public class DocumentDictionary implements Dictionary {
     }
 
     @Override
-    public long weight() {
+    public Long weight() {
       return currentWeight;
     }
 
@@ -239,10 +239,10 @@ public class DocumentDictionary implements Dictionary {
      * or if it's indexed as {@link NumericDocValues} (using <code>docId</code>) for the document.
      * If no value is found, then the weight is 0.
      */
-    protected long getWeight(Document doc, int docId) throws IOException {
+    protected Long getWeight(Document doc, int docId) throws IOException {
       IndexableField weight = doc.getField(weightField);
       if (weight != null) { // found weight as stored
-        return (weight.numericValue() != null) ? weight.numericValue().longValue() : 0;
+        return weight.numericValue().longValue();
       } else if (weightValues != null) {  // found weight as NumericDocValue
         if (weightValues.docID() < docId) {
           weightValues.advance(docId);
@@ -251,10 +251,10 @@ public class DocumentDictionary implements Dictionary {
           return weightValues.longValue();
         } else {
           // missing
-          return 0;
+          return null;
         }
       } else { // fall back
-        return 0;
+        return null;
       }
     }
     

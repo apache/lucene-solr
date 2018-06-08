@@ -421,7 +421,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
         List<SimpleOrderedMap<Object>> suggestEntriesNamedList = new ArrayList<>();
         for (LookupResult lookupResult : lookupResults) {
           String suggestionString = lookupResult.key.toString();
-          long weight = lookupResult.value;
+          double weight = lookupResult.value;
           String payload = (lookupResult.payload != null) ? 
               lookupResult.payload.utf8ToString()
               : "";

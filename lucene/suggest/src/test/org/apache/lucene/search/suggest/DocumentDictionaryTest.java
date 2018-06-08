@@ -70,7 +70,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     InputIterator inputIterator = dictionary.getEntryIterator();
 
     assertNull(inputIterator.next());
-    assertEquals(inputIterator.weight(), 0);
+    assertNull(inputIterator.weight());
     assertNull(inputIterator.payload());
     
     IOUtils.close(ir, analyzer, dir);
@@ -99,7 +99,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       IndexableField weightField = doc.getField(WEIGHT_FIELD_NAME);
-      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
+      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : null);
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -141,7 +141,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     BytesRef f = inputIterator.next();
     assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
     IndexableField weightField = doc.getField(WEIGHT_FIELD_NAME);
-    assertEquals(inputIterator.weight(), weightField.numericValue().longValue());
+    assertEquals(inputIterator.weight(), (Long) weightField.numericValue().longValue());
     IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
     assertNull(payloadField);
     assertTrue(inputIterator.payload().length == 0);
@@ -171,7 +171,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       IndexableField weightField = doc.getField(WEIGHT_FIELD_NAME);
-      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
+      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : null);
       assertNull(inputIterator.payload());
     }
     
@@ -207,7 +207,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       IndexableField weightField = doc.getField(WEIGHT_FIELD_NAME);
-      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
+      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : null);
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -272,7 +272,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       IndexableField weightField = doc.getField(WEIGHT_FIELD_NAME);
-      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
+      assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : null);
       assertNull(inputIterator.payload());
     }
     
@@ -304,8 +304,8 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     while((f = inputIterator.next())!=null) {
       Suggestion nextSuggestion = suggestionsIter.next();
       assertTrue(f.equals(nextSuggestion.term));
-      long weight = nextSuggestion.weight;
-      assertEquals(inputIterator.weight(), (weight != -1) ? weight : 0);
+      Long weight = nextSuggestion.weight;
+      assertEquals(inputIterator.weight(), (weight != -1) ? weight : null);
       assertEquals(inputIterator.payload(), nextSuggestion.payload);
       assertTrue(inputIterator.contexts().equals(nextSuggestion.contexts));
     }
