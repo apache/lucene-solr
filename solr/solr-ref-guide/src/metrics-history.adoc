@@ -129,7 +129,7 @@ is collected for each collection.
 
 `enableNodes`:: boolean, default is false. When this is true then non-aggregated history will be
 collected separately for each node (for node and JVM metrics), with database names consisting of
-base registry name with appended node name, eg. `solr.jvm.localhost:8983_solr`. When this is false
+base registry name with appended node name, e.g., `solr.jvm.localhost:8983_solr`. When this is false
 then only aggregated history will be collected in a single `solr.jvm` and `solr.node` cluster-wide
 databases.
 
