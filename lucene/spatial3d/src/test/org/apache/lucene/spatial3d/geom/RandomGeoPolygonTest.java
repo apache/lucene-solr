@@ -120,11 +120,12 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
       referencePoint = randomGeoPoint(planetModel);
     }
     final int n = random().nextInt(4) + 4;
-    final List<GeoPoint> points = new ArrayList<>(n);
+
     List<GeoPoint> orderedPoints = null;
     GeoPolygon polygon = null;
     GeoPolygon largePolygon = null;
     do {
+      final List<GeoPoint> points = new ArrayList<>(n);
       double maxDistance = random().nextDouble() * limitDistance;
       //if distance is too small we can fail
       //building the polygon.
