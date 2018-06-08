@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
-import java.util.Arrays;
-
 /**
  * Estimates how {@link RamUsageEstimator} estimates physical memory consumption
  * of Java objects. 
@@ -88,7 +85,7 @@ public class StressRamUsageEstimator extends LuceneTestCase {
 
         // Make another batch of objects.
         Object[] seg =  new Object[10000];
-        all = Arrays.copyOf(all, all.length + 1);
+        all = ArrayUtil.growExact(all, all.length + 1);
         all[all.length - 1] = seg;
         for (int i = 0; i < seg.length; i++) {
           seg[i] = new byte[random().nextInt(7)];

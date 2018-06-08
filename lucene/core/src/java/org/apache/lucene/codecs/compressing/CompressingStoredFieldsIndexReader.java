@@ -21,7 +21,6 @@ import static org.apache.lucene.util.BitUtil.zigZagDecode;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -73,12 +72,12 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
       }
       if (blockCount == docBases.length) {
         final int newSize = ArrayUtil.oversize(blockCount + 1, 8);
-        docBases = Arrays.copyOf(docBases, newSize);
-        startPointers = Arrays.copyOf(startPointers, newSize);
-        avgChunkDocs = Arrays.copyOf(avgChunkDocs, newSize);
-        avgChunkSizes = Arrays.copyOf(avgChunkSizes, newSize);
-        docBasesDeltas = Arrays.copyOf(docBasesDeltas, newSize);
-        startPointersDeltas = Arrays.copyOf(startPointersDeltas, newSize);
+        docBases = ArrayUtil.growExact(docBases, newSize);
+        startPointers = ArrayUtil.growExact(startPointers, newSize);
+        avgChunkDocs = ArrayUtil.growExact(avgChunkDocs, newSize);
+        avgChunkSizes = ArrayUtil.growExact(avgChunkSizes, newSize);
+        docBasesDeltas = ArrayUtil.growExact(docBasesDeltas, newSize);
+        startPointersDeltas = ArrayUtil.growExact(startPointersDeltas, newSize);
       }
 
       // doc bases
@@ -102,12 +101,12 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
       ++blockCount;
     }
 
-    this.docBases = Arrays.copyOf(docBases, blockCount);
-    this.startPointers = Arrays.copyOf(startPointers, blockCount);
-    this.avgChunkDocs = Arrays.copyOf(avgChunkDocs, blockCount);
-    this.avgChunkSizes = Arrays.copyOf(avgChunkSizes, blockCount);
-    this.docBasesDeltas = Arrays.copyOf(docBasesDeltas, blockCount);
-    this.startPointersDeltas = Arrays.copyOf(startPointersDeltas, blockCount);
+    this.docBases = ArrayUtil.copyOfSubArray(docBases, 0, blockCount);
+    this.startPointers = ArrayUtil.copyOfSubArray(startPointers, 0, blockCount);
+    this.avgChunkDocs = ArrayUtil.copyOfSubArray(avgChunkDocs, 0, blockCount);
+    this.avgChunkSizes = ArrayUtil.copyOfSubArray(avgChunkSizes, 0, blockCount);
+    this.docBasesDeltas = ArrayUtil.copyOfSubArray(docBasesDeltas, 0, blockCount);
+    this.startPointersDeltas = ArrayUtil.copyOfSubArray(startPointersDeltas, 0, blockCount);
   }
 
   private int block(int docID) {

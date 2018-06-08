@@ -559,7 +559,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       for (int j = 0; j < data[docId].length; ++j) {
         final byte[] arr = data[docId][j];
         final BytesRef arr2Ref = doc.getBinaryValue("bytes" + j);
-        final byte[] arr2 = Arrays.copyOfRange(arr2Ref.bytes, arr2Ref.offset, arr2Ref.offset + arr2Ref.length);
+        final byte[] arr2 = BytesRef.deepCopyOf(arr2Ref).bytes;
         assertArrayEquals(arr, arr2);
       }
     }

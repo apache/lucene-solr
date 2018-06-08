@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.compressing;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -158,8 +157,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   public void finishDocument() throws IOException {
     if (numBufferedDocs == this.numStoredFields.length) {
       final int newLength = ArrayUtil.oversize(numBufferedDocs + 1, 4);
-      this.numStoredFields = Arrays.copyOf(this.numStoredFields, newLength);
-      endOffsets = Arrays.copyOf(endOffsets, newLength);
+      this.numStoredFields = ArrayUtil.growExact(this.numStoredFields, newLength);
+      endOffsets = ArrayUtil.growExact(endOffsets, newLength);
     }
     this.numStoredFields[numBufferedDocs] = numStoredFieldsInDoc;
     numStoredFieldsInDoc = 0;

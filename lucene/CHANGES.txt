@@ -107,6 +107,9 @@ Optimizations
   or phrase queries as sub queries, which know how to leverage this information
   to run faster. (Adrien Grand)
 
+======================= Lucene 7.5.0 =======================
+(No Changes)
+
 ======================= Lucene 7.4.0 =======================
 
 API Changes
@@ -266,6 +269,9 @@ Bug Fixes
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
+
+* LUCENE-8299: Geo3D wrapper uses new polygon method factory that gives better
+  support for polygons with many points (>100). (Ignacio vera)
 
 * LUCENE-8261: InterpolatedProperties.interpolate and recursive property
   references. (Steve Rowe, Dawid Weiss)
