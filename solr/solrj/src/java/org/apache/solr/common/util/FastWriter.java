@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
-import java.io.Writer;
 import java.io.IOException;
+import java.io.Writer;
 
 /** Single threaded BufferedWriter
  *  Internal Solr use only, subject to change.

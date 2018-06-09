@@ -52,6 +52,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.Pair;
@@ -2525,7 +2526,7 @@ public void testUtilizeNodeFailure2() throws Exception {
     StringWriter writer = new StringWriter();
     NamedList<Object> val = new NamedList<>();
     val.add("violations", violations);
-    JSONWriter.write (writer, true, JSONWriter.JSON_NL_MAP, val);
+    JSONWriter.write (writer, true, JsonTextWriter.JSON_NL_MAP, val);
 
     assertEquals(2l,
         Utils.getObjectByPath(Utils.fromJSONString(writer.toString()), true,"violations[0]/violation/replica/NRT"));

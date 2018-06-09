@@ -50,6 +50,8 @@ Optimizations
 
 * SOLR-12350: Do not use docValues as stored for _str (copy)fields in _default configset (janhoy)
 
+* SOLR-12455: Refactor JSON serialization code into SolrJ package (noble)
+
 Other Changes
 ----------------------
 
