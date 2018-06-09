@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response;
+package org.apache.solr.common.util;
 
 import java.io.IOException;
 
 import org.apache.solr.common.util.JavaBinCodec.ObjectResolver;
 
 public abstract class WriteableValue implements ObjectResolver {
-  public abstract void write(String name, TextResponseWriter writer) throws IOException;
+  public abstract void write(String name, TextWriter writer) throws IOException;
 }
