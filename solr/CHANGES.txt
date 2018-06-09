@@ -38,7 +38,10 @@ Upgrade Notes
 New Features
 ----------------------
 
-(no changes)
+* SOLR-11865: The QueryElevationComponent now has a useConfiguredElevatedOrder setting. When multiple docs are elevated,
+  this specifies whether their relative order should be the order in the configuration file or if not then should they
+  be subject to whatever the sort criteria is.  Additionally, QEC was extensively refactored to be more extensible.
+  (Bruno Roustant, David Smiley)
 
 Bug Fixes
 ----------------------
