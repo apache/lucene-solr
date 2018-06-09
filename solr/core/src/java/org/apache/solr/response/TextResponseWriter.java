@@ -90,6 +90,15 @@ public abstract class TextResponseWriter implements PushWriter {
     returnFields = rsp.getReturnFields();
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
   }
+  //only for test purposes
+   TextResponseWriter(Writer writer, boolean indent) {
+    this.writer = writer == null ? null: FastWriter.wrap(writer);
+    this.schema = null;
+    this.req = null;
+    this.rsp = null;
+    returnFields = null;
+    this.doIndent = indent;
+  }
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
   public void close() throws IOException {

@@ -72,7 +72,7 @@ New Features
 Bug Fixes
 ----------------------
 
-(no changes)
+* SOLR-12449: Response /autoscaling/diagnostics shows improper json (noble)
 
 Optimizations
 ----------------------
