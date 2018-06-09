@@ -135,7 +135,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   }
 
   final public Query Query(String field) throws ParseException, SyntaxError {
-  List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+  List<BooleanClause> clauses = new ArrayList<>();
   Query q;
   int conj, mods;
     if (jj_2_1(2)) {
