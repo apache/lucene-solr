@@ -14,13 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
-import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+
+import org.apache.lucene.util.LuceneTestCase;
 
 
 class MemWriter extends FastWriter {

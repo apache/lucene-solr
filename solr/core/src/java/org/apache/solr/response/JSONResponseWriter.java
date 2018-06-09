@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
@@ -50,10 +51,10 @@ public class JSONResponseWriter implements QueryResponseWriter {
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final SolrParams params = req.getParams();
     final String wrapperFunction = params.get(JSONWriter.JSON_WRAPPER_FUNCTION);
-    final String namedListStyle = params.get(JSONWriter.JSON_NL_STYLE, JSONWriter.JSON_NL_FLAT).intern();
+    final String namedListStyle = params.get(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_FLAT).intern();
 
     final JSONWriter w;
-    if (namedListStyle.equals(JSONWriter.JSON_NL_ARROFNTV)) {
+    if (namedListStyle.equals(JsonTextWriter.JSON_NL_ARROFNTV)) {
       w = new ArrayOfNameTypeValueJSONWriter(
           writer, req, rsp, wrapperFunction, namedListStyle, true);
     } else {
