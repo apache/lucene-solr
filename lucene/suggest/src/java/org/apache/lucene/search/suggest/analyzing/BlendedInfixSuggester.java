@@ -56,7 +56,6 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental
  */
 public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
-
   /**
    * Coefficient used for linear blending
    */
@@ -188,41 +187,36 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
       throws IOException {
 
     TreeSet<Lookup.LookupResult> results = new TreeSet<>(LOOKUP_COMP);
-
+    final BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
+    assert textDV != null;
+    final NumericDocValues weightDV = MultiDocValues.getNumericValues(searcher.getIndexReader(), WEIGHT_FIELD_NAME);
+    // This will just be null if app didn't pass payloads to build():
+    // TODO: maybe just stored fields?  they compress...
+    final BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), PAYLOADS_FIELD_NAME);
+    
     // we reduce the num to the one initially requested
     int actualNum = num / numFactor;
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
 
-      BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
-      assert textDV != null;
-
       textDV.advance(fd.doc);
-
       final String text = textDV.binaryValue().utf8ToString();
 
-      NumericDocValues weightDV = MultiDocValues.getNumericValues(searcher.getIndexReader(), WEIGHT_FIELD_NAME);
       Long weight = null;
       if (weightDV != null) {
         boolean weightPresent = weightDV.advanceExact(fd.doc);
         if (weightPresent) weight = weightDV.longValue();
       }
 
-      // This will just be null if app didn't pass payloads to build():
-      // TODO: maybe just stored fields?  they compress...
-      BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
-
-      BytesRef payload;
+      BytesRef payload = null;
       if (payloadsDV != null) {
         if (payloadsDV.advance(fd.doc) == fd.doc) {
           payload = BytesRef.deepCopyOf(payloadsDV.binaryValue());
         } else {
           payload = new BytesRef(BytesRef.EMPTY_BYTES);
         }
-      } else {
-        payload = null;
-      }
+      } 
 
       double coefficient;
       if (text.startsWith(key.toString())) {
