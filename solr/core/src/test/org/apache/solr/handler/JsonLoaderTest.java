@@ -433,11 +433,15 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "f", "name:/children/grandchildren/name",
       "f", "cat:/children/grandchildren/cat"};
 
-  public void testFewParentsJsonDoc() throws Exception {
+  @Test
+  public void testFewParentsAnonymousJsonDoc() throws Exception {
     String json = PARENT_TWO_CHILDREN_JSON;
     assertFewParents(json, true);
-    tearDown();
-    setUp();
+  }
+
+  @Test
+  public void testFewParentsJsonDoc() throws Exception {
+    String json = PARENT_TWO_CHILDREN_JSON;
     assertFewParents(json, false);
   }
 
@@ -810,55 +814,61 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req.close();
   }
 
+  private static final String SIMPLE_JSON_CHILD_DOCS = "{\n" +
+      "    \"add\": {\n" +
+      "        \"doc\": {\n" +
+      "            \"id\": \"1\",\n" +
+      "            \"_childDocuments_\": [\n" +
+      "                {\n" +
+      "                    \"id\": \"2\"\n" +
+      "                },\n" +
+      "                {\n" +
+      "                    \"id\": \"3\",\n" +
+      "                    \"foo_i\": [666,777]\n" +
+      "                }\n" +
+      "            ]\n" +
+      "        }\n" +
+      "    }\n" +
+      "}";
+
   @Test
   public void testSimpleAnonymousChildDocs() throws Exception {
-    String str = "{\n" +
-        "    \"add\": {\n" +
-        "        \"doc\": {\n" +
-        "            \"id\": \"1\",\n" +
-        "            \"_childDocuments_\": [\n" +
-        "                {\n" +
-        "                    \"id\": \"2\"\n" +
-        "                },\n" +
-        "                {\n" +
-        "                    \"id\": \"3\",\n" +
-        "                    \"foo_i\": [666,777]\n" +
-        "                }\n" +
-        "            ]\n" +
-        "        }\n" +
-        "    }\n" +
-        "}";
-    checkTwoAnonymousChildDocs(str);
-    tearDown();
-    setUp();
-    checkTwoAnonymousChildDocs(str, false);
+    checkTwoAnonymousChildDocs(SIMPLE_JSON_CHILD_DOCS);
   }
 
   @Test
+  public void testSimpleChildDocs() throws Exception {
+    checkTwoAnonymousChildDocs(SIMPLE_JSON_CHILD_DOCS, false);
+  }
+
+  private static final String DUP_KEYS_JSON_CHILD_DOCS = "{\n" +
+      "    \"add\": {\n" +
+      "        \"doc\": {\n" +
+      "            \"_childDocuments_\": [\n" +
+      "                {\n" +
+      "                    \"id\": \"2\"\n" +
+      "                }\n" +
+      "            ],\n" +
+      "            \"id\": \"1\",\n" +
+      "            \"_childDocuments_\": [\n" +
+      "                {\n" +
+      "                    \"id\": \"3\",\n" +
+      "                    \"foo_i\": 666,\n" +
+      "                    \"foo_i\": 777\n" +
+      "                }\n" +
+      "            ]\n" +
+      "        }\n" +
+      "    }\n" +
+      "}";
+
+  @Test
   public void testDupKeysAnonymousChildDocs() throws Exception {
-    String str = "{\n" +
-        "    \"add\": {\n" +
-        "        \"doc\": {\n" +
-        "            \"_childDocuments_\": [\n" +
-        "                {\n" +
-        "                    \"id\": \"2\"\n" +
-        "                }\n" +
-        "            ],\n" +
-        "            \"id\": \"1\",\n" +
-        "            \"_childDocuments_\": [\n" +
-        "                {\n" +
-        "                    \"id\": \"3\",\n" +
-        "                    \"foo_i\": 666,\n" +
-        "                    \"foo_i\": 777\n" +
-        "                }\n" +
-        "            ]\n" +
-        "        }\n" +
-        "    }\n" +
-        "}";
-    checkTwoAnonymousChildDocs(str);
-    tearDown();
-    setUp();
-    checkTwoAnonymousChildDocs(str, false);
+    checkTwoAnonymousChildDocs(DUP_KEYS_JSON_CHILD_DOCS);
+  }
+
+  @Test
+  public void testDupKeysChildDocs() throws Exception {
+    checkTwoAnonymousChildDocs(DUP_KEYS_JSON_CHILD_DOCS, false);
   }
 
   private void checkTwoAnonymousChildDocs(String rawJsonStr) throws Exception {
