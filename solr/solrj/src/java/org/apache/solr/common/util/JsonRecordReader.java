@@ -363,7 +363,7 @@ public class JsonRecordReader {
         void walkObject() throws IOException {
           if (node.isChildRecord) {
             node.handleObjectStart(parser,
-                (record, path) -> addChildDoc2ParentDoc(record, values, path),
+                (record, path) -> addChildDoc2ParentDoc(record, values, getPathSuffix(path)),
                 new LinkedHashMap<>(),
                 new Stack<>(),
                 true,
@@ -442,19 +442,18 @@ public class JsonRecordReader {
       }
     }
 
-    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values, String path) {
-      String trimmedPath = trimPath(path);
+    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values, String key) {
       record =  Utils.getDeepCopy(record, 2);
-      Object oldVal = values.get(trimmedPath);
+      Object oldVal = values.get(key);
       if (oldVal == null) {
-        values.put(trimmedPath, record);
+        values.put(key, record);
       } else if (oldVal instanceof List) {
         ((List) oldVal).add(record);
       } else {
         ArrayList l = new ArrayList();
         l.add(oldVal);
         l.add(record);
-        values.put(trimmedPath, l);
+        values.put(key, l);
       }
     }
 
@@ -491,7 +490,8 @@ public class JsonRecordReader {
       values.put(fieldName, l);
     }
 
-    private String trimPath(String path) {
+    // returns the last key of the path
+    private String getPathSuffix(String path) {
       int indexOf = path.lastIndexOf("/");
       if (indexOf == -1) return path;
       return path.substring(indexOf + 1);
