@@ -358,6 +358,9 @@ Bug Fixes
   but 'bin/solr create' tells users to use the default action 'set-property', which fails
   because the property is not editable. (Steve Rowe)
 
+* SOLR-12450: Don't allow referal to external resources in various config files.
+  (Yuyang Xiao, Uwe Schindler)
+
 Optimizations
 ----------------------
 
