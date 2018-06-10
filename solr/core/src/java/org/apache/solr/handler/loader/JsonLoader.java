@@ -251,7 +251,7 @@ public class JsonLoader extends ContentStreamLoader {
     private SolrInputDocument buildDoc(Map<String, Object> m) {
       SolrInputDocument result = new SolrInputDocument();
       for (Map.Entry<String, Object> e : m.entrySet()) {
-        if (entryIsChildDoc(e.getValue())) {// special case. JsonRecordReader emits child docs with null key
+        if (entryIsChildDoc(e.getValue())) { // parse child documents
           if (e.getValue() instanceof List) {
             List value = (List) e.getValue();
             for (Object o : value) {
@@ -259,6 +259,7 @@ public class JsonLoader extends ContentStreamLoader {
                 if (anonChildDocFlag) {
                   result.addChildDocument(buildDoc((Map) o));
                 } else {
+                  // retain the value as a list, even if the list contains a single value.
                   if(!result.containsKey(e.getKey())) {
                     result.setField(e.getKey(), new ArrayList<>(1));
                   }
@@ -691,6 +692,8 @@ public class JsonLoader extends ContentStreamLoader {
       return val instanceof Map;
     }
 
+    // This is used instead of addField, since SolrInputDocument implements iterable,
+    // so each of the document SolrInputField is added to the array list, instead of the whole SolrInputDocument
     private void safeAddValue(SolrInputDocument doc, String fieldName, Object value) {
       SolrInputField field = doc.getField(fieldName);
       if(field == null || field.getValue() == null) {
