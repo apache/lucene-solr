@@ -56,6 +56,7 @@ import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SolrJSONWriter;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -2526,14 +2527,18 @@ public void testUtilizeNodeFailure2() throws Exception {
     StringWriter writer = new StringWriter();
     NamedList<Object> val = new NamedList<>();
     val.add("violations", violations);
+    new SolrJSONWriter(writer)
+        .writeObj(val)
+        .close();
     JSONWriter.write (writer, true, JsonTextWriter.JSON_NL_MAP, val);
 
+    Object root = Utils.fromJSONString(writer.toString());
     assertEquals(2l,
-        Utils.getObjectByPath(Utils.fromJSONString(writer.toString()), true,"violations[0]/violation/replica/NRT"));
+        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/NRT"));
     assertEquals(0l,
-        Utils.getObjectByPath(Utils.fromJSONString(writer.toString()), true,"violations[0]/violation/replica/PULL"));
+        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/PULL"));
     assertEquals(0l,
-        Utils.getObjectByPath(Utils.fromJSONString(writer.toString()), true,"violations[0]/violation/replica/TLOG"));
+        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/TLOG"));
 
   }
 

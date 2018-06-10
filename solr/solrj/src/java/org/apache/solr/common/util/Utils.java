@@ -19,6 +19,8 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
@@ -63,6 +65,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -133,6 +136,15 @@ public class Utils {
       Collections.sort((List)result);
     }
     return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
+  }
+
+  public static void toJSON(Object o, OutputStream os, boolean indent) throws IOException {
+    OutputStreamWriter writer = new OutputStreamWriter(os, UTF_8);
+    new SolrJSONWriter(writer)
+        .setIndent(indent)
+        .writeObj(o)
+        .close();
+    writer.flush();
   }
 
   public static byte[] toJSON(Object o) {
