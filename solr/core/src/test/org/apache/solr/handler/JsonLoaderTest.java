@@ -412,6 +412,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "      \"id\": \"1.2\",\n" +
       "      \"name\": \"i am the 2nd child\",\n" +
       "      \"cat\": \"child\",\n" +
+      "      \"test_s\": \"test-new-label\",\n" +
       "      \"grandchildren\": [\n" +
       "        {\n" +
       "          \"id\": \"1.2.1\",\n" +
@@ -495,6 +496,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         final SolrInputDocument child2 = childDocs1.get(1);
         assertOnlyValue(s.apply("1.2"), child2, "id");
         assertOnlyValue("i am the 2nd child", child2, "name");
+        assertOnlyValue("test-new-label", child2, "test_s");
         assertOnlyValue("child", child2, "cat");
 
         List<SolrInputDocument> childDocs2;
