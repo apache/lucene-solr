@@ -18,14 +18,12 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -38,8 +36,10 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -51,7 +51,6 @@ import org.xml.sax.SAXException;
  * Abstract Field type for support of string values with custom sort order.
  */
 public abstract class AbstractEnumField extends PrimitiveFieldType {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected EnumMapping enumMapping;
   
   @Override
@@ -69,6 +68,8 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
    * @lucene.internal
    */
   public static final class EnumMapping {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
     public static final String PARAM_ENUMS_CONFIG = "enumsConfig";
     public static final String PARAM_ENUM_NAME = "enumName";
     public static final Integer DEFAULT_VALUE = -1;
@@ -105,67 +106,49 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
                                 ftName + ": No enum name was configured.");
       }
       
-      InputStream is = null;
-      
+      final SolrResourceLoader loader = schema.getResourceLoader(); 
       try {
-        is = schema.getResourceLoader().openResource(enumsConfigFile);
-        final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        try {
-          final Document doc = dbf.newDocumentBuilder().parse(is);
-          final XPathFactory xpathFactory = XPathFactory.newInstance();
-          final XPath xpath = xpathFactory.newXPath();
-          final String xpathStr = String.format(Locale.ROOT, "/enumsConfig/enum[@name='%s']", enumName);
-          final NodeList nodes = (NodeList) xpath.evaluate(xpathStr, doc, XPathConstants.NODESET);
-          final int nodesLength = nodes.getLength();
-          if (nodesLength == 0) {
-            String exceptionMessage = String.format
-              (Locale.ENGLISH, "%s: No enum configuration found for enum '%s' in %s.",
+        log.debug("Reloading enums config file from {}", enumsConfigFile);
+        Document doc = SafeXMLParsing.parseConfigXML(log, loader, enumsConfigFile);
+        final XPathFactory xpathFactory = XPathFactory.newInstance();
+        final XPath xpath = xpathFactory.newXPath();
+        final String xpathStr = String.format(Locale.ROOT, "/enumsConfig/enum[@name='%s']", enumName);
+        final NodeList nodes = (NodeList) xpath.evaluate(xpathStr, doc, XPathConstants.NODESET);
+        final int nodesLength = nodes.getLength();
+        if (nodesLength == 0) {
+          String exceptionMessage = String.format
+            (Locale.ENGLISH, "%s: No enum configuration found for enum '%s' in %s.",
+             ftName, enumName, enumsConfigFile);
+          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, exceptionMessage);
+        }
+        if (nodesLength > 1) {
+          if (log.isWarnEnabled())
+            log.warn("{}: More than one enum configuration found for enum '{}' in {}. The last one was taken.",
+                     ftName, enumName, enumsConfigFile);
+        }
+        final Node enumNode = nodes.item(nodesLength - 1);
+        final NodeList valueNodes = (NodeList) xpath.evaluate("value", enumNode, XPathConstants.NODESET);
+        for (int i = 0; i < valueNodes.getLength(); i++) {
+          final Node valueNode = valueNodes.item(i);
+          final String valueStr = valueNode.getTextContent();
+          if ((valueStr == null) || (valueStr.length() == 0)) {
+            final String exceptionMessage = String.format
+              (Locale.ENGLISH, "%s: A value was defined with an no value in enum '%s' in %s.",
                ftName, enumName, enumsConfigFile);
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, exceptionMessage);
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMessage);
           }
-          if (nodesLength > 1) {
-            if (log.isWarnEnabled())
-              log.warn("{}: More than one enum configuration found for enum '{}' in {}. The last one was taken.",
-                       ftName, enumName, enumsConfigFile);
+          if (enumStringToIntMap.containsKey(valueStr)) {
+            final String exceptionMessage = String.format
+              (Locale.ENGLISH, "%s: A duplicated definition was found for value '%s' in enum '%s' in %s.",
+               ftName, valueStr, enumName, enumsConfigFile);
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMessage);
           }
-          final Node enumNode = nodes.item(nodesLength - 1);
-          final NodeList valueNodes = (NodeList) xpath.evaluate("value", enumNode, XPathConstants.NODESET);
-          for (int i = 0; i < valueNodes.getLength(); i++) {
-            final Node valueNode = valueNodes.item(i);
-            final String valueStr = valueNode.getTextContent();
-            if ((valueStr == null) || (valueStr.length() == 0)) {
-              final String exceptionMessage = String.format
-                (Locale.ENGLISH, "%s: A value was defined with an no value in enum '%s' in %s.",
-                 ftName, enumName, enumsConfigFile);
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMessage);
-            }
-            if (enumStringToIntMap.containsKey(valueStr)) {
-              final String exceptionMessage = String.format
-                (Locale.ENGLISH, "%s: A duplicated definition was found for value '%s' in enum '%s' in %s.",
-                 ftName, valueStr, enumName, enumsConfigFile);
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMessage);
-            }
-            enumIntToStringMap.put(i, valueStr);
-            enumStringToIntMap.put(valueStr, i);
-          }
+          enumIntToStringMap.put(i, valueStr);
+          enumStringToIntMap.put(valueStr, i);
         }
-        catch (ParserConfigurationException | XPathExpressionException | SAXException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                  ftName + ": Error parsing enums config.", e);
-        }
-      }
-      catch (IOException e) {
+      } catch (IOException | SAXException | XPathExpressionException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                ftName + ": Error while opening enums config.", e);
-      } finally {
-        try {
-          if (is != null) {
-            is.close();
-          }
-        }
-        catch (IOException e) {
-          e.printStackTrace();
-        }
+                                ftName + ": Error while parsing enums config.", e);
       }
       
       if ((enumStringToIntMap.size() == 0) || (enumIntToStringMap.size() == 0)) {

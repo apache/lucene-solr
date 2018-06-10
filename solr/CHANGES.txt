@@ -382,6 +382,9 @@ Bug Fixes
 * SOLR-12416: When creating a time routed alias, the router.autoDeleteAge option wasn't considered.
   (Joachim Sauer via David Smiley)
 
+* SOLR-12450: Don't allow referal to external resources in various config files.
+  (Yuyang Xiao, Uwe Schindler)
+
 Optimizations
 ----------------------
 
