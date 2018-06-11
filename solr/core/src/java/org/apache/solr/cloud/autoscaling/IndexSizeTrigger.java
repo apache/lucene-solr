@@ -289,6 +289,8 @@ public class IndexSizeTrigger extends TriggerBase {
     // collection / list(info)
     Map<String, List<ReplicaInfo>> aboveSize = new HashMap<>();
 
+    Set<String> splittable = new HashSet<>();
+
     currentSizes.forEach((coreName, info) -> {
       if ((Long)info.getVariable(BYTES_SIZE_PROP) > aboveBytes ||
           (Long)info.getVariable(DOCS_SIZE_PROP) > aboveDocs) {
@@ -301,6 +303,7 @@ public class IndexSizeTrigger extends TriggerBase {
               info.getVariables().put(VIOLATION_PROP, ABOVE_DOCS_PROP);
             }
             infos.add(info);
+            splittable.add(info.getName());
           }
         }
       } else {
@@ -313,8 +316,10 @@ public class IndexSizeTrigger extends TriggerBase {
     Map<String, List<ReplicaInfo>> belowSize = new HashMap<>();
 
     currentSizes.forEach((coreName, info) -> {
-      if ((Long)info.getVariable(BYTES_SIZE_PROP) < belowBytes ||
-          (Long)info.getVariable(DOCS_SIZE_PROP) < belowDocs) {
+      if (((Long)info.getVariable(BYTES_SIZE_PROP) < belowBytes ||
+          (Long)info.getVariable(DOCS_SIZE_PROP) < belowDocs) &&
+          // make sure we don't produce conflicting ops
+          !splittable.contains(info.getName())) {
         if (waitForElapsed(coreName, now, lastBelowEventMap)) {
           List<ReplicaInfo> infos = belowSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
           if (!infos.contains(info)) {
