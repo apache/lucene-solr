@@ -117,10 +117,10 @@ this is a SPLITSHARD operation.
 
 Similarly, when either of the lower thresholds is exceeded the trigger will generate an
 event with a (configurable) requested operation to perform on two of the smallest
-shards - by default this is a MERGESHARDS operation (which is currently ignored because
-it's not yet implemented - SOLR-9407)
+shards. By default this is a MERGESHARDS operation, and is currently ignored because
+that operation is not yet implemented (see https://issues.apache.org/jira/browse/SOLR-9407[SOLR-9407]).
 
-Additionally, monitoring can be restricted to a list of collections - by default
+Additionally, monitoring can be restricted to a list of collections; by default
 all collections are monitored.
 
 This trigger supports the following configuration parameters (all thresholds are exclusive):
@@ -131,7 +131,8 @@ This trigger supports the following configuration parameters (all thresholds are
 `aboveBytes`
 
 `aboveDocs`:: upper threshold expressed as the number of documents. This value is compared with `SEARCHER.searcher.numDocs` metric.
-Note: due to the way Lucene indexes work a shard may exceed the `aboveBytes` threshold
++
+NOTE: Due to the way Lucene indexes work, a shard may exceed the `aboveBytes` threshold
 even if the number of documents is relatively small, because replaced and deleted documents keep
 occupying disk space until they are actually removed during Lucene index merging.
 
@@ -151,7 +152,7 @@ that exceeded thresholds and the types of violations (upper / lower bounds, byte
 
 .Example:
 This configuration specifies an index size trigger that monitors collections "test1" and "test2",
-with both bytes (1GB) and number of docs (1 mln) upper limits, and a custom `belowOp`
+with both bytes (1GB) and number of docs (1 million) upper limits, and a custom `belowOp`
 operation `NONE` (which still can be monitored and acted upon by an appropriate trigger listener):
 
 [source,json]
