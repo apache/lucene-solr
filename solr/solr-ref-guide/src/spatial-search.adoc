@@ -296,11 +296,9 @@ Underlying Solr is the Spatial4j library which implements them.  To support othe
 The https://github.com/locationtech/jts[JTS Topology Suite] is a popular computational geometry library with a Euclidean/cartesian (flat 2D) model.
 It supports a variety of shapes including polygons, buffering shapes, and some invalid polygon repair fall-backs.
 With the help of Spatial4j, included with Solr, the polygons support dateline (anti-meridian) crossing.
-Unfortunately Solr cannot include JTS due to its LGPL license.
 You must download it (a JAR file) and put that in a special location internal to Solr:  `SOLR_INSTALL/server/solr-webapp/webapp/WEB-INF/lib/`.
-You can readily download it here: https://repo1.maven.org/maven2/com/vividsolutions/jts-core/.
+You can readily download it here: http://central.maven.org/maven2/org/locationtech/jts/jts-core/1.15.0/.
 _It will not work if placed in other more typical Solr lib directories, unfortunately._
-JTS's license is expected to be transitioned to BSD by the end of 2017.
 
 Set the `spatialContextFactory` attribute on the field type to `JTS`.
 
