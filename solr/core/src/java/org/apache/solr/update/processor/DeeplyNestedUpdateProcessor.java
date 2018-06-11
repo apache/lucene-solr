@@ -18,24 +18,27 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Objects;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
+import static org.apache.solr.update.processor.DeeplyNestedUpdateProcessorFactory.NestedFlag;
 
 public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
-  List<String> fields;
+  private EnumSet<NestedFlag> fields;
+  SolrQueryRequest req;
 
-  protected DeeplyNestedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, List<String> fields, UpdateRequestProcessor next) {
+
+  protected DeeplyNestedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, EnumSet<NestedFlag> fields, UpdateRequestProcessor next) {
     super(next);
+    this.req = req;
     this.fields = fields;
   }
 
@@ -50,7 +53,7 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
     for(SolrInputField field: doc.values()) {
       if(field.getFirstValue() instanceof SolrInputDocument) {
         Object val = field.getValue();
-        fullPath = Objects.isNull(fullPath) ? field.getName(): String.format("%s.%s", fullPath, field.getName());
+        fullPath = Objects.isNull(fullPath) ? field.getName(): String.format(Locale.ROOT,"%s.%s", fullPath, field.getName());
         if (val instanceof Collection) {
           for(Object childDoc: (Collection) val) {
             if(childDoc instanceof SolrInputDocument) {
@@ -65,10 +68,34 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
-    if(fields.contains(IndexSchema.PATH_FIELD_NAME)) sdoc.addField(IndexSchema.PATH_FIELD_NAME, fullPath);
-    if(fields.contains(IndexSchema.PARENT_FIELD_NAME)) sdoc.addField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue("id"));
-    if(fields.contains(IndexSchema.LEVEL_FIELD_NAME)) sdoc.addField(IndexSchema.LEVEL_FIELD_NAME, fullPath.split("\\.").length);
+    if(fields == NestedFlag.ALL) {
+      setPathField(sdoc, fullPath);
+      setParentKey(sdoc, parent);
+      setLevelKey(sdoc, fullPath);
+    } else {
+      if(fields.contains(NestedFlag.PATH)) {
+        setPathField(sdoc, fullPath);
+      }
+      if (fields.contains(NestedFlag.PARENT)) {
+        setParentKey(sdoc, parent);
+      }
+      if(fields.contains(NestedFlag.LEVEL)) {
+        setLevelKey(sdoc, fullPath);
+      }
+    }
     processDocChildren(sdoc, fullPath);
+  }
+
+  private void setLevelKey(SolrInputDocument sdoc, String fullPath) {
+    sdoc.addField(IndexSchema.LEVEL_FIELD_NAME, fullPath.split("\\.").length);
+  }
+
+  private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
+    sdoc.addField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue(req.getSchema().getUniqueKeyField().getName()));
+  }
+
+  private void setPathField(SolrInputDocument sdoc, String fullPath) {
+    sdoc.addField(IndexSchema.PATH_FIELD_NAME, fullPath);
   }
 
 }

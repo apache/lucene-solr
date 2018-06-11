@@ -32,7 +32,7 @@
 
   <updateRequestProcessorChain name="deeply-nested">
     <processor class="solr.DeeplyNestedUpdateProcessorFactory">
-      <str name="fields">_nestLevel_,_nestParent_,_nestPath_</str>
+      <str name="fields">level,parent,path</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>

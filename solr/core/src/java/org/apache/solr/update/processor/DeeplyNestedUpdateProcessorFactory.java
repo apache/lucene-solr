@@ -17,27 +17,24 @@
 
 package org.apache.solr.update.processor;
 
-import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public class DeeplyNestedUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
-  private static List<String> allowedFields = new ArrayList<String>(3) {
-    {
-      add(IndexSchema.LEVEL_FIELD_NAME);add(IndexSchema.PARENT_FIELD_NAME);
-      add(IndexSchema.PATH_FIELD_NAME);
-    }
-  };
-  private List<String> fields;
+  private EnumSet<NestedFlag> fields;
+  private static final List<String> allowedConfFields = NestedFlag.ALL.stream().map(e -> e.toString().toLowerCase(Locale.ROOT)).collect(Collectors.toList());
 
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next ) {
     return new DeeplyNestedUpdateProcessor(req, rsp, fields, next);
@@ -55,9 +52,23 @@ public class DeeplyNestedUpdateProcessorFactory extends UpdateRequestProcessorFa
       throw new SolrException(SERVER_ERROR,
           "'versionField' must be configured as a <str>");
     }
-    fields = StrUtils.splitSmart((String)tmp, ',');
-    if(!allowedFields.containsAll(fields)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Deeply Nested Fields may only contain _nestLevel_, _nestParent_, _nestPath_");
+    List<String> fields = StrUtils.splitSmart((String)tmp, ',');
+    if(!allowedConfFields.containsAll(fields)) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Deeply Nested URP may only contain: " + StringUtils.join(allowedConfFields, ", ") +
+      " got: " + StringUtils.join(fields, ", ") + " instead");
     }
+    this.fields = fields.size() == NestedFlag.values().length ? NestedFlag.ALL: generateNestedFlags(fields);
+  }
+
+  private static EnumSet<NestedFlag> generateNestedFlags(List<String> fields) {
+    return EnumSet.copyOf(fields.stream().map(e -> NestedFlag.valueOf(e.toUpperCase(Locale.ROOT))).collect(Collectors.toList()));
+  }
+
+  public enum NestedFlag {
+    PATH,
+    PARENT,
+    LEVEL;
+
+    public static final EnumSet<NestedFlag> ALL = EnumSet.allOf(NestedFlag.class);
   }
 }
