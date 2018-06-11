@@ -1806,7 +1806,11 @@ public class CoreContainer {
     return false;
   }
 
-  public void checkTragicException(SolrCore solrCore) {
+  /**
+   * @param solrCore
+   * @return whether this solr core has tragic exception
+   */
+  public boolean checkTragicException(SolrCore solrCore) {
     Throwable tragicException = null;
     try {
       tragicException = solrCore.getSolrCoreState().getTragicException();
@@ -1820,6 +1824,8 @@ public class CoreContainer {
         getZkController().giveupLeadership(solrCore.getCoreDescriptor(), tragicException);
       }
     }
+    
+    return tragicException != null;
   }
 
 }
