@@ -43,6 +43,9 @@ New Features
   be subject to whatever the sort criteria is.  Additionally, QEC was extensively refactored to be more extensible.
   (Bruno Roustant, David Smiley)
 
+* SOLR-12474: Add an UpdateRequest Object that implements RequestWriter.ContentWriter (noble)
+
+
 Bug Fixes
 ----------------------
 
