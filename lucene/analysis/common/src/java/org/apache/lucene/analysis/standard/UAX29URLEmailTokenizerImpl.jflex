@@ -83,7 +83,12 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
 %include ASCIITLD.jflex-macro
 
 DomainLabel = [A-Za-z0-9] ([-A-Za-z0-9]* [A-Za-z0-9])?
-DomainNameStrict = {DomainLabel} ("." {DomainLabel})* {ASCIITLD}
+DomainLabelSequence = {DomainLabel} ("." {DomainLabel})*
+DomainNameStrict                       = {DomainLabelSequence} ({ASCIITLD} | {ASCIITLDprefix_1CharSuffix} | {ASCIITLDprefix_2CharSuffix})
+DomainNameStrict_NoTLDprefix           = {DomainLabelSequence} {ASCIITLD}
+DomainNameStrict_TLDprefix_1CharSuffix = {DomainLabelSequence} {ASCIITLDprefix_1CharSuffix}
+DomainNameStrict_TLDprefix_2CharSuffix = {DomainLabelSequence} {ASCIITLDprefix_2CharSuffix}
+
 DomainNameLoose  = {DomainLabel} ("." {DomainLabel})*
 
 IPv4DecimalOctet = "0"{0,2} [0-9] | "0"? [1-9][0-9] | "1" [0-9][0-9] | "2" ([0-4][0-9] | "5" [0-5])
@@ -108,7 +113,10 @@ URIlogin = {URIloginSegment} (":" {URIloginSegment})? "@"
 URIquery    = "?" ({URIunreserved} | {URIpercentEncoded} | {URIsubDelims} | [:@/?])*
 URIfragment = "#" ({URIunreserved} | {URIpercentEncoded} | {URIsubDelims} | [:@/?])*
 URIport = ":" [0-9]{1,5}
-URIhostStrict = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameStrict}  
+URIhostStrict                       = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameStrict}  
+URIhostStrict_NoTLDprefix           = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameStrict_NoTLDprefix} 
+URIhostStrict_TLDprefix_1CharSuffix = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameStrict_TLDprefix_1CharSuffix}
+URIhostStrict_TLDprefix_2CharSuffix = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameStrict_TLDprefix_2CharSuffix}
 URIhostLoose  = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameLoose} 
 URIauthorityLoose  = {URIlogin}? {URIhostLoose}  {URIport}?
 
@@ -218,12 +226,16 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 
 // Match bad URL (no scheme domain-only URL with a following alphanumeric character)
 // then change to AVOID_BAD_URL state and pushback the match.
-// This rule won't match when in AVOID_BAD_URL state
-{URIhostStrict} / [-\w]  { yybegin(AVOID_BAD_URL); yypushback(yylength()); }
+// These rules won't match when in AVOID_BAD_URL state
+//
+{URIhostStrict_NoTLDprefix} / [-\w]            { yybegin(AVOID_BAD_URL); yypushback(yylength()); }
+{URIhostStrict_NoTLDprefix}                    { return URL_TYPE; }
 
-// Match a no-schema domain at EOF
-// This rule won't match when in AVOID_BAD_URL state
-{URIhostStrict} { return URL_TYPE; }
+{URIhostStrict_TLDprefix_1CharSuffix} / [-\w]  { yybegin(AVOID_BAD_URL); yypushback(yylength()); }
+{URIhostStrict_TLDprefix_1CharSuffix}          { return URL_TYPE; }
+
+{URIhostStrict_TLDprefix_2CharSuffix} / [-\w]  { yybegin(AVOID_BAD_URL); yypushback(yylength()); }
+{URIhostStrict_TLDprefix_2CharSuffix}          { return URL_TYPE; }
 
 <YYINITIAL, AVOID_BAD_URL> {
 
