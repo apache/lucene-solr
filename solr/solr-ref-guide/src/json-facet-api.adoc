@@ -1,7 +1,6 @@
 = JSON Facet API
 :page-tocclass: right
 
-[[JSONFacetAPI]]
 == Facet & Analytics Module
 
 The new Facet & Analytics Module exposed via the JSON Facet API is a rewrite of Solr's previous faceting capabilities, with the following goals:
@@ -17,7 +16,6 @@ The new Facet & Analytics Module exposed via the JSON Facet API is a rewrite of 
 * Support better integration with other search features
 * Full integration with the JSON Request API
 
-[[FacetedSearch]]
 == Faceted Search
 
 Faceted search is about aggregating data and calculating metrics about that data.
@@ -27,7 +25,6 @@ There are two main types of facets:
 * Facets that partition or categorize data (the domain) into multiple *buckets*
 * Facets that calculate data for a given bucket (normally a metric, statistic or analytic function)
 
-[[MetricsExample]]
 === Metrics Example
 
 By default, the *domain* for facets starts with all documents that match the base query and any filters. Here's an example that requests various metrics about the root domain:
@@ -57,7 +54,6 @@ The response to the facet request above will start with documents matching the r
   }
 ----
 
-[[BucketingFacetExample]]
 === Bucketing Facet Example
 
 Here's an example of a bucketing facet, that partitions documents into bucket based on the `cat` field (short for category), and returns the top 3 buckets:
@@ -96,7 +92,6 @@ The response below shows us that 32 documents match the default root domain. and
   }
 ----
 
-[[MakingaFacetRequest]]
 === Making a Facet Request
 
 In this guide, we will often just present the **facet command block**:
@@ -134,7 +129,6 @@ curl http://localhost:8983/solr/techproducts/query -d '
 '
 ----
 
-[[JSONExtensions]]
 === JSON Extensions
 
 The *Noggit* JSON parser that is used by Solr accepts a number of JSON extensions such as
@@ -147,7 +141,6 @@ The *Noggit* JSON parser that is used by Solr accepts a number of JSON extension
 * Allow trailing commas and extra commas. Example: [9,4,3,]
 * Handle nbsp (non-break space, \u00a0) as whitespace.
 
-[[TermsFacet]]
 == Terms Facet
 
 The terms facet (or field facet) buckets the domain based on the unique terms / values of a field.
@@ -194,7 +187,6 @@ This parameter indicates the facet algorithm to use:
 
 |===
 
-[[QueryFacet]]
 == Query Facet
 
 The query facet produces a single bucket of documents that match the domain as well as the specified query.
@@ -231,7 +223,6 @@ Example response:
 }
 ----
 
-[[RangeFacet]]
 == Range Facet
 
 The range facet produces multiple buckets over a date field or numeric field.
@@ -274,7 +265,6 @@ Example:
 }
 ----
 
-[[RangeFacetParameters]]
 === Range Facet Parameters
 
 To ease migration, the range facet parameter names and semantics largely mirror facet.range query-parameter style faceting. For example "start" here corresponds to "facet.range.start" in a facet.range command.
@@ -310,7 +300,6 @@ By default, the ranges used to compute range faceting between `start` and `end` 
 |facet |Aggregations, metrics, or nested facets that will be calculated for every returned bucket
 |===
 
-[[FilteringFacets]]
 == Filtering Facets
 
 One can filter the domain *before* faceting via the `filter` keyword in the `domain` block of the facet.
@@ -331,7 +320,6 @@ The value of `filter` can be a single query to treat as a filter, or a list of f
 * a string containing a query in Solr query syntax
 * a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
 
-[[AggregationFunctions]]
 == Aggregation Functions
 
 Aggregation functions, also called *facet functions, analytic functions,* or **metrics**, calculate something interesting over a domain (each facet bucket).
@@ -355,8 +343,7 @@ Aggregation functions, also called *facet functions, analytic functions,* or **m
 
 Numeric aggregation functions such as `avg` can be on any numeric field, or on another function of multiple numeric fields such as `avg(mul(price,popularity))`.
 
-[[FacetSorting]]
-=== Facet Sorting
+=== Sorting Facets
 
 The default sort for a field or terms facet is by bucket count descending. We can optionally sort ascending or descending by any facet function that appears in each bucket.
 
@@ -375,13 +362,11 @@ The default sort for a field or terms facet is by bucket count descending. We ca
 }
 ----
 
-[[NestedFacets]]
 == Nested Facets
 
 Nested facets, or **sub-facets**, allow one to nest bucketing facet commands like **terms**, **range**, or *query* facets under other facet commands. The syntax is identical to top-level facets - just add the facet command to the facet command block of the parent facet. Technically, every facet command is actually a sub-facet since we start off with a single facet bucket with a domain defined by the main query and filters.
 
-[[Nestedfacetexample]]
-=== Nested facet example
+=== Nested Facet Example
 
 Let's start off with a simple non-nested terms facet on the genre field:
 
@@ -416,7 +401,6 @@ And the response will look something like:
 
 [source,java]
 ----
-  [...]
   "facets":{
     "top_genres":{
       "buckets":[
@@ -445,20 +429,17 @@ And the response will look something like:
                 "count":132}
             ]
           }
-        },
-        [...]
+        }
 ----
 
 By default "top authors" is defined by simple document count descending, but we could use our aggregation functions to sort by more interesting metrics.
 
 
-[[BlockJoinFacets]]
 == Block Join Facets
 
 Block Join Facets facets allow bucketing <<uploading-data-with-index-handlers.adoc#nested-child-documents, child documents>> as attributes of their parents.
 
-[[Blockjoinfacetexample]]
-=== Block Join Facet example
+=== Block Join Facet Example
 
 Suppose we have products with multiple SKUs, and we want to count products for each color.
 
@@ -514,7 +495,7 @@ since default value of `limit` parameter is `10`, while `uniqueBlock` is suppose
 
 == Semantic Knowledge Graphs
 
-The `relatedness(...)` aggregation functions allows for sets of documents to be scored relative to Foreground and Background sets of documents, for the purposes of finding ad-hoc relationships that make up a "Semantic Knowledge Graph":
+The `relatedness(...)` aggregation function allows for sets of documents to be scored relative to Foreground and Background sets of documents, for the purposes of finding ad-hoc relationships that make up a "Semantic Knowledge Graph":
 
 [quote, Grainger et al., 'https://arxiv.org/abs/1609.00464[The Semantic Knowledge Graph]']
 ____
@@ -523,10 +504,9 @@ ____
 
 The `relatedness(...)` function is used to "score" these relationships, relative to "Foreground" and "Background" sets of documents, specified in the function params as queries.
 
-Unlike most aggregation functions, the `relatedness(...)` function is aware of if/how it's used in <<NestedFacets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from it's parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
+Unlike most aggregation functions, the `relatedness(...)` function is aware of whether and how it's used in <<nested-facets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from it's parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
 
 === Semantic Knowledge Graph Example
-
 
 .Sample Documents
 [source,bash,subs="verbatim,callouts"]
