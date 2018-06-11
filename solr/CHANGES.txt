@@ -74,7 +74,6 @@ New Features
 
 * SOLR-12474: Add an UpdateRequest Object that implements RequestWriter.ContentWriter (noble)
 
-
 Bug Fixes
 ----------------------
 
@@ -90,7 +89,11 @@ Optimizations
 Other Changes
 ----------------------
 
-(no changes)
+* SOLR-12361: Allow nested child documents to be in field values of a SolrInputDocument as an alternative to
+  add/get ChildDocuments off to the side.  The latter is now referred to as "anonymous" child documents as opposed to
+  "labelled" (by the field name).  Anonymous child docs might be deprecated in the future.
+  This is an internal change not yet plumbed into /update formats.
+  AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
 
 ==================  7.4.0 ==================
 
