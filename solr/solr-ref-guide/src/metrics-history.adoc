@@ -16,11 +16,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-== Design
-=== Round-robin databases
 Solr collects long-term history of certain key metrics both in SolrCloud and in standalone mode.
+
 This information can be used for very simple monitoring and troubleshooting, but also some
-Solr Cloud components (e.g., autoscaling) can use this data for making informed decisions based on
+SolrCloud components (e.g., autoscaling) can use this data for making informed decisions based on
 long-term trends of selected metrics.
 
 [IMPORTANT]
@@ -30,7 +29,13 @@ is absent then metrics history will still be collected and kept in memory but it
 on node restart.
 ====
 
-This data is maintained as multi-resolution time series, with a fixed total number of data points
+== Design
+
+Before discussing how to configure metrics storage, a bit of explanation about how it works may be helpful.
+
+=== Round-Robin Databases
+
+The metrics history data is maintained as multi-resolution time series, with a fixed total number of data points
 per metric history (a fixed size window). Multi-resolution refers to the fact that data from the most detailed
 time series is periodically resampled to create coarser-grained time series, which in turn
 are periodically resampled again to build even coarser-grained series.
@@ -47,28 +52,28 @@ time series are built:
 This means that the total number of samples in all data series is constant, and consequently
 the size of this data structure is also constant (because the size of the moving window is fixed, and
 older samples are replaced by newer ones). This arrangement is referred to as a
-round-robin database, and Solr uses implementation of this concept provided by RRD4j library.
+round-robin database, and Solr uses implementation of this concept provided by the https://github.com/rrd4j/rrd4j[RRD4j] library.
 
 === Storage
 Databases created with RRD4j are compact - for the time series specified above the total size
-of data is ca. 11kB for each of the primary time series, including its resampled data. Each database may contain
+of data is around 11kB for each of the primary time series, including its resampled data. Each database may contain
 several primary time series ("datasources" in RRD4j parlance) and their re-sampled versions (called
 "archives").
 
 This data is updated in memory and then periodically stored in the `.system`
 collection in the form of Solr documents with a binary `data_bin` field, each document
 containing data of one full database. This method of storage is much more compact and generates less
-update operations than storing each data point in a separate Solr document. Metrics history API allows retrieving
+update operations than storing each data point in a separate Solr document. The Metrics History API allows retrieving
 detailed data from each database, including retrieval of all individual datapoints.
 
 Databases are identified primarily by their corresponding metric registry name, so for databases that
 keep track of aggregated metrics this will be e.g., `solr.jvm`, `solr.node`, `solr.collection.gettingstarted`.
 For databases with non-aggregated metrics the name consists of the registry name, optionally with a node name
 to identify databases with the same name coming from different nodes. For example, per-node databases are
-name like this: `solr.jvm.localhost:8983_solr`, `solr.node.localhost:7574_solr`, but per-replica names are
+named like this: `solr.jvm.localhost:8983_solr`, `solr.node.localhost:7574_solr`, but per-replica names are
 already unique across the cluster so they are named like this: `solr.core.gettingstarted.shard1.replica_n1`.
 
-=== Collected metrics
+=== Collected Metrics
 Currently the following selected metrics are tracked:
 
 * Non-aggregated `solr.core` and aggregated `solr.collection` metrics:
@@ -114,10 +119,10 @@ the call from originating node to the current Overseer leader.
 
 The handler assumes that a simple aggregation (sum of partial metric values from each resource) is
 sufficient. This happens to make sense for the default built-in sets of metrics. Future extensions will
-provide other aggregation strategies (average, max, min, ...).
+provide other aggregation strategies (such as, average, max, min, etc.).
 
 == Metrics History Configuration
-There are two mechanisms for configuring this subsystem:
+There are two ways to configure this subsystem:
 
 * `/clusterprops.json` - this is the primary mechanism. It uses the cluster properties JSON
 file in ZooKeeper. Configuration is stored in the `/metrics/history` element in a JSON map.
@@ -128,43 +133,42 @@ with the existing metrics configuration section in this file. Configuration is s
 
 Currently the following configuration options are supported:
 
-`enable`:: boolean, default is true. If this if false then metrics history is not collected
-but can still be retrieved from existing databases. When this is true then metrics are
+`enable`:: boolean, default is `true`. If this is `false` then metrics history is not collected
+but can still be retrieved from existing databases. When this is `true` then metrics are
 periodically collected, aggregated and saved.
 
-`enableReplicas`:: boolean, default is false. When this is true non-aggregated history will be
-collected for each replica in each collection. When this is false then only aggregated history
+`enableReplicas`:: boolean, default is `false`. When this is `true` non-aggregated history will be
+collected for each replica in each collection. When this is `false` then only aggregated history
 is collected for each collection.
 
-`enableNodes`:: boolean, default is false. When this is true then non-aggregated history will be
+`enableNodes`:: boolean, default is `false`. When this is `true` then non-aggregated history will be
 collected separately for each node (for node and JVM metrics), with database names consisting of
-base registry name with appended node name, e.g., `solr.jvm.localhost:8983_solr`. When this is false
+base registry name with appended node name, e.g., `solr.jvm.localhost:8983_solr`. When this is `false`
 then only aggregated history will be collected in a single `solr.jvm` and `solr.node` cluster-wide
 databases.
 
-`collectPeriod`:: integer, in seconds, default is 60. Metrics values will be collected and respective
+`collectPeriod`:: integer, in seconds, default is `60`. Metrics values will be collected and respective
 databases updated every `collectPeriod` seconds.
-
++
 [IMPORTANT]
 ====
 Value of `collectPeriod` must be at least 1, and if it's changed then all previously existing databases
 with their historic data must be manually removed (new databases will be created automatically).
 ====
 
-`syncPeriod`:: integer, in seconds, default is 60. Data from modified databases will be saved to Solr
+`syncPeriod`:: integer, in seconds, default is `60`. Data from modified databases will be saved to Solr
 every `syncPeriod` seconds. When accessing the databases via REST API in `index` mode the visibility of
 most recent data depends on this period, because requests accessing the data from other nodes see only
 the version of the data that is stored in the `.system` collection.
 
-=== Example configuration
+=== Example Configuration
 Example `/clusterprops.json` file with metrics history configuration that turns on the collection of
-per-node metrics history for node and JVM metrics. Note: typically this file will also contain other
-properties unrelated to metrics history API.
+per-node metrics history for node and JVM metrics. Typically this file will also contain other
+properties unrelated to Metrics History API.
 
 [source,json]
 ----
 {
-...
   "metrics" : {
     "history" : {
       "enable" : true,
@@ -172,7 +176,6 @@ properties unrelated to metrics history API.
       "syncPeriod" : 300
     }
   }
-...
 }
 ----
 
@@ -186,11 +189,14 @@ required parameter `action`.
 All responses contain a section named `state`, which reports the current internal state of the API:
 
 `enableReplicas`:: boolean, corresponds to the `enableReplicas` configuration setting.
+
 `enableNodes`:: boolean, corresponds to the `enableNodes` configuration setting.
+
 `mode`:: one of the following values:
+
 * `inactive` - when metrics collection is disabled (but access to existing metrics history is still available).
 * `memory` - when metrics history is kept only in memory because `.system` collection doesn't exist. In this mode
-clients can access metrics history available on the node that received the reuqest and on the Overseer leader.
+clients can access metrics history available on the node that received the request and on the Overseer leader.
 * `index` - when metrics history is periodically stored in the `.system` collection. Data available in memory on
 the node that accepted the request is retrieved from memory, any other data is retrieved from the
 `.system` collection (so it's at least `syncPeriod` old).
@@ -198,14 +204,15 @@ the node that accepted the request is retrieved from memory, any other data is r
 Also, the response header section (`responseHeader`) contains `zkConnected` boolean property that indicates
 whether the current node is a part of SolrCloud cluster.
 
-=== List databases (`action=list`)
-This call produces a list of available databases. It supports the following parameters:
+=== List Databases
+The query parameter `action=list` produces a list of available databases. It supports the following parameters:
 
-`rows`:: optional integer, default is 500. Maximum number of results to return.
+`rows`:: optional integer, default is `500`. Maximum number of results to return.
 
 Example:
 In this SolrCloud example the API is in `memory` mode, and the request was made to a node that is
 not Overseer leader. The API transparently forwarded the request to Overseer leader.
+
 [source,bash]
 ----
 curl http://localhost:7574/solr/admin/metrics/history?action=list&rows=10
@@ -252,12 +259,12 @@ received the request (because the data is retrieved from the `.system` collectio
 Each section also contains a `lastModified` element, which contains the last modification time when the
 database was update. All timestamps returned from this API correspond to Unix epoch time in seconds.
 
-=== Database status (`action=status`)
-This call provides detailed status of the selected database.
+=== Database Status
+The query parameter `action=status` provides detailed status of the selected database.
 
 The following parameters are supported:
 
-`name`:: string, required: database name
+`name`:: string, required: database name.
 
 Example:
 [source,bash]
@@ -295,7 +302,7 @@ curl http://localhost:7574/solr/admin/metrics/history?action=status&name=solr.co
             "datasource": "DS:numReplicas:GAUGE:120:U:U",
             "lastValue": 4
           },
-          ...
+          "..."
         ],
         "archives": [
           {
@@ -316,7 +323,7 @@ curl http://localhost:7574/solr/admin/metrics/history?action=status&name=solr.co
             "endTime": 1528318200,
             "rows": 288
           },
-          ...
+          "..."
         ]
       },
       "node": "127.0.0.1:7574_solr"
@@ -330,12 +337,12 @@ curl http://localhost:7574/solr/admin/metrics/history?action=status&name=solr.co
 }
 ----
 
-=== Get database data (`action=get`)
-This call retrieves all data collected in the specified database.
+=== Get Database Data
+The query parameter `action=get` retrieves all data collected in the specified database.
 
 The following parameters are supported:
 
-`name`:: string, required: database name
+`name`:: string, required: database name.
 `format`:: string, optional, default is `list`. Format of the data. Currently the
 following formats are supported:
 
@@ -369,27 +376,26 @@ curl http://localhost:8983/solr/admin/metrics/history?action=get&name=solr.colle
           "timestamps": [
             1528304160,
             1528304220,
-            ...
+            "..."
           ],
           "values": {
             "numShards": [
               "NaN",
               2.0,
-              ...
+              "..."
             ],
             "numReplicas": [
               "NaN",
               4.0,
-              ...
+              "..."
             ],
-            ...
           }
         },
         "RRA:AVERAGE:0.5:10:288": {
           "timestamps": [
             1528145400,
             1528146000,
-          ...
+          ],
       "lastModified": 1528318606,
       "node": "127.0.0.1:8983_solr"
     }
@@ -398,8 +404,7 @@ curl http://localhost:8983/solr/admin/metrics/history?action=get&name=solr.colle
     "enableReplicas": false,
     "enableNodes": false,
     "mode": "index"
-  }
-}
+  }}}}
 ----
 
 This is the output when using the `string` format:
@@ -424,11 +429,12 @@ curl http://localhost:8983/solr/admin/metrics/history?action=get&name=solr.colle
             "numShards": "NaN\n2.0\n2.0\n2.0\n2.0\n2.0\n2.0\n...",
             "numReplicas": "NaN\n4.0\n4.0\n4.0\n4.0\n4.0\n4.0\n...",
             "QUERY./select.requests": "NaN\n123\n456\n789\n...",
-            ...
+            "..."
           }
         },
         "RRA:AVERAGE:0.5:10:288": {
-                ...
+                "..."
+  }}}}}
 ----
 
 This is the output when using the `graph` format:
@@ -452,24 +458,22 @@ curl http://localhost:8983/solr/admin/metrics/history?action=get&name=solr.colle
             "numShards": "iVBORw0KGgoAAAANSUhEUgAAAkQAAA...",
             "numReplicas": "iVBORw0KGgoAAAANSUhEUgAAAkQA...",
             "QUERY./select.requests": "iVBORw0KGgoAAAANS...",
-            ...
+            "..."
           }
         },
         "RRA:AVERAGE:0.5:10:288": {
           "values": {
             "numShards": "iVBORw0KGgoAAAANSUhEUgAAAkQAAA...",
-            ...
-          },
-        ...
+            "..."
+          }
+  }}}}}
 ----
 
 .Example 60 sec resolution history graph for `QUERY./select.requests` metric
 image::images/metrics-history/query-graph-60s.png[image]
 
-
 .Example 10 min resolution history graph for `QUERY./select.requests` metric
 image::images/metrics-history/query-graph-10min.png[image]
-
 
 .Example 60 sec resolution history graph for `UPDATE./update.requests` metric
 image::images/metrics-history/update-graph-60s.png[image]
