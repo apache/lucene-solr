@@ -35,7 +35,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -141,10 +141,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                  expectedXmlFileCount, xmlFiles.size());
     
     for (File xml : xmlFiles) {
-      ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
-      req.addFile(xml, "application/xml");
       log.info("POSTing "+xml.getAbsolutePath());
-      cloudClient.request(req);
+      cloudClient.request(new StreamingUpdateRequest("/update",xml,"application/xml"));
     }
     cloudClient.commit();
 
