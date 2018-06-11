@@ -512,7 +512,7 @@ To delete the `currentFeatureStore` feature store:
 curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/feature-store/currentFeatureStore'
 ----
 
-==== Using large models
+==== Using Large Models
 
 With SolrCloud, large models may fail to upload due to the limitation of ZooKeeper's buffer. In this case, `DefaultWrapperModel` may help you to separate the model definition from uploaded file.
 
