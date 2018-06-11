@@ -36,7 +36,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -315,9 +314,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
-
-      if (cmd.isBlock()) {
-        writer.addDocuments(cmd);
+      Iterable<Document> blockDocs = cmd.getLuceneDocsIfNested();
+      if (blockDocs != null) {
+        writer.addDocuments(blockDocs);
       } else {
         writer.addDocument(cmd.getLuceneDocument());
       }
@@ -330,31 +329,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void doNormalUpdate(AddUpdateCommand cmd) throws IOException {
-    Term updateTerm;
-    Term idTerm = getIdTerm(cmd);
-    boolean del = false;
-    if (cmd.updateTerm == null) {
-      updateTerm = idTerm;
-    } else {
-      // this is only used by the dedup update processor
-      del = true;
-      updateTerm = cmd.updateTerm;
-    }
-
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
 
-      updateDocOrDocValues(cmd, writer, updateTerm);
-
-      if (del) { // ensure id remains unique
-        BooleanQuery.Builder bq = new BooleanQuery.Builder();
-        bq.add(new BooleanClause(new TermQuery(updateTerm),
-            Occur.MUST_NOT));
-        bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
-        writer.deleteDocuments(new DeleteByQueryWrapper(bq.build(), core.getLatestSchema()));
-      }
-
+      updateDocOrDocValues(cmd, writer);
 
       // Add to the transaction log *after* successfully adding to the
       // index, if there was no error.
@@ -368,13 +347,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     } finally {
       iw.decref();
     }
-
-
-
   }
 
   private void addAndDelete(AddUpdateCommand cmd, List<UpdateLog.DBQ> deletesAfter) throws IOException {
-
+    // this logic is different enough from doNormalUpdate that it's separate
     log.info("Reordered DBQs detected.  Update=" + cmd + " DBQs="
         + deletesAfter);
     List<Query> dbqList = new ArrayList<>(deletesAfter.size());
@@ -389,15 +365,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
     }
 
-    Term idTerm = getIdTerm(cmd);
-
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
 
       // see comment in deleteByQuery
       synchronized (solrCoreState.getUpdateLock()) {
-        updateDocOrDocValues(cmd, writer, idTerm);
+        updateDocOrDocValues(cmd, writer);
 
         if (cmd.isInPlaceUpdate() && ulog != null) {
           ulog.openRealtimeSearcher(); // This is needed due to LUCENE-7344.
@@ -411,10 +385,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       iw.decref();
     }
 
-  }
-
-  private Term getIdTerm(AddUpdateCommand cmd) {
-    return new Term(cmd.isBlock() ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
   }
 
   private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
@@ -938,7 +908,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   /**
-   * Calls either {@link IndexWriter#updateDocValues} or {@link IndexWriter#updateDocument} as 
+   * Calls either {@link IndexWriter#updateDocValues} or {@link IndexWriter#updateDocument}(s) as
    * needed based on {@link AddUpdateCommand#isInPlaceUpdate}.
    * <p>
    * If the this is an UPDATE_INPLACE cmd, then all fields included in 
@@ -948,38 +918,53 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    *
    * @param cmd - cmd apply to IndexWriter
    * @param writer - IndexWriter to use
-   * @param updateTerm - used if this cmd results in calling {@link IndexWriter#updateDocument}
    */
-  private void updateDocOrDocValues(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
-    assert null != cmd;
-    final SchemaField uniqueKeyField = cmd.req.getSchema().getUniqueKeyField();
-    final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
+  private void updateDocOrDocValues(AddUpdateCommand cmd, IndexWriter writer) throws IOException {
+    assert idField != null; // this code path requires an idField in order to potentially replace a doc
+    boolean hasUpdateTerm = cmd.updateTerm != null; // AKA dedupe
 
     if (cmd.isInPlaceUpdate()) {
-      Document luceneDocument = cmd.getLuceneDocument(true);
+      if (hasUpdateTerm) {
+        throw new IllegalStateException("cmd.updateTerm/dedupe is not compatible with in-place updates");
+      }
+      // we don't support the solrInputDoc with nested child docs either but we'll throw an exception if attempted
+
+      Term updateTerm = new Term(idField.getName(), cmd.getIndexedId());
+      Document luceneDocument = cmd.getLuceneDocument();
 
       final List<IndexableField> origDocFields = luceneDocument.getFields();
       final List<Field> fieldsToUpdate = new ArrayList<>(origDocFields.size());
       for (IndexableField field : origDocFields) {
-        if (! field.name().equals(uniqueKeyFieldName) ) {
+        if (! field.name().equals(updateTerm.field()) ) {
           fieldsToUpdate.add((Field)field);
         }
       }
       log.debug("updateDocValues({})", cmd);
       writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[fieldsToUpdate.size()]));
-    } else {
-      updateDocument(cmd, writer, updateTerm);
-    }
-  }
 
-  private void updateDocument(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
-    if (cmd.isBlock()) {
-      log.debug("updateDocuments({})", cmd);
-      writer.updateDocuments(updateTerm, cmd);
-    } else {
-      Document luceneDocument = cmd.getLuceneDocument(false);
-      log.debug("updateDocument({})", cmd);
-      writer.updateDocument(updateTerm, luceneDocument);
+    } else { // more normal path
+
+      Iterable<Document> blockDocs = cmd.getLuceneDocsIfNested();
+      boolean isBlock = blockDocs != null; // AKA nested child docs
+      Term idTerm = new Term(isBlock ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
+      Term updateTerm = hasUpdateTerm ? cmd.updateTerm : idTerm;
+      if (isBlock) {
+        log.debug("updateDocuments({})", cmd);
+        writer.updateDocuments(updateTerm, blockDocs);
+      } else {
+        Document luceneDocument = cmd.getLuceneDocument();
+        log.debug("updateDocument({})", cmd);
+        writer.updateDocument(updateTerm, luceneDocument);
+      }
+
+      // If hasUpdateTerm, then delete any existing documents with the same ID other than the one added above
+      //   (used in near-duplicate replacement)
+      if (hasUpdateTerm) { // rare
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
+        bq.add(new TermQuery(updateTerm), Occur.MUST_NOT); //don't want the one we added above (will be unique)
+        bq.add(new TermQuery(idTerm), Occur.MUST); // same ID
+        writer.deleteDocuments(new DeleteByQueryWrapper(bq.build(), core.getLatestSchema()));
+      }
     }
   }
 

@@ -16,10 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.ID;
-import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -88,6 +84,10 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 public class RealTimeGetComponent extends SearchComponent
 {
@@ -771,8 +771,9 @@ public class RealTimeGetComponent extends SearchComponent
    * @lucene.experimental
    */
   public static SolrDocument toSolrDoc(SolrInputDocument sdoc, IndexSchema schema) {
+    // TODO what about child / nested docs?
     // TODO: do something more performant than this double conversion
-    Document doc = DocumentBuilder.toDocument(sdoc, schema, false);
+    Document doc = DocumentBuilder.toDocument(sdoc, schema);
 
     // copy the stored fields only
     Document out = new Document();

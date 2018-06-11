@@ -61,7 +61,11 @@ Optimizations
 Other Changes
 ----------------------
 
-(no changes)
+* SOLR-12361: Allow nested child documents to be in field values of a SolrInputDocument as an alternative to
+  add/get ChildDocuments off to the side.  The latter is now referred to as "anonymous" child documents as opposed to
+  "labelled" (by the field name).  Anonymous child docs might be deprecated in the future.
+  This is an internal change not yet plumbed into /update formats.
+  AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
 
 ==================  7.4.0 ==================
 
@@ -93,6 +97,7 @@ Upgrade Notes
 
 New Features
 ----------------------
+
 * SOLR-12396: Upgrade Carrot2 to 3.16.0, HPPC to 0.8.1, morfologik to 2.1.5. (Dawid Weiss)
 
 * SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable
@@ -190,6 +195,7 @@ New Features
 
 Bug Fixes
 ----------------------
+
 * SOLR-5351: Fixed More Like This Handler to use all fields provided in mlt.fl when used with
   content stream. The similarity is calculated between the content stream's value and all
   fields listed in mlt.fl. (Dawid Weiss)
@@ -540,6 +546,7 @@ Upgrade Notes
 
 New Features
 ----------------------
+
 * SOLR-11285: Simulation framework for autoscaling. (ab)
 
 * LUCENE-2899: In the Solr analysis-extras contrib, added support for the

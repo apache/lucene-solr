@@ -1938,7 +1938,8 @@ public class IndexSchema {
    * @lucene.internal
    */
   public boolean isUsableForChildDocs() {
-    FieldType rootType = getFieldType(ROOT_FIELD_NAME);
+    //TODO make this boolean a field so it needn't be looked up each time?
+    FieldType rootType = getFieldTypeNoEx(ROOT_FIELD_NAME);
     return (null != uniqueKeyFieldType &&
             null != rootType &&
             rootType.getTypeName().equals(uniqueKeyFieldType.getTypeName()));
