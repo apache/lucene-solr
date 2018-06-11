@@ -4,7 +4,11 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 7.5.0 =======================
-(No Changes)
+
+Bug Fixes
+
+* LUCENE-8278: Some end-of-input no-scheme domain-only URL tokens are typed as
+  <ALPHANUM> rather than <URL>.  (Junte Zhang, Steve Rowe)
 
 ======================= Lucene 7.4.0 =======================
 
