@@ -45,6 +45,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
@@ -315,9 +316,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
-
-      if (cmd.isBlock()) {
-        writer.addDocuments(cmd);
+      List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
+      if (docs.size() > 1) {
+        writer.addDocuments(cmd.toDocumentsIter(docs, cmd.req.getSchema()));
       } else {
         writer.addDocument(cmd.getLuceneDocument());
       }
@@ -330,25 +331,18 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void doNormalUpdate(AddUpdateCommand cmd) throws IOException {
-    Term updateTerm;
-    Term idTerm = getIdTerm(cmd);
-    boolean del = false;
-    if (cmd.updateTerm == null) {
-      updateTerm = idTerm;
-    } else {
-      // this is only used by the dedup update processor
-      del = true;
-      updateTerm = cmd.updateTerm;
-    }
+    boolean del = cmd.updateTerm != null;
 
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
 
-      updateDocOrDocValues(cmd, writer, updateTerm);
+      Term idTerm = updateDocOrDocValues(cmd, writer);
 
       if (del) { // ensure id remains unique
+        Term updateTerm = cmd.updateTerm;
         BooleanQuery.Builder bq = new BooleanQuery.Builder();
+
         bq.add(new BooleanClause(new TermQuery(updateTerm),
             Occur.MUST_NOT));
         bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
@@ -389,7 +383,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
     }
 
-    Term idTerm = getIdTerm(cmd);
 
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
@@ -397,7 +390,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       // see comment in deleteByQuery
       synchronized (solrCoreState.getUpdateLock()) {
-        updateDocOrDocValues(cmd, writer, idTerm);
+        updateDocOrDocValues(cmd, writer);
 
         if (cmd.isInPlaceUpdate() && ulog != null) {
           ulog.openRealtimeSearcher(); // This is needed due to LUCENE-7344.
@@ -413,8 +406,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   }
 
-  private Term getIdTerm(AddUpdateCommand cmd) {
-    return new Term(cmd.isBlock() ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
+  private Term getIdTerm(AddUpdateCommand cmd, boolean isBlock) {
+    return new Term(isBlock ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
   }
 
   private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
@@ -948,34 +941,44 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    *
    * @param cmd - cmd apply to IndexWriter
    * @param writer - IndexWriter to use
-   * @param updateTerm - used if this cmd results in calling {@link IndexWriter#updateDocument}
    */
-  private void updateDocOrDocValues(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
+  private Term updateDocOrDocValues(AddUpdateCommand cmd, IndexWriter writer) throws IOException {
     assert null != cmd;
+    Term idTerm;
     final SchemaField uniqueKeyField = cmd.req.getSchema().getUniqueKeyField();
     final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
+    boolean hasUpdateTerm = cmd.updateTerm != null;
 
     if (cmd.isInPlaceUpdate()) {
-      Document luceneDocument = cmd.getLuceneDocument(true);
-
-      final List<IndexableField> origDocFields = luceneDocument.getFields();
-      final List<Field> fieldsToUpdate = new ArrayList<>(origDocFields.size());
-      for (IndexableField field : origDocFields) {
-        if (! field.name().equals(uniqueKeyFieldName) ) {
-          fieldsToUpdate.add((Field)field);
-        }
-      }
-      log.debug("updateDocValues({})", cmd);
-      writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[fieldsToUpdate.size()]));
+      idTerm = getIdTerm(cmd, false);
+      inlineUpdateDocument(cmd, writer, uniqueKeyFieldName, hasUpdateTerm ? cmd.updateTerm: idTerm);
     } else {
-      updateDocument(cmd, writer, updateTerm);
+      List<SolrInputDocument> docs = cmd.computeFinalFlattenedSolrDocs();
+      boolean isBlock = docs.size() > 1;
+      idTerm = getIdTerm(cmd, isBlock);
+      updateDocument(cmd, docs, writer, hasUpdateTerm ? cmd.updateTerm: idTerm, isBlock);
     }
+    return idTerm;
   }
 
-  private void updateDocument(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
-    if (cmd.isBlock()) {
-      log.debug("updateDocuments({})", cmd);
-      writer.updateDocuments(updateTerm, cmd);
+  private void inlineUpdateDocument(AddUpdateCommand cmd, IndexWriter writer, String uniqueKeyFieldName, Term updateTerm) throws IOException {
+    Document luceneDocument = cmd.getLuceneDocument(true);
+
+    final List<IndexableField> origDocFields = luceneDocument.getFields();
+    final List<Field> fieldsToUpdate = new ArrayList<>(origDocFields.size());
+    for (IndexableField field : origDocFields) {
+      if (! field.name().equals(uniqueKeyFieldName) ) {
+        fieldsToUpdate.add((Field)field);
+      }
+    }
+    log.debug("updateDocValues({})", cmd);
+    writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[fieldsToUpdate.size()]));
+  }
+
+  private void updateDocument(AddUpdateCommand cmd, List<SolrInputDocument> docs, IndexWriter writer, Term updateTerm, boolean isBlock) throws IOException {
+    if (isBlock) {
+      log.debug("updateDocuments({})", docs);
+      writer.updateDocuments(updateTerm, cmd.toDocumentsIter(docs, cmd.req.getSchema()));
     } else {
       Document luceneDocument = cmd.getLuceneDocument(false);
       log.debug("updateDocument({})", cmd);

@@ -259,7 +259,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     }
   }
 
-  /** Returns the list of child documents, or null if none. */
+  /** Returns the list of anonymous child documents, or null if none. */
   public List<SolrInputDocument> getChildDocuments() {
     return _childDocuments;
   }
