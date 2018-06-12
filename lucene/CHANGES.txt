@@ -5,10 +5,7 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 7.5.0 =======================
 
-Bug Fixes
-
-* LUCENE-8278: Some end-of-input no-scheme domain-only URL tokens are typed as
-  <ALPHANUM> rather than <URL>.  (Junte Zhang, Steve Rowe)
+(No changes)
 
 ======================= Lucene 7.4.0 =======================
 
@@ -165,6 +162,9 @@ Bug Fixes
 
 * LUCENE-8186: LowerCaseTokenizerFactory now lowercases text in multi-term
   queries. (Tim Allison via Adrien Grand)
+
+* LUCENE-8278: Some end-of-input no-scheme domain-only URL tokens are typed as
+  <ALPHANUM> rather than <URL>.  (Junte Zhang, Steve Rowe)
 
 Other
 
