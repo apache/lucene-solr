@@ -122,7 +122,13 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       Row.forEachReplica(result, r -> {
         for (String key : keys) {
           if (r.getVariables().containsKey(key)) continue;
-          keyVsReplica.put("solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":" + key, new Pair<>(key, r));
+          String perReplicaAttrKeyPrefix = "solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":";
+          Suggestion.ConditionType tagType = Suggestion.getTagType(key);
+          if(tagType == null) continue;
+          String perReplicaValue = tagType.metricsAttribute;
+          perReplicaValue = perReplicaValue == null ? key : perReplicaValue;
+          perReplicaAttrKeyPrefix += perReplicaValue;
+          keyVsReplica.put(perReplicaAttrKeyPrefix, new Pair<>(key, r));
         }
       });
 
