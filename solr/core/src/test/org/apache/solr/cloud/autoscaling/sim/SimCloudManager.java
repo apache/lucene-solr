@@ -126,12 +126,13 @@ public class SimCloudManager implements SolrCloudManager {
   private Overseer.OverseerThread triggerThread;
   private ThreadGroup triggerThreadGroup;
   private SolrResourceLoader loader;
-  private MetricsHistoryHandler historyHandler;
+  private MetricsHandler metricsHandler;
+  private MetricsHistoryHandler metricsHistoryHandler;
   private TimeSource timeSource;
 
   private static int nodeIdPort = 10000;
-  public static int DEFAULT_DISK = 1000; // 1000 GB
-  public static int DEFAULT_IDX_SIZE_BYTES = 1000000000; // 1 GB
+  public static int DEFAULT_DISK = 1024; // 1000 GiB
+  public static long DEFAULT_IDX_SIZE_BYTES = 10240; // 10 kiB
 
   /**
    * Create a simulated cluster. This cluster uses the following components:
@@ -396,10 +397,10 @@ public class SimCloudManager implements SolrCloudManager {
     clusterStateProvider.simAddNode(nodeId);
     LOG.trace("-- added node " + nodeId);
     // initialize history handler if this is the first node
-    if (historyHandler == null && liveNodesSet.size() == 1) {
-      MetricsHandler metricsHandler = new MetricsHandler(metricManager);
-      historyHandler = new MetricsHistoryHandler(nodeId, metricsHandler, solrClient, this, Collections.emptyMap());
-      historyHandler.initializeMetrics(metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag, CommonParams.METRICS_HISTORY_PATH);
+    if (metricsHistoryHandler == null && liveNodesSet.size() == 1) {
+      metricsHandler = new MetricsHandler(metricManager);
+      metricsHistoryHandler = new MetricsHistoryHandler(nodeId, metricsHandler, solrClient, this, Collections.emptyMap());
+      metricsHistoryHandler.initializeMetrics(metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag, CommonParams.METRICS_HISTORY_PATH);
     }
     return nodeId;
   }
@@ -416,6 +417,16 @@ public class SimCloudManager implements SolrCloudManager {
     clusterStateProvider.simRemoveNode(nodeId);
     if (withValues) {
       nodeStateProvider.simRemoveNodeValues(nodeId);
+    }
+    if (liveNodesSet.isEmpty()) {
+      // remove handlers
+      if (metricsHistoryHandler != null) {
+        IOUtils.closeQuietly(metricsHistoryHandler);
+        metricsHistoryHandler = null;
+      }
+      if (metricsHandler != null) {
+        metricsHandler = null;
+      }
     }
     LOG.trace("-- removed node " + nodeId);
   }
@@ -642,15 +653,18 @@ public class SimCloudManager implements SolrCloudManager {
     if (req.getPath() != null) {
       if (req.getPath().startsWith("/admin/autoscaling") ||
           req.getPath().startsWith("/cluster/autoscaling") ||
-          req.getPath().startsWith("/admin/metrics/history") ||
-          req.getPath().startsWith("/cluster/metrics/history")
+          req.getPath().startsWith("/admin/metrics") ||
+          req.getPath().startsWith("/cluster/metrics")
           ) {
         metricManager.registry("solr.node").counter("ADMIN." + req.getPath() + ".requests").inc();
         boolean autoscaling = req.getPath().contains("autoscaling");
+        boolean history = req.getPath().contains("history");
         if (autoscaling) {
           incrementCount("autoscaling");
-        } else {
+        } else if (history) {
           incrementCount("metricsHistory");
+        } else {
+          incrementCount("metrics");
         }
         ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
         params.set(CommonParams.PATH, req.getPath());
@@ -669,10 +683,18 @@ public class SimCloudManager implements SolrCloudManager {
         if (autoscaling) {
           autoScalingHandler.handleRequest(queryRequest, queryResponse);
         } else {
-          if (historyHandler != null) {
-            historyHandler.handleRequest(queryRequest, queryResponse);
+          if (history) {
+            if (metricsHistoryHandler != null) {
+              metricsHistoryHandler.handleRequest(queryRequest, queryResponse);
+            } else {
+              throw new UnsupportedOperationException("must add at least 1 node first");
+            }
           } else {
-            throw new UnsupportedOperationException("must add at least 1 node first");
+            if (metricsHandler != null) {
+              metricsHandler.handleRequest(queryRequest, queryResponse);
+            } else {
+              throw new UnsupportedOperationException("must add at least 1 node first");
+            }
           }
         }
         if (queryResponse.getException() != null) {
@@ -824,8 +846,8 @@ public class SimCloudManager implements SolrCloudManager {
 
   @Override
   public void close() throws IOException {
-    if (historyHandler != null) {
-      IOUtils.closeQuietly(historyHandler);
+    if (metricsHistoryHandler != null) {
+      IOUtils.closeQuietly(metricsHistoryHandler);
     }
     IOUtils.closeQuietly(clusterStateProvider);
     IOUtils.closeQuietly(nodeStateProvider);
