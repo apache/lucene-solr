@@ -265,7 +265,7 @@ public class Config {
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.debug(name + " missing optional " + path);
+          log.trace(name + " missing optional " + path);
           return null;
         }
       }
@@ -299,7 +299,7 @@ public class Config {
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.debug(name + " missing optional " + path);
+          log.trace(name + " missing optional " + path);
           return null;
         }
       }
