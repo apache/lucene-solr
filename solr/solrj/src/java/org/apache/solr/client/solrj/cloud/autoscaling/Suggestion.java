@@ -41,7 +41,7 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class Suggestion {
-  public static final String coreidxsize = "INDEX.sizeInBytes";
+  public static final String coreidxsize = "INDEX.sizeInGB";
 
   static final Map<String, ConditionType> validatetypes = new HashMap<>();
 
@@ -121,7 +121,7 @@ public class Suggestion {
     IP_2("ip_2", Long.class, null, 0L, 255L),
     IP_3("ip_3", Long.class, null, 0L, 255L),
     IP_4("ip_4", Long.class, null, 0L, 255L),
-    FREEDISK(ImplicitSnitch.DISK, Double.class, null, 0d, Double.MAX_VALUE, coreidxsize, Boolean.TRUE) {
+    FREEDISK(ImplicitSnitch.DISK, Double.class, null, 0d, Double.MAX_VALUE, coreidxsize, Boolean.TRUE,null) {
       @Override
       public Object convertVal(Object val) {
         Number value = (Number) super.validate(ImplicitSnitch.DISK, val, false);
@@ -206,14 +206,14 @@ public class Suggestion {
         cell.val = currFreeDisk + idxSize;
       }
     },
-    CORE_IDX(coreidxsize, Double.class, null, 0d, Double.MAX_VALUE) {
+    CORE_IDX(coreidxsize, Double.class, null, 0d, Double.MAX_VALUE,null, false,"INDEX.sizeInBytes" ) {
       @Override
       public Object convertVal(Object val) {
         return FREEDISK.convertVal(val);
       }
     },
     NODE_ROLE(ImplicitSnitch.NODEROLE, String.class, Collections.singleton("overseer"), null, null),
-    CORES(ImplicitSnitch.CORES, Long.class, null, 0L, Long.MAX_VALUE, null, Boolean.TRUE) {
+    CORES(ImplicitSnitch.CORES, Long.class, null, 0L, Long.MAX_VALUE) {
       @Override
       public void addViolatingReplicas(ViolationCtx ctx) {
         for (Row r : ctx.allRows) {
@@ -247,9 +247,9 @@ public class Suggestion {
         cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() - 1;
       }
     },
-    SYSLOADAVG(ImplicitSnitch.SYSLOADAVG, Double.class, null, 0d, 100d, null, Boolean.TRUE),
-    HEAPUSAGE(ImplicitSnitch.HEAPUSAGE, Double.class, null, 0d, null, null, Boolean.TRUE),
-    NUMBER("NUMBER", Long.class, null, 0L, Long.MAX_VALUE, null, Boolean.TRUE),
+    SYSLOADAVG(ImplicitSnitch.SYSLOADAVG, Double.class, null, 0d, 100d),
+    HEAPUSAGE(ImplicitSnitch.HEAPUSAGE, Double.class, null, 0d, null),
+    NUMBER("NUMBER", Long.class, null, 0L, Long.MAX_VALUE),
 
     STRING("STRING", String.class, null, null, null),
     NODE("node", String.class, null, null, null) {
@@ -280,7 +280,7 @@ public class Suggestion {
       }
     },
     DISKTYPE(ImplicitSnitch.DISKTYPE, String.class,
-        unmodifiableSet(new HashSet(Arrays.asList("ssd", "rotational"))), null, null, null, null) {
+        unmodifiableSet(new HashSet(Arrays.asList("ssd", "rotational"))), null, null) {
       @Override
       public void getSuggestions(SuggestionCtx ctx) {
         perNodeSuggestions(ctx);
@@ -294,14 +294,15 @@ public class Suggestion {
     final Boolean additive;
     public final String tagName;
     public final String perReplicaValue;
+    public final String metricsAttribute;
 
     ConditionType(String tagName, Class type, Set<String> vals, Number min, Number max) {
-      this(tagName, type, vals, min, max, null, null);
+      this(tagName, type, vals, min, max, null, Boolean.TRUE, null);
 
     }
 
     ConditionType(String tagName, Class type, Set<String> vals, Number min, Number max, String perReplicaValue,
-                  Boolean additive) {
+                  Boolean additive, String metricsAttribute) {
       this.tagName = tagName;
       this.type = type;
       this.vals = vals;
@@ -309,6 +310,7 @@ public class Suggestion {
       this.max = max;
       this.perReplicaValue = perReplicaValue;
       this.additive = additive;
+      this.metricsAttribute = metricsAttribute;
     }
 
     public void getSuggestions(SuggestionCtx ctx) {
