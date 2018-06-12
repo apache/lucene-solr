@@ -22,7 +22,6 @@ import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -263,7 +262,7 @@ public class JsonLoader extends ContentStreamLoader {
                   if(!result.containsKey(e.getKey())) {
                     result.setField(e.getKey(), new ArrayList<>(1));
                   }
-                  safeAddValue(result, e.getKey(), buildDoc((Map) o));
+                  result.addField(e.getKey(), buildDoc((Map) o));
                 }
               }
             }
@@ -271,7 +270,7 @@ public class JsonLoader extends ContentStreamLoader {
             if (anonChildDocFlag) {
               result.addChildDocument(buildDoc((Map) e.getValue()));
             } else {
-              safeAddValue(result, e.getKey(), buildDoc((Map) e.getValue()));
+              result.addField(e.getKey(), buildDoc((Map) e.getValue()));
             }
           }
         } else {
@@ -690,32 +689,6 @@ public class JsonLoader extends ContentStreamLoader {
         return  listVal.get(0) instanceof Map;
       }
       return val instanceof Map;
-    }
-
-    // This is used instead of addField, since SolrInputDocument implements iterable,
-    // so each of the document SolrInputField is added to the array list, instead of the whole SolrInputDocument
-    private void safeAddValue(SolrInputDocument doc, String fieldName, Object value) {
-      SolrInputField field = doc.getField(fieldName);
-      if(field == null || field.getValue() == null) {
-        doc.setField(fieldName, value);
-      } else if(field.getValue() instanceof List) {
-        List fieldVal = (List) field.getValue();
-        if(value instanceof Collection) {
-          fieldVal.addAll((Collection) value);
-        } else {
-          fieldVal.add(value);
-        }
-      } else {
-        List vals = new ArrayList<>(2);
-        if(value instanceof Collection) {
-          vals.add(field.getValue());
-          vals.addAll((Collection) value);
-        } else {
-          vals.add(field.getValue());
-          vals.add(value);
-        }
-        doc.setField(fieldName, vals);
-      }
     }
 
     private SolrInputDocument generateExtendedValueDoc(int ev) throws IOException {
