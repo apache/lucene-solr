@@ -592,7 +592,7 @@ public class JsonLoader extends ContentStreamLoader {
     private void parseExtendedFieldValue(int ev, SolrInputField sif) throws IOException {
       assert ev == JSONParser.OBJECT_START;
 
-      SolrInputDocument extendedSolrDocument = parseExtendedValueAsDoc(ev);
+      SolrInputDocument extendedSolrDocument = parseDoc(ev);
 
       if (isChildDoc(extendedSolrDocument)) {
         sif.addValue(extendedSolrDocument);
@@ -698,26 +698,6 @@ public class JsonLoader extends ContentStreamLoader {
         return  listVal.get(0) instanceof Map;
       }
       return val instanceof Map;
-    }
-
-    private SolrInputDocument parseExtendedValueAsDoc(int ev) throws IOException {
-      assert ev == JSONParser.OBJECT_START;
-      SolrInputDocument extendedInfo = new SolrInputDocument();
-
-      while(true) {
-        ev = parser.nextEvent();
-        if (ev == JSONParser.OBJECT_END) {
-          return extendedInfo;
-        }
-        String label = parser.getString();
-        SolrInputField sif = new SolrInputField(label);
-        parseFieldValue(sif);
-        // pulling out the pieces may seem weird, but it's because
-        // SolrInputDocument.addField will do the right thing
-        // if the doc already has another value for this field
-        // (ie: repeating fieldname keys)
-        extendedInfo.addField(label, sif.getValue());
-      }
     }
   }
 
