@@ -68,10 +68,16 @@ import org.slf4j.LoggerFactory;
  * &lt;/requestHandler&gt;
  * </pre>
  * <p>
+<<<<<<< HEAD
  * Then, at index time, Solr will look at the <code>id</code> field value and extract
  * it's domain portion into a new <code>hostname</code> field. By default, the
  * following fields will also be added:
  * </p>
+=======
+ * Then, at index time, Solr will look at the <code>id</code> field value and extract
+ * it's domain portion into a new <code>hostname</code> field. By default, the
+ * following fields will also be added
+>>>>>>> Add an example explaining how to use
  * <ul>
  *  <li>url_length</li>
  *  <li>url_levels</li>
