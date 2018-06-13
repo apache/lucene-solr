@@ -580,6 +580,15 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
+    /**
+     * @param ev
+     * @param sif
+     * @throws IOException
+     * A method to either extract an index time boost (deprecated), a map for atomic update, or a child document.
+     * firstly, a solr document SolrInputDocument constructed. It is then determined whether the document is indeed a childDocument(if it has a unique field).
+     * If so, it is added.
+     * Otherwise the document is looped as a map, and is then parsed as an Atomic Update if that is the case.
+     */
     private void parseExtendedFieldValue(int ev, SolrInputField sif) throws IOException {
       assert ev == JSONParser.OBJECT_START;
 
