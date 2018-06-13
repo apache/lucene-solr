@@ -39,7 +39,7 @@ REM set GC_TUNE=-XX:NewRatio=3 -XX:SurvivorRatio=4     etc.
 REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 REM e.g. host1:2181,host2:2181/chroot
 REM Leave empty if not using SolrCloud
-set ZK_HOST=localhost:2181
+REM set ZK_HOST=
 
 REM Set the ZooKeeper client timeout (for SolrCloud mode)
 REM set ZK_CLIENT_TIMEOUT=15000

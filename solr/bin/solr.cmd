@@ -1426,10 +1426,13 @@ SHIFT
 goto parse_config_args
 
 :run_config
+IF NOT "!ZK_HOST!"=="" SET "CONFIG_ARGS=!CONFIG_ARGS! -z !ZK_HOST!"
+IF NOT "!SOLR_URL_SCHEME!"=="" SET "CONFIG_ARGS=!CONFIG_ARGS! -scheme !SOLR_URL_SCHEME!"
+
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j2.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI config -zkHost !ZK_HOST! -scheme !SOLR_URL_SCHEME! !CONFIG_ARGS!
+  org.apache.solr.util.SolrCLI config !CONFIG_ARGS!
 if errorlevel 1 (
    exit /b 1
 )

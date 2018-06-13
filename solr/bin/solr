@@ -940,7 +940,13 @@ if [[ "$SCRIPT_CMD" == "config" ]]; then
       esac
     done
   fi
-  run_tool config -zkHost "$ZK_HOST" -scheme "$SOLR_URL_SCHEME" "${CONFIG_PARAMS[@]}"
+  if [[ -n "$ZK_HOST" ]]; then
+    CONFIG_PARAMS+=("-z" "$ZK_HOST")
+  fi
+  if [[ -n "$SOLR_URL_SCHEME" ]]; then
+    CONFIG_PARAMS+=("-scheme" "$SOLR_URL_SCHEME")
+  fi
+  run_tool config "${CONFIG_PARAMS[@]}"
   exit $?
 fi
 
