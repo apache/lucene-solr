@@ -96,6 +96,8 @@ Other Changes
   AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
 
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
+
+* SOLR-12193: Move some log messages to TRACE level (gezapeti)
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
