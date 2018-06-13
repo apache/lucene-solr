@@ -79,10 +79,6 @@ Bug Fixes
 
 * SOLR-12449: Response /autoscaling/diagnostics shows improper json (noble)
 
-* SOLR-12481: update.autoCreateFields must be set via Config API command 'set-user-property', 
-  but 'bin/solr create' tells users to use the default action 'set-property', which fails
-  because the property is not editable. (Steve Rowe)
-
 Optimizations
 ----------------------
 
@@ -368,6 +364,10 @@ Bug Fixes
 * SOLR-12445: Upgrade Dropwizard Metrics to version 3.2.6. (ab)
 
 * SOLR-12434: bin/solr {config,healthcheck} ignore ZK_HOST in solr.in.{sh,cmd} (Steve Rowe)
+
+* SOLR-12481: update.autoCreateFields must be set via Config API command 'set-user-property', 
+  but 'bin/solr create' tells users to use the default action 'set-property', which fails
+  because the property is not editable. (Steve Rowe)
 
 Optimizations
 ----------------------
