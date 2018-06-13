@@ -253,7 +253,7 @@ public class JsonLoader extends ContentStreamLoader {
     private SolrInputDocument buildDoc(Map<String, Object> m) {
       SolrInputDocument result = new SolrInputDocument();
       for (Map.Entry<String, Object> e : m.entrySet()) {
-        if (entryIsChildDoc(e.getValue())) { // parse child documents
+        if (mapEntryIsChildDoc(e.getValue())) { // parse child documents
           if (e.getValue() instanceof List) {
             List value = (List) e.getValue();
             for (Object o : value) {
@@ -691,7 +691,7 @@ public class JsonLoader extends ContentStreamLoader {
       return extendedFieldValue.containsKey(req.getSchema().getUniqueKeyField().getName());
     }
 
-    private boolean entryIsChildDoc(Object val) {
+    private boolean mapEntryIsChildDoc(Object val) {
       if(val instanceof List) {
         List listVal = (List) val;
         if (listVal.size() == 0) return false;
