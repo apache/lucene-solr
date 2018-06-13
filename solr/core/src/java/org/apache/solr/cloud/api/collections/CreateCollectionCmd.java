@@ -277,7 +277,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     Integer numSlices = message.getInt(OverseerCollectionMessageHandler.NUM_SLICES, null);
     String router = message.getStr("router.name", DocRouter.DEFAULT_NAME);
     if(ImplicitDocRouter.NAME.equals(router)){
-      ClusterStateMutator.getShardNames(shardNames, message.getStr("shards", null));
+      ClusterStateMutator.addShardNames(shardNames, message.getStr("shards", null));
       numSlices = shardNames.size();
     } else {
       if (numSlices == null ) {
@@ -286,7 +286,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if (numSlices <= 0) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, OverseerCollectionMessageHandler.NUM_SLICES + " must be > 0");
       }
-      ClusterStateMutator.getShardNames(numSlices, shardNames);
+      ClusterStateMutator.addShardNames(numSlices, shardNames);
     }
 
     int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);

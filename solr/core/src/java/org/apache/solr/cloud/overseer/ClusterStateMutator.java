@@ -73,12 +73,12 @@ public class ClusterStateMutator {
       List<String> shardNames = new ArrayList<>();
 
       if (router instanceof ImplicitDocRouter) {
-        getShardNames(shardNames, message.getStr("shards", DocRouter.DEFAULT_NAME));
+        addShardNames(shardNames, message.getStr("shards", DocRouter.DEFAULT_NAME));
       } else {
         int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, -1);
         if (numShards < 1)
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "numShards is a required parameter for 'compositeId' router");
-        getShardNames(numShards, shardNames);
+        addShardNames(numShards, shardNames);
       }
       List<DocRouter.Range> ranges = router.partitionRange(shardNames.size(), router.fullRange());//maybe null
 
@@ -137,25 +137,24 @@ public class ClusterStateMutator {
     return newClusterState;
   }
 
-  public static void getShardNames(Integer numShards, List<String> shardNames) {
-    if (numShards == null)
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "numShards" + " is a required param");
-    for (int i = 0; i < numShards; i++) {
-      final String sliceName = "shard" + (i + 1);
-      shardNames.add(sliceName);
-    }
-
+  public static void addShardNames(Integer numShards, List<String> shardNames) {
+	if (numShards == null)
+	  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "numShards" + " is a required param");
+	for (int i = 0; i < numShards; i++) {
+	  final String sliceName = "shard" + (i + 1);
+	  shardNames.add(sliceName);
+	}
   }
 
-  public static void getShardNames(List<String> shardNames, String shards) {
-    if (shards == null)
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
-    for (String s : shards.split(",")) {
-      if (s == null || s.trim().isEmpty()) continue;
-      shardNames.add(s.trim());
-    }
-    if (shardNames.isEmpty())
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
+  public static void addShardNames(List<String> shardNames, String shards) {
+	if (shards == null)
+	  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
+	for (String s : shards.split(",")) {
+	  if (s == null || s.trim().isEmpty()) continue;
+	  shardNames.add(s.trim());
+	}
+	if (shardNames.isEmpty())
+	  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
   }
 
   /*
