@@ -47,6 +47,9 @@ API Changes
 * LUCENE-8144: Moved QueryCachingPolicy.ALWAYS_CACHE to the test framework.
   (Nhat Nguyen via Adrien Grand)
 
+* LUCENE-8356: StandardFilter and StandardFilterFactory have been removed
+  (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
