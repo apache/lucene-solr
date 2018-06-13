@@ -30,9 +30,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WordlistLoader;
 
 /**
- * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
- * LowerCaseFilter} and {@link StopFilter}, using a configurable list of
- * stop words.
+ * Filters {@link StandardTokenizer} with {@link LowerCaseFilter} and
+ * {@link StopFilter}, using a configurable list of stop words.
  */
 public final class StandardAnalyzer extends StopwordAnalyzerBase {
 
@@ -102,8 +101,7 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(final String fieldName) {
     final StandardTokenizer src = new StandardTokenizer();
     src.setMaxTokenLength(maxTokenLength);
-    TokenStream tok = new StandardFilter(src);
-    tok = new LowerCaseFilter(tok);
+    TokenStream tok = new LowerCaseFilter(src);
     tok = new StopFilter(tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
@@ -118,8 +116,6 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new LowerCaseFilter(result);
-    return result;
+    return new LowerCaseFilter(in);
   }
 }

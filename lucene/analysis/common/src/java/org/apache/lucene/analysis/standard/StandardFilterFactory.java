@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.standard;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -32,7 +31,10 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.StandardFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @deprecated StandardFilter is a no-op and can be removed from filter chains
  */
+@Deprecated
 public class StandardFilterFactory extends TokenFilterFactory {
   
   /** Creates a new StandardFilterFactory */

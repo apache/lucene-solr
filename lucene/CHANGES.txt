@@ -112,6 +112,10 @@ Optimizations
 
 ======================= Lucene 7.5.0 =======================
 
+API Changes:
+
+ * LUCENE-8356: StandardFilter is deprecated (Alan Woodward)
+
 Bug Fixes:
 
  * LUCENE-8164: IndexWriter silently accepts broken payload. This has been fixed

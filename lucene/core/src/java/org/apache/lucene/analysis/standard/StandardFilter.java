@@ -24,7 +24,10 @@ import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Normalizes tokens extracted with {@link StandardTokenizer}.
+ *
+ * @deprecated StandardFilter is a no-op and can be removed from code
  */
+@Deprecated
 public class StandardFilter extends TokenFilter {
 
   /** Sole constructor */
