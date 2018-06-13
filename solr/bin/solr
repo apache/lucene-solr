@@ -1065,7 +1065,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
 
   if [[ "$CREATE_CONFDIR" == "_default" ]] && ([[ "$CREATE_CONFNAME" == "" ]] || [[ "$CREATE_CONFNAME" == "_default" ]]); then
     echo "WARNING: Using _default configset with data driven schema functionality. NOT RECOMMENDED for production use."
-    echo "         To turn off: bin/solr config -c $CREATE_NAME -p $CREATE_PORT -property update.autoCreateFields -value false"
+    echo "         To turn off: bin/solr config -c $CREATE_NAME -p $CREATE_PORT -action set-user-property -property update.autoCreateFields -value false"
   fi
 
   if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then

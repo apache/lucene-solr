@@ -81,6 +81,10 @@ Bug Fixes
 
 * SOLR-12434: bin/solr {config,healthcheck} ignore ZK_HOST in solr.in.{sh,cmd} (Steve Rowe)
 
+* SOLR-12481: update.autoCreateFields must be set via Config API command 'set-user-property', 
+  but 'bin/solr create' tells users to use the default action 'set-property', which fails
+  because the property is not editable. (Steve Rowe)
+
 Optimizations
 ----------------------
 

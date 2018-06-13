@@ -1548,7 +1548,7 @@ if "!CREATE_PORT!"=="" (
 
 if "!CREATE_CONFDIR!"=="_default" (
   echo WARNING: Using _default configset with data driven schema functionality. NOT RECOMMENDED for production use.
-  echo          To turn off: bin\solr config -c !CREATE_NAME! -p !CREATE_PORT! -property update.autoCreateFields -value false
+  echo          To turn off: bin\solr config -c !CREATE_NAME! -p !CREATE_PORT! -action set-user-property -property update.autoCreateFields -value false
 )
 
 if "%SCRIPT_CMD%"=="create_core" (
