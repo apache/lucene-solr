@@ -912,6 +912,7 @@ if [[ "$SCRIPT_CMD" == "config" ]]; then
 
   if [ $# -gt 0 ]; then
     while true; do
+      echo "Got here #1"
       case "$1" in
           -z|-zkhost|-zkHost)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
@@ -930,11 +931,17 @@ if [[ "$SCRIPT_CMD" == "config" ]]; then
               shift 2
           ;;
           *)  # Pass through all other params
-              CONFIG_PARAMS+=($1)
+              if [ "$1" != "" ]; then
+                CONFIG_PARAMS+=($1)
+                shift
+              else
+                break
+              fi
           ;;
       esac
     done
   fi
+echo run_tool config -zkHost "$ZK_HOST" -scheme "$SOLR_URL_SCHEME" "${CONFIG_PARAMS[@]}"
   run_tool config -zkHost "$ZK_HOST" -scheme "$SOLR_URL_SCHEME" "${CONFIG_PARAMS[@]}"
   exit $?
 fi
