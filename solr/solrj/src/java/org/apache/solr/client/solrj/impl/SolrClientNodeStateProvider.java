@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -113,6 +114,10 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return ctx.getTags();
   }
 
+  public void forEachReplica(String node, Consumer<ReplicaInfo> consumer){
+    Row.forEachReplica(nodeVsCollectionVsShardVsReplicaInfo.get(node), consumer);
+  }
+
 
   @Override
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
@@ -124,9 +129,11 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           if (r.getVariables().containsKey(key)) continue;
           String perReplicaAttrKeyPrefix = "solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":";
           Suggestion.ConditionType tagType = Suggestion.getTagType(key);
-          if(tagType == null) continue;
-          String perReplicaValue = tagType.metricsAttribute;
-          perReplicaValue = perReplicaValue == null ? key : perReplicaValue;
+          String perReplicaValue = key;
+          if (tagType != null) {
+            perReplicaValue = tagType.metricsAttribute;
+            perReplicaValue = perReplicaValue == null ? key : perReplicaValue;
+          }
           perReplicaAttrKeyPrefix += perReplicaValue;
           keyVsReplica.put(perReplicaAttrKeyPrefix, new Pair<>(key, r));
         }
