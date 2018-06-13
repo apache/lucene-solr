@@ -912,7 +912,6 @@ if [[ "$SCRIPT_CMD" == "config" ]]; then
 
   if [ $# -gt 0 ]; then
     while true; do
-      echo "Got here #1"
       case "$1" in
           -z|-zkhost|-zkHost)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
