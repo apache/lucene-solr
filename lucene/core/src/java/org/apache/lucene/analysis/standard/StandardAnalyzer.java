@@ -31,8 +31,8 @@ import org.apache.lucene.analysis.WordlistLoader;
 
 /**
  * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
- * LowerCaseFilter} and {@link StopFilter}, using a list of
- * English stop words.
+ * LowerCaseFilter} and {@link StopFilter}, using a configurable list of
+ * stop words.
  */
 public final class StandardAnalyzer extends StopwordAnalyzerBase {
 
@@ -67,10 +67,10 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
     super(stopWords);
   }
 
-  /** Builds an analyzer with the default stop words ({@link #STOP_WORDS_SET}).
+  /** Builds an analyzer with no stop words.
    */
   public StandardAnalyzer() {
-    this(STOP_WORDS_SET);
+    this(CharArraySet.EMPTY_SET);
   }
 
   /** Builds an analyzer with the stop words from the given reader.

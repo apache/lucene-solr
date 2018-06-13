@@ -73,6 +73,9 @@ Changes in Runtime Behavior
 * LUCENE-8031: Length normalization correctly reflects omission of term frequencies.
   (Robert Muir, Adrien Grand)
 
+* LUCENE-7444: StandardAnalyzer no longer defaults to removing English stopwords
+  (Alan Woodward)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
