@@ -270,6 +270,9 @@ Bug Fixes
 * LUCENE-8278: Some end-of-input no-scheme domain-only URL tokens are typed as
   <ALPHANUM> rather than <URL>.  (Junte Zhang, Steve Rowe)
 
+* LUCENE-8355: Prevent IW from opening an already dropped segment while DV updates
+  are written. (Nhat Nguyen via Simon Willnauer)
+
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
