@@ -603,13 +603,13 @@ public class JsonLoader extends ContentStreamLoader {
       Map<String, Object> extendedInfo = null;
 
       for (SolrInputField entry: extendedSolrDocument) {
-        Object label = entry.getValue();
-        String val = entry.getName();
-        if ("boost".equals(val)) {
-          Object boostVal = label;
+        Object val = entry.getValue();
+        String label = entry.getName();
+        if ("boost".equals(label)) {
+          Object boostVal = val;
           if (!(boostVal instanceof Double)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Boost should have number. "
-                + "Unexpected value: " + boostVal.toString() + "field=" + val);
+                + "Unexpected value: " + boostVal.toString() + "field=" + label);
           }
 
           String message = "Ignoring field boost: " + boostVal.toString() + " as index-time boosts are not supported anymore";
@@ -618,8 +618,8 @@ public class JsonLoader extends ContentStreamLoader {
           } else {
             log.debug(message);
           }
-        } else if ("value".equals(val)) {
-          normalFieldValue = label;
+        } else if ("value".equals(label)) {
+          normalFieldValue = val;
         } else {
           // If we encounter other unknown map keys, then use a map
           if (extendedInfo == null) {
@@ -627,7 +627,7 @@ public class JsonLoader extends ContentStreamLoader {
           }
           // for now, the only extended info will be field values
           // we could either store this as an Object or a SolrInputField
-          extendedInfo.put(val, label);
+          extendedInfo.put(label, val);
         }
         if (extendedInfo != null) {
           if (normalFieldValue != null) {
