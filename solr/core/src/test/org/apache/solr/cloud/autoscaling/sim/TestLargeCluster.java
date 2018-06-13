@@ -102,13 +102,19 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     triggerFinishedCount.set(0);
     triggerFinishedLatch = new CountDownLatch(1);
     listenerEvents.clear();
-    // disable .scheduled_maintenance
+    // disable .scheduled_maintenance and .auto_add_replicas
     String suspendTriggerCommand = "{" +
         "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
         "}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
     SolrClient solrClient = cluster.simGetSolrClient();
     NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {'name' : '.auto_add_replicas'}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
     // do this in advance if missing

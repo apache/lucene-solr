@@ -908,7 +908,39 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
 fi
 
 if [[ "$SCRIPT_CMD" == "config" ]]; then
-  run_tool config $*
+  CONFIG_PARAMS=()
+
+  if [ $# -gt 0 ]; then
+    while true; do
+      case "$1" in
+          -z|-zkhost|-zkHost)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
+                exit 1
+              fi
+              ZK_HOST="$2"
+              shift 2
+          ;;
+          -s|-scheme)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "URL scheme is required when using the $1 option!"
+                exit 1
+              fi
+              SOLR_URL_SCHEME="$2"
+              shift 2
+          ;;
+          *)  # Pass through all other params
+              if [ "$1" != "" ]; then
+                CONFIG_PARAMS+=($1)
+                shift
+              else
+                break
+              fi
+          ;;
+      esac
+    done
+  fi
+  run_tool config -zkHost "$ZK_HOST" -scheme "$SOLR_URL_SCHEME" "${CONFIG_PARAMS[@]}"
   exit $?
 fi
 
@@ -1033,7 +1065,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
 
   if [[ "$CREATE_CONFDIR" == "_default" ]] && ([[ "$CREATE_CONFNAME" == "" ]] || [[ "$CREATE_CONFNAME" == "_default" ]]); then
     echo "WARNING: Using _default configset with data driven schema functionality. NOT RECOMMENDED for production use."
-    echo "         To turn off: bin/solr config -c $CREATE_NAME -p $CREATE_PORT -property update.autoCreateFields -value false"
+    echo "         To turn off: bin/solr config -c $CREATE_NAME -p $CREATE_PORT -action set-user-property -property update.autoCreateFields -value false"
   fi
 
   if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
