@@ -29,8 +29,7 @@ import org.apache.lucene.analysis.core.StopAnalyzer;
 
 /**
  * Filters {@link org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer}
- * with {@link org.apache.lucene.analysis.standard.StandardFilter},
- * {@link org.apache.lucene.analysis.LowerCaseFilter} and
+ * with {@link org.apache.lucene.analysis.LowerCaseFilter} and
  * {@link org.apache.lucene.analysis.StopFilter}, using a list of
  * English stop words.
  */
@@ -87,8 +86,7 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(final String fieldName) {
     final UAX29URLEmailTokenizer src = new UAX29URLEmailTokenizer();
     src.setMaxTokenLength(maxTokenLength);
-    TokenStream tok = new StandardFilter(src);
-    tok = new LowerCaseFilter(tok);
+    TokenStream tok = new LowerCaseFilter(src);
     tok = new StopFilter(tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
