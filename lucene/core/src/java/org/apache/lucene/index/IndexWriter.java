@@ -607,6 +607,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // Only acquire IW lock on each write, since this is a time consuming operation.  This way
               // other threads get a chance to run in between our writes.
               synchronized (this) {
+                // It's possible that the segment of a reader returned by readerPool#getReadersByRam
+                // is dropped before being processed here. If it happens, we need to skip that reader.
+                if (readerPool.get(rld.info, false) == null) {
+                  assert segmentInfos.contains(rld.info) == false : "Segment [" + rld.info + "] is not dropped yet";
+                  continue;
+                }
                 if (rld.writeFieldUpdates(directory, globalFieldNumberMap, bufferedUpdatesStream.getCompletedDelGen(), infoStream)) {
                   checkpointNoSIS();
                 }
