@@ -93,13 +93,16 @@ public class JsonLoader extends ContentStreamLoader {
     protected JSONParser parser;
     protected final int commitWithin;
     protected final boolean overwrite;
-    protected final boolean anonChildDocFlag;
+    protected final boolean anonChildDoc;
 
+    /**
+     * {@link CommonParams#ANONYMOUS_CHILD_DOCS} Defaults to true.
+     */
     public SingleThreadedJsonLoader(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
       this.processor = processor;
       this.req = req;
       this.rsp = rsp;
-      this.anonChildDocFlag = req.getParams().getBool(CommonParams.ANONYMOUS_CHILD_DOCS_FLAG, true);
+      this.anonChildDoc = req.getParams().getBool(CommonParams.ANONYMOUS_CHILD_DOCS, true);
 
       commitWithin = req.getParams().getInt(UpdateParams.COMMIT_WITHIN, -1);
       overwrite = req.getParams().getBool(UpdateParams.OVERWRITE, true);
@@ -255,7 +258,7 @@ public class JsonLoader extends ContentStreamLoader {
             List value = (List) e.getValue();
             for (Object o : value) {
               if (o instanceof Map) {
-                if (anonChildDocFlag) {
+                if (anonChildDoc) {
                   result.addChildDocument(buildDoc((Map) o));
                 } else {
                   // retain the value as a list, even if the list contains a single value.
@@ -267,7 +270,7 @@ public class JsonLoader extends ContentStreamLoader {
               }
             }
           } else if (e.getValue() instanceof Map) {
-            if (anonChildDocFlag) {
+            if (anonChildDoc) {
               result.addChildDocument(buildDoc((Map) e.getValue()));
             } else {
               result.addField(e.getKey(), buildDoc((Map) e.getValue()));
@@ -546,7 +549,7 @@ public class JsonLoader extends ContentStreamLoader {
         }
         String fieldName = parser.getString();
 
-        if (anonChildDocFlag && fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
+        if (anonChildDoc && fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
           ev = parser.nextEvent();
           assertEvent(ev, JSONParser.ARRAY_START);
           while ((ev = parser.nextEvent()) != JSONParser.ARRAY_END) {
@@ -570,37 +573,34 @@ public class JsonLoader extends ContentStreamLoader {
     private void parseFieldValue(SolrInputField sif) throws IOException {
       int ev = parser.nextEvent();
       if (ev == JSONParser.OBJECT_START) {
-        parseExtendedFieldValue(sif, ev);
+        parseExtendedFieldValue(ev, sif);
       } else {
         Object val = parseNormalFieldValue(ev, sif);
         sif.setValue(val);
       }
     }
 
-    private void parseExtendedFieldValue(SolrInputField sif, int ev) throws IOException {
+    private void parseExtendedFieldValue(int ev, SolrInputField sif) throws IOException {
       assert ev == JSONParser.OBJECT_START;
 
-      SolrInputDocument extendedSolrDocument = generateExtendedValueDoc(ev);
+      SolrInputDocument extendedSolrDocument = parseExtendedValueAsDoc(ev);
 
       if (isChildDoc(extendedSolrDocument)) {
-        SolrInputDocument cDoc = new SolrInputDocument();
-        for (Map.Entry<String, SolrInputField> extendedEntry: extendedSolrDocument.entrySet()) {
-          cDoc.setField(extendedEntry.getKey(), extendedEntry.getValue().getValue());
-        }
-        sif.addValue(cDoc);
+        sif.addValue(extendedSolrDocument);
         return;
       }
 
       Object normalFieldValue = null;
       Map<String, Object> extendedInfo = null;
 
-      for (String label: extendedSolrDocument.keySet() ) {
-        Object fieldVal = extendedSolrDocument.get(label).getValue();
-        if ("boost".equals(label)) {
+      for (SolrInputField field: extendedSolrDocument) {
+        Object fieldVal = field.getValue();
+        String fieldName = field.getName();
+        if ("boost".equals(fieldName)) {
           Object boostVal = fieldVal;
           if (!(boostVal instanceof Double)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Boost should have number. "
-                + "Unexpected value: " + boostVal.toString() + "field=" + label);
+                + "Unexpected value: " + boostVal.toString() + "field=" + fieldName);
           }
 
           String message = "Ignoring field boost: " + boostVal.toString() + " as index-time boosts are not supported anymore";
@@ -609,7 +609,7 @@ public class JsonLoader extends ContentStreamLoader {
           } else {
             log.debug(message);
           }
-        } else if ("value".equals(label)) {
+        } else if ("value".equals(fieldName)) {
           normalFieldValue = fieldVal;
         } else {
           // If we encounter other unknown map keys, then use a map
@@ -618,7 +618,7 @@ public class JsonLoader extends ContentStreamLoader {
           }
           // for now, the only extended info will be field values
           // we could either store this as an Object or a SolrInputField
-          extendedInfo.put(label, fieldVal);
+          extendedInfo.put(fieldName, fieldVal);
         }
         if (extendedInfo != null) {
           if (normalFieldValue != null) {
@@ -654,7 +654,7 @@ public class JsonLoader extends ContentStreamLoader {
         case JSONParser.ARRAY_START:
           return parseArrayFieldValue(ev, sif);
         case JSONParser.OBJECT_START:
-          parseExtendedFieldValue(sif, ev);
+          parseExtendedFieldValue(ev, sif);
           return sif.getValue();
         default:
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON field value. "
@@ -678,8 +678,8 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    private boolean isChildDoc(SolrInputDocument extendedMap) {
-      return extendedMap.containsKey(req.getSchema().getUniqueKeyField().getName());
+    private boolean isChildDoc(SolrInputDocument extendedFieldValue) {
+      return extendedFieldValue.containsKey(req.getSchema().getUniqueKeyField().getName());
     }
 
     private boolean entryIsChildDoc(Object val) {
@@ -691,7 +691,7 @@ public class JsonLoader extends ContentStreamLoader {
       return val instanceof Map;
     }
 
-    private SolrInputDocument generateExtendedValueDoc(int ev) throws IOException {
+    private SolrInputDocument parseExtendedValueAsDoc(int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
       SolrInputDocument extendedInfo = new SolrInputDocument();
 
@@ -703,6 +703,10 @@ public class JsonLoader extends ContentStreamLoader {
         String label = parser.getString();
         SolrInputField sif = new SolrInputField(label);
         parseFieldValue(sif);
+        // pulling out the pieces may seem weird, but it's because
+        // SolrInputDocument.addField will do the right thing
+        // if the doc already has another value for this field
+        // (ie: repeating fieldname keys)
         extendedInfo.addField(label, sif.getValue());
       }
     }

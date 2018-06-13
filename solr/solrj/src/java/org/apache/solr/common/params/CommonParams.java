@@ -289,6 +289,10 @@ public interface CommonParams {
 
   String JAVABIN_MIME = "application/javabin";
 
-  String ANONYMOUS_CHILD_DOCS_FLAG = "anonChildDocsFlag";
+  /**
+   * If set to true, child documents will be added as anonymous children into the _childDocuments list,
+   * else, child documents will be added to SolrInputDocument as field values according to their key name.
+   */
+  String ANONYMOUS_CHILD_DOCS = "anonChildDocs";
 }
 

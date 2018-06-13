@@ -20,7 +20,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -37,6 +36,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
+
+import static org.apache.solr.common.params.CommonParams.ANONYMOUS_CHILD_DOCS;
 
 public class JsonLoaderTest extends SolrTestCaseJ4 {
 
@@ -464,7 +465,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       }
     }
 
-    req = req(PARENT_TWO_CHILDREN_PARAMS, "anonChildDocsFlag", Boolean.toString(anonChildDocsFlag));
+    req = req(PARENT_TWO_CHILDREN_PARAMS, ANONYMOUS_CHILD_DOCS, Boolean.toString(anonChildDocsFlag));
     req.getContext().put("path", "/update/json/docs");
     rsp = new SolrQueryResponse();
     p = new BufferingRequestProcessor(null);
@@ -878,7 +879,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   private void checkTwoAnonymousChildDocs(String rawJsonStr, boolean anonChildDocs) throws Exception {
-    SolrQueryRequest req = req("commit","true", CommonParams.ANONYMOUS_CHILD_DOCS_FLAG, Boolean.toString(anonChildDocs));
+    SolrQueryRequest req = req("commit","true", ANONYMOUS_CHILD_DOCS, Boolean.toString(anonChildDocs));
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     JsonLoader loader = new JsonLoader();
