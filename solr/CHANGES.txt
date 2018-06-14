@@ -49,6 +49,9 @@ New Features
   relationship instead of the current "anonymous" relationship.  Use of this experimental feature requires
   anonChildDocs=false parameter.  (Moshe Bla, David Smiley)
 
+* SOLR-11578: Solr 7 Admin UI (Cloud > Graph) should reflect the Replica type to give a more accurate representation
+  of the cluster. (Rhoit Singh via Erick Erickson)
+
 Bug Fixes
 ----------------------
 
