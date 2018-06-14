@@ -74,6 +74,10 @@ New Features
 
 * SOLR-12474: Add an UpdateRequest Object that implements RequestWriter.ContentWriter (noble)
 
+* SOLR-12362: Uploading docs in JSON now supports child documents as field values, thus providing a label to the
+  relationship instead of the current "anonymous" relationship.  Use of this experimental feature requires
+  anonChildDocs=false parameter.  (Moshe Bla, David Smiley)
+
 Bug Fixes
 ----------------------
 
