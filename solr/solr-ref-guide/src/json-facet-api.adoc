@@ -320,6 +320,27 @@ The value of `filter` can be a single query to treat as a filter, or a list of f
 * a string containing a query in Solr query syntax
 * a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
 
+== Filter Exclusions
+One can exclude top-level filters and query *before* faceting via the `excludeTags` keywords in the `domain` block of the facet.
+
+Example:
+[source,bash]
+----
+&q={!tag=top}"running shorts"
+&fq={!tag=COLOR}color:Blue
+&json={
+   filter:"{!tag=BRAND}brand:Bosco"
+   facet:{
+      sizes:{type:terms, field:size},
+      colors:{type:terms, field:color, domain:{excludeTags:COLOR} },
+      brands:{type:terms, field:brand, domain:{excludeTags:"BRAND,top"} }
+   }
+}
+----
+
+The value of `excludeTags` can be a single string tag, array of string tags or comma-separated tags in the single string.
+See also the section on <<faceting.adoc#tagging-and-excluding-filters,multi-select faceting>>.
+
 == Aggregation Functions
 
 Aggregation functions, also called *facet functions, analytic functions,* or **metrics**, calculate something interesting over a domain (each facet bucket).
