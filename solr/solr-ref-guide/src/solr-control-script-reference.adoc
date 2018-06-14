@@ -461,10 +461,10 @@ Other collections can share the same configuration by specifying the name of the
 
 ==== Data-driven Schema and Shared Configurations
 
-The `_default` schema can mutate as data is indexed, since it has schemaless functionality (i.e., data-driven changes to the schema). Consequently, we recommend that you do not share data-driven configurations between collections unless you are certain that all collections should inherit the changes made when indexing data into one of the collections. You can turn off schemaless functionality (i.e., data-driven changes to the schema) for a collection by the following (assuming the collection name is `mycollection`):
+The `_default` schema can mutate as data is indexed, since it has schemaless functionality (i.e., data-driven changes to the schema). Consequently, we recommend that you do not share data-driven configurations between collections unless you are certain that all collections should inherit the changes made when indexing data into one of the collections. You can turn off schemaless functionality (i.e., data-driven changes to the schema) for a collection by the following, assuming the collection name is `mycollection` - see <<Set or Unset Configuration Properties>>:
 
 [source,text]
-curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false
 
 === Delete Core or Collection
 
@@ -578,6 +578,61 @@ You can disable Basic Authentication with `bin/solr auth disable`.
 If the `-updateIncludeFileOnly` option is set to *true*, then only the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will not be removed.
 
 If the `-updateIncludeFileOnly` option is set to *false*, then the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will be removed. However, the `basicAuth.conf` file is not removed with either option.
+
+== Set or Unset Configuration Properties
+
+The `bin/solr` script enables a subset of the Config API: <<config-api.adoc#commands-for-common-properties,(un)setting common properties>> and <<config-api.adoc#commands-for-user-defined-properties,(un)setting user-defined properties>>.
+
+`bin/solr config [options]`
+
+`bin/solr config -help`
+
+=== Set or Unset Common Properties
+
+To set the common property `updateHandler.autoCommit.maxDocs` to `100` on collection `mycollection`:
+
+`bin/solr config -c mycollection -p 8983 -action set-property -property updateHandler.autoCommit.maxDocs -value 100`
+
+The default `-action` is `set-property`, so the above can be shortened by not mentioning it:
+
+`bin/solr config -c mycollection -p 8983 -property updateHandler.autoCommit.maxDocs -value 100`
+
+To unset a previously set common property, specify `-action unset-property` with no `-value`:
+
+`bin/solr config -c mycollection -p 8983 -action unset-property -property updateHandler.autoCommit.maxDocs`
+
+=== Set or Unset User-defined Properties
+
+To set the user-defined property `update.autoCreateFields` to `false` (to disable <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>):
+
+`bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false`
+
+To unset a previously set user-defined property, specify `-action unset-user-property` with no `-value`:
+
+`bin/solr config -c mycollection -p 8983 -action unset-user-property -property update.autoCreateFields`
+
+=== Config Parameters
+
+`-c <name>`::
+Name of the core or collection on which to change configuration (required).
+
+`-action <name>`::
+Config API action, one of: `set-property`, `unset-property`, `set-user-property`, `unset-user-property`; defaults to `set-property`.
+
+`-property <name>`::
+Name of the property to change (required).
+
+`-value <new-value>`::
+Set the property to this value.
+
+`-z <zkHost>`::
+The ZooKeeper connection string, usable in SolrCloud mode. Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
+
+`-p <port>`::
+`localhost` port of the Solr node to use when applying the configuration change.
+
+`-solrUrl <url>`::
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 == ZooKeeper Operations
 
