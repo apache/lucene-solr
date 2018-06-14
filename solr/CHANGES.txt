@@ -482,6 +482,8 @@ Other Changes
 
 * SOLR-12183: Refactor Streaming Expression test cases (Joel Bernstein)
 
+* SOLR-12437: Document 'bin/solr config' in the ref guide. (Steve Rowe)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
