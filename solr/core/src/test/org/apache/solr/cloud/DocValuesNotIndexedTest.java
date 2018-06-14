@@ -224,7 +224,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   // We should be able to sort thing with missing first/last and that are _NOT_ present at all on one server.
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testGroupingSorting() throws IOException, SolrServerException {
     CloudSolrClient client = cluster.getSolrClient();
 
@@ -270,7 +270,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testGroupingDocAbsent() throws IOException, SolrServerException {
     List<SolrInputDocument> docs = new ArrayList<>(4);
     docs.add(makeGSDoc(2, fieldsToTestGroupSortFirst, null));
@@ -312,7 +312,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   // Verify that we actually form groups that are "expected". Most of the processing takes some care to 
   // make sure all the values for each field are unique. We need to have docs that have values that are _not_
   // unique.
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testGroupingDVOnly() throws IOException, SolrServerException {
     List<SolrInputDocument> docs = new ArrayList<>(50);
     for (int idx = 0; idx < 49; ++idx) {

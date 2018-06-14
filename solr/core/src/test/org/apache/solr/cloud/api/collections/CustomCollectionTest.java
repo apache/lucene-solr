@@ -55,7 +55,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testCustomCollectionsAPI() throws Exception {
 
     final String collection = "implicitcoll";

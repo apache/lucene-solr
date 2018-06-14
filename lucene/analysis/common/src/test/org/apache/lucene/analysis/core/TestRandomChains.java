@@ -97,6 +97,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
@@ -848,6 +849,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     String toString;
   }
 
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testRandomChains() throws Throwable {
     int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;
     Random random = random();
@@ -876,6 +878,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
 
   // we might regret this decision...
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testRandomChainsWithLargeStrings() throws Throwable {
     int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;
     Random random = random();

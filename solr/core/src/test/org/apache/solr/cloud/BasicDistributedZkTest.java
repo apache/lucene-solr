@@ -148,6 +148,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void test() throws Exception {
     // setLoggingLevel(null);
 
