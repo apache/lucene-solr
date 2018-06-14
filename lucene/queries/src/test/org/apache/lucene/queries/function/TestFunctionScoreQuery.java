@@ -27,6 +27,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -126,8 +127,11 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     assertEquals(plain.totalHits, docs.totalHits);
     for (int i = 0; i < expectedDocs.length; i++) {
       assertEquals(expectedDocs[i], docs.scoreDocs[i].doc);
-
     }
+
+    Explanation expl = searcher.explain(fq, 4);
+    assertTrue(expl.toString().contains("first"));
+    assertTrue(expl.toString().contains("iii"));
 
   }
 
@@ -147,8 +151,11 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     assertEquals(plain.totalHits, docs.totalHits);
     for (int i = 0; i < expectedDocs.length; i++) {
       assertEquals(expectedDocs[i], docs.scoreDocs[i].doc);
-
     }
+
+    Explanation expl = searcher.explain(fq, 6);
+    assertTrue(expl.toString().contains("rechecking"));
+    assertTrue(expl.toString().contains("text"));
   }
 
   // check boosts with non-distributive score source
