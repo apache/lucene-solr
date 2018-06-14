@@ -120,6 +120,13 @@ Bug Fixes:
 
 ======================= Lucene 7.4.0 =======================
 
+Upgrading
+
+* LUCENE-8344: If you are using the AnalyzingSuggester or FuzzySuggester subclass, and if you
+  explicitly use the preservePositionIncrements=false setting (not the default), then you ought
+  to rebuild your suggester index. If you don't, queries or indexed data with trailing position
+  gaps (e.g. stop words) may not work correctly. (David Smiley, Jim Ferenczi)
+
 API Changes
 
 * LUCENE-8242: IndexSearcher.createNormalizedWeight() has been deprecated.
@@ -279,6 +286,10 @@ Bug Fixes
 
 * LUCENE-8355: Prevent IW from opening an already dropped segment while DV updates
   are written. (Nhat Nguyen via Simon Willnauer)
+
+* LUCENE-8344: TokenStreamToAutomaton (used by some suggesters) was not ignoring a trailing
+  position increment when the preservePositionIncrement setting is false.
+  (David Smiley, Jim Ferenczi)
 
 Other
 
