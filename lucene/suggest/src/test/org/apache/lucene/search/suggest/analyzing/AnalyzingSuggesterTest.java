@@ -220,34 +220,49 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
    * basic "standardanalyzer" test with stopword removal
    */
   public void testStandard() throws Exception {
+    final String input = "the ghost of christmas past the"; // trailing stopword there just to perturb possible bugs
     Input keys[] = new Input[] {
-        new Input("the ghost of christmas past", 50),
+        new Input(input, 50),
     };
-    
+
     Directory tempDir = getDirectory();
     Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", standard, standard, 
         AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, false);
 
     suggester.build(new InputArrayIterator(keys));
-    
-    List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);
+    List<LookupResult> results;
+
+    // round-trip
+    results = suggester.lookup(TestUtil.stringToCharSequence(input, random()), false, 1);
     assertEquals(1, results.size());
-    assertEquals("the ghost of christmas past", results.get(0).key.toString());
+    assertEquals(input, results.get(0).key.toString());
+    assertEquals(50, results.get(0).value, 0.01F);
+
+    // prefix of input stopping part way through christmas
+    results = suggester.lookup(TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);
+    assertEquals(1, results.size());
+    assertEquals(input, results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // omit the 'the' since it's a stopword, it's suggested anyway
     results = suggester.lookup(TestUtil.stringToCharSequence("ghost of chris", random()), false, 1);
     assertEquals(1, results.size());
-    assertEquals("the ghost of christmas past", results.get(0).key.toString());
+    assertEquals(input, results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // omit the 'the' and 'of' since they are stopwords, it's suggested anyway
     results = suggester.lookup(TestUtil.stringToCharSequence("ghost chris", random()), false, 1);
     assertEquals(1, results.size());
-    assertEquals("the ghost of christmas past", results.get(0).key.toString());
+    assertEquals(input, results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
-    
+
+    // trailing stopword "the"
+    results = suggester.lookup(TestUtil.stringToCharSequence("ghost christmas past the", random()), false, 1);
+    assertEquals(1, results.size());
+    assertEquals(input, results.get(0).key.toString());
+    assertEquals(50, results.get(0).value, 0.01F);
+
     IOUtils.close(standard, tempDir);
   }
 
