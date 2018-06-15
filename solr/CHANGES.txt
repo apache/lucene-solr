@@ -376,6 +376,9 @@ Bug Fixes
   but 'bin/solr create' tells users to use the default action 'set-property', which fails
   because the property is not editable. (Steve Rowe)
 
+* SOLR-12416: When creating a time routed alias, the router.autoDeleteAge option wasn't considered.
+  (Joachim Sauer via David Smiley)
+
 Optimizations
 ----------------------
 
