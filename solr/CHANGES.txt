@@ -33,7 +33,10 @@ Upgrade Notes
 ----------------------
 
 * The data-driven schema no longer returns the *_str field-copy of text fields by default. The *_str field is still 
-  created and can be used for e.g. sorting, but to retrieve it you now need to explicitly list it in "fl" (SOLR-12350) 
+  created and can be used for e.g. sorting, but to retrieve it you now need to explicitly list it in "fl" (SOLR-12350)
+
+* LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
+  findForcedMerges (optimize) and findForcedDeletesMerges (expungeDeletes) (Erick Erickson)
 
 New Features
 ----------------------

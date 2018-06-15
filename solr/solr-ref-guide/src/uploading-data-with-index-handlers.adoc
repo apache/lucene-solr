@@ -87,20 +87,20 @@ The `<commit>` operation writes all documents loaded since the last commit to on
 
 Commits may be issued explicitly with a `<commit/>` message, and can also be triggered from `<autocommit>` parameters in `solrconfig.xml`.
 
-The `<optimize>` operation requests Solr to merge internal data structures. For a large index, optimization will take some time to complete, but by merging many small segment files into a larger one, search performance may improve. If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred.
+The `<optimize>` operation requests Solr to merge internal data structures. For a large index, optimization will take some time to complete, but by merging many small segment files into larger segments, search performance may improve. If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred.
 
-WARNING: You should only consider using optimize on static indexes, i.e., indexes that can be optimized as part of the regular update process (say once-a-day updates). Applications requiring NRT functionalty are discouraged from using optimize.
+WARNING: You should only consider using optimize on static indexes, i.e., indexes that can be optimized as part of the regular update process (say once-a-day updates). Applications requiring NRT functionality should not use optimize.
 
 The `<commit>` and `<optimize>` elements accept these optional attributes:
 
 `waitSearcher`::
 Default is `true`. Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
 
-`expungeDeletes`:: (commit only) Default is `false`. Merges segments that have more than 10% deleted docs, expunging them in the process.
+`expungeDeletes`:: (commit only) Default is `false`. Merges segments that have more than 10% deleted docs, expunging the deleted documents in the process. Resulting segments will respect maxMergedSegmentMB.
 
 WARNING: expungeDeletes is "less expensive" than optimize, but the same warnings apply.
 
-`maxSegments`:: (optimize only) Default is `1`. Merges the segments down to no more than this number of segments.
+`maxSegments`:: (optimize only) Default is unlimited, resulting segments respect the maxMergedSegmentMB setting. Merges the segments down to no more than this number of segments. Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
 
 Here are examples of <commit> and <optimize> using optional attributes:
 
