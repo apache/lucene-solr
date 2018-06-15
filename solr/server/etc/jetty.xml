@@ -91,9 +91,24 @@
 
       <Call name="addRule">
         <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.TerminatingRegexRule">
+            <Set name="regex">^/solr/admin-ui/.*[.](js|html)$</Set>
+          </New>
+        </Arg>
+      </Call>
+      <Call name="addRule">
+        <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RedirectRegexRule">
             <Set name="regex">^/$</Set>
-            <Set name="replacement">/solr/</Set>
+            <Set name="replacement">/solr/admin-ui/index.html</Set>
+          </New>
+        </Arg>
+      </Call>
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule">
+            <Set name="regex">^/solr/admin-ui/.*$</Set>
+            <Set name="replacement">/solr/admin-ui/index.html</Set>
           </New>
         </Arg>
       </Call>
@@ -143,7 +158,7 @@
     <Set name="handler">
       <Ref id="RewriteHandler"/>
     </Set>
-    
+
     <!-- =========================================================== -->
     <!-- Configure Request Log                                       -->
     <!-- =========================================================== -->
@@ -197,9 +212,9 @@
               </New>
             </Arg>
           </Call>
-          
+
           <!-- Add a customize step to the deployment lifecycle -->
-          <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class 
+          <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class
           <Call name="insertLifeCycleNode">
             <Arg>deployed</Arg>
             <Arg>starting</Arg>
@@ -213,9 +228,9 @@
             </Arg>
           </Call>
           -->
-          
+
         </New>
       </Arg>
     </Call>
-    
+
 </Configure>
