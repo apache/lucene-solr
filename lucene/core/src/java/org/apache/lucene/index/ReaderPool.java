@@ -19,19 +19,22 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
@@ -243,16 +246,36 @@ final class ReaderPool implements Closeable {
     return any;
   }
 
-  PriorityQueue<ReadersAndUpdates> getReadersByRam() {
-    // Sort by largest ramBytesUsed:
-    PriorityQueue<ReadersAndUpdates> queue = new PriorityQueue<>(readerMap.size(),
-        (a, b) -> Long.compare(b.ramBytesUsed.get(), a.ramBytesUsed.get()));
-    synchronized (this) {
-      for (ReadersAndUpdates rld : readerMap.values()) {
-        queue.add(rld);
+  /**
+   * Returns a list of all currently maintained ReadersAndUpdates sorted by it's ram consumption largest to smallest.
+   * This list can also contain readers that don't consume any ram at this point ie. don't have any updates buffered.
+   */
+  synchronized List<ReadersAndUpdates> getReadersByRam() {
+    class RamRecordingHolder {
+      final ReadersAndUpdates updates;
+      final long ramBytesUsed;
+      RamRecordingHolder(ReadersAndUpdates updates) {
+        this.updates = updates;
+        this.ramBytesUsed = updates.ramBytesUsed.get();
       }
     }
-    return queue;
+    final ArrayList<RamRecordingHolder> readersByRam;
+    synchronized (this) {
+      if (readerMap.isEmpty()) {
+        return Collections.emptyList();
+      }
+      readersByRam = new ArrayList<>(readerMap.size());
+      for (ReadersAndUpdates rld : readerMap.values()) {
+        // we have to record the ram usage once and then sort
+        // since the ram usage can change concurrently and that will confuse the sort or hit an assertion
+        // the we can acquire here is not enough we would need to lock all ReadersAndUpdates to make sure it doesn't
+        // change
+        readersByRam.add(new RamRecordingHolder(rld));
+      }
+    }
+    // Sort this outside of the lock by largest ramBytesUsed:
+    CollectionUtil.introSort(readersByRam, (a, b) -> Long.compare(b.ramBytesUsed, a.ramBytesUsed));
+    return Collections.unmodifiableList(readersByRam.stream().map(h -> h.updates).collect(Collectors.toList()));
   }
 
 

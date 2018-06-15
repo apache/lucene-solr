@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -30,6 +31,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -277,5 +279,35 @@ public class TestReaderPool extends LuceneTestCase {
     writer.commit();
     writer.close();
     return writer.globalFieldNumberMap;
+  }
+
+  public void testGetReaderByRam() throws IOException {
+    Directory directory = newDirectory();
+    FieldInfos.FieldNumbers fieldNumbers = buildIndex(directory);
+    StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
+    SegmentInfos segmentInfos = reader.segmentInfos.clone();
+    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
+        new NullInfoStream(), null, null);
+    assertEquals(0, pool.getReadersByRam().size());
+
+    int ord = 0;
+    for (SegmentCommitInfo commitInfo : segmentInfos) {
+      ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
+      BinaryDocValuesFieldUpdates test = new BinaryDocValuesFieldUpdates(0, "test", commitInfo.info.maxDoc());
+      test.add(0, new BytesRef(new byte[ord++]));
+      test.finish();
+      readersAndUpdates.addDVUpdate(test);
+    }
+
+    List<ReadersAndUpdates> readersByRam = pool.getReadersByRam();
+    assertEquals(segmentInfos.size(), readersByRam.size());
+    long previousRam = Long.MAX_VALUE;
+    for (ReadersAndUpdates rld : readersByRam) {
+      assertTrue("previous: " + previousRam + " now: " + rld.ramBytesUsed.get(), previousRam >= rld.ramBytesUsed.get());
+      previousRam = rld.ramBytesUsed.get();
+      rld.dropChanges();
+      pool.drop(rld.info);
+    }
+    IOUtils.close(pool, reader, directory);
   }
 }

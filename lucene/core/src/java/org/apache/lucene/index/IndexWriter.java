@@ -29,7 +29,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -592,25 +591,27 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             }
 
             // Sort by largest ramBytesUsed:
-            PriorityQueue<ReadersAndUpdates> queue = readerPool.getReadersByRam();
+            final List<ReadersAndUpdates> list = readerPool.getReadersByRam();
             int count = 0;
-            while (ramBytesUsed > 0.5 * ramBufferSizeMB * 1024 * 1024) {
-              ReadersAndUpdates rld = queue.poll();
-              if (rld == null) {
+            for (ReadersAndUpdates rld : list) {
+
+              if (ramBytesUsed <= 0.5 * ramBufferSizeMB * 1024 * 1024) {
                 break;
               }
-
               // We need to do before/after because not all RAM in this RAU is used by DV updates, and
               // not all of those bytes can be written here:
               long bytesUsedBefore = rld.ramBytesUsed.get();
-
+              if (bytesUsedBefore == 0) {
+                continue; // nothing to do here - lets not acquire the lock
+              }
               // Only acquire IW lock on each write, since this is a time consuming operation.  This way
               // other threads get a chance to run in between our writes.
               synchronized (this) {
                 // It's possible that the segment of a reader returned by readerPool#getReadersByRam
                 // is dropped before being processed here. If it happens, we need to skip that reader.
+                // this is also best effort to free ram, there might be some other thread writing this rld concurrently
+                // which wins and then if readerPooling is off this rld will be dropped.
                 if (readerPool.get(rld.info, false) == null) {
-                  assert segmentInfos.contains(rld.info) == false : "Segment [" + rld.info + "] is not dropped yet";
                   continue;
                 }
                 if (rld.writeFieldUpdates(directory, globalFieldNumberMap, bufferedUpdatesStream.getCompletedDelGen(), infoStream)) {
