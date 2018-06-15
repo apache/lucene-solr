@@ -60,7 +60,7 @@ Start Solr in SolrCloud mode, which will also launch the embedded ZooKeeper inst
 +
 This option can be shortened to simply `-c`.
 +
-If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also pass the -z parameter.
+If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) or pass the -z parameter.
 +
 For more details, see the section <<SolrCloud Mode>> below.
 +
@@ -137,7 +137,7 @@ Start Solr with verbose messages from the start script.
 *Example*: `bin/solr start -V`
 
 `-z <zkHost>`::
-Start Solr with the defined ZooKeeper connection string. This option is only used with the -c option, to start Solr in SolrCloud mode. If this option is not provided, Solr will start the embedded ZooKeeper instance and use that instance for SolrCloud operations.
+Start Solr with the defined ZooKeeper connection string. This option is only used with the -c option, to start Solr in SolrCloud mode. If `ZK_HOST` is not specified in `solr.in.sh`/`solr.in.cmd` and this option is not provided, Solr will start the embedded ZooKeeper instance and use that instance for SolrCloud operations.
 +
 *Example*: `bin/solr start -c -z server1:2181,server2:2181`
 
@@ -172,7 +172,9 @@ The `-c` and `-cloud` options are equivalent:
 
 If you specify a ZooKeeper connection string, such as `-z 192.168.1.4:2181`, then Solr will connect to ZooKeeper and join the cluster.
 
-If you do not specify the `-z` option when starting Solr in cloud mode, then Solr will launch an embedded ZooKeeper server listening on the Solr port + 1000, i.e., if Solr is running on port 8983, then the embedded ZooKeeper will be listening on port 9983.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from all `bin/solr` commands.
+
+ When starting Solr in cloud mode, if you neither define `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` nor specify the `-z` option, then Solr will launch an embedded ZooKeeper server listening on the Solr port + 1000, i.e., if Solr is running on port 8983, then the embedded ZooKeeper will be listening on port 9983.
 
 [IMPORTANT]
 ====
@@ -328,7 +330,7 @@ The `healthcheck` command generates a JSON-formatted health report for a collect
 *Example*: `bin/solr healthcheck -c gettingstarted`
 
 `-z <zkhost>`::
-ZooKeeper connection string, defaults to `localhost:9983`. If you are running Solr on a port other than 8983, you will have to specify the ZooKeeper connection string. By default, this will be the Solr port + 1000.
+ZooKeeper connection string, defaults to `localhost:9983`. If you are running Solr on a port other than 8983, you will have to specify the ZooKeeper connection string. By default, this will be the Solr port + 1000.  Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `bin/solr healthcheck -z localhost:2181`
 
@@ -563,7 +565,7 @@ When *true*, blocks all unauthenticated users from accessing Solr. This defaults
 When *true*, only the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will not be created.
 
 `-z`::
-Defines the ZooKeeper connect string. This is useful if you want to enable authentication before all your Solr nodes have come up.
+Defines the ZooKeeper connect string. This is useful if you want to enable authentication before all your Solr nodes have come up.  Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 `-d`::
 Defines the Solr server directory, by default `$SOLR_HOME/server`. It is not common to need to override the default, and is only needed if you have customized the `$SOLR_HOME` directory path.
@@ -672,7 +674,7 @@ If just a name is supplied, `$SOLR_HOME/server/solr/configsets` will be checked 
 * `-d /path/to/configset/source`
 
 `-z <zkHost>`::
-The ZooKeeper connection string. Unnecessary if ZK_HOST is defined in `solr.in.sh` or `solr.in.cmd`.
+The ZooKeeper connection string. Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -711,7 +713,7 @@ In either case, _pre-existing configurations at the destination will be overwrit
 * `-d /path/to/configset/destination`
 
 `-z <zkHost>`::
-The ZooKeeper connection string. Unnecessary if ZK_HOST is defined in `solr.in.sh` or `solr.in.cmd`.
+The ZooKeeper connection string. Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -752,7 +754,7 @@ At least one of `<src>` or `<dest>` must be prefixed by `zk:` or the command wil
 * `file:/Users/apache/configs/src`
 
 `-z <zkHost>`::
-The ZooKeeper connection string. Unnecessary if ZK_HOST is defined in `solr.in.sh` or `solr.in.cmd`.
+The ZooKeeper connection string. Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -791,7 +793,7 @@ The path is assumed to be a ZooKeeper node, no `zk:` prefix is necessary.
 * `/configs/myconfigset/solrconfig.xml`
 
 `-z <zkHost>`::
-The ZooKeeper connection string. Unnecessary if ZK_HOST is defined in `solr.in.sh` or `solr.in.cmd`.
+The ZooKeeper connection string. Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -819,7 +821,7 @@ The new name of the znode. The `zk:` prefix is assumed.
 *Example*: `/configs/newconfigset`
 
 `-z <zkHost>`::
-The ZooKeeper connection string. Unnecessary if ZK_HOST is defined in `solr.in.sh` or `solr.in.cmd`.
+The ZooKeeper connection string. Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -845,7 +847,7 @@ The path on ZooKeeper to list.
 *Example*: `/collections/mycollection`
 
 `-z <zkHost>`::
-The ZooKeeper connection string. Unnecessary if ZK_HOST is defined in `solr.in.sh` or `solr.in.cmd`.
+The ZooKeeper connection string. Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -868,7 +870,7 @@ The path on ZooKeeper to create. Intermediate znodes will be created if necessar
 *Example*: `/solr`
 
 `-z <zkHost>`::
-The ZooKeeper connection string. Unnecessary if ZK_HOST is defined in `solr.in.sh` or `solr.in.cmd`.
+The ZooKeeper connection string. Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
