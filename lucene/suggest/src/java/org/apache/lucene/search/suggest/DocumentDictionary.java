@@ -132,6 +132,10 @@ public class DocumentDictionary implements Dictionary {
       relevantFields = getRelevantFields(new String [] {field, weightField, payloadField, contextsField});
     }
 
+    /**
+     * The document weight is extracted from the source document 'weightField'.
+     * It can be null if the 'weightField' is missing in the source document.
+     */
     @Override
     public Long weight() {
       return currentWeight;
@@ -237,7 +241,7 @@ public class DocumentDictionary implements Dictionary {
      * Returns the value of the <code>weightField</code> for the current document.
      * Retrieves the value for the <code>weightField</code> if it's stored (using <code>doc</code>)
      * or if it's indexed as {@link NumericDocValues} (using <code>docId</code>) for the document.
-     * If no value is found, then the weight is 0.
+     * If no value is found, then the weight is null.
      */
     protected Long getWeight(Document doc, int docId) throws IOException {
       IndexableField weight = doc.getField(weightField);
