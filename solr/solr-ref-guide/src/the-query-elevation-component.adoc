@@ -68,6 +68,13 @@ Path to the file that defines query elevation. This file must exist in `<instanc
 
 `forceElevation`::
 By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true` (the default), results will first return the boosted docs, then order by date.
+This is also a request parameter, which will override the config.
+
+`useConfiguredElevatedOrder`::
+When multiple docs are elevated, should their relative order be the order in the configuration file or should
+they be subject to whatever the sort criteria is?  True by default.
+This is also a request parameter, which will override the config.
+The effect is most apparent when forceElevation is true and there is sorting on fields.
 
 === The elevate.xml File
 
@@ -118,6 +125,10 @@ You can force Solr to return only the results specified in the elevation file by
 
 [source,text]
 http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&exclusive=true
+
+=== The useConfiguredElevatedOrder Parameter
+
+You can force set `useConfiguredElevatedOrder` during runtime by supplying it as a request parameter.
 
 === Document Transformers and the markExcludes Parameter
 

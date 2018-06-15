@@ -67,22 +67,35 @@ Upgrade Notes
 New Features
 ----------------------
 
-(no changes)
+* SOLR-11865: The QueryElevationComponent now has a useConfiguredElevatedOrder setting. When multiple docs are elevated,
+  this specifies whether their relative order should be the order in the configuration file or if not then should they
+  be subject to whatever the sort criteria is.  Additionally, QEC was extensively refactored to be more extensible.
+  (Bruno Roustant, David Smiley)
+
+* SOLR-12474: Add an UpdateRequest Object that implements RequestWriter.ContentWriter (noble)
 
 Bug Fixes
 ----------------------
 
-(no changes)
+* SOLR-12449: Response /autoscaling/diagnostics shows improper json (noble)
 
 Optimizations
 ----------------------
 
 * SOLR-12350: Do not use docValues as stored for _str (copy)fields in _default configset (janhoy)
 
+* SOLR-12455: Refactor JSON serialization code into SolrJ package (noble)
+
 Other Changes
 ----------------------
 
-(no changes)
+* SOLR-12361: Allow nested child documents to be in field values of a SolrInputDocument as an alternative to
+  add/get ChildDocuments off to the side.  The latter is now referred to as "anonymous" child documents as opposed to
+  "labelled" (by the field name).  Anonymous child docs might be deprecated in the future.
+  This is an internal change not yet plumbed into /update formats.
+  AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
+
+* SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
 
 ==================  7.4.0 ==================
 
@@ -349,6 +362,12 @@ Bug Fixes
 * SOLR-12354: Register the /admin/info/key end-point at the startup time to avoid 404 (noble)
 
 * SOLR-12445: Upgrade Dropwizard Metrics to version 3.2.6. (ab)
+
+* SOLR-12434: bin/solr {config,healthcheck} ignore ZK_HOST in solr.in.{sh,cmd} (Steve Rowe)
+
+* SOLR-12481: update.autoCreateFields must be set via Config API command 'set-user-property', 
+  but 'bin/solr create' tells users to use the default action 'set-property', which fails
+  because the property is not editable. (Steve Rowe)
 
 Optimizations
 ----------------------

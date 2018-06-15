@@ -197,12 +197,12 @@ Place all replicas in nodes with freedisk more than 500GB when possible. Here we
 [source,json]
 {"replica": 0, "freedisk": "<500", "strict" : false}
 
-==== Try to Place all Replicas of type TLOG in nodes with SSD drives
+==== Try to Place all Replicas of type TLOG on Nodes with SSD Drives
 
 [source,json]
 { "replica": 0,  "diskType" : "!ssd",  "type" : "TLOG" }
 
-==== Try to Place all Replicas of type PULL on nodes with rotational disk drives
+==== Try to Place all Replicas of type PULL on Nodes with Rotational Disk Drives
 
 [source,json]
 { "replica": 0,  "diskType" : "!rotational",  "type" : "PULL" }

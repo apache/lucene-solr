@@ -92,7 +92,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean()) {
+    if (random().nextBoolean() && false) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -455,10 +455,10 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
   @Test
   public void testMixedBounds() throws Exception {
-    if (cloudManager instanceof SimCloudManager) {
-      log.warn("Requires SOLR-12208");
-      return;
-    }
+//    if (cloudManager instanceof SimCloudManager) {
+//      log.warn("Requires SOLR-12208");
+//      return;
+//    }
 
     String collectionName = "testMixedBounds_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,

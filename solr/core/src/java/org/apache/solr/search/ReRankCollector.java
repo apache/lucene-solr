@@ -20,9 +20,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
+
 import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.IntIntHashMap;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -46,7 +47,7 @@ public class ReRankCollector extends TopDocsCollector {
   final private IndexSearcher searcher;
   final private int reRankDocs;
   final private int length;
-  final private Map<BytesRef, Integer> boostedPriority;
+  final private Set<BytesRef> boostedPriority; // order is the "priority"
   final private Rescorer reRankQueryRescorer;
 
 
@@ -55,7 +56,7 @@ public class ReRankCollector extends TopDocsCollector {
       Rescorer reRankQueryRescorer,
       QueryCommand cmd,
       IndexSearcher searcher,
-      Map<BytesRef, Integer> boostedPriority) throws IOException {
+      Set<BytesRef> boostedPriority) throws IOException {
     super(null);
     this.reRankDocs = reRankDocs;
     this.length = length;
