@@ -52,7 +52,11 @@ public abstract class Lookup implements Accountable {
      *  highlighted suggestion. */
     public final Object highlightKey;
 
-    /** the key's weight */
+    /**
+     * the key's weight.
+     * This is not just the dictionary weight for the suggestion.
+     * It depends on the suggester implementation.
+     */
     public final double value;
 
     /** the key's payload (null if not present) */
