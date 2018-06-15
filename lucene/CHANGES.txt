@@ -118,6 +118,11 @@ Bug Fixes:
    via LUCENE-8165 since we are now checking for offset+length going out of bounds.
    (Robert Muir, Nhat Nyugen, Simon Willnauer)
 
+Changes in Runtime Behavior:
+
+* LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
+  findForcedMerges and findForcedDeletesMerges (Erick Erickson)
+
 ======================= Lucene 7.4.0 =======================
 
 Upgrading
