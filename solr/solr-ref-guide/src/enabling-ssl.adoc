@@ -175,6 +175,8 @@ If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.a
 
 === Run SolrCloud with SSL
 
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from all of the `bin/solr`/`bin\solr.cmd` commands below.
+
 ==== Create Solr Home Directories for Two Nodes
 
 Create two copies of the `server/solr/` directory which will serve as the Solr home directories for each of your two SolrCloud nodes:
