@@ -348,12 +348,17 @@ public class JsonRecordReader {
           } else if (event == ARRAY_START) {
             for (; ; ) {
               event = parser.nextEvent();
-              if (event == ARRAY_END) break;
-              if (event == OBJECT_START) {
-                // if single item in array will still be added as array
-                if(!values.containsKey(name)) {
-                  values.put(name, new ArrayList<>());
+              if (event == ARRAY_END) {
+                // ensure that the value is of type List
+                final Object val = values.get(name);
+                if (val != null && !(val instanceof List)) {
+                  final ArrayList listVal = new ArrayList(1);
+                  listVal.add(val);
+                  values.put(name, listVal);
                 }
+                break;
+              }
+              if (event == OBJECT_START) {
                 walkObject();
               }
             }
@@ -437,7 +442,6 @@ public class JsonRecordReader {
           for (String fld : valuesAddedinThisFrame) {
             values.remove(fld);
           }
-          values.remove(null);
         }
       }
     }
