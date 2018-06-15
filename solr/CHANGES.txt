@@ -487,6 +487,9 @@ Other Changes
 
 * SOLR-12437: Document 'bin/solr config' in the ref guide. (Steve Rowe)
 
+* SOLR-12435: Fix bin/solr help and ref guide text to describe ZK_HOST in solr.in.sh/solr.in.cmd
+  as an alternative to -z cmdline param. (Steve Rowe)
+
 ==================  7.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
