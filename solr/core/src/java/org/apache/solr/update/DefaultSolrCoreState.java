@@ -34,8 +34,8 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -48,14 +48,14 @@ import org.slf4j.LoggerFactory;
 
 public final class DefaultSolrCoreState extends SolrCoreState implements RecoveryStrategy.RecoveryListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 
   private final ReentrantLock recoveryLock = new ReentrantLock();
   
-  private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", 10000);
+  private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", 1000);
   
-  private final ActionThrottle leaderThrottle = new ActionThrottle("leader", 5000);
+  private final ActionThrottle leaderThrottle = new ActionThrottle("leader", 1000);
   
   private final AtomicInteger recoveryWaiting = new AtomicInteger();
 
@@ -286,7 +286,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
-    
+    // nocommit - limit recovery executor based on load
     Runnable recoveryTask = new Runnable() {
       @Override
       public void run() {
@@ -335,6 +335,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
               
               recoveryStrat = recoveryStrategyBuilder.create(cc, cd, DefaultSolrCoreState.this);
               recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
+              
+              cc.getUpdateShardHandler().sizeRecoveryExecutorForLoad();
+              
               Future<?> future = cc.getUpdateShardHandler().getRecoveryExecutor().submit(recoveryStrat);
               try {
                 future.get();

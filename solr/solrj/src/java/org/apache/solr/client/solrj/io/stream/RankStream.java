@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -36,8 +38,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
-import static org.apache.solr.common.params.CommonParams.SORT;
 
 
 /**

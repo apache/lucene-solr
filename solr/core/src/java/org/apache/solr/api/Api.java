@@ -19,12 +19,13 @@ package org.apache.solr.api;
 
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.common.util.JsonSchemaValidator;
+
+import com.google.common.collect.ImmutableMap;
 
 /** Every version 2 API must extend the this class. It's mostly like a request handler
  * but it has extra methods to provide the json schema of the end point

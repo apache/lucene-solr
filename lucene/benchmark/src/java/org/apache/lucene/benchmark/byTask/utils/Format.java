@@ -96,6 +96,17 @@ public class Format {
     String s1 = (s + padd);
     return s1.substring(0, Math.min(col.length(), s1.length()));
   }
+  
+  /**
+   * Pad a string from right.
+   * @param s string to be formatted.
+   * @param len length.
+   * @return formatted string.
+   */
+  public static String format(String s, int len) {
+    String s1 = (s + padd);
+    return s1.substring(0, Math.min(len, s1.length()));
+  }
 
   /**
    * Pad a string from left.
@@ -106,6 +117,17 @@ public class Format {
   public static String formatPaddLeft(String s, String col) {
     String res = padd + s;
     return res.substring(res.length() - col.length());
+  }
+  
+  /**
+   * Pad a string from left.
+   * @param s string to be formatted.
+   * @param len length of to padd to.
+   * @return formatted string.
+   */
+  public static String formatPaddLeft(String s, int len) {
+    String res = padd + s;
+    return res.substring(res.length() - len);
   }
 
 }

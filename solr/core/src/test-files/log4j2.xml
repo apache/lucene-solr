@@ -31,7 +31,10 @@
     <Logger name="org.apache.hadoop" level="WARN"/>
     <Logger name="org.apache.directory" level="WARN"/>
     <Logger name="org.apache.solr.hadoop" level="INFO"/>
-
+    <Logger name="org.eclipse.jetty.servlets.QoSFilter" level="DEBUG"/>
+    
+   <!--   <Logger name="org.eclipse.jetty" level="DEBUG"/> -->
+  
     <Root level="INFO">
       <AppenderRef ref="STDERR"/>
     </Root>

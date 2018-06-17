@@ -16,15 +16,15 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
 
-import java.util.Collections;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
 /**
  * Keeps only the last value of fields matching the specified 

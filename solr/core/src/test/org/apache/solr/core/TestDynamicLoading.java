@@ -16,13 +16,8 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.handler.TestBlobHandler;
-import org.apache.solr.util.RestTestHarness;
-import org.apache.solr.util.SimplePostTool;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static java.util.Arrays.asList;
+import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,9 +29,17 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static java.util.Arrays.asList;
-import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.handler.TestBlobHandler;
+import org.apache.solr.util.RestTestHarness;
+import org.apache.solr.util.SimplePostTool;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
+@Ignore
+// nocommit
 public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
@@ -54,7 +57,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     boolean success = false;
 
 
-    HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));
+    Http2SolrClient randomClient = (Http2SolrClient) clients.get(random().nextInt(clients.size()));
     String baseURL = randomClient.getBaseURL();
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
     String payload = "{\n" +

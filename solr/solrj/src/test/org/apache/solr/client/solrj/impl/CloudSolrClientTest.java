@@ -32,12 +32,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -49,6 +46,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
@@ -79,11 +77,17 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+
 
 /**
  * This test would be faster if we simulated the zk state instead.
  */
 @Slow
+@TimeoutSuite(millis = 120 * TimeUnits.SECOND)
 public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
@@ -250,7 +254,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       params.add("q", "id:" + id);
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
-      try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+      try (Http2SolrClient solrClient = new Http2SolrClient.Builder(url).build()) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
         assertTrue(docList.getNumFound() == 1);
@@ -296,7 +300,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+        try (Http2SolrClient solrClient = new Http2SolrClient.Builder(url).build()) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
           assertTrue(docList.getNumFound() == 1);
@@ -480,7 +484,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       SolrServerException, IOException {
 
     NamedList<Object> resp;
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "/"+ collectionName, 15000, 60000)) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(baseUrl + "/"+ collectionName).build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
@@ -607,10 +611,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
-    HttpSolrClient.RemoteSolrException sse = null;
+    Http2SolrClient.RemoteSolrException sse = null;
 
     final String url = r.getStr(ZkStateReader.BASE_URL_PROP) + "/" + COLLECTION;
-    try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+    try (Http2SolrClient solrClient = new Http2SolrClient.Builder(url).build()) {
 
       log.info("should work query, result {}", solrClient.query(q));
       //no problem
@@ -648,13 +652,13 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
 
     final String solrClientUrl = theNode + "/" + COLLECTION;
-    try (SolrClient solrClient = getHttpSolrClient(solrClientUrl)) {
+    try (SolrClient solrClient = new Http2SolrClient.Builder(solrClientUrl).build()) {
 
       q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion()-1));
       try {
         QueryResponse rsp = solrClient.query(q);
         log.info("error was expected");
-      } catch (HttpSolrClient.RemoteSolrException e) {
+      } catch (Http2SolrClient.RemoteSolrException e) {
         sse = e;
       }
       assertNotNull(sse);
@@ -692,14 +696,13 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void customHttpClientTest() throws IOException {
-    CloseableHttpClient client = HttpClientUtil.createClient(null);
-    try (CloudSolrClient solrClient = getCloudSolrClient(cluster.getZkServer().getZkAddress(), client)) {
+    SolrInternalHttpClient httpClient = getHttpClient();
 
-      assertTrue(solrClient.getLbClient().getHttpClient() == client);
+    try (CloudSolrClient solrClient = getCloudSolrClient(cluster.getZkServer().getZkAddress(), httpClient)) {
 
-    } finally {
-      HttpClientUtil.close(client);
-    }
+      assertTrue(solrClient.getLbClient().getHttpClient() == httpClient);
+
+    } 
   }
 
   @Test

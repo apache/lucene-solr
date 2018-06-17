@@ -16,6 +16,9 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.OverseerTaskProcessor.getLeaderNode;
+import static org.apache.solr.cloud.OverseerTaskProcessor.getSortedElectionNodes;
+
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Collections;
@@ -36,9 +39,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.OverseerCollectionConfigSetProcessor.getLeaderNode;
-import static org.apache.solr.cloud.OverseerTaskProcessor.getSortedElectionNodes;
 
 public class OverseerRolesTest extends SolrCloudTestCase {
 

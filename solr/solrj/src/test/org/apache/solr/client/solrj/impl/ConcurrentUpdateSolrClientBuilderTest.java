@@ -19,11 +19,13 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Unit tests for {@link Builder}.
  */
+@Ignore // nocommit
 public class ConcurrentUpdateSolrClientBuilderTest extends LuceneTestCase {
 
   @Test(expected = IllegalArgumentException.class)

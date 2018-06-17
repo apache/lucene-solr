@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +27,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -34,8 +36,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 /**
  * See SOLR-9504
@@ -109,15 +109,15 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     long numFound = Long.MIN_VALUE;
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
-      HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl())
-          .withHttpClient(cloudClient.getLbClient().getHttpClient()).build();
+      try (Http2SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl())
+          .withHttpClient(cloudClient.getLbClient().getHttpClient()).build()) {
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
 //      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
       if (numFound == Long.MIN_VALUE)  {
         numFound = response.getResults().getNumFound();
       } else  {
         assertEquals("Shard " + shard.getName() + " replicas do not have same number of documents", numFound, response.getResults().getNumFound());
-      }
+      }}
       count++;
     }
     return count;

@@ -16,8 +16,12 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Test for TermsComponent distributed querying
@@ -25,6 +29,8 @@ import org.junit.Test;
  *
  * @since solr 1.5
  */
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {
 
   @Test

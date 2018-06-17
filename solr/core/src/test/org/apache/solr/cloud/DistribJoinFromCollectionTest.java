@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import static org.hamcrest.CoreMatchers.not;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -26,9 +28,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -47,11 +51,13 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.CoreMatchers.not;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Tests using fromIndex that points to a collection in SolrCloud mode.
  */
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -212,7 +218,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     final QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
     try {
       cluster.getSolrClient().request(qr);
-    } catch (HttpSolrClient.RemoteSolrException ex) {
+    } catch (Http2SolrClient.RemoteSolrException ex) {
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
       assertTrue(ex.getMessage().contains(wrongName));
     }

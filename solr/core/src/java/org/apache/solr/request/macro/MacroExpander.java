@@ -16,14 +16,14 @@
  */
 package org.apache.solr.request.macro;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.search.StrParser;
-import org.apache.solr.search.SyntaxError;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.search.StrParser;
+import org.apache.solr.search.SyntaxError;
 
 public class MacroExpander {
   public static final String MACRO_START = "${";

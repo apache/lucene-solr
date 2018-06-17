@@ -22,12 +22,12 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
-public class V2StandaloneTest extends SolrTestCaseJ4{
+public class V2StandaloneTest extends SolrTestCaseJ4 {
 
   @Test
   public void testWelcomeMessage() throws Exception {
@@ -37,17 +37,18 @@ public class V2StandaloneTest extends SolrTestCaseJ4{
 
     JettySolrRunner jetty = new JettySolrRunner(solrHomeTmp.getAbsolutePath(), buildJettyConfig("/solr"));
     jetty.start();
+    try {
+      try (Http2SolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/"))) {
+        NamedList res = client.request(new V2Request.Builder("/").build());
+        NamedList header = (NamedList) res.get("responseHeader");
+        assertEquals(0, header.get("status"));
 
-    try (HttpSolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort(),"/solr/"))) {
-      NamedList res = client.request(new V2Request.Builder("/").build());
-      NamedList header = (NamedList) res.get("responseHeader");
-      assertEquals(0, header.get("status"));
-
-      res = client.request(new V2Request.Builder("/_introspect").build());
-      header = (NamedList) res.get("responseHeader");
-      assertEquals(0, header.get("status"));
+        res = client.request(new V2Request.Builder("/_introspect").build());
+        header = (NamedList) res.get("responseHeader");
+        assertEquals(0, header.get("status"));
+      }
+    } finally {
+      jetty.stop();
     }
-
-    jetty.stop();
   }
 }

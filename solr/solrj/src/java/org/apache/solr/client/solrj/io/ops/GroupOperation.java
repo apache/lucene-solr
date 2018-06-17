@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.ops;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -38,8 +40,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
-import static org.apache.solr.common.params.CommonParams.SORT;
 
 public class GroupOperation implements ReduceOperation {
 

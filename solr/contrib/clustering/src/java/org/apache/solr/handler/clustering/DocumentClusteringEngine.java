@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.DocSet;
 
 /**

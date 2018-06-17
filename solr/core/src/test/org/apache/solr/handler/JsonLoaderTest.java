@@ -16,6 +16,11 @@
  */
 package org.apache.solr.handler;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.UnaryOperator;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -31,11 +36,6 @@ import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.UnaryOperator;
 
 public class JsonLoaderTest extends SolrTestCaseJ4 {
 

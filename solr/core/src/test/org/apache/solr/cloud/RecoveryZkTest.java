@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.DocCollection;
@@ -31,11 +31,14 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
+@Ignore
+// nocommit
 public class RecoveryZkTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -132,7 +135,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     long[] numCounts = new long[replicas.size()];
     int i = 0;
     for (Replica replica : replicas) {
-      try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl())
+      try (Http2SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl())
           .withHttpClient(cluster.getSolrClient().getHttpClient()).build()) {
         numCounts[i] = client.query(new SolrQuery("*:*").add("distrib", "false")).getResults().getNumFound();
         i++;

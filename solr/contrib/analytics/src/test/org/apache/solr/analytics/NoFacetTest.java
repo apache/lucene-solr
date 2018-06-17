@@ -21,9 +21,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class NoFacetTest extends SolrAnalyticsTestCase {
   
   @BeforeClass

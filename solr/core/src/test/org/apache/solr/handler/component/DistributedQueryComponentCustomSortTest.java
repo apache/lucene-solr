@@ -16,18 +16,24 @@
  */
 package org.apache.solr.handler.component;
 
+import java.nio.ByteBuffer;
+
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.nio.ByteBuffer;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Test for QueryComponent's distributed querying
  *
  * @see org.apache.solr.handler.component.QueryComponent
  */
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class DistributedQueryComponentCustomSortTest extends BaseDistributedSearchTestCase {
 
   public DistributedQueryComponentCustomSortTest() {

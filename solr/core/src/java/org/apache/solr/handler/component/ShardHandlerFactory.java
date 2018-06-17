@@ -15,20 +15,27 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
-import com.google.common.collect.ImmutableMap;
+import java.util.Collections;
+import java.util.Locale;
+
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
-import java.util.Collections;
-import java.util.Locale;
+import com.google.common.collect.ImmutableMap;
 
 public abstract class ShardHandlerFactory {
-
+  
+  protected SolrInternalHttpClient httpClient;
   public abstract ShardHandler getShardHandler();
 
   public abstract void close();
+  
+  public void setHttpClient(SolrInternalHttpClient httpClient) {
+    this.httpClient = httpClient;
+  }
 
   /**
    * Create a new ShardHandlerFactory instance
@@ -45,6 +52,7 @@ public abstract class ShardHandlerFactory {
       ShardHandlerFactory shf = loader.findClass(info.className, ShardHandlerFactory.class).newInstance();
       if (PluginInfoInitialized.class.isAssignableFrom(shf.getClass()))
         PluginInfoInitialized.class.cast(shf).init(info);
+
       return shf;
     }
     catch (Exception e) {

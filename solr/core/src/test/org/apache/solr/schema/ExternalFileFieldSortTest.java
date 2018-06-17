@@ -16,13 +16,13 @@
  */
 package org.apache.solr.schema;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
 
 public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
 

@@ -16,21 +16,22 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.core.PluginInfo.APPENDS;
+import static org.apache.solr.core.PluginInfo.DEFAULTS;
+import static org.apache.solr.core.PluginInfo.INVARIANTS;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.core.PluginInfo.APPENDS;
-import static org.apache.solr.core.PluginInfo.DEFAULTS;
-import static org.apache.solr.core.PluginInfo.INVARIANTS;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * An Object which represents a {@code <initParams>} tag

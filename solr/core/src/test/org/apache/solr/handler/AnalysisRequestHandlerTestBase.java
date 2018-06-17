@@ -16,9 +16,9 @@
  */
 package org.apache.solr.handler;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
-import org.apache.commons.lang.ArrayUtils;
 
 /**
  * A base class for all analysis request handler tests.

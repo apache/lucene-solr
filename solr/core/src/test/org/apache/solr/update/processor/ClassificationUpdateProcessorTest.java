@@ -16,6 +16,9 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.mock;
+
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -36,9 +39,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.AddUpdateCommand;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.hamcrest.core.Is.is;
-import static org.mockito.Mockito.mock;
 
 /**
  * Tests for {@link ClassificationUpdateProcessor}

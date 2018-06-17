@@ -16,7 +16,12 @@
  */
 package org.apache.solr.client.solrj;
 
-import junit.framework.Assert;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -29,11 +34,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import junit.framework.Assert;
 
 abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   

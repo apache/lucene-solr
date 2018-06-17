@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
+
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,8 +36,6 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Template;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
-
-import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 
 public class V1toV2ApiMapper {
@@ -135,9 +135,10 @@ public class V1toV2ApiMapper {
 
     if (info.meta.getHttpMethod() == SolrRequest.METHOD.POST) {
       if (info.path == null) info.setPath();
+      System.out.println("CONVERT");
       return info.convert(request.getParams());
     }
-
+    System.out.println("DONT CONVERT");
     return null;
   }
 

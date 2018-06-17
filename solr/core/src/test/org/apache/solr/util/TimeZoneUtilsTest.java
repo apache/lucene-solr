@@ -16,16 +16,16 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-
-import java.util.Set;
 import java.util.HashSet;
-import java.util.Random;
-import java.util.TimeZone;
 import java.util.Locale;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
 
-public class TimeZoneUtilsTest extends LuceneTestCase {
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+
+public class TimeZoneUtilsTest extends SolrTestCaseJ4 {
 
   private static void assertSameRules(final String label,
                                       final TimeZone expected,

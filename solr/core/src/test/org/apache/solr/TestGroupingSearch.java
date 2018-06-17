@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -72,8 +73,10 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterTests() {
+  public static void afterTests() throws InterruptedException {
     systemClearPropertySolrTestsMergePolicyFactory();
+    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
+    TimeLimitingCollector.getGlobalTimerThread().join();
   }
 
   @Before

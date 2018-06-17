@@ -41,7 +41,7 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     SolrCore core = h.getCore();
-    _parser = new SolrRequestParsers( null );
+    _parser = new SolrRequestParsers( null, null );
     SolrQueryResponse resp = null;
     parameters = new ModifiableSolrParams();
     parameters.set(RegexpBoostProcessor.BOOST_FILENAME_PARAM, "regex-boost-processor-test.txt");

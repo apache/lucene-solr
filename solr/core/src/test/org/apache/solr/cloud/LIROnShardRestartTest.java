@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -90,7 +90,7 @@ public class LIROnShardRestartTest extends SolrCloudTestCase {
 
     // randomly add too many docs to peer sync to one replica so that only one random replica is the valid leader
     // the versions don't matter, they just have to be higher than what the last 2 docs got
-    try (HttpSolrClient client = getHttpSolrClient(jettyOfNewLeader.getBaseUrl().toString())) {
+    try (Http2SolrClient client = getHttpSolrClient(jettyOfNewLeader.getBaseUrl().toString())) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString());
 

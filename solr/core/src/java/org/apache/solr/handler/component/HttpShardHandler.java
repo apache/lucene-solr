@@ -32,14 +32,19 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.AsyncLBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.Abortable;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.OnComplete;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -72,18 +77,21 @@ public class HttpShardHandler extends ShardHandler {
 
   private HttpShardHandlerFactory httpShardHandlerFactory;
   private CompletionService<ShardResponse> completionService;
+  private Set<ShardResponse> asyncPending;
   private Set<Future<ShardResponse>> pending;
   private Map<String,List<String>> shardToURLs;
-  private HttpClient httpClient;
+  private SolrInternalHttpClient httpClient;
+  private Http2SolrClient solrClient;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, HttpClient httpClient) {
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Http2SolrClient solrClient, SolrInternalHttpClient httpClient) {
     this.httpClient = httpClient;
+    this.solrClient = solrClient;
     this.httpShardHandlerFactory = httpShardHandlerFactory;
     completionService = httpShardHandlerFactory.newCompletionService();
     pending = new HashSet<>();
-
+    asyncPending = new HashSet<>();
     // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
     // This is primarily to keep track of what order we should use to query the replicas of a shard
     // so that we use the same replica for all phases of a distributed request.
@@ -136,7 +144,9 @@ public class HttpShardHandler extends ShardHandler {
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard);
 
-    Callable<ShardResponse> task = () -> {
+    if (HttpShardHandlerFactory.ASYNC) {
+
+      // Callable<ShardResponse> task = () -> {
 
       ShardResponse srsp = new ShardResponse();
       if (sreq.nodeName != null) {
@@ -159,7 +169,7 @@ public class HttpShardHandler extends ShardHandler {
         // req.setResponseParser(new BinaryResponseParser());
 
         // if there are no shards available for a slice, urls.size()==0
-        if (urls.size()==0) {
+        if (urls.size() == 0) {
           // TODO: what's the right error code here? We should use the same thing when
           // all of the servers for a shard are down.
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
@@ -168,43 +178,134 @@ public class HttpShardHandler extends ShardHandler {
         if (urls.size() <= 1) {
           String url = urls.get(0);
           srsp.setShardAddress(url);
-          try (SolrClient client = new Builder(url).withHttpClient(httpClient).build()) {
-            ssr.nl = client.request(req);
-          }
+          req.setBasePath(url);
+          Abortable areq = solrClient.abortableRequest(req, new OnComplete<SolrResponseBase>() {
+
+            @Override
+            public void onSuccess(SolrResponseBase result) {
+              // nocommit
+
+              ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+
+              transfomResponse(sreq, srsp, shard);
+              ssr.nl = result.getResponse();
+            }
+
+            @Override
+            public void onFailure(Throwable e) {
+              
+              e.printStackTrace();
+              // nocommit
+            }
+          });
+          assert areq != null;
+          srsp.setAbortableRequest(areq);
+          asyncPending.add(srsp);
         } else {
-          LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
-          ssr.nl = rsp.getResponse();
-          srsp.setShardAddress(rsp.getServer());
+
+          AsyncLBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeAsyncLoadBalancedRequest(req, urls);
+          assert rsp.areq != null;
+          srsp.setAbortableRequest(rsp.areq);
+          asyncPending.add(srsp);
+
         }
-      }
-      catch( ConnectException cex ) {
-        srsp.setException(cex); //????
+      } catch (ConnectException cex) {
+        cex.printStackTrace();
+        srsp.setException(cex); // ????
       } catch (Exception th) {
+        th.printStackTrace();
         srsp.setException(th);
         if (th instanceof SolrException) {
-          srsp.setResponseCode(((SolrException)th).code());
+          srsp.setResponseCode(((SolrException) th).code());
         } else {
           srsp.setResponseCode(-1);
         }
       }
-
-      ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-
-      return transfomResponse(sreq, srsp, shard);
-    };
-
-    try {
-      if (shard != null)  {
-        MDC.put("ShardRequest.shards", shard);
+      try {
+        if (shard != null) {
+          MDC.put("ShardRequest.shards", shard);
+        }
+        if (urls != null && !urls.isEmpty()) {
+          MDC.put("ShardRequest.urlList", urls.toString());
+        }
+      } finally {
+        MDC.remove("ShardRequest.shards");
+        MDC.remove("ShardRequest.urlList");
       }
-      if (urls != null && !urls.isEmpty())  {
-        MDC.put("ShardRequest.urlList", urls.toString());
+    } else {
+      Callable<ShardResponse> task = () -> {
+
+        ShardResponse srsp = new ShardResponse();
+        if (sreq.nodeName != null) {
+          srsp.setNodeName(sreq.nodeName);
+        }
+        srsp.setShardRequest(sreq);
+        srsp.setShard(shard);
+        SimpleSolrResponse ssr = new SimpleSolrResponse();
+        srsp.setSolrResponse(ssr);
+        long startTime = System.nanoTime();
+
+        try {
+          params.remove(CommonParams.WT); // use default (currently javabin)
+          params.remove(CommonParams.VERSION);
+
+          QueryRequest req = makeQueryRequest(sreq, params, shard);
+          req.setMethod(SolrRequest.METHOD.POST);
+
+          // no need to set the response parser as binary is the default
+          // req.setResponseParser(new BinaryResponseParser());
+
+          // if there are no shards available for a slice, urls.size()==0
+          if (urls.size() == 0) {
+            // TODO: what's the right error code here? We should use the same thing when
+            // all of the servers for a shard are down.
+            throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
+          }
+
+          if (urls.size() <= 1) {
+            String url = urls.get(0);
+            srsp.setShardAddress(url);
+            try (SolrClient client = new Builder(url).withHttpClient(httpClient).solrInternal().build()) {
+              ssr.nl = client.request(req);
+            }
+          } else {
+            LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
+            ssr.nl = rsp.getResponse();
+            srsp.setShardAddress(rsp.getServer());
+          }
+        } catch (ConnectException cex) {
+          srsp.setException(cex); // ????
+        } catch (Exception th) {
+          srsp.setException(th);
+          if (th instanceof SolrException) {
+            srsp.setResponseCode(((SolrException) th).code());
+          } else {
+            srsp.setResponseCode(-1);
+          }
+        }
+
+        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+
+        return transfomResponse(sreq, srsp, shard);
+      };
+      
+      try {
+        if (shard != null) {
+          MDC.put("ShardRequest.shards", shard);
+        }
+        if (urls != null && !urls.isEmpty()) {
+          MDC.put("ShardRequest.urlList", urls.toString());
+        }
+        if (!HttpShardHandlerFactory.ASYNC) pending.add( completionService.submit(task) );
+      } finally {
+        MDC.remove("ShardRequest.shards");
+        MDC.remove("ShardRequest.urlList");
       }
-      pending.add( completionService.submit(task) );
-    } finally {
-      MDC.remove("ShardRequest.shards");
-      MDC.remove("ShardRequest.urlList");
     }
+
+    // };
+
+
   }
   
   /**
@@ -242,37 +343,72 @@ public class HttpShardHandler extends ShardHandler {
   }
   
   private ShardResponse take(boolean bailOnError) {
-    
-    while (pending.size() > 0) {
-      try {
-        Future<ShardResponse> future = completionService.take();
-        pending.remove(future);
-        ShardResponse rsp = future.get();
-        if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
+    if (HttpShardHandlerFactory.ASYNC) {
+      while (asyncPending.size() > 0) {
+        System.out.println("take");
+        ShardResponse srsp = asyncPending.iterator().next();
+        assert srsp != null;
+        asyncPending.remove(srsp);
+        assert srsp != null;
+        assert srsp.getAbortableRequest() != null;
+        SolrResponse solrRsp = srsp.getAbortableRequest().get();
+        // srsp.nl = solrRsp.getResponse();
+        // srsp.setShardAddress(rsp.getServer());
+        // nocommit
+        // srsp.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+
+        transfomResponse(srsp.getShardRequest(), srsp, srsp.getShardAddress());
+        srsp.setSolrResponse(solrRsp);
+        // ShardResponse rsp = future.get();
+        if (bailOnError && srsp.getException() != null) return srsp; // if exception, return immediately
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
-        // for a request was received.  Otherwise we might return the same
+        // for a request was received. Otherwise we might return the same
         // request more than once.
-        rsp.getShardRequest().responses.add(rsp);
-        if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
-          return rsp;
+        srsp.getShardRequest().responses.add(srsp);
+        if (srsp.getShardRequest().responses.size() == srsp.getShardRequest().actualShards.length) {
+          return srsp;
         }
-      } catch (InterruptedException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (ExecutionException e) {
-        // should be impossible... the problem with catching the exception
-        // at this level is we don't know what ShardRequest it applied to
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Impossible Exception",e);
+
       }
+      return null;
+    } else {
+
+      while (pending.size() > 0) {
+        try {
+          Future<ShardResponse> future = completionService.take();
+          pending.remove(future);
+          ShardResponse rsp = future.get();
+          if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
+          // add response to the response list... we do this after the take() and
+          // not after the completion of "call" so we know when the last response
+          // for a request was received. Otherwise we might return the same
+          // request more than once.
+          rsp.getShardRequest().responses.add(rsp);
+          if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
+            return rsp;
+          }
+        } catch (InterruptedException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (ExecutionException e) {
+          // should be impossible... the problem with catching the exception
+          // at this level is we don't know what ShardRequest it applied to
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Impossible Exception", e);
+        }
+      }
+      return null;
     }
-    return null;
   }
 
 
   @Override
   public void cancelAll() {
-    for (Future<ShardResponse> future : pending) {
-      future.cancel(false);
+    for (ShardResponse srsp : asyncPending) {
+      srsp.getAbortableRequest().abort();
+    }
+ 
+    for (Future<ShardResponse> srsp : pending) {
+      srsp.cancel(false);
     }
   }
 

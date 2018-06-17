@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import javax.servlet.Filter;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -38,9 +37,16 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.Assert;
+import javax.servlet.Filter;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.TestUtil;
@@ -49,7 +55,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -58,7 +64,9 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -68,6 +76,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import junit.framework.Assert;
 
 /**
  * Helper base class for distributed search test cases
@@ -89,6 +99,16 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.5
  */
 public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
+  
+  protected ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+      4,
+      Integer.MAX_VALUE,
+      15, TimeUnit.SECONDS, // terminate idle threads after 15 sec
+      new SynchronousQueue<>(),  // directly hand off tasks
+      new DefaultSolrThreadFactory("BaseDistributedSearchTestCase"),
+      false
+  );
+  
   // TODO: this shouldn't be static. get the random when you need it to avoid sharing.
   public static Random r;
   
@@ -160,6 +180,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if ("".equals(ctx)) ctx = "/solr";
     if (ctx.endsWith("/")) ctx = ctx.substring(0,ctx.length()-1);;
     if (!ctx.startsWith("/")) ctx = "/" + ctx;
+    
+    // just / is causing url problems
+    if(ctx.equals("/") )  ctx = "/solr";
     return ctx;
   }
 
@@ -225,7 +248,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   // to stress with higher thread counts and requests, make sure the junit
   // xml formatter is not being used (all output will be buffered before
   // transformation to xml and cause an OOM exception).
-  protected int stress = TEST_NIGHTLY ? 2 : 0;
+  protected int stress = 0;
   protected boolean verifyStress = true;
   protected int nThreads = 3;
 
@@ -308,7 +331,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   private boolean distribTearDownCalled = false;
   public void distribTearDown() throws Exception {
     distribTearDownCalled = true;
-    destroyServers();
+    ExecutorUtil.shutdownAndAwaitTermination(executor);
   }
 
   protected JettySolrRunner createControlJetty() throws Exception {
@@ -419,6 +442,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         .withFilters(getExtraRequestFilters())
         .withServlets(getExtraServlets())
         .withSSLConfig(sslConfig)
+        .withHttpClient(getHttpClient())
+        .withJettyQtp(getQtp())
         .build());
 
     jetty.start();
@@ -439,7 +464,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      HttpSolrClient client = getHttpSolrClient(buildUrl(port) + "/" + DEFAULT_TEST_CORENAME);
+      Http2SolrClient client = getHttpSolrClient(buildUrl(port) + "/" + DEFAULT_TEST_CORENAME);
       return client;
     }
     catch (Exception ex) {
@@ -608,11 +633,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     if (stress > 0) {
       log.info("starting stress...");
-      Thread[] threads = new Thread[nThreads];
+      Set<Future<Object>> pending = new HashSet<>();;
+      ExecutorCompletionService<Object> cs = new ExecutorCompletionService<>(executor);
+      Callable[] threads = new Callable[nThreads];
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new Thread() {
+        threads[i] = new Callable() {
           @Override
-          public void run() {
+          public Object call() {
             for (int j = 0; j < stress; j++) {
               int which = r.nextInt(clients.size());
               SolrClient client = clients.get(which);
@@ -625,14 +652,22 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
                 throw new RuntimeException(e);
               }
             }
+            return new Object();
           }
         };
-        threads[i].start();
+        pending.add(cs.submit(threads[i]));
       }
+      
+      while (pending.size() > 0) {
+        Future<Object> future = cs.take();
+        pending.remove(future);
+        future.get();
+      }
+     
+//      for (Thread thread : threads) {
+//        thread.join();
+//      }
 
-      for (Thread thread : threads) {
-        thread.join();
-      }
     }
     return rsp;
   }
@@ -987,6 +1022,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
       @Override
       public void callStatement() throws Throwable {
+        System.out.println("SHARDS FIXED CALL");
         fixShardCount(numShards);
         createServers(numShards);
         RandVal.uniqueValues = new HashSet(); //reset random values

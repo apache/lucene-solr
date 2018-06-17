@@ -17,9 +17,8 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.lucene.util.Version;
-import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.SolrTestCaseJ4;
-
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -18,8 +18,8 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,12 +27,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import junit.framework.Assert;
-
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 /**
  * Test for UpdateRequestCodec
@@ -41,7 +41,7 @@ import org.junit.Test;
  *
  * @see org.apache.solr.client.solrj.request.UpdateRequest
  */
-public class TestUpdateRequestCodec extends LuceneTestCase {
+public class TestUpdateRequestCodec extends SolrTestCaseJ4 {
 
   @Test
   public void simple() throws IOException {

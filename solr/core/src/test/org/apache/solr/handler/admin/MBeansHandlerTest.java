@@ -26,7 +26,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.codahale.metrics.MetricRegistry;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
@@ -37,6 +38,11 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.codahale.metrics.MetricRegistry;
+
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class MBeansHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass

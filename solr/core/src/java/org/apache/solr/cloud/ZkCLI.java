@@ -16,7 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import javax.xml.parsers.ParserConfigurationException;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -28,7 +30,8 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
-import com.google.common.annotations.VisibleForTesting;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -47,8 +50,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.xml.sax.SAXException;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
+import com.google.common.annotations.VisibleForTesting;
 
 public class ZkCLI {
   
@@ -193,6 +195,7 @@ public class ZkCLI {
         zkServer.start();
       }
       SolrZkClient zkClient = null;
+      CoreContainer cc = null;
       try {
         zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
             () -> {
@@ -205,7 +208,7 @@ public class ZkCLI {
             System.exit(1);
           }
 
-          CoreContainer cc = new CoreContainer(solrHome);
+          cc = new CoreContainer(solrHome);
 
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
@@ -363,6 +366,9 @@ public class ZkCLI {
         }
         if (zkClient != null) {
           zkClient.close();
+        }
+        if (cc != null) {
+          cc.shutdown();
         }
       }
     } catch (ParseException exp) {

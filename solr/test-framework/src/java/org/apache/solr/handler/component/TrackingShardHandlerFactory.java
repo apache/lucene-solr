@@ -44,6 +44,10 @@ import org.apache.solr.core.CoreContainer;
  */
 public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
 
+  public TrackingShardHandlerFactory() {
+    super();
+  }
+
   private Queue<ShardRequestAndParams> queue;
 
   /**

@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
@@ -58,7 +58,7 @@ public class TestV2Request extends SolrCloudTestCase {
   @Test
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testHttpSolrClient() throws Exception {
-    HttpSolrClient solrClient = new HttpSolrClient.Builder(
+    Http2SolrClient solrClient = new Http2SolrClient.Builder(
         cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
     doTest(solrClient);
     solrClient.close();

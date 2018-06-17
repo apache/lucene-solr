@@ -17,14 +17,15 @@
 package org.apache.solr.common;
 
 import java.io.InputStream;
-import org.xml.sax.InputSource;
-import org.xml.sax.EntityResolver;
+
 import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLResolver;
 
 import org.apache.commons.io.input.ClosedInputStream;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 
 /**
  * This class provides several singletons of entity resolvers used by

@@ -24,10 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
-import org.apache.solr.cloud.ElectionContext;
-import org.apache.solr.cloud.LeaderElector;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.ShardSplitTest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -250,9 +246,10 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
-    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT, getHttpClient(), null);
     // TODO: close Overseer
-    Overseer overseer = new Overseer(new HttpShardHandlerFactory().getShardHandler(), updateShardHandler, "/admin/cores",
+    HttpShardHandlerFactory shf = new HttpShardHandlerFactory();
+    Overseer overseer = new Overseer(shf.getShardHandler(), updateShardHandler, "/admin/cores",
         reader, null, new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
     overseer.close();
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
@@ -260,6 +257,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     overseerElector.setup(ec);
     overseerElector.joinElection(ec, false);
     reader.close();
+    shf.close();
     return zkClient;
   }
 

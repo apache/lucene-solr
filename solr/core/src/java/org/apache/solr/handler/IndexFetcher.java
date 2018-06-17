@@ -16,6 +16,31 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.common.params.CommonParams.JAVABIN;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.handler.ReplicationHandler.ALIAS;
+import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
+import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE;
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
+import static org.apache.solr.handler.ReplicationHandler.CMD_INDEX_VERSION;
+import static org.apache.solr.handler.ReplicationHandler.COMMAND;
+import static org.apache.solr.handler.ReplicationHandler.COMPRESSION;
+import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
+import static org.apache.solr.handler.ReplicationHandler.CONF_FILE_SHORT;
+import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
+import static org.apache.solr.handler.ReplicationHandler.FETCH_FROM_LEADER;
+import static org.apache.solr.handler.ReplicationHandler.FILE;
+import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+import static org.apache.solr.handler.ReplicationHandler.GENERATION;
+import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
+import static org.apache.solr.handler.ReplicationHandler.MASTER_URL;
+import static org.apache.solr.handler.ReplicationHandler.OFFSET;
+import static org.apache.solr.handler.ReplicationHandler.SIZE;
+import static org.apache.solr.handler.ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO;
+import static org.apache.solr.handler.ReplicationHandler.TLOG_FILE;
+import static org.apache.solr.handler.ReplicationHandler.TLOG_FILES;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -54,8 +79,6 @@ import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
 
-import com.google.common.base.Strings;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
@@ -67,10 +90,10 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -78,6 +101,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
@@ -87,7 +111,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler.*;
+import org.apache.solr.handler.ReplicationHandler.FileInfo;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -104,9 +128,7 @@ import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.JAVABIN;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.ReplicationHandler.*;
+import com.google.common.base.Strings;
 
 /**
  * <p> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
@@ -159,8 +181,6 @@ public class IndexFetcher {
 
   boolean fetchFromLeader = false;
 
-  private final HttpClient myHttpClient;
-
   private Integer connTimeout;
 
   private Integer soTimeout;
@@ -168,6 +188,8 @@ public class IndexFetcher {
   private boolean downloadTlogFiles = false;
 
   private boolean skipCommitOnMasterVersionZero = true;
+
+  private SolrInternalHttpClient httpClient;
 
   private static final String INTERRUPT_RESPONSE_MESSAGE = "Interrupted while waiting for modify lock";
 
@@ -217,17 +239,19 @@ public class IndexFetcher {
     }
   }
 
-  private static HttpClient createHttpClient(SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, boolean useCompression) {
-    final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
-    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
-    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
-    httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
-
-    return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getDefaultConnectionManager(), true);
-  }
+  // nocommit: basic auth
+//  private static HttpClient createHttpClient(SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, boolean useCompression) {
+//    final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
+//    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
+//    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
+//    httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
+//
+//    return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getDefaultConnectionManager(), true);
+//  }
 
   public IndexFetcher(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
     solrCore = sc;
+    this.httpClient = solrCore.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
     Object fetchFromLeader = initArgs.get(FETCH_FROM_LEADER);
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
@@ -265,7 +289,7 @@ public class IndexFetcher {
 
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
-    myHttpClient = createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
+    //myHttpClient = createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
   }
   
   protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
@@ -289,13 +313,8 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
 
-    // TODO modify to use shardhandler
-    try (HttpSolrClient client = new Builder(masterUrl)
-        .withHttpClient(myHttpClient)
-        .withConnectionTimeout(connTimeout)
-        .withSocketTimeout(soTimeout)
-        .build()) {
-
+    try (Http2SolrClient client = new Http2SolrClient.Builder(masterUrl).withHttpClient(httpClient)
+        .withHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL).build()) {
       return client.request(req);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
@@ -315,10 +334,9 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl)
-        .withHttpClient(myHttpClient)
-        .withConnectionTimeout(connTimeout)
-        .withSocketTimeout(soTimeout)
+    // nocommit - support this straem stuff with http2 client
+    try (Http2SolrClient client = new Http2SolrClient.Builder(masterUrl).withHttpClient(httpClient)
+        .withHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL)
         .build()) {
       NamedList response = client.request(req);
 
@@ -944,12 +962,16 @@ public class IndexFetcher {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Failed to create temporary config folder: " + tmpconfDir.getName());
       }
-      for (Map<String, Object> file : confFilesToDownload) {
-        String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
-        localFileFetcher = new LocalFsFileFetcher(tmpconfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
-        currentFile = file;
-        localFileFetcher.fetchFile();
-        confFilesDownloaded.add(new HashMap<>(file));
+      try (Http2SolrClient client = new Http2SolrClient.Builder(masterUrl).withHttpClient(httpClient)
+          .withHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL).build()) {
+        for (Map<String,Object> file : confFilesToDownload) {
+          String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
+          localFileFetcher = new LocalFsFileFetcher(client, tmpconfDir, file, saveAs, CONF_FILE_SHORT,
+              latestGeneration);
+          currentFile = file;
+          localFileFetcher.fetchFile();
+          confFilesDownloaded.add(new HashMap<>(file));
+        }
       }
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.
@@ -973,13 +995,16 @@ public class IndexFetcher {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Failed to create temporary tlog folder: " + tmpTlogDir.getName());
     }
-    for (Map<String, Object> file : tlogFilesToDownload) {
-      String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
-      localFileFetcher = new LocalFsFileFetcher(tmpTlogDir, file, saveAs, TLOG_FILE, latestGeneration);
-      currentFile = file;
-      localFileFetcher.fetchFile();
-      bytesDownloaded += localFileFetcher.getBytesDownloaded();
-      tlogFilesDownloaded.add(new HashMap<>(file));
+    try (Http2SolrClient client = new Http2SolrClient.Builder(masterUrl).withHttpClient(httpClient)
+        .withHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL).build()) {
+      for (Map<String,Object> file : tlogFilesToDownload) {
+        String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
+        localFileFetcher = new LocalFsFileFetcher(client, tmpTlogDir, file, saveAs, TLOG_FILE, latestGeneration);
+        currentFile = file;
+        localFileFetcher.fetchFile();
+        bytesDownloaded += localFileFetcher.getBytesDownloaded();
+        tlogFilesDownloaded.add(new HashMap<>(file));
+      }
     }
     return bytesDownloaded;
   }
@@ -1007,33 +1032,36 @@ public class IndexFetcher {
         (indexDir instanceof FilterDirectory && FilterDirectory.unwrap(indexDir) instanceof FSDirectory))
         && (tmpIndexDir instanceof FSDirectory ||
         (tmpIndexDir instanceof FilterDirectory && FilterDirectory.unwrap(tmpIndexDir) instanceof FSDirectory));
-
-    for (Map<String,Object> file : filesToDownload) {
-      String filename = (String) file.get(NAME);
-      long size = (Long) file.get(SIZE);
-      CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
-      boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
-      LOG.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
-      if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
-        File localFile = new File(indexDirPath, filename);
-        if (downloadCompleteIndex && doDifferentialCopy && compareResult.equal && compareResult.checkSummed
-            && localFile.exists()) {
-          LOG.info("Don't need to download this file. Local file's path is: {}, checksum is: {}",
-              localFile.getAbsolutePath(), file.get(CHECKSUM));
-          // A hard link here should survive the eventual directory move, and should be more space efficient as
-          // compared to a file copy. TODO: Maybe we could do a move safely here?
-          Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
-          bytesSkippedCopying += localFile.length();
+    try (Http2SolrClient client = new Http2SolrClient.Builder(masterUrl).withHttpClient(httpClient)
+        .withHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL).build()) {
+      for (Map<String,Object> file : filesToDownload) {
+        String filename = (String) file.get(NAME);
+        long size = (Long) file.get(SIZE);
+        CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
+        boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
+        LOG.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM),
+            alwaysDownload);
+        if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
+          File localFile = new File(indexDirPath, filename);
+          if (downloadCompleteIndex && doDifferentialCopy && compareResult.equal && compareResult.checkSummed
+              && localFile.exists()) {
+            LOG.info("Don't need to download this file. Local file's path is: {}, checksum is: {}",
+                localFile.getAbsolutePath(), file.get(CHECKSUM));
+            // A hard link here should survive the eventual directory move, and should be more space efficient as
+            // compared to a file copy. TODO: Maybe we could do a move safely here?
+            Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
+            bytesSkippedCopying += localFile.length();
+          } else {
+            dirFileFetcher = new DirectoryFileFetcher(client, tmpIndexDir, file,
+                (String) file.get(NAME), FILE, latestGeneration);
+            currentFile = file;
+            dirFileFetcher.fetchFile();
+            bytesDownloaded += dirFileFetcher.getBytesDownloaded();
+          }
+          filesDownloaded.add(new HashMap<>(file));
         } else {
-          dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
-              (String) file.get(NAME), FILE, latestGeneration);
-          currentFile = file;
-          dirFileFetcher.fetchFile();
-          bytesDownloaded += dirFileFetcher.getBytesDownloaded();
+          LOG.info("Skipping download for {} because it already exists", file.get(NAME));
         }
-        filesDownloaded.add(new HashMap<>(file));
-      } else {
-        LOG.info("Skipping download for {} because it already exists", file.get(NAME));
       }
     }
     LOG.info("Bytes downloaded: {}, Bytes skipped downloading: {}", bytesDownloaded, bytesSkippedCopying);
@@ -1521,9 +1549,11 @@ public class IndexFetcher {
     private final Checksum checksum;
     private int errorCount = 0;
     private boolean aborted = false;
+    private Http2SolrClient client;
 
-    FileFetcher(FileInterface file, Map<String, Object> fileDetails, String saveAs,
+    FileFetcher(Http2SolrClient client, FileInterface file, Map<String, Object> fileDetails, String saveAs,
                 String solrParamOutput, long latestGen) throws IOException {
+      this.client = client;
       this.file = file;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
@@ -1736,17 +1766,10 @@ public class IndexFetcher {
       NamedList response;
       InputStream is = null;
 
-      // TODO use shardhandler
-      try (HttpSolrClient client = new Builder(masterUrl)
-          .withHttpClient(myHttpClient)
-          .withResponseParser(null)
-          .withConnectionTimeout(connTimeout)
-          .withSocketTimeout(soTimeout)
-          .build()) {
-        QueryRequest req = new QueryRequest(params);
-        response = client.request(req);
-        is = (InputStream) response.get("stream");
-        if(useInternalCompression) {
+      try {
+        is = client.queryAndStreamResponse(null, params);
+        
+        if (useInternalCompression) {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
@@ -1787,9 +1810,9 @@ public class IndexFetcher {
   }
 
   private class DirectoryFileFetcher extends FileFetcher {
-    DirectoryFileFetcher(Directory tmpIndexDir, Map<String, Object> fileDetails, String saveAs,
+    DirectoryFileFetcher(Http2SolrClient client, Directory tmpIndexDir, Map<String, Object> fileDetails, String saveAs,
                          String solrParamOutput, long latestGen) throws IOException {
-      super(new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);
+      super(client, new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);
     }
   }
 
@@ -1836,9 +1859,9 @@ public class IndexFetcher {
   }
 
   private class LocalFsFileFetcher extends FileFetcher {
-    LocalFsFileFetcher(File dir, Map<String, Object> fileDetails, String saveAs,
+    LocalFsFileFetcher(Http2SolrClient client, File dir, Map<String, Object> fileDetails, String saveAs,
                        String solrParamOutput, long latestGen) throws IOException {
-      super(new LocalFsFile(dir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);
+      super(client, new LocalFsFile(dir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);
     }
   }
 
@@ -1848,11 +1871,8 @@ public class IndexFetcher {
     params.set("slave", false);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
-    // TODO use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl)
-        .withHttpClient(myHttpClient)
-        .withConnectionTimeout(connTimeout)
-        .withSocketTimeout(soTimeout)
+    try (Http2SolrClient client = new Http2SolrClient.Builder(masterUrl).withHttpClient(httpClient)
+        .solrInternal()
         .build()) {
       QueryRequest request = new QueryRequest(params);
       return client.request(request);
@@ -1861,7 +1881,6 @@ public class IndexFetcher {
 
   public void destroy() {
     abortFetch();
-    HttpClientUtil.close(myHttpClient);
   }
 
   String getMasterUrl() {

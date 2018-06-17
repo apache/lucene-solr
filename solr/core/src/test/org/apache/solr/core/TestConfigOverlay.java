@@ -16,14 +16,14 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.core.ConfigOverlay.isEditableProp;
+
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 
-import static org.apache.solr.core.ConfigOverlay.isEditableProp;
-
-public class TestConfigOverlay extends LuceneTestCase {
+public class TestConfigOverlay extends SolrTestCaseJ4 {
 
   public void testPaths() {
     assertTrue(isEditableProp("updateHandler/autoCommit/maxDocs", true, null));

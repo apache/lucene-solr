@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -36,7 +37,10 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 @Slow
+@TimeoutSuite(millis =  45 * TimeUnits.SECOND)
 public class TestReplicaProperties extends ReplicaPropertiesBase {
 
   public static final String COLLECTION_NAME = "testcollection";

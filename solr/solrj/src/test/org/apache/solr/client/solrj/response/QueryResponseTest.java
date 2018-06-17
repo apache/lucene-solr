@@ -24,14 +24,15 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
-import junit.framework.Assert;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 /**
  * A few tests for parsing Solr response in QueryResponse
@@ -39,7 +40,7 @@ import org.junit.Test;
  * @since solr 1.3
  */
 @Limit(bytes=20000)
-public class QueryResponseTest extends LuceneTestCase {
+public class QueryResponseTest extends SolrTestCaseJ4 {
   @Test
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();

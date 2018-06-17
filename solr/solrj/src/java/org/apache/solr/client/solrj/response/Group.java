@@ -16,9 +16,9 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.common.SolrDocumentList;
-
 import java.io.Serializable;
+
+import org.apache.solr.common.SolrDocumentList;
 
 /**
  * Represents a group. A group contains a common group value that all documents inside the group share and

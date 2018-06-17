@@ -16,6 +16,9 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
+import static org.apache.solr.handler.ReplicationHandler.COMMAND;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -24,11 +27,12 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.NonExistentCoreException;
@@ -41,14 +45,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
-import static org.apache.solr.handler.ReplicationHandler.COMMAND;
 
 
 /**
@@ -163,6 +165,7 @@ public class TestInjection {
     wrongIndexFingerprint = null;
     delayBeforeSlaveCommitRefresh = null;
     uifOutOfMemoryError = false;
+    newSearcherHooks.clear();
 
     for (Timer timer : timers) {
       timer.cancel();
@@ -288,6 +291,7 @@ public class TestInjection {
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        log.error("TestInjection induced failed update generated!");
         throw new SolrException(ErrorCode.SERVER_ERROR, "Random test update fail");
       }
     }
@@ -417,7 +421,7 @@ public class TestInjection {
         if (core.isClosed()) return true;
         Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
             collection, shardId);
-        try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(leaderReplica.getCoreUrl()).build()) {
+        try (Http2SolrClient leaderClient = new Http2SolrClient.Builder(leaderReplica.getCoreUrl()).withHttpClient(core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient()).build()) {
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.set(CommonParams.QT, ReplicationHandler.PATH);
           params.set(COMMAND, CMD_DETAILS);
@@ -440,7 +444,7 @@ public class TestInjection {
       }
 
     } catch (Exception e) {
-      log.error("Exception when wait for replicas in sync with master");
+      log.error("Exception when wait for replicas in sync with master", e);
     }
 
     return false;
@@ -475,5 +479,24 @@ public class TestInjection {
     }
     return true;
   }
+  
+  static Set<Hook> newSearcherHooks = ConcurrentHashMap.newKeySet();
+  
+  public interface Hook {
+    public void newSearcher(CoreDescriptor cd);
+    public void waitForSearcher(String collection, int cnt, int timeoutms, boolean failOnTimeout) throws InterruptedException;
+  }
+  
+  public static boolean newSearcherHook(Hook hook) {
+    newSearcherHooks.add(hook);
+    return true;
+  }
 
+  public static boolean injectSearcherHooks(CoreDescriptor cd) {
+    for (Hook hook : newSearcherHooks) {
+      hook.newSearcher(cd);
+    }
+    return true;
+  }
+  
 }

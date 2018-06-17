@@ -18,6 +18,12 @@
 package org.apache.solr.handler.admin;
 
 
+import static java.util.Collections.EMPTY_MAP;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.handler.admin.TestCollectionAPIs.compareOutput;
+
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -26,13 +32,10 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
+import org.junit.Ignore;
 
-import static java.util.Collections.EMPTY_MAP;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.handler.admin.TestCollectionAPIs.compareOutput;
-
+@Ignore
+// nocommit
 public class TestConfigsApi extends SolrTestCaseJ4 {
 
 

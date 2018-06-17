@@ -19,6 +19,7 @@ package org.apache.solr;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -28,9 +29,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 @SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class DistributedIntervalFacetingTest extends
     BaseDistributedSearchTestCase {
 

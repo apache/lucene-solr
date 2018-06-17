@@ -19,8 +19,8 @@ package org.apache.solr.cloud;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;

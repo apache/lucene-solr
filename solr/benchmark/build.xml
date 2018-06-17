@@ -1,0 +1,86 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<project name="solr-benchmark" default="run-task" xmlns:ivy="antlib:org.apache.ivy.ant">
+  <description>
+    System for benchmarking Solr
+  </description>
+
+  <property name="build.dir" location="../build/solr-benchmark"/>
+  
+  <import file="../common-build.xml"/>
+
+  <available file="${common-solr.dir}/server/solr-webapp/webapp" property="abc.present"/>
+  
+  <path id="classpath">
+    <pathelement location="${build.dir}/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/benchmark/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/core/classes/java" />
+    <pathelement location="${common-solr.dir}/build/solr-solrj/classes/java" />
+    <pathelement location="${common-solr.dir}/build/solr-core/classes/java" />
+    <fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}" />
+    <fileset dir="${common-solr.dir}/../lucene/benchmark/lib" excludes="${common.classpath.excludes}" erroronmissingdir="false" />
+  </path>
+  <path id="run.classpath">
+    <path refid="classpath" />
+    <pathelement location="${build.dir}/classes/java" />
+    <pathelement path="${benchmark.ext.classpath}" />
+  </path>
+  
+  <target name="server-if-needed" unless="abc.present">
+    <antcall target="server" />
+  </target>
+    
+  <target name="server">
+    <ant antfile="${common-solr.dir}/build.xml" target="server" useNativeBasedir="true" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties" />
+    </ant>
+  </target>
+
+  <target name="check-and-get-files">
+    <ant antfile="${common-solr.dir}/../lucene/benchmark/build.xml" inheritAll="false">
+      <target name="check-files"/>
+      <target name="get-files"/>
+    </ant>
+  </target>
+  
+  <target name="compile-solr">
+    <!-- running this target takes forever, so it's on the user currently to run this first and then to pick up changes
+    <ant antfile="${common-solr.dir}/../build.xml" target="server" useNativeBasedir="true" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    -->
+    <ant antfile="${common-solr.dir}/../lucene/benchmark/build.xml" target="compile" useNativeBasedir="true" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties" />
+    </ant>
+    <ant antfile="${common-solr.dir}/solrj/build.xml" target="compile" dir="../solrj" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties" />
+    </ant>
+  </target>
+
+  <target name="run-task" depends="compile-solr,compile,check-and-get-files,server-if-needed" description="Run compound penalty perf test (optional: -Dtask.alg=your-algorithm-file -Dtask.mem=java-max-mem)">
+    <echo>Working Directory: ${working.dir}</echo>
+    <java classname="org.apache.lucene.benchmark.byTask.Benchmark" maxmemory="${task.mem}" fork="true">
+      <syspropertyset> 
+        <propertyref builtin="commandline"/> 
+      </syspropertyset> 
+      <classpath refid="run.classpath" />
+      <arg file="${task.alg}" />
+    </java>
+  </target>
+
+</project>

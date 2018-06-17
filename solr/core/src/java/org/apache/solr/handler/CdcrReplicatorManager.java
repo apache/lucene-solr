@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -30,15 +32,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -57,8 +59,6 @@ import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
 
 class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
 
@@ -258,8 +258,8 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
       try {
         Replica leader = state.getClient().getZkStateReader().getLeaderRetry(targetCollection, shard, 30000); // assume same shard exists on target
         String leaderCoreUrl = leader.getCoreUrl();
-        HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
-        try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
+        SolrInternalHttpClient httpClient = state.getClient().getLbClient().getHttpClient();
+        try (Http2SolrClient client = new Http2SolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
           sendCdcrCommand(client, CdcrParams.CdcrAction.CANCEL_BOOTSTRAP);
         } catch (SolrServerException e) {
           log.error("Error sending cancel bootstrap message to target collection: {} shard: {} leader: {}",
@@ -356,8 +356,8 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
     private BootstrapStatus sendBootstrapCommand() throws InterruptedException {
       Replica leader = state.getClient().getZkStateReader().getLeaderRetry(targetCollection, shard, 30000); // assume same shard exists on target
       String leaderCoreUrl = leader.getCoreUrl();
-      HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
-      try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
+      SolrInternalHttpClient httpClient = state.getClient().getLbClient().getHttpClient();
+      try (Http2SolrClient client = new Http2SolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
         log.info("Attempting to bootstrap target collection: {} shard: {} leader: {}", targetCollection, shard, leaderCoreUrl);
         try {
           NamedList response = sendCdcrCommand(client, CdcrParams.CdcrAction.BOOTSTRAP, ReplicationHandler.MASTER_URL, myCoreUrl);
@@ -378,8 +378,8 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
       try {
         Replica leader = state.getClient().getZkStateReader().getLeaderRetry(targetCollection, shard, 30000); // assume same shard exists on target
         String leaderCoreUrl = leader.getCoreUrl();
-        HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
-        try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
+        SolrInternalHttpClient httpClient = state.getClient().getLbClient().getHttpClient();
+        try (Http2SolrClient client = new Http2SolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
           NamedList response = sendCdcrCommand(client, CdcrParams.CdcrAction.BOOTSTRAP_STATUS);
           String status = (String) response.get(RESPONSE_STATUS);
           BootstrapStatus bootstrapStatus = BootstrapStatus.valueOf(status.toUpperCase(Locale.ROOT));

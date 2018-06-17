@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -25,6 +26,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -48,6 +50,12 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+  }
+  
+  @AfterClass
+  public static void tearDownCluster() throws Exception {
+    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
+    TimeLimitingCollector.getGlobalTimerThread().join();
   }
 
   @Test

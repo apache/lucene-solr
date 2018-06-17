@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.google.common.collect.ImmutableMap;
@@ -35,6 +36,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -53,6 +56,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestIndexSearcher extends SolrTestCaseJ4 {
 
   @BeforeClass

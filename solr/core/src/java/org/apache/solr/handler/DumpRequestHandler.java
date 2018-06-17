@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -31,8 +33,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class DumpRequestHandler extends RequestHandlerBase
 {

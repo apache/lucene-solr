@@ -19,16 +19,16 @@ package org.apache.solr.client.solrj.io;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.Optional;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,13 +42,13 @@ public class SolrClientCache implements Serializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
-  private final HttpClient httpClient;
+  private final SolrInternalHttpClient httpClient;
 
   public SolrClientCache() {
     httpClient = null;
   }
 
-  public SolrClientCache(HttpClient httpClient) {
+  public SolrClientCache(SolrInternalHttpClient httpClient) {
     this.httpClient = httpClient;
   }
 
@@ -70,15 +70,15 @@ public class SolrClientCache implements Serializable {
 
     return client;
   }
-
-  public synchronized HttpSolrClient getHttpSolrClient(String host) {
-    HttpSolrClient client;
+  
+  public synchronized Http2SolrClient getHttpSolrClient(String host) {
+    Http2SolrClient client;
     if (solrClients.containsKey(host)) {
-      client = (HttpSolrClient) solrClients.get(host);
+      client = (Http2SolrClient) solrClients.get(host);
     } else {
-      HttpSolrClient.Builder builder = new HttpSolrClient.Builder(host);
+      Http2SolrClient.Builder builder = new Http2SolrClient.Builder(host);
       if (httpClient != null) {
-        builder = builder.withHttpClient(httpClient);
+       builder = builder.withHttpClient(httpClient);
       }
       client = builder.build();
       solrClients.put(host, client);

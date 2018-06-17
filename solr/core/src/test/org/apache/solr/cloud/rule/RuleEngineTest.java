@@ -16,6 +16,10 @@
  */
 package org.apache.solr.cloud.rule;
 
+import static java.util.Collections.singletonList;
+import static org.apache.solr.cloud.rule.Rule.parseRule;
+import static org.apache.solr.common.util.Utils.makeMap;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -27,12 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.cloud.autoscaling.DelegatingCloudManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.DelegatingCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.Snitch;
@@ -40,9 +43,7 @@ import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
-import static java.util.Collections.singletonList;
-import static org.apache.solr.cloud.rule.Rule.parseRule;
-import static org.apache.solr.common.util.Utils.makeMap;
+import com.google.common.collect.ImmutableList;
 
 public class RuleEngineTest extends SolrTestCaseJ4{
   @Test

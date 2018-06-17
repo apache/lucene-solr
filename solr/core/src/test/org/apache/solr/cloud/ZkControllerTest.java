@@ -16,6 +16,10 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -23,9 +27,15 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
@@ -42,12 +52,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-@Slow
 @SolrTestCaseJ4.SuppressSSL
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class ZkControllerTest extends SolrTestCaseJ4 {
 
   private static final String COLLECTION_NAME = "collection1";
@@ -361,11 +370,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   private static class MockCoreContainer extends CoreContainer {
-    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT, getHttpClient(), null);
 
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(null, "<solr/>"));
       this.shardHandlerFactory = new HttpShardHandlerFactory();
+      this.shardHandlerFactory.setHttpClient(getHttpClient());
       this.coreAdminHandler = new CoreAdminHandler();
     }
 
@@ -381,6 +391,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     @Override
     public void shutdown() {
       updateShardHandler.close();
+      this.shardHandlerFactory.close();
       super.shutdown();
     }
   }    

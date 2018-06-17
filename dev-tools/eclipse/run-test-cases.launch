@@ -13,5 +13,5 @@
 	<booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
 	<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value=""/>
 	<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="@ECLIPSEPROJECTNAME@"/>
-	<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-ea"/>
+	<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-ea -Djava.security.egd=file:/dev/./urandom -Dlog4j.configurationFile=/home/mark/solr-log4j2.xml"/>
 </launchConfiguration>

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,8 +28,6 @@ import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.ContentStream;
-
-import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
 
 /**
  * A RequestWriter which writes requests in the javabin format

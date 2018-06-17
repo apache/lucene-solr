@@ -24,16 +24,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Metric;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -47,6 +43,11 @@ import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Metric;
 
 @Slow
 @Nightly
@@ -161,14 +162,14 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   }
 
   private int getNumOfCores(CloudSolrClient cloudClient, String nodeName) throws IOException, SolrServerException {
-    try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
+    try (Http2SolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       return status.getCoreStatus().size();
     }
   }
 
   private String getDataDir(Replica replica) throws IOException, SolrServerException {
-    try (HttpSolrClient coreclient = getHttpSolrClient(replica.getBaseUrl())) {
+    try (Http2SolrClient coreclient = getHttpSolrClient(replica.getBaseUrl())) {
       CoreStatus status = CoreAdminRequest.getCoreStatus(replica.getCoreName(), coreclient);
       return status.getDataDirectory();
     }

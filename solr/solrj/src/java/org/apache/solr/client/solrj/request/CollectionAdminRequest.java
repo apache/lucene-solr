@@ -16,6 +16,11 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -50,11 +55,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
-import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
-
 /**
  * This class is experimental and subject to change.
  *
@@ -77,6 +77,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   @Override
   public SolrRequest getV2Request() {
+    // nocommit System.out.println("params before mapping to V2: " + getParams() + " class: " + getClass().getName());
     return usev2 ?
         V1toV2ApiMapper.convert(this).useBinary(useBinaryV2).build() :
         this;
@@ -124,7 +125,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected CollectionAdminResponse createResponse(SolrClient client) {
+    public CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
 
@@ -270,7 +271,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
+    public SolrResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
   }
@@ -1245,7 +1246,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected RequestStatusResponse createResponse(SolrClient client) {
+    public RequestStatusResponse createResponse(SolrClient client) {
       return new RequestStatusResponse();
     }
 
@@ -1321,7 +1322,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected CollectionAdminResponse createResponse(SolrClient client) {
+    public CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
 
@@ -1827,7 +1828,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected CollectionAdminResponse createResponse(SolrClient client) {
+    public CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
 
@@ -1868,7 +1869,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected CollectionAdminResponse createResponse(SolrClient client) {
+    public CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
   }
@@ -2051,7 +2052,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected CollectionAdminResponse createResponse(SolrClient client) {
+    public CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
 
@@ -2065,7 +2066,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected CollectionAdminResponse createResponse(SolrClient client) {
+    public CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
 
@@ -2086,7 +2087,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected CollectionAdminResponse createResponse(SolrClient client) {
+    public CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
   }

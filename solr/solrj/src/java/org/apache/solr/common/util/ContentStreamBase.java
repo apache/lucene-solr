@@ -30,8 +30,12 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.SimpleResponse;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
 /**
@@ -83,12 +87,27 @@ public abstract class ContentStreamBase implements ContentStream
 
     @Override
     public InputStream getStream() throws IOException {
-      URLConnection conn = this.url.openConnection();
-      
-      contentType = conn.getContentType();
+      // nocommit - this works with files and things, may need to stay as is
+      //URLConnection conn = this.url.openConnection();
+      SimpleResponse sResp;
+      try {
+        sResp = Http2SolrClient.GET(url.toString());
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e);
+      } catch (TimeoutException e) {
+        throw new RuntimeException(e);
+      }
+      // nocommit exceptions
+
+      ByteArrayInputStream bais = new ByteArrayInputStream(sResp.asString.getBytes());
+
+      contentType = sResp.contentType;
+
       name = url.toExternalForm();
-      size = new Long( conn.getContentLength() );
-      return conn.getInputStream();
+      size = new Long(sResp.size);
+      return bais;
     }
   }
   

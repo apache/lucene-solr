@@ -16,8 +16,12 @@
  */
 package org.apache.solr.servlet;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
@@ -26,18 +30,14 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.Test;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 
 public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
 
   protected HttpRequestBase getSelectMethod(String method, String... params) throws URISyntaxException {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     HttpRequestBase m = null;
     
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
@@ -64,7 +64,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
   }
 
   protected HttpRequestBase getUpdateMethod(String method, String... params) throws URISyntaxException {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     HttpRequestBase m = null;
     
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
@@ -87,7 +87,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
   }
   
   protected HttpClient getClient() {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     return client.getHttpClient();
   }
 

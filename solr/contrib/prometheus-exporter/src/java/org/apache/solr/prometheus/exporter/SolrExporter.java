@@ -16,18 +16,21 @@
  */
 package org.apache.solr.prometheus.exporter;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.InetSocketAddress;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.xml.parsers.ParserConfigurationException;
 
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.Counter;
-import io.prometheus.client.exporter.HTTPServer;
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
@@ -36,15 +39,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import java.lang.invoke.MethodHandles;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.Counter;
+import io.prometheus.client.exporter.HTTPServer;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
 
 /**
  * SolrExporter
@@ -152,11 +153,11 @@ public class SolrExporter {
       NoOpResponseParser responseParser = new NoOpResponseParser();
       responseParser.setWriterType("json");
 
-      HttpSolrClient.Builder builder = new HttpSolrClient.Builder();
-      builder.withBaseSolrUrl(connStr);
+      Http2SolrClient.Builder builder = new Http2SolrClient.Builder(connStr);
 
-      HttpSolrClient httpSolrClient = builder.build();
-      httpSolrClient.setParser(responseParser);
+      Http2SolrClient httpSolrClient = builder.build();
+      // nocommit
+      //httpSolrClient.setParser(responseParser);
 
       solrClient = httpSolrClient;
     } else {

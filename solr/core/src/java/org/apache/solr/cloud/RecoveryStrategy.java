@@ -25,17 +25,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.HttpUriRequestResponse;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.Abortable;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -118,8 +120,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private int retries;
   private boolean recoveringAfterStartup;
   private CoreContainer cc;
-  private volatile HttpUriRequest prevSendPreRecoveryHttpUriRequest;
+ //private volatile HttpUriRequest prevSendPreRecoveryHttpUriRequest;
   private final Replica.Type replicaType;
+
+  private SolrInternalHttpClient httpClient;
+
+  private volatile Abortable abortable;
 
   protected RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
     this.cc = cc;
@@ -130,6 +136,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     baseUrl = zkController.getBaseUrl();
     coreZkNodeName = cd.getCloudDescriptor().getCoreNodeName();
     replicaType = cd.getCloudDescriptor().getReplicaType();
+    httpClient = cc.getUpdateShardHandler().getDefaultHttpClient();
   }
 
   final public int getWaitForUpdatesWithStaleStatePauseMilliSeconds() {
@@ -168,9 +175,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
   @Override
   final public void close() {
     close = true;
-    if (prevSendPreRecoveryHttpUriRequest != null) {
-      prevSendPreRecoveryHttpUriRequest.abort();
+    try {
+      abortable.abort();
+    } catch (NullPointerException e) {
+      // expected
     }
+    
     LOG.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
   }
 
@@ -263,9 +273,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl)
-        .withConnectionTimeout(30000)
-        .build()) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(leaderUrl).solrInternal().build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -552,7 +560,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             .getSlice(cloudDesc.getShardId());
             
         try {
-          prevSendPreRecoveryHttpUriRequest.abort();
+          //prevSendPreRecoveryHttpUriRequest.abort();
         } catch (NullPointerException e) {
           // okay
         }
@@ -739,7 +747,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       Replica leaderReplica = null;
 
       if (isClosed()) {
-        return leaderReplica;
+        return null;
       }
 
       try {
@@ -753,11 +761,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
       if (leaderReplica.getCoreUrl().equals(ourUrl)) {
         return leaderReplica;
       }
+      
+      if (isClosed()) {
+        return null;
+      }
 
-      try (HttpSolrClient httpSolrClient = new HttpSolrClient.Builder(leaderReplica.getCoreUrl())
-          .withSocketTimeout(1000)
-          .withConnectionTimeout(1000)
-          .build()) {
+      try (Http2SolrClient httpSolrClient = new Http2SolrClient.Builder(leaderReplica.getCoreUrl()).solrInternal()
+          .withHttpClient(httpClient).build()) {
         SolrPingResponse resp = httpSolrClient.ping();
         return leaderReplica;
       } catch (IOException e) {
@@ -849,15 +859,27 @@ public class RecoveryStrategy implements Runnable, Closeable {
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
     // timeout after 5 seconds more than the max timeout (conflictWait + 3 seconds) on the server side
     int readTimeout = conflictWaitMs + 8000;
-    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderBaseUrl).build()) {
-      client.setConnectionTimeout(10000);
-      client.setSoTimeout(readTimeout);
-      HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
-      prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
+    try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(httpClient)
+        .solrInternal().idleConnectionTimeout(readTimeout).build()) {
 
+      AtomicBoolean failed = new AtomicBoolean(false);
       LOG.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd.toString());
-
-      mrr.future.get();
+      abortable = client.abortableRequest(prepCmd, new Http2SolrClient.OnComplete<SolrResponseBase>() {
+        
+        @Override
+        public void onSuccess(SolrResponseBase result) {}
+        
+        @Override
+        public void onFailure(Throwable e) {
+          failed.set(true);
+        }
+      });
+      abortable.get();
+     // mrr.future.get();
+      if (failed.get()) {
+        // nocommit
+        throw new RuntimeException("sendPrepRecoveryCmd failed");
+      }
     }
   }
 }

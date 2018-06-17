@@ -16,13 +16,14 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.Builder;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
+import org.eclipse.jetty.client.HttpClient;
 
 public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
-  protected HttpClient httpClient;
+  protected SolrInternalHttpClient httpClient;
   protected ResponseParser responseParser;
   protected Integer connectionTimeoutMillis;
   protected Integer socketTimeoutMillis;
@@ -33,7 +34,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   /**
    * Provides a {@link HttpClient} for the builder to use when creating clients.
    */
-  public B withHttpClient(HttpClient httpClient) {
+  public B withHttpClient(SolrInternalHttpClient httpClient) {
     this.httpClient = httpClient;
     return getThis();
   }

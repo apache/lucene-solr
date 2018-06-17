@@ -16,19 +16,24 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.DOMUtil;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import java.util.*;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.DOMUtil;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * An Object which represents a Plugin of any type 

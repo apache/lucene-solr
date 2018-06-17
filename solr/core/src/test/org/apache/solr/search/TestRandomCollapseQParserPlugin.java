@@ -16,11 +16,16 @@
  */
 package org.apache.solr.search;
 
-import java.util.List;
+import static org.apache.solr.search.CollapsingQParserPlugin.NULL_COLLAPSE;
+import static org.apache.solr.search.CollapsingQParserPlugin.NULL_EXPAND;
+import static org.apache.solr.search.CollapsingQParserPlugin.NULL_IGNORE;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -29,12 +34,12 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import static org.apache.solr.search.CollapsingQParserPlugin.NULL_IGNORE;
-import static org.apache.solr.search.CollapsingQParserPlugin.NULL_COLLAPSE;
-import static org.apache.solr.search.CollapsingQParserPlugin.NULL_EXPAND;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND) 
 public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   /** Full SolrServer instance for arbitrary introspection of response data and adding fqs */

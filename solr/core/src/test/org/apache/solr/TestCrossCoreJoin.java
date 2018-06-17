@@ -19,7 +19,6 @@ package org.apache.solr;
 import java.io.StringWriter;
 import java.util.Collections;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -35,6 +34,8 @@ import org.apache.solr.servlet.DirectSolrConnection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.collect.ImmutableMap;
 
 public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 

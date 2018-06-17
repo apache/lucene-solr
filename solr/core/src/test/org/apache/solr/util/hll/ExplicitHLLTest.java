@@ -16,19 +16,20 @@
  */
 package org.apache.solr.util.hll;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
+
 import java.util.HashSet;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 import com.carrotsearch.hppc.LongHashSet;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 
 
 /**
  * Tests {@link HLL} of type {@link HLLType#EXPLICIT}.
  */
-public class ExplicitHLLTest extends LuceneTestCase {
+public class ExplicitHLLTest extends SolrTestCaseJ4 {
     /**
      * Tests basic set semantics of {@link HLL#addRaw(long)}.
      */

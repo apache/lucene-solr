@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,8 +31,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  *

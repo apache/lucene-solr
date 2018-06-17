@@ -18,13 +18,14 @@ package org.apache.solr.core;
 
 import java.util.Map;
 
-import com.codahale.metrics.Gauge;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.stats.MetricUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.codahale.metrics.Gauge;
 
 public class RequestHandlersTest extends SolrTestCaseJ4 {
   @BeforeClass

@@ -16,26 +16,29 @@
  */
 package org.apache.solr.util.hll;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-
-import org.junit.Test;
-
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_EXPTHRESH_PARAM;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_LOG2M_PARAM;
+import static org.apache.solr.util.hll.HLL.MAXIMUM_REGWIDTH_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_EXPTHRESH_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_LOG2M_PARAM;
+import static org.apache.solr.util.hll.HLL.MINIMUM_REGWIDTH_PARAM;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
-import java.util.EnumSet;
 
-import static org.apache.solr.util.hll.HLL.*;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Test;
 
 /**
  * Serialization smoke-tests.
  */
-public class HLLSerializationTest extends LuceneTestCase {
+public class HLLSerializationTest extends SolrTestCaseJ4 {
   
   /**
    * A smoke-test that covers serialization/deserialization of an HLL

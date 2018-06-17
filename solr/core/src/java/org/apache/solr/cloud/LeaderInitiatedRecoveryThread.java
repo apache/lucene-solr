@@ -16,9 +16,15 @@
  */
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.List;
+
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -30,16 +36,10 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.zookeeper.KeeperException;
 import org.apache.solr.util.RTimer;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.List;
 
 /**
  * Background daemon thread that tries to send the REQUESTRECOVERY to a downed
@@ -213,9 +213,10 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         log.info("Asking core={} coreNodeName={} on " + recoveryUrl + " to recover", coreNeedingRecovery, replicaCoreNodeName);
       }
 
-      try (HttpSolrClient client = new HttpSolrClient.Builder(recoveryUrl)
-          .withConnectionTimeout(15000)
-          .withSocketTimeout(60000)
+      // nocommit no shared exec, but this going away anyway...
+      try (Http2SolrClient client = new Http2SolrClient.Builder(recoveryUrl)
+          //.withConnectionTimeout(15000)
+          //.withSocketTimeout(60000)
           .build()) {
         try {
           client.request(recoverRequestCmd);

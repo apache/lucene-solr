@@ -16,15 +16,17 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
-import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.OnComplete;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -44,8 +46,6 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-
 public class SyncStrategy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -54,12 +54,10 @@ public class SyncStrategy {
   private final ShardHandler shardHandler;
 
   private volatile boolean isClosed;
-  
-  private final HttpClient client;
 
-  private final ExecutorService updateExecutor;
-  
   private final List<RecoveryRequest> recoveryRequests = new ArrayList<>();
+
+  private Http2SolrClient solrClient;
   
   private static class RecoveryRequest {
     ZkNodeProps leaderProps;
@@ -69,9 +67,8 @@ public class SyncStrategy {
   
   public SyncStrategy(CoreContainer cc) {
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
-    client = updateShardHandler.getDefaultHttpClient();
     shardHandler = cc.getShardHandlerFactory().getShardHandler();
-    updateExecutor = updateShardHandler.getUpdateExecutor();
+    solrClient = updateShardHandler.getUpdateSolrClient();
   }
   
   private static class ShardCoreRequest extends ShardRequest {
@@ -281,32 +278,29 @@ public class SyncStrategy {
     }
   }
   
-  private void requestRecovery(final ZkNodeProps leaderProps, final String baseUrl, final String coreName) throws SolrServerException, IOException {
-    Thread thread = new Thread() {
-      {
-        setDaemon(true);
+  private void requestRecovery(final ZkNodeProps leaderProps, final String baseUrl, final String coreName)
+      throws SolrServerException, IOException {
+
+    RequestRecovery recoverRequestCmd = new RequestRecovery();
+    recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
+    recoverRequestCmd.setCoreName(coreName);
+    try {
+      solrClient.request(recoverRequestCmd, null, new OnComplete<SolrResponse>() {
+
+        @Override
+        public void onSuccess(SolrResponse result) {}
+
+        @Override
+        public void onFailure(Throwable e) {
+          // nocommit
+        }});
+    } catch (Throwable t) {
+      SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
+      if (t instanceof Error) {
+        throw (Error) t;
       }
-      @Override
-      public void run() {
-        RequestRecovery recoverRequestCmd = new RequestRecovery();
-        recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
-        recoverRequestCmd.setCoreName(coreName);
-        
-        try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
-            .withHttpClient(SyncStrategy.this.client)
-            .withConnectionTimeout(30000)
-            .withSocketTimeout(120000)
-            .build()) {
-          client.request(recoverRequestCmd);
-        } catch (Throwable t) {
-          SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
-          if (t instanceof Error) {
-            throw (Error) t;
-          }
-        }
-      }
-    };
-    updateExecutor.execute(thread);
+    }
+
   }
   
   public static ModifiableSolrParams params(String... params) {

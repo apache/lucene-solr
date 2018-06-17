@@ -16,13 +16,13 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.hamcrest.core.Is.is;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.core.Is.is;
 
 public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 

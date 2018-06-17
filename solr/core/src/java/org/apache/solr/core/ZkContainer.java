@@ -37,7 +37,6 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,14 +47,13 @@ public class ZkContainer {
   protected ZkController zkController;
   private SolrZkServer zkServer;
 
-  private ExecutorService coreZkRegister = ExecutorUtil.newMDCAwareCachedThreadPool(
-      new DefaultSolrThreadFactory("coreZkRegister") );
+  private ExecutorService coreZkRegister;
   
   // see ZkController.zkRunOnly
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
   
-  public ZkContainer() {
-    
+  public ZkContainer(ExecutorService coreZkRegister ) {
+    this.coreZkRegister = coreZkRegister;
   }
 
   public void initZooKeeper(final CoreContainer cc, String solrHome, CloudConfig config) {

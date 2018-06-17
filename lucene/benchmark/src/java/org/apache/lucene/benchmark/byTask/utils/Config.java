@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
+import org.apache.lucene.benchmark.utils.PropertiesUtil;
+
 /**
  * Perf run configuration properties.
  * <p>
@@ -61,12 +63,13 @@ public class Config {
    * @throws IOException If there is a low-level I/O error.
    */
   public Config(Reader algReader) throws IOException {
+    System.out.println("found props:" + System.getProperties().keySet());
     // read alg file to array of lines
     ArrayList<String> lines = new ArrayList<>();
     BufferedReader r = new BufferedReader(algReader);
     int lastConfigLine = 0;
     for (String line = r.readLine(); line != null; line = r.readLine()) {
-      lines.add(line);
+      lines.add(PropertiesUtil.substituteProperty(line, null) );
       if (line.indexOf('=') > 0) {
         lastConfigLine = lines.size();
       }
@@ -182,7 +185,7 @@ public class Config {
    */
   public int get(String name, int dflt) {
     // use value by round if already parsed
-    int vals[] = (int[]) valByRound.get(name);
+    Integer vals[] = (Integer[]) valByRound.get(name);
     if (vals != null) {
       return vals[roundNumber % vals.length];
     }
@@ -213,7 +216,7 @@ public class Config {
    */
   public double get(String name, double dflt) {
     // use value by round if already parsed
-    double vals[] = (double[]) valByRound.get(name);
+    Double vals[] = (Double[]) valByRound.get(name);
     if (vals != null) {
       return vals[roundNumber % vals.length];
     }
@@ -244,7 +247,7 @@ public class Config {
    */
   public boolean get(String name, boolean dflt) {
     // use value by round if already parsed
-    boolean vals[] = (boolean[]) valByRound.get(name);
+    Boolean vals[] = (Boolean[]) valByRound.get(name);
     if (vals != null) {
       return vals[roundNumber % vals.length];
     }
@@ -278,13 +281,13 @@ public class Config {
       sb.append(": ");
       for (final String name : valByRound.keySet()) {
         Object a = valByRound.get(name);
-        if (a instanceof int[]) {
-          int ai[] = (int[]) a;
+        if (a instanceof Integer[]) {
+          Integer ai[] = (Integer[]) a;
           int n1 = (roundNumber - 1) % ai.length;
           int n2 = roundNumber % ai.length;
           sb.append("  ").append(name).append(":").append(ai[n1]).append("-->").append(ai[n2]);
-        } else if (a instanceof double[]) {
-          double ad[] = (double[]) a;
+        } else if (a instanceof Double[]) {
+          Double ad[] = (Double[]) a;
           int n1 = (roundNumber - 1) % ad.length;
           int n2 = roundNumber % ad.length;
           sb.append("  ").append(name).append(":").append(ad[n1]).append("-->").append(ad[n2]);
@@ -294,7 +297,7 @@ public class Config {
           int n2 = roundNumber % ad.length;
           sb.append("  ").append(name).append(":").append(ad[n1]).append("-->").append(ad[n2]);
         } else {
-          boolean ab[] = (boolean[]) a;
+          Boolean ab[] = (Boolean[]) a;
           int n1 = (roundNumber - 1) % ab.length;
           int n2 = roundNumber % ab.length;
           sb.append("  ").append(name).append(":").append(ab[n1]).append("-->").append(ab[n2]);
@@ -324,9 +327,9 @@ public class Config {
   }
 
   // extract properties to array, e.g. for "10:100:5" return int[]{10,100,5}. 
-  private int[] propToIntArray(String s) {
+  private Integer[] propToIntArray(String s) {
     if (s.indexOf(":") < 0) {
-      return new int[]{Integer.parseInt(s)};
+      return new Integer[]{Integer.parseInt(s)};
     }
 
     ArrayList<Integer> a = new ArrayList<>();
@@ -335,7 +338,7 @@ public class Config {
       String t = st.nextToken();
       a.add(Integer.valueOf(t));
     }
-    int res[] = new int[a.size()];
+    Integer res[] = new Integer[a.size()];
     for (int i = 0; i < a.size(); i++) {
       res[i] = a.get(i).intValue();
     }
@@ -343,9 +346,9 @@ public class Config {
   }
 
   // extract properties to array, e.g. for "10.7:100.4:-2.3" return int[]{10.7,100.4,-2.3}. 
-  private double[] propToDoubleArray(String s) {
+  private Double[] propToDoubleArray(String s) {
     if (s.indexOf(":") < 0) {
-      return new double[]{Double.parseDouble(s)};
+      return new Double[]{Double.parseDouble(s)};
     }
 
     ArrayList<Double> a = new ArrayList<>();
@@ -354,7 +357,7 @@ public class Config {
       String t = st.nextToken();
       a.add(Double.valueOf(t));
     }
-    double res[] = new double[a.size()];
+    Double res[] = new Double[a.size()];
     for (int i = 0; i < a.size(); i++) {
       res[i] = a.get(i).doubleValue();
     }
@@ -362,9 +365,9 @@ public class Config {
   }
 
   // extract properties to array, e.g. for "true:true:false" return boolean[]{true,false,false}. 
-  private boolean[] propToBooleanArray(String s) {
+  private Boolean[] propToBooleanArray(String s) {
     if (s.indexOf(":") < 0) {
-      return new boolean[]{Boolean.valueOf(s).booleanValue()};
+      return new Boolean[]{Boolean.valueOf(s).booleanValue()};
     }
 
     ArrayList<Boolean> a = new ArrayList<>();
@@ -373,7 +376,7 @@ public class Config {
       String t = st.nextToken();
       a.add(new Boolean(t));
     }
-    boolean res[] = new boolean[a.size()];
+    Boolean res[] = new Boolean[a.size()];
     for (int i = 0; i < a.size(); i++) {
       res[i] = a.get(i).booleanValue();
     }
@@ -390,8 +393,22 @@ public class Config {
     StringBuilder sb = new StringBuilder();
     for (final String name : colForValByRound.keySet()) {
       String colName = colForValByRound.get(name);
-      sb.append(" ").append(colName);
+      
+      Object a = valByRound.get(name);
+      Object ad[] = null;
+
+      ad = (Object[]) a;
+
+      int longestVal = colName.length() + 1;
+      for (Object val : ad) {
+        if (val.toString().length() > longestVal) {
+          longestVal = val.toString().length();
+        }
+      }
+
+      sb.append(" ").append(Format.format(colName, longestVal));
     }
+    
     return sb.toString();
   }
 
@@ -408,24 +425,39 @@ public class Config {
       String template = " " + colName;
       if (roundNum < 0) {
         // just append blanks
-        sb.append(Format.formatPaddLeft("-", template));
+        Object a = valByRound.get(name);
+        Object ad[] = (Object[]) a;
+        int longestVal = colName.length() + 1;
+        for (Object val : ad) {
+          if (val.toString().length() > longestVal) {
+            longestVal = val.toString().length();
+          }
+        }
+        
+        sb.append(" ").append(Format.formatPaddLeft("-", longestVal));
       } else {
         // append actual values, for that round
         Object a = valByRound.get(name);
-        if (a instanceof int[]) {
-          int ai[] = (int[]) a;
+        if (a instanceof Integer[]) {
+          Integer ai[] = (Integer[]) a;
           int n = roundNum % ai.length;
           sb.append(Format.format(ai[n], template));
-        } else if (a instanceof double[]) {
-          double ad[] = (double[]) a;
+        } else if (a instanceof Double[]) {
+          Double ad[] = (Double[]) a;
           int n = roundNum % ad.length;
           sb.append(Format.format(2, ad[n], template));
         } else if (a instanceof String[]) {
           String ad[] = (String[]) a;
+          int longestVal = 0;
+          for (String val : ad) {
+            if (val.length() > longestVal) {
+              longestVal = val.length();
+            }
+          }
           int n = roundNum % ad.length;
-          sb.append(ad[n]);
+          sb.append(" ").append(Format.format(ad[n], longestVal));
         } else {
-          boolean ab[] = (boolean[]) a;
+          Boolean ab[] = (Boolean[]) a;
           int n = roundNum % ab.length;
           sb.append(Format.formatPaddLeft("" + ab[n], template));
         }
@@ -446,6 +478,13 @@ public class Config {
    */
   public String getAlgorithmText() {
     return algorithmText;
+  }
+
+  /**
+   * @return props used.
+   */
+  public Properties getProps() {
+    return props;
   }
 
 }

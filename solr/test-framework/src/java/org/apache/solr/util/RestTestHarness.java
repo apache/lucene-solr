@@ -15,33 +15,28 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.SimpleResponse;
 
 /**
  * Facilitates testing Solr's REST API via a provided embedded Jetty
  */
 public class RestTestHarness extends BaseTestHarness implements Closeable {
   private RESTfulServerProvider serverProvider;
-  private CloseableHttpClient httpClient = HttpClientUtil.createClient(new
-      ModifiableSolrParams());
+  private Http2SolrClient httpClient = new Http2SolrClient.Builder("").withHttpClient(SolrTestCaseJ4.getHttpClient()).build();
   
   public RestTestHarness(RESTfulServerProvider serverProvider) {
     this.serverProvider = serverProvider;
@@ -104,11 +99,11 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @exception Exception any exception in the response.
    */
   public String query(String request) throws Exception {
-    return getResponse(new HttpGet(getBaseURL() + request));
+    return getResponse(getBaseURL() + request);
   }
 
   public String adminQuery(String request) throws Exception {
-    return getResponse(new HttpGet(getAdminURL() + request));
+    return getResponse(getAdminURL() + request);
   }
 
   /**
@@ -119,12 +114,12 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @param content The content to include with the PUT request
    * @return The response to the PUT request
    */
-  public String put(String request, String content) throws IOException {
+  public String put(String request, String content) throws Exception {
     HttpPut httpPut = new HttpPut(getBaseURL() + request);
     httpPut.setEntity(new StringEntity(content, ContentType.create(
         "application/json", StandardCharsets.UTF_8)));
     
-    return getResponse(httpPut);
+    return getPutResponse(getBaseURL() + request, content);
   }
 
   /**
@@ -134,9 +129,8 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @param request the URL path and optional query params
    * @return The response to the DELETE request
    */
-  public String delete(String request) throws IOException {
-    HttpDelete httpDelete = new HttpDelete(getBaseURL() + request);
-    return getResponse(httpDelete);
+  public String delete(String request) throws Exception {
+    return getDeleteResponse(getBaseURL() + request);
   }
 
   /**
@@ -147,12 +141,12 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @param content The content to include with the POST request
    * @return The response to the POST request
    */
-  public String post(String request, String content) throws IOException {
+  public String post(String request, String content) throws Exception {
     HttpPost httpPost = new HttpPost(getBaseURL() + request);
     httpPost.setEntity(new StringEntity(content, ContentType.create(
         "application/json", StandardCharsets.UTF_8)));
     
-    return getResponse(httpPost);
+    return getPostResponse(getBaseURL() + request, content);
   }
 
 
@@ -209,18 +203,28 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   /**
    * Executes the given request and returns the response.
    */
-  private String getResponse(HttpUriRequest request) throws IOException {
-    HttpEntity entity = null;
-    try {
-      entity = httpClient.execute(request, HttpClientUtil.createNewHttpClientRequestContext()).getEntity();
-      return EntityUtils.toString(entity, StandardCharsets.UTF_8);
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-    }
+  private String getResponse(String url) throws Exception {
+    SimpleResponse rsp = httpClient.httpGet(url);
+//    if (rsp.status != 200) {
+//      throw new Http2SolrClient.RemoteSolrException(url, rsp.status, rsp.asString, null);
+//    }
+    return rsp.asString;
+  }
+  
+  private String getDeleteResponse(String url) throws Exception {
+    return httpClient.httpDelete(url);
+  }
+  
+  private String getPutResponse(String url, String json) throws Exception {
+    return httpClient.httpPut(url, json.getBytes(), "application/json");
+  }
+  
+  private String getPostResponse(String url, String json) throws Exception {
+    return httpClient.httpPost(url, json.getBytes(), "application/json").asString;
   }
 
   @Override
   public void close() throws IOException {
-    HttpClientUtil.close(httpClient);
+    httpClient.close();
   }
 }

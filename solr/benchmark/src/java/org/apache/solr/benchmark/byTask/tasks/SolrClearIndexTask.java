@@ -14,21 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.benchmark.byTask.tasks;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 
-public class BadZookeeperThreadsFilter implements ThreadFilter {
+
+public class SolrClearIndexTask extends PerfTask {
+
+  public SolrClearIndexTask(PerfRunData runData) {
+    super(runData);
+  }
+
 
   @Override
-  public boolean reject(Thread t) {
-    String name = t.getName();
-    
-    StackTraceElement [] stack = t.getStackTrace();
-    if (name.startsWith("Thread-") && stack.length > 1 && stack[stack.length - 2].getClassName().equals("org.apache.zookeeper.Login$1")) {
-      return true; // see ZOOKEEPER-2100
-    }
-
-    return false;
+  protected String getLogMessage(int recsCount) {
+    return "index cleared";
   }
+  
+  @Override
+  public int doLogic() throws Exception {
+    SolrClient solrServer = (SolrClient) getRunData().getPerfObject("solr.client");
+    UpdateResponse result = solrServer.deleteByQuery("*:*");
+    result = solrServer.commit();
+    
+    return 1;
+  }
+  
 }

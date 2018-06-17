@@ -16,11 +16,11 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.common.util.NamedList;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A base class for all analysis responses.

@@ -48,7 +48,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   }
 
   @Override
-  protected SimpleSolrResponse createResponse(SolrClient client) {
+  public SimpleSolrResponse createResponse(SolrClient client) {
     return response;
   }
 }

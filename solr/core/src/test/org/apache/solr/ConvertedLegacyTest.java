@@ -16,12 +16,14 @@
  */
 package org.apache.solr;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.request.*;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.*;
 
     
 /**

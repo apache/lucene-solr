@@ -17,7 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;

@@ -16,18 +16,20 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -47,13 +49,14 @@ import org.apache.zookeeper.CreateMode;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Super basic testing, no shard restarting or anything.
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass
@@ -153,7 +156,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   }
 
   private void testDeleteByIdImplicitRouter() throws Exception {
-    SolrClient server = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
+    SolrClient server = createNewSolrClient("", getBaseUrl((Http2SolrClient) clients.get(0)));
     CollectionAdminResponse response;
     Map<String, NamedList<Integer>> coresStatus;
 
@@ -175,9 +178,9 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     waitForRecoveriesToFinish("implicit_collection_without_routerfield", true);
 
     SolrClient shard1 = createNewSolrClient("implicit_collection_without_routerfield_shard1_replica1",
-        getBaseUrl((HttpSolrClient) clients.get(0)));
+        getBaseUrl((Http2SolrClient) clients.get(0)));
     SolrClient shard2 = createNewSolrClient("implicit_collection_without_routerfield_shard2_replica1",
-        getBaseUrl((HttpSolrClient) clients.get(0)));
+        getBaseUrl((Http2SolrClient) clients.get(0)));
 
     SolrInputDocument doc = new SolrInputDocument();
     int docCounts1, docCounts2;
@@ -277,7 +280,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   }
 
   private void testDeleteByIdCompositeRouterWithRouterField() throws Exception {
-    SolrClient server = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
+    SolrClient server = createNewSolrClient("", getBaseUrl((Http2SolrClient) clients.get(0)));
     CollectionAdminResponse response;
     Map<String, NamedList<Integer>> coresStatus;
 
@@ -300,9 +303,9 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     waitForRecoveriesToFinish("compositeid_collection_with_routerfield", true);
 
     SolrClient shard1 = createNewSolrClient("compositeid_collection_with_routerfield_shard1_replica1",
-        getBaseUrl((HttpSolrClient) clients.get(0)));
+        getBaseUrl((Http2SolrClient) clients.get(0)));
     SolrClient shard2 = createNewSolrClient("compositeid_collection_with_routerfield_shard2_replica1",
-        getBaseUrl((HttpSolrClient) clients.get(0)));
+        getBaseUrl((Http2SolrClient) clients.get(0)));
 
     SolrInputDocument doc = new SolrInputDocument();
     int docCounts1 = 0, docCounts2 = 0;
@@ -690,18 +693,18 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     QueryResponse results = query(cloudClient);
     long beforeCount = results.getResults().getNumFound();
     int cnt = TEST_NIGHTLY ? 2933 : 313;
-    try (ConcurrentUpdateSolrClient concurrentClient = getConcurrentUpdateSolrClient(
-        ((HttpSolrClient) clients.get(0)).getBaseURL(), 10, 2, 120000)) {
-      for (int i = 0; i < cnt; i++) {
-        index_specific(concurrentClient, id, docId++, "text_t", "some text so that it not's negligent work to parse this doc, even though it's still a pretty short doc");
-      }
-      concurrentClient.blockUntilFinished();
-      
-      commit();
-
-      checkShardConsistency();
-      assertDocCounts(VERBOSE);
+    Http2SolrClient concurrentClient = ((Http2SolrClient) clients.get(0));
+    for (int i = 0; i < cnt; i++) {
+      index_specific(concurrentClient, id, docId++, "text_t",
+          "some text so that it not's negligent work to parse this doc, even though it's still a pretty short doc");
     }
+
+    concurrentClient.waitForAsyncRequests();
+    commit();
+
+    checkShardConsistency();
+    assertDocCounts(VERBOSE);
+
     results = query(cloudClient);
     assertEquals(beforeCount + cnt, results.getResults().getNumFound());
     return docId;

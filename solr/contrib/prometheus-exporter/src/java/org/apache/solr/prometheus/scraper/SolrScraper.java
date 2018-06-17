@@ -16,30 +16,32 @@
  */
 package org.apache.solr.prometheus.scraper;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.solr.prometheus.exporter.SolrExporter;
-import io.prometheus.client.Collector;
-import net.thisptr.jackson.jq.JsonQuery;
-import net.thisptr.jackson.jq.exception.JsonQueryException;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.prometheus.exporter.SolrExporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.prometheus.client.Collector;
+import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.jackson.jq.exception.JsonQueryException;
 
 /**
  * SolrScraper
@@ -150,9 +152,9 @@ public class SolrScraper implements Callable<Map<String, Collector.MetricFamilyS
               labelValues.add(collection);
             }
 
-            if (solrClient instanceof HttpSolrClient) {
+            if (solrClient instanceof Http2SolrClient) {
               labelNames.add("base_url");
-              labelValues.add(((HttpSolrClient) solrClient).getBaseURL());
+              labelValues.add(((Http2SolrClient) solrClient).getBaseURL());
             }
 
             if (core != null) {
@@ -202,7 +204,7 @@ public class SolrScraper implements Callable<Map<String, Collector.MetricFamilyS
           SolrExporter.scrapeErrorTotal.inc();
         }
       }
-    } catch (HttpSolrClient.RemoteSolrException | IOException e) {
+    } catch (Http2SolrClient.RemoteSolrException | IOException e) {
       this.logger.error("failed to request: " + e.toString());
     } catch (Exception e) {
       this.logger.error(e.toString());

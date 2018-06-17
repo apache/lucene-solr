@@ -27,7 +27,7 @@
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
             <Item>
-              <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+              <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
                 <Arg name="config"><Ref refid="httpConfig" /></Arg>
               </New>
             </Item>

@@ -17,13 +17,15 @@
 
 package org.apache.solr.cloud.rule;
 
+import static org.hamcrest.core.Is.is;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.common.collect.Sets;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleLimitSysouts;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -35,12 +37,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static org.hamcrest.core.Is.is;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.when;
+import com.google.common.collect.Sets;
 
 @TestRuleLimitSysouts.Limit(bytes=32000)
-public class ImplicitSnitchTest extends LuceneTestCase {
+public class ImplicitSnitchTest extends SolrTestCaseJ4 {
 
   private ImplicitSnitch snitch;
   private SnitchContext context;

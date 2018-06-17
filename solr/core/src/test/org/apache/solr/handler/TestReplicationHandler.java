@@ -22,13 +22,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -44,6 +41,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -51,7 +49,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.SimpleResponse;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -78,14 +77,17 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 /**
  * Test for ReplicationHandler
  *
  *
  * @since 1.4
  */
-@Slow
 @SuppressSSL     // Currently unknown why SSL does not work with this test
+@Slow
+@TimeoutSuite(millis = 160 * TimeUnits.SECOND) // nocommit - we should make this shorter non  nightly
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -155,7 +157,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").withHttpClient(getHttpClient()).setPort(0).withJettyQtp(getQtp()).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
@@ -165,7 +167,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port) + "/" + DEFAULT_TEST_CORENAME;
-      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 90000);
+      Http2SolrClient client = getHttpSolrClient(baseUrl, 15000, 90000);
       return client;
     }
     catch (Exception ex) {
@@ -272,7 +274,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     params.set("qt","/admin/cores");
     QueryRequest req = new QueryRequest(params);
 
-    try (HttpSolrClient adminClient = adminClient(s)) {
+    try (Http2SolrClient adminClient = adminClient(s)) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
       return res;
@@ -280,8 +282,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   }
 
-  private HttpSolrClient adminClient(SolrClient client) {
-    String adminUrl = ((HttpSolrClient)client).getBaseURL().replace("/collection1", "");
+  private Http2SolrClient adminClient(SolrClient client) {
+    String adminUrl = ((Http2SolrClient)client).getBaseURL().replace("/collection1", "");
     return getHttpSolrClient(adminUrl);
   }
 
@@ -487,12 +489,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   //Simple function to wrap the invocation of replication commands on the various
   //jetty servers.
-  private void invokeReplicationCommand(int pJettyPort, String pCommand) throws IOException
+  private void invokeReplicationCommand(int pJettyPort, String pCommand) throws Exception
   {
     String masterUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=" + pCommand;
-    URL u = new URL(masterUrl);
-    InputStream stream = u.openStream();
-    stream.close();
+    SimpleResponse resp = ((Http2SolrClient) masterClient).httpGet(masterUrl);
+    if (resp.status != 200) {
+      throw new RuntimeException("Request failed with status: " + resp.status);
+    }
   }
   
   @Test
@@ -737,9 +740,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // index fetch
     String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=fetchindex&masterUrl=";
     masterUrl += buildUrl(masterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
-    URL url = new URL(masterUrl);
-    InputStream stream = url.openStream();
-    stream.close();
+    ((Http2SolrClient) masterClient).httpGet(masterUrl);
     
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
@@ -983,8 +984,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return list.length;
   }
 
-  private void pullFromMasterToSlave() throws MalformedURLException,
-      IOException {
+  private void pullFromMasterToSlave() throws Exception {
     pullFromTo(masterJetty, slaveJetty);
   }
   
@@ -1102,23 +1102,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return maxVersionSlave;
   }
 
-  private void pullFromSlaveToMaster() throws MalformedURLException,
+  private void pullFromSlaveToMaster() throws Exception,
       IOException {
     pullFromTo(slaveJetty, masterJetty);
   }
   
-  private void pullFromTo(JettySolrRunner from, JettySolrRunner to) throws IOException {
-    String masterUrl;
-    URL url;
-    InputStream stream;
-    masterUrl = buildUrl(to.getLocalPort())
+  private void pullFromTo(JettySolrRunner from, JettySolrRunner to) throws Exception {
+
+    String masterUrl = buildUrl(to.getLocalPort())
         + "/" + DEFAULT_TEST_CORENAME
         + ReplicationHandler.PATH+"?wait=true&command=fetchindex&masterUrl="
         + buildUrl(from.getLocalPort())
         + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
-    url = new URL(masterUrl);
-    stream = url.openStream();
-    stream.close();
+    ((Http2SolrClient) masterClient).httpGet(masterUrl);
   }
 
   @Test
@@ -1548,7 +1544,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
-    try (HttpSolrClient adminClient = adminClient(client)) {
+    try (Http2SolrClient adminClient = adminClient(client)) {
       SolrParams p = params("action", "status", "core", "collection1");
       while (timeSlept < timeout) {
         QueryRequest req = new QueryRequest(p);

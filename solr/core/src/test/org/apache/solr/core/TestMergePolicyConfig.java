@@ -27,6 +27,8 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.index.LogByteSizeMergePolicyFactory;
 import org.apache.solr.index.LogDocMergePolicyFactory;
@@ -36,7 +38,11 @@ import org.apache.solr.update.SolrIndexConfigTest;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 /** @see SolrIndexConfigTest */
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   
   private static AtomicInteger docIdCounter = new AtomicInteger(42);

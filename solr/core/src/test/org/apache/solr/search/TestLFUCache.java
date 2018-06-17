@@ -33,6 +33,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,9 @@ import org.slf4j.LoggerFactory;
  * @see org.apache.solr.search.LFUCache
  * @since solr 3.6
  */
+
+@Ignore
+// nocommit too slow
 public class TestLFUCache extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

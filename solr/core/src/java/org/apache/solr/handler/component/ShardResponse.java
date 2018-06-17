@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.Abortable;
 import org.apache.solr.common.SolrException;
 
 public final class ShardResponse {
@@ -26,6 +27,7 @@ public final class ShardResponse {
   private int rspCode;
   private Throwable exception;
   private SolrResponse rsp;
+  private Abortable areq;
 
   @Override
   public String toString() {
@@ -49,6 +51,10 @@ public final class ShardResponse {
   public SolrResponse getSolrResponse()
   {
     return rsp;
+  }
+  
+  public Abortable getAbortableRequest() {
+    return areq;
   }
 
   public String getShard()
@@ -95,5 +101,7 @@ public final class ShardResponse {
   public String getShardAddress() { return this.shardAddress; }
 
   void setShardAddress(String addr) { this.shardAddress = addr; }
+
+  void setAbortableRequest(Abortable areq) { this.areq = areq; }
 
 }

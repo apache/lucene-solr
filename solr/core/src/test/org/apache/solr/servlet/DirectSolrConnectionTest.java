@@ -18,8 +18,8 @@ package org.apache.solr.servlet;
 
 import java.net.URLEncoder;
 
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 
 

@@ -24,7 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.AssertionFailedError;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -35,6 +36,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+import junit.framework.AssertionFailedError;
+
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND) 
 public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCase {
 
   public DistributedFacetPivotSmallTest() {

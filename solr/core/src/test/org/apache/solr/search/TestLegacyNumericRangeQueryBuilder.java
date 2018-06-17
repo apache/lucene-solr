@@ -16,23 +16,23 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.search.Query;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-public class TestLegacyNumericRangeQueryBuilder extends LuceneTestCase {
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.Query;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
+public class TestLegacyNumericRangeQueryBuilder extends SolrTestCaseJ4 {
 
   public void testGetFilterHandleNumericParseErrorStrict() throws Exception {
     LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();

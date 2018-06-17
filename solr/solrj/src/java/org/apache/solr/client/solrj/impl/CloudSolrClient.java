@@ -16,6 +16,9 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
@@ -44,7 +47,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.http.NoHttpResponseException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -57,6 +59,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -78,17 +81,16 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.eclipse.jetty.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
-import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -109,7 +111,7 @@ public class CloudSolrClient extends SolrClient {
   private volatile String defaultCollection;
   private final LBHttpSolrClient lbClient;
   private final boolean shutdownLBHttpSolrServer;
-  private HttpClient myClient;
+  private SolrInternalHttpClient httpClient;
   private final boolean clientIsInternal;
   //no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES = 5;
@@ -270,15 +272,15 @@ public class CloudSolrClient extends SolrClient {
     } else {
       this.stateProvider = builder.stateProvider;
     }
-    this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
     if(builder.lbClientBuilder != null) {
       propagateLBClientConfigOptions(builder);
       builder.loadBalancedSolrClient = builder.lbClientBuilder.build();
     }
     if(builder.loadBalancedSolrClient != null) builder.httpClient = builder.loadBalancedSolrClient.getHttpClient();
-    this.myClient = (builder.httpClient == null) ? HttpClientUtil.createClient(null) : builder.httpClient;
-    if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(builder, myClient);
+    this.clientIsInternal = builder.httpClient == null;
+    this.httpClient = (builder.httpClient == null) ? new SolrInternalHttpClient(getClass().getSimpleName()) : builder.httpClient;
+    if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(builder, httpClient);
     this.lbClient = builder.loadBalancedSolrClient;
     this.updatesToLeaders = builder.shardLeadersOnly;
     this.parallelUpdates = builder.parallelUpdates;
@@ -294,6 +296,10 @@ public class CloudSolrClient extends SolrClient {
     
     if (builder.socketTimeoutMillis != null) {
       lbBuilder.withSocketTimeout(builder.socketTimeoutMillis);
+    }
+    
+    if (builder.httpClient != null) {
+      lbBuilder.withHttpClient(builder.httpClient);
     }
   }
 
@@ -454,7 +460,7 @@ public class CloudSolrClient extends SolrClient {
    * Register a CollectionStateWatcher to be called when the cluster state for a collection changes
    *
    * Note that the watcher is unregistered after it has been called once.  To make a watcher persistent,
-   * it should re-register itself in its {@link CollectionStateWatcher#onStateChanged(Set, DocCollection)}
+   * it should re-register itself in its {@link CollectionStateWatcher#onStateChanged(boolean, Set, DocCollection)}
    * call
    *
    * @param collection the collection to watch
@@ -1133,8 +1139,8 @@ public class CloudSolrClient extends SolrClient {
       lbClient.close();
     }
     
-    if (clientIsInternal && myClient!=null) {
-      HttpClientUtil.close(myClient);
+    if (clientIsInternal && httpClient!=null) {
+      IOUtils.closeQuietly(httpClient);
     }
 
     if(this.threadPool != null && !this.threadPool.isShutdown()) {
@@ -1146,8 +1152,8 @@ public class CloudSolrClient extends SolrClient {
     return lbClient;
   }
 
-  public HttpClient getHttpClient() {
-    return myClient;
+  public SolrInternalHttpClient getHttpClient() {
+    return httpClient;
   }
   
   public boolean isUpdatesToLeaders() {
@@ -1329,14 +1335,16 @@ public class CloudSolrClient extends SolrClient {
     return true;
   }
 
-  private static LBHttpSolrClient createLBHttpSolrClient(Builder cloudSolrClientBuilder, HttpClient httpClient) {
+  private static LBHttpSolrClient createLBHttpSolrClient(Builder cloudSolrClientBuilder, SolrInternalHttpClient httpClient) {
     final LBHttpSolrClient.Builder lbBuilder = new LBHttpSolrClient.Builder();
-    lbBuilder.withHttpClient(httpClient);
     if (cloudSolrClientBuilder.connectionTimeoutMillis != null) {
       lbBuilder.withConnectionTimeout(cloudSolrClientBuilder.connectionTimeoutMillis);
     }
     if (cloudSolrClientBuilder.socketTimeoutMillis != null) {
       lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis);
+    }
+    if (httpClient != null) {
+      lbBuilder.withHttpClient(httpClient);
     }
     final LBHttpSolrClient lbClient = lbBuilder.build();
     lbClient.setRequestWriter(new BinaryRequestWriter());
@@ -1358,6 +1366,7 @@ public class CloudSolrClient extends SolrClient {
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
+    protected SolrInternalHttpClient httpClient;
     
     /**
      * @deprecated use other constructors instead.  This constructor will be changing visibility in an upcoming release.
@@ -1520,6 +1529,11 @@ public class CloudSolrClient extends SolrClient {
     /** Should direct updates to shards be done in parallel (the default) or if not then synchronously? */
     public Builder withParallelUpdates(boolean parallelUpdates) {
       this.parallelUpdates = parallelUpdates;
+      return this;
+    }
+    
+    public Builder withHttpClient(SolrInternalHttpClient httpClient) {
+      this.httpClient = httpClient;
       return this;
     }
 

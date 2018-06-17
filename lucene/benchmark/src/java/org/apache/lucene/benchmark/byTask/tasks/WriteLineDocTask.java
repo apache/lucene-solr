@@ -177,7 +177,7 @@ public class WriteLineDocTask extends PerfTask {
     for (int i=0; i<fieldsToWrite.length; i++) {
       IndexableField f = doc.getField(fieldsToWrite[i]);
       String text = f == null ? "" : matcher.reset(f.stringValue()).replaceAll(" ").trim();
-      sb.append(text).append(SEP);
+      sb.append(text.replaceAll(Character.toString(SEP), "")).append(SEP);
       sufficient |= text.length()>0 && sufficientFields[i];
     }
     if (sufficient) {

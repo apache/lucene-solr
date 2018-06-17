@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +32,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -48,8 +50,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 /**
  * @since 6.5.0
@@ -379,7 +379,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
     public NamedList<Double> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      // nocommit: shared executor?
+      Http2SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq","{!sigificantTerms}");

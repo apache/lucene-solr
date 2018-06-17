@@ -20,8 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import junit.framework.Assert;
-
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -33,6 +32,10 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+import junit.framework.Assert;
+
 /**
  * Test for SpellCheckComponent's distributed querying
  *
@@ -40,8 +43,9 @@ import org.junit.Test;
  *
  * @see org.apache.solr.handler.component.SpellCheckComponent
  */
-@Slow
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND) // nocommit - why over 30?
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
   
   public DistributedSpellCheckComponentTest()

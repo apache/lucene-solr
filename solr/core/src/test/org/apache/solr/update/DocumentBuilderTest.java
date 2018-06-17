@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.TestUtil;
@@ -36,6 +35,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 
 /**
  * 

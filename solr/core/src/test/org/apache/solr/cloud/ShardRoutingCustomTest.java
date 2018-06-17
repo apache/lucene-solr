@@ -70,7 +70,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     assertTrue(CollectionAdminRequest
         .addReplicaToShard(collection,"shard1")
         .setNode(j.getNodeName())
-        .setType(useTlogReplicas()? Replica.Type.TLOG: Replica.Type.NRT)
+        .setType(Replica.Type.NRT)
         .process(cloudClient).isSuccess());
     jettys.add(j);
     SolrClient client = createNewSolrClient(j.getLocalPort());

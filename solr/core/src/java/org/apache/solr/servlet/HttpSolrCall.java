@@ -16,47 +16,56 @@
  */
 package org.apache.solr.servlet;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
+
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.Header;
-import org.apache.http.HeaderIterator;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpEntityEnclosingRequest;
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -69,6 +78,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
@@ -105,27 +115,15 @@ import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 /**
  * This class represents a call made to Solr
@@ -169,6 +167,8 @@ public class HttpSolrCall {
   }
 
   protected RequestType requestType;
+
+  private boolean preserveHost;
 
   public HttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cores,
                HttpServletRequest request, HttpServletResponse response, boolean retry) {
@@ -233,7 +233,7 @@ public class HttpSolrCall {
     // Check for container handlers
     handler = cores.getRequestHandler(path);
     if (handler != null) {
-      solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
+      solrReq = SolrRequestParsers.createInstance(cores.getFileCleaningTracker()).parse(null, path, req);
       solrReq.getContext().put(CoreContainer.class.getName(), cores);
       requestType = RequestType.ADMIN;
       action = ADMIN;
@@ -369,15 +369,14 @@ public class HttpSolrCall {
    * {@link #getCollectionsList()}
    */
   protected List<String> resolveCollectionListOrAlias(String collectionStr) {
-    if (collectionStr == null) {
-      return Collections.emptyList();
-    }
     LinkedHashSet<String> resultList = new LinkedHashSet<>();
-    Aliases aliases = getAliases();
-    List<String> inputCollections = StrUtils.splitSmart(collectionStr, ",", true);
-    for (String inputCollection : inputCollections) {
-      List<String> resolvedCollections = aliases.resolveAliases(inputCollection);
-      resultList.addAll(resolvedCollections);
+    if (collectionStr != null) {
+      Aliases aliases = getAliases();
+      List<String> inputCollections = StrUtils.splitSmart(collectionStr, ",", true);
+      for (String inputCollection : inputCollections) {
+        List<String> resolvedCollections = aliases.resolveAliases(inputCollection);
+        resultList.addAll(resolvedCollections);
+      }
     }
     return new ArrayList<>(resultList);
   }
@@ -496,7 +495,7 @@ public class HttpSolrCall {
           handleAdminRequest();
           return RETURN;
         case REMOTEQUERY:
-          remoteQuery(coreUrl + path, resp);
+          Action a = remoteQuery(coreUrl + path);
           return RETURN;
         case PROCESS:
           final Method reqMethod = Method.getMethod(req.getMethod());
@@ -527,7 +526,6 @@ public class HttpSolrCall {
         default: return action;
       }
     } catch (Throwable ex) {
-      sendError(ex);
       // walk the the entire cause chain to search for an Error
       Throwable t = ex;
       while (t != null) {
@@ -535,10 +533,11 @@ public class HttpSolrCall {
           if (t != ex) {
             log.error("An Error was wrapped in another exception - please report complete stacktrace on SOLR-6161", ex);
           }
-          throw (Error) t;
+          //throw (Error) t;
         }
         t = t.getCause();
       }
+      sendError(ex);
       return RETURN;
     } finally {
       MDCLoggingContext.clear();
@@ -574,84 +573,174 @@ public class HttpSolrCall {
     }
   }
 
-  private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
-    HttpRequestBase method = null;
-    HttpEntity httpEntity = null;
-    try {
-      String urlstr = coreUrl + queryParams.toQueryString();
+  private Action remoteQuery(String coreUrl) throws IOException, ServletException {
+    if (req != null) {
 
-      boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
-      if ("GET".equals(req.getMethod())) {
-        method = new HttpGet(urlstr);
-      } else if ("HEAD".equals(req.getMethod())) {
-        method = new HttpHead(urlstr);
-      } else if (isPostOrPutRequest) {
-        HttpEntityEnclosingRequestBase entityRequest =
-            "POST".equals(req.getMethod()) ? new HttpPost(urlstr) : new HttpPut(urlstr);
-        InputStream in = req.getInputStream();
-        HttpEntity entity = new InputStreamEntity(in, req.getContentLength());
-        entityRequest.setEntity(entity);
-        method = entityRequest;
-      } else if ("DELETE".equals(req.getMethod())) {
-        method = new HttpDelete(urlstr);
+      System.out.println("proxy to:" + coreUrl + "?" + req.getQueryString());
+      // nocommit - dont proxy around too much
+      String fhost = req.getHeader(HttpHeader.X_FORWARDED_FOR.toString());
+      final URL proxyFromUrl;
+      if (fhost != null) {
+        // already proxied, allow this?
+        proxyFromUrl = new URL("http://" + fhost);
+        // OR? action = PASSTHROUGH;
+        // nocommit: look into how much we can proxy around
+        System.out.println("Already proxied");
+        sendError(404, "No SolrCore found to service request.");
+        return RETURN;
       } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unexpected method type: " + req.getMethod());
+        proxyFromUrl = null;
       }
 
-      for (Enumeration<String> e = req.getHeaderNames(); e.hasMoreElements(); ) {
-        String headerName = e.nextElement();
-        if (!"host".equalsIgnoreCase(headerName)
-            && !"authorization".equalsIgnoreCase(headerName)
-            && !"accept".equalsIgnoreCase(headerName)) {
-          method.addHeader(headerName, req.getHeader(headerName));
+      System.out.println("protocol:" + req.getProtocol());
+      final Request proxyRequest = solrDispatchFilter.httpClient.newRequest(coreUrl + "?" + (req.getQueryString() != null ? req.getQueryString() : ""))
+          .method(req.getMethod())
+          .version(HttpVersion.fromString(req.getProtocol()));
+
+      copyRequestHeaders(req, proxyRequest);
+
+      addProxyHeaders(req, proxyRequest);
+
+      InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream());
+      
+      if (hasContent(req)) {
+        proxyRequest.content(defferedContent);
+      }
+
+      InputStreamResponseListener listener = new InputStreamResponseListener() {
+        @Override
+        public void onFailure(Response resp, Throwable t) {
+          System.out.println("proxy to failed");
+          super.onFailure(resp, t);
+          
+        }
+
+        @Override
+        public void onHeaders(Response resp) {
+          System.out.println("resp code:" + resp.getStatus());
+          for (HttpField field : resp.getHeaders()) {
+            String headerName = field.getName();
+            String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
+             System.out.println("response header: " + headerName + " : " + field.getValue() + " status:" +
+             resp.getStatus());
+            if (HOP_HEADERS.contains(lowerHeaderName))
+              continue;
+
+            response.addHeader(headerName, field.getValue());
+          }
+          response.setStatus(resp.getStatus());
+          super.onHeaders(resp);
+        }
+      };
+    
+   
+      proxyRequest.send(listener);
+      
+      
+      IOUtils.copyLarge(listener.getInputStream(), response.getOutputStream());
+      response.getOutputStream().flush(); // nocommit try not flushing
+      
+    }
+    
+    return RETURN;
+  }
+  
+  protected void addProxyHeaders(HttpServletRequest clientRequest, Request proxyRequest) {
+    proxyRequest.header(HttpHeader.VIA, "HTTP/2.0 Solr Proxy"); //nocommit protocol hard code
+    proxyRequest.header(HttpHeader.X_FORWARDED_FOR, clientRequest.getRemoteAddr());
+    // we have some tricky to see in tests header size limitations
+   // proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, clientRequest.getScheme());
+   // proxyRequest.header(HttpHeader.X_FORWARDED_HOST, clientRequest.getHeader(HttpHeader.HOST.asString()));
+   // proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, clientRequest.getLocalName());
+    proxyRequest.header(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
+  }
+  
+  protected void copyRequestHeaders(HttpServletRequest clientRequest, Request proxyRequest) {
+    // First clear possibly existing headers, as we are going to copy those from the client request.
+    proxyRequest.getHeaders().clear();
+
+    Set<String> headersToRemove = findConnectionHeaders(clientRequest);
+
+    for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements();) {
+      String headerName = headerNames.nextElement();
+      String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
+
+      if (HttpHeader.HOST.is(headerName) && !preserveHost)
+        continue;
+
+      // Remove hop-by-hop headers.
+      if (HOP_HEADERS.contains(lowerHeaderName))
+        continue;
+      if (headersToRemove != null && headersToRemove.contains(lowerHeaderName))
+        continue;
+
+      for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements();) {
+        String headerValue = headerValues.nextElement();
+        if (headerValue != null) {
+          proxyRequest.header(headerName, headerValue);
+          //System.out.println("request header: " + headerName + " : " + headerValue);
         }
       }
-      // These headers not supported for HttpEntityEnclosingRequests
-      if (method instanceof HttpEntityEnclosingRequest) {
-        method.removeHeaders(TRANSFER_ENCODING_HEADER);
-        method.removeHeaders(CONTENT_LENGTH_HEADER);
-      }
-
-      final HttpResponse response
-          = solrDispatchFilter.httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
-      int httpStatus = response.getStatusLine().getStatusCode();
-      httpEntity = response.getEntity();
-
-      resp.setStatus(httpStatus);
-      for (HeaderIterator responseHeaders = response.headerIterator(); responseHeaders.hasNext(); ) {
-        Header header = responseHeaders.nextHeader();
-
-        // We pull out these two headers below because they can cause chunked
-        // encoding issues with Tomcat
-        if (header != null && !header.getName().equalsIgnoreCase(TRANSFER_ENCODING_HEADER)
-            && !header.getName().equalsIgnoreCase(CONNECTION_HEADER)) {
-          resp.addHeader(header.getName(), header.getValue());
-        }
-      }
-
-      if (httpEntity != null) {
-        if (httpEntity.getContentEncoding() != null)
-          resp.setCharacterEncoding(httpEntity.getContentEncoding().getValue());
-        if (httpEntity.getContentType() != null) resp.setContentType(httpEntity.getContentType().getValue());
-
-        InputStream is = httpEntity.getContent();
-        OutputStream os = resp.getOutputStream();
-
-        IOUtils.copyLarge(is, os);
-      }
-
-    } catch (IOException e) {
-      sendError(new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Error trying to proxy request for url: " + coreUrl, e));
-    } finally {
-      Utils.consumeFully(httpEntity);
     }
 
+    // Force the Host header if configured
+    // if (_hostHeader != null)
+    // proxyRequest.header(HttpHeader.HOST, _hostHeader);
+  }
+  
+  protected Set<String> findConnectionHeaders(HttpServletRequest clientRequest)
+  {
+      // Any header listed by the Connection header must be removed:
+      // http://tools.ietf.org/html/rfc7230#section-6.1.
+      Set<String> hopHeaders = null;
+      Enumeration<String> connectionHeaders = clientRequest.getHeaders(HttpHeader.CONNECTION.asString());
+      while (connectionHeaders.hasMoreElements())
+      {
+          String value = connectionHeaders.nextElement();
+          String[] values = value.split(",");
+          for (String name : values)
+          {
+              name = name.trim().toLowerCase(Locale.ENGLISH);
+              if (hopHeaders == null)
+                  hopHeaders = new HashSet<>();
+              hopHeaders.add(name);
+          }
+      }
+      return hopHeaders;
+  }
+  
+  protected boolean hasContent(HttpServletRequest clientRequest) {
+    boolean hasContent = clientRequest.getContentLength() > 0 ||
+        clientRequest.getContentType() != null ||
+        clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
+    return hasContent;
+  }
+  
+  protected static final Set<String> HOP_HEADERS;
+  static
+  {
+      Set<String> hopHeaders = new HashSet<>();
+      hopHeaders.add("accept-encoding");
+      hopHeaders.add("connection");
+      hopHeaders.add("keep-alive");
+      hopHeaders.add("proxy-authorization");
+      hopHeaders.add("proxy-authenticate");
+      hopHeaders.add("proxy-connection");
+      hopHeaders.add("transfer-encoding");
+      hopHeaders.add("te");
+      hopHeaders.add("trailer");
+      hopHeaders.add("upgrade");
+//      hopHeaders.add(HttpHeader.X_FORWARDED_FOR.asString());
+//      hopHeaders.add(HttpHeader.X_FORWARDED_PROTO.asString());
+//      hopHeaders.add(HttpHeader.VIA.asString());
+//      hopHeaders.add(HttpHeader.X_FORWARDED_HOST.asString());
+//      hopHeaders.add(HttpHeader.SERVER.asString());
+//      
+      HOP_HEADERS = Collections.unmodifiableSet(hopHeaders);
   }
 
   protected void sendError(Throwable ex) throws IOException {
+    ex.printStackTrace();
     Exception exp = null;
     SolrCore localCore = null;
     try {
@@ -659,7 +748,8 @@ public class HttpSolrCall {
       if (ex instanceof Exception) {
         solrResp.setException((Exception) ex);
       } else {
-        solrResp.setException(new RuntimeException(ex));
+        RuntimeException we = new RuntimeException(ex.getMessage(), ex);
+        solrResp.setException(we);
       }
       localCore = core;
       if (solrReq == null) {
@@ -677,6 +767,7 @@ public class HttpSolrCall {
       QueryResponseWriter writer = getResponseWriter();
       writeResponse(solrResp, writer, Method.GET);
     } catch (Exception e) { // This error really does not matter
+      e.printStackTrace();
       exp = e;
     } finally {
       try {
@@ -694,6 +785,7 @@ public class HttpSolrCall {
   }
 
   protected void sendError(int code, String message) throws IOException {
+    // assert false : "evil send error";
     try {
       response.sendError(code, message);
     } catch (EOFException e) {
@@ -886,7 +978,7 @@ public class HttpSolrCall {
     if (slices == null) {
       slices = new ArrayList<>();
       // look by core name
-      byCoreName = true;
+     // byCoreName = true;
       getSlicesForCollections(clusterState, slices, true);
       if (slices.isEmpty()) {
         getSlicesForCollections(clusterState, slices, false);
@@ -899,7 +991,7 @@ public class HttpSolrCall {
 
     collectionsList.add(collectionName);
     String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
-        slices, byCoreName, true);
+        slices, true, true);
 
     if (coreUrl == null) {
       coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
@@ -926,23 +1018,30 @@ public class HttpSolrCall {
       for (Replica replica : randomizedReplicas) {
         if (!activeReplicas || (liveNodes.contains(replica.getNodeName())
             && replica.getState() == Replica.State.ACTIVE)) {
-
-          if (byCoreName && !collectionName.equals(replica.getStr(CORE_NAME_PROP))) {
+          if (byCoreName && !origCorename.equals(replica.getStr(CORE_NAME_PROP))) {
             // if it's by core name, make sure they match
             continue;
           }
+
+        
           if (replica.getStr(BASE_URL_PROP).equals(cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
           }
 
           if (origCorename != null) {
+            System.out.println("use replica with corename:" + replica.getStr(CORE_NAME_PROP));
             coreUrl = replica.getStr(BASE_URL_PROP) + "/" + origCorename;
+            System.out.println("we are " + cores.getZkController().getBaseUrl());
+            System.out.println("found remote core:" + coreUrl);
+            System.out.println("instead of " + replica.getCoreUrl());
           } else {
             coreUrl = replica.getCoreUrl();
             if (coreUrl.endsWith("/")) {
               coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
             }
+            System.out.println("we are " + cores.getZkController().getBaseUrl());
+            System.out.println("found remote core:" + coreUrl + " replica " + replica);
           }
 
           return coreUrl;

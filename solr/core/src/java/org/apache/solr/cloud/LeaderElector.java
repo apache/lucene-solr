@@ -167,7 +167,7 @@ public  class LeaderElector {
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
-    context.runLeaderProcess(weAreReplacement,0);
+    context.runLeaderProcess(weAreReplacement);
   }
   
   /**
@@ -281,11 +281,6 @@ public  class LeaderElector {
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);
           }
-          try {
-            Thread.sleep(50);
-          } catch (InterruptedException e2) {
-            Thread.currentThread().interrupt();
-          }
         }
 
       } catch (KeeperException.NoNodeException e) {
@@ -297,11 +292,6 @@ public  class LeaderElector {
               "", e);
         }
         cont = true;
-        try {
-          Thread.sleep(50);
-        } catch (InterruptedException e2) {
-          Thread.currentThread().interrupt();
-        }
       }
     }
     checkIfIamLeader(context, replacement);

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterState;
@@ -130,20 +130,18 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
         if (leaderUrl == null) { // we might not have a leader yet, stop and try again later
           return;
         }
-
-        HttpSolrClient server = new HttpSolrClient.Builder(leaderUrl)
-            .withConnectionTimeout(15000)
-            .withSocketTimeout(60000)
-            .build();
-
-        ModifiableSolrParams params = new ModifiableSolrParams();
-        params.set(CommonParams.ACTION, CdcrParams.CdcrAction.LASTPROCESSEDVERSION.toString());
-
-        SolrRequest request = new QueryRequest(params);
-        request.setPath(path);
-
         long lastVersion;
-        try {
+        try (Http2SolrClient server = new Http2SolrClient.Builder(leaderUrl)
+            // .withConnectionTimeout(15000) // nocommit
+            // .withSocketTimeout(60000)
+            .build()) {
+
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CommonParams.ACTION, CdcrParams.CdcrAction.LASTPROCESSEDVERSION.toString());
+
+          SolrRequest request = new QueryRequest(params);
+          request.setPath(path);
+
           NamedList response = server.request(request);
           lastVersion = (Long) response.get(CdcrParams.LAST_PROCESSED_VERSION);
           log.debug("My leader {} says its last processed _version_ number is: {}. I am {}", leaderUrl, lastVersion,
@@ -151,12 +149,6 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
         } catch (IOException | SolrServerException e) {
           log.warn("Couldn't get last processed version from leader {}: {}", leaderUrl, e.getMessage());
           return;
-        } finally {
-          try {
-            server.close();
-          } catch (IOException ioe) {
-            log.warn("Caught exception trying to close server: ", leaderUrl, ioe.getMessage());
-          }
         }
 
         // if we received -1, it means that the log reader on the leader has not yet started to read log entries
@@ -173,9 +165,11 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
           }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          log.warn("Couldn't advance replica buffering tlog reader to {} (to remove old tlogs): {}", lastVersion, e.getMessage());
+          log.warn("Couldn't advance replica buffering tlog reader to {} (to remove old tlogs): {}", lastVersion,
+              e.getMessage());
         } catch (IOException e) {
-          log.warn("Couldn't advance replica buffering tlog reader to {} (to remove old tlogs): {}", lastVersion, e.getMessage());
+          log.warn("Couldn't advance replica buffering tlog reader to {} (to remove old tlogs): {}", lastVersion,
+              e.getMessage());
         }
       } catch (Throwable e) {
         log.warn("Caught unexpected exception", e);

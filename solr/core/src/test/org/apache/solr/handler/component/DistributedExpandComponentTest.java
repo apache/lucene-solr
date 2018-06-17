@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.Iterator;
+import java.util.Map;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -23,9 +26,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Map;
-import java.util.Iterator;
 
 /**
  * Test for QueryComponent's distributed querying

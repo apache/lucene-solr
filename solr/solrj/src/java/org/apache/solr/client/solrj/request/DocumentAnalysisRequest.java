@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -31,8 +33,6 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
@@ -85,7 +85,7 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
   }
 
   @Override
-  protected DocumentAnalysisResponse createResponse(SolrClient client) {
+  public DocumentAnalysisResponse createResponse(SolrClient client) {
     return new DocumentAnalysisResponse();
   }
 

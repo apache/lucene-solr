@@ -22,7 +22,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -30,7 +31,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class DirectoryFactoryTest extends LuceneTestCase {
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+//@ThreadLeakLingering(linger = 80000)
+@TimeoutSuite(millis = 120 * TimeUnits.SECOND)
+public class DirectoryFactoryTest extends SolrTestCaseJ4 {
 
   private static Path solrHome = null;
   private static SolrResourceLoader loader = null;
@@ -87,6 +92,7 @@ public class DirectoryFactoryTest extends LuceneTestCase {
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
+    cc.shutdown();
     cc = new CoreContainer(config);
     rdf = new RAMDirectoryFactory();
     rdf.initCoreContainer(cc);
@@ -97,11 +103,15 @@ public class DirectoryFactoryTest extends LuceneTestCase {
     // solr.data.home set but also solrDataHome set in solr.xml, which should override the former
     System.setProperty("test.solr.data.home", "/foo");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
+    rdf.close();
+    cc.shutdown();
     cc = new CoreContainer(config);
     rdf = new RAMDirectoryFactory();
     rdf.initCoreContainer(cc);
     rdf.init(new NamedList());
     assertDataHome("/foo/inst_dir/data", "inst_dir", rdf, cc);
+    rdf.close();
+    cc.shutdown();
   }
 
   private void assertDataHome(String expected, String instanceDir, RAMDirectoryFactory rdf, CoreContainer cc, String... properties) throws IOException {
@@ -112,6 +122,10 @@ public class DirectoryFactoryTest extends LuceneTestCase {
 
   private NodeConfig loadNodeConfig(String config) throws Exception {
     InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
-    return SolrXmlConfig.fromInputStream(loader, is);
+    try {
+      return SolrXmlConfig.fromInputStream(loader, is);
+    } finally {
+      is.close();
+    }
   }
 }

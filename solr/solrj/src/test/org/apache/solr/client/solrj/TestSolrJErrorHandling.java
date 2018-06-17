@@ -40,16 +40,18 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore // nocommit
 public class TestSolrJErrorHandling extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -104,7 +106,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     client.setRequestWriter(new RequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -112,7 +114,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @Test
   public void testWithBinary() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     client.setRequestWriter(new BinaryRequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -143,7 +145,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     };
   };
 
-  void doThreads(final HttpSolrClient client, final int numThreads, final int numRequests) throws Exception {
+  void doThreads(final Http2SolrClient client, final int numThreads, final int numRequests) throws Exception {
     final AtomicInteger tries = new AtomicInteger(0);
 
     List<Thread> threads = new ArrayList<>();
@@ -187,7 +189,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     assertTrue("got unexpected exceptions. ", unexpected.isEmpty() );
   }
 
-  int getCount(HttpSolrClient client) throws IOException, SolrServerException {
+  int getCount(Http2SolrClient client) throws IOException, SolrServerException {
     client.commit();
     QueryResponse rsp = client.query(params("q", "id:test", "fl", "count_i", "wt", "json"));
     int count = ((Number)rsp.getResults().get(0).get("count_i")).intValue();
@@ -195,17 +197,17 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   // this always failed with the Jetty 9.3 snapshot
-  void doIt(HttpSolrClient client) throws Exception {
+  void doIt(Http2SolrClient client) throws Exception {
     client.deleteByQuery("*:*");
     doThreads(client,10,100);
     // doSingle(client, 1);
   }
 
-  void doSingle(HttpSolrClient client, int threadNum) {
+  void doSingle(Http2SolrClient client, int threadNum) {
     try {
       client.add(manyDocs(threadNum*1000000, 1000));
     }
-    catch (HttpSolrClient.RemoteSolrException e) {
+    catch (Http2SolrClient.RemoteSolrException e) {
       String msg = e.getMessage();
       assertTrue(msg, msg.contains("field_does_not_exist"));
     }
@@ -266,7 +268,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
    String bodyString = getJsonDocs(200000);  // sometimes succeeds with this size, but larger can cause OOM from command line
 
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
 
     String urlString = client.getBaseURL() + "/update";
 

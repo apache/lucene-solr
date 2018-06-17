@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -38,6 +37,8 @@ import org.apache.solr.update.processor.SkipExistingDocumentsProcessorFactory.Sk
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import com.google.common.collect.ImmutableMap;
 
 public class SkipExistingDocumentsProcessorFactoryTest {
 

@@ -16,6 +16,10 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,8 +32,10 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -47,14 +53,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Test the functionality (accuracy and failure) of the methods exposed by the classes
  * {@link SchemaRequest} and {@link SchemaResponse}.
  */
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class SchemaTest extends RestTestBase {
   private static void assertValidSchemaResponse(SolrResponseBase schemaResponse) {
     assertEquals("Response contained errors: " + schemaResponse.toString(), 0, schemaResponse.getStatus());
@@ -62,7 +68,7 @@ public class SchemaTest extends RestTestBase {
   }
   
   private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
-    HttpSolrClient.RemoteExecutionException e = expectThrows(HttpSolrClient.RemoteExecutionException.class, runnable);
+    Http2SolrClient.RemoteExecutionException e = expectThrows(Http2SolrClient.RemoteExecutionException.class, runnable);
     SimpleOrderedMap errorMap = (SimpleOrderedMap)e.getMetaData().get("error");
     assertEquals("org.apache.solr.api.ApiBag$ExceptionWithErrObject",
         ((NamedList)errorMap.get("metadata")).get("error-class"));

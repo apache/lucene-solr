@@ -19,6 +19,8 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.util.List;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -29,11 +31,15 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 // See SOLR-6640
 @SolrTestCaseJ4.SuppressSSL
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
   private static final int MAX_BUFFERED_DOCS = 2, ULOG_NUM_RECORDS_TO_KEEP = 2;
-  private final boolean onlyLeaderIndexes = random().nextBoolean();
+  private final boolean onlyLeaderIndexes = false;//random().nextBoolean();
   public RecoveryAfterSoftCommitTest() {
     sliceCount = 1;
     fixShardCount(2);

@@ -28,9 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -48,6 +49,11 @@ import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.google.common.collect.ImmutableList;
+
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestLazyCores extends SolrTestCaseJ4 {
 
   private File solrHomeDirectory;

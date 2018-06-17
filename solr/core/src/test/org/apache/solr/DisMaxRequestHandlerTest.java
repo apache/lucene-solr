@@ -16,11 +16,11 @@
  */
 package org.apache.solr;
 
+import java.util.regex.Pattern;
+
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.regex.Pattern;
 
 /**
  * Tests some basic functionality of the DisMaxRequestHandler

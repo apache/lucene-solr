@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import static org.apache.solr.common.params.CoreAdminParams.NODE;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,8 +35,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-
-import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 /**
  * Each instance represents a node in the cluster

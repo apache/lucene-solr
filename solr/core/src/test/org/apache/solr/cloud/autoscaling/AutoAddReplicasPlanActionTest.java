@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,10 +42,11 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-
+@Ignore
+//nocommit
 public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
   @BeforeClass

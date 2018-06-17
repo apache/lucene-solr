@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,8 +43,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
-
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 /**
  *  Iterates over a gatherNodes() expression and scores the Tuples based on tf-idf.

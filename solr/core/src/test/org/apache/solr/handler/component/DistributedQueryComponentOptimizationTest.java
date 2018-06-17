@@ -36,6 +36,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -46,6 +47,8 @@ import org.junit.Test;
  *
  * @see QueryComponent
  */
+@Ignore
+// nocommit
 public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "optimize";

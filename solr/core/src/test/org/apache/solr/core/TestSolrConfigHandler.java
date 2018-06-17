@@ -16,6 +16,9 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.common.util.Utils.getObjectByPath;
+import static org.apache.solr.handler.TestBlobHandler.getAsString;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
@@ -30,8 +33,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.StrUtils;
@@ -55,9 +59,11 @@ import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-import static org.apache.solr.handler.TestBlobHandler.getAsString;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.google.common.collect.ImmutableList;
 
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TestSolrConfigHandler extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -177,7 +183,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     reqhandlertests(restTestHarness, null, null);
   }
 
-  public static void runConfigCommand(RestTestHarness harness, String uri, String payload) throws IOException {
+  public static void runConfigCommand(RestTestHarness harness, String uri, String payload) throws Exception {
     String json = SolrTestCaseJ4.json(payload);
     log.info("going to send config command. path {} , payload: {}", uri, payload);
     String response = harness.post(uri, json);

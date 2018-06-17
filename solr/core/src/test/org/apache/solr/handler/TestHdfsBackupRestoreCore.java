@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler;
 
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -24,7 +26,6 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -35,10 +36,11 @@ import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
@@ -56,12 +58,15 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
   public static final String HDFS_REPO_SOLR_XML = "<solr>\n" +
       "\n" +
@@ -178,12 +183,12 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     boolean testViaReplicationHandler = random().nextBoolean();
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    try (SolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
+    try (Http2SolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
       // Create a backup.
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");
         BackupRestoreUtils.runReplicationHandlerCommand(baseUrl, coreName, ReplicationHandler.CMD_BACKUP, "hdfs", backupName);
-        CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, coreName, null);
+        CheckBackupStatus checkBackupStatus = new CheckBackupStatus(masterClient, coreName, null);
         while (!checkBackupStatus.success) {
           checkBackupStatus.fetchStatus();
           Thread.sleep(1000);

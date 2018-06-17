@@ -17,6 +17,11 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.CONFLICT;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -45,11 +50,6 @@ import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.SolrException.ErrorCode.CONFLICT;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor {
   private static final String[] EMPTY_STR_ARR = new String[0];

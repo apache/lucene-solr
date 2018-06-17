@@ -16,18 +16,24 @@
  */
 package org.apache.solr;
 
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
-import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
+import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 
-import java.util.List;
-import java.util.Collections;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * super simple sanity check that SimpleTrackingShardHandler can be used in a 
  * {@link BaseDistributedSearchTestCase} subclass
  */
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCase {
 
   @Override

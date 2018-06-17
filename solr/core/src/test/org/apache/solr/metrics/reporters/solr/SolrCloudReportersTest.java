@@ -19,8 +19,9 @@ package org.apache.solr.metrics.reporters.solr;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import com.codahale.metrics.Metric;
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.core.CoreContainer;
@@ -35,9 +36,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.codahale.metrics.Metric;
+
 /**
  *
  */
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class SolrCloudReportersTest extends SolrCloudTestCase {
   int leaderRegistries;
   int clusterRegistries;

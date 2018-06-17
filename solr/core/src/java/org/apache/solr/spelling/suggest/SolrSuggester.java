@@ -16,6 +16,9 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.spelling.suggest.fst.AnalyzingInfixLookupFactory.CONTEXTS_FIELD_NAME;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,9 +50,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrCoreState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.spelling.suggest.fst.AnalyzingInfixLookupFactory.CONTEXTS_FIELD_NAME;
 
 /** 
  * Responsible for loading the lookup and dictionary Implementations specified by 

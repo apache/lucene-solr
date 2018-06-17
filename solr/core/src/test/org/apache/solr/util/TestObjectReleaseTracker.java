@@ -16,15 +16,17 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+
 
 @Limit(bytes=150000) // raise limit as this writes to sys err
-public class TestObjectReleaseTracker extends LuceneTestCase {
+@ThreadLeakLingering(linger = 80000) // nocommit log4j2 async log thread
+public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
   
   @Test
   public void testObjectReleaseTracker() {

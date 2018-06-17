@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,8 +41,6 @@ import org.apache.solr.search.EarlyTerminatingCollectorException;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.ID;
 
 public class SpellCheckCollator {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

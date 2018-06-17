@@ -17,6 +17,10 @@
 
 package org.apache.solr.core;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -33,12 +37,11 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.TestBlobHandler;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
-
+@Ignore
+// nocommit
 public class TestDynamicURP extends SolrCloudTestCase {
 
 

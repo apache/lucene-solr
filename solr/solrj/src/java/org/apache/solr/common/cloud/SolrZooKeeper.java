@@ -88,15 +88,40 @@ public class SolrZooKeeper extends ZooKeeper {
       }
     };
     spawnedThreads.add(t);
+    t.setDaemon(true);
     t.start();
   }
   
   @Override
   public synchronized void close() throws InterruptedException {
+    super.close();
+    final ClientCnxn cnxn = getConnection();
+
+    join(cnxn, "sendThread");
+    join(cnxn, "eventThread");
+    
     for (Thread t : spawnedThreads) {
       if (t.isAlive()) t.interrupt();
     }
-    super.close();
+  }
+
+  private void join(final ClientCnxn cnxn, String field) {
+    try {
+      final Field sendThreadFld = cnxn.getClass().getDeclaredField(field);
+      sendThreadFld.setAccessible(true);
+      Object sendThread = sendThreadFld.get(cnxn);
+      if (sendThread != null) {
+        Method method = sendThread.getClass().getMethod("join");
+        method.setAccessible(true);
+        try {
+          method.invoke(sendThread);
+        } catch (InvocationTargetException e) {
+          // is fine
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Closing Zookeeper send channel failed.", e);
+    }
   }
   
 //  public static void assertCloses() {

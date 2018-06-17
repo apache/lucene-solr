@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
-import org.apache.lucene.search.spell.SuggestWord;
-
 import java.util.Comparator;
+
+import org.apache.lucene.search.spell.SuggestWord;
 
 
 /**

@@ -19,8 +19,9 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,10 +39,17 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
     MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
 })
+@ThreadLeakLingering(linger = 5000)
+@Slow
+@TimeoutSuite(millis = 160 * TimeUnits.SECOND) // nocommit could we speed up non nightly?
 public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
   private static MiniDFSCluster dfsCluster;
 
@@ -152,7 +160,7 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
     assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
 
     // node0 will delete it replica because of CloudUtil.checkSharedFSFailoverReplaced()
-    cluster.getJettySolrRunners().get(0).start();
+    ChaosMonkey.start(cluster.getJettySolrRunners().get(0));
     Thread.sleep(5000);
     assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
 

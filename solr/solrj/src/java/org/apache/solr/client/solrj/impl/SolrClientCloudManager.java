@@ -21,26 +21,20 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
@@ -122,55 +116,70 @@ public class SolrClientCloudManager implements SolrCloudManager {
 
   @Override
   public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException {
-    HttpClient client = solrClient.getHttpClient();
-    final HttpRequestBase req;
-    HttpEntity entity = null;
-    if (payload != null) {
-      entity = new StringEntity(payload, "UTF-8");
+    // nocommit
+    SolrInternalHttpClient httpClient = solrClient.getHttpClient();
+    try (Http2SolrClient client = new Http2SolrClient.Builder(url).withHttpClient(httpClient).build()) {
+      final HttpRequestBase req;
+      HttpEntity entity = null;
+      if (payload != null) {
+        entity = new StringEntity(payload, "UTF-8");
+      }
+      switch (method) {
+        case GET:
+          return client.httpGet(url).asString.getBytes("UTF-8");
+        case POST:
+          return client.httpPost(url, payload.getBytes("UTF-8"), "text/html; charset=UTF-8").asString.getBytes("UTF-8");
+          //req = new HttpPost(url);
+//          if (entity != null) {
+//            ((HttpPost) req).setEntity(entity);
+//          }
+//          break;
+        case PUT:
+          return client.httpPut(url, payload.getBytes("UTF-8"), "text/html; charset=UTF-8").getBytes("UTF-8");
+//          req = new HttpPut(url);
+//          if (entity != null) {
+//            ((HttpPut) req).setEntity(entity);
+//          }
+//          break;
+        case DELETE:
+          return client.httpDelete(url).getBytes();
+          //req = new HttpDelete(url);
+          //break;
+        default:
+          throw new IOException("Unsupported method " + method);
+      }
+//      if (headers != null) {
+//        headers.forEach((k, v) -> req.addHeader(k, v));
+//      }
+//      RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
+//      if (timeout > 0) {
+//        requestConfigBuilder.setSocketTimeout(timeout);
+//        requestConfigBuilder.setConnectTimeout(timeout);
+//      }
+//      requestConfigBuilder.setRedirectsEnabled(followRedirects);
+//      req.setConfig(requestConfigBuilder.build());
+//      HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
+//     // HttpResponse rsp = client.execute(req, httpClientRequestContext);
+//      int statusCode = rsp.getStatusLine().getStatusCode();
+//      if (statusCode != 200) {
+//        throw new IOException("Error sending request to " + url + ", HTTP response: " + rsp.toString());
+//      }
+//      HttpEntity responseEntity = rsp.getEntity();
+//      if (responseEntity != null && responseEntity.getContent() != null) {
+//        return EntityUtils.toByteArray(responseEntity);
+//      } else {
+//        return EMPTY;
+//      }
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e);
+    } catch (TimeoutException e) {
+      throw new RuntimeException(e);
     }
-    switch (method) {
-      case GET:
-        req = new HttpGet(url);
-        break;
-      case POST:
-        req = new HttpPost(url);
-        if (entity != null) {
-          ((HttpPost)req).setEntity(entity);
-        }
-        break;
-      case PUT:
-        req = new HttpPut(url);
-        if (entity != null) {
-          ((HttpPut)req).setEntity(entity);
-        }
-        break;
-      case DELETE:
-        req = new HttpDelete(url);
-        break;
-      default:
-        throw new IOException("Unsupported method " + method);
-    }
-    if (headers != null) {
-      headers.forEach((k, v) -> req.addHeader(k, v));
-    }
-    RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
-    if (timeout > 0) {
-      requestConfigBuilder.setSocketTimeout(timeout);
-      requestConfigBuilder.setConnectTimeout(timeout);
-    }
-    requestConfigBuilder.setRedirectsEnabled(followRedirects);
-    req.setConfig(requestConfigBuilder.build());
-    HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
-    HttpResponse rsp = client.execute(req, httpClientRequestContext);
-    int statusCode = rsp.getStatusLine().getStatusCode();
-    if (statusCode != 200) {
-      throw new IOException("Error sending request to " + url + ", HTTP response: " + rsp.toString());
-    }
-    HttpEntity responseEntity = rsp.getEntity();
-    if (responseEntity != null && responseEntity.getContent() != null) {
-      return EntityUtils.toByteArray(responseEntity);
-    } else {
-      return EMPTY;
+    // nocommit exceptions
+    catch (SolrServerException e) {
+      throw new RuntimeException(e);
     }
   }
 

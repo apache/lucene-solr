@@ -26,22 +26,22 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+@Ignore
+// nocommit
 public class TestSegmentSorting extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

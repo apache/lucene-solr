@@ -29,11 +29,13 @@ import java.util.Random;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -47,10 +49,14 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 /** 
  * @see TestPseudoReturnFields 
  * @see TestRandomFlRTGCloud
  */
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
@@ -59,7 +65,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static ArrayList<Http2SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
@@ -112,7 +118,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   @AfterClass
   private static void afterClass() throws Exception {
     CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
-    for (HttpSolrClient client : CLIENTS) {
+    for (Http2SolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS = null;

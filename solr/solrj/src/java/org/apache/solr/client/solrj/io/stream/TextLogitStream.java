@@ -35,7 +35,7 @@ import java.util.concurrent.Future;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -619,7 +619,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     public Tuple call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      Http2SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq","{!tlogit}");

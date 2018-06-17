@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -30,11 +28,18 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   private static class MapperCache implements Cache {

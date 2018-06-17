@@ -55,7 +55,7 @@ public class DirectSolrConnection
   public DirectSolrConnection( SolrCore c )
   {
     core = c;
-    parser = new SolrRequestParsers( c.getSolrConfig() );
+    parser = new SolrRequestParsers( c.getSolrConfig(), null );
   }
   
 

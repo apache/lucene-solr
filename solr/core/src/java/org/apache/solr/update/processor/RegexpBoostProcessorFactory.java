@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;

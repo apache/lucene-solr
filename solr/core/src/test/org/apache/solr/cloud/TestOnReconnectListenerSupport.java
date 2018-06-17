@@ -17,9 +17,13 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -33,9 +37,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

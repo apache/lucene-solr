@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -28,6 +31,11 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
+@BadApple(bugUrl="this test is slower than it should be") // nocommit
 public class ZkFailoverTest extends SolrCloudTestCase {
 
   @BeforeClass

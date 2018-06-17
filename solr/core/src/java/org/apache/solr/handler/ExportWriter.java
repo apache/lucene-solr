@@ -17,6 +17,10 @@
 
 package org.apache.solr.handler;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.util.Utils.makeMap;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -50,8 +54,8 @@ import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -78,10 +82,6 @@ import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

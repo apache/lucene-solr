@@ -22,8 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 
 /**
  * Check standard query parsers for class loading problems during initialization (NAME field is final and static).
@@ -34,7 +36,8 @@ import org.junit.Test;
  * @see org.apache.solr.search.QParserPlugin#standardPlugins
  *
  */
-public class TestStandardQParsers extends LuceneTestCase {
+@ThreadLeakLingering(linger = 80000)
+public class TestStandardQParsers extends SolrTestCaseJ4 {
   /**
    * Field name of constant mandatory for query parser plugin.
    */

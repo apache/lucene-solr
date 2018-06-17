@@ -16,10 +16,10 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 
-public class UUIDFieldTest extends LuceneTestCase {
+public class UUIDFieldTest extends SolrTestCaseJ4 {
   public void testToInternal() {
     boolean ok = false;
     UUIDField uuidfield = new UUIDField();

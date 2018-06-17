@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.MoveReplicaHDFSTest;
@@ -26,12 +25,18 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
+
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @LuceneTestCase.Slow
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
     MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
 })
+
+@Ignore
+// nocommit
 public class HdfsAutoAddReplicasIntegrationTest extends AutoAddReplicasIntegrationTest {
 
   private static MiniDFSCluster dfsCluster;

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud.hdfs;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -27,6 +26,9 @@ import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+
 @Slow
 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
 //@Nightly
@@ -34,6 +36,7 @@ import org.junit.BeforeClass;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @LogLevel("org.apache.solr.update.HdfsTransactionLog=DEBUG")
+@ThreadLeakLingering(linger = 5000)
 public class HdfsRecoveryZkTest extends RecoveryZkTest {
 
   private static MiniDFSCluster dfsCluster;

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -27,9 +30,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
@@ -41,7 +44,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -60,10 +63,11 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-import static org.apache.solr.common.util.Utils.getObjectByPath;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.google.common.collect.ImmutableSet;
 
-@LuceneTestCase.Slow
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class TestPolicyCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -213,7 +217,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("expected exception");
-    } catch (HttpSolrClient.RemoteExecutionException e) {
+    } catch (Http2SolrClient.RemoteExecutionException e) {
       // expected
       assertTrue(String.valueOf(getObjectByPath(e.getMetaData(),
           false, "error/details[0]/errorMessages[0]")).contains("Invalid metrics: param in"));

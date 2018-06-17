@@ -18,6 +18,9 @@
 
 package org.apache.solr.update;
 
+import static org.apache.solr.update.UpdateLogTest.buildAddUpdateCommand;
+import static org.junit.internal.matchers.StringContains.containsString;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,6 +35,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -52,13 +57,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.update.UpdateLogTest.buildAddUpdateCommand;
-import static org.junit.internal.matchers.StringContains.containsString;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 
 /**
  * Tests the in-place updates (docValues updates) for a standalone Solr instance.
  */
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   private static SolrClient client;
 

@@ -19,9 +19,9 @@ package org.apache.solr.util;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 
-public class FileUtilsTest extends LuceneTestCase {  
+public class FileUtilsTest extends SolrTestCaseJ4 {  
 
   public void testResolve() throws IOException {
     String cwd = new File(".").getAbsolutePath();

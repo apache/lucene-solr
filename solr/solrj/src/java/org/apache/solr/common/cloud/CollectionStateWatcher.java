@@ -38,6 +38,6 @@ public interface CollectionStateWatcher {
    *
    * @return true if the watcher should be removed
    */
-  boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState);
+  boolean onStateChanged(boolean closing, Set<String> liveNodes, DocCollection collectionState);
 
 }

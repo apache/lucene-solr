@@ -16,7 +16,9 @@
  */
 package org.apache.solr.common.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 
 /** <code>SimpleOrderedMap</code> is a {@link NamedList} where access by key is more

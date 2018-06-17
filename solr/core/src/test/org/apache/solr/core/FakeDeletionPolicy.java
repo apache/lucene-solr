@@ -16,12 +16,12 @@
  */
 package org.apache.solr.core;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  *

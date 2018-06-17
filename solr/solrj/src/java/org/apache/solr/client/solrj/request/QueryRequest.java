@@ -67,7 +67,7 @@ public class QueryRequest extends SolrRequest<QueryResponse> {
   //---------------------------------------------------------------------------------
 
   @Override
-  protected QueryResponse createResponse(SolrClient client) {
+  public QueryResponse createResponse(SolrClient client) {
     return new QueryResponse(client);
   }
 

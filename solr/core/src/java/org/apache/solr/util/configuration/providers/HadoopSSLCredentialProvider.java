@@ -17,6 +17,8 @@
 
 package org.apache.solr.util.configuration.providers;
 
+import static org.apache.hadoop.security.alias.CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.EnumMap;
@@ -25,8 +27,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.hadoop.security.alias.CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH;
 
 /**
  * System property based SSL configuration provider

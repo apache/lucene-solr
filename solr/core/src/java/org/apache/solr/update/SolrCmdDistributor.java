@@ -17,14 +17,24 @@
 package org.apache.solr.update;
 
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.http.HttpResponse;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient; // jdoc
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.OnComplete;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -32,24 +42,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
+import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
 
 /**
  * Used for distributing commands from a shard leader to its replicas.
@@ -58,122 +54,86 @@ public class SolrCmdDistributor implements Closeable {
   private static final int MAX_RETRIES_ON_FORWARD = 25;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  private StreamingSolrClients clients;
   private boolean finished = false; // see finish()
 
-  private int retryPause = 500;
   private int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD;
   
-  private final List<Error> allErrors = new ArrayList<>();
-  private final List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
-  
-  private final CompletionService<Object> completionService;
-  private final Set<Future<Object>> pending = new HashSet<>();
+  private final Set<Error> allErrors = ConcurrentHashMap.newKeySet();
   
   public static interface AbortCheck {
     public boolean abortCheck();
   }
   
+  private Http2SolrClient solrClient;
+
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
-    this.clients = new StreamingSolrClients(updateShardHandler);
-    this.completionService = new ExecutorCompletionService<>(updateShardHandler.getUpdateExecutor());
+    this.solrClient = updateShardHandler.getUpdateSolrClient();
   }
   
-  public SolrCmdDistributor(StreamingSolrClients clients, int maxRetriesOnForward, int retryPause) {
-    this.clients = clients;
+  public SolrCmdDistributor(int maxRetriesOnForward) {
     this.maxRetriesOnForward = maxRetriesOnForward;
-    this.retryPause = retryPause;
-    completionService = new ExecutorCompletionService<>(clients.getUpdateExecutor());
   }
   
-  public void finish() {    
-    try {
-      assert ! finished : "lifecycle sanity check";
-      finished = true;
-      
-      blockAndDoRetries();
-    } finally {
-      clients.shutdown();
-    }
+  public void finish() {
+    assert !finished : "lifecycle sanity check";
+    finished = true;
+
+    blockAndDoRetries();
   }
   
   public void close() {
-    clients.shutdown();
+
   }
 
   private void doRetriesIfNeeded() {
-    // NOTE: retries will be forwards to a single url
+ 
+  }
+  
+  public boolean checkRetry(Error err) {
+    String oldNodeUrl = err.req.node.getUrl();
     
-    List<Error> errors = new ArrayList<>(this.errors);
-    errors.addAll(clients.getErrors());
-    List<Error> resubmitList = new ArrayList<>();
+    // if there is a retry url, we want to retry...
+    boolean isRetry = err.req.node.checkRetry();
 
-    for (Error err : errors) {
-      try {
-        String oldNodeUrl = err.req.node.getUrl();
-        
-        // if there is a retry url, we want to retry...
-        boolean isRetry = err.req.node.checkRetry();
-        
-        boolean doRetry = false;
-        int rspCode = err.statusCode;
-        
-        if (testing_errorHook != null) Diagnostics.call(testing_errorHook,
-            err.e);
-        
-        // this can happen in certain situations such as close
-        if (isRetry) {
-          if (rspCode == 404 || rspCode == 403 || rspCode == 503) {
-            doRetry = true;
-          }
-          
-          // if it's a connect exception, lets try again
-          if (err.e instanceof SolrServerException) {
-            if (((SolrServerException) err.e).getRootCause() instanceof ConnectException) {
-              doRetry = true;
-            }
-          }
-          
-          if (err.e instanceof ConnectException) {
-            doRetry = true;
-          }
-          
-          if (err.req.retries < maxRetriesOnForward && doRetry) {
-            err.req.retries++;
-            
-            SolrException.log(SolrCmdDistributor.log, "forwarding update to "
-                + oldNodeUrl + " failed - retrying ... retries: "
-                + err.req.retries + " " + err.req.cmd.toString() + " params:"
-                + err.req.uReq.getParams() + " rsp:" + rspCode, err.e);
-            try {
-              Thread.sleep(retryPause);
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              log.warn(null, e);
-            }
-            
-            resubmitList.add(err);
-          } else {
-            allErrors.add(err);
-          }
-        } else {
-          allErrors.add(err);
-        }
-      } catch (Exception e) {
-        // continue on
-        log.error("Unexpected Error while doing request retries", e);
+    boolean doRetry = false;
+    int rspCode = err.statusCode;
+    
+    if (testing_errorHook != null) Diagnostics.call(testing_errorHook,
+        err.t);
+    
+    // this can happen in certain situations such as close
+    if (isRetry) {
+      if (rspCode == 404 || rspCode == 403 || rspCode == 503) {
+        doRetry = true;
       }
+      
+      // if it's a connect exception, lets try again
+      if (err.t instanceof SolrServerException) {
+        if (((SolrServerException) err.t).getRootCause() instanceof ConnectException) {
+          doRetry = true;
+        }
+      }
+      
+      if (err.t instanceof ConnectException) {
+        doRetry = true;
+      }
+      
+      if (err.req.retries < maxRetriesOnForward && doRetry) {
+        err.req.retries++;
+        
+        SolrException.log(SolrCmdDistributor.log, "forwarding update to "
+            + oldNodeUrl + " failed - retrying ... retries: "
+            + err.req.retries + " " + err.req.cmd.toString() + " params:"
+            + err.req.uReq.getParams() + " rsp:" + rspCode, err.t);
+
+        return true;
+      } else {
+       return false;
+      }
+    } else {
+      return false;
     }
-    
-    clients.clearErrors();
-    this.errors.clear();
-    for (Error err : resubmitList) {
-      submit(err.req, false);
-    }
-    
-    if (resubmitList.size() > 0) {
-      blockAndDoRetries();
-    }
+
   }
   
   public void distribDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params) throws IOException {
@@ -191,10 +151,12 @@ public class SolrCmdDistributor implements Closeable {
       if (cmd.isDeleteById()) {
         uReq.deleteById(cmd.getId(), cmd.getRoute(), cmd.getVersion());
       } else {
+        blockAndDoRetries();
+
         uReq.deleteByQuery(cmd.query);
       }
 
-      submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker), false);
+      submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker));
     }
   }
   
@@ -218,7 +180,7 @@ public class SolrCmdDistributor implements Closeable {
       if (cmd.isInPlaceUpdate()) {
         params.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
       }
-      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker), false);
+      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker));
     }
     
   }
@@ -229,36 +191,23 @@ public class SolrCmdDistributor implements Closeable {
     // we need to do any retries before commit...
     blockAndDoRetries();
     
-    UpdateRequest uReq = new UpdateRequest();
-    uReq.setParams(params);
-    
-    addCommit(uReq, cmd);
-    
     log.debug("Distrib commit to: {} params: {}", nodes, params);
     
     for (Node node : nodes) {
-      submit(new Req(cmd, node, uReq, false), true);
+      UpdateRequest uReq = new UpdateRequest();
+      uReq.setParams(params);
+      
+      addCommit(uReq, cmd);
+      submit(new Req(cmd, node, uReq, false));
     }
     
   }
 
   public void blockAndDoRetries() {
-    clients.blockUntilFinished();
-    
-    // wait for any async commits to complete
-    while (pending != null && pending.size() > 0) {
-      Future<Object> future = null;
-      try {
-        future = completionService.take();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("blockAndDoRetries interrupted", e);
-      }
-      if (future == null) break;
-      pending.remove(future);
-    }
-    doRetriesIfNeeded();
 
+    solrClient.waitForAsyncRequests();
+
+    doRetriesIfNeeded(); // we could retry faster?
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
@@ -267,25 +216,7 @@ public class SolrCmdDistributor implements Closeable {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes, cmd.openSearcher);
   }
 
-  private void submit(final Req req, boolean isCommit) {
-    if (req.synchronous) {
-      blockAndDoRetries();
-
-      try (HttpSolrClient client = new HttpSolrClient.Builder(req.node.getUrl()).withHttpClient(clients.getHttpClient()).build()) {
-        client.request(req.uReq);
-      } catch (Exception e) {
-        SolrException.log(log, e);
-        Error error = new Error();
-        error.e = e;
-        error.req = req;
-        if (e instanceof SolrException) {
-          error.statusCode = ((SolrException) e).code();
-        }
-        errors.add(error);
-      }
-      
-      return;
-    }
+  private void submit(final Req req) {
     
     if (log.isDebugEnabled()) {
       log.debug("sending update to "
@@ -293,32 +224,45 @@ public class SolrCmdDistributor implements Closeable {
           + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
     }
     
-    if (isCommit) {
-      // a commit using ConncurrentUpdateSolrServer is not async,
-      // so we make it async to prevent commits from happening
-      // serially across multiple nodes
-      pending.add(completionService.submit(() -> {
-        doRequest(req);
-        return null;
-      }));
-    } else {
-      doRequest(req);
-    }
-  }
-  
-  private void doRequest(final Req req) {
     try {
-      SolrClient solrClient = clients.getSolrClient(req);
-      solrClient.request(req.uReq);
+      req.uReq.setBasePath(req.node.getUrl());
+      solrClient.request(req.uReq, null, new OnComplete<SolrResponseBase>() {
+
+        @Override
+        public void onSuccess(SolrResponseBase result) {
+
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          SolrException.log(log, t);
+          Error error = new Error();
+          error.t = t;
+          error.req = req;
+          if (t instanceof SolrException) {
+            error.statusCode = ((SolrException) t).code();
+          }
+          if (checkRetry(error)) {
+             submit(req);
+          } else {
+            allErrors.add(error);
+          }
+
+        }});
     } catch (Exception e) {
       SolrException.log(log, e);
       Error error = new Error();
-      error.e = e;
+      error.t = e;
       error.req = req;
       if (e instanceof SolrException) {
         error.statusCode = ((SolrException) e).code();
       }
-      errors.add(error);
+      if (checkRetry(error)) {
+        submit(req);
+      } else {
+        allErrors.add(error);
+      }
+
     }
   }
   
@@ -326,7 +270,6 @@ public class SolrCmdDistributor implements Closeable {
     public Node node;
     public UpdateRequest uReq;
     public int retries;
-    public boolean synchronous;
     public UpdateCommand cmd;
     final private RollupRequestReplicationTracker rollupTracker;
     final private LeaderRequestReplicationTracker leaderTracker;
@@ -340,7 +283,6 @@ public class SolrCmdDistributor implements Closeable {
                LeaderRequestReplicationTracker leaderTracker) {
       this.node = node;
       this.uReq = uReq;
-      this.synchronous = synchronous;
       this.cmd = cmd;
       this.rollupTracker = rollupTracker;
       this.leaderTracker = leaderTracker;
@@ -418,21 +360,15 @@ public class SolrCmdDistributor implements Closeable {
   }
   
   public static class Error {
-    public Exception e;
+    public Throwable t;
     public int statusCode = -1;
 
-    /**
-     * NOTE: This is the request that happened to be executed when this error was <b>triggered</b> the error, 
-     * but because of how {@link StreamingSolrClients} uses {@link ConcurrentUpdateSolrClient} it might not 
-     * actaully be the request that <b>caused</b> the error -- multiple requests are merged &amp; processed as 
-     * a sequential batch.
-     */
     public Req req;
     
     public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("SolrCmdDistributor$Error: statusCode=").append(statusCode);
-      sb.append("; exception=").append(String.valueOf(e));
+      sb.append("; throwable=").append(String.valueOf(t));
       sb.append("; req=").append(String.valueOf(req));
       return sb.toString();
     }
@@ -478,7 +414,7 @@ public class SolrCmdDistributor implements Closeable {
     
     @Override
     public String toString() {
-      return this.getClass().getSimpleName() + ": " + nodeProps.getCoreUrl();
+      return "StdNode [nodeProps=" + nodeProps + ", collection=" + collection + ", shardId=" + shardId + "]";
     }
 
     @Override
@@ -593,7 +529,7 @@ public class SolrCmdDistributor implements Closeable {
     }
   }
 
-  public List<Error> getErrors() {
+  public Set<Error> getErrors() {
     return allErrors;
   }
 }

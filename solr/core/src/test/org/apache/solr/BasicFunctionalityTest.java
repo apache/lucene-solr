@@ -16,8 +16,6 @@
  */
 package org.apache.solr;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -27,8 +25,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LazyDocument;
@@ -54,6 +53,9 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good

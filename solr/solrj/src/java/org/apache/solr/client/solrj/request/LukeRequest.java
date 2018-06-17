@@ -90,7 +90,7 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
   
 
   @Override
-  protected LukeResponse createResponse(SolrClient client) {
+  public LukeResponse createResponse(SolrClient client) {
     return new LukeResponse();
   }
 

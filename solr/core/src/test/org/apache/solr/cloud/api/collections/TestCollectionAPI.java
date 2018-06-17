@@ -24,12 +24,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.google.common.collect.Lists;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -47,6 +48,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.google.common.collect.Lists;
+
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   public static final String COLLECTION_NAME = "testcollection";
@@ -62,7 +68,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   public void test() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       CollectionAdminRequest.Create req;
-      if (useTlogReplicas()) {
+      if (false) {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 0, 1, 1);
       } else {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 1, 0, 1);
@@ -256,7 +262,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     totalexpectedV2Calls = V2Request.v2Calls.get().get();
     if (random().nextBoolean()) {
       req.setUseV2(true);
-      req.setUseBinaryV2(random().nextBoolean());
+      req.setUseBinaryV2(true); // nocommit
       totalexpectedV2Calls++;
     }
     return req;

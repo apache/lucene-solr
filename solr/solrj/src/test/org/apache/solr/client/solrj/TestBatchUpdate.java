@@ -20,7 +20,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -49,7 +49,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     client.setRequestWriter(new RequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -57,7 +57,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithBinary()throws Exception{
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     client.setRequestWriter(new BinaryRequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -65,7 +65,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithBinaryBean()throws Exception{
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     client.setRequestWriter(new BinaryRequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     final int[] counter = new int[1];
@@ -104,7 +104,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     String cat;
   }
        
-  private void doIt(HttpSolrClient client) throws SolrServerException, IOException {
+  private void doIt(Http2SolrClient client) throws SolrServerException, IOException {
     final int[] counter = new int[1];
     counter[0] = 0;
     client.add(new Iterator<SolrInputDocument>() {

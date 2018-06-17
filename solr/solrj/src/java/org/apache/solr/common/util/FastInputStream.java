@@ -16,7 +16,10 @@
  */
 package org.apache.solr.common.util;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
 
 /** Single threaded buffered InputStream
  *  Internal Solr use only, subject to change.

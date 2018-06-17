@@ -21,11 +21,13 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.github.benmanes.caffeine.cache.*;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-public class BlockCacheTest extends LuceneTestCase {
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalListener;
+
+public class BlockCacheTest extends SolrTestCaseJ4 {
   @Test
   public void testBlockCache() {
     int blocksInTest = 2000000;

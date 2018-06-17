@@ -16,7 +16,8 @@
  */
 package org.apache.solr.servlet;
 
-import javax.servlet.http.HttpServletRequest;
+import static org.apache.solr.common.params.CommonParams.PATH;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -38,10 +39,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -61,8 +63,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrFileCleaningTracker;
-
-import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 public class SolrRequestParsers 
@@ -88,17 +88,22 @@ public class SolrRequestParsers
   private StandardRequestParser standard;
   private boolean handleSelect = true;
   private boolean addHttpRequestToContext;
+  
+  private SolrFileCleaningTracker fileCleaningTracker;
 
   /** Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote streams. */
-  public static final SolrRequestParsers DEFAULT = new SolrRequestParsers();
+  //public static final SolrRequestParsers DEFAULT = new SolrRequestParsers();
   
-  public static volatile SolrFileCleaningTracker fileCleaningTracker;
+  public static SolrRequestParsers createInstance(SolrFileCleaningTracker fileCleaningTracker) {
+    return new SolrRequestParsers(fileCleaningTracker);
+  }
   
   /**
    * Pass in an xml configuration.  A null configuration will enable
    * everything with maximum values.
    */
-  public SolrRequestParsers( SolrConfig globalConfig ) {
+  // nocommit we have to passs cleaner in case of config made in corecontainer
+  public SolrRequestParsers(SolrConfig globalConfig, SolrFileCleaningTracker fileCleaningTracker) {
     final int multipartUploadLimitKB, formUploadLimitKB;
     if( globalConfig == null ) {
       multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE; 
@@ -122,7 +127,7 @@ public class SolrRequestParsers
     init(multipartUploadLimitKB, formUploadLimitKB);
   }
   
-  private SolrRequestParsers() {
+  private SolrRequestParsers(SolrFileCleaningTracker fileCleaningTracker) {
     enableRemoteStreams = false;
     enableStreamBody = false;
     handleSelect = false;
@@ -131,7 +136,7 @@ public class SolrRequestParsers
   }
 
   private void init( int multipartUploadLimitKB, int formUploadLimitKB) {       
-    MultipartRequestParser multi = new MultipartRequestParser( multipartUploadLimitKB );
+    MultipartRequestParser multi = new MultipartRequestParser(fileCleaningTracker, multipartUploadLimitKB );
     RawRequestParser raw = new RawRequestParser();
     FormDataRequestParser formdata = new FormDataRequestParser( formUploadLimitKB );
     standard = new StandardRequestParser( multi, raw, formdata );
@@ -571,16 +576,15 @@ public class SolrRequestParsers
    */
   static class MultipartRequestParser implements SolrRequestParser {
     private final int uploadLimitKB;
-    private DiskFileItemFactory factory = new DiskFileItemFactory();
+    private DiskFileItemFactory factory = new DiskFileItemFactory(1000000, null);
     
-    public MultipartRequestParser(int limit) {
+    public MultipartRequestParser(SolrFileCleaningTracker fileCleaningTracker, int limit) {
       uploadLimitKB = limit;
 
       // Set factory constraints
-      FileCleaningTracker fct = fileCleaningTracker;
-      if (fct != null) {
-        factory.setFileCleaningTracker(fileCleaningTracker);
-      }
+   
+      factory.setFileCleaningTracker(fileCleaningTracker);
+      
       // TODO - configure factory.setSizeThreshold(yourMaxMemorySize);
       // TODO - configure factory.setRepository(yourTempDirectory);
     }

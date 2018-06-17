@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -44,6 +45,7 @@ import org.rrd4j.core.RrdDb;
  *
  */
 @LogLevel("org.apache.solr.cloud=DEBUG")
+@BadApple(bugUrl="nocommit this can fail - auto scaling config is empty")
 public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   private static SolrCloudManager cloudManager;

@@ -95,6 +95,7 @@ public class HdfsDirectory extends BaseDirectory {
   @Override
   public void close() throws IOException {
     LOG.info("Closing hdfs directory {}", hdfsDirPath);
+
     fileSystem.close();
     isOpen = false;
   }

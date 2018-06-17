@@ -17,13 +17,30 @@
 package org.apache.solr.common.util;
 
 
+import static org.noggit.JSONParser.ARRAY_END;
+import static org.noggit.JSONParser.ARRAY_START;
+import static org.noggit.JSONParser.BIGNUMBER;
+import static org.noggit.JSONParser.BOOLEAN;
+import static org.noggit.JSONParser.EOF;
+import static org.noggit.JSONParser.LONG;
+import static org.noggit.JSONParser.NULL;
+import static org.noggit.JSONParser.NUMBER;
+import static org.noggit.JSONParser.OBJECT_END;
+import static org.noggit.JSONParser.OBJECT_START;
+import static org.noggit.JSONParser.STRING;
+
 import java.io.IOException;
 import java.io.Reader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 import org.noggit.JSONParser;
-
-import static org.noggit.JSONParser.*;
 
 /**
  * A Streaming parser for json to emit one record at a time.

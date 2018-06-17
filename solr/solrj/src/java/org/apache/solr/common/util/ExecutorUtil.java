@@ -75,6 +75,21 @@ public class ExecutorUtil {
     pool.shutdown(); // Disable new tasks from being submitted
     awaitTermination(pool);
   }
+  
+  public static void shutdownWithInterruptAndAwaitTermination(ExecutorService pool) {
+   // pool.shutdownNow(); // Cancel currently executing tasks - NOTE: this interrupts!
+    boolean shutdown = false;
+    while (!shutdown) {
+      try {
+        // Wait a while for existing tasks to terminate
+        pool.shutdownNow();
+        shutdown = pool.awaitTermination(5, TimeUnit.SECONDS);
+      } catch (InterruptedException ie) {
+        // Preserve interrupt status
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
 
   public static void awaitTermination(ExecutorService pool) {
     boolean shutdown = false;
@@ -103,8 +118,8 @@ public class ExecutorUtil {
    * See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}
    */
   public static ExecutorService newMDCAwareSingleThreadExecutor(ThreadFactory threadFactory) {
-    return new MDCAwareThreadPoolExecutor(1, 1,
-            0L, TimeUnit.MILLISECONDS,
+    return new MDCAwareThreadPoolExecutor(0, 1,
+            5000L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<>(),
             threadFactory);
   }
@@ -119,9 +134,9 @@ public class ExecutorUtil {
   /**
    * See {@link java.util.concurrent.Executors#newCachedThreadPool(ThreadFactory)}
    */
-  public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
+  public static MDCAwareThreadPoolExecutor newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-        60L, TimeUnit.SECONDS,
+        0L, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
         threadFactory);
   }

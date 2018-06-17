@@ -28,9 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.SimpleResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -49,6 +50,10 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TestConfigReload extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -56,11 +61,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   @Test
   public void test() throws Exception {
     setupRestTestHarnesses();
-    try {
-      reloadTest();
-    } finally {
-      closeRestTestHarnesses();
-    }
+    reloadTest();
   }
 
   private void reloadTest() throws Exception {
@@ -111,19 +112,13 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     assertEquals(StrUtils.formatString("tried these servers {0} succeeded only in {1} ", urls, succeeded) , urls.size(), succeeded.size());
   }
 
-  private  Map getAsMap(String uri) throws Exception {
-    HttpGet get = new HttpGet(uri) ;
-    HttpEntity entity = null;
-    try {
-      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
-      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
-    } finally {
-      EntityUtils.consumeQuietly(entity);
+  private Map getAsMap(String uri) throws Exception {
+    try (Http2SolrClient solrClient = new Http2SolrClient.Builder(uri).withHttpClient(getHttpClient()).build()) {
+
+      SimpleResponse rsp = solrClient.httpGet(uri);
+
+      return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(rsp.asString)));
     }
   }
-
-
-
 
 }

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
+import static org.hamcrest.core.Is.is;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
@@ -29,7 +32,6 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-import junit.framework.Assert;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
@@ -42,8 +44,7 @@ import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
-import static org.hamcrest.core.Is.is;
+import junit.framework.Assert;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
 

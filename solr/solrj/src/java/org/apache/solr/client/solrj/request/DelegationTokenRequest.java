@@ -50,7 +50,8 @@ public abstract class DelegationTokenRequest
   protected abstract Q getThis();
 
   @Override
-  protected abstract R createResponse(SolrClient client);
+  public
+  abstract R createResponse(SolrClient client);
 
   public static class Get extends DelegationTokenRequest<Get, DelegationTokenResponse.Get> {
     protected String renewer;

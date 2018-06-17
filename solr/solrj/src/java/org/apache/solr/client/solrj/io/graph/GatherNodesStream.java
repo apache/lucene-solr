@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.io.graph;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,8 +53,6 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-
-import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
  * @since 6.1.0

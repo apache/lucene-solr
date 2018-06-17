@@ -33,8 +33,8 @@ import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -201,7 +201,7 @@ public class AnalyticsShardRequestManager {
    */
   protected class AnalyticsShardRequester implements Callable<SolrException> {
     private String baseUrl;
-    HttpSolrClient client;
+    Http2SolrClient client;
 
     /**
      * Create a requester for analytics shard data.
@@ -218,7 +218,7 @@ public class AnalyticsShardRequestManager {
      */
     @Override
     public SolrException call() throws Exception {
-      client = new HttpSolrClient.Builder(baseUrl).build();
+      client = new Http2SolrClient.Builder(baseUrl).build();
       QueryRequest query = new QueryRequest( params );
       query.setPath(AnalyticsHandler.NAME);
       query.setResponseParser(new AnalyticsShardResponseParser(manager));

@@ -22,18 +22,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.search.TimeLimitingCollector;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -43,11 +50,11 @@ import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams.FacetRangeMethod;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.common.params.FacetParams.FacetRangeMethod;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.handler.component.StatsComponentTest.StatSetCombinations;
@@ -56,10 +63,13 @@ import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * TODO? perhaps use:
@@ -71,6 +81,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9061")
+@TimeoutSuite(millis = 160 * TimeUnits.SECOND) // nocommit why so long non nightly?
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -101,6 +112,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // server so that we don't use a bad one
     System.setProperty("validateAfterInactivity", "200");
   }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
+    TimeLimitingCollector.getGlobalTimerThread().join();
+  }
 
   public TestDistributedSearch() {
     // we need DVs on point fields to compute stats & facets
@@ -108,7 +125,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  //@ShardsFixed(num = 3)
   public void test() throws Exception {
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
@@ -998,7 +1016,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
            "group.query", t1 + ":kings OR " + t1 + ":eggs",
            "group.limit", 10,
            "sort", i1 + " asc, id asc",
-           CommonParams.TIME_ALLOWED, 1,
+           CommonParams.TIME_ALLOWED, 500,
            ShardParams.SHARDS_INFO, "true",
            ShardParams.SHARDS_TOLERANT, "true");
 
@@ -1041,7 +1059,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             "stats.field", tdate_a, 
             "stats.field", tdate_b,
             "stats.calcdistinct", "true");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (Http2SolrClient.RemoteSolrException e) {
       if (e.getMessage().startsWith("java.lang.NullPointerException"))  {
         fail("NullPointerException with stats request on empty index");
       } else  {
@@ -1129,16 +1147,18 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     setDistributedParams(params);
 
     QueryResponse rsp = queryRandomUpServer(params,upClients);
-
+    System.out.println(rsp);
     comparePartialResponses(rsp, controlRsp, upShards);
 
     if (stress > 0) {
       log.info("starting stress...");
-      Thread[] threads = new Thread[nThreads];
+      Set<Future<Object>> pending = new HashSet<>();;
+      ExecutorCompletionService<Object> cs = new ExecutorCompletionService<>(executor);
+      Callable[] threads = new Callable[nThreads];
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new Thread() {
+        threads[i] = new Callable() {
           @Override
-          public void run() {
+          public Object call() {
             for (int j = 0; j < stress; j++) {
               int which = r.nextInt(upClients.size());
               SolrClient client = upClients.get(which);
@@ -1151,14 +1171,22 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                 throw new RuntimeException(e);
               }
             }
+            return null;
           }
         };
-        threads[i].start();
+        pending.add(cs.submit(threads[i]));
+      }
+      
+      while (pending.size() > 0) {
+        Future<Object> future = cs.take();
+        pending.remove(future);
+        future.get();
       }
 
-      for (Thread thread : threads) {
-        thread.join();
-      }
+//      for (Thread thread : threads) {
+//        thread.join();
+//      }
+
     }
   }
 
@@ -1189,7 +1217,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           if (upShards.contains(s)) {
             // this is no longer true if there was a query timeout on an up shard
             // assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
-            assertTrue("Expected to find shardAddress in the up shard info: " + info.toString(), info.get("shardAddress") != null);
+            assertTrue("Expected to find shardAddress " + s + " in the up shard info: " + info.toString(), info.get("shardAddress") != null);
           }
           else {
             assertEquals("Expected to find the "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" header set if a shard is down",

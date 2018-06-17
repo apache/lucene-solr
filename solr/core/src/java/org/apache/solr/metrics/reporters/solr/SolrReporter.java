@@ -32,17 +32,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.ScheduledReporter;
-import com.codahale.metrics.Timer;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
@@ -50,6 +44,14 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.ScheduledReporter;
+import com.codahale.metrics.Timer;
 
 /**
  * Implementation of {@link ScheduledReporter} that reports metrics from selected registries and sends
@@ -163,7 +165,7 @@ public class SolrReporter extends ScheduledReporter {
     /**
      * If true then use {@link org.apache.solr.client.solrj.impl.CloudSolrClient} for communication.
      * Default is false.
-     * @param cloudClient use CloudSolrClient when true, {@link org.apache.solr.client.solrj.impl.HttpSolrClient} otherwise.
+     * @param cloudClient use CloudSolrClient when true, {@link org.apache.solr.client.solrj.impl.Http2SolrClient} otherwise.
      * @return {@code this}
      */
     public Builder cloudClient(boolean cloudClient) {
@@ -254,7 +256,7 @@ public class SolrReporter extends ScheduledReporter {
      *                    function will be called every time just before report is sent.
      * @return configured instance of reporter
      */
-    public SolrReporter build(HttpClient client, Supplier<String> urlProvider) {
+    public SolrReporter build(SolrInternalHttpClient client, Supplier<String> urlProvider) {
       return new SolrReporter(client, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
           params, skipHistograms, skipAggregateValues, cloudClient, compact);
     }
@@ -298,7 +300,7 @@ public class SolrReporter extends ScheduledReporter {
     }
   }
 
-  public SolrReporter(HttpClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
+  public SolrReporter(SolrInternalHttpClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
                       SolrParams params, boolean skipHistograms, boolean skipAggregateValues,

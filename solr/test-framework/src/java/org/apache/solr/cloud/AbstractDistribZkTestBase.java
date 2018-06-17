@@ -16,9 +16,14 @@
  */
 package org.apache.solr.cloud;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
@@ -39,9 +44,6 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTestCase {
   
@@ -141,57 +143,55 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   }
   
   public static void waitForRecoveriesToFinish(String collection,
-      ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout, int timeoutSeconds)
+      ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout, long timeoutSeconds)
       throws Exception {
     log.info("Wait for recoveries to finish - collection: " + collection + " failOnTimeout:" + failOnTimeout + " timeout (sec):" + timeoutSeconds);
-    boolean cont = true;
-    int cnt = 0;
-    
-    while (cont) {
-      if (verbose) System.out.println("-");
-      boolean sawLiveRecovering = false;
-      ClusterState clusterState = zkStateReader.getClusterState();
-      final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-      assertNotNull("Could not find collection:" + collection, docCollection);
-      Map<String,Slice> slices = docCollection.getSlicesMap();
-      assertNotNull("Could not find collection:" + collection, slices);
-      for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-        Slice slice = entry.getValue();
-        if (slice.getState() == Slice.State.CONSTRUCTION) { // similar to replica recovering; pretend its the same thing
-          if (verbose) System.out.println("Found a slice in construction state; will wait.");
-          sawLiveRecovering = true;
-        }
-        Map<String,Replica> shards = slice.getReplicasMap();
-        for (Map.Entry<String,Replica> shard : shards.entrySet()) {
-          if (verbose) System.out.println("replica:" + shard.getValue().getName() + " rstate:"
-              + shard.getValue().getStr(ZkStateReader.STATE_PROP)
-              + " live:"
-              + clusterState.liveNodesContain(shard.getValue().getNodeName()));
-          final Replica.State state = shard.getValue().getState();
-          if ((state == Replica.State.RECOVERING || state == Replica.State.DOWN || state == Replica.State.RECOVERY_FAILED)
-              && clusterState.liveNodesContain(shard.getValue().getStr(ZkStateReader.NODE_NAME_PROP))) {
+    try {
+      zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (liveNodes, docCollection) -> {
+        if (docCollection == null)
+          return false;
+        boolean sawLiveRecovering = false;
+
+        assertNotNull("Could not find collection:" + collection, docCollection);
+        Map<String,Slice> slices = docCollection.getSlicesMap();
+        assertNotNull("Could not find collection:" + collection, slices);
+        for (Map.Entry<String,Slice> entry : slices.entrySet()) {
+          Slice slice = entry.getValue();
+          if (slice.getState() == Slice.State.CONSTRUCTION) { // similar to replica recovering; pretend its the same
+                                                              // thing
+            if (verbose) System.out.println("Found a slice in construction state; will wait.");
             sawLiveRecovering = true;
           }
-        }
-      }
-      if (!sawLiveRecovering || cnt == timeoutSeconds) {
-        if (!sawLiveRecovering) {
-          if (verbose) System.out.println("no one is recoverying");
-        } else {
-          if (verbose) System.out.println("Gave up waiting for recovery to finish..");
-          if (failOnTimeout) {
-            Diagnostics.logThreadDumps("Gave up waiting for recovery to finish.  THREAD DUMP:");
-            zkStateReader.getZkClient().printLayoutToStdOut();
-            fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
-            // won't get here
-            return;
+          Map<String,Replica> shards = slice.getReplicasMap();
+          for (Map.Entry<String,Replica> shard : shards.entrySet()) {
+            if (verbose) System.out.println("replica:" + shard.getValue().getName() + " rstate:"
+                + shard.getValue().getStr(ZkStateReader.STATE_PROP)
+                + " live:"
+                + liveNodes.contains(shard.getValue().getNodeName()));
+            final Replica.State state = shard.getValue().getState();
+            if ((state == Replica.State.RECOVERING || state == Replica.State.DOWN
+                || state == Replica.State.RECOVERY_FAILED)
+                && liveNodes.contains(shard.getValue().getStr(ZkStateReader.NODE_NAME_PROP))) {
+              return false;
+            }
           }
         }
-        cont = false;
-      } else {
-        Thread.sleep(1000);
-      }
-      cnt++;
+        if (!sawLiveRecovering) {
+          if (!sawLiveRecovering) {
+            if (verbose) System.out.println("no one is recoverying");
+          } else {
+            if (verbose) System.out.println("Gave up waiting for recovery to finish..");
+            return false;
+          }
+          return true;
+        } else {
+          return false;
+        }
+      });
+    } catch (TimeoutException | InterruptedException e) {
+      Diagnostics.logThreadDumps("Gave up waiting for recovery to finish.  THREAD DUMP:");
+      zkStateReader.getZkClient().printLayoutToStdOut();
+      fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
     }
 
     log.info("Recoveries finished - collection: " + collection);

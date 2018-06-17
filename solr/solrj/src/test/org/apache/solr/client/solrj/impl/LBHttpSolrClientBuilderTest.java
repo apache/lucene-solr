@@ -17,28 +17,31 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 /**
  * Unit tests for {@link Builder}.
  */
-public class LBHttpSolrClientBuilderTest extends LuceneTestCase {
+public class LBHttpSolrClientBuilderTest extends SolrTestCaseJ4 {
   private static final String ANY_BASE_SOLR_URL = "ANY_BASE_SOLR_URL";
-  private static final HttpClient ANY_HTTP_CLIENT = HttpClientBuilder.create().build();
-  private static final ResponseParser ANY_RESPONSE_PARSER = new NoOpResponseParser();
-
+  private static ResponseParser ANY_RESPONSE_PARSER = new NoOpResponseParser();
+  
+  @AfterClass
+  public static void tearDownAfter() throws Exception {
+    ANY_RESPONSE_PARSER = null;
+  }
+  
   @Test
   public void providesHttpClientToClient() {
     try(LBHttpSolrClient createdClient = new Builder()
         .withBaseSolrUrl(ANY_BASE_SOLR_URL)
-        .withHttpClient(ANY_HTTP_CLIENT)
+        .withHttpClient(getHttpClient())
         .build()) {
-      assertTrue(createdClient.getHttpClient().equals(ANY_HTTP_CLIENT));
+      assertTrue(createdClient.getHttpClient().equals(getHttpClient()));
     }
   }
   

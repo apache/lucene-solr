@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import static org.apache.solr.common.params.CommonParams.PATH;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +27,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.google.common.base.Strings;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -57,7 +58,7 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 
-import static org.apache.solr.common.params.CommonParams.PATH;
+import com.google.common.base.Strings;
 
 /**
  * SolrClient that connects directly to a CoreContainer.
@@ -119,7 +120,7 @@ public class EmbeddedSolrServer extends SolrClient {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core name cannot be empty");
     this.coreContainer = coreContainer;
     this.coreName = coreName;
-    _parser = new SolrRequestParsers(null);
+    _parser = new SolrRequestParsers(null, null);
   }
 
   // TODO-- this implementation sends the response to XML and then parses it.

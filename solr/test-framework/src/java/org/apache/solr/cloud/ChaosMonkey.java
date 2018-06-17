@@ -658,12 +658,12 @@ public class ChaosMonkey {
         jetty.start();
       } catch (Exception e2) {
         jetty.stop();
-        Thread.sleep(10000);
+        Thread.sleep(5000);
         try {
           jetty.start();
         } catch (Exception e3) {
           jetty.stop();
-          Thread.sleep(30000);
+          Thread.sleep(15000);
           try {
             jetty.start();
           } catch (Exception e4) {

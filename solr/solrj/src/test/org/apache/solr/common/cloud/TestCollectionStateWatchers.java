@@ -26,6 +26,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -38,6 +40,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -119,7 +125,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     // shutdown a node and check that we get notified about the change
     final CountDownLatch latch = new CountDownLatch(1);
-    client.registerCollectionStateWatcher("testcollection", (liveNodes, collectionState) -> {
+    client.registerCollectionStateWatcher("testcollection", (closing, liveNodes, collectionState) -> {
       int nodeCount = 0;
       log.info("State changed: {}", collectionState);
       for (Slice slice : collectionState) {
@@ -151,7 +157,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         .processAndWait(client, MAX_WAIT_TIMEOUT);
 
     final CountDownLatch latch = new CountDownLatch(1);
-    client.registerCollectionStateWatcher("currentstate", (n, c) -> {
+    client.registerCollectionStateWatcher("currentstate", (closing, n, c) -> {
       latch.countDown();
       return false;
     });
@@ -161,7 +167,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         1, client.getZkStateReader().getStateWatchers("currentstate").size());
 
     final CountDownLatch latch2 = new CountDownLatch(1);
-    client.registerCollectionStateWatcher("currentstate", (n, c) -> {
+    client.registerCollectionStateWatcher("currentstate", (closing, n, c) -> {
       latch2.countDown();
       return true;
     });

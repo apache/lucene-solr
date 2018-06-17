@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.util.Utils.makeMap;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,16 +26,14 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.admin.SecurityConfHandler.SecurityConfig;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
-import org.apache.solr.common.util.CommandOperation;
-
-import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.handler.admin.SecurityConfHandler.SecurityConfig;
 
 public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 

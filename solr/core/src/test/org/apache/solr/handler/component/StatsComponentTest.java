@@ -18,22 +18,26 @@ package org.apache.solr.handler.component;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.apache.commons.math3.util.Combinations;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -44,24 +48,24 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.StatsField.Stat;
 import org.apache.solr.handler.component.StatsField.HllOptions;
+import org.apache.solr.handler.component.StatsField.Stat;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.SolrTestCaseJ4;
-
-import org.apache.commons.math3.util.Combinations;
-import com.tdunning.math.stats.AVLTreeDigest;
-import com.google.common.hash.HashFunction;
 import org.apache.solr.util.hll.HLL;
-
 import org.junit.BeforeClass;
+
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.google.common.hash.HashFunction;
+import com.tdunning.math.stats.AVLTreeDigest;
 
 /**
  * Statistics Component Test
  */
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class StatsComponentTest extends SolrTestCaseJ4 {
 
   final static String XPRE = "/response/lst[@name='stats']/";

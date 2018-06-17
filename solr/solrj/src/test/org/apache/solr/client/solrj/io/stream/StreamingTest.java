@@ -64,6 +64,7 @@ import org.junit.Test;
 **/
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@Ignore // nocommit
 public class StreamingTest extends SolrCloudTestCase {
 
 public static final String COLLECTIONORALIAS = "streams";

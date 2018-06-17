@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
@@ -31,8 +33,6 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 /**
  *

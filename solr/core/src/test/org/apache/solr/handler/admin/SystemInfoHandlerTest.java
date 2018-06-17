@@ -20,13 +20,14 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.Arrays;
 
-import com.codahale.metrics.Gauge;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.stats.MetricUtils;
 
+import com.codahale.metrics.Gauge;
 
-public class SystemInfoHandlerTest extends LuceneTestCase {
+
+public class SystemInfoHandlerTest extends SolrTestCaseJ4 {
 
   public void testMagickGetter() throws Exception {
 

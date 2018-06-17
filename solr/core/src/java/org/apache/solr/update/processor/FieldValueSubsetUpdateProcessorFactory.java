@@ -16,13 +16,13 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
+
 import java.util.Collection;
 
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
 
 /**
  * Base class for processors that want to mutate selected fields to only 

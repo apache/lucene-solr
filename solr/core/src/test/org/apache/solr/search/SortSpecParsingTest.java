@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.search;
+import java.util.List;
+
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
@@ -23,8 +25,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.List;
 
 /**
  *

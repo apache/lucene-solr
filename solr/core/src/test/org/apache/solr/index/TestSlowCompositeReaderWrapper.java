@@ -27,16 +27,16 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 
-public class TestSlowCompositeReaderWrapper extends LuceneTestCase {
+public class TestSlowCompositeReaderWrapper extends SolrTestCaseJ4 {
 
   public void testCoreListenerOnSlowCompositeReaderWrapper() throws IOException {
     RandomIndexWriter w = new RandomIndexWriter(random(), newDirectory());

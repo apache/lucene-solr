@@ -16,6 +16,9 @@
  */
 package org.apache.solr.core;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.util.Utils.getDeepCopy;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,7 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
@@ -40,8 +42,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.Utils.getDeepCopy;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * The class encapsulates the request time parameters . This is immutable and any changes performed

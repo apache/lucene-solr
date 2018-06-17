@@ -36,7 +36,7 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
 
   /**
    * Package protected constructor for use by 
-   * {@linkplain org.apache.solr.client.solrj.impl.HttpSolrClient.Builder}.
+   * {@linkplain org.apache.solr.client.solrj.impl.Http2SolrClient.Builder}.
    * @lucene.internal
    * 
    * @deprecated use {@link DelegationTokenHttpSolrClient#DelegationTokenHttpSolrClient(HttpSolrClient.Builder)} instead, as it is a more
@@ -64,7 +64,7 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
 
   /**
    * This constructor is defined at "protected" scope. Ideally applications should
-   * use {@linkplain org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} instance
+   * use {@linkplain org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} instance
    * to configure this Solr client instance.
    *
    * @param baseURL The base url to communicate with the Solr server

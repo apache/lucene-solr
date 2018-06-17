@@ -75,7 +75,7 @@ public class TestRestManager extends SolrRestletTestBase {
    * Test RestManager initialization and handling of registered ManagedResources. 
    */
   @Test
-  @Ignore
+  @Ignore // nocommit ???
   public void testManagedResourceRegistrationAndInitialization() throws Exception {
     // first, we need to register some ManagedResources, which is done with the registry
     // provided by the SolrResourceLoader

@@ -16,8 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import junit.framework.Assert;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
@@ -31,10 +30,12 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.junit.Test;
 
+import junit.framework.Assert;
+
 /**
  **/
 
-public class StreamExpressionToExplanationTest extends LuceneTestCase {
+public class StreamExpressionToExplanationTest extends SolrTestCaseJ4 {
 
   private StreamFactory factory;
   

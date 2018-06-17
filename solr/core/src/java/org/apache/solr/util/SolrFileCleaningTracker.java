@@ -22,8 +22,8 @@ import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.FileDeleteStrategy;
@@ -32,7 +32,7 @@ public class SolrFileCleaningTracker extends FileCleaningTracker {
 
   ReferenceQueue<Object> q = new ReferenceQueue<>();
 
-  final Collection<Tracker> trackers = Collections.synchronizedSet(new HashSet<Tracker>());
+  final Collection<Tracker> trackers = ConcurrentHashMap.newKeySet();
 
   final List<String> deleteFailures = Collections.synchronizedList(new ArrayList<String>());
 
@@ -67,10 +67,12 @@ public class SolrFileCleaningTracker extends FileCleaningTracker {
     if (exitWhenFinished) {
       throw new IllegalStateException("No new trackers can be added once exitWhenFinished() is called");
     }
+ 
     if (reaper == null) {
       reaper = new Reaper();
       reaper.start();
     }
+
     trackers.add(new Tracker(path, deleteStrategy, marker, q));
   }
 
@@ -82,19 +84,23 @@ public class SolrFileCleaningTracker extends FileCleaningTracker {
     return deleteFailures;
   }
 
+  @Override
   public synchronized void exitWhenFinished() {
+    super.exitWhenFinished();
     // synchronized block protects reaper
     exitWhenFinished = true;
+
     if (reaper != null) {
-      synchronized (reaper) {
+      while (reaper.isAlive()) {
         reaper.interrupt();
         try {
           reaper.join();
-        } catch (InterruptedException e) { 
+        } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
       }
     }
+
   }
 
   private final class Reaper extends Thread {
@@ -108,6 +114,9 @@ public class SolrFileCleaningTracker extends FileCleaningTracker {
       while (exitWhenFinished == false || trackers.size() > 0) {
         try {
           // Wait for a tracker to remove.
+          synchronized (SolrFileCleaningTracker.this) {
+            if (exitWhenFinished) return;
+          }
           final Tracker tracker = (Tracker) q.remove(); // cannot return null
           trackers.remove(tracker);
           if (!tracker.delete()) {

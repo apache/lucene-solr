@@ -18,12 +18,12 @@ package org.apache.solr.util;
 
 import java.text.ParseException;
 
+import org.apache.solr.common.SolrException;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.exception.InvalidShapeException;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
-import org.apache.solr.common.SolrException;
 
 /** Utility methods pertaining to spatial. */
 public class SpatialUtils {

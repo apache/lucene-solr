@@ -126,7 +126,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   @Override
-  protected SchemaResponse createResponse(SolrClient client) {
+  public SchemaResponse createResponse(SolrClient client) {
     return new SchemaResponse();
   }
 
@@ -143,7 +143,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.SchemaNameResponse createResponse(SolrClient client) {
+    public SchemaResponse.SchemaNameResponse createResponse(SolrClient client) {
       return new SchemaResponse.SchemaNameResponse();
     }
   }
@@ -162,7 +162,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.SchemaVersionResponse createResponse(SolrClient client) {
+    public SchemaResponse.SchemaVersionResponse createResponse(SolrClient client) {
       return new SchemaResponse.SchemaVersionResponse();
     }
   }
@@ -180,7 +180,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.FieldsResponse createResponse(SolrClient client) {
+    public SchemaResponse.FieldsResponse createResponse(SolrClient client) {
       return new SchemaResponse.FieldsResponse();
     }
   }
@@ -204,7 +204,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.FieldResponse createResponse(SolrClient client) {
+    public SchemaResponse.FieldResponse createResponse(SolrClient client) {
       return new SchemaResponse.FieldResponse();
     }
   }
@@ -223,7 +223,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.DynamicFieldsResponse createResponse(SolrClient client) {
+    public SchemaResponse.DynamicFieldsResponse createResponse(SolrClient client) {
       return new SchemaResponse.DynamicFieldsResponse();
     }
   }
@@ -247,7 +247,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.DynamicFieldResponse createResponse(SolrClient client) {
+    public SchemaResponse.DynamicFieldResponse createResponse(SolrClient client) {
       return new SchemaResponse.DynamicFieldResponse();
     }
   }
@@ -266,7 +266,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.FieldTypesResponse createResponse(SolrClient client) {
+    public SchemaResponse.FieldTypesResponse createResponse(SolrClient client) {
       return new SchemaResponse.FieldTypesResponse();
     }
   }
@@ -290,7 +290,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.FieldTypeResponse createResponse(SolrClient client) {
+    public SchemaResponse.FieldTypeResponse createResponse(SolrClient client) {
       return new SchemaResponse.FieldTypeResponse();
     }
   }
@@ -309,7 +309,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.CopyFieldsResponse createResponse(SolrClient client) {
+    public SchemaResponse.CopyFieldsResponse createResponse(SolrClient client) {
       return new SchemaResponse.CopyFieldsResponse();
     }
   }
@@ -328,7 +328,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.UniqueKeyResponse createResponse(SolrClient client) {
+    public SchemaResponse.UniqueKeyResponse createResponse(SolrClient client) {
       return new SchemaResponse.UniqueKeyResponse();
     }
   }
@@ -346,7 +346,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.GlobalSimilarityResponse createResponse(SolrClient client) {
+    public SchemaResponse.GlobalSimilarityResponse createResponse(SolrClient client) {
       return new SchemaResponse.GlobalSimilarityResponse();
     }
   }
@@ -719,7 +719,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     @Override
-    protected SchemaResponse.UpdateResponse createResponse(SolrClient client) {
+    public SchemaResponse.UpdateResponse createResponse(SolrClient client) {
       return new SchemaResponse.UpdateResponse();
     }
   }

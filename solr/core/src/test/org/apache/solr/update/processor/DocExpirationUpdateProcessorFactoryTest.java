@@ -16,19 +16,15 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.common.SolrInputDocument;
-
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.update.UpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-
-import org.junit.BeforeClass;
-
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.UpdateCommand;
+import org.junit.BeforeClass;
 
 /**
  * Tests various configurations of DocExpirationUpdateProcessorFactory

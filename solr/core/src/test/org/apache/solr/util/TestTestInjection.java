@@ -18,11 +18,11 @@ package org.apache.solr.util;
 
 import java.util.Locale;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class TestTestInjection extends LuceneTestCase {
+public class TestTestInjection extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() {

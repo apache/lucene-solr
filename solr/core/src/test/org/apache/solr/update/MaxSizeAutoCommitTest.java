@@ -27,8 +27,6 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.MapSolrParams;
@@ -41,8 +39,14 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@Ignore
+// nocommit
 public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
   // Given an ID, returns an XML string for an "add document" request

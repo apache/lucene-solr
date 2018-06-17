@@ -17,16 +17,21 @@
 
 package org.apache.solr.metrics.reporters;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import info.ganglia.gmetric4j.gmetric.GMetric;
-import info.ganglia.gmetric4j.gmetric.GMetricSlope;
-import info.ganglia.gmetric4j.gmetric.GMetricType;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
@@ -37,11 +42,17 @@ import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.util.TestHarness;
 import org.junit.Test;
 
-import static org.mockito.Mockito.*;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+import info.ganglia.gmetric4j.gmetric.GMetric;
+import info.ganglia.gmetric4j.gmetric.GMetricSlope;
+import info.ganglia.gmetric4j.gmetric.GMetricType;
 
 /**
  *
  */
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class SolrGangliaReporterTest extends SolrTestCaseJ4 {
   @Test
   public void testReporter() throws Exception {

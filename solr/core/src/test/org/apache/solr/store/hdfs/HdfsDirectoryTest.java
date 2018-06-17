@@ -21,7 +21,9 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
@@ -29,6 +31,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -39,10 +43,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 5000)
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   
   private static final int MAX_NUMBER_OF_WRITES = 10000;
@@ -57,11 +66,15 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("tests.killwait", "1000");
+    System.setProperty("tests.killattempts", "10");
+    
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
   
   @AfterClass
   public static void afterClass() throws Exception {
+    FileSystem.closeAll();
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
   }
@@ -72,7 +85,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     
     Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     conf.set("dfs.permissions.enabled", "false");
-    
+    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
     directory = new HdfsDirectory(new Path(dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs"), conf);
     
     random = random();
@@ -80,6 +93,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   
   @After
   public void tearDown() throws Exception {
+    IOUtils.closeQuietly(directory);
     super.tearDown();
   }
   

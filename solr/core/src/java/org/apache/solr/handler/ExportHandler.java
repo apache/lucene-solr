@@ -18,6 +18,8 @@
 package org.apache.solr.handler;
 
 
+import static org.apache.solr.common.params.CommonParams.JSON;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,8 +29,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.common.params.CommonParams.JSON;
 
 public class ExportHandler extends SearchHandler {
   @Override

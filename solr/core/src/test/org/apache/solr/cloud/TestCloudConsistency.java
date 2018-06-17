@@ -26,10 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -44,6 +47,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 230 * TimeUnits.SECOND)
+@BadApple(bugUrl="this test can fail waiting for a new leader") // nocommit
 public class TestCloudConsistency extends SolrCloudTestCase {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -212,7 +220,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   private void addDoc(String collection, int docId, JettySolrRunner solrRunner) throws IOException, SolrServerException {
-    try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
+    try (Http2SolrClient solrClient = new Http2SolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
       solrClient.add(collection, new SolrInputDocument("id", String.valueOf(docId), "fieldName_s", String.valueOf(docId)));
     }
   }
@@ -221,9 +229,9 @@ public class TestCloudConsistency extends SolrCloudTestCase {
                                               String testCollectionName, int firstDocId, int lastDocId) throws Exception {
     Replica leader =
         cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
-    HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
-    List<HttpSolrClient> replicas =
-        new ArrayList<HttpSolrClient>(notLeaders.size());
+    Http2SolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
+    List<Http2SolrClient> replicas =
+        new ArrayList<Http2SolrClient>(notLeaders.size());
 
     for (Replica r : notLeaders) {
       replicas.add(getHttpSolrClient(r, testCollectionName));
@@ -232,7 +240,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists(leaderSolr, testCollectionName, docId);
-        for (HttpSolrClient replicaSolr : replicas) {
+        for (Http2SolrClient replicaSolr : replicas) {
           assertDocExists(replicaSolr, testCollectionName, docId);
         }
       }
@@ -240,25 +248,25 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       if (leaderSolr != null) {
         leaderSolr.close();
       }
-      for (HttpSolrClient replicaSolr : replicas) {
+      for (Http2SolrClient replicaSolr : replicas) {
         replicaSolr.close();
       }
     }
   }
 
-  private void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
+  private void assertDocExists(Http2SolrClient solr, String coll, String docId) throws Exception {
     NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match == null);
   }
 
-  private NamedList realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
+  private NamedList realTimeGetDocId(Http2SolrClient solr, String docId) throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);
   }
 
-  protected HttpSolrClient getHttpSolrClient(Replica replica, String coll) throws Exception {
+  protected Http2SolrClient getHttpSolrClient(Replica replica, String coll) throws Exception {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + coll;
     return getHttpSolrClient(url);

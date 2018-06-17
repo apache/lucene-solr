@@ -58,7 +58,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
 
 
   @Override
-  protected FieldAnalysisResponse createResponse(SolrClient client) {
+  public FieldAnalysisResponse createResponse(SolrClient client) {
     if (fieldTypes == null && fieldNames == null) {
       throw new IllegalStateException("At least one field type or field name need to be specified");
     }

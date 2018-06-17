@@ -29,9 +29,11 @@ import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.Ignore;
 
 /**
  */
+@Ignore // nocommit
 public class ContentStreamTest extends SolrTestCaseJ4 
 {  
   public void testStringStream() throws IOException 

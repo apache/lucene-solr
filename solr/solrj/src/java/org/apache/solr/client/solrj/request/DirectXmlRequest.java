@@ -45,7 +45,7 @@ public class DirectXmlRequest extends SolrRequest<UpdateResponse> implements IsU
   }
 
   @Override
-  protected UpdateResponse createResponse(SolrClient client) {
+  public UpdateResponse createResponse(SolrClient client) {
     return new UpdateResponse();
   }
 

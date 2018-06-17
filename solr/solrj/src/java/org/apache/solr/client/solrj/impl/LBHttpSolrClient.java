@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
+
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
@@ -37,25 +39,24 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.http.client.HttpClient;
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteExecutionException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.MDC;
-
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around
@@ -113,13 +114,14 @@ public class LBHttpSolrClient extends SolrClient {
 
   // changes to aliveServers are reflected in this array, no need to synchronize
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
-
+  
+  private Set<SolrClient> clients = new ConcurrentHashMap<>().newKeySet();
 
   private ScheduledExecutorService aliveCheckExecutor;
 
-  private final HttpClient httpClient;
-  private final boolean clientIsInternal;
-  private HttpSolrClient.Builder httpSolrClientBuilder;
+  private SolrInternalHttpClient httpClient;
+  private boolean clientIsInternal;
+  private Http2SolrClient.Builder httpSolrClientBuilder;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
@@ -130,6 +132,8 @@ public class LBHttpSolrClient extends SolrClient {
   private Integer connectionTimeout;
 
   private Integer soTimeout;
+
+  private Builder builder;
 
   static {
     solrQuery.setRows(0);
@@ -147,7 +151,7 @@ public class LBHttpSolrClient extends SolrClient {
 
   protected static class ServerWrapper {
 
-    final HttpSolrClient client;
+    final Http2SolrClient client;
 
     // "standard" servers are used by default.  They normally live in the alive list
     // and move to the zombie list when unavailable.  When they become available again,
@@ -156,7 +160,7 @@ public class LBHttpSolrClient extends SolrClient {
 
     int failedPings = 0;
 
-    public ServerWrapper(HttpSolrClient client) {
+    public ServerWrapper(Http2SolrClient client) {
       this.client = client;
     }
 
@@ -243,8 +247,8 @@ public class LBHttpSolrClient extends SolrClient {
    * @deprecated use {@link LBHttpSolrClient#LBHttpSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
   @Deprecated
-  protected LBHttpSolrClient(HttpSolrClient.Builder httpSolrClientBuilder,
-                          HttpClient httpClient, String... solrServerUrl) {
+  protected LBHttpSolrClient(Http2SolrClient.Builder httpSolrClientBuilder,
+      SolrInternalHttpClient httpClient, String... solrServerUrl) {
     this(new Builder()
         .withHttpSolrClientBuilder(httpSolrClientBuilder)
         .withHttpClient(httpClient)
@@ -257,7 +261,7 @@ public class LBHttpSolrClient extends SolrClient {
    * @deprecated use {@link LBHttpSolrClient#LBHttpSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
   @Deprecated
-  protected LBHttpSolrClient(HttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
+  protected LBHttpSolrClient(SolrInternalHttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
     this(new Builder()
         .withBaseSolrUrls(solrServerUrl)
         .withResponseParser(parser)
@@ -265,9 +269,10 @@ public class LBHttpSolrClient extends SolrClient {
   }
 
   protected LBHttpSolrClient(Builder builder) {
+    if (builder == null) return;
     this.clientIsInternal = builder.httpClient == null;
     this.httpSolrClientBuilder = builder.httpSolrClientBuilder;
-    this.httpClient = builder.httpClient == null ? constructClient(builder.baseSolrUrls.toArray(new String[builder.baseSolrUrls.size()])) : builder.httpClient;
+    this.httpClient = builder.httpClient == null ? new SolrInternalHttpClient(getClass().getSimpleName()+ "-internal") : builder.httpClient;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;    
     this.parser = builder.responseParser;
@@ -279,18 +284,19 @@ public class LBHttpSolrClient extends SolrClient {
       }
     }
     updateAliveList();
+    this.builder = builder;
   }
 
-  private HttpClient constructClient(String[] solrServerUrl) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    if (solrServerUrl != null && solrServerUrl.length > 1) {
-      // we prefer retrying another server
-      params.set(HttpClientUtil.PROP_USE_RETRY, false);
-    } else {
-      params.set(HttpClientUtil.PROP_USE_RETRY, true);
-    }
-    return HttpClientUtil.createClient(params);
-  }
+//  private HttpClient constructClient(String[] solrServerUrl) {
+//    ModifiableSolrParams params = new ModifiableSolrParams();
+//    if (solrServerUrl != null && solrServerUrl.length > 1) {
+//      // we prefer retrying another server
+//      params.set(HttpClientUtil.PROP_USE_RETRY, false);
+//    } else {
+//      params.set(HttpClientUtil.PROP_USE_RETRY, true);
+//    }
+//    return HttpClientUtil.createClient(params);
+//  }
 
   public Set<String> getQueryParams() {
     return queryParams;
@@ -313,40 +319,61 @@ public class LBHttpSolrClient extends SolrClient {
     return server;
   }
 
-  protected HttpSolrClient makeSolrClient(String server) {
-    HttpSolrClient client;
+  protected Http2SolrClient makeSolrClient(String server) {
+//    HttpSolrClient client;
+//    if (httpSolrClientBuilder != null) {
+//      synchronized (this) {
+//        httpSolrClientBuilder
+//            .withBaseSolrUrl(server)
+//            .withHttpClient(httpClient);
+//        if (connectionTimeout != null) {
+//          httpSolrClientBuilder.withConnectionTimeout(connectionTimeout);
+//        }
+//        if (soTimeout != null) {
+//          httpSolrClientBuilder.withSocketTimeout(soTimeout);
+//        }
+//        client = httpSolrClientBuilder.build();
+//      }
+//    } else {
+//      final HttpSolrClient.Builder clientBuilder = new HttpSolrClient.Builder(server)
+//          .withHttpClient(httpClient)
+//          .withResponseParser(parser);
+//      if (connectionTimeout != null) {
+//        clientBuilder.withConnectionTimeout(connectionTimeout);
+//      }
+//      if (soTimeout != null) {
+//        clientBuilder.withSocketTimeout(soTimeout);
+//      }
+//      client = clientBuilder.build();
+//    }
+//    if (requestWriter != null) {
+//      client.setRequestWriter(requestWriter);
+//    }
+//    if (queryParams != null) {
+//      client.setQueryParams(queryParams);
+//    }
+    
     if (httpSolrClientBuilder != null) {
-      synchronized (this) {
-        httpSolrClientBuilder
-            .withBaseSolrUrl(server)
-            .withHttpClient(httpClient);
-        if (connectionTimeout != null) {
-          httpSolrClientBuilder.withConnectionTimeout(connectionTimeout);
-        }
-        if (soTimeout != null) {
-          httpSolrClientBuilder.withSocketTimeout(soTimeout);
-        }
-        client = httpSolrClientBuilder.build();
+      if (builder != null) {
+        httpSolrClientBuilder.withHeaders(builder.headers);
       }
+      Http2SolrClient client = httpSolrClientBuilder.withHttpClient(httpClient).build();
+      clients.add(client);
+      return client;
     } else {
-      final HttpSolrClient.Builder clientBuilder = new HttpSolrClient.Builder(server)
-          .withHttpClient(httpClient)
-          .withResponseParser(parser);
-      if (connectionTimeout != null) {
-        clientBuilder.withConnectionTimeout(connectionTimeout);
+      try {
+        System.out.println("builder:" + builder );
+        Http2SolrClient.Builder clientBuilder = new Http2SolrClient.Builder(server).withHttpClient(httpClient);
+        if (builder != null) {
+          clientBuilder.withHeaders(builder.headers);
+        }
+        Http2SolrClient client = clientBuilder.build();
+        clients.add(client);
+        return client;
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
-      if (soTimeout != null) {
-        clientBuilder.withSocketTimeout(soTimeout);
-      }
-      client = clientBuilder.build();
     }
-    if (requestWriter != null) {
-      client.setRequestWriter(requestWriter);
-    }
-    if (queryParams != null) {
-      client.setQueryParams(queryParams);
-    }
-    return client;
   }
 
   /**
@@ -407,7 +434,7 @@ public class LBHttpSolrClient extends SolrClient {
           break;
         }
 
-        HttpSolrClient client = makeSolrClient(serverStr);
+        Http2SolrClient client = makeSolrClient(serverStr);
 
         ++numServersTried;
         ex = doRequest(client, req, rsp, isNonRetryable, false, null);
@@ -464,7 +491,7 @@ public class LBHttpSolrClient extends SolrClient {
 
   }
 
-  protected Exception addZombie(HttpSolrClient server, Exception e) {
+  protected Exception addZombie(Http2SolrClient server, Exception e) {
 
     ServerWrapper wrapper;
 
@@ -475,7 +502,7 @@ public class LBHttpSolrClient extends SolrClient {
     return e;
   }  
 
-  protected Exception doRequest(HttpSolrClient client, Req req, Rsp rsp, boolean isNonRetryable,
+  protected Exception doRequest(Http2SolrClient client, Req req, Rsp rsp, boolean isNonRetryable,
       boolean isZombie, String zombieKey) throws SolrServerException, IOException {
     Exception ex = null;
     try {
@@ -550,7 +577,7 @@ public class LBHttpSolrClient extends SolrClient {
   }
 
   public void addSolrServer(String server) throws MalformedURLException {
-    HttpSolrClient client = makeSolrClient(server);
+    Http2SolrClient client = makeSolrClient(server);
     addToAlive(new ServerWrapper(client));
   }
 
@@ -580,12 +607,12 @@ public class LBHttpSolrClient extends SolrClient {
     synchronized (aliveServers) {
       Iterator<ServerWrapper> wrappersIt = aliveServers.values().iterator();
       while (wrappersIt.hasNext()) {
-        wrappersIt.next().client.setConnectionTimeout(timeout);
+       // wrappersIt.next().client.setConnectionTimeout(timeout);
       }
     }
     Iterator<ServerWrapper> wrappersIt = zombieServers.values().iterator();
     while (wrappersIt.hasNext()) {
-      wrappersIt.next().client.setConnectionTimeout(timeout);
+      //wrappersIt.next().client.setConnectionTimeout(timeout);
     }
   }
 
@@ -601,23 +628,54 @@ public class LBHttpSolrClient extends SolrClient {
     synchronized (aliveServers) {
       Iterator<ServerWrapper> wrappersIt = aliveServers.values().iterator();
       while (wrappersIt.hasNext()) {
-        wrappersIt.next().client.setSoTimeout(timeout);
+        //wrappersIt.next().client.setSoTimeout(timeout);
       }
     }
     Iterator<ServerWrapper> wrappersIt = zombieServers.values().iterator();
     while (wrappersIt.hasNext()) {
-      wrappersIt.next().client.setSoTimeout(timeout);
+      //wrappersIt.next().client.setSoTimeout(timeout);
     }
   }
 
   @Override
   public void close() {
+
     if (aliveCheckExecutor != null) {
       aliveCheckExecutor.shutdownNow();
     }
-    if(clientIsInternal) {
-      HttpClientUtil.close(httpClient);
+
+    for (SolrClient client : clients) {
+      IOUtils.closeQuietly(client);
     }
+    
+    if (clientIsInternal) {
+      IOUtils.closeQuietly(httpClient);
+    }
+    
+//    if (zombieServers != null) {
+//      synchronized (zombieServers) {
+//
+//        for (S zombieServer : zombieServers.values()) {
+//          try {
+//            zombieServer.client.close();
+//          } catch (IOException e) {
+//            throw new RuntimeException(e);
+//          }
+//        }
+//      }
+//    }
+//    if (aliveServers != null) {
+//      synchronized (aliveServers) {
+//
+//        for (ServerWrapper aliveServer : aliveServers.values()) {
+//          try {
+//            aliveServer.client.close();
+//          } catch (IOException e) {
+//            throw new RuntimeException(e);
+//          }
+//        }
+//      }
+//    }
   }
 
   /**
@@ -830,7 +888,7 @@ public class LBHttpSolrClient extends SolrClient {
   /**
    * Return the HttpClient this instance uses.
    */
-  public HttpClient getHttpClient() {
+  public SolrInternalHttpClient getHttpClient() {
     return httpClient;
   }
 
@@ -883,17 +941,18 @@ public class LBHttpSolrClient extends SolrClient {
    */
   public static class Builder extends SolrClientBuilder<Builder> {
     protected final List<String> baseSolrUrls;
-    protected HttpSolrClient.Builder httpSolrClientBuilder;
+    protected Http2SolrClient.Builder httpSolrClientBuilder;
+    protected Map<String,String> headers = new HashMap<>();
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();
       this.responseParser = new BinaryResponseParser();
     }
 
-    public HttpSolrClient.Builder getHttpSolrClientBuilder() {
+    public Http2SolrClient.Builder getHttpSolrClientBuilder() {
       return httpSolrClientBuilder;
     }
-    
+   
     /**
      * Provide a Solr endpoint to be used when configuring {@link LBHttpSolrClient} instances.
      * 
@@ -955,8 +1014,18 @@ public class LBHttpSolrClient extends SolrClient {
     /**
      * Provides a {@link HttpSolrClient.Builder} to be used for building the internally used clients.
      */
-    public Builder withHttpSolrClientBuilder(HttpSolrClient.Builder builder) {
+    public Builder withHttpSolrClientBuilder(Http2SolrClient.Builder builder) {
       this.httpSolrClientBuilder = builder;
+      return this;
+    }
+    
+    public Builder withHeader(String header, String value) {
+      this.headers.put(header, value);
+      return this;
+    }
+    
+    public Builder solrInternal() {
+      this.headers.put(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
       return this;
     }
 

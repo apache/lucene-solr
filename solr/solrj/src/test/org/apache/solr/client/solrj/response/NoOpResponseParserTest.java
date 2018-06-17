@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -74,7 +74,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   @Test
   public void testQueryParse() throws Exception {
 
-    try (HttpSolrClient client = (HttpSolrClient) createNewSolrClient()) {
+    try (Http2SolrClient client = (Http2SolrClient) createNewSolrClient()) {
       SolrQuery query = new SolrQuery("id:1234");
       QueryRequest req = new QueryRequest(query);
       client.setParser(new NoOpResponseParser());

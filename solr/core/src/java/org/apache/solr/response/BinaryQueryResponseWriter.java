@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.response;
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import org.apache.solr.request.SolrQueryRequest;
 

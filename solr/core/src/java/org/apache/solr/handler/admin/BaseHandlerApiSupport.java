@@ -17,6 +17,10 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.util.StrUtils.splitSmart;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -39,9 +42,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.util.StrUtils.splitSmart;
+import com.google.common.collect.ImmutableList;
 
 /**
  * This is a utility class to provide an easy mapping of request handlers which support multiple commands
@@ -94,7 +95,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             }
 
             if (command == null) {
-              throw new SolrException(BAD_REQUEST, " no such command " + c);
+              throw new SolrException(BAD_REQUEST, " no such command " + c + " : " + req.getParams());
             }
             wrapParams(req, c, command, false);
             command.invoke(req, rsp, apiHandler);

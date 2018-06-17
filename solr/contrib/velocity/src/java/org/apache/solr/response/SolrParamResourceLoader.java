@@ -16,18 +16,18 @@
  */
 package org.apache.solr.response;
 
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.velocity.runtime.resource.loader.ResourceLoader;
-import org.apache.velocity.runtime.resource.Resource;
-import org.apache.velocity.exception.ResourceNotFoundException;
-import org.apache.commons.collections.ExtendedProperties;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.apache.commons.collections.ExtendedProperties;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.velocity.exception.ResourceNotFoundException;
+import org.apache.velocity.runtime.resource.Resource;
+import org.apache.velocity.runtime.resource.loader.ResourceLoader;
 
 public class SolrParamResourceLoader extends ResourceLoader {
   public static final String TEMPLATE_PARAM_PREFIX = VelocityResponseWriter.TEMPLATE + ".";

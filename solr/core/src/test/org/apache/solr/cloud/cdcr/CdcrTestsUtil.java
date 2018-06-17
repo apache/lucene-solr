@@ -26,7 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -128,14 +128,14 @@ public class CdcrTestsUtil extends SolrTestCaseJ4{
     assertNotNull(correctSlice);
 
     long leaderDocCount;
-    try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(correctSlice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+    try (Http2SolrClient leaderClient = new Http2SolrClient.Builder(correctSlice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
       leaderDocCount = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false")).getResults().getNumFound();
     }
 
     while (!waitTimeOut.hasTimedOut()) {
       int replicasInSync = 0;
       for (Replica replica : correctSlice.getReplicas()) {
-        try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(replica.getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+        try (Http2SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
           long replicaDocCount = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false")).getResults().getNumFound();
           if (replicaDocCount == leaderDocCount) replicasInSync++;
         }

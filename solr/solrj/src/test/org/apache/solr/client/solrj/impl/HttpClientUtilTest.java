@@ -16,25 +16,26 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import javax.net.ssl.HostnameVerifier;
 import java.io.IOException;
 
-import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
+import javax.net.ssl.HostnameVerifier;
 
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleRestoreSystemProperties;
-
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.rules.TestRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
-public class HttpClientUtilTest extends LuceneTestCase {
+@Ignore // nocommit
+public class HttpClientUtilTest extends SolrTestCaseJ4 {
 
   @Rule
   public TestRule syspropRestore = new TestRuleRestoreSystemProperties

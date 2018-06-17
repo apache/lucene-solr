@@ -18,7 +18,15 @@ package org.apache.solr.search;
 
 import org.apache.lucene.queryparser.xml.CoreParser;
 import org.apache.lucene.queryparser.xml.TestCoreParser;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class
+})
 public class TestXmlQParser extends TestCoreParser {
 
   private CoreParser solrCoreParser;

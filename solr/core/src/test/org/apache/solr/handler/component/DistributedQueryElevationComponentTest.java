@@ -19,11 +19,9 @@ package org.apache.solr.handler.component;
 import java.io.File;
 
 import org.apache.lucene.util.Constants;
-
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -110,9 +108,9 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     assertEquals(true, document.getFieldValue("[elevated]"));
 
     // Force javabin format
-    final String clientUrl = ((HttpSolrClient)clients.get(0)).getBaseURL();
-    HttpSolrClient client = getHttpSolrClient(clientUrl);
-    client.setParser(new BinaryResponseParser());
+    final String clientUrl = ((Http2SolrClient)clients.get(0)).getBaseURL();
+    Http2SolrClient client = getHttpSolrClient(clientUrl);
+    //client.setParser(new BinaryResponseParser());
     SolrQuery solrQuery = new SolrQuery("XXXX").setParam("qt", "/elevate").setParam("shards.qt", "/elevate").setRows(500).setFields("id,[elevated]")
         .setParam("enableElevation", "true").setParam("forceElevation", "true").setParam("elevateIds", "6", "wt", "javabin")
         .setSort("id", SolrQuery.ORDER.desc);

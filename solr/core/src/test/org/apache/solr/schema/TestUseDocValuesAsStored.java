@@ -16,11 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -33,9 +28,17 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.apache.solr.util.DOMUtil;
 import org.junit.After;
@@ -45,9 +48,13 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 /**
  * Tests the useDocValuesAsStored functionality.
  */
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   private int id = 1;

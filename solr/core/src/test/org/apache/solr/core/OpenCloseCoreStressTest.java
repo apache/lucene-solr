@@ -16,25 +16,6 @@
  */
 package org.apache.solr.core;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -48,6 +29,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Incorporate the open/close stress tests into unit tests.
@@ -76,8 +76,8 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   File solrHomeDirectory;
 
-  List<HttpSolrClient> indexingClients = new ArrayList<>(indexingThreads);
-  List<HttpSolrClient> queryingClients = new ArrayList<>(queryThreads);
+  List<Http2SolrClient> indexingClients = new ArrayList<>(indexingThreads);
+  List<Http2SolrClient> queryingClients = new ArrayList<>(queryThreads);
 
   static String savedFactory;
   
@@ -137,11 +137,11 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     // Mostly to keep annoying logging messages from being sent out all the time.
 
     for (int idx = 0; idx < indexingThreads; ++idx) {
-      HttpSolrClient client = getHttpSolrClient(url, 30000, 60000);
+      Http2SolrClient client = getHttpSolrClient(url, 30000, 60000);
       indexingClients.add(client);
     }
     for (int idx = 0; idx < queryThreads; ++idx) {
-      HttpSolrClient client = getHttpSolrClient(url, 30000, 30000);
+      Http2SolrClient client = getHttpSolrClient(url, 30000, 30000);
       queryingClients.add(client);
     }
 
@@ -225,7 +225,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   }
 
 
-  void deleteAllDocuments(HttpSolrClient client, Queries queries) {
+  void deleteAllDocuments(Http2SolrClient client, Queries queries) {
     log.info("Deleting data from last cycle, this may take a few minutes.");
 
     for (String core : coreNames) {
@@ -261,7 +261,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void checkResults(HttpSolrClient client, Queries queries, Indexer idxer) throws InterruptedException {
+  private void checkResults(Http2SolrClient client, Queries queries, Indexer idxer) throws InterruptedException {
     log.info("Checking if indexes have all the documents they should...");
     long totalDocsFound = 0;
     for (Map.Entry<String, Long> ent : coreCounts.entrySet()) {
@@ -318,7 +318,7 @@ class Indexer {
 
   ArrayList<OneIndexer> _threads = new ArrayList<>();
 
-  public Indexer(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrClient> clients, int numThreads, int secondsToRun, Random random) {
+  public Indexer(OpenCloseCoreStressTest OCCST, String url, List<Http2SolrClient> clients, int numThreads, int secondsToRun, Random random) {
     stopTimeout = new TimeOut(secondsToRun, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     nextTimeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     docsThisCycle.set(0);
@@ -362,13 +362,13 @@ class Indexer {
 
 class OneIndexer extends Thread {
   private final OpenCloseCoreStressTest OCCST;
-  private final HttpSolrClient client;
+  private final Http2SolrClient client;
   private final String baseUrl;
   private final Random random;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  OneIndexer(OpenCloseCoreStressTest OCCST, String url, HttpSolrClient client, long seed) {
+  OneIndexer(OpenCloseCoreStressTest OCCST, String url, Http2SolrClient client, long seed) {
     this.OCCST = OCCST;
     this.client = client;
     this.baseUrl = url;
@@ -430,7 +430,7 @@ class Queries {
   static AtomicInteger _errors = new AtomicInteger(0);
   String baseUrl;
 
-  public Queries(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrClient> clients, int numThreads, Random random) {
+  public Queries(OpenCloseCoreStressTest OCCST, String url, List<Http2SolrClient> clients, int numThreads, Random random) {
     baseUrl = url;
     for (int idx = 0; idx < numThreads; ++idx) {
       Thread one = new OneQuery(OCCST, url, clients.get(idx), random.nextLong());
@@ -451,7 +451,7 @@ class Queries {
     }
   }
 
-  public long getCount(HttpSolrClient client, String core) {
+  public long getCount(Http2SolrClient client, String core) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/select");
     params.set("q", "*:*");
@@ -469,13 +469,13 @@ class Queries {
 
 class OneQuery extends Thread {
   OpenCloseCoreStressTest OCCST;
-  private final HttpSolrClient client;
+  private final Http2SolrClient client;
   private final String baseUrl;
   private final Random random;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  OneQuery(OpenCloseCoreStressTest OCCST, String url, HttpSolrClient client, long seed) {
+  OneQuery(OpenCloseCoreStressTest OCCST, String url, Http2SolrClient client, long seed) {
     this.OCCST = OCCST;
     this.client = client;
     this.baseUrl = url;

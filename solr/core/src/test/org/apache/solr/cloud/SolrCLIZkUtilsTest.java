@@ -32,6 +32,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.util.SolrCLI;
@@ -41,6 +43,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   @BeforeClass

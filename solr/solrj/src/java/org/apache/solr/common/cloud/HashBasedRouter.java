@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.util.Collection;
 import java.util.Collections;
 
@@ -23,8 +25,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
-
-import static org.apache.solr.common.params.CommonParams.ID;
 
 public abstract class HashBasedRouter extends DocRouter {
 

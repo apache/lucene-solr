@@ -16,14 +16,14 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
+
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
-
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
 
 /**
  * Ignores &amp; removes fields matching the specified 

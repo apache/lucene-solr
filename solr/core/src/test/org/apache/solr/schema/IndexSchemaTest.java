@@ -17,6 +17,10 @@
 package org.apache.solr.schema;
 
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.SolrTestCaseJ4;
@@ -27,10 +31,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 
 public class IndexSchemaTest extends SolrTestCaseJ4 {

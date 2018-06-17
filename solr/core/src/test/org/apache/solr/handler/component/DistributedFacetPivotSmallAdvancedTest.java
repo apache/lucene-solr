@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.List;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -25,8 +27,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
-
-import java.util.List;
 
 /**
  * tests some edge cases of pivot faceting with stats

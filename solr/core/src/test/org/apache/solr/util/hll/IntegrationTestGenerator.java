@@ -16,8 +16,10 @@
  */
 package org.apache.solr.util.hll;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
-import static org.apache.solr.util.hll.ProbabilisticTestUtil.*;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
+import static org.apache.solr.util.hll.ProbabilisticTestUtil.constructHLLValue;
 
 import java.io.IOException;
 import java.io.Writer;

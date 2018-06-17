@@ -16,6 +16,13 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
+import static org.apache.solr.handler.admin.CoreAdminHandler.FAILED;
+import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE;
+import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_MESSAGE;
+import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
+import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -36,7 +43,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -70,13 +77,6 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.FAILED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_MESSAGE;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
 
 /**
  * <p>
@@ -800,8 +800,8 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     private void commitOnLeader(String leaderUrl) throws SolrServerException,
         IOException {
-      try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl)
-          .withConnectionTimeout(30000)
+      try (Http2SolrClient client = new Http2SolrClient.Builder(leaderUrl)
+          //.withConnectionTimeout(30000)
           .build()) {
         UpdateRequest ureq = new UpdateRequest();
         ureq.setParams(new ModifiableSolrParams());
@@ -839,9 +839,9 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     @Override
     public Long call() throws Exception {
-      try (HttpSolrClient server = new HttpSolrClient.Builder(baseUrl)
-          .withConnectionTimeout(15000)
-          .withSocketTimeout(60000)
+      try (Http2SolrClient server = new Http2SolrClient.Builder(baseUrl)
+          //.withConnectionTimeout(15000)
+          //.withSocketTimeout(60000) nocommit
           .build()) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();

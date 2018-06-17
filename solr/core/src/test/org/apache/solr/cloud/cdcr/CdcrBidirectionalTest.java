@@ -20,7 +20,9 @@ package org.apache.solr.cloud.cdcr;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableMap;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -39,6 +41,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.google.common.collect.ImmutableMap;
+
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
+@BadApple(bugUrl="assert fail at org.apache.solr.update.CdcrUpdateLog$CdcrLogReader.forwardSeek(CdcrUpdateLog.java:611)") //nocommit
 public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
@@ -25,12 +27,13 @@ import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   private static final String rh = "/suggest";
-
-  private static CoreContainer cc;
 
   @BeforeClass
   public static void beforeClass() throws Exception {

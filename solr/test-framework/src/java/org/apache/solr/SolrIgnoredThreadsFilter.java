@@ -16,8 +16,6 @@
  */
 package org.apache.solr;
 
-import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
-
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 
 
@@ -37,26 +35,9 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
      */
 
     String threadName = t.getName();
-    if (threadName.equals(TimerThread.THREAD_NAME)) {
-      return true;
-    }
 
-    if (threadName.startsWith("facetExecutor-") || 
-        threadName.startsWith("cmdDistribExecutor-") ||
-        threadName.startsWith("httpShardExecutor-")) {
-      return true;
-    }
-    
-    // This is a bug in ZooKeeper where they call System.exit(11) when
-    // this thread receives an interrupt signal.
-    if (threadName.startsWith("SyncThread")) {
-      return true;
-    }
-
-    // THESE ARE LIKELY BUGS - these threads should be closed!
-    if (threadName.startsWith("Overseer-") ||
-        threadName.startsWith("aliveCheckExecutor-") ||
-        threadName.startsWith("concurrentUpdateScheduler-")) {
+    // Log4j2 async loggers may take a moment
+    if (threadName.startsWith("Log4j2-")) {
       return true;
     }
 

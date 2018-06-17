@@ -21,9 +21,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.codahale.metrics.Snapshot;
-import com.codahale.metrics.Timer;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -41,7 +38,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
@@ -84,7 +84,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
+
 @Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class OverseerTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -684,9 +689,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
         overseers.get(overseers.size() -1).close();
         overseers.get(overseers.size() -1).getZkStateReader().getZkClient().close();
       }
-      UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+      UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT, getHttpClient(), null);
       updateShardHandlers.add(updateShardHandler);
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
+      httpShardHandlerFactory.setHttpClient(getHttpClient());
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
       MockZkController mockZkController = createMockZkController(server.getZkAddress(), zkClient, reader);
       Overseer overseer = new Overseer(httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, mockZkController,
@@ -1309,9 +1315,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseers.get(overseers.size() -1).close();
       overseers.get(overseers.size() -1).getZkStateReader().getZkClient().close();
     }
-    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT, getHttpClient(), null);
     updateShardHandlers.add(updateShardHandler);
     HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
+    httpShardHandlerFactory.setHttpClient(getHttpClient());
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
 
     MockZkController zkController = createMockZkController(address, zkClient, reader);

@@ -112,7 +112,7 @@ public abstract class AbstractUpdateRequest extends SolrRequest<UpdateResponse> 
   }
 
   @Override
-  protected UpdateResponse createResponse(SolrClient client) {
+  public UpdateResponse createResponse(SolrClient client) {
     return new UpdateResponse();
   }
 

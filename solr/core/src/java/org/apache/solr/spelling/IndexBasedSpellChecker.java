@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
-
+import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
-
-import java.io.File;
-import java.io.IOException;
 
 /**
  * <p>

@@ -16,13 +16,13 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.util.Bits;
-
-import java.util.Map;
 import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.util.Bits;
 
 
 /** A SolrFilter extends the Lucene Filter and adds extra semantics such as passing on

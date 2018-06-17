@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.util.DateMathParser.UTC;
+
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -26,14 +28,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.lucene.util.LuceneTestCase;
-
-import static org.apache.solr.util.DateMathParser.UTC;
+import org.apache.solr.SolrTestCaseJ4;
 
 /**
  * Tests that the functions in DateMathParser
  */
-public class DateMathParserTest extends LuceneTestCase {
+public class DateMathParserTest extends SolrTestCaseJ4 {
 
   /**
    * A formatter for specifying every last nuance of a Date for easy

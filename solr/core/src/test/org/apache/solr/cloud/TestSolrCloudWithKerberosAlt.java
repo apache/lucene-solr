@@ -20,7 +20,6 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
@@ -29,8 +28,8 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +40,9 @@ import org.slf4j.LoggerFactory;
  * doesn't allow us to run multiple nodes on the same host.
  * https://issues.apache.org/jira/browse/HADOOP-9893
  */
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    BadZookeeperThreadsFilter.class // Zookeeper login leaks TGT renewal threads
-})
-
 @LuceneTestCase.Slow
+@Ignore
+// nocommit
 public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

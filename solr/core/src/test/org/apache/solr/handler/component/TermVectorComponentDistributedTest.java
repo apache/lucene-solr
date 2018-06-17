@@ -17,8 +17,9 @@
 package org.apache.solr.handler.component;
 
 import org.apache.lucene.util.Constants;
-
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.TermVectorParams;
@@ -29,6 +30,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TermVectorComponentDistributedTest extends BaseDistributedSearchTestCase {
   @BeforeClass
   public static void betterNotBeJ9() {

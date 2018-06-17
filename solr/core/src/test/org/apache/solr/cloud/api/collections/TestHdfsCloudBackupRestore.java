@@ -16,6 +16,13 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.core.backup.BackupManager.BACKUP_NAME_PROP;
+import static org.apache.solr.core.backup.BackupManager.BACKUP_PROPS_FILE;
+import static org.apache.solr.core.backup.BackupManager.COLLECTION_NAME_PROP;
+import static org.apache.solr.core.backup.BackupManager.CONFIG_STATE_DIR;
+import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -26,7 +33,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -45,15 +51,11 @@ import org.apache.solr.core.backup.repository.HdfsBackupRepository;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
-import static org.apache.solr.core.backup.BackupManager.BACKUP_NAME_PROP;
-import static org.apache.solr.core.backup.BackupManager.BACKUP_PROPS_FILE;
-import static org.apache.solr.core.backup.BackupManager.COLLECTION_NAME_PROP;
-import static org.apache.solr.core.backup.BackupManager.CONFIG_STATE_DIR;
-import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 /**
  * This class implements the tests for HDFS integration for Solr backup/restore capability.
@@ -62,6 +64,8 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+@Ignore
+//nocommit
 public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   public static final String SOLR_XML = "<solr>\n" +
       "\n" +

@@ -28,20 +28,20 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.Builder;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
+import org.eclipse.jetty.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +83,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     } catch (IOException e) {
 
     } finally {
-      HttpClientUtil.close(((HttpSolrClient) solrClient).getHttpClient());
+      ((Http2SolrClient) solrClient).getHttpClient().close();
     }
   }
 
@@ -94,8 +94,8 @@ public class SolrEntityProcessor extends EntityProcessorBase {
    *
    * @return a {@link HttpClient} instance used for interfacing with a source Solr service
    */
-  protected HttpClient getHttpClient() {
-    return HttpClientUtil.createClient(null);
+  protected SolrInternalHttpClient getHttpClient() {
+    return new SolrInternalHttpClient(SolrEntityProcessor.class.getSimpleName());
   }
 
   @Override
@@ -109,7 +109,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
             "SolrEntityProcessor: parameter 'url' is required");
       }
 
-      HttpClient client = getHttpClient();
+      SolrInternalHttpClient client = getHttpClient();
       URL url = new URL(serverPath);
       // (wt="javabin|xml") default is javabin
       if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {

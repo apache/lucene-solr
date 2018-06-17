@@ -16,19 +16,10 @@
  */
 package org.apache.solr.core;
 
-import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
-import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
-import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
@@ -37,10 +28,21 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricReporter;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
+import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
+import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.MetricRegistry;
 
 /**
  * Test for JMX Integration

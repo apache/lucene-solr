@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj;
 
+import static java.util.Collections.unmodifiableSet;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
@@ -27,8 +29,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-
-import static java.util.Collections.unmodifiableSet;
 
 /**
  * 
@@ -76,6 +76,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   private String basicAuthUser, basicAuthPwd;
+
+  private String basePath;
 
   public SolrRequest setBasicAuthCredentials(String user, String password) {
     this.basicAuthUser = user;
@@ -140,6 +142,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public void setStreamingResponseCallback(StreamingResponseCallback callback) {
     this.callback = callback;
   }
+  
+  public void setBasePath(String path) {
+    if (path.endsWith("/")) {
+      path = path.substring(0, path.length() - 1);
+    }
+      
+    this.basePath = path;
+  }
 
   /**
    * Parameter keys that are sent via the query string
@@ -175,7 +185,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    * Create a new SolrResponse to hold the response from the server
    * @param client the {@link SolrClient} the request will be sent to
    */
-  protected abstract T createResponse(SolrClient client);
+  public abstract T createResponse(SolrClient client);
 
   /**
    * Send this request to a {@link SolrClient} and return the response
@@ -213,6 +223,10 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public String getCollection() {
     return getParams() == null ? null : getParams().get("collection");
+  }
+
+  public String getBasePath() {
+    return basePath;
   }
 
 }

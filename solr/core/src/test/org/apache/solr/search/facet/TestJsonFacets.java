@@ -26,27 +26,33 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import com.tdunning.math.stats.AVLTreeDigest;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.util.hll.HLL;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.util.hll.HLL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.tdunning.math.stats.AVLTreeDigest;
 
 // Related tests:
 //   TestCloudJSONFacetJoinDomain for random field faceting tests with domain modifications
 //   TestJsonFacetRefinement for refinement tests
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
+@Slow
+@TimeoutSuite(millis = 120 * TimeUnits.SECOND) // nocommit non nightly should be faster?
 public class TestJsonFacets extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing

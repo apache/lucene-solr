@@ -567,7 +567,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
 
   @Override
-  protected CoreAdminResponse createResponse(SolrClient client) {
+  public CoreAdminResponse createResponse(SolrClient client) {
     return new CoreAdminResponse();
   }
 

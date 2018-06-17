@@ -16,16 +16,16 @@
  */
 package org.apache.solr.request.macro;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 /*
  * Tests for the MacroExpander
  */
-public class TestMacroExpander extends LuceneTestCase {
+public class TestMacroExpander extends SolrTestCaseJ4 {
 
   @Test
   public void testExamples() {

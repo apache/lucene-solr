@@ -16,16 +16,23 @@
  */
 package org.apache.solr.cloud.rule;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
+import static org.junit.matchers.JUnitMatchers.containsString;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -39,13 +46,10 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-@LuceneTestCase.Slow
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class RulesTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -191,7 +195,7 @@ public class RulesTest extends SolrCloudTestCase {
     String ip_1 = ipFragments[ipFragments.length - 1];
     String ip_2 = ipFragments[ipFragments.length - 2];
 
-    expectedException.expect(HttpSolrClient.RemoteSolrException.class);
+    expectedException.expect(Http2SolrClient.RemoteSolrException.class);
     expectedException.expectMessage(containsString("ip_1"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(rulesColl, "conf", "shard1", 2)

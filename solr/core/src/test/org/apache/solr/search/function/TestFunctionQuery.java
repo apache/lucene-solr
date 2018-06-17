@@ -27,16 +27,22 @@ import java.util.Random;
 
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 /**
  * Tests some basic functionality of Solr while demonstrating good
  * Best Practices for using SolrTestCaseJ4
  */
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestFunctionQuery extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

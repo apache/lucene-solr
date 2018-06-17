@@ -16,6 +16,23 @@
  */
 package org.apache.solr.handler;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.util.Collections.singletonList;
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
+import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
+import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
+import static org.apache.solr.core.PluginInfo.APPENDS;
+import static org.apache.solr.core.PluginInfo.DEFAULTS;
+import static org.apache.solr.core.PluginInfo.INVARIANTS;
+import static org.apache.solr.core.RequestParams.USEPARAM;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
+import static org.apache.solr.schema.FieldType.CLASS_NAME;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -37,14 +54,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -81,22 +96,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.util.Collections.singletonList;
-import static org.apache.solr.common.params.CoreAdminParams.NAME;
-import static org.apache.solr.common.util.StrUtils.formatString;
-import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
-import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
-import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
-import static org.apache.solr.core.PluginInfo.APPENDS;
-import static org.apache.solr.core.PluginInfo.DEFAULTS;
-import static org.apache.solr.core.PluginInfo.INVARIANTS;
-import static org.apache.solr.core.RequestParams.USEPARAM;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
-import static org.apache.solr.schema.FieldType.CLASS_NAME;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -845,7 +846,8 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     public Boolean call() throws Exception {
       final RTimer timer = new RTimer();
       int attempts = 0;
-      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
+      // nocommit - shared httpclient?
+      try (Http2SolrClient solr = new Http2SolrClient.Builder(coreUrl).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {
           try {
@@ -855,7 +857,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             }
             log.info("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
             Thread.sleep(100);
-            NamedList<Object> resp = solr.httpUriRequest(this).future.get();
+            NamedList<Object> resp = solr.request(this); // nocommit - this replaces HttpSolrClient#httpUriRequest
             if (resp != null) {
               Map m = (Map) resp.get(ZNODEVER);
               if (m != null) {
@@ -880,7 +882,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
+    public SolrResponse createResponse(SolrClient client) {
       return null;
     }
   }

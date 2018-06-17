@@ -16,8 +16,13 @@
  */
 package org.apache.solr.client.solrj;
 
-import static org.apache.solr.common.params.CoreAdminParams.*;
 import static org.apache.solr.common.params.CollectionAdminParams.FLUSH;
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
+import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.REQUESTID;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 import java.util.Iterator;
 import java.util.Set;

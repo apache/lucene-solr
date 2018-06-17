@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler;
 
+import static java.util.Arrays.asList;
+import static org.apache.solr.handler.TestBlobHandler.getAsString;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +26,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -38,9 +43,10 @@ import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.Test;
 
-import static java.util.Arrays.asList;
-import static org.apache.solr.handler.TestBlobHandler.getAsString;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
+@Slow
+@TimeoutSuite(millis = 120 * TimeUnits.SECOND)
 public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
   @Test

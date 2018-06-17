@@ -17,8 +17,8 @@
 package org.apache.solr;
 
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.request.*;
-import org.apache.solr.util.*;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

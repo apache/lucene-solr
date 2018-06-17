@@ -25,6 +25,7 @@ import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.JSONUtil;
 import org.restlet.ext.servlet.ServerServlet;
@@ -34,6 +35,8 @@ import org.restlet.ext.servlet.ServerServlet;
  * GET: returns the list of stop words or a single word if it exists
  * PUT: add some words to the current list
  */
+// nocommit
+@Ignore
 public class TestManagedStopFilterFactory extends RestTestBase {
   private static File tmpSolrHome;
   private static File tmpConfDir;

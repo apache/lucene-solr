@@ -18,26 +18,24 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BackupRestoreUtils extends LuceneTestCase {
+public class BackupRestoreUtils extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -69,7 +67,7 @@ public class BackupRestoreUtils extends LuceneTestCase {
     assertEquals(nDocs, response.getResults().getNumFound());
   }
 
-  public static void runCoreAdminCommand(String baseUrl, String coreName, String action, Map<String,String> params) throws IOException {
+  public static void runCoreAdminCommand(String baseUrl, String coreName, String action, Map<String,String> params) throws Exception {
     StringBuilder builder = new StringBuilder();
     builder.append(baseUrl);
     builder.append("/admin/cores?action=");
@@ -86,19 +84,12 @@ public class BackupRestoreUtils extends LuceneTestCase {
     executeHttpRequest(masterUrl);
   }
 
-  public static void runReplicationHandlerCommand(String baseUrl, String coreName, String action, String repoName, String backupName) throws IOException {
+  public static void runReplicationHandlerCommand(String baseUrl, String coreName, String action, String repoName, String backupName) throws Exception {
     String masterUrl = baseUrl + "/" + coreName + ReplicationHandler.PATH + "?command=" + action + "&repository="+repoName+"&name="+backupName;
     executeHttpRequest(masterUrl);
   }
 
-  static void executeHttpRequest(String requestUrl) throws IOException {
-    InputStream stream = null;
-    try {
-      URL url = new URL(requestUrl);
-      stream = url.openStream();
-      stream.close();
-    } finally {
-      IOUtils.closeQuietly(stream);
-    }
+  static void executeHttpRequest(String requestUrl) throws Exception {
+    Http2SolrClient.GET(requestUrl);
   }
 }

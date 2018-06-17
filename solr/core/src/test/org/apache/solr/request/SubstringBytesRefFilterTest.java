@@ -19,11 +19,11 @@ package org.apache.solr.request;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-public class SubstringBytesRefFilterTest extends LuceneTestCase {
+public class SubstringBytesRefFilterTest extends SolrTestCaseJ4 {
     
   @Test
   public void testSubstringBytesRefFilter() {

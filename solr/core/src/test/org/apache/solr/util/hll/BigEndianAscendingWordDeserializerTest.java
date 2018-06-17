@@ -16,17 +16,17 @@
  */
 package org.apache.solr.util.hll;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
+
 import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
-
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 
 /**
  * Unit and smoke tests for {@link BigEndianAscendingWordDeserializer}.
  */
-public class BigEndianAscendingWordDeserializerTest extends LuceneTestCase {
+public class BigEndianAscendingWordDeserializerTest extends SolrTestCaseJ4 {
     /**
      * Error checking tests for constructor.
      */

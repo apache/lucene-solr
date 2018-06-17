@@ -16,27 +16,27 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.document.Document;
-import static org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.StringField;
-
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.response.transform.*;
 import static org.apache.solr.response.DocsStreamer.convertLuceneDocToSolrDoc;
-import org.apache.solr.schema.IndexSchema;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.response.transform.DocTransformers;
+import org.apache.solr.response.transform.ScoreAugmenter;
+import org.apache.solr.schema.IndexSchema;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class ReturnFieldsTest extends SolrTestCaseJ4 {
 

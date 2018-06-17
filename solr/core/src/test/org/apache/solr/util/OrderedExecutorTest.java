@@ -21,11 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.Test;
 
-public class OrderedExecutorTest extends LuceneTestCase {
+public class OrderedExecutorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExecutionInOrder() {

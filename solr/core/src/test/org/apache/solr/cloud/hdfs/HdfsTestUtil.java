@@ -201,7 +201,7 @@ public class HdfsTestUtil {
         timer.cancel();
       }
       try {
-        dfsCluster.shutdown();
+        dfsCluster.shutdown(true);
       } catch (Error e) {
         // Added in SOLR-7134
         // Rarely, this can fail to either a NullPointerException

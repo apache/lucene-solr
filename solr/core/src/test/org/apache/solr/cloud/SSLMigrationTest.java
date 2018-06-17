@@ -17,6 +17,14 @@
 package org.apache.solr.cloud;
 
   
+import static org.apache.solr.common.util.Utils.makeMap;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -34,15 +42,8 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.SSLTestConfig;
+import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * We want to make sure that when migrating between http and https modes the
@@ -51,6 +52,8 @@ import static org.apache.solr.common.util.Utils.makeMap;
  */
 @Slow
 @SuppressSSL
+@Ignore
+// nocommit - no ssl support yet
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 
   @Test

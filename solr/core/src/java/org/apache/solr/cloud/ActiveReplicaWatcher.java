@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Watch for replicas to become {@link org.apache.solr.common.cloud.Replica.State#ACTIVE}. Watcher is
- * terminated (its {@link #onStateChanged(Set, DocCollection)} method returns false) when all listed
+ * terminated (its {@link #onStateChanged(boolean, Set, DocCollection)} method returns false) when all listed
  * replicas become active.
  * <p>Additionally, the provided {@link SolrCloseableLatch} instance can be used to await
  * for all listed replicas to become active.</p>
@@ -114,7 +114,8 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
 
   // synchronized due to SOLR-11535
   @Override
-  public synchronized boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
+  public synchronized boolean onStateChanged(boolean closing, Set<String> liveNodes, DocCollection collectionState) {
+    if (closing) return false;
     log.debug("-- onStateChanged@" + Long.toHexString(hashCode()) + ": replicaIds=" + replicaIds + ", solrCoreNames=" + solrCoreNames +
         (latch != null ? "\nlatch count=" + latch.getCount() : "") +
         "\ncollectionState=" + collectionState);

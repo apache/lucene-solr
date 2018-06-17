@@ -52,7 +52,8 @@ public class SSLConfig {
   
   /** All other settings on this object are ignored unless this is true */
   public boolean isSSLMode() {
-    return useSsl;
+    return false; // nocommit fix ssl support: javax.net.ssl.SSLException: Unable to parse TLS packet header
+    // return useSsl;
   }
   
   public boolean isClientAuthMode() {

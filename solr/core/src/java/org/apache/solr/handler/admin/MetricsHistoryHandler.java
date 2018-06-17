@@ -16,7 +16,9 @@
  */
 package org.apache.solr.handler.admin;
 
-import javax.imageio.ImageIO;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -51,7 +53,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.annotations.VisibleForTesting;
+import javax.imageio.ImageIO;
+
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
@@ -74,6 +77,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -105,8 +109,7 @@ import org.rrd4j.graph.RrdGraphDef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.stream.Collectors.toMap;
-import static org.apache.solr.common.params.CommonParams.ID;
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  *
@@ -639,7 +642,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   public void close() {
     log.debug("Closing " + hashCode());
     if (collectService != null) {
-      collectService.shutdownNow();
+      ExecutorUtil.shutdownWithInterruptAndAwaitTermination(collectService);
     }
     if (factory != null) {
       factory.close();

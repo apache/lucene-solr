@@ -46,7 +46,7 @@ public class SolrPing extends SolrRequest<SolrPingResponse> {
   }
   
   @Override
-  protected SolrPingResponse createResponse(SolrClient client) {
+  public SolrPingResponse createResponse(SolrClient client) {
     return new SolrPingResponse();
   }
 

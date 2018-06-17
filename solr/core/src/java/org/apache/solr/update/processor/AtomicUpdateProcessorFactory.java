@@ -16,6 +16,9 @@
  */
 package org.apache.solr.update.processor;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -36,9 +39,6 @@ import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 /**
  * An update processor that will convert conventional field-value document to atomic update document

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.function.Function;
 
 import org.apache.solr.common.SolrInputField;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

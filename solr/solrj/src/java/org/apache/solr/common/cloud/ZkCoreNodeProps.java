@@ -20,6 +20,7 @@ public class ZkCoreNodeProps {
   private ZkNodeProps nodeProps;
   
   public ZkCoreNodeProps(ZkNodeProps nodeProps) {
+    assert nodeProps != null;
     this.nodeProps = nodeProps;
   }
   
@@ -31,6 +32,10 @@ public class ZkCoreNodeProps {
     return nodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
   }
 
+  public String getCoreNodeName() {
+    return nodeProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+  }
+  
   public String getState() {
     return nodeProps.getStr(ZkStateReader.STATE_PROP);
   }

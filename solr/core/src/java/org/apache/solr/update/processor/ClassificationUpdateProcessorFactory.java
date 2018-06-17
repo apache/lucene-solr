@@ -17,6 +17,8 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.ClassificationUpdateProcessorFactory.Algorithm.KNN;
+
 import java.util.Locale;
 
 import org.apache.lucene.index.IndexReader;
@@ -29,8 +31,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.LuceneQParser;
 import org.apache.solr.search.SyntaxError;
-
-import static org.apache.solr.update.processor.ClassificationUpdateProcessorFactory.Algorithm.KNN;
 
 /**
  * This class implements an UpdateProcessorFactory for the Classification Update Processor.

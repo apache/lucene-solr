@@ -16,12 +16,16 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Test;
 
 /**
  * Test for FastInputStream.
@@ -29,7 +33,7 @@ import java.util.zip.GZIPOutputStream;
  *
  * @see org.apache.solr.common.util.FastInputStream
  */
-public class TestFastInputStream extends LuceneTestCase {
+public class TestFastInputStream extends SolrTestCaseJ4 {
   @Test
   public void testgzip() throws Exception {
     ByteArrayOutputStream b = new ByteArrayOutputStream();

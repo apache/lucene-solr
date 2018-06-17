@@ -16,6 +16,14 @@
  */
 package org.apache.solr.common.cloud;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.EMPTY_MAP;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.emptySortedSet;
+import static java.util.Collections.unmodifiableSet;
+import static org.apache.solr.common.util.Utils.fromJSON;
+
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -61,14 +69,6 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.EMPTY_MAP;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.emptySortedSet;
-import static java.util.Collections.unmodifiableSet;
-import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements Closeable {
   public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
@@ -278,6 +278,7 @@ public class ZkStateReader implements Closeable {
   private final boolean closeClient;
 
   private volatile boolean closed = false;
+  private volatile boolean closing = false;
 
   public ZkStateReader(SolrZkClient zkClient) {
     this(zkClient, null);
@@ -666,6 +667,9 @@ public class ZkStateReader implements Closeable {
    * Register a CloudCollectionsListener to be called when the set of collections within a cloud changes.
    */
   public void registerCloudCollectionsListener(CloudCollectionsListener cloudCollectionsListener) {
+    if (closing) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Closing...");
+    }
     cloudCollectionsListeners.add(cloudCollectionsListener);
     notifyNewCloudCollectionsListener(cloudCollectionsListener);
   }
@@ -751,6 +755,7 @@ public class ZkStateReader implements Closeable {
   private final Object refreshLiveNodesLock = new Object();
   // Ensures that only the latest getChildren fetch gets applied.
   private final AtomicReference<SortedSet<String>> lastFetchedLiveNodes = new AtomicReference<>();
+  private RuntimeException closeExp;
 
   /**
    * Refresh live_nodes.
@@ -795,6 +800,9 @@ public class ZkStateReader implements Closeable {
   }
 
   public void registerLiveNodesListener(LiveNodesListener listener) {
+    if (closing) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Closing...");
+    }
     liveNodesListeners.add(listener);
   }
 
@@ -814,12 +822,28 @@ public class ZkStateReader implements Closeable {
   }
 
   public void close() {
+    
     this.closed  = true;
+    
     notifications.shutdown();
+    
+//    stop(); nocommit
+    
     ExecutorUtil.shutdownAndAwaitTermination(collectionPropsNotifications);
+
     if (closeClient) {
       zkClient.close();
     }
+  }
+  
+  public void stop() {
+    closeExp = new RuntimeException();
+    closing = true;
+    collectionWatches.forEach((k, v) -> {
+      v.stateWatchers.forEach(s -> {
+        s.onStateChanged(true, null, null);
+      });
+    });
   }
   
   public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException {
@@ -837,6 +861,16 @@ public class ZkStateReader implements Closeable {
     }
     return null;
   }
+  
+  public Replica getLeader(Set<String> liveNodes, DocCollection docCollection, String shard) {
+    
+      Replica replica = docCollection != null ? docCollection.getLeader(shard) : null;
+      if (replica != null && liveNodes.contains(replica.getNodeName())) {
+        return replica;
+      }
+    
+    return null;
+  }
 
   /**
    * Get shard leader properties, with retry if none exist.
@@ -849,16 +883,25 @@ public class ZkStateReader implements Closeable {
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
-    long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-    while (true) {
-      Replica leader = getLeader(collection, shard);
-      if (leader != null) return leader;
-      if (System.nanoTime() >= timeoutAt || closed) break;
-      Thread.sleep(GET_LEADER_RETRY_INTERVAL_MS);
+
+    AtomicReference<Replica> leader = new AtomicReference<>();
+    try {
+      waitForState(collection, timeout, TimeUnit.MILLISECONDS, (n, c) -> {
+        if (c == null)
+          return false;
+        Replica l = getLeader(n, c, shard);
+        if (l != null) {
+          leader.set(l);
+          return true;
+        }
+        return false;
+      });
+    } catch (TimeoutException | InterruptedException e) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
+          + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
+          + " with live_nodes=" + clusterState.getLiveNodes());
     }
-    throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
-        + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
-        + " with live_nodes=" + clusterState.getLiveNodes());
+    return leader.get();
   }
 
   /**
@@ -1367,6 +1410,9 @@ public class ZkStateReader implements Closeable {
    * @see ZkStateReader#unregisterCore(String)
    */
   public void registerCore(String collection) {
+    if (closing) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Closing...");
+    }
     AtomicBoolean reconstructState = new AtomicBoolean(false);
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null) {
@@ -1417,6 +1463,9 @@ public class ZkStateReader implements Closeable {
    * Register a CollectionStateWatcher to be called when the state of a collection changes
    */
   public void registerCollectionStateWatcher(String collection, CollectionStateWatcher stateWatcher) {
+    if (closing) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Closing...");
+    }
     AtomicBoolean watchSet = new AtomicBoolean(false);
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null) {
@@ -1432,7 +1481,7 @@ public class ZkStateReader implements Closeable {
     }
 
     DocCollection state = clusterState.getCollectionOrNull(collection);
-    if (stateWatcher.onStateChanged(liveNodes, state) == true) {
+    if (stateWatcher.onStateChanged(closing, liveNodes, state) == true) {
       removeCollectionStateWatcher(collection, stateWatcher);
     }
   }
@@ -1454,8 +1503,15 @@ public class ZkStateReader implements Closeable {
       throws InterruptedException, TimeoutException {
 
     final CountDownLatch latch = new CountDownLatch(1);
-
-    CollectionStateWatcher watcher = (n, c) -> {
+    AtomicBoolean closed = new AtomicBoolean();
+    AtomicReference<Exception> exp = new AtomicReference<>();
+    CollectionStateWatcher watcher = (closing, n, c) -> {
+      if (this.closing) {
+        closed.set(true);
+        exp.set(closeExp);
+        latch.countDown();
+        return false;
+      }
       boolean matches = predicate.matches(n, c);
       if (matches)
         latch.countDown();
@@ -1471,6 +1527,10 @@ public class ZkStateReader implements Closeable {
     }
     finally {
       removeCollectionStateWatcher(collection, watcher);
+    }
+    if (closed.get()) {
+      exp.get().printStackTrace(); // nocommit
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "This " + getClass().getSimpleName() + " is closed.");
     }
   }
 
@@ -1563,6 +1623,9 @@ public class ZkStateReader implements Closeable {
   }
 
   public void registerCollectionPropsWatcher(final String collection, CollectionPropsWatcher propsWatcher) {
+    if (closing) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Closing...");
+    }
     AtomicBoolean watchSet = new AtomicBoolean(false);
     collectionPropsWatches.compute(collection, (k, v) -> {
       if (v == null) {
@@ -1639,7 +1702,7 @@ public class ZkStateReader implements Closeable {
       });
       for (CollectionStateWatcher watcher : watchers) {
         try {
-          if (watcher.onStateChanged(liveNodes, collectionState)) {
+          if (watcher.onStateChanged(closing, liveNodes, collectionState)) {
             removeCollectionStateWatcher(collection, watcher);
           }
         } catch (Exception exception) {

@@ -26,12 +26,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ClusterState.CollectionRef;
@@ -40,6 +40,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
+import org.eclipse.jetty.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,14 +55,12 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
 
   private int cacheTimeout = 5; // the liveNodes and aliases cache will be invalidated after 5 secs
   final HttpClient httpClient;
-  final boolean clientIsInternal;
 
-  public HttpClusterStateProvider(List<String> solrUrls, HttpClient httpClient) throws Exception {
-    this.httpClient = httpClient == null? HttpClientUtil.createClient(null): httpClient;
-    this.clientIsInternal = httpClient == null;
+  public HttpClusterStateProvider(List<String> solrUrls, SolrInternalHttpClient httpClient) throws Exception {
+    this.httpClient = httpClient;
     for (String solrUrl: solrUrls) {
       urlScheme = solrUrl.startsWith("https")? "https": "http";
-      try (SolrClient initialClient = new HttpSolrClient.Builder().withBaseSolrUrl(solrUrl).withHttpClient(httpClient).build()) {
+      try (SolrClient initialClient = new Http2SolrClient.Builder(solrUrl).withHttpClient(httpClient).build()) {
         Set<String> liveNodes = fetchLiveNodes(initialClient); // throws exception if unable to fetch
         this.liveNodes = liveNodes;
         liveNodesTimestamp = System.nanoTime();
@@ -82,20 +81,16 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public void close() throws IOException {
-    if (this.clientIsInternal && this.httpClient != null) {
-      HttpClientUtil.close(httpClient);
-    }
+
   }
 
   @Override
   public CollectionRef getState(String collection) {
     for (String nodeName: liveNodes) {
-      try (HttpSolrClient client = new HttpSolrClient.Builder().
-          withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
-          withHttpClient(httpClient).build()) {
+      try (Http2SolrClient client = new Http2SolrClient.Builder(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).build()) {
         ClusterState cs = fetchClusterState(client, collection, null);
         return cs.getCollectionRef(collection);
-      } catch (SolrServerException | RemoteSolrException | IOException e) {
+      } catch (Exception e) {
         if (e.getMessage().contains(collection + " not found")) {
           // Cluster state for the given collection was not found.
           // Lets fetch/update our aliases:
@@ -161,9 +156,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
     }
     if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS) > getCacheTimeout()) {
       for (String nodeName: liveNodes) {
-        try (HttpSolrClient client = new HttpSolrClient.Builder().
-            withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
-            withHttpClient(httpClient).build()) {
+        try (Http2SolrClient client = new Http2SolrClient.Builder(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).build()) {
           Set<String> liveNodes = fetchLiveNodes(client);
           this.liveNodes = (liveNodes);
           liveNodesTimestamp = System.nanoTime();
@@ -210,9 +203,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
     if (forceFetch || this.aliases == null ||
         TimeUnit.SECONDS.convert((System.nanoTime() - aliasesTimestamp), TimeUnit.NANOSECONDS) > getCacheTimeout()) {
       for (String nodeName: liveNodes) {
-        try (HttpSolrClient client = new HttpSolrClient.Builder().
-            withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
-            withHttpClient(httpClient).build()) {
+        try (Http2SolrClient client = new Http2SolrClient.Builder(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).build()) {
 
           Map<String, List<String>> aliases = new CollectionAdminRequest.ListAliases().process(client).getAliasesAsLists();
           this.aliases = aliases;
@@ -245,9 +236,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   @Override
   public ClusterState getClusterState() throws IOException {
     for (String nodeName: liveNodes) {
-      try (HttpSolrClient client = new HttpSolrClient.Builder().
-          withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
-          withHttpClient(httpClient).build()) {
+      try (Http2SolrClient client = new Http2SolrClient.Builder(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).build()) {
         ClusterState cs = fetchClusterState(client, null, null);
         return cs;
       } catch (SolrServerException | RemoteSolrException | IOException e) {
@@ -265,9 +254,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   @Override
   public Map<String, Object> getClusterProperties() {
     for (String nodeName: liveNodes) {
-      try (HttpSolrClient client = new HttpSolrClient.Builder().
-          withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
-          withHttpClient(httpClient).build()) {
+      try (Http2SolrClient client = new Http2SolrClient.Builder(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).build()) {
         Map<String, Object> clusterProperties = new HashMap<>();
         fetchClusterState(client, null, clusterProperties);
         return clusterProperties;

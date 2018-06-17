@@ -16,6 +16,21 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.http.HttpResponse;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -28,22 +43,10 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
+@Ignore // nocommit
 public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
 
   /**
@@ -129,6 +132,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     JettyConfig jettyConfig = JettyConfig.builder()
         .withServlet(new ServletHolder(TestServlet.class), "/cuss/*")
         .withSSLConfig(sslConfig)
+        .withHttpClient(getHttpClient())
+        .withJettyQtp(getQtp())
         .build();
     createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }

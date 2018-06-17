@@ -16,7 +16,28 @@
  */
 package org.apache.solr.cloud;
 
-import com.google.common.util.concurrent.AtomicLongMap;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import javax.management.JMException;
+
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
@@ -38,26 +59,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.JMException;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import com.google.common.util.concurrent.AtomicLongMap;
 
 public class ZkTestServer {
   public static final int TICK_TIME = 1000;
@@ -334,11 +336,9 @@ public class ZkTestServer {
      * @throws IOException If there is a low-level I/O error.
      */
     protected void shutdown() throws IOException {
-      zooKeeperServer.shutdown();
+      zooKeeperServer.shutdown(false);
       ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
-      if (cnxnFactory != null && cnxnFactory.getLocalPort() != 0) {
-        waitForServerDown(getZkHost() + ":" + getPort(), 5000);
-      }
+
       if (cnxnFactory != null) {
         cnxnFactory.shutdown();
         try {
@@ -347,8 +347,13 @@ public class ZkTestServer {
           Thread.currentThread().interrupt();
         }
       }
+
       if (zkDb != null) {
         zkDb.close();
+      }
+      
+      if (cnxnFactory != null && cnxnFactory.getLocalPort() != 0) {
+        waitForServerDown(getZkHost() + ":" + getPort(), 5000);
       }
     }
 

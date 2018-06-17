@@ -16,12 +16,12 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.common.util.NamedList;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A response that is returned by processing the {@link org.apache.solr.client.solrj.request.DocumentAnalysisRequest}.

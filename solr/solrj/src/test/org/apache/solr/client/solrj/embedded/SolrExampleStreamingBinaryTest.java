@@ -22,9 +22,11 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.junit.Ignore;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore // nocommit concurrent update processor doesnt speak http2
 public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
   @Override

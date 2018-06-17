@@ -20,7 +20,10 @@ package org.apache.solr.handler;
 
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.DocCollection;
+import org.junit.Ignore;
 
+//nocommit
+@Ignore
 public class TestSystemCollAutoCreate extends AbstractFullDistribZkTestBase {
   public void testAutoCreate() throws Exception {
     TestBlobHandler.checkBlobPost(cloudJettys.get(0).jetty.getBaseUrl().toExternalForm(), cloudClient);

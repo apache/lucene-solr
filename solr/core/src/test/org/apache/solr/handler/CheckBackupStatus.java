@@ -16,14 +16,11 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 
 public class CheckBackupStatus extends SolrTestCaseJ4 {
   String response = null;
@@ -32,22 +29,22 @@ public class CheckBackupStatus extends SolrTestCaseJ4 {
   final String lastBackupTimestamp;
   final Pattern p = Pattern.compile("<str name=\"snapshotCompletedAt\">(.*?)</str>");
   final Pattern pException = Pattern.compile("<str name=\"snapShootException\">(.*?)</str>");
-  final HttpSolrClient client;
+  final Http2SolrClient client;
   final String coreName;
 
-  public CheckBackupStatus(final HttpSolrClient client, String coreName, String lastBackupTimestamp) {
+  public CheckBackupStatus(final Http2SolrClient client, String coreName, String lastBackupTimestamp) {
     this.client = client;
     this.lastBackupTimestamp = lastBackupTimestamp;
     this.coreName = coreName;
   }
 
-  public CheckBackupStatus(final HttpSolrClient client, String coreName) {
+  public CheckBackupStatus(final Http2SolrClient client, String coreName) {
     this(client, coreName, null);
   }
 
-  public void fetchStatus() throws IOException {
+  public void fetchStatus() throws Exception {
     String masterUrl = client.getBaseURL() + "/"  + coreName + ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_DETAILS;
-    response = client.getHttpClient().execute(new HttpGet(masterUrl), new BasicResponseHandler());
+    response = client.httpGet(masterUrl).asString;
     if(pException.matcher(response).find()) {
       fail("Failed to create backup");
     }

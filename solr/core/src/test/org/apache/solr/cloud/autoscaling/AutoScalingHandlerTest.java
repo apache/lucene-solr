@@ -17,6 +17,10 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -31,7 +35,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
@@ -51,10 +55,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
-import static org.apache.solr.common.params.CommonParams.JSON_MIME;
-import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
  * Test for AutoScalingHandler
@@ -365,7 +365,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("expected exception");
-    } catch (HttpSolrClient.RemoteExecutionException e) {
+    } catch (Http2SolrClient.RemoteExecutionException e) {
       // expected
       assertTrue(String.valueOf(getObjectByPath(e.getMetaData(),
           false, "error/details[0]/errorMessages[0]")).contains("Cannot remove trigger: node_lost_trigger because it has active listeners: ["));
@@ -413,9 +413,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("should have thrown Exception");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (Http2SolrClient.RemoteSolrException e) {
       // expected
-      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+      assertTrue(String.valueOf(getObjectByPath(((Http2SolrClient.RemoteExecutionException) e).getMetaData(),
           false, "error/details[0]/errorMessages[0]")).contains("A trigger with the name node_lost_trigger does not exist"));
     }
   }
@@ -435,7 +435,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
       solrClient.request(req);
       fail("expect exception");
-    } catch (HttpSolrClient.RemoteExecutionException e) {
+    } catch (Http2SolrClient.RemoteExecutionException e) {
       String message = String.valueOf(Utils.getObjectByPath(e.getMetaData(), true, "error/details[0]/errorMessages[0]"));
       assertTrue(message.contains("replica is required in"));
     }
@@ -464,9 +464,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("should have thrown Exception");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (Http2SolrClient.RemoteSolrException e) {
       // expected
-      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+      assertTrue(String.valueOf(getObjectByPath(((Http2SolrClient.RemoteExecutionException) e).getMetaData(),
           false, "error/details[0]/errorMessages[0]")).contains("foo=unknown property"));
     }
 
@@ -488,9 +488,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("should have thrown Exception");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (Http2SolrClient.RemoteSolrException e) {
       // expected
-      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+      assertTrue(String.valueOf(getObjectByPath(((Http2SolrClient.RemoteExecutionException) e).getMetaData(),
           false, "error/details[0]/errorMessages[0]")).contains("aboveRate=Invalid configuration value: 'foo'"));
     }
 
@@ -512,9 +512,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("should have thrown Exception");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (Http2SolrClient.RemoteSolrException e) {
       // expected
-      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+      assertTrue(String.valueOf(getObjectByPath(((Http2SolrClient.RemoteExecutionException) e).getMetaData(),
           false, "error/details[0]/errorMessages[0]")).contains("foo=unknown property"));
     }
 
@@ -551,9 +551,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("should have thrown Exception");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (Http2SolrClient.RemoteSolrException e) {
       // expected
-      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+      assertTrue(String.valueOf(getObjectByPath(((Http2SolrClient.RemoteExecutionException) e).getMetaData(),
           false, "error/details[0]/errorMessages[0]")).contains("foo=unknown property"));
     }
   }
@@ -577,7 +577,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("Adding a policy with 'cores' attribute should not have succeeded.");
-    } catch (HttpSolrClient.RemoteExecutionException e)  {
+    } catch (Http2SolrClient.RemoteExecutionException e)  {
       String message = String.valueOf(Utils.getObjectByPath(e.getMetaData(), true, "error/details[0]/errorMessages[0]"));
 
       // expected
@@ -926,7 +926,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, removePolicyCommand));
       fail("should have failed");
-    } catch (HttpSolrClient.RemoteExecutionException e) {
+    } catch (Http2SolrClient.RemoteExecutionException e) {
       assertTrue(String.valueOf(getObjectByPath(e.getMetaData(), true, "error/details[0]/errorMessages[0]"))
           .contains("is being used by collection"));
     } catch (Exception e) {
@@ -1051,7 +1051,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     }
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
+    public SolrResponse createResponse(SolrClient client) {
       return null;
     }
   }

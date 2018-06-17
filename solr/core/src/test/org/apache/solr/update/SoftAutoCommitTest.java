@@ -26,17 +26,20 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Test auto commit functionality in a way that doesn't suck.
@@ -58,6 +61,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @Slow
+@TimeoutSuite(millis = 160 * TimeUnits.SECOND) // nocommit test too long
 public class SoftAutoCommitTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -491,7 +495,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     // these will be modified in each iteration of our assertion loop
     long prevTimestampNanos = startTimestampNanos;
     int count = 1;
-    Long commitNanos = queue.poll(commitWaitMillis * 3, MILLISECONDS);
+    Long commitNanos = queue.poll(commitWaitMillis * 6, MILLISECONDS);
     assertNotNull(debug + ": did not find a single commit", commitNanos);
     
     while (null != commitNanos) {

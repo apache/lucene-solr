@@ -53,8 +53,8 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
   }
 
   @Override
-  public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
-    if (collectionState == null) { // collection has been deleted - don't wait
+  public boolean onStateChanged(boolean closing, Set<String> liveNodes, DocCollection collectionState) {
+    if (closing || collectionState == null) { // collection has been deleted - don't wait
       latch.countDown();
       return true;
     }

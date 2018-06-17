@@ -26,7 +26,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -218,7 +218,7 @@ public class StatsStream extends TupleStream implements Expressible  {
       }
     } else {
       List<String> shards = shardsMap.get(collection);
-      HttpSolrClient client = cache.getHttpSolrClient(shards.get(0));
+      Http2SolrClient client = cache.getHttpSolrClient(shards.get(0));
 
       if(shards.size() > 1) {
         String shardsParam = getShardString(shards);

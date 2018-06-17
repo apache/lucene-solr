@@ -16,16 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.Replica;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,12 +23,25 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Tests leader-initiated recovery scenarios after a leader node fails
  * and one of the replicas is out-of-sync.
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore
+//nocommit
 public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -119,11 +122,11 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // doc should be on leader and 1 replica
     sendDoc(5);
     
-    try (HttpSolrClient server = getHttpSolrClient(leader, testCollectionName)) {
+    try (Http2SolrClient server = getHttpSolrClient(leader, testCollectionName)) {
       assertDocExists(server, testCollectionName, "5");
     }
 
-    try (HttpSolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
+    try (Http2SolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
       assertDocExists(server, testCollectionName, "5");
     }
   

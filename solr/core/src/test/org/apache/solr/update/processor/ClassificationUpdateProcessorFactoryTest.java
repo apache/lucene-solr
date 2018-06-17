@@ -16,6 +16,9 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.mock;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -23,9 +26,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.core.Is.is;
-import static org.mockito.Mockito.mock;
 
 /**
  * Tests for {@link ClassificationUpdateProcessorFactory}

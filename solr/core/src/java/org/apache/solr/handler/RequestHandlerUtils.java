@@ -17,7 +17,13 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.util.*;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -29,6 +35,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Common helper functions for RequestHandlers
@@ -38,6 +46,9 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
  */
 public class RequestHandlerUtils
 {
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   /**
    * A common way to mark the response format as experimental
    */
@@ -67,13 +78,13 @@ public class RequestHandlerUtils
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize );
       updateCommit(cmd, params);
       processor.processCommit( cmd );
+
       return true;
     }
     
     
     return false;
   }
-
   
   private static Set<String> commitParams = new HashSet<>(Arrays.asList(new String[]{UpdateParams.OPEN_SEARCHER, UpdateParams.WAIT_SEARCHER, UpdateParams.SOFT_COMMIT, UpdateParams.EXPUNGE_DELETES, UpdateParams.MAX_OPTIMIZE_SEGMENTS, UpdateParams.PREPARE_COMMIT}));
 

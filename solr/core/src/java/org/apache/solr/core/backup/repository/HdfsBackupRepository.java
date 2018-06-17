@@ -23,7 +23,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
-import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -40,6 +39,8 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.apache.solr.store.hdfs.HdfsDirectory.HdfsIndexInput;
+
+import com.google.common.base.Preconditions;
 
 public class HdfsBackupRepository implements BackupRepository {
   private static final String HDFS_UMASK_MODE_PARAM = "solr.hdfs.permissions.umask-mode";

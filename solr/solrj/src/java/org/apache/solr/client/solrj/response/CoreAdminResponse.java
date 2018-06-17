@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.Date;
+
 import org.apache.solr.common.util.NamedList;
 
 /**

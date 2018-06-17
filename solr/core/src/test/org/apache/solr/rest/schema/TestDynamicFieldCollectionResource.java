@@ -15,11 +15,17 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 import java.io.IOException;
 
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TestDynamicFieldCollectionResource extends SolrRestletTestBase {
   @Test
   public void testGetAllDynamicFields() throws Exception {

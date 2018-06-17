@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.lucene.util.LuceneTestCase.random;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
@@ -29,7 +31,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -37,6 +38,10 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest.AddField;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest.AddFieldType;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest.MultiUpdate;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest.Update;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.Group;
 import org.apache.solr.client.solrj.response.GroupCommand;
@@ -47,6 +52,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -54,9 +60,10 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.util.LuceneTestCase.random;
-import static org.apache.solr.client.solrj.request.schema.SchemaRequest.*;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
+@Ignore
+// nocommit - multi-stream needed?
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

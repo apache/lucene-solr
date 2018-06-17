@@ -19,7 +19,8 @@ package org.apache.solr.metrics.reporters.solr;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
-import com.codahale.metrics.Metric;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -36,9 +37,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.codahale.metrics.Metric;
+
 /**
  *
  */
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class SolrShardReporterTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

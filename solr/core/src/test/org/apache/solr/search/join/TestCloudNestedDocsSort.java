@@ -26,6 +26,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -39,6 +41,21 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+
+// nocommit can hit - same buffer too small issue but without root error found?
+//Caused by: java.lang.IllegalStateException
+// at org.eclipse.jetty.http2.hpack.HpackEncoder.encode(HpackEncoder.java:336)
+// at org.eclipse.jetty.http2.hpack.HpackEncoder.encode(HpackEncoder.java:165)
+// at org.eclipse.jetty.http2.generator.HeadersGenerator.generateHeaders(HeadersGenerator.java:72)
+// at org.eclipse.jetty.http2.generator.HeadersGenerator.generate(HeadersGenerator.java:56)
+// at org.eclipse.jetty.http2.generator.Generator.control(Generator.java:80)
+// at org.eclipse.jetty.http2.HTTP2Session$ControlEntry.generate(HTTP2Session.java:1177)
+
+
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
   private static ArrayList<String> vals = new ArrayList<>();

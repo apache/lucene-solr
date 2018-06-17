@@ -23,20 +23,25 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RTimer;
-
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 /** Tests CurrencyField and CurrencyFieldType. */
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   private final String fieldName;
   private final Class<? extends ExchangeRateProvider> expectedProviderClass;

@@ -16,47 +16,50 @@
  */
 package org.apache.solr.handler.component;
 
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutorService;
-import java.util.List;
-import java.util.ArrayList;
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.Builder;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 public abstract class IterativeMergeStrategy implements MergeStrategy  {
 
   protected ExecutorService executorService;
-  protected static HttpClient httpClient;
+  protected static SolrInternalHttpClient httpClient;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void merge(ResponseBuilder rb, ShardRequest sreq) {
     rb._responseDocs = new SolrDocumentList(); // Null pointers will occur otherwise.
     rb.onePassDistributedQuery = true;   // Turn off the second pass distributed.
-    executorService =     ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("IterativeMergeStrategy"));
+    executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("IterativeMergeStrategy"));
+    httpClient = getHttpClient();
     try {
       process(rb, sreq);
     } catch (Exception e) {
       throw new RuntimeException(e);
     } finally {
       executorService.shutdownNow();
+      IOUtils.closeQuietly(httpClient);
     }
   }
 
@@ -77,7 +80,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
   }
 
   public static class CallBack implements Callable<CallBack> {
-    private HttpSolrClient solrClient;
+    private Http2SolrClient solrClient;
     private QueryRequest req;
     private QueryResponse response;
     private ShardResponse originalShardResponse;
@@ -85,7 +88,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
     public CallBack(ShardResponse originalShardResponse, QueryRequest req) {
 
       this.solrClient = new Builder(originalShardResponse.getShardAddress())
-          .withHttpClient(getHttpClient())
+          .withHttpClient(httpClient)
           .build();
       this.req = req;
       this.originalShardResponse = originalShardResponse;
@@ -122,13 +125,13 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
 
   protected abstract void process(ResponseBuilder rb, ShardRequest sreq) throws Exception;
 
-  static synchronized HttpClient getHttpClient() {
+  static synchronized SolrInternalHttpClient getHttpClient() {
 
       if(httpClient == null) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
         params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
-        httpClient = HttpClientUtil.createClient(params);
+        httpClient = new SolrInternalHttpClient(IterativeMergeStrategy.class.getSimpleName() + "-internal");
         return httpClient;
       } else {
         return httpClient;

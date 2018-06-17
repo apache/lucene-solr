@@ -16,25 +16,24 @@
  */
 package org.apache.solr.client.solrj.beans;
 
-import org.apache.lucene.util.LuceneTestCase;
-
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.util.NamedList;
-import org.junit.Test;
-
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.NamedList;
+import org.junit.Test;
 
-public class TestDocumentObjectBinder extends LuceneTestCase {
+
+public class TestDocumentObjectBinder extends SolrTestCaseJ4 {
 
   public void testSimple() throws Exception {
     DocumentObjectBinder binder = new DocumentObjectBinder();

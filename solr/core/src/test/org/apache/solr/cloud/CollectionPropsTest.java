@@ -23,7 +23,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.util.LuceneTestCase;
+
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -37,8 +39,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 @SolrTestCaseJ4.SuppressSSL
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class CollectionPropsTest extends SolrCloudTestCase {
   private String collectionName;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

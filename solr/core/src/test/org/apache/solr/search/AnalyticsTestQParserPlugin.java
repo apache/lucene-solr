@@ -16,24 +16,23 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.Future;
 
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.IterativeMergeStrategy;
+import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.ShardResponse;
-
-import java.util.List;
-import java.util.concurrent.Future;
-import java.io.IOException;
+import org.apache.solr.request.SolrQueryRequest;
 
 public class AnalyticsTestQParserPlugin extends QParserPlugin {
 

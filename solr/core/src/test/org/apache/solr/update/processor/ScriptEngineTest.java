@@ -16,15 +16,15 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.StringReader;
 
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.StringReader;
 
+import org.apache.lucene.util.Constants;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 
@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
  * Sanity tests basic functionality of {@link ScriptEngineManager} and 
  * {@link ScriptEngine} w/o exercising any Lucene specific code.
  */
-public class ScriptEngineTest extends LuceneTestCase {
+public class ScriptEngineTest extends SolrTestCaseJ4 {
 
   private ScriptEngineManager manager;
 

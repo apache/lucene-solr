@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -26,8 +28,6 @@ import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
 
 /**
  * Strips all HTML Markup in any CharSequence values 

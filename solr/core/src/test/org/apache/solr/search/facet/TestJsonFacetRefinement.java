@@ -20,6 +20,8 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,6 +34,10 @@ import org.junit.Test;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing

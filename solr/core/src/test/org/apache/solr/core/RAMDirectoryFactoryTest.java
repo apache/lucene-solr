@@ -21,13 +21,16 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 
 /**
  * Test-case for RAMDirectoryFactory
  */
-public class RAMDirectoryFactoryTest extends LuceneTestCase {
+@ThreadLeakLingering(linger = 80000)
+public class RAMDirectoryFactoryTest extends SolrTestCaseJ4 {
 
   public void test() throws Exception {
     dotestOpenReturnsTheSameForSamePath();

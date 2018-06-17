@@ -16,6 +16,13 @@
  */
 package org.apache.solr.search.stats;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TestExactStatsCache extends TestBaseStatsCache {
   @Override
   protected String getStatsCacheClassName() {

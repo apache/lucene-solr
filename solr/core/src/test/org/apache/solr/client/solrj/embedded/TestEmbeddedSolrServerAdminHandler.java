@@ -62,7 +62,7 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
         }
 
         @Override
-        protected QueryResponse createResponse(final SolrClient client) {
+        public QueryResponse createResponse(final SolrClient client) {
             return new QueryResponse();
         }
     }

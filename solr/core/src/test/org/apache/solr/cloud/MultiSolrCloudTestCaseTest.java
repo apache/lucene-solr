@@ -17,9 +17,15 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
 
   private static int numClouds;

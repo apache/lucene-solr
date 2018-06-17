@@ -64,8 +64,10 @@
     <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="${/com.fasterxml.jackson.core/jackson-annotations}" conf="compile"/>
     <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-smile" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-smile}" conf="compile"/>
 
+    <dependency org="org.conscrypt" name="conscrypt-openjdk-uber" rev="1.1.3" conf="compile"/>
 
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="compile.hadoop"/>
+    
     <!--
       hadoop-hdfs, hadoop-annotations and hadoop-auth are runtime dependencies,
       so even though they are not compile-time dependencies, they are included

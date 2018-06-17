@@ -16,9 +16,9 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.SolrException;
-
 import java.util.Iterator;
+
+import org.apache.solr.common.SolrException;
 
 /**
  * This is a simple wrapper to SolrParams that will throw a 400

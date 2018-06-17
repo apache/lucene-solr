@@ -23,7 +23,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -31,7 +33,11 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
 
-public class ReplicaListTransformerTest extends LuceneTestCase {
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
+public class ReplicaListTransformerTest extends SolrTestCaseJ4 {
 
   // A transformer that keeps only matching choices
   private static class ToyMatchingReplicaListTransformer implements ReplicaListTransformer {
@@ -90,12 +96,10 @@ public class ReplicaListTransformerTest extends LuceneTestCase {
       transformer = new ToyMatchingReplicaListTransformer(regex);
 
     } else {
-
-      transformer = new HttpShardHandlerFactory() {
+      HttpShardHandlerFactory shf = new HttpShardHandlerFactory() {
 
         @Override
-        protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
-        {
+        protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
           final SolrParams params = req.getParams();
 
           if (params.getBool("toyNoTransform", false)) {
@@ -110,9 +114,12 @@ public class ReplicaListTransformerTest extends LuceneTestCase {
           return super.getReplicaListTransformer(req);
         }
 
-      }.getReplicaListTransformer(
+      };
+      shf.setHttpClient(getHttpClient());
+      transformer = shf.getReplicaListTransformer(
           new LocalSolrQueryRequest(null,
               new ModifiableSolrParams().add("toyRegEx", regex)));
+      shf.close();
     }
 
     final List<Replica> inputs = new ArrayList<>();
@@ -136,7 +143,9 @@ public class ReplicaListTransformerTest extends LuceneTestCase {
 
     final List<Replica> actualTransformed = new ArrayList<>(inputs);
     transformer.transform(actualTransformed);
-
+    if (transformer instanceof HttpShardHandlerFactory) {
+      ((HttpShardHandlerFactory) transformer).close();
+    }
     assertEquals(expectedTransformed.size(), actualTransformed.size());
     for (int ii=0; ii<expectedTransformed.size(); ++ii) {
       assertEquals("mismatch for ii="+ii, expectedTransformed.get(ii), actualTransformed.get(ii));

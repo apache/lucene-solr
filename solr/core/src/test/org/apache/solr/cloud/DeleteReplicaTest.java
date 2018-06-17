@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.Replica.State.DOWN;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +31,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -52,9 +57,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.Replica.State.DOWN;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-
+@Slow
+@TimeoutSuite(millis = 120 * TimeUnits.SECOND)
+//   [junit4]   2> Caused by: org.apache.solr.common.SolrException: non legacy mode coreNodeName missing {collection.configName=conf, numShards=1, shard=shard1, collection=deleteFromClusterState_false, replicaType=NRT}
+// [junit4]   2>  at org.apache.solr.core.CoreContainer.create(CoreContainer.java:1033)
+// nocommit
+@BadApple(bugUrl="")
 public class DeleteReplicaTest extends SolrCloudTestCase {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

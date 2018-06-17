@@ -75,94 +75,89 @@ public class TestBinaryField extends SolrJettyTestBase {
 
 
   public void testSimple() throws Exception {
-    try (SolrClient client = getSolrClient()) {
-      byte[] buf = new byte[10];
-      for (int i = 0; i < 10; i++) {
-        buf[i] = (byte) i;
-      }
-      SolrInputDocument doc = null;
-      doc = new SolrInputDocument();
-      doc.addField("id", 1);
-      doc.addField("data", ByteBuffer.wrap(buf, 2, 5));
-      client.add(doc);
+    SolrClient client = getSolrClient();
+    byte[] buf = new byte[10];
+    for (int i = 0; i < 10; i++) {
+      buf[i] = (byte) i;
+    }
+    SolrInputDocument doc = null;
+    doc = new SolrInputDocument();
+    doc.addField("id", 1);
+    doc.addField("data", ByteBuffer.wrap(buf, 2, 5));
+    client.add(doc);
 
-      doc = new SolrInputDocument();
-      doc.addField("id", 2);
-      doc.addField("data", ByteBuffer.wrap(buf, 4, 3));
-      client.add(doc);
+    doc = new SolrInputDocument();
+    doc.addField("id", 2);
+    doc.addField("data", ByteBuffer.wrap(buf, 4, 3));
+    client.add(doc);
 
-      doc = new SolrInputDocument();
-      doc.addField("id", 3);
-      doc.addField("data", buf);
-      client.add(doc);
+    doc = new SolrInputDocument();
+    doc.addField("id", 3);
+    doc.addField("data", buf);
+    client.add(doc);
 
-      client.commit();
+    client.commit();
 
-      QueryResponse resp = client.query(new SolrQuery("*:*"));
-      SolrDocumentList res = resp.getResults();
-      List<Bean> beans = resp.getBeans(Bean.class);
-      assertEquals(3, res.size());
-      assertEquals(3, beans.size());
-      for (SolrDocument d : res) {
+    QueryResponse resp = client.query(new SolrQuery("*:*"));
+    SolrDocumentList res = resp.getResults();
+    List<Bean> beans = resp.getBeans(Bean.class);
+    assertEquals(3, res.size());
+    assertEquals(3, beans.size());
+    for (SolrDocument d : res) {
 
-        Integer id = Integer.parseInt(d.getFieldValue("id").toString());
-        byte[] data = (byte[]) d.getFieldValue("data");
-        if (id == 1) {
-          assertEquals(5, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 2), b);
-          }
+      Integer id = Integer.parseInt(d.getFieldValue("id").toString());
+      byte[] data = (byte[]) d.getFieldValue("data");
+      if (id == 1) {
+        assertEquals(5, data.length);
+        for (int i = 0; i < data.length; i++) {
+          byte b = data[i];
+          assertEquals((byte) (i + 2), b);
+        }
 
-        } else if (id == 2) {
-          assertEquals(3, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 4), b);
-          }
+      } else if (id == 2) {
+        assertEquals(3, data.length);
+        for (int i = 0; i < data.length; i++) {
+          byte b = data[i];
+          assertEquals((byte) (i + 4), b);
+        }
 
-
-        } else if (id == 3) {
-          assertEquals(10, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) i, b);
-          }
-
+      } else if (id == 3) {
+        assertEquals(10, data.length);
+        for (int i = 0; i < data.length; i++) {
+          byte b = data[i];
+          assertEquals((byte) i, b);
         }
 
       }
-      for (Bean d : beans) {
-        Integer id = Integer.parseInt(d.id);
-        byte[] data = d.data;
-        if (id == 1) {
-          assertEquals(5, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 2), b);
-          }
 
-        } else if (id == 2) {
-          assertEquals(3, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 4), b);
-          }
-
-
-        } else if (id == 3) {
-          assertEquals(10, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) i, b);
-          }
-
+    }
+    for (Bean d : beans) {
+      Integer id = Integer.parseInt(d.id);
+      byte[] data = d.data;
+      if (id == 1) {
+        assertEquals(5, data.length);
+        for (int i = 0; i < data.length; i++) {
+          byte b = data[i];
+          assertEquals((byte) (i + 2), b);
         }
 
+      } else if (id == 2) {
+        assertEquals(3, data.length);
+        for (int i = 0; i < data.length; i++) {
+          byte b = data[i];
+          assertEquals((byte) (i + 4), b);
+        }
+
+      } else if (id == 3) {
+        assertEquals(10, data.length);
+        for (int i = 0; i < data.length; i++) {
+          byte b = data[i];
+          assertEquals((byte) i, b);
+        }
       }
     }
-
   }
+  
   public static class Bean{
     @Field
     String id;

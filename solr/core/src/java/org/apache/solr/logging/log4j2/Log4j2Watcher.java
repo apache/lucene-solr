@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Throwables;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,12 +34,16 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.message.Message;
+import org.apache.logging.log4j.util.BiConsumer;
+import org.apache.logging.log4j.util.ReadOnlyStringMap;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.CircularList;
 import org.apache.solr.logging.ListenerConfig;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
+
+import com.google.common.base.Throwables;
 
 @SuppressForbidden(reason = "class is specific to log4j2")
 public class Log4j2Watcher extends LogWatcher<LogEvent> {
@@ -278,10 +281,16 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     if (t != null)
       doc.setField("trace", Throwables.getStackTraceAsString(t));
 
-    Map<String,String> contextMap = event.getContextMap();
-    if (contextMap != null) {
-      for (String key : contextMap.keySet())
-        doc.setField(key, contextMap.get(key));
+    ReadOnlyStringMap contextData = event.getContextData();
+    if (contextData != null) {
+      contextData.forEach(new BiConsumer<String,String>() {
+
+        @Override
+        public void accept(String key, String value) {
+          doc.setField(key, value);
+        }
+      });
+
     }
 
     if (!doc.containsKey("core"))

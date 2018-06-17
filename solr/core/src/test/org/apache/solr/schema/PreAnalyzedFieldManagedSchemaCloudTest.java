@@ -29,8 +29,11 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse.UpdateRespons
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
+// nocommit - multi-stream?
 public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "managed-preanalyzed";

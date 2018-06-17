@@ -16,6 +16,14 @@
  */
 package org.apache.solr.handler;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -29,14 +37,6 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Collections;
-import java.util.List;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.IOException;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 
 /**
  * A test for {@link DocumentAnalysisRequestHandler}.

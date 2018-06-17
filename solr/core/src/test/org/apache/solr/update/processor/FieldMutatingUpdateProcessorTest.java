@@ -16,9 +16,9 @@
  */
 package org.apache.solr.update.processor;
 
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.TreeSet;
-import java.util.Arrays;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;

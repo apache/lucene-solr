@@ -15,8 +15,15 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+import java.io.IOException;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -27,10 +34,10 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
 
   public TestCloudManagedSchema() {
@@ -55,7 +62,7 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/cores");
     int which = r.nextInt(clients.size());
-    HttpSolrClient client = (HttpSolrClient)clients.get(which);
+    Http2SolrClient client = (Http2SolrClient)clients.get(which);
     String previousBaseURL = client.getBaseURL();
     // Strip /collection1 step from baseURL - requests fail otherwise
     client.setBaseURL(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));

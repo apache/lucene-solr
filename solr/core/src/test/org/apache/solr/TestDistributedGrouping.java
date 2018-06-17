@@ -19,7 +19,10 @@ package org.apache.solr;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.search.TimeLimitingCollector;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -27,8 +30,10 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
+import org.junit.AfterClass;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * TODO? perhaps use:
@@ -37,8 +42,9 @@ import org.junit.Test;
  *
  * @since solr 4.0
  */
-@Slow
 @SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10844")
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
   public TestDistributedGrouping() {
@@ -54,7 +60,13 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   String tdate_a = "a_n_tdt";
   String tdate_b = "b_n_tdt";
   String oddField="oddField_s1";
-
+  
+  @AfterClass
+  public static void afterTDGClass() throws Exception {
+    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
+    TimeLimitingCollector.getGlobalTimerThread().join();
+  }
+  
   @Test
   public void test() throws Exception {
     del("*:*");

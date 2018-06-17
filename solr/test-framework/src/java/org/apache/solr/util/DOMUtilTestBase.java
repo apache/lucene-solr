@@ -18,18 +18,19 @@ package org.apache.solr.util;
 
 
 import java.io.StringReader;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
-public abstract class DOMUtilTestBase extends LuceneTestCase {
+public abstract class DOMUtilTestBase extends SolrTestCaseJ4 {
   
   private DocumentBuilder builder;
   private static final XPathFactory xpathFactory = XPathFactory.newInstance();

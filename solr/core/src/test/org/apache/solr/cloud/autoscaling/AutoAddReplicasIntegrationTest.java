@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.common.util.Utils.makeMap;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,11 +42,12 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.solr.common.util.Utils.makeMap;
-
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
+@Ignore
+//nocommit
 public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   private static final String COLLECTION1 =  "testSimple1";
   private static final String COLLECTION2 =  "testSimple2";

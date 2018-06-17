@@ -16,6 +16,21 @@
  */
 package org.apache.solr.core;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
+import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
+import static org.apache.solr.common.params.CommonParams.AUTOSCALING_HISTORY_PATH;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.METRICS_HISTORY_PATH;
+import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
+import static org.apache.solr.common.params.CommonParams.ZK_PATH;
+import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
+import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -36,9 +51,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
@@ -53,6 +68,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.AuthSchemeRegistryProvider;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.CredentialsProviderProvider;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
@@ -66,6 +82,8 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -103,25 +121,14 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.OrderedExecutor;
+import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Objects.requireNonNull;
-import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
-import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
-import static org.apache.solr.common.params.CommonParams.AUTOSCALING_HISTORY_PATH;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.METRICS_HISTORY_PATH;
-import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
-import static org.apache.solr.common.params.CommonParams.ZK_PATH;
-import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
-import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 /**
  *
@@ -143,6 +150,12 @@ public class CoreContainer {
       this.exception = loadFailure;
     }
   }
+  
+  private final SolrFileCleaningTracker fileCleaningTracker = new SolrFileCleaningTracker();
+
+  public SolrFileCleaningTracker getFileCleaningTracker() {
+    return fileCleaningTracker;
+  }
 
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
@@ -159,7 +172,14 @@ public class CoreContainer {
 
   private ConfigSetService coreConfigService;
 
-  protected ZkContainer zkSys = new ZkContainer();
+  private ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
+      5L, TimeUnit.SECONDS,
+      new SynchronousQueue<>(),
+      new SolrjNamedThreadFactory(CoreContainer.class.getSimpleName() + "Executor"),
+      // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
+      // see SOLR-11880 for more details
+      false);
+  protected ZkContainer zkSys = new ZkContainer(executor);
   protected ShardHandlerFactory shardHandlerFactory;
 
   private UpdateShardHandler updateShardHandler;
@@ -217,6 +237,8 @@ public class CoreContainer {
   protected AutoScalingHandler autoScalingHandler;
 
   private enum CoreInitFailedAction { fromleader, none }
+  
+  private volatile SolrInternalHttpClient httpClient;
 
   /**
    * This method instantiates a new instance of {@linkplain BackupRepository}.
@@ -316,6 +338,8 @@ public class CoreContainer {
         ExecutorUtil.newMDCAwareCachedThreadPool(
             cfg.getReplayUpdatesThreads(),
             new DefaultSolrThreadFactory("replayUpdatesExecutor")));
+    
+    assert ObjectReleaseTracker.track(this);
   }
 
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
@@ -538,12 +562,13 @@ public class CoreContainer {
         SolrMetricManager.mkName("coreContainerWorkExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
 
     shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
+    shardHandlerFactory.setHttpClient(getHttpClient());
     if (shardHandlerFactory instanceof SolrMetricProducer) {
       SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
       metricProducer.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "httpShardHandler");
     }
 
-    updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
+    updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig(), getHttpClient(), executor);
     updateShardHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "updateShardHandler");
 
     solrCores.load(loader);
@@ -739,6 +764,16 @@ public class CoreContainer {
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
   }
 
+  private synchronized SolrInternalHttpClient getHttpClient() {
+    if (isShutDown) {
+      throw new IllegalStateException("CoreContainer is shutdown."); // nocommit this could interfere with in flight requests
+    }
+    if (httpClient == null) {
+      httpClient = new SolrInternalHttpClient(CoreContainer.class.getSimpleName(), true);;
+    }
+    return httpClient;
+  }
+
   // MetricsHistoryHandler supports both cloud and standalone configs
   private void createMetricsHistoryHandler() {
     PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
@@ -843,6 +878,7 @@ public class CoreContainer {
     }
 
     if (isZooKeeperAware()) {
+      zkSys.zkController.zkStateReader.stop();
       cancelCoreRecoveries();
       zkSys.zkController.publishNodeAsDown(zkSys.zkController.getNodeName());
       try {
@@ -904,9 +940,16 @@ public class CoreContainer {
           if (updateShardHandler != null) {
             updateShardHandler.close();
           }
+          IOUtils.closeQuietly(httpClient);
+          ExecutorUtil.shutdownAndAwaitTermination(executor);
         } finally {
           // we want to close zk stuff last
           zkSys.close();
+        }
+        try {
+          fileCleaningTracker.exitWhenFinished();
+        } catch (Exception e) {
+          log.warn("Exception closing FileCleaningTracker", e);
         }
       }
     }
@@ -931,6 +974,8 @@ public class CoreContainer {
     }
 
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
+    
+    assert ObjectReleaseTracker.release(this);
   }
 
   public void cancelCoreRecoveries() {

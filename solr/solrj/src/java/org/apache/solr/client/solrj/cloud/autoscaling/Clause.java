@@ -17,6 +17,18 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.PASS;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.EQUAL;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.GREATER_THAN;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.LESS_THAN;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.NOT_EQUAL;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.WILDCARD;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
+import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,18 +45,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.PASS;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.EQUAL;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.GREATER_THAN;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.LESS_THAN;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.NOT_EQUAL;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.WILDCARD;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
-import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
-import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 /**
  * Represents a set of conditions in the policy

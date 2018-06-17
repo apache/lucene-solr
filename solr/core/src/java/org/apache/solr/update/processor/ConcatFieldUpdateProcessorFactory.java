@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
@@ -27,8 +29,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
-
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
 
 /**
  * Concatenates multiple values for fields matching the specified 

@@ -20,8 +20,8 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -30,8 +30,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
-public class MiniSolrCloudClusterTest extends LuceneTestCase {
+public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
 
   @ClassRule
   public static TestRule solrClassRules = RuleChain.outerRule(
@@ -45,7 +47,7 @@ public class MiniSolrCloudClusterTest extends LuceneTestCase {
 
     MiniSolrCloudCluster cluster = null;
     try {
-      cluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build()) {
+      cluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().withJettyQtp(getQtp()).withHttpClient(getHttpClient()).build()) {
         @Override
         public JettySolrRunner startJettySolrRunner(String name, String context, JettyConfig config) throws Exception {
           if (jettyIndex.incrementAndGet() != 2)
@@ -71,7 +73,7 @@ public class MiniSolrCloudClusterTest extends LuceneTestCase {
 
     AtomicInteger jettyIndex = new AtomicInteger();
 
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build()) {
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().withJettyQtp(getQtp()).withHttpClient(getHttpClient()).build()) {
       @Override
       public JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
         JettySolrRunner j = super.stopJettySolrRunner(jetty);
@@ -98,7 +100,7 @@ public class MiniSolrCloudClusterTest extends LuceneTestCase {
     JettyConfig.Builder jettyConfig = JettyConfig.builder();
     jettyConfig.waitForLoadingCoresToFinish(null);
     jettyConfig.withFilter(JettySolrRunner.DebugFilter.class, "*");
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(random().nextInt(3) + 1, createTempDir(), jettyConfig.build());
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(random().nextInt(3) + 1, createTempDir(), jettyConfig.withJettyQtp(getQtp()).build());
     cluster.shutdown();
   }
 

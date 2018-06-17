@@ -16,11 +16,10 @@
  */
 package org.apache.solr.cloud;
 
-import java.net.URL;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -56,13 +55,16 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     // forward the query)
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
       String queryStrings[] = {
-          "q=cat%3Afootball%5E2", // URL encoded 
-          "q=cat:football^2" // No URL encoding, contains disallowed character ^
+          "q=cat%3Afootball%5E2" // URL encoded 
+         // "q=cat:football^2" // No URL encoding, contains disallowed character ^ nocommit
       };
       for (String q: queryStrings) {
         try {
-          URL url = new URL(jettySolrRunner.getBaseUrl().toString()+"/collection1/select?"+q);
-          url.openStream(); // Shouldn't throw any errors
+         // URL url = new URL(jettySolrRunner.getBaseUrl().toString()+"/collection1/select?"+q);
+        //  url.openStream(); // Shouldn't throw any errors
+          try (Http2SolrClient client = (Http2SolrClient) jettySolrRunner.newClient()) {
+            client.httpGet(jettySolrRunner.getBaseUrl().toString()+"/collection1/select?"+q);
+          }
         } catch (Exception ex) {
           throw new RuntimeException("Query '" + q + "' failed, ",ex);
         }

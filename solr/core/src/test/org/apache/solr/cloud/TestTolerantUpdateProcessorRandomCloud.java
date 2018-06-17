@@ -16,6 +16,15 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -32,7 +41,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -46,17 +55,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
 /**
  * Test of TolerantUpdateProcessor using a randomized MiniSolrCloud.
@@ -70,6 +71,8 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
  *
  */
 @SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
+@Ignore
+// nocommit
 public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -79,7 +82,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** one HttpSolrClient for each server */
-  private static List<HttpSolrClient> NODE_CLIENTS;
+  private static List<Http2SolrClient> NODE_CLIENTS;
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
@@ -111,11 +114,11 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         .process(CLOUD_CLIENT);
 
     if (NODE_CLIENTS != null) {
-      for (HttpSolrClient client : NODE_CLIENTS) {
+      for (Http2SolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }
-    NODE_CLIENTS = new ArrayList<HttpSolrClient>(numServers);
+    NODE_CLIENTS = new ArrayList<Http2SolrClient>(numServers);
     
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       URL jettyURL = jetty.getBaseUrl();
@@ -137,7 +140,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws IOException {
     if (NODE_CLIENTS != null) {
-      for (HttpSolrClient client : NODE_CLIENTS) {
+      for (Http2SolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }

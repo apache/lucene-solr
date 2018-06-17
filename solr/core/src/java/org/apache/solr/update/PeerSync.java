@@ -16,6 +16,11 @@
  */
 package org.apache.solr.update;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
@@ -29,13 +34,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Timer;
 import org.apache.http.NoHttpResponseException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -60,10 +63,8 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.ID;
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Timer;
 
 /**
  * This class is useful for performing peer to peer synchronization of recently indexed update commands during
@@ -96,7 +97,7 @@ public class PeerSync implements SolrMetricProducer {
   private final boolean cantReachIsSuccess;
   private final boolean getNoVersionsIsSuccess;
   private final boolean doFingerprint;
-  private final HttpClient client;
+  private final SolrInternalHttpClient client;
   private final boolean onlyIfActive;
   private SolrCore core;
 
@@ -104,7 +105,6 @@ public class PeerSync implements SolrMetricProducer {
   private Timer syncTime;
   private Counter syncErrors;
   private Counter syncSkipped;
-
   // comparator that sorts by absolute value, putting highest first
   public static Comparator<Long> absComparator = (o1, o2) -> {
     long l1 = Math.abs(o1);
@@ -527,7 +527,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.params.set(DISTRIB, false);
     sreq.params.set("checkCanHandleVersionRanges", false);
 
-    ShardHandler sh = shardHandlerFactory.getShardHandler(client);
+    ShardHandler sh = shardHandlerFactory.getShardHandler();
     sh.submit(sreq, replica, sreq.params);
 
     ShardResponse srsp = sh.takeCompletedIncludingErrors();

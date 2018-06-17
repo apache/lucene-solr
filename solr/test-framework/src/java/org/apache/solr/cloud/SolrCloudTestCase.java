@@ -38,7 +38,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -267,7 +267,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {
     AtomicReference<DocCollection> state = new AtomicReference<>();
-    AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
+    AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>(Collections.emptySet());
     try {
       cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> {
         state.set(c);
@@ -347,7 +347,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected static CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
-    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
+    try (Http2SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
   }

@@ -32,6 +32,19 @@
     <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-client" rev="${/org.eclipse.jetty/jetty-client}" conf="compile"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-client" rev="${/org.eclipse.jetty.http2/http2-client}" conf="compile"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-common" rev="${/org.eclipse.jetty.http2/http2-common}" conf="compile"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-http-client-transport" rev="${/org.eclipse.jetty.http2/http2-http-client-transport}" conf="compile"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-hpack" rev="${/org.eclipse.jetty.http2/http2-hpack}" conf="compile"/>
+    
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-conscrypt-client" rev="${/org.eclipse.jetty/jetty-alpn-conscrypt-client}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-client" rev="${/org.eclipse.jetty/jetty-alpn-client}" conf="compile"/>
+    <dependency org="org.conscrypt" name="conscrypt-openjdk-uber" rev="1.1.3" conf="compile"/>
+    
+    <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-io" rev="${/org.eclipse.jetty/jetty-io}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" conf="compile"/>
     <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-math3" rev="${/org.apache.commons/commons-math3}" conf="compile"/>
     <dependency org="org.codehaus.woodstox" name="woodstox-core-asl" rev="${/org.codehaus.woodstox/woodstox-core-asl}" conf="compile"/>

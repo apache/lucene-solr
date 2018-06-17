@@ -30,10 +30,13 @@ import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.JSONUtil;
 import org.restlet.ext.servlet.ServerServlet;
 
+// nocommit
+@Ignore
 public class TestManagedSynonymFilterFactory extends RestTestBase {
   
   private static File tmpSolrHome;

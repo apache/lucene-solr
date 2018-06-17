@@ -30,18 +30,20 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 //@ThreadLeakLingering(linger = 60000)
 @SuppressObjectReleaseTracker(bugUrl="Testing purposes")
+@Ignore // nocommit
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
 
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
-  private final boolean onlyLeaderIndexes = random().nextBoolean();
+  private final boolean onlyLeaderIndexes = false;//random().nextBoolean();
 
   @BeforeClass
   public static void beforeSuperClass() {
@@ -158,7 +160,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       boolean runFullThrottle = random().nextBoolean();
       if (runFullThrottle) {
         FullThrottleStoppableIndexingThread ftIndexThread = 
-            new FullThrottleStoppableIndexingThread(controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
+            new FullThrottleStoppableIndexingThread(getHttpClient(), controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
         threads.add(ftIndexThread);
         ftIndexThread.start();
       }

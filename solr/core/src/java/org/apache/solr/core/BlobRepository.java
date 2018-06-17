@@ -34,9 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.SimpleResponse;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -45,7 +45,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,22 +156,17 @@ public class BlobRepository {
     Replica replica = getSystemCollReplica();
     String url = replica.getStr(BASE_URL_PROP) + "/" + CollectionAdminParams.SYSTEM_COLL + "/blob/" + key + "?wt=filestream";
 
-    HttpClient httpClient = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
-    HttpGet httpGet = new HttpGet(url);
+    SolrInternalHttpClient httpClient = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
     ByteBuffer b;
-    HttpResponse response = null;
     HttpEntity entity = null;
-    try {
-      response = httpClient.execute(httpGet);
-      entity = response.getEntity();
-      int statusCode = response.getStatusLine().getStatusCode();
-      if (statusCode != 200) {
+    try (Http2SolrClient solrClient = new Http2SolrClient.Builder(url).withHttpClient(httpClient).build()) {
+      SimpleResponse rsp = solrClient.httpGet(url);
+
+      if (rsp.status != 200) {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
       }
+      b = ByteBuffer.wrap(rsp.bytes);
 
-      try (InputStream is = entity.getContent()) {
-        b = SimplePostTool.inputStreamToByteArray(is);
-      }
     } catch (Exception e) {
       if (e instanceof SolrException) {
         throw (SolrException) e;

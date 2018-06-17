@@ -16,8 +16,8 @@
  */
 package org.apache.solr.core;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.Term;

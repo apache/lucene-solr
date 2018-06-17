@@ -16,10 +16,8 @@
  */
 package org.apache.solr.core;
 
-import javax.management.MBeanServer;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -34,7 +32,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import com.google.common.base.Strings;
+import javax.management.MBeanServer;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -50,7 +52,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
+import com.google.common.base.Strings;
 
 
 /**

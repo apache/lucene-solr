@@ -154,7 +154,6 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     params.set("q", "*:*");
     params.set("indent", "true");
     params.set("rows", "0");
-    params.set("wt", "json");
     
     params.set("analytics", analyticsRequest);
     

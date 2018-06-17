@@ -17,13 +17,14 @@
 
 package org.apache.solr.servlet;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;

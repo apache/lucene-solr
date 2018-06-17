@@ -17,31 +17,31 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.hll.HLL;
-import com.google.common.hash.Hashing;
-import com.google.common.hash.HashFunction;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

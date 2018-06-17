@@ -16,13 +16,15 @@
  */
 package org.apache.solr.search.function;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -36,11 +38,15 @@ import org.apache.solr.schema.TrieField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 /**
  * Tests the behavior of <code>field(foo,min|max)</code> on numerious types of multivalued 'foo' fields,
  * as well as the beahvior of sorting on <code>foo asc|desc</code> to implicitly choose the min|max.
  */
 @SuppressCodecs({"SimpleText"}) // see TestSortedSetSelector
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
 
   /** Initializes core and does some sanity checking of schema */

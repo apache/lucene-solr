@@ -17,6 +17,10 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.WAIT_FOR_DELTA_NANOS;
+import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.timeSource;
+
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +29,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -38,9 +44,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.WAIT_FOR_DELTA_NANOS;
-import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.timeSource;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Integration test to ensure that triggers can restore state from ZooKeeper after overseer restart
@@ -49,6 +53,8 @@ import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.timeSourc
  * Added in SOLR-10515
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class RestoreTriggerStateTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

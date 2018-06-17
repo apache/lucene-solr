@@ -17,12 +17,14 @@
 package org.apache.solr.cloud.cdcr;
 
 import java.util.Arrays;
-import com.google.common.collect.ImmutableMap;
+
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.CdcrParams;
 import org.junit.Test;
+
+import com.google.common.collect.ImmutableMap;
 
 @Nightly
 public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Clob;
@@ -50,8 +52,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
-import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
  * Connects to a datasource using a registered JDBC driver and execute a query. The results of

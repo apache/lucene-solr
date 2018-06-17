@@ -18,9 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +28,6 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -41,10 +38,9 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -57,7 +53,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   JettySolrRunner masterJetty;
   TestReplicationHandler.SolrInstance master = null;
-  SolrClient masterClient;
+  Http2SolrClient masterClient;
   
   private static final String CONF_DIR = "solr" + File.separator + "collection1" + File.separator + "conf"
       + File.separator;
@@ -73,17 +69,17 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").withHttpClient(getHttpClient()).setPort(0).withJettyQtp(getQtp()).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
   }
 
-  private static SolrClient createNewSolrClient(int port) {
+  private static Http2SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port, context);
-      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
+      Http2SolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
       return client;
     }
     catch (Exception ex) {
@@ -128,7 +124,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
 
     //Confirm if completed
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME);
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus(masterClient, DEFAULT_TEST_CORENAME);
     while (!checkBackupStatus.success) {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);
@@ -157,7 +153,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
 
     //Confirm if completed
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME);
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus(masterClient, DEFAULT_TEST_CORENAME);
     while (!checkBackupStatus.success) {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);
@@ -189,7 +185,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         backupNames[i] = backupName;
       }
 
-     checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, firstBackupTimestamp);
+     checkBackupStatus = new CheckBackupStatus(masterClient, DEFAULT_TEST_CORENAME, firstBackupTimestamp);
       while (!checkBackupStatus.success) {
         checkBackupStatus.fetchStatus();
         Thread.sleep(1000);
@@ -246,7 +242,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  private void testDeleteNamedBackup(String backupNames[]) throws InterruptedException, IOException {
+  private void testDeleteNamedBackup(String backupNames[]) throws Exception {
     String lastTimestamp = null;
     for (int i = 0; i < 2; i++) {
       runBackupCommand(masterJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" +backupNames[i]);
@@ -265,16 +261,11 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws IOException {
+  public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws Exception {
     String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME
-        + ReplicationHandler.PATH+"?wt=xml&command=" + cmd + params;
-    InputStream stream = null;
-    try {
-      URL url = new URL(masterUrl);
-      stream = url.openStream();
-      stream.close();
-    } finally {
-      IOUtils.closeQuietly(stream);
+        + ReplicationHandler.PATH + "?wt=xml&command=" + cmd + params;
+    try (Http2SolrClient client = ((Http2SolrClient) masterJetty.newClient())) {
+      client.httpGet(masterUrl);
     }
   }
 
@@ -289,27 +280,24 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       this.lastTimestamp = lastTimestamp;
     }
 
-    public boolean fetchStatus() throws IOException {
-      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_DETAILS;
-      URL url;
-      InputStream stream = null;
-      try {
-        url = new URL(masterUrl);
-        stream = url.openStream();
-        response = IOUtils.toString(stream, "UTF-8");
-        if(response.contains("<str name=\"status\">success</str>")) {
+    public boolean fetchStatus() throws Exception {
+      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME
+          + ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_DETAILS;
+
+      try (Http2SolrClient client = ((Http2SolrClient) masterJetty.newClient())) {
+        response = client.httpGet(masterUrl).asString;
+
+        if (response.contains("<str name=\"status\">success</str>")) {
           Matcher m = p.matcher(response);
-          if(m.find() && (lastTimestamp == null || !lastTimestamp.equals(m.group(1)))) {
+          if (m.find() && (lastTimestamp == null || !lastTimestamp.equals(m.group(1)))) {
             lastTimestamp = m.group(1);
             return true;
           }
-        } else if(response.contains("<str name=\"status\">Unable to delete snapshot: " + backupName + "</str>" )) {
+        } else if (response.contains("<str name=\"status\">Unable to delete snapshot: " + backupName + "</str>")) {
           return false;
         }
-        stream.close();
-      } finally {
-        IOUtils.closeQuietly(stream);
       }
+
       return false;
     }
   }

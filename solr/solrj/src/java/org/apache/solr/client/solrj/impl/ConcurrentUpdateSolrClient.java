@@ -106,17 +106,18 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                                        ExecutorService es, boolean streamDeletes) {
     this((streamDeletes) ?
         new Builder(solrServerUrl)
-        .withHttpClient(client)
+        //.withHttpClient(client)
         .withQueueSize(queueSize)
         .withThreadCount(threadCount)
         .withExecutorService(es)
         .alwaysStreamDeletes() :
           new Builder(solrServerUrl)
-          .withHttpClient(client)
+          //.withHttpClient(client)
           .withQueueSize(queueSize)
           .withThreadCount(threadCount)
           .withExecutorService(es)
           .neverStreamDeletes());
+    // nocommit
   }
   
   protected ConcurrentUpdateSolrClient(Builder builder) {

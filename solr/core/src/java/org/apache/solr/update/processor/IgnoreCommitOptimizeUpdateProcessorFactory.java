@@ -16,12 +16,11 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.common.SolrException.ErrorCode;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;

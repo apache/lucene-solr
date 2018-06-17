@@ -23,7 +23,7 @@ public class UpdateShardHandlerConfig {
   public static final int DEFAULT_MAXUPDATECONNECTIONS = 100000;
   public static final int DEFAULT_MAXUPDATECONNECTIONSPERHOST = 100000;
   public static final String DEFAULT_METRICNAMESTRATEGY = "queryLessURLAndMethod";
-  public static final int DEFAULT_MAXRECOVERYTHREADS = -1;
+  public static final int DEFAULT_MAXRECOVERYTHREADS = 3;
 
   public static final UpdateShardHandlerConfig DEFAULT
       = new UpdateShardHandlerConfig(DEFAULT_MAXUPDATECONNECTIONS, DEFAULT_MAXUPDATECONNECTIONSPERHOST,

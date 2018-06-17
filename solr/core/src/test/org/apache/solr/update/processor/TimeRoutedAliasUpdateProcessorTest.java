@@ -52,8 +52,11 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
+// nocommit
 public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   static final String configName = "timeConfig";

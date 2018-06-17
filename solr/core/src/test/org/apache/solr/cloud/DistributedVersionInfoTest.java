@@ -16,6 +16,9 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -34,7 +37,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -52,15 +55,15 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore
+// nocommit
 public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -294,8 +297,8 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
                                               int lastDocId,
                                               Set<Integer> deletedDocs)
       throws Exception {
-    HttpSolrClient leaderSolr = getHttpSolrClient(leader);
-    List<HttpSolrClient> replicas = new ArrayList<HttpSolrClient>(notLeaders.size());
+    Http2SolrClient leaderSolr = getHttpSolrClient(leader);
+    List<Http2SolrClient> replicas = new ArrayList<Http2SolrClient>(notLeaders.size());
     for (Replica r : notLeaders)
       replicas.add(getHttpSolrClient(r));
 
@@ -307,20 +310,20 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
         String docId = String.valueOf(d);
         Long leaderVers = assertDocExists(leaderSolr, testCollectionName, docId, null);
-        for (HttpSolrClient replicaSolr : replicas)
+        for (Http2SolrClient replicaSolr : replicas)
           assertDocExists(replicaSolr, testCollectionName, docId, leaderVers);
       }
     } finally {
       if (leaderSolr != null) {
         leaderSolr.close();
       }
-      for (HttpSolrClient replicaSolr : replicas) {
+      for (Http2SolrClient replicaSolr : replicas) {
         replicaSolr.close();
       }
     }
   }
 
-  protected HttpSolrClient getHttpSolrClient(Replica replica) throws Exception {
+  protected Http2SolrClient getHttpSolrClient(Replica replica) throws Exception {
     return getHttpSolrClient(replica.getCoreUrl());
   }
 
@@ -336,7 +339,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    * exists in the provided server, using distrib=false so it doesn't route to another replica.
    */
   @SuppressWarnings("rawtypes")
-  protected Long assertDocExists(HttpSolrClient solr, String coll, String docId, Long expVers) throws Exception {
+  protected Long assertDocExists(Http2SolrClient solr, String coll, String docId, Long expVers) throws Exception {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
     NamedList rsp = solr.request(qr);
     SolrDocument doc = (SolrDocument)rsp.get("doc");
@@ -356,7 +359,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (HttpSolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (Http2SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

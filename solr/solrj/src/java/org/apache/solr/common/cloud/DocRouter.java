@@ -16,11 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.StrUtils;
-import org.noggit.JSONWriter;
+import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +27,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
+import org.noggit.JSONWriter;
 
 /**
  * Class to partition int range into n ranges.

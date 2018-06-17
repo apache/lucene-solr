@@ -68,7 +68,7 @@ import org.apache.solr.schema.SchemaField;
 import org.junit.Ignore;
 
 
-@Ignore
+@Ignore // nocommit ???
 public class TestRankQueryPlugin extends QParserPlugin {
 
 

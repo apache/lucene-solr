@@ -16,13 +16,13 @@
  */
 package org.apache.solr.util.hll;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 /**
  * Tests {@link HLLUtil} static methods.
  */
-public class HLLUtilTest extends LuceneTestCase {
+public class HLLUtilTest extends SolrTestCaseJ4 {
     /**
      * Tests that {@link HLLUtil#largeEstimatorCutoff(int, int)} is the same
      * as a trivial implementation.

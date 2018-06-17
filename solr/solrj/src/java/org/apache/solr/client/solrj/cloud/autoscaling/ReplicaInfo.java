@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,8 +29,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
-
-import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 
 
 public class ReplicaInfo implements MapWriter {

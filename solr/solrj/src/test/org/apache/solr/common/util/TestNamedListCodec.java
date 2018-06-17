@@ -16,20 +16,20 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
-import java.util.List;
-import java.util.Random;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-
-public class TestNamedListCodec  extends LuceneTestCase {
+public class TestNamedListCodec  extends SolrTestCaseJ4 {
   public void testSimple() throws Exception{
 
     NamedList nl = new NamedList();

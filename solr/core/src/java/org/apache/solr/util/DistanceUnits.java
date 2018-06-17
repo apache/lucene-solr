@@ -20,9 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
-import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.apache.solr.schema.AbstractSpatialFieldType;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Used with a spatial field type for all distance measurements.

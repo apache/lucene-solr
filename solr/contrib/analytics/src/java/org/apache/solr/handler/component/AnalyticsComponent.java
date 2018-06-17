@@ -23,10 +23,10 @@ import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
 import org.apache.solr.analytics.ExpressionFactory;
 import org.apache.solr.analytics.stream.AnalyticsShardRequestManager;
+import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.OldAnalyticsParams;
 import org.apache.solr.analytics.util.OldAnalyticsRequestConverter;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 
 /**
  * Computes analytics requests.

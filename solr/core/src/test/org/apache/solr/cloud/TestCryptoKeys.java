@@ -16,13 +16,16 @@
  */
 package org.apache.solr.cloud;
 
+import static java.util.Arrays.asList;
+import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.MemClassLoader;
@@ -32,11 +35,10 @@ import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import static java.util.Arrays.asList;
-import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
-
+@Ignore // nocommit
 public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
 
   public TestCryptoKeys() {
@@ -88,7 +90,7 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     }
 
 
-    HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));
+    Http2SolrClient randomClient = (Http2SolrClient) clients.get(random().nextInt(clients.size()));
     String baseURL = randomClient.getBaseURL();
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
 

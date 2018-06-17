@@ -184,7 +184,6 @@ public class JavaBinUpdateRequestCodec {
             // indicate that we've hit the last doc in the batch, used to enable optimizations when doing replication
             updateRequest.lastDocInBatch();
           }
-
           handler.update(sdoc, updateRequest, commitWithin, overwrite);
         }
         return Collections.EMPTY_LIST;

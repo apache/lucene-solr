@@ -1008,6 +1008,7 @@
         <property name="tests.useSecurityManager"  value="true" />
 
         <property name="tests.heapdump.args" value=""/>
+      
 
         <!-- turn on security manager? -->
         <condition property="java.security.manager" value="org.apache.lucene.util.TestSecurityManager">
@@ -1159,6 +1160,7 @@
             <sysproperty key="tests.LUCENE_VERSION" value="${version.base}"/>
 
             <sysproperty key="jetty.testMode" value="1"/>
+            <sysproperty key="log4j2.contextSelector" value="org.apache.logging.log4j.core.async.AsyncLoggerContextSelector"/>
             <sysproperty key="jetty.insecurerandom" value="1"/>
             <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
             

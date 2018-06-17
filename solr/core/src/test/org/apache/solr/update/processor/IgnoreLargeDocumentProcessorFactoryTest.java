@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -34,8 +34,8 @@ import org.junit.Test;
 
 import static org.apache.solr.update.processor.IgnoreLargeDocumentProcessorFactory.ObjectSizeEstimator.estimate;
 
-public class IgnoreLargeDocumentProcessorFactoryTest extends LuceneTestCase {
-
+public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCaseJ4 {
+  
   @Test
   public void testProcessor() throws IOException {
     NamedList args = new NamedList();

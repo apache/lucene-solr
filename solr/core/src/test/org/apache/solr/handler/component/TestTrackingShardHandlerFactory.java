@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -30,11 +32,15 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 /**
  * Test for {@link org.apache.solr.handler.component.TrackingShardHandlerFactory}
  * See SOLR-7147 for more information
  */
 @SolrTestCaseJ4.SuppressSSL
+@Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBase {
 
   public TestTrackingShardHandlerFactory() {

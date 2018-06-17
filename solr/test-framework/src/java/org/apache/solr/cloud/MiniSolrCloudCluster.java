@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import javax.servlet.Filter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
@@ -38,12 +37,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.servlet.Filter;
+
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
+import org.apache.solr.client.solrj.util.SolrQueuedThreadPool;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -110,6 +113,8 @@ public class MiniSolrCloudCluster {
   
   private final AtomicInteger nodeIds = new AtomicInteger();
 
+  private SolrInternalHttpClient httpClient;
+
   /**
    * Create a MiniSolrCloudCluster with default solr.xml
    *
@@ -137,8 +142,8 @@ public class MiniSolrCloudCluster {
    */
   public MiniSolrCloudCluster(int numServers, String hostContext, Path baseDir, String solrXml,
       SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class<? extends Filter>, String> extraRequestFilters) throws Exception {
-    this(numServers, hostContext, baseDir, solrXml, extraServlets, extraRequestFilters, null);
+      SortedMap<Class<? extends Filter>, String> extraRequestFilters, SolrInternalHttpClient httpClient, SolrQueuedThreadPool qtp) throws Exception {
+    this(numServers, hostContext, baseDir, solrXml, extraServlets, extraRequestFilters, null, httpClient, qtp);
   }
 
   /**
@@ -157,12 +162,14 @@ public class MiniSolrCloudCluster {
   public MiniSolrCloudCluster(int numServers, String hostContext, Path baseDir, String solrXml,
       SortedMap<ServletHolder, String> extraServlets,
       SortedMap<Class<? extends Filter>, String> extraRequestFilters,
-      SSLConfig sslConfig) throws Exception {
+      SSLConfig sslConfig, SolrInternalHttpClient httpClient, SolrQueuedThreadPool qtp) throws Exception {
     this(numServers, baseDir, solrXml, JettyConfig.builder()
         .setContext(hostContext)
         .withSSLConfig(sslConfig)
         .withFilters(extraRequestFilters)
         .withServlets(extraServlets)
+        .withHttpClient(httpClient)
+        .withJettyQtp(qtp)
         .build());
   }
 
@@ -215,6 +222,7 @@ public class MiniSolrCloudCluster {
       ZkTestServer zkTestServer, Optional<String> securityJson) throws Exception {
 
     Objects.requireNonNull(securityJson);
+    this.httpClient = jettyConfig.httpClient;
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
 
@@ -368,6 +376,8 @@ public class MiniSolrCloudCluster {
         .withServlets(extraServlets)
         .withFilters(extraRequestFilters)
         .withSSLConfig(sslConfig)
+        .withHttpClient(httpClient)
+        .withJettyQtp(jettyConfig.qtp)
         .build());
   }
 
@@ -387,7 +397,7 @@ public class MiniSolrCloudCluster {
   public JettySolrRunner startJettySolrRunner(String name, String hostContext, JettyConfig config) throws Exception {
     Path runnerPath = createInstancePath(name);
     String context = getHostContextSuitableForServletContext(hostContext);
-    JettyConfig newConfig = JettyConfig.builder(config).setContext(context).build();
+    JettyConfig newConfig = JettyConfig.builder(config).setContext(context).withJettyQtp(jettyConfig.qtp).build();
     JettySolrRunner jetty = new JettySolrRunner(runnerPath.toString(), newConfig);
     jetty.start();
     jettys.add(jetty);
@@ -447,12 +457,11 @@ public class MiniSolrCloudCluster {
 
   /** Delete all collections (and aliases) */
   public void deleteAllCollections() throws Exception {
-    try (ZkStateReader reader = new ZkStateReader(solrClient.getZkStateReader().getZkClient())) {
-      reader.createClusterStateWatchersAndUpdate(); // up to date aliases & collections
-      reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
-      for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
-        CollectionAdminRequest.deleteCollection(collection).process(solrClient);
-      }
+    ZkStateReader reader = solrClient.getZkStateReader();
+    reader.createClusterStateWatchersAndUpdate(); // up to date aliases & collections
+    reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
+    for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
+      CollectionAdminRequest.deleteCollection(collection).process(solrClient);
     }
   }
 
@@ -461,8 +470,9 @@ public class MiniSolrCloudCluster {
    */
   public void shutdown() throws Exception {
     try {
-    
+      
       IOUtils.closeQuietly(solrClient);
+
       // accept no new tasks
       executorLauncher.shutdown();
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
@@ -501,7 +511,7 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudSolrClient buildSolrClient() {
-    return new Builder(Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
+    return new Builder(Collections.singletonList(getZkServer().getZkAddress()), Optional.empty()).withHttpClient(httpClient)
         .build();
   }
 

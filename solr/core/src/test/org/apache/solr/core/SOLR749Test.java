@@ -16,8 +16,8 @@
  */
 package org.apache.solr.core;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.FooQParserPlugin;
+import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.ValueSourceParser;
 import org.junit.BeforeClass;
 

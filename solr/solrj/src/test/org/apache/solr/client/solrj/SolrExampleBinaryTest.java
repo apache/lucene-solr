@@ -17,9 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.junit.BeforeClass;
 
 
@@ -40,12 +38,13 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
     try {
       // setup the server...
       String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
+      Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
+      // nocommit
+      //client.setUseMultiPartPost(random().nextBoolean());
 
       // where the magic happens
-      client.setParser(new BinaryResponseParser());
-      client.setRequestWriter(new BinaryRequestWriter());
+     // client.setParser(new BinaryResponseParser());
+     // client.setRequestWriter(new BinaryRequestWriter());
 
       return client;
     }

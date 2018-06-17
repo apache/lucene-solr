@@ -23,12 +23,14 @@ import java.util.List;
 import java.util.StringJoiner;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -36,10 +38,18 @@ import org.junit.BeforeClass;
  */
 public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
+  static Http2SolrClient solrClient;
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log","true");
+    solrClient = getHttpSolrClient("", getHttpClient());
     initCore("solrconfig.xml", "schema.xml");
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    solrClient.close();
   }
 
   public void testWrongAtomicOpPassed() throws Exception {

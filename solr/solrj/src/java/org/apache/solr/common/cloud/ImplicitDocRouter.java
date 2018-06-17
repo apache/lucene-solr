@@ -16,14 +16,15 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.SolrParams;
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import static org.apache.solr.common.params.ShardParams._ROUTE_;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.SolrParams;
 
 /** This document router is for custom sharding
  */

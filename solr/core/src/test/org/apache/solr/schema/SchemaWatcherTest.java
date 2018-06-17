@@ -17,6 +17,10 @@
 
 package org.apache.solr.schema;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.ZkIndexSchemaReader.SchemaWatcher;
 import org.apache.zookeeper.WatchedEvent;
@@ -24,10 +28,6 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class SchemaWatcherTest {
 

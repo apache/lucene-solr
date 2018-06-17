@@ -20,12 +20,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
-
+import org.apache.solr.util.SSLTestConfig;
 import org.junit.BeforeClass;
-
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +36,8 @@ import org.slf4j.LoggerFactory;
  * @see TestMiniSolrCloudClusterSSL
  */
 @RandomizeSSL(ssl=0.5,reason="frequent SSL usage to make test worth while")
+// nocommit
+@Ignore
 public class TestSSLRandomization extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

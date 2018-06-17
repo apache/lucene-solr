@@ -16,14 +16,14 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.List;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
-
-import java.util.List;
 
 public class DistributedFacetPivotWhiteBoxTest extends BaseDistributedSearchTestCase {
 

@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -26,6 +26,10 @@ import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.ThreadFilter;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  *
@@ -35,6 +39,8 @@ import org.junit.Test;
     MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
 })
 @LogLevel("org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.autoscaling=DEBUG;")
+@Slow
+@TimeoutSuite(millis = 90 * TimeUnits.SECOND)
 public class MoveReplicaHDFSTest extends MoveReplicaTest {
 
   private static MiniDFSCluster dfsCluster;

@@ -16,29 +16,8 @@
  */
 package org.apache.solr.prometheus.collector;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.solr.core.Config;
-import org.apache.solr.prometheus.scraper.SolrScraper;
-import io.prometheus.client.Collector;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-
-import java.lang.invoke.MethodHandles;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -47,8 +26,31 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.Config;
+import org.apache.solr.prometheus.scraper.SolrScraper;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.prometheus.client.Collector;
 
 /**
  * SolrCollector
@@ -102,10 +104,10 @@ public class SolrCollector extends Collector implements Collector.Describable {
 
         if (this.solrClient instanceof CloudSolrClient) {
           // in SolrCloud mode
-          List<HttpSolrClient> httpSolrClients = new ArrayList<>();
+          List<Http2SolrClient> httpSolrClients = new ArrayList<>();
           try {
             httpSolrClients = getHttpSolrClients((CloudSolrClient) this.solrClient);
-            for (HttpSolrClient httpSolrClient : httpSolrClients) {
+            for (Http2SolrClient httpSolrClient : httpSolrClients) {
               for (NamedList requestNL : requestsNL) {
                 String coreName = (String) ((NamedList) requestNL.get("query")).get("core");
                 String collectionName = (String) ((NamedList) requestNL.get("query")).get("collection");
@@ -147,7 +149,7 @@ public class SolrCollector extends Collector implements Collector.Describable {
           } catch (SolrServerException | IOException e) {
             this.logger.error("failed to get HttpSolrClients: " + e.getMessage());
           } finally {
-            for (HttpSolrClient httpSolrClient : httpSolrClients) {
+            for (Http2SolrClient httpSolrClient : httpSolrClients) {
               try {
                 httpSolrClient.close();
               } catch (IOException e) {
@@ -191,7 +193,7 @@ public class SolrCollector extends Collector implements Collector.Describable {
             String coreName = (String) ((NamedList) requestNL.get("query")).get("core");
             if (coreName == null) {
               try {
-                List<String> cores = getCores((HttpSolrClient) this.solrClient);
+                List<String> cores = getCores((Http2SolrClient) this.solrClient);
                 for (String core : cores) {
                   LinkedHashMap conf = (LinkedHashMap) requestNL.asMap(10);
                   LinkedHashMap query = (LinkedHashMap) conf.get("query");
@@ -225,10 +227,10 @@ public class SolrCollector extends Collector implements Collector.Describable {
 
         if (this.solrClient instanceof CloudSolrClient) {
           // in SolrCloud mode
-          List<HttpSolrClient> httpSolrClients = new ArrayList<>();
+          List<Http2SolrClient> httpSolrClients = new ArrayList<>();
           try {
             httpSolrClients = getHttpSolrClients((CloudSolrClient) this.solrClient);
-            for (HttpSolrClient httpSolrClient : httpSolrClients) {
+            for (Http2SolrClient httpSolrClient : httpSolrClients) {
               for (NamedList requestNL : requestsNL) {
                 LinkedHashMap conf = (LinkedHashMap) requestNL.asMap(10);
 
@@ -250,7 +252,7 @@ public class SolrCollector extends Collector implements Collector.Describable {
           } catch (SolrServerException | IOException e) {
             this.logger.error(e.getMessage());
           } finally {
-            for (HttpSolrClient httpSolrClient : httpSolrClients) {
+            for (Http2SolrClient httpSolrClient : httpSolrClients) {
               try {
                 httpSolrClient.close();
               } catch (IOException e) {
@@ -359,13 +361,13 @@ public class SolrCollector extends Collector implements Collector.Describable {
   /**
    * Get target cores via CoreAdminAPI.
    */
-  public static List<String> getCores(HttpSolrClient httpSolrClient) throws SolrServerException, IOException {
+  public static List<String> getCores(Http2SolrClient httpSolrClient) throws SolrServerException, IOException {
     List<String> cores = new ArrayList<>();
 
     NoOpResponseParser responseParser = new NoOpResponseParser();
     responseParser.setWriterType("json");
 
-    httpSolrClient.setParser(responseParser);
+    // nocommit: httpSolrClient.setParser(responseParser);
 
     CoreAdminRequest coreAdminRequest = new CoreAdminRequest();
     coreAdminRequest.setAction(CoreAdminParams.CoreAdminAction.STATUS);
@@ -442,18 +444,17 @@ public class SolrCollector extends Collector implements Collector.Describable {
   /**
    * Get HTTP Solr Clients
    */
-  private List<HttpSolrClient> getHttpSolrClients(CloudSolrClient cloudSolrClient) throws SolrServerException, IOException {
-    List<HttpSolrClient> solrClients = new ArrayList<>();
+  private List<Http2SolrClient> getHttpSolrClients(CloudSolrClient cloudSolrClient) throws SolrServerException, IOException {
+    List<Http2SolrClient> solrClients = new ArrayList<>();
 
     for (String baseUrl : getBaseUrls(cloudSolrClient)) {
       NoOpResponseParser responseParser = new NoOpResponseParser();
       responseParser.setWriterType("json");
 
-      HttpSolrClient.Builder builder = new HttpSolrClient.Builder();
-      builder.withBaseSolrUrl(baseUrl);
+      Http2SolrClient.Builder builder = new Http2SolrClient.Builder(baseUrl);
 
-      HttpSolrClient httpSolrClient = builder.build();
-      httpSolrClient.setParser(responseParser);
+      Http2SolrClient httpSolrClient = builder.build();
+      // nocommit httpSolrClient.setParser(responseParser);
 
       solrClients.add(httpSolrClient);
     }

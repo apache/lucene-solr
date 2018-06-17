@@ -16,13 +16,20 @@
  */
 package org.apache.solr;
 
+import java.io.File;
+import java.io.OutputStreamWriter;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+import java.util.Properties;
+import java.util.SortedMap;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -30,13 +37,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.OutputStreamWriter;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.util.Properties;
-import java.util.SortedMap;
 
 
 abstract public class SolrJettyTestBase extends SolrTestCaseJ4 
@@ -66,6 +66,8 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
         .stopAtShutdown(stopAtShutdown)
         .withServlets(extraServlets)
         .withSSLConfig(sslConfig)
+        .withHttpClient(getHttpClient())
+        .withJettyQtp(getQtp())
         .build();
 
     Properties nodeProps = new Properties();
@@ -89,7 +91,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
   public static JettySolrRunner createJetty(String solrHome) throws Exception {
-    return createJetty(solrHome, new Properties(), JettyConfig.builder().withSSLConfig(sslConfig).build());
+    return createJetty(solrHome, new Properties(), JettyConfig.builder().withSSLConfig(sslConfig).withHttpClient(getHttpClient()).withJettyQtp(getQtp()).build());
   }
 
   public static JettySolrRunner createJetty(String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
@@ -152,7 +154,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       try {
         // setup the client...
         String url = jetty.getBaseUrl().toString() + "/" + "collection1";
-        HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
+        Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
         return client;
       }
       catch( Exception ex ) {

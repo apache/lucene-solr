@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
-import com.google.common.base.Preconditions;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.SolrException;
@@ -48,6 +47,8 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
 
 /**
  * This class implements functionality to create a backup with extension points provided to integrate with different

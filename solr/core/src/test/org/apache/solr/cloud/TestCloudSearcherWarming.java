@@ -17,11 +17,15 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -52,12 +56,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.JSON_MIME;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Tests related to SOLR-6086
  */
 @LogLevel("org.apache.solr.cloud.overseer.*=DEBUG,org.apache.solr.cloud.Overseer=DEBUG,org.apache.solr.cloud.ZkController=DEBUG")
+@Slow
+@TimeoutSuite(millis = 120 * TimeUnits.SECOND)
 public class TestCloudSearcherWarming extends SolrCloudTestCase {
   public static final AtomicReference<String> coreNodeNameRef = new AtomicReference<>(null),
       coreNameRef = new AtomicReference<>(null);
@@ -238,7 +244,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
   private CollectionStateWatcher createActiveReplicaSearcherWatcher(AtomicInteger expectedDocs, AtomicReference<String> failingCoreNodeName) {
     return new CollectionStateWatcher() {
       @Override
-      public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
+      public boolean onStateChanged(boolean closing, Set<String> liveNodes, DocCollection collectionState) {
         try {
           String coreNodeName = coreNodeNameRef.get();
           String coreName = coreNameRef.get();
@@ -353,7 +359,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     }
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
+    public SolrResponse createResponse(SolrClient client) {
       return new SolrResponseBase();
     }
   }

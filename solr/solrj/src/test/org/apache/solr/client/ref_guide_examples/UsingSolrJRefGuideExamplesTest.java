@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.beans.Field;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -235,9 +235,9 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   private SolrClient getTechProductSolrClient() {
     // tag::solrj-solrclient-timeouts[]
     final String solrUrl = "http://localhost:8983/solr";
-    return new HttpSolrClient.Builder(solrUrl)
-        .withConnectionTimeout(10000)
-        .withSocketTimeout(60000)
+    return new Http2SolrClient.Builder(solrUrl)
+        // .withConnectionTimeout(10000) // nocommit
+        // .withSocketTimeout(60000) // nocommit
         .build();
     // end::solrj-solrclient-timeouts[]
   }

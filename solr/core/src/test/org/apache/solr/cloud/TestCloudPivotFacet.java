@@ -16,6 +16,16 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.FacetParams.FACET;
+import static org.apache.solr.common.params.FacetParams.FACET_LIMIT;
+import static org.apache.solr.common.params.FacetParams.FACET_MISSING;
+import static org.apache.solr.common.params.FacetParams.FACET_OFFSET;
+import static org.apache.solr.common.params.FacetParams.FACET_OVERREQUEST_COUNT;
+import static org.apache.solr.common.params.FacetParams.FACET_OVERREQUEST_RATIO;
+import static org.apache.solr.common.params.FacetParams.FACET_PIVOT;
+import static org.apache.solr.common.params.FacetParams.FACET_PIVOT_MINCOUNT;
+import static org.apache.solr.common.params.FacetParams.FACET_SORT;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -28,6 +38,8 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -44,15 +56,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.FacetParams.FACET;
-import static org.apache.solr.common.params.FacetParams.FACET_LIMIT;
-import static org.apache.solr.common.params.FacetParams.FACET_MISSING;
-import static org.apache.solr.common.params.FacetParams.FACET_OFFSET;
-import static org.apache.solr.common.params.FacetParams.FACET_OVERREQUEST_COUNT;
-import static org.apache.solr.common.params.FacetParams.FACET_OVERREQUEST_RATIO;
-import static org.apache.solr.common.params.FacetParams.FACET_PIVOT;
-import static org.apache.solr.common.params.FacetParams.FACET_PIVOT_MINCOUNT;
-import static org.apache.solr.common.params.FacetParams.FACET_SORT;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * <p>
@@ -77,6 +81,8 @@ import static org.apache.solr.common.params.FacetParams.FACET_SORT;
  *
  */
 @SuppressSSL // Too Slow
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

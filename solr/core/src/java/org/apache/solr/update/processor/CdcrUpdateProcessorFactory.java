@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -29,6 +30,8 @@ import org.apache.solr.response.SolrQueryResponse;
 public class CdcrUpdateProcessorFactory
     extends UpdateRequestProcessorFactory
     implements DistributingUpdateProcessorFactory {
+
+  private Http2SolrClient client;
 
   @Override
   public void init(NamedList args) {

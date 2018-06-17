@@ -84,6 +84,7 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.SolrFileCleaningTracker;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -137,7 +138,7 @@ public class SolrConfig extends Config implements MapSerializable {
    */
   public SolrConfig()
       throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, DEFAULT_CONF_FILE, null);
+    this((SolrResourceLoader) null, DEFAULT_CONF_FILE, null, null);
   }
 
   /**
@@ -148,7 +149,7 @@ public class SolrConfig extends Config implements MapSerializable {
    */
   public SolrConfig(String name)
       throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, name, null);
+    this((SolrResourceLoader) null, name, null, null);
   }
 
   /**
@@ -162,7 +163,7 @@ public class SolrConfig extends Config implements MapSerializable {
    */
   public SolrConfig(String name, InputSource is)
       throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, name, is);
+    this((SolrResourceLoader) null, name, is, null);
   }
 
   /**
@@ -174,12 +175,12 @@ public class SolrConfig extends Config implements MapSerializable {
    */
   public SolrConfig(Path instanceDir, String name, InputSource is)
       throws ParserConfigurationException, IOException, SAXException {
-    this(new SolrResourceLoader(instanceDir), name, is);
+    this(new SolrResourceLoader(instanceDir), name, is, null);
   }
 
   public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name) {
     try {
-      return new SolrConfig(loader, name, null);
+      return new SolrConfig(loader, name, null, null);
     } catch (Exception e) {
       String resource;
       if (loader instanceof ZkSolrResourceLoader) {
@@ -200,7 +201,7 @@ public class SolrConfig extends Config implements MapSerializable {
    * @param name   the configuration name
    * @param is     the configuration stream
    */
-  public SolrConfig(SolrResourceLoader loader, String name, InputSource is)
+  public SolrConfig(SolrResourceLoader loader, String name, InputSource is, SolrFileCleaningTracker fileCleaningTracker)
       throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     getOverlay();//just in case it is not initialized
@@ -330,7 +331,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
     }
 
-    solrRequestParsers = new SolrRequestParsers(this);
+    solrRequestParsers = new SolrRequestParsers(this, fileCleaningTracker);
     log.debug("Loaded SolrConfig: {}", name);
   }
 

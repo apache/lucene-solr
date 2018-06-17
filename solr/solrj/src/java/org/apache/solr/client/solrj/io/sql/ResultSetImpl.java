@@ -40,11 +40,11 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.PushBackStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.common.util.SuppressForbidden;
 
 class ResultSetImpl implements ResultSet {
   private final StatementImpl statement;

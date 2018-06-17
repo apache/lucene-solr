@@ -23,11 +23,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.Test;
 
-public class ShufflingReplicaListTransformerTest extends LuceneTestCase {
+public class ShufflingReplicaListTransformerTest extends SolrTestCaseJ4 {
 
   private final ShufflingReplicaListTransformer transformer = new ShufflingReplicaListTransformer(random());
 

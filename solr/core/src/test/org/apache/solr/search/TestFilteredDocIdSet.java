@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import junit.framework.Assert;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -37,9 +35,11 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 
-public class TestFilteredDocIdSet extends LuceneTestCase {
+import junit.framework.Assert;
+
+public class TestFilteredDocIdSet extends SolrTestCaseJ4 {
   public void testFilteredDocIdSet() throws Exception {
     final int maxdoc=10;
     final DocIdSet innerSet = new DocIdSet() {

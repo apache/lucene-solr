@@ -48,7 +48,7 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -331,12 +331,13 @@ public final class ManagedIndexSchema extends IndexSchema {
     @Override
     public Integer call() throws Exception {
       int remoteVersion = -1;
-      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
+      try (Http2SolrClient client = new Http2SolrClient.Builder(coreUrl).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
           try {
-            HttpSolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
-            NamedList<Object> zkversionResp = mrr.future.get();
+            //Http2SolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
+            //client.httpGet(coreUrl + "/schema/zkversion?" + "refreshIfBelowVersion=" + expectedZkVersion );
+            NamedList<Object> zkversionResp = client.request(this);
             if (zkversionResp != null)
               remoteVersion = (Integer)zkversionResp.get("zkversion");
 
@@ -362,7 +363,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
+    public SolrResponse createResponse(SolrClient client) {
       return null;
     }
 

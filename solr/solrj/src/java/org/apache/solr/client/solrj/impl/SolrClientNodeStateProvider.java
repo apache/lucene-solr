@@ -17,6 +17,9 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static java.util.Collections.emptyMap;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.METRICS_PREFIX;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -56,9 +59,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Collections.emptyMap;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.METRICS_PREFIX;
 
 /**
  *
@@ -297,10 +297,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
       GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
-      try (HttpSolrClient client = new HttpSolrClient.Builder()
-          .withHttpClient(solrClient.getHttpClient())
-          .withBaseSolrUrl(url)
-          .withResponseParser(new BinaryResponseParser())
+      try (Http2SolrClient client = new Http2SolrClient.Builder(url).withHttpClient(solrClient.getHttpClient())
           .build()) {
         NamedList<Object> rsp = client.request(request);
         request.response.nl = rsp;

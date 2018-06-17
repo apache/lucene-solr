@@ -16,13 +16,13 @@
  */
 package org.apache.solr.common.params;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toMap;
 
 public interface CollectionParams {
   /**

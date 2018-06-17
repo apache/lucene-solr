@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -42,6 +44,7 @@ import org.rrd4j.core.Sample;
 /**
  *
  */
+@BadApple(bugUrl="nocommit looks flakey")
 public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
 
   private SolrRrdBackendFactory factory;

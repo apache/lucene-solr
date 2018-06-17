@@ -16,6 +16,26 @@
  */
 package org.apache.solr.servlet;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.Security;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ReadListener;
@@ -30,32 +50,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
@@ -76,11 +72,17 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
+import org.conscrypt.OpenSSLProvider;
+import org.eclipse.jetty.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -90,6 +92,27 @@ import org.slf4j.LoggerFactory;
 public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  
+  static {
+    // this has to happen in the right class loader
+    try {
+      if (Security.getProvider("Conscrypt") == null) {
+        Security.addProvider(new OpenSSLProvider("Conscrypt"));
+      }
+    } catch(UnsatisfiedLinkError e) {
+      log.error("Could not load SSL Provider due to " + UnsatisfiedLinkError.class.getSimpleName(), e);
+      Throwable[] suppressed = e.getSuppressed();
+      for (Throwable t : suppressed) {
+        log.error("Supressed Throwable:", t);
+      }
+      throw e;
+    } catch (Throwable t) {
+      log.error("Could not load SSL Provider", t);
+      throw t;
+    }
+  }
+
+  
   protected volatile CoreContainer cores;
   protected final CountDownLatch init = new CountDownLatch(1);
 
@@ -138,8 +161,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     CoreContainer coresInit = null;
     try{
 
-    SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
-
     StartupLoggingUtils.checkLogDir();
     log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
     logWelcomeBanner();
@@ -171,7 +192,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       coresInit = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
                                        extraProperties);
-      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       log.debug("user.dir=" + System.getProperty("user.dir"));
     }
@@ -187,6 +207,19 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }finally{
       log.trace("SolrDispatchFilter.init() done");
       this.cores = coresInit; // crucially final assignment 
+      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
+      try {
+        // nocommit
+        //httpClient.getContentDecoderFactories().clear();
+        // Content must not be decoded, otherwise the client gets confused.
+  
+
+        // Pass traffic to the client, only intercept what's necessary.
+        //ProtocolHandlers protocolHandlers = httpClient.getProtocolHandlers();
+       // protocolHandlers.clear();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
       init.countDown();
     }
   }
@@ -295,26 +328,19 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void destroy() {
     try {
-      FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
-      if (fileCleaningTracker != null) {
-        fileCleaningTracker.exitWhenFinished();
+      if (metricManager != null) {
+        metricManager.unregisterGauges(registryName, metricTag);
+      }
+
+      if (cores != null) {
+        try {
+          cores.shutdown();
+        } finally {
+          cores = null;
+        }
       }
     } catch (Exception e) {
-      log.warn("Exception closing FileCleaningTracker", e);
-    } finally {
-      SolrRequestParsers.fileCleaningTracker = null;
-    }
-
-    if (metricManager != null) {
-      metricManager.unregisterGauges(registryName, metricTag);
-    }
-
-    if (cores != null) {
-      try {
-        cores.shutdown();
-      } finally {
-        cores = null;
-      }
+      log.error("Exception while shutting down.", e);
     }
   }
   

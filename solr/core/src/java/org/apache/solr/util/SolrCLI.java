@@ -16,7 +16,12 @@
  */
 package org.apache.solr.util;
 
-import javax.net.ssl.SSLPeerUnverifiedException;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
+import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.io.Console;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -51,12 +56,15 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import javax.net.ssl.SSLPeerUnverifiedException;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
@@ -72,6 +80,7 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.http.HttpEntity;
@@ -79,14 +88,11 @@ import org.apache.http.HttpResponse;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrClient;
@@ -94,14 +100,14 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.Builder;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -119,18 +125,13 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
+import org.eclipse.jetty.client.HttpClient;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
-import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * Command-line utility for working with Solr.
@@ -575,9 +576,15 @@ public class SolrCLI {
    * @throws SolrException if auth/autz problems
    * @throws IOException if connection failure
    */
-  private static int attemptHttpHead(String url, HttpClient httpClient) throws SolrException, IOException {
-    HttpResponse response = httpClient.execute(new HttpHead(url), HttpClientUtil.createNewHttpClientRequestContext());
-    int code = response.getStatusLine().getStatusCode();
+  private static int attemptHttpHead(String url, Http2SolrClient httpClient) throws SolrException, IOException {
+   // HttpResponse response = httpClient.execute(new HttpHead(url), HttpClientUtil.createNewHttpClientRequestContext());
+    int code;
+    try {
+      code = Http2SolrClient.HEAD(url);
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      // nocommit
+      throw new RuntimeException(e);
+    }
     if (code == UNAUTHORIZED.code || code == FORBIDDEN.code) {
       throw new SolrException(SolrException.ErrorCode.getErrorCode(code), 
           "Solr requires authentication for " + url + ". Please supply valid credentials. HTTP code=" + code);
@@ -590,23 +597,12 @@ public class SolrCLI {
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
   
-  public static CloseableHttpClient getHttpClient() {
+  public static SolrInternalHttpClient getHttpClient() {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
-    params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
-    return HttpClientUtil.createClient(params);    
-  }
-  
-  @SuppressWarnings("deprecation")
-  public static void closeHttpClient(CloseableHttpClient httpClient) {
-    if (httpClient != null) {
-      try {
-        HttpClientUtil.close(httpClient);
-      } catch (Exception exc) {
-        // safe to ignore, we're just shutting things down
-      }
-    }    
+    //params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
+    //params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
+    //params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
+    return new SolrInternalHttpClient(SolrCLI.class.getSimpleName());   
   }
 
   public static final String JSON_CONTENT_TYPE = "application/json";
@@ -624,11 +620,11 @@ public class SolrCLI {
    */
   public static Map<String,Object> getJson(String getUrl) throws Exception {
     Map<String,Object> json = null;
-    CloseableHttpClient httpClient = getHttpClient();
+    SolrInternalHttpClient httpClient = getHttpClient();
     try {
       json = getJson(httpClient, getUrl, 2, true);
     } finally {
-      closeHttpClient(httpClient);
+      IOUtils.closeQuietly(httpClient);
     }
     return json;
   }
@@ -636,28 +632,32 @@ public class SolrCLI {
   /**
    * Utility function for sending HTTP GET request to Solr with built-in retry support.
    */
-  public static Map<String,Object> getJson(HttpClient httpClient, String getUrl, int attempts, boolean isFirstAttempt) throws Exception {
+  public static Map<String,Object> getJson(SolrInternalHttpClient httpClient, String getUrl, int attempts, boolean isFirstAttempt) throws Exception {
     Map<String,Object> json = null;
-    if (attempts >= 1) {
-      try {
-        json = getJson(httpClient, getUrl);
-      } catch (Exception exc) {
-        if (exceptionIsAuthRelated(exc)) {
-          throw exc;
-        }
-        if (--attempts > 0 && checkCommunicationError(exc)) {
-          if (!isFirstAttempt) // only show the log warning after the second attempt fails
-            log.warn("Request to "+getUrl+" failed due to: "+exc.getMessage()+
-                ", sleeping for 5 seconds before re-trying the request ...");
-          try {
-            Thread.sleep(5000);
-          } catch (InterruptedException ie) { Thread.interrupted(); }
-          
-          // retry using recursion with one-less attempt available
-          json = getJson(httpClient, getUrl, attempts, false);
-        } else {
-          // no more attempts or error is not retry-able
-          throw exc;
+    try (Http2SolrClient client = new Http2SolrClient.Builder(getUrl).withHttpClient(httpClient).build()) {
+      if (attempts >= 1) {
+        try {
+          json = getJson(client, getUrl);
+        } catch (Exception exc) {
+          if (exceptionIsAuthRelated(exc)) {
+            throw exc;
+          }
+          if (--attempts > 0 && checkCommunicationError(exc)) {
+            if (!isFirstAttempt) // only show the log warning after the second attempt fails
+              log.warn("Request to " + getUrl + " failed due to: " + exc.getMessage() +
+                  ", sleeping for 5 seconds before re-trying the request ...");
+            try {
+              Thread.sleep(5000);
+            } catch (InterruptedException ie) {
+              Thread.interrupted();
+            }
+
+            // retry using recursion with one-less attempt available
+            json = getJson(httpClient, getUrl, attempts, false);
+          } else {
+            // no more attempts or error is not retry-able
+            throw exc;
+          }
         }
       }
     }
@@ -696,13 +696,21 @@ public class SolrCLI {
    * validation of the response.
    */
   @SuppressWarnings({"unchecked"})
-  public static Map<String,Object> getJson(HttpClient httpClient, String getUrl) throws Exception {
+  public static Map<String,Object> getJson(Http2SolrClient client, String getUrl) throws Exception {
     try {
       // ensure we're requesting JSON back from Solr
       HttpGet httpGet = new HttpGet(new URIBuilder(getUrl).setParameter(CommonParams.WT, CommonParams.JSON).build());
 
       // make the request and get back a parsed JSON object
-      Map<String, Object> json = httpClient.execute(httpGet, new SolrResponseHandler(), HttpClientUtil.createNewHttpClientRequestContext());
+      //Map<String, Object> json = httpClient.execute(httpGet, new SolrResponseHandler());
+      String jsonString = client.httpGet(getUrl + "?" + CommonParams.WT + "=" + CommonParams.JSON).asString;
+      Map<String, Object> json;
+      try {
+        json = (Map<String,Object>) ObjectBuilder.getVal(new JSONParser(jsonString));
+      } catch (JSONParser.ParseException pe) {
+        throw new ClientProtocolException("Expected JSON response from server but received: "+jsonString+
+            "\nTypically, this indicates a problem with the Solr server; check the Solr server logs for more information.");
+      }
       // check the response JSON from Solr to see if it is an error
       Long statusCode = asLong("/responseHeader/status", json);
       if (statusCode == -1) {
@@ -921,20 +929,20 @@ public class SolrCLI {
         solrUrl += "/";
 
       String systemInfoUrl = solrUrl+"admin/info/system";
-      CloseableHttpClient httpClient = getHttpClient();
+      SolrInternalHttpClient httpClient = getHttpClient();
       try {
         // hit Solr to get system info
         Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
         // convert raw JSON into user-friendly output
         status = reportStatus(solrUrl, systemInfo, httpClient);
       } finally {
-        closeHttpClient(httpClient);
+        IOUtils.closeQuietly(httpClient);
       }
 
       return status;
     }
     
-    public Map<String,Object> reportStatus(String solrUrl, Map<String,Object> info, HttpClient httpClient)
+    public Map<String,Object> reportStatus(String solrUrl, Map<String,Object> info, SolrInternalHttpClient httpClient)
         throws Exception
     {
       Map<String,Object> status = new LinkedHashMap<String,Object>();
@@ -962,7 +970,7 @@ public class SolrCLI {
      * Calls the CLUSTERSTATUS endpoint in Solr to get basic status information about
      * the SolrCloud cluster. 
      */
-    protected Map<String,String> getCloudStatus(HttpClient httpClient, String solrUrl, String zkHost) 
+    protected Map<String,String> getCloudStatus(SolrInternalHttpClient httpClient, String solrUrl, String zkHost) 
         throws Exception
     {
       Map<String,String> cloudStatus = new LinkedHashMap<String,String>();      
@@ -1201,9 +1209,15 @@ public class SolrCLI {
       Collection<Slice> slices = docCollection.getSlices();
       // Test http code using a HEAD request first, fail fast if authentication failure
       String urlForColl = zkStateReader.getLeaderUrl(collection, slices.stream().findFirst().get().getName(), 1000); 
-      attemptHttpHead(urlForColl, cloudSolrClient.getHttpClient());
-
+     
+      // nocommit
+      //attemptHttpHead(urlForColl, cloudSolrClient.getHttpClient());
+      try (Http2SolrClient client = new Http2SolrClient.Builder(urlForColl)
+          .withHttpClient(cloudSolrClient.getHttpClient()).build()) {
+        attemptHttpHead(urlForColl, client);
+      }
       SolrQuery q = new SolrQuery("*:*");
+      
       q.setRows(0);      
       QueryResponse qr = cloudSolrClient.query(q);
       String collErr = null;
@@ -1248,7 +1262,7 @@ public class SolrCLI {
             q = new SolrQuery("*:*");
             q.setRows(0);
             q.set(DISTRIB, "false");
-            try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
+            try (Http2SolrClient solr = new Http2SolrClient.Builder(coreUrl).build()) {
 
               String solrUrl = solr.getBaseURL();
 
@@ -1408,7 +1422,7 @@ public class SolrCLI {
       solrUrl += "/";
 
     String systemInfoUrl = solrUrl+"admin/info/system";
-    CloseableHttpClient httpClient = getHttpClient();
+    SolrInternalHttpClient httpClient = getHttpClient();
     try {
       // hit Solr to get system info
       Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
@@ -1425,7 +1439,7 @@ public class SolrCLI {
         zkHost = zookeeper;
       }
     } finally {
-      HttpClientUtil.close(httpClient);
+      IOUtils.closeQuietly(httpClient);
     }
 
     return zkHost;
@@ -1674,7 +1688,7 @@ public class SolrCLI {
       String coreName = cli.getOptionValue(NAME);
 
       String systemInfoUrl = solrUrl+"admin/info/system";
-      CloseableHttpClient httpClient = getHttpClient();
+      SolrInternalHttpClient httpClient = getHttpClient();
       String solrHome = null;
       try {
         Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
@@ -1689,7 +1703,7 @@ public class SolrCLI {
           solrHome = configsetsDir.getParentFile().getAbsolutePath();
 
       } finally {
-        closeHttpClient(httpClient);
+        IOUtils.closeQuietly(httpClient);
       }
 
       String coreStatusUrl = solrUrl+"admin/cores?action=STATUS&core="+coreName;
@@ -1767,7 +1781,7 @@ public class SolrCLI {
         solrUrl += "/";
 
       String systemInfoUrl = solrUrl+"admin/info/system";
-      CloseableHttpClient httpClient = getHttpClient();
+      SolrInternalHttpClient httpClient = getHttpClient();
 
       ToolBase tool = null;
       try {
@@ -1779,7 +1793,7 @@ public class SolrCLI {
         }
         tool.runImpl(cli);
       } finally {
-        closeHttpClient(httpClient);
+        IOUtils.closeQuietly(httpClient);
       }
     }
 
@@ -2366,7 +2380,7 @@ public class SolrCLI {
         solrUrl += "/";
 
       String systemInfoUrl = solrUrl+"admin/info/system";
-      CloseableHttpClient httpClient = getHttpClient();
+      SolrInternalHttpClient httpClient = getHttpClient();
       try {
         Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
         if ("solrcloud".equals(systemInfo.get("mode"))) {
@@ -2375,7 +2389,7 @@ public class SolrCLI {
           deleteCore(cli, httpClient, solrUrl);
         }
       } finally {
-        closeHttpClient(httpClient);
+        IOUtils.closeQuietly(httpClient);
       }
     }
 
@@ -2465,7 +2479,7 @@ public class SolrCLI {
       echo("Deleted collection '" + collectionName + "' using command:\n" + deleteCollectionUrl);
     }
 
-    protected void deleteCore(CommandLine cli, CloseableHttpClient httpClient, String solrUrl) throws Exception {
+    protected void deleteCore(CommandLine cli, HttpClient httpClient, String solrUrl) throws Exception {
       String coreName = cli.getOptionValue(NAME);
       String deleteCoreUrl =
           String.format(Locale.ROOT,
@@ -3573,8 +3587,8 @@ public class SolrCLI {
     public static int assertSolrNotRunning(String url) throws Exception {
       StatusTool status = new StatusTool();
       long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs.orElse(1000L), TimeUnit.MILLISECONDS);
-      try {
-        attemptHttpHead(url, getHttpClient());
+      try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
+        attemptHttpHead(url, client);
       } catch (SolrException se) {
         throw se; // Auth error
       } catch (IOException e) {
@@ -3697,7 +3711,7 @@ public class SolrCLI {
     }
 
     private static boolean runningSolrIsCloud(String url) throws Exception {
-      try (final HttpSolrClient client = new HttpSolrClient.Builder(url).build()) {
+      try (final Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
         final SolrRequest<CollectionAdminResponse> request = new CollectionAdminRequest.ClusterStatus();
         final CollectionAdminResponse response = request.process(client);
         return response != null;

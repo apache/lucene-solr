@@ -18,8 +18,7 @@ package org.apache.solr.cloud;
 
 import java.util.Map;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -30,6 +29,10 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
+
 /**
  * This test is not fully functional - the port registered is illegal - 
  * so you cannot hit this with http - a nice side benifit is that it will
@@ -37,6 +40,7 @@ import org.junit.Test;
  * do that.
  */
 @Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class BasicZkTest extends AbstractZkTestCase {
   
   @BeforeClass

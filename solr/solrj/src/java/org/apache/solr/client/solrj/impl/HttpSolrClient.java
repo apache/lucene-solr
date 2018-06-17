@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.common.util.Utils.getObjectByPath;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -85,8 +87,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
  */
@@ -135,7 +135,7 @@ public class HttpSolrClient extends SolrClient {
    */
   protected volatile RequestWriter requestWriter = new BinaryRequestWriter();
   
-  private final HttpClient httpClient;
+  private HttpClient httpClient = null;
   
   private volatile Boolean followRedirects = false;
   
@@ -152,7 +152,7 @@ public class HttpSolrClient extends SolrClient {
   @Deprecated
   protected HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
     this(new Builder(baseURL)
-        .withHttpClient(client)
+        //.withHttpClient(client)
         .withResponseParser(parser)
         .allowCompression(allowCompression));
   }
@@ -172,7 +172,7 @@ public class HttpSolrClient extends SolrClient {
   protected HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression,
       ModifiableSolrParams invariantParams) {
     this(new Builder(baseURL)
-        .withHttpClient(client)
+        //.withHttpClient(client)
         .withResponseParser(parser)
         .allowCompression(allowCompression)
         .withInvariantParams(invariantParams));
@@ -190,7 +190,7 @@ public class HttpSolrClient extends SolrClient {
     }
     
     if (builder.httpClient != null) {
-      this.httpClient = builder.httpClient;
+     // this.httpClient = builder.httpClient;
       this.internalClient = false;
     } else {
       this.internalClient = true;

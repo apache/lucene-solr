@@ -17,7 +17,6 @@
 package org.apache.solr.handler.clustering.carrot2;
 
 import java.lang.invoke.MethodHandles;
-
 import java.nio.CharBuffer;
 import java.util.HashMap;
 

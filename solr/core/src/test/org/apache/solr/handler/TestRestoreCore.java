@@ -17,9 +17,6 @@
 package org.apache.solr.handler;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -29,15 +26,13 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
@@ -49,7 +44,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   JettySolrRunner masterJetty;
   TestReplicationHandler.SolrInstance master = null;
-  SolrClient masterClient;
+  Http2SolrClient masterClient;
 
   private static final String CONF_DIR = "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf"
       + File.separator;
@@ -61,17 +56,17 @@ public class TestRestoreCore extends SolrJettyTestBase {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").withHttpClient(getHttpClient()).setPort(0).withJettyQtp(getQtp()).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
   }
 
-  private static SolrClient createNewSolrClient(int port) {
+  private static Http2SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port, context);
-      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
+      Http2SolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
       return client;
     }
     catch (Exception ex) {
@@ -129,7 +124,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, params);
 
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, null);
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus(masterClient, DEFAULT_TEST_CORENAME, null);
     while (!checkBackupStatus.success) {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);
@@ -187,7 +182,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, params);
 
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, null);
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus(masterClient, DEFAULT_TEST_CORENAME, null);
     while (!checkBackupStatus.success) {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);
@@ -220,29 +215,22 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   }
 
-  public static boolean fetchRestoreStatus (String baseUrl, String coreName) throws IOException {
+  public static boolean fetchRestoreStatus(String baseUrl, String coreName) throws Exception {
     String masterUrl = baseUrl + "/" + coreName +
         ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_RESTORE_STATUS;
     final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 
-    InputStream stream = null;
-    try {
-      URL url = new URL(masterUrl);
-      stream = url.openStream();
-      String response = IOUtils.toString(stream, "UTF-8");
-      Matcher matcher = pException.matcher(response);
-      if(matcher.find()) {
-        fail("Failed to complete restore action with exception " + matcher.group(1));
-      }
-      if(response.contains("<str name=\"status\">success</str>")) {
-        return true;
-      } else if (response.contains("<str name=\"status\">failed</str>")){
-        fail("Restore Failed");
-      }
-      stream.close();
-    } finally {
-      IOUtils.closeQuietly(stream);
+    String response = Http2SolrClient.GET(masterUrl).asString;
+    Matcher matcher = pException.matcher(response);
+    if (matcher.find()) {
+      fail("Failed to complete restore action with exception " + matcher.group(1));
     }
+    if (response.contains("<str name=\"status\">success</str>")) {
+      return true;
+    } else if (response.contains("<str name=\"status\">failed</str>")) {
+      fail("Restore Failed");
+    }
+
     return false;
   }
 }

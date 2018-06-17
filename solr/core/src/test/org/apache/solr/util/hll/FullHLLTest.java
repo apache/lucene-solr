@@ -16,14 +16,14 @@
  */
 package org.apache.solr.util.hll;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.LongIterator;
 import org.junit.Test;
 
 /**
  * Tests {@link HLL} of type {@link HLLType#FULL}.
  */
-public class FullHLLTest extends LuceneTestCase {
+public class FullHLLTest extends SolrTestCaseJ4 {
     // TODO union test
     /**
      * Smoke test for {@link HLL#cardinality()} and the proper use of the

@@ -18,15 +18,18 @@ package org.apache.solr.handler.component;
 
 import java.util.List;
 
+import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.facet.DistributedFacetSimpleRefinementLongTailTest;
-
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * <p>
@@ -45,6 +48,8 @@ import org.junit.Test;
  * <code>facet.pivot</code> so the assertions in this test vary from that test.
  * </p>
  */
+@Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTestCase {
   
   private String STAT_FIELD = null; // will be randomized single value vs multivalued

@@ -16,24 +16,24 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Arrays;
+import java.util.Set;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.commons.io.IOUtils;
-
-import java.io.Reader;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
 
 /**
  * Provides the ability to specify multiple field types and field names in the same request. Expected parameters:

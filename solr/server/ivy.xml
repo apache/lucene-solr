@@ -56,13 +56,19 @@
     <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${/org.eclipse.jetty/jetty-webapp}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-xml" rev="${/org.eclipse.jetty/jetty-xml}" conf="jetty"/>
-
+    
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-conscrypt-server" rev="${/org.eclipse.jetty/jetty-alpn-conscrypt-server}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-proxy" rev="${/org.eclipse.jetty/jetty-proxy}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-server" rev="${/org.eclipse.jetty.http2/http2-server}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-common" rev="${/org.eclipse.jetty.http2/http2-common}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-server" rev="${/org.eclipse.jetty/jetty-alpn-server}" conf="jetty"/>
+    
     <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="jetty"/>
 
     <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start">
       <artifact name="jetty-start" type="jar" maven:classifier="shaded"/>
     </dependency>
 
-    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+    
   </dependencies>
 </ivy-module>

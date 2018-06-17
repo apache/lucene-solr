@@ -21,8 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
-
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -32,12 +31,17 @@ import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
+import junit.framework.Assert;
+
 /**
  * Test for SuggestComponent's distributed querying
  *
  * @see org.apache.solr.handler.component.SuggestComponent
  */
 @Slow
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND)
 public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCase {
   
   public DistributedSuggestComponentTest() {

@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
@@ -44,7 +45,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 @Slow
+@TimeoutSuite(millis = 60 * TimeUnits.SECOND)
 public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -95,9 +99,9 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
+    void runLeaderProcess(boolean weAreReplacement)
         throws KeeperException, InterruptedException, IOException {
-      super.runLeaderProcess(weAreReplacement, pauseBeforeStartMs);
+      super.runLeaderProcess(weAreReplacement);
       if (runLeaderDelay > 0) {
         log.info("Sleeping for " + runLeaderDelay + "ms to simulate leadership takeover delay");
         Thread.sleep(runLeaderDelay);

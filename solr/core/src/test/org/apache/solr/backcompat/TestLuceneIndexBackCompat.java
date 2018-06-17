@@ -31,12 +31,16 @@ import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.TestBackwardsCompatibility;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.TestHarness;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 /** Verify we can read/write previous versions' Lucene indexes. */
+@TimeoutSuite(millis = 45 * TimeUnits.SECOND) // nocommit
 public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
   private static final String[] oldNames = TestBackwardsCompatibility.getOldNames();
   private static final String[] oldSingleSegmentNames = TestBackwardsCompatibility.getOldSingleSegmentNames();

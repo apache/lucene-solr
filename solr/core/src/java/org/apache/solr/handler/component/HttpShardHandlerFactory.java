@@ -16,38 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.URLUtil;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
-import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
-import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
-import org.apache.solr.util.stats.MetricUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -64,13 +33,48 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
+import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.AsyncLBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.AsyncLBHttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
+import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
+import org.apache.solr.util.stats.MetricUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
   
+  public static boolean ASYNC = false;
   // We want an executor that doesn't take up any resources if
   // it's not used, so it could be created statically for
   // the distributed search component if desired.
@@ -80,7 +84,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   private ExecutorService commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
       0,
       Integer.MAX_VALUE,
-      5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
+      5, TimeUnit.SECONDS, // terminate idle threads after 15 sec
       new SynchronousQueue<>(),  // directly hand off tasks
       new DefaultSolrThreadFactory("httpShardExecutor"),
       // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
@@ -88,18 +92,20 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       false
   );
 
+  private Http2SolrClient solrClient;
+  
   protected InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
-  protected CloseableHttpClient defaultClient;
+  //protected CloseableHttpClient defaultClient;
   protected InstrumentedHttpRequestExecutor httpRequestExecutor;
-  private LBHttpSolrClient loadbalancer;
+  private SolrClient loadbalancer;
   //default values:
   int soTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
   int connectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
   int maxConnectionsPerHost = 20;
   int maxConnections = 10000;
-  int corePoolSize = 0;
+  int corePoolSize = 4;
   int maximumPoolSize = Integer.MAX_VALUE;
-  int keepAliveTime = 5;
+  int keepAliveTime = 15;
   int queueSize = -1;
   int   permittedLoadBalancerRequestsMinimumAbsolute = 0;
   float permittedLoadBalancerRequestsMaximumFraction = 1.0f;
@@ -138,20 +144,30 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   // Configure if the threadpool favours fairness over throughput
   static final String INIT_FAIRNESS_POLICY = "fairnessPolicy";
+  
+  public HttpShardHandlerFactory() {
 
+  }
+  
+  public void setHttpClient(SolrInternalHttpClient httpClient) {
+    assert this.httpClient == null;
+    super.setHttpClient(httpClient);
+    solrClient = new Http2SolrClient.Builder("").solrInternal().withHttpClient(httpClient).build();
+  }
+  
   /**
    * Get {@link ShardHandler} that uses the default http client.
    */
   @Override
   public ShardHandler getShardHandler() {
-    return getShardHandler(defaultClient);
+    return getShardHandler(httpClient);
   }
 
   /**
    * Get {@link ShardHandler} that uses custom http client.
    */
-  public ShardHandler getShardHandler(final HttpClient httpClient){
-    return new HttpShardHandler(this, httpClient);
+  public ShardHandler getShardHandler(final SolrInternalHttpClient httpClient){
+    return new HttpShardHandler(this, solrClient, httpClient);
   }
 
   @Override
@@ -211,9 +227,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
     ModifiableSolrParams clientParams = getClientParams();
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(this.metricNameStrategy);
-    clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
-    this.defaultClient = HttpClientUtil.createClient(clientParams, clientConnectionManager, false, httpRequestExecutor);
-    this.loadbalancer = createLoadbalancer(defaultClient);
+
+    if (ASYNC) {
+      this.loadbalancer = createAsyncLoadbalancer(httpClient);
+    } else {
+      this.loadbalancer = createLoadbalancer(httpClient);
+    }
   }
 
   protected ModifiableSolrParams getClientParams() {
@@ -226,12 +245,28 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected ExecutorService getThreadPoolExecutor(){
     return this.commExecutor;
   }
-
-  protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
-    LBHttpSolrClient client = new Builder()
+  
+  public SolrInternalHttpClient getHttpClient(){
+    return this.httpClient;
+  }
+  
+  protected LBHttpSolrClient createLoadbalancer(SolrInternalHttpClient httpClient){
+    LBHttpSolrClient client = new LBHttpSolrClient.Builder()
         .withHttpClient(httpClient)
         .withConnectionTimeout(connectionTimeout)
         .withSocketTimeout(soTimeout)
+        .solrInternal()
+        .build();
+    return client;
+  }
+
+  protected AsyncLBHttpSolrClient createAsyncLoadbalancer(SolrInternalHttpClient httpClient){
+    AsyncLBHttpSolrClient client = new Builder()
+        .withHttpClient(httpClient)
+        .withConnectionTimeout(connectionTimeout)
+        .withSocketTimeout(soTimeout)
+        .withHttp2SolrClient(solrClient)
+        .solrInternal() 
         .build();
     return client;
   }
@@ -250,20 +285,21 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public void close() {
     try {
-      ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
-    } finally {
       try {
         if (loadbalancer != null) {
-          loadbalancer.close();
+          IOUtils.closeQuietly(loadbalancer);
         }
-      } finally { 
-        if (defaultClient != null) {
-          HttpClientUtil.close(defaultClient);
+
+    } finally { 
+        if (solrClient != null) {
+          IOUtils.closeQuietly(solrClient);
         }
         if (clientConnectionManager != null)  {
           clientConnectionManager.close();
         }
       }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
     }
   }
 
@@ -274,9 +310,29 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * @param urls The list of solr server urls to load balance across
    * @return The response from the request
    */
+  public AsyncLBHttpSolrClient.Rsp makeAsyncLoadBalancedRequest(final QueryRequest req, List<String> urls)
+    throws SolrServerException, IOException {
+    return ((AsyncLBHttpSolrClient)loadbalancer).request(new AsyncLBHttpSolrClient.Req(req, urls));
+  }
+
+  protected AsyncLBHttpSolrClient.Req newAsyncLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
+    int numServersToTry = (int)Math.floor(urls.size() * this.permittedLoadBalancerRequestsMaximumFraction);
+    if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
+      numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
+    }
+    return new AsyncLBHttpSolrClient.Req(req, urls, numServersToTry);
+  }
+
+    /**
+   * Makes a request to one or more of the given urls, using the configured load balancer.
+   *
+   * @param req The solr search request that should be sent through the load balancer
+   * @param urls The list of solr server urls to load balance across
+   * @return The response from the request
+   */
   public LBHttpSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
     throws SolrServerException, IOException {
-    return loadbalancer.request(newLBHttpSolrClientReq(req, urls));
+    return ((LBHttpSolrClient)loadbalancer).request(new LBHttpSolrClient.Req(req, urls));
   }
 
   protected LBHttpSolrClient.Req newLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
@@ -305,7 +361,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   /**
-   * A distributed request is made via {@link LBHttpSolrClient} to the first live server in the URL list.
+   * A distributed request is made via {@link AsyncLBHttpSolrClient} to the first live server in the URL list.
    * This means it is just as likely to choose current host as any of the other hosts.
    * This function makes sure that the cores are sorted according to the given list of preferences.
    * E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive less requests from 
@@ -474,7 +530,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
     this.metricTag = tag;
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    clientConnectionManager.initializeMetrics(manager, registry, tag, expandedScope);
+   // clientConnectionManager.initializeMetrics(manager, registry, tag, expandedScope);
     httpRequestExecutor.initializeMetrics(manager, registry, tag, expandedScope);
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,
         manager.registry(registry),

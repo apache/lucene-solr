@@ -16,12 +16,15 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import org.eclipse.jetty.servlet.ServletHolder;
-
-import javax.servlet.Filter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
+
+import javax.servlet.Filter;
+
+import org.apache.solr.client.solrj.util.SolrInternalHttpClient;
+import org.apache.solr.client.solrj.util.SolrQueuedThreadPool;
+import org.eclipse.jetty.servlet.ServletHolder;
 
 public class JettyConfig {
 
@@ -38,9 +41,13 @@ public class JettyConfig {
   public final Map<Class<? extends Filter>, String> extraFilters;
 
   public final SSLConfig sslConfig;
+  
+  public SolrInternalHttpClient httpClient;
+  
+  public SolrQueuedThreadPool qtp;
 
   private JettyConfig(int port, String context, boolean stopAtShutdown, Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
-                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig) {
+                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, SolrInternalHttpClient httpClient, SolrQueuedThreadPool qtp) {
     this.port = port;
     this.context = context;
     this.stopAtShutdown = stopAtShutdown;
@@ -48,6 +55,8 @@ public class JettyConfig {
     this.extraServlets = extraServlets;
     this.extraFilters = extraFilters;
     this.sslConfig = sslConfig;
+    this.httpClient = httpClient;
+    this.qtp = qtp;
   }
 
   public static Builder builder() {
@@ -62,6 +71,8 @@ public class JettyConfig {
     builder.extraServlets = other.extraServlets;
     builder.extraFilters = other.extraFilters;
     builder.sslConfig = other.sslConfig;
+    builder.httpClient = other.httpClient;
+    builder.qtp = other.qtp;
     return builder;
   }
 
@@ -74,6 +85,8 @@ public class JettyConfig {
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
     Map<Class<? extends Filter>, String> extraFilters = new LinkedHashMap<>();
     SSLConfig sslConfig = null;
+    SolrInternalHttpClient httpClient;
+    SolrQueuedThreadPool qtp;
 
     public Builder setPort(int port) {
       this.port = port;
@@ -81,6 +94,7 @@ public class JettyConfig {
     }
 
     public Builder setContext(String context) {
+      //assert !context.endsWith("/") : context;
       this.context = context;
       return this;
     }
@@ -121,9 +135,19 @@ public class JettyConfig {
       this.sslConfig = sslConfig;
       return this;
     }
+    
+    public Builder withHttpClient(SolrInternalHttpClient httpClient) {
+      this.httpClient = httpClient;
+      return this;
+    }
+    
+    public Builder withJettyQtp(SolrQueuedThreadPool qtp) {
+      this.qtp = qtp;
+      return this;
+    }
 
     public JettyConfig build() {
-      return new JettyConfig(port, context, stopAtShutdown, waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig);
+      return new JettyConfig(port, context, stopAtShutdown, waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, httpClient, qtp);
     }
 
   }

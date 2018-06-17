@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.core.Config.assertWarnOrFail;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -108,9 +111,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.core.Config.assertWarnOrFail;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. </p>

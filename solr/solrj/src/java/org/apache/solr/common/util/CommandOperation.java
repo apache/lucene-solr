@@ -16,6 +16,12 @@
  */
 package org.apache.solr.common.util;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.common.util.Utils.toJSON;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -31,12 +37,6 @@ import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
-
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.StrUtils.formatString;
-import static org.apache.solr.common.util.Utils.toJSON;
 
 public class CommandOperation {
   public final String name;

@@ -30,7 +30,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -65,7 +65,7 @@ public class SolrStream extends TupleStream {
   private boolean trace;
   private Map<String, String> fieldMappings;
   private transient TupleStreamParser tupleStreamParser;
-  private transient HttpSolrClient client;
+  private transient Http2SolrClient client;
   private transient SolrClientCache cache;
   private String slice;
   private long checkpoint = -1;
@@ -105,7 +105,8 @@ public class SolrStream extends TupleStream {
 
   public void open() throws IOException {
     if(cache == null) {
-      client = new HttpSolrClient.Builder(baseUrl).build();
+      // nocommit: shared executor
+      client = new Http2SolrClient.Builder(baseUrl).build();
     } else {
       client = cache.getHttpSolrClient(baseUrl);
     }
