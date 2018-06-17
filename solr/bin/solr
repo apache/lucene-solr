@@ -124,7 +124,7 @@ if [ -z "$SOLR_STOP_WAIT" ]; then
   SOLR_STOP_WAIT=180
 fi
 # test that Java exists, is executable and correct version
-JAVA_VER=$("$JAVA" -version 2>&1)
+JAVA_VER=$("$JAVA" -version 2>&1 | grep -v -E '^[pP]icked up (_JAVA_OPTIONS|JAVA_TOOL_OPTIONS):' )
 if [[ $? -ne 0 ]] ; then
   echo >&2 "Java not found, or an error was encountered when running java."
   echo >&2 "A working Java $JAVA_VER_REQ JRE is required to run Solr!"
