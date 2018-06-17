@@ -192,6 +192,9 @@ Bug Fixes
 * LUCENE-8357: FunctionScoreQuery.boostByQuery() and boostByValue() were
   producing truncated Explanations (Markus Jelsma, Alan Woodward)
 
+* LUCENE-8360: NGramTokenFilter and EdgeNGramTokenFilter did not correctly
+  set position increments in end() (Alan Woodward)
+
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
