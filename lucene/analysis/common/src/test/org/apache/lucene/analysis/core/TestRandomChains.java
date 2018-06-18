@@ -97,7 +97,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
@@ -130,6 +129,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     // expose inconsistent offsets
     // https://issues.apache.org/jira/browse/LUCENE-4170
     avoidConditionals.add(ShingleFilter.class);
+    // FlattenGraphFilter changes the output graph entirely, so wrapping it in a condition
+    // can break position lengths
+    avoidConditionals.add(FlattenGraphFilter.class);
   }
 
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
@@ -626,7 +628,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       return sb.toString();
     }
     
-    private <T> T createComponent(Constructor<T> ctor, Object[] args, StringBuilder descr) {
+    private <T> T createComponent(Constructor<T> ctor, Object[] args, StringBuilder descr, boolean isConditional) {
       try {
         final T instance = ctor.newInstance(args);
         /*
@@ -635,6 +637,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         }
         */
         descr.append("\n  ");
+        if (isConditional) {
+          descr.append("Conditional:");
+        }
         descr.append(ctor.getDeclaringClass().getName());
         String params = Arrays.deepToString(args);
         params = params.substring(1, params.length()-1);
@@ -673,7 +678,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         if (broken(ctor, args)) {
           continue;
         }
-        spec.tokenizer = createComponent(ctor, args, descr);
+        spec.tokenizer = createComponent(ctor, args, descr, false);
         if (spec.tokenizer != null) {
           spec.toString = descr.toString();
         }
@@ -693,7 +698,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           if (broken(ctor, args)) {
             continue;
           }
-          reader = createComponent(ctor, args, descr);
+          reader = createComponent(ctor, args, descr, false);
           if (reader != null) {
             spec.reader = reader;
             break;
@@ -725,8 +730,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
               if (broken(ctor, args)) {
                 return in;
               }
-              descr.append("ConditionalTokenFilter: ");
-              TokenStream ts = createComponent(ctor, args, descr);
+              TokenStream ts = createComponent(ctor, args, descr, true);
               if (ts == null) {
                 return in;
               }
@@ -752,7 +756,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
             if (broken(ctor, args)) {
               continue;
             }
-            final TokenFilter flt = createComponent(ctor, args, descr);
+            final TokenFilter flt = createComponent(ctor, args, descr, false);
             if (flt != null) {
               spec.stream = flt;
               break;
@@ -849,7 +853,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     String toString;
   }
 
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testRandomChains() throws Throwable {
     int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;
     Random random = random();
@@ -878,7 +881,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
 
   // we might regret this decision...
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testRandomChainsWithLargeStrings() throws Throwable {
     int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;
     Random random = random();
