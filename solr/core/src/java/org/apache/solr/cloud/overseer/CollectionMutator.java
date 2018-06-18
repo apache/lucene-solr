@@ -38,6 +38,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionMutator {
@@ -106,9 +108,12 @@ public class CollectionMutator {
     Map<String, Object> m = coll.shallowCopy();
     boolean hasAnyOps = false;
     for (String prop : CollectionsHandler.MODIFIABLE_COLL_PROPS) {
-      if(message.get(prop)!= null) {
+      if (message.get(prop) != null) {
         hasAnyOps = true;
         m.put(prop,message.get(prop));
+        if (prop == REPLICATION_FACTOR) { //SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
+          m.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
+        }
       }
     }
     
