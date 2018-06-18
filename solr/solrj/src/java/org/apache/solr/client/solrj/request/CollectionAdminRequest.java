@@ -508,7 +508,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set("router.field", routerField);
       }
       if (nrtReplicas != null) {
-        params.set( ZkStateReader.REPLICATION_FACTOR, nrtReplicas);// Keep both for compatibility?
         params.set( ZkStateReader.NRT_REPLICAS, nrtReplicas);
       }
       if (autoAddReplicas != null) {

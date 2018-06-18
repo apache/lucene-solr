@@ -92,9 +92,70 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusZNodeVersion();
     testClusterStateMigration();
     testCollectionCreationCollectionNameValidation();
+    testReplicationFactorValidaton();
     testCollectionCreationShardNameValidation();
     testAliasCreationNameValidation();
     testShardCreationNameValidation();
+  }
+
+  private void testReplicationFactorValidaton() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      //Test that you can't specify both replicationFactor and nrtReplicas
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", "test_repFactorColl");
+      params.set("numShards", "1");
+      params.set("replicationFactor", "1");
+      params.set("nrtReplicas", "2");
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        fail();
+      } catch (RemoteSolrException e) {
+        final String errorMessage = e.getMessage();
+        assertTrue(errorMessage.contains("Cannot specify both replicationFactor and nrtReplicas as they mean the same thing"));
+      }
+
+      //Create it again correctly
+      CollectionAdminRequest.Create req = CollectionAdminRequest.createCollection("test_repFactorColl", "conf1", 1, 3, 0, 0);
+      client.request(req);
+
+      waitForCollection(cloudClient.getZkStateReader(), "test_repFactorColl", 1);
+      waitForRecoveriesToFinish("test_repFactorColl", false);
+
+      //Assert that replicationFactor has also been set to 3
+      assertCountsForRepFactorAndNrtReplicas(client, "test_repFactorColl");
+
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
+      params.set("collection", "test_repFactorColl");
+      params.set("replicationFactor", "4");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+      client.request(request);
+
+      assertCountsForRepFactorAndNrtReplicas(client, "test_repFactorColl");
+    }
+  }
+
+  private void assertCountsForRepFactorAndNrtReplicas(CloudSolrClient client, String collectionName) throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+    params.set("collection", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+
+    NamedList<Object> rsp = client.request(request);
+    NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+    assertNotNull("Cluster state should not be null", cluster);
+    NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+    assertNotNull("Collections should not be null in cluster state", collections);
+    assertEquals(1, collections.size());
+    Map<String, Object> collection = (Map<String, Object>) collections.get(collectionName);
+    assertNotNull(collection);
+    assertEquals(collection.get("replicationFactor"), collection.get("nrtReplicas"));
   }
 
   private void clusterStatusWithCollectionAndShard() throws IOException, SolrServerException {

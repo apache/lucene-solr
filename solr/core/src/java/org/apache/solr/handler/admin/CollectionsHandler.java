@@ -484,6 +484,22 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (props.get(STATE_FORMAT) == null) {
         props.put(STATE_FORMAT, "2");
       }
+
+      if (props.get(REPLICATION_FACTOR) != null && props.get(NRT_REPLICAS) != null) {
+        //TODO: Remove this in 8.0 . Keep this for SolrJ client back-compat. See SOLR-11676 for more details
+        int replicationFactor = Integer.parseInt((String) props.get(REPLICATION_FACTOR));
+        int nrtReplicas = Integer.parseInt((String) props.get(NRT_REPLICAS));
+        if (replicationFactor != nrtReplicas) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
+        }
+      }
+      if (props.get(REPLICATION_FACTOR) != null) {
+        props.put(NRT_REPLICAS, props.get(REPLICATION_FACTOR));
+      } else if (props.get(NRT_REPLICAS) != null) {
+        props.put(REPLICATION_FACTOR, props.get(NRT_REPLICAS));
+      }
+
       addMapObject(props, RULE);
       addMapObject(props, SNITCH);
       verifyRuleParams(h.coreContainer, props);
@@ -907,6 +923,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       addMapObject(m, SNITCH);
       for (String prop : MODIFIABLE_COLL_PROPS) DocCollection.verifyProp(m, prop);
       verifyRuleParams(h.coreContainer, m);
+      if (m.get(REPLICATION_FACTOR) != null) {
+        m.put(NRT_REPLICAS, m.get(REPLICATION_FACTOR));
+      }
       return m;
     }),
     MIGRATESTATEFORMAT_OP(MIGRATESTATEFORMAT, (req, rsp, h) -> copy(req.getParams().required(), null, COLLECTION_PROP)),
