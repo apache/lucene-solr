@@ -1,3 +1,115 @@
-<p>
-  analysis-component works!
-</p>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="analysis">
+  <div class="block analysis-error" id="analysis-handler-missing" *ngIf="isHandlerMissing">
+    <div class="head">This Functionality requires the <code>/analysis/field</code> Handler to be registered and active!</div>
+  </div>
+  <div class="block analysis-error" id="analysis-error" *ngIf="analysisError">
+    <div class="body">{{analysisError}}</div>
+  </div>
+  <div id="analysis-holder">
+    <div id="field-analysis">
+      <form method="get">
+        <ul class="clearfix">
+          <li class="index">
+            <label for="analysis_fieldvalue_index">Field Value (Index)</label>
+            <textarea name="analysis.fieldvalue" id="analysis_fieldvalue_index" [(ngModel)]="indexText"></textarea>
+          </li>
+          <li class="query">
+            <label for="analysis_fieldvalue_query">Field Value (Query)</label>
+            <textarea name="analysis.query" id="analysis_fieldvalue_query" [(ngModel)]="queryText"></textarea>
+          </li>
+          <li class="settings-holder clearfix">
+            <div class="settings clearfix">
+              <label for="type_or_name">Analyse Fieldname / FieldType:</label>
+              <ng-select
+                  labelForId="type_or_name"
+                  name="type_or_name"
+                  style="width:250px"
+                  (change)="changeFieldOrType()"
+                  [(ngModel)]="fieldOrType"
+                  [items]="fieldsAndTypes"
+                  bindLabel="label"
+                  bindValue="value"
+                  groupBy="group"
+                  placeholder="Select an Option">
+                </ng-select>
+              <a id="tor_schema" [routerLink]="['/collections', collectionName, 'schema']"><span>Schema Browser</span>&nbsp;</a>
+              <div class="buttons clearfix">
+                <button type="submit" (click)="updateQueryString()"><span>Analyse Values</span></button>
+                <div class="verbose_output" [ngClass]="{'active': verbose}">
+                  <a (click)="toggleVerbose()">Verbose Output</a>
+                </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </form>
+    </div>
+    <div id="analysis-result" class="clearfix verbose_output">
+      <div class="{{resultKey}}" *ngFor="let resultKey of resultKeys">
+        <table border="0" cellspacing="0" cellpadding="0">
+          <tbody>
+            <tr class="step" *ngFor="let component of result[resultKey]">
+              <td class="part analyzer">
+                <div>
+                  <abbr title="{{component.name}}">{{component.short}}</abbr>
+                </div>
+              </td>
+              <td class="part legend" *ngIf="verbose">
+                <div class="holder">
+                  <table border="0" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td>
+                        <ng-container *ngFor="let caption of component.captions">
+                          <table border="0" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td>{{ caption }}</td>
+                            </tr>
+                          </table>
+                        </ng-container>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </td>
+              <td class="part data" colspan="1" *ngFor="let token of component.tokens">
+                <div class="holder" *ngIf="!token.blank">
+                    <table border="0" cellspacing="0" cellpadding="0">
+                      <tbody>
+                        <tr class="details">
+                          <td class="details">
+                            <ng-container *ngFor="let value of token.keys; let i = index">
+                              <table *ngIf="verbose || i==0" border="0" cellspacing="0" cellpadding="0" >
+                                <tbody>
+                                  <tr class="{{value.name}} {{value.extraclass}}" >
+                                    <td>{{value.value}}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </ng-container>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="holder" *ngIf="token.blank">&nbsp;</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>

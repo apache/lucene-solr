@@ -25,8 +25,10 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import {AppComponent} from './app.component';
 import { CollectionsComponent } from './collections/collections.component';
 import { SystemInfoService } from './systeminfo.service';
+import { AnalysisService } from './analysis.service';
 import { CollectionsService } from './collections.service';
 import { CoresService } from './cores.service';
+import { LukeService } from './luke.service';
 import { ZookeeperService } from './zookeeper.service';
 import { SharedService } from './shared.service';
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -74,8 +76,10 @@ import { SegmentsComponent } from './segments/segments.component';
   providers: [
     SharedService,
     SystemInfoService,
+    AnalysisService,
     CollectionsService,
     CoresService,
+    LukeService,
     ZookeeperService
   ],
   bootstrap: [AppComponent]
