@@ -253,7 +253,7 @@ def main():
           tests[testcase] = oldTests[testcase]
       if len(tests) > 0:
         print('\n[repro] Re-testing 100%% failures at the tip of %s' % branchFromLog)
-        prepareWorkspace(False, branchFromLog)
+        prepareWorkspace(True, branchFromLog)
         modules = groupTestsByModule(tests)
         runTests(config.testIters, modules, tests)
         failures = printReport(config.testIters, ' at the tip of %s' % branchFromLog)
