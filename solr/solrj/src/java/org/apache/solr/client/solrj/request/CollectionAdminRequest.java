@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -833,6 +834,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String configName;
     protected Integer maxShardsPerNode;
     protected Integer replicationFactor;
+    protected Integer nrtReplicas;
+    protected Integer tlogReplicas;
+    protected Integer pullReplicas;
     protected Boolean autoAddReplicas;
     protected Optional<String> createNodeSet = Optional.empty();
     protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
@@ -885,7 +889,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Restore setMaxShardsPerNode(int maxShardsPerNode) { this.maxShardsPerNode = maxShardsPerNode; return this; }
 
     public Integer getReplicationFactor() { return replicationFactor; }
-    public Restore setReplicationFactor(Integer repl) { this.replicationFactor = repl; return this; }
+    public Restore setReplicationFactor(Integer replicationFactor) { this.replicationFactor = replicationFactor; return this; }
+
+    public Integer getNrtReplicas() { return nrtReplicas; }
+    public Restore setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas= nrtReplicas; return this; };
+
+    public Integer getTlogReplicas() { return tlogReplicas; }
+    public Restore setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this; }
+
+    public Integer getPullReplicas() { return pullReplicas; }
+    public Restore setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this; }
 
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
     public Restore setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
@@ -907,8 +920,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (maxShardsPerNode != null) {
         params.set( ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
       }
+      if (replicationFactor != null && nrtReplicas != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");
+      }
       if (replicationFactor != null) {
         params.set(ZkStateReader.REPLICATION_FACTOR, replicationFactor);
+      }
+      if (nrtReplicas != null) {
+        params.set(ZkStateReader.NRT_REPLICAS, nrtReplicas);
+      }
+      if (pullReplicas != null) {
+        params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
+      }
+      if (tlogReplicas != null) {
+        params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
       }
       if (autoAddReplicas != null) {
         params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);

@@ -110,14 +110,21 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         zkStateReader.getClusterState().getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
 
     int numShards = backupCollectionState.getActiveSlices().size();
-    
-    int numNrtReplicas = getInt(message, NRT_REPLICAS, backupCollectionState.getNumNrtReplicas(), 0);
-    if (numNrtReplicas == 0) {
-      numNrtReplicas = getInt(message, REPLICATION_FACTOR, backupCollectionState.getReplicationFactor(), 0);
+
+    int numNrtReplicas;
+    if (message.get(REPLICATION_FACTOR) != null) {
+      numNrtReplicas = message.getInt(REPLICATION_FACTOR, 0);
+    } else if (message.get(NRT_REPLICAS) != null) {
+      numNrtReplicas = message.getInt(NRT_REPLICAS, 0);
+    } else {
+      //replicationFactor and nrtReplicas is always in sync after SOLR-11676
+      //pick from cluster state of the backed up collection
+      numNrtReplicas = backupCollectionState.getReplicationFactor();
     }
     int numTlogReplicas = getInt(message, TLOG_REPLICAS, backupCollectionState.getNumTlogReplicas(), 0);
     int numPullReplicas = getInt(message, PULL_REPLICAS, backupCollectionState.getNumPullReplicas(), 0);
     int totalReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
+    assert totalReplicasPerShard > 0;
     
     int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, backupCollectionState.getMaxShardsPerNode());
     int availableNodeCount = nodeList.size();
@@ -151,11 +158,16 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       if (properties.get(STATE_FORMAT) == null) {
         propMap.put(STATE_FORMAT, "2");
       }
+      propMap.put(REPLICATION_FACTOR, numNrtReplicas);
+      propMap.put(NRT_REPLICAS, numNrtReplicas);
+      propMap.put(TLOG_REPLICAS, numTlogReplicas);
+      propMap.put(PULL_REPLICAS, numPullReplicas);
+      properties.put(MAX_SHARDS_PER_NODE, maxShardsPerNode);
 
       // inherit settings from input API, defaulting to the backup's setting.  Ex: replicationFactor
       for (String collProp : OverseerCollectionMessageHandler.COLL_PROPS.keySet()) {
         Object val = message.getProperties().getOrDefault(collProp, backupCollectionState.get(collProp));
-        if (val != null) {
+        if (val != null && propMap.get(collProp) == null) {
           propMap.put(collProp, val);
         }
       }
@@ -308,7 +320,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       if (totalReplicasPerShard > 1) {
-        log.info("Adding replicas to restored collection={}", restoreCollection);
+        log.info("Adding replicas to restored collection={}", restoreCollection.getName());
         for (Slice slice : restoreCollection.getSlices()) {
 
           //Add the remaining replicas for each shard, considering it's type

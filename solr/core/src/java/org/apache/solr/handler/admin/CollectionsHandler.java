@@ -1016,12 +1016,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             "Cannot restore with a CREATE_NODE_SET of CREATE_NODE_SET_EMPTY."
         );
       }
+      if (req.getParams().get(NRT_REPLICAS) != null && req.getParams().get(REPLICATION_FACTOR) != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");
+      }
 
       Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       // from CREATE_OP:
-      copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, MAX_SHARDS_PER_NODE, STATE_FORMAT,
-          AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
+      copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, NRT_REPLICAS, TLOG_REPLICAS,
+          PULL_REPLICAS, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
     }),
