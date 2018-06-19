@@ -1713,7 +1713,7 @@ public class ZkStateReader implements Closeable {
         try {
           try {
             final Stat stat = getZkClient().setData(ALIASES, modAliasesJson, curAliases.getZNodeVersion(), true);
-            setIfNewer(Aliases.fromJSON(modAliasesJson, stat.getVersion()));
+            setIfNewerOrZero(Aliases.fromJSON(modAliasesJson, stat.getVersion()));
             return;
           } catch (KeeperException.BadVersionException e) {
             LOG.debug(e.toString(), e);
@@ -1750,7 +1750,20 @@ public class ZkStateReader implements Closeable {
       zkClient.getSolrZooKeeper().sync(ALIASES, null, null);
       Stat stat = new Stat();
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);
-      return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
+      if (stat.getVersion() == 0) {
+        // special case for SOLR-12413 - we want to immediately cause a version increment if it's version zero
+        // so that we don't wastefully replace aliases repeatedly. This will cause a watch to fire and this method
+        // will get called again but not hit this block and after that we should be fine
+        try {
+          zkClient.setData(ALIASES, data, 0, true);
+        } catch (KeeperException e) {
+          if (!(e instanceof KeeperException.BadVersionException)) {
+            // if the version is already incremented we don't care, the only point here is to get off of zero.
+            throw e;
+          }
+        }
+      }
+      return setIfNewerOrZero(Aliases.fromJSON(data, stat.getVersion()));
     }
 
     // ZK Watcher interface
@@ -1767,7 +1780,7 @@ public class ZkStateReader implements Closeable {
         Stat stat = new Stat();
         final byte[] data = zkClient.getData(ALIASES, this, stat, true);
         // note: it'd be nice to avoid possibly needlessly parsing if we don't update aliases but not a big deal
-        setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
+        setIfNewerOrZero(Aliases.fromJSON(data, stat.getVersion()));
       } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
         LOG.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
       } catch (KeeperException e) {
@@ -1785,10 +1798,10 @@ public class ZkStateReader implements Closeable {
      *
      * @param newAliases the potentially newer version of Aliases
      */
-    private boolean setIfNewer(Aliases newAliases) {
+    private boolean setIfNewerOrZero(Aliases newAliases) {
       synchronized (this) {
         int cmp = Integer.compare(aliases.getZNodeVersion(), newAliases.getZNodeVersion());
-        if (cmp < 0) {
+        if (aliases.getZNodeVersion() == 0 || cmp < 0) {
           LOG.debug("Aliases: cmp={}, new definition is: {}", cmp, newAliases);
           aliases = newAliases;
           this.notifyAll();
