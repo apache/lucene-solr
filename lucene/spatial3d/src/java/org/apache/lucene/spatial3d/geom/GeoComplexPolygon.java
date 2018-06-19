@@ -706,7 +706,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       this.plane = new Plane(startPoint, endPoint);
       this.startPlane =  new SidedPlane(endPoint, plane, startPoint);
       this.endPlane = new SidedPlane(startPoint, plane, endPoint);
-      final GeoPoint interpolationPoint = plane.interpolate(startPoint, endPoint, halfProportions)[0];
+      final GeoPoint interpolationPoint = plane.interpolate(pm, startPoint, endPoint, halfProportions)[0];
       this.backingPlane = new SidedPlane(interpolationPoint, interpolationPoint, 0.0);
       this.planeBounds = new XYZBounds();
       this.planeBounds.addPoint(startPoint);
