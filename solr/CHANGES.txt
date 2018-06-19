@@ -63,6 +63,9 @@ Bug Fixes
 * SOLR-11676: Keep nrtReplicas and replicationFactor in sync while creating a collection and modifying a collection
   (Varun Thacker)
 
+* SOLR-12489: User specified replicationFactor and maxShardsPerNode is used when specified during a restore operation.
+  A user can now specify nrtReplicas/tlogReplicas/pullReplicas while restoring the collection.
+  Specifying replicationFactor or nrtReplicas have the same effect and only one can be specified (Varun Thacker)
 
 Optimizations
 ----------------------
