@@ -465,7 +465,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
   }
 
   // Tests that terms collected out of order due to being present in multiple Spans are handled correctly
-  // See LUCENE-
+  // See LUCENE-8365
   public void testReverseOrderSpanCollection() throws IOException {
     // Processing order may depend on various optimizations or other weird factor.
     indexWriter.addDocument(newDoc("alpha bravo - alpha charlie"));
