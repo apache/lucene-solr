@@ -158,11 +158,18 @@ def prepareWorkspace(useGit, gitRef):
     checkoutCmd = 'git checkout %s' % gitRef
     code = run(checkoutCmd)
     if 0 != code:
+      addWantedBranchCmd = "git remote set-branches --add origin %s" % gitRef
       checkoutBranchCmd = 'git checkout -t -b %s origin/%s' % (gitRef, gitRef) # Checkout remote branch as new local branch
-      print('"%s" failed. Trying "%s".' % (checkoutCmd, checkoutBranchCmd))
+      print('"%s" failed. Trying "%s" and "%s".' % (checkoutCmd, addWantedBranchCmd, checkoutBranchCmd))
+      code = run(addWantedBranchCmd)
+      if 0 != code:
+        raise RuntimeError('ERROR: "%s" failed.  See above.' % addWantedBranchCmd)
       code = run(checkoutBranchCmd)
       if 0 != code:
         raise RuntimeError('ERROR: "%s" failed.  See above.' % checkoutBranchCmd)
+    code = run('git merge')
+    if 0 != code:
+      raise RuntimeError('ERROR: "git merge" failed.  See above.')
     gitCheckoutSucceeded = True
     run('git merge --ff-only', rememberFailure=False) # Ignore failure on non-branch ref
   
