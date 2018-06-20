@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -60,7 +59,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.PeerSync;
+import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -573,6 +572,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         // that started before they saw recovering state 
         // are sure to have finished (see SOLR-7141 for
         // discussion around current value)
+        //TODO since SOLR-11216, we probably won't need this
         try {
           Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
         } catch (InterruptedException e) {
@@ -585,15 +585,15 @@ public class RecoveryStrategy implements Runnable, Closeable {
           LOG.info("Attempting to PeerSync from [{}] - recoveringAfterStartup=[{}]", leader.getCoreUrl(), recoveringAfterStartup);
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
-          PeerSync peerSync = new PeerSync(core,
-              Collections.singletonList(leader.getCoreUrl()), ulog.getNumRecordsToKeep(), false, false);
-          peerSync.setStartingVersions(recentVersions);
-          boolean syncSuccess = peerSync.sync().isSuccess();
+          PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core,
+              leader.getCoreUrl(), ulog.getNumRecordsToKeep());
+          boolean syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
           if (syncSuccess) {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
             // force open a new searcher
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+            req.close();
             LOG.info("PeerSync stage of recovery was successful.");
 
             // solrcloud_debug
@@ -786,6 +786,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       SolrQueryRequest req = new LocalSolrQueryRequest(core,
           new ModifiableSolrParams());
       core.getUpdateHandler().getUpdateLog().copyOverBufferingUpdates(new CommitUpdateCommand(req, false));
+      req.close();
       return null;
     }
     Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
