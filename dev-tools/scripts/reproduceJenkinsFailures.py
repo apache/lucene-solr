@@ -167,9 +167,6 @@ def prepareWorkspace(useGit, gitRef):
       code = run(checkoutBranchCmd)
       if 0 != code:
         raise RuntimeError('ERROR: "%s" failed.  See above.' % checkoutBranchCmd)
-    code = run('git merge')
-    if 0 != code:
-      raise RuntimeError('ERROR: "git merge" failed.  See above.')
     gitCheckoutSucceeded = True
     run('git merge --ff-only', rememberFailure=False) # Ignore failure on non-branch ref
   
