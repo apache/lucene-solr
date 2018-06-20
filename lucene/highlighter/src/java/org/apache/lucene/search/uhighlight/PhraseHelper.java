@@ -384,8 +384,8 @@ public class PhraseHelper {
       // shift right any pairs by one to make room
       final int shiftLen = numPairs - (pairIdx + 1);
       if (shiftLen > 0) {
-        System.arraycopy(startOffsets, pairIdx + 2, startOffsets, pairIdx + 3, shiftLen);
-        System.arraycopy(endOffsets, pairIdx + 2, endOffsets, pairIdx + 3, shiftLen);
+        System.arraycopy(startOffsets, pairIdx + 1, startOffsets, pairIdx + 2, shiftLen);
+        System.arraycopy(endOffsets, pairIdx + 1, endOffsets, pairIdx + 2, shiftLen);
       }
       // now we can place the offset pair
       startOffsets[pairIdx + 1] = startOffset;
