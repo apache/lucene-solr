@@ -67,6 +67,8 @@ Bug Fixes
   A user can now specify nrtReplicas/tlogReplicas/pullReplicas while restoring the collection.
   Specifying replicationFactor or nrtReplicas have the same effect and only one can be specified (Varun Thacker)
 
+* SOLR-11216: Race condition in PeerSync (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
