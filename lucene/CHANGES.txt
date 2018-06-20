@@ -16,6 +16,15 @@ Changes in Runtime Behavior:
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
   findForcedMerges and findForcedDeletesMerges (Erick Erickson)
 
+
+======================= Lucene 7.4.1 =======================
+
+Bug Fixes:
+ 
+ * LUCENE-8365: Fix ArrayIndexOutOfBoundsException in UnifiedHighlighter. This fixes 
+   a "off by one" error in the UnifiedHighlighter's code that is only triggered when
+   two nested SpanNearQueries contain the same term. (Marc-Andre Morissette via Simon Willnauer)
+
 ======================= Lucene 7.4.0 =======================
 
 Upgrading
