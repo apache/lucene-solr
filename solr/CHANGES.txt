@@ -102,6 +102,9 @@ Bug Fixes
 
 * SOLR-11807: Restoring collection now treats maxShardsPerNode=-1 as unlimited (Varun Thacker)
 
+* SOLR-12413: If Zookeeper was pre-loaded with data before first-use, then the aliases information would be ignored.
+  (David Smiley, Gaël Jourdan, Gus Heck)
+
 Optimizations
 ----------------------
 
