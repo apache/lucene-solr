@@ -1698,6 +1698,19 @@ public class ZkStateReader implements Closeable {
      * The caller should understand it's possible the aliases has further changed if it examines it.
      */
     public void applyModificationAndExportToZk(UnaryOperator<Aliases> op) {
+      // The current aliases hasn't been update()'ed yet -- which is impossible?  Any way just update it first.
+      if (aliases.getZNodeVersion() == -1) {
+        try {
+          boolean updated = update();
+          assert updated;
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new ZooKeeperException(ErrorCode.SERVER_ERROR, e.toString(), e);
+        } catch (KeeperException e) {
+          throw new ZooKeeperException(ErrorCode.SERVER_ERROR, e.toString(), e);
+        }
+      }
+
       final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
       // note: triesLeft tuning is based on ConcurrentCreateRoutedAliasTest
       for (int triesLeft = 30; triesLeft > 0; triesLeft--) {
@@ -1769,6 +1782,7 @@ public class ZkStateReader implements Closeable {
         // note: it'd be nice to avoid possibly needlessly parsing if we don't update aliases but not a big deal
         setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
       } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
+        // note: aliases.json is required to be present
         LOG.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
       } catch (KeeperException e) {
         LOG.error("A ZK error has occurred", e);
@@ -1786,6 +1800,7 @@ public class ZkStateReader implements Closeable {
      * @param newAliases the potentially newer version of Aliases
      */
     private boolean setIfNewer(Aliases newAliases) {
+      assert newAliases.getZNodeVersion() >= 0;
       synchronized (this) {
         int cmp = Integer.compare(aliases.getZNodeVersion(), newAliases.getZNodeVersion());
         if (cmp < 0) {
