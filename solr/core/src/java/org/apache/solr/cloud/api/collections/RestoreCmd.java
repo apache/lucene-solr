@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -137,8 +138,8 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     //Upload the configs
-    String configName = (String) properties.get(OverseerCollectionMessageHandler.COLL_CONF);
-    String restoreConfigName = message.getStr(OverseerCollectionMessageHandler.COLL_CONF, configName);
+    String configName = (String) properties.get(CollectionAdminParams.COLL_CONF);
+    String restoreConfigName = message.getStr(CollectionAdminParams.COLL_CONF, configName);
     if (zkStateReader.getConfigManager().configExists(restoreConfigName)) {
       log.info("Using existing config {}", restoreConfigName);
       //TODO add overwrite option?
@@ -165,7 +166,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       properties.put(MAX_SHARDS_PER_NODE, maxShardsPerNode);
 
       // inherit settings from input API, defaulting to the backup's setting.  Ex: replicationFactor
-      for (String collProp : OverseerCollectionMessageHandler.COLL_PROPS.keySet()) {
+      for (String collProp : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.keySet()) {
         Object val = message.getProperties().getOrDefault(collProp, backupCollectionState.get(collProp));
         if (val != null && propMap.get(collProp) == null) {
           propMap.put(collProp, val);
@@ -174,7 +175,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
       propMap.put(NAME, restoreCollectionName);
       propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET, OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY); //no cores
-      propMap.put(OverseerCollectionMessageHandler.COLL_CONF, restoreConfigName);
+      propMap.put(CollectionAdminParams.COLL_CONF, restoreConfigName);
 
       // router.*
       @SuppressWarnings("unchecked")

@@ -41,6 +41,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -103,7 +104,7 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND
 import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
@@ -915,13 +916,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     MODIFYCOLLECTION_OP(MODIFYCOLLECTION, (req, rsp, h) -> {
-      Map<String, Object> m = copy(req.getParams(), null, MODIFIABLE_COLL_PROPS);
+      Map<String, Object> m = copy(req.getParams(), null, CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES);
       if (m.isEmpty()) throw new SolrException(ErrorCode.BAD_REQUEST,
-          formatString("no supported values provided rule, snitch, maxShardsPerNode, replicationFactor, collection.configName"));
+          formatString("no supported values provided %s", CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES));
       copy(req.getParams().required(), m, COLLECTION_PROP);
       addMapObject(m, RULE);
       addMapObject(m, SNITCH);
-      for (String prop : MODIFIABLE_COLL_PROPS) DocCollection.verifyProp(m, prop);
+      for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) DocCollection.verifyProp(m, prop);
       verifyRuleParams(h.coreContainer, m);
       if (m.get(REPLICATION_FACTOR) != null) {
         m.put(NRT_REPLICAS, m.get(REPLICATION_FACTOR));
@@ -1342,15 +1343,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     Map<String, Object> execute(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception;
 
   }
-
-  public static final List<String> MODIFIABLE_COLL_PROPS = Arrays.asList(
-      RULE,
-      SNITCH,
-      REPLICATION_FACTOR,
-      MAX_SHARDS_PER_NODE,
-      AUTO_ADD_REPLICAS,
-      POLICY,
-      COLL_CONF);
 
   @Override
   public Collection<Api> getApis() {

@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -210,7 +211,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
         NAME, tempSourceCollectionName,
         NRT_REPLICAS, 1,
         OverseerCollectionMessageHandler.NUM_SLICES, 1,
-        OverseerCollectionMessageHandler.COLL_CONF, configName,
+        CollectionAdminParams.COLL_CONF, configName,
         OverseerCollectionMessageHandler.CREATE_NODE_SET, sourceLeader.getNodeName());
     if (asyncId != null) {
       String internalAsyncId = asyncId + Math.abs(System.nanoTime());

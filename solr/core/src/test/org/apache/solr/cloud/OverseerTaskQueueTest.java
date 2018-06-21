@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
@@ -51,7 +52,7 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     // Put an expected Overseer task onto the queue
     final Map<String, Object> props = new HashMap<>();
     props.put(CommonParams.NAME, "coll1");
-    props.put(OverseerCollectionMessageHandler.COLL_CONF, "myconf");
+    props.put(CollectionAdminParams.COLL_CONF, "myconf");
     props.put(OverseerCollectionMessageHandler.NUM_SLICES, 1);
     props.put(ZkStateReader.REPLICATION_FACTOR, 3);
     props.put(CommonAdminParams.ASYNC, requestId);

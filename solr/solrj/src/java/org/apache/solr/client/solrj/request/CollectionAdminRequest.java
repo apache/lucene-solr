@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -52,9 +53,16 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
+import static org.apache.solr.common.cloud.DocCollection.RULE;
+import static org.apache.solr.common.cloud.DocCollection.SNITCH;
+import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_UNSET;
 
 /**
  * This class is experimental and subject to change.
@@ -62,6 +70,19 @@ import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SE
  * @since solr 4.5
  */
 public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements V2RequestSupport, MapWriter {
+
+  /**
+   * The set of modifiable collection properties
+   */
+  public static final java.util.List<String> MODIFIABLE_COLLECTION_PROPERTIES = Arrays.asList(
+      RULE,
+      SNITCH,
+      REPLICATION_FACTOR,
+      MAX_SHARDS_PER_NODE,
+      AUTO_ADD_REPLICAS,
+      POLICY,
+      COLL_CONF,
+      PROPERTY_UNSET);
 
   protected final CollectionAction action;
 
