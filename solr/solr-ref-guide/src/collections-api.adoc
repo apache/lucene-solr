@@ -156,7 +156,7 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
 [[modifycollection]]
 == MODIFYCOLLECTION: Modify Attributes of a Collection
 
-`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>_`
+`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>_&property.unset=<yet_another_attribute_name>`
 
 It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
 
@@ -166,8 +166,13 @@ It's possible to edit multiple attributes at a time. Changing these values only 
 The name of the collection to be modified. This parameter is required.
 
 `_attribute_=_value_`::
-Key-value pairs of attribute names and attribute values. At least one of these is required.
+Key-value pairs of attribute names and attribute values.
 +
+`property.unset=_attribute_`::
+Unsets (or deletes) the given attribute from the collection.
+
+At least one of either `_attribute_` or `property.unset` parameters is required.
+
 The attributes that can be modified are:
 
 * maxShardsPerNode

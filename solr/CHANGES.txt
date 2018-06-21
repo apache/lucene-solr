@@ -55,6 +55,8 @@ New Features
 * SOLR-11578: Solr 7 Admin UI (Cloud > Graph) should reflect the Replica type to give a more accurate representation
   of the cluster. (Rhoit Singh via Erick Erickson)
 
+* SOLR-12507: Modify collection API should support un-setting properties. (shalin)
+
 Bug Fixes
 ----------------------
 

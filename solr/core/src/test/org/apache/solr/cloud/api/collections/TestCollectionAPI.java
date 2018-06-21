@@ -96,6 +96,65 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     testCollectionCreationShardNameValidation();
     testAliasCreationNameValidation();
     testShardCreationNameValidation();
+    testModifyCollection(); // deletes replicationFactor property from collections, be careful adding new tests after this one!
+  }
+
+  private void testModifyCollection() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
+      params.set("collection", COLLECTION_NAME);
+      params.set("replicationFactor", 25);
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      client.request(request);
+      NamedList<Object> rsp = CollectionAdminRequest.getClusterStatus().setCollectionName(COLLECTION_NAME)
+          .process(client).getResponse();
+      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertEquals(1, collections.size());
+      Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
+      int replicationFactor = Integer.parseInt(collection.get("replicationFactor").toString());
+      assertEquals(25, replicationFactor);
+
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
+      params.set("collection", COLLECTION_NAME);
+      params.set("property.unset", "replicationFactor");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      client.request(request);
+
+      rsp = CollectionAdminRequest.getClusterStatus().setCollectionName(COLLECTION_NAME)
+          .process(client).getResponse();
+      System.out.println(rsp);
+      cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertEquals(1, collections.size());
+      collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
+      assertNull(collection.get("replicationFactor"));
+
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
+      params.set("collection", COLLECTION_NAME);
+      params.set("property.unset", "non_existent_property");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        fail("Trying to unset an unknown property should have failed");
+      } catch (RemoteSolrException e) {
+        // expected
+        assertTrue(e.getMessage().contains("The value for property.unset must be one of"));
+      }
+    }
   }
 
   private void testReplicationFactorValidaton() throws Exception {
