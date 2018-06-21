@@ -415,7 +415,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testSelectedCollections() throws Exception {
     log.info("Found number of jetties: {}", cluster.getJettySolrRunners().size());
     AssertingTriggerAction.expectedNode = null;

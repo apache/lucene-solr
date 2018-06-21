@@ -44,7 +44,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
 public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
   // Given an ID, returns an XML string for an "add document" request
