@@ -98,6 +98,8 @@ Bug Fixes
 
 * SOLR-11216: Race condition in PeerSync (Cao Manh Dat)
 
+* SOLR-11807: Restoring collection now treats maxShardsPerNode=-1 as unlimited (Varun Thacker)
+
 Optimizations
 ----------------------
 
