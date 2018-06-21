@@ -109,6 +109,9 @@ Optimizations
 
 * SOLR-12455: Refactor JSON serialization code into SolrJ package (noble)
 
+* SOLR-11654: Time Routed Alias will now route documents to the ideal shard of a collection, thus avoiding a hop.
+  Usually documents were already routed well but not always.  (Gus Heck, David Smiley)
+
 Other Changes
 ----------------------
 
