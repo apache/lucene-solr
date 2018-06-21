@@ -100,7 +100,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "conf1", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
         CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
 
-    if (NUM_SHARDS * (backupReplFactor) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
+    if (random().nextBoolean()) {
+      create.setMaxShardsPerNode(-1);
+    } else if (NUM_SHARDS * (backupReplFactor) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
       create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * backupReplFactor / (double) cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
       if (doSplitShardOperation) {
         create.setMaxShardsPerNode(create.getMaxShardsPerNode() * 2);
@@ -265,60 +267,62 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     int restoreReplFactor = restoreReplcationFactor + restoreTlogReplicas + restorePullReplicas;
 
     boolean isMaxShardsPerNodeExternal = false;
-    int restoreMaxShardsPerNode = -1;
-    {
-      CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+    boolean isMaxShardsUnlimited = false;
+    CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+        .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
 
-      //explicitly specify the replicationFactor/pullReplicas/nrtReplicas/tlogReplicas.
-      if (setExternalReplicationFactor)  {
-        restore.setReplicationFactor(restoreReplcationFactor);
-        restore.setTlogReplicas(restoreTlogReplicas);
-        restore.setPullReplicas(restorePullReplicas);
-      }
+    //explicitly specify the replicationFactor/pullReplicas/nrtReplicas/tlogReplicas.
+    if (setExternalReplicationFactor)  {
+      restore.setReplicationFactor(restoreReplcationFactor);
+      restore.setTlogReplicas(restoreTlogReplicas);
+      restore.setPullReplicas(restorePullReplicas);
+    }
+    final int restoreMaxShardsPerNode = (int) Math.ceil((restoreReplFactor * numShards/(double) cluster.getJettySolrRunners().size()));
 
+    if (restoreReplFactor > backupReplFactor) { //else the backup maxShardsPerNode should be enough
+      log.info("numShards={} restoreReplFactor={} maxShardsPerNode={} totalNodes={}",
+          numShards, restoreReplFactor, restoreMaxShardsPerNode, cluster.getJettySolrRunners().size());
 
-      if (restoreReplFactor > backupReplFactor) { //else the backup maxShardsPerNode should be enough
-        restoreMaxShardsPerNode = (int)Math.ceil((restoreReplFactor * numShards/(double) cluster.getJettySolrRunners().size()));
-        log.info("numShards={} restoreReplFactor={} maxShardsPerNode={} totalNodes={}",
-            numShards, restoreReplFactor, restoreMaxShardsPerNode, cluster.getJettySolrRunners().size());
+      if (random().nextBoolean()) { //set it to -1
+        isMaxShardsUnlimited = true;
+        restore.setMaxShardsPerNode(-1);
+      } else {
         isMaxShardsPerNodeExternal = true;
-
         restore.setMaxShardsPerNode(restoreMaxShardsPerNode);
       }
-
-      if (rarely()) { // Try with createNodeSet configuration
-        int nodeSetSize = cluster.getJettySolrRunners().size() / 2;
-        List<String> nodeStrs = new ArrayList<>(nodeSetSize);
-        Iterator<JettySolrRunner> iter = cluster.getJettySolrRunners().iterator();
-        for (int i = 0; i < nodeSetSize ; i++) {
-          nodeStrs.add(iter.next().getNodeName());
-        }
-        restore.setCreateNodeSet(String.join(",", nodeStrs));
-        restore.setCreateNodeSetShuffle(usually());
-        // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
-        if (restore.getMaxShardsPerNode() != null) {
-          restore.setMaxShardsPerNode(restore.getMaxShardsPerNode() * 2);
-        } else {
-          restore.setMaxShardsPerNode(origShardToDocCount.size() * 2);
-        }
-      }
-
-      Properties props = new Properties();
-      props.setProperty("customKey", "customVal");
-      restore.setProperties(props);
-
-      if (sameConfig==false) {
-        restore.setConfigName("customConfigName");
-      }
-      if (random().nextBoolean()) {
-        assertEquals(0, restore.process(client).getStatus());
-      } else {
-        assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 30));//async
-      }
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
     }
+
+    if (rarely()) { // Try with createNodeSet configuration
+      int nodeSetSize = cluster.getJettySolrRunners().size() / 2;
+      List<String> nodeStrs = new ArrayList<>(nodeSetSize);
+      Iterator<JettySolrRunner> iter = cluster.getJettySolrRunners().iterator();
+      for (int i = 0; i < nodeSetSize ; i++) {
+        nodeStrs.add(iter.next().getNodeName());
+      }
+      restore.setCreateNodeSet(String.join(",", nodeStrs));
+      restore.setCreateNodeSetShuffle(usually());
+      // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
+      if (restore.getMaxShardsPerNode() != null) {
+        restore.setMaxShardsPerNode(restore.getMaxShardsPerNode() * 2);
+      } else {
+        restore.setMaxShardsPerNode(origShardToDocCount.size() * 2);
+      }
+    }
+
+    Properties props = new Properties();
+    props.setProperty("customKey", "customVal");
+    restore.setProperties(props);
+
+    if (sameConfig==false) {
+      restore.setConfigName("customConfigName");
+    }
+    if (random().nextBoolean()) {
+      assertEquals(0, restore.process(client).getStatus());
+    } else {
+      assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 30));//async
+    }
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
 
     //Check the number of results are the same
     DocCollection restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);
@@ -339,8 +343,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       numReplicasByNodeName.put(x.getNodeName(), numReplicasByNodeName.getOrDefault(x.getNodeName(), 0) + 1);
     });
     numReplicasByNodeName.forEach((k, v) -> {
-      assertTrue("Node " + k + " has " + v + " replicas. Expected num replicas : " + restoreCollection.getMaxShardsPerNode() ,
-          v <= restoreCollection.getMaxShardsPerNode());
+      assertTrue("Node " + k + " has " + v + " replicas. Expected num replicas : " + restoreMaxShardsPerNode
+              + " state file \n" + restoreCollection, v <= restoreMaxShardsPerNode);
     });
 
     assertEquals(restoreCollection.toString(), restoreReplcationFactor, restoreCollection.getReplicationFactor().intValue());
@@ -349,6 +353,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     assertEquals(restoreCollection.toString(), restoreTlogReplicas, restoreCollection.getNumTlogReplicas().intValue());
     if (isMaxShardsPerNodeExternal) {
       assertEquals(restoreCollectionName, restoreMaxShardsPerNode, restoreCollection.getMaxShardsPerNode());
+    } else if (isMaxShardsUnlimited){
+      assertEquals(restoreCollectionName, -1, restoreCollection.getMaxShardsPerNode());
     } else {
       assertEquals(restoreCollectionName, backupCollection.getMaxShardsPerNode(), restoreCollection.getMaxShardsPerNode());
     }
