@@ -75,7 +75,7 @@ export class AnalysisService {
         let response = {};
         if (ft) {
           this.extractComponents(ft.index, response, "index");
-          this.extractComponents(ft.index, response, "query");
+          this.extractComponents(ft.query, response, "query");
         }
         return response;
       }));

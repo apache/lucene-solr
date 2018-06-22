@@ -79,8 +79,6 @@ export class AnalysisComponent implements OnInit {
         .subscribe(r => {
           this.result = r;
           this.resultKeys = Object.keys(r);
-          console.log("FISH", this.result);
-          console.log("LAMB", this.resultKeys);
         }, (error => {
           this.sharedService.clearErrors();
           this.sharedService.showError(error.error);
