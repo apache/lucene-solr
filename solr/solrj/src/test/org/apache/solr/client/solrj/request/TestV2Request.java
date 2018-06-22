@@ -85,9 +85,11 @@ public class TestV2Request extends SolrCloudTestCase {
     assertSuccess(client, new V2Request.Builder("/c/_introspect").build());
 
 
+    String requestHandlerName = "/x" + random().nextInt();
     assertSuccess(client, new V2Request.Builder("/c/test/config")
         .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}}")
+        .withPayload("{'create-requesthandler' : { 'name' : '" + requestHandlerName + 
+            "', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}}")
         .build());
 
     assertSuccess(client, new V2Request.Builder("/c/test").withMethod(SolrRequest.METHOD.DELETE).build());
