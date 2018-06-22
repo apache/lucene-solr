@@ -34,8 +34,6 @@ export class SharedService {
     cores = [];
     currentCollection = null;
     currentCore = null;
-    showPing=true;
-    pingMS = 1234567890;
 
     constructor(private collectionsService: CollectionsService, private coresService: CoresService) {}
 

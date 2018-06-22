@@ -19,14 +19,15 @@ import { Component, OnInit } from '@angular/core';
 import { SharedService } from '../shared.service';
 import { CollectionsService } from '../collections.service';
 import { CoresService } from '../cores.service';
-import {Router} from '@angular/router';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-menu',
   templateUrl: './menu.component.html'
 })
 export class MenuComponent implements OnInit {
-  sharedService: SharedService
+  sharedService: SharedService;
+  pingMS = null;
 
   constructor(
     sharedService: SharedService,
@@ -38,19 +39,29 @@ export class MenuComponent implements OnInit {
 
   ngOnInit() {
     this.sharedService.refreshCollections();
-    this.sharedService.refreshCores();    
+    this.sharedService.refreshCores();
   }
 
   showCollection(c: String) {
+    this.sharedService.currentCore = null;
+    this.pingMS = null;
     this.router.navigate(['collections', c, 'overview']);
   }
 
   showCore(c: String) {
+    this.sharedService.currentCore = c;
+    this.pingMS = null;
+    this.sharedService.currentCollection = null;
     this.router.navigate(['cores', c, 'overview']);
   }
 
   ping() {
-    alert("PING");
+    this.pingMS = null;
+    if (this.sharedService.currentCore) {
+      this.coresService.ping(this.sharedService.currentCore).subscribe(pingMS => {
+        this.pingMS = pingMS;
+      });
+    }
   }
 
   menuClick() {

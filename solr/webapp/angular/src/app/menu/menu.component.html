@@ -92,7 +92,7 @@ limitations under the License.
 				<li *ngIf="!sharedService.isCloudEnabled" class="dataimport" routerLinkActive="active"><a routerLink="/cores/{{sharedService.currentCore}}/dataimport"><span>Dataimport</span></a></li>
 				<li *ngIf="!sharedService.isCloudEnabled" class="documents" routerLinkActive="active"><a routerLink="/cores/{{sharedService.currentCore}}/documents"><span>Documents</span></a></li>
 				<li *ngIf="!sharedService.isCloudEnabled" class="files" routerLinkActive="active"><a routerLink="/cores/{{sharedService.currentCore}}/files"><span>Files</span></a></li>
-				<li class="ping" routerLinkActive="active"><a (click)="ping()"><span>Ping</span><small class="qtime" *ngIf="sharedService.showPing"> (<span>{{sharedService.pingMS}}ms</span>)</small></a></li>
+				<li class="ping" routerLinkActive="active"><a (click)="ping()"><span>Ping</span><small class="qtime" *ngIf="pingMS"> (<span>{{pingMS}}ms</span>)</small></a></li>
 				<li class="plugins" routerLinkActive="active"><a href="/cores/{{sharedService.currentCore}}/plugins"><span>Plugins / Stats</span></a></li>
 				<li *ngIf="!sharedService.isCloudEnabled" class="query" routerLinkActive="active"><a routerLink="/cores/{{sharedService.currentCore}}/query"><span>Query</span></a></li>
 				<li *ngIf="!sharedService.isCloudEnabled" class="replication" routerLinkActive="active"><a routerLink="/cores/{{sharedService.currentCore}}/replication"><span>Replication</span></a></li>
