@@ -16,6 +16,10 @@ Changes in Runtime Behavior:
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
   findForcedMerges and findForcedDeletesMerges (Erick Erickson)
 
+Other:
+
+* LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
+  Extended_Pictographic property. (Robert Muir)
 
 ======================= Lucene 7.4.1 =======================
 
