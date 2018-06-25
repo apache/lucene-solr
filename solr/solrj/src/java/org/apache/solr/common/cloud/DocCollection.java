@@ -34,14 +34,12 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
 
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_UNSET;
 
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
@@ -151,10 +149,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       case "snitch":
       case "rule":
         return (List) o;
-      case PROPERTY_UNSET:
-        if (!MODIFIABLE_COLLECTION_PROPERTIES.contains(o.toString())) {
-          throw new IllegalArgumentException("The value for " + PROPERTY_UNSET + " must be one of: " + MODIFIABLE_COLLECTION_PROPERTIES);
-        }
       default:
         return o;
     }

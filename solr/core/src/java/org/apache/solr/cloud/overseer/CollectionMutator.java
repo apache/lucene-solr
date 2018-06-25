@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_UNSET;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionMutator {
@@ -110,8 +109,8 @@ public class CollectionMutator {
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
       if (message.containsKey(prop)) {
         hasAnyOps = true;
-        if (PROPERTY_UNSET.equals(prop))  {
-          m.remove(message.getStr(prop));
+        if (message.get(prop) == null)  {
+          m.remove(prop);
         } else  {
           m.put(prop, message.get(prop));
         }

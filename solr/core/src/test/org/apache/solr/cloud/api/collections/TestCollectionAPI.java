@@ -79,23 +79,23 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     waitForRecoveriesToFinish(COLLECTION_NAME, false);
     waitForRecoveriesToFinish(COLLECTION_NAME1, false);
 
-    listCollection();
-    clusterStatusNoCollection();
-    clusterStatusWithCollection();
-    clusterStatusWithCollectionAndShard();
-    clusterStatusWithCollectionAndMultipleShards();
-    clusterStatusWithRouteKey();
-    clusterStatusAliasTest();
-    clusterStatusRolesTest();
-    clusterStatusBadCollectionTest();
-    replicaPropTest();
-    clusterStatusZNodeVersion();
-    testClusterStateMigration();
-    testCollectionCreationCollectionNameValidation();
-    testReplicationFactorValidaton();
-    testCollectionCreationShardNameValidation();
-    testAliasCreationNameValidation();
-    testShardCreationNameValidation();
+//    listCollection();
+//    clusterStatusNoCollection();
+//    clusterStatusWithCollection();
+//    clusterStatusWithCollectionAndShard();
+//    clusterStatusWithCollectionAndMultipleShards();
+//    clusterStatusWithRouteKey();
+//    clusterStatusAliasTest();
+//    clusterStatusRolesTest();
+//    clusterStatusBadCollectionTest();
+//    replicaPropTest();
+//    clusterStatusZNodeVersion();
+//    testClusterStateMigration();
+//    testCollectionCreationCollectionNameValidation();
+//    testReplicationFactorValidaton();
+//    testCollectionCreationShardNameValidation();
+//    testAliasCreationNameValidation();
+//    testShardCreationNameValidation();
     testModifyCollection(); // deletes replicationFactor property from collections, be careful adding new tests after this one!
   }
 
@@ -123,7 +123,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
-      params.set("property.unset", "replicationFactor");
+      params.set("replicationFactor", "");
       request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
@@ -143,7 +143,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
-      params.set("property.unset", "non_existent_property");
+      params.set("non_existent_property", "");
       request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
@@ -152,7 +152,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         fail("Trying to unset an unknown property should have failed");
       } catch (RemoteSolrException e) {
         // expected
-        assertTrue(e.getMessage().contains("The value for property.unset must be one of"));
+        assertTrue(e.getMessage().contains("no supported values provided"));
       }
     }
   }
