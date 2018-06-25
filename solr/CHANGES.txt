@@ -57,6 +57,8 @@ New Features
 
 * SOLR-12507: Modify collection API should support un-setting properties. (shalin)
 
+* SOLR-12506: Add SolrJ support for the modify collection API. (shalin)
+
 Bug Fixes
 ----------------------
 

@@ -493,4 +493,52 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     });
 
   }
+
+  @Test
+  public void testModifyCollectionAttribute() throws IOException, SolrServerException {
+    final String collection = "testAddAndDeleteCollectionAttribute";
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+
+    CollectionAdminRequest.modifyCollection(collection, null)
+        .setAttribute("replicationFactor", 25)
+        .process(cluster.getSolrClient());
+
+    waitForState("Expecting attribute 'replicationFactor' to be 25", collection,
+        (n, c) -> 25 == c.getReplicationFactor());
+
+    CollectionAdminRequest.modifyCollection(collection, null)
+        .unsetAttribute("maxShardsPerNode")
+        .process(cluster.getSolrClient());
+
+    waitForState("Expecting attribute 'maxShardsPerNode' to be deleted", collection,
+        (n, c) -> null == c.get("maxShardsPerNode"));
+
+    try {
+      CollectionAdminRequest.modifyCollection(collection, null)
+          .setAttribute("non_existent_attr", 25)
+          .process(cluster.getSolrClient());
+      fail("An attempt to set unknown collection attribute should have failed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
+    try {
+      CollectionAdminRequest.modifyCollection(collection, null)
+          .setAttribute("non_existent_attr", null)
+          .process(cluster.getSolrClient());
+      fail("An attempt to set null value should have failed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
+    try {
+      CollectionAdminRequest.modifyCollection(collection, null)
+          .unsetAttribute("non_existent_attr")
+          .process(cluster.getSolrClient());
+      fail("An attempt to unset unknown collection attribute should have failed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }
 }
