@@ -80,6 +80,8 @@ Bug Fixes
   
 * SOLR-12482: Config API returns status 0 for failed operations. (Steve Rowe)
 
+* SOLR-12513: Reproducing TestCodecSupport.testMixedCompressionMode failure (Erick Erickson)
+
 Optimizations
 ----------------------
 
