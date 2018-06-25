@@ -79,23 +79,23 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     waitForRecoveriesToFinish(COLLECTION_NAME, false);
     waitForRecoveriesToFinish(COLLECTION_NAME1, false);
 
-//    listCollection();
-//    clusterStatusNoCollection();
-//    clusterStatusWithCollection();
-//    clusterStatusWithCollectionAndShard();
-//    clusterStatusWithCollectionAndMultipleShards();
-//    clusterStatusWithRouteKey();
-//    clusterStatusAliasTest();
-//    clusterStatusRolesTest();
-//    clusterStatusBadCollectionTest();
-//    replicaPropTest();
-//    clusterStatusZNodeVersion();
-//    testClusterStateMigration();
-//    testCollectionCreationCollectionNameValidation();
-//    testReplicationFactorValidaton();
-//    testCollectionCreationShardNameValidation();
-//    testAliasCreationNameValidation();
-//    testShardCreationNameValidation();
+    listCollection();
+    clusterStatusNoCollection();
+    clusterStatusWithCollection();
+    clusterStatusWithCollectionAndShard();
+    clusterStatusWithCollectionAndMultipleShards();
+    clusterStatusWithRouteKey();
+    clusterStatusAliasTest();
+    clusterStatusRolesTest();
+    clusterStatusBadCollectionTest();
+    replicaPropTest();
+    clusterStatusZNodeVersion();
+    testClusterStateMigration();
+    testCollectionCreationCollectionNameValidation();
+    testReplicationFactorValidaton();
+    testCollectionCreationShardNameValidation();
+    testAliasCreationNameValidation();
+    testShardCreationNameValidation();
     testModifyCollection(); // deletes replicationFactor property from collections, be careful adding new tests after this one!
   }
 
