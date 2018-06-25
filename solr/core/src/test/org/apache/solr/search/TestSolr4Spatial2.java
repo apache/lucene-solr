@@ -265,7 +265,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   private void testRptWithGeometryField(String fieldName) throws Exception {
     assertU(adoc("id", "0", fieldName, "ENVELOPE(-10, 20, 15, 10)"));
     assertU(adoc("id", "1", fieldName, "BUFFER(POINT(-10 15), 5)"));//circle at top-left corner
-    assertU(optimize());// one segment.
+    assertU(optimize("maxSegments", "1"));// one segment.
     assertU(commit());
 
     // Search to the edge but not quite touching the indexed envelope of id=0.  It requires geom validation to
