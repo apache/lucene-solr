@@ -17,14 +17,16 @@
 
 package org.apache.solr.metrics.rrd;
 
-import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.MockSearchableSolrClient;
 import org.junit.After;
 import org.junit.Before;
@@ -64,8 +66,9 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     }
   }
 
-  private RrdDef createDef() {
+  private RrdDef createDef(long startTime) {
     RrdDef def = new RrdDef("solr:foo", 60);
+    def.setStartTime(startTime);
     def.addDatasource("one", DsType.COUNTER, 120, Double.NaN, Double.NaN);
     def.addDatasource("two", DsType.GAUGE, 120, Double.NaN, Double.NaN);
     def.addArchive(ConsolFun.AVERAGE, 0.5, 1, 120); // 2 hours
@@ -77,61 +80,64 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBasic() throws Exception {
-    RrdDb db = new RrdDb(createDef(), factory);
-    List<String> list = factory.list(100);
+    long startTime = 1000000000;
+    RrdDb db = new RrdDb(createDef(startTime), factory);
+    List<Pair<String, Long>> list = factory.list(100);
     assertEquals(list.toString(), 1, list.size());
-    assertEquals(list.toString(), "foo", list.get(0));
+    assertEquals(list.toString(), "foo", list.get(0).first());
     timeSource.sleep(2000);
     // there should be one sync data
     assertEquals(solrClient.docs.toString(), 1, solrClient.docs.size());
     String id = SolrRrdBackendFactory.ID_PREFIX + SolrRrdBackendFactory.ID_SEP + "foo";
     SolrInputDocument doc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
-    long timestamp = ((Date)doc.getFieldValue("timestamp")).getTime();
+    long timestamp = (Long)doc.getFieldValue("timestamp_l");
     timeSource.sleep(2000);
     SolrInputDocument newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertEquals(newDoc.toString(), newDoc, doc);
-    long firstTimestamp = TimeUnit.SECONDS.convert(timestamp, TimeUnit.MILLISECONDS);
-    long lastTimestamp = firstTimestamp + 60;
+    // make sure the update doesn't race with the sampling boundaries
+    long lastTime = startTime + 30;
     // update the db
     Sample s = db.createSample();
     for (int i = 0; i < 100; i++) {
-      s.setTime(lastTimestamp);
+      s.setTime(lastTime);
       s.setValue("one", 1000 + i * 60);
       s.setValue("two", 100);
       s.update();
-      lastTimestamp = lastTimestamp + 60;
+      lastTime = lastTime + 60;
     }
     timeSource.sleep(3000);
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertFalse(newDoc.toString(), newDoc.equals(doc));
-    long newTimestamp = ((Date)newDoc.getFieldValue("timestamp")).getTime();
+    long newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
     assertNotSame(newTimestamp, timestamp);
-    FetchRequest fr = db.createFetchRequest(ConsolFun.AVERAGE, firstTimestamp + 60, lastTimestamp - 60, 60);
+    // don't race with the sampling boundary
+    FetchRequest fr = db.createFetchRequest(ConsolFun.AVERAGE, startTime + 20, lastTime - 20, 60);
     FetchData fd = fr.fetchData();
     int rowCount = fd.getRowCount();
     double[] one = fd.getValues("one");
-    assertEquals("one", 101, one.length);
-    assertEquals(Double.NaN, one[0], 0.00001);
-    assertEquals(Double.NaN, one[100], 0.00001);
-    for (int i = 1; i < 100; i++) {
-      assertEquals(1.0, one[i], 0.00001);
-    }
     double[] two = fd.getValues("two");
-    assertEquals(Double.NaN, two[100], 0.00001);
+    String dump = dumpData(db, fd);
+    assertEquals("one: " + dump, 101, one.length);
+    assertEquals(dump, Double.NaN, one[0], 0.00001);
+    assertEquals(dump, Double.NaN, one[100], 0.00001);
     for (int i = 1; i < 100; i++) {
-      assertEquals("wrong value at pos " + i, 100.0, two[i], 0.00001);
+      assertEquals(dump + "\npos=" + i, 1.0, one[i], 0.00001);
+    }
+    assertEquals("two: " + dump, Double.NaN, two[100], 0.00001);
+    for (int i = 0; i < 100; i++) {
+      assertEquals(dump + "\ntwo pos=" + i, 100.0, two[i], 0.00001);
     }
     db.close();
 
     // should still be listed
     list = factory.list(100);
     assertEquals(list.toString(), 1, list.size());
-    assertEquals(list.toString(), "foo", list.get(0));
+    assertEquals(list.toString(), "foo", list.get(0).first());
 
     // re-open read-write
     db = new RrdDb("solr:foo", factory);
     s = db.createSample();
-    s.setTime(lastTimestamp);
+    s.setTime(lastTime);
     s.setValue("one", 7000);
     s.setValue("two", 100);
     s.update();
@@ -141,22 +147,23 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     doc = newDoc;
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertFalse(newDoc.toString(), newDoc.equals(doc));
-    newTimestamp = ((Date)newDoc.getFieldValue("timestamp")).getTime();
+    newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
     assertNotSame(newTimestamp, timestamp);
-    fr = db.createFetchRequest(ConsolFun.AVERAGE, firstTimestamp + 60, lastTimestamp, 60);
+    fr = db.createFetchRequest(ConsolFun.AVERAGE, startTime + 20, lastTime + 20, 60);
     fd = fr.fetchData();
+    dump = dumpData(db, fd);
     rowCount = fd.getRowCount();
     one = fd.getValues("one");
-    assertEquals("one", 102, one.length);
-    assertEquals(Double.NaN, one[0], 0.00001);
-    assertEquals(Double.NaN, one[101], 0.00001);
+    assertEquals("one: " + dump, 102, one.length);
+    assertEquals(dump, Double.NaN, one[0], 0.00001);
+    assertEquals(dump, Double.NaN, one[101], 0.00001);
     for (int i = 1; i < 101; i++) {
-      assertEquals(1.0, one[i], 0.00001);
+      assertEquals(dump, 1.0, one[i], 0.00001);
     }
     two = fd.getValues("two");
-    assertEquals(Double.NaN, two[101], 0.00001);
+    assertEquals("two: " + dump, Double.NaN, two[101], 0.00001);
     for (int i = 1; i < 101; i++) {
-      assertEquals(100.0, two[i], 0.00001);
+      assertEquals(dump, 100.0, two[i], 0.00001);
     }
 
     db.close();
@@ -164,7 +171,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     // open a read-only version of the db
     RrdDb readOnly = new RrdDb("solr:foo", true, factory);
     s = readOnly.createSample();
-    s.setTime(lastTimestamp + 120);
+    s.setTime(lastTime + 120);
     s.setValue("one", 10000001);
     s.setValue("two", 100);
     s.update();
@@ -174,9 +181,19 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     timestamp = newTimestamp;
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertTrue(newDoc.toString(), newDoc.equals(doc));
-    newTimestamp = ((Date)newDoc.getFieldValue("timestamp")).getTime();
+    newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
     assertEquals(newTimestamp, timestamp);
     readOnly.close();
+  }
+
+  private String dumpData(RrdDb db, FetchData fd) throws Exception {
+    Map<String, Object> map = new LinkedHashMap<>();
+    map.put("dbLastUpdateTime", db.getLastUpdateTime());
+    map.put("firstTimestamp", fd.getFirstTimestamp());
+    map.put("lastTimestamp", fd.getLastTimestamp());
+    map.put("timestamps", fd.getTimestamps());
+    map.put("data", fd.dump());
+    return Utils.toJSONString(map);
   }
 
 }

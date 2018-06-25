@@ -74,4 +74,14 @@ public interface CollectionAdminParams {
    * Value of collection property to set
    */
   public static final String PROPERTY_VALUE = "propertyValue";
+
+  /**
+   * Parameter used by the Modify Collection API to remove values
+   */
+  public static final String PROPERTY_UNSET = "property.unset";
+
+  /**
+   * The name of the config set to be used for a collection
+   */
+  public static final String COLL_CONF = "collection.configName";
 }

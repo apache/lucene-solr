@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,11 +52,15 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.JsonTextWriter;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SolrJSONWriter;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.response.JSONWriter;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1519,10 +1524,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  replicaInfo : {" +
         "    node1:{}," +
         "    node2:{mycoll1:{" +
-        "        shard1:[{r1:{type:NRT, INDEX.sizeInBytes:900}}]," +
-        "        shard2:[{r2:{type:NRT, INDEX.sizeInBytes:300}}]," +
-        "        shard3:[{r3:{type:NRT, INDEX.sizeInBytes:200}}]," +
-        "        shard4:[{r4:{type:NRT, INDEX.sizeInBytes:100}}]}}}" +
+        "        shard1:[{r1:{type:NRT, INDEX.sizeInGB:900}}]," +
+        "        shard2:[{r2:{type:NRT, INDEX.sizeInGB:300}}]," +
+        "        shard3:[{r3:{type:NRT, INDEX.sizeInGB:200}}]," +
+        "        shard4:[{r4:{type:NRT, INDEX.sizeInGB:100}}]}}}" +
         "    nodeValues : {" +
         "    node1: { node : node1 , cores:0 , freedisk : 2000}," +
         "    node2: { node : node2 , cores:4 , freedisk : 500}}}";
@@ -2465,6 +2470,75 @@ public void testUtilizeNodeFailure2() throws Exception {
       assertTrue(rows.get(i).isLive);
     }
 
+
+  }
+  public void testViolationOutput() throws IOException {
+    String autoScalingjson = "{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 3}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, shard:'#EACH', port : '8983'}" +
+        "  ]" +
+        "}";
+
+
+    String dataproviderdata = "{" +
+        "  'liveNodes': [" +
+        "    'node1:8983'," +
+        "    'node2:8984'," +
+        "    'node3:8985'" +
+        "  ]," +
+        "  'replicaInfo': {" +
+        "    'node1:8983': {" +
+        "      'c1': {" +
+        "        's1': [" +
+        "          {'r1': {'type': 'NRT'}}," +
+        "          {'r2': {'type': 'NRT'}}" +
+        "        ]," +
+        "        's2': [" +
+        "          {'r1': {'type': 'NRT'}}," +
+        "          {'r2': {'type': 'NRT'}}" +
+        "        ]" +
+        "      }" +
+        "    }" +
+        "  }," +
+        "  'nodeValues': {" +
+        "    'node1:8983': {" +
+        "      'cores': 4," +
+        "      'freedisk': 334," +
+        "      'port': 8983" +
+        "    }," +
+        "    'node2:8984': {" +
+        "      'cores': 0," +
+        "      'freedisk': 1000," +
+        "      'port': 8984" +
+        "    }," +
+        "    'node3:8985': {" +
+        "      'cores': 0," +
+        "      'freedisk': 1500," +
+        "      'port': 8985" +
+        "    }" +
+        "  }" +
+        "}";
+    AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) Utils.fromJSONString(dataproviderdata))).getViolations();
+    StringWriter writer = new StringWriter();
+    NamedList<Object> val = new NamedList<>();
+    val.add("violations", violations);
+    new SolrJSONWriter(writer)
+        .writeObj(val)
+        .close();
+    JSONWriter.write (writer, true, JsonTextWriter.JSON_NL_MAP, val);
+
+    Object root = Utils.fromJSONString(writer.toString());
+    assertEquals(2l,
+        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/NRT"));
+    assertEquals(0l,
+        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/PULL"));
+    assertEquals(0l,
+        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/TLOG"));
 
   }
 

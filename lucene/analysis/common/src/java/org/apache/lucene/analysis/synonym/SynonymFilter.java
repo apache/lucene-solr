@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.synonym;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -33,7 +32,6 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
 
 /**
@@ -206,7 +204,7 @@ public final class SynonymFilter extends TokenFilter {
 
     public void add(char[] output, int offset, int len, int endOffset, int posLength) {
       if (count == outputs.length) {
-        outputs = Arrays.copyOf(outputs, ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
+        outputs = ArrayUtil.grow(outputs, count+1);
       }
       if (count == endOffsets.length) {
         final int[] next = new int[ArrayUtil.oversize(1+count, Integer.BYTES)];

@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Represent the field and boost information needed to construct and index
+ * Represent the field-value information needed to construct and index
  * a Lucene Document.  Like the SolrDocument, the field values should
  * match those specified in schema.xml 
  *
@@ -50,7 +50,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   }
   
   /**
-   * Remove all fields and boosts from the document
+   * Remove all fields from the document
    */
   @Override
   public void clear()
@@ -66,7 +66,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   ///////////////////////////////////////////////////////////////////
 
   /** 
-   * Add a field with implied null value for boost.
+   * Add a field value to any existing values that may or may not exist.
    * 
    * The class type of value and the name parameter should match schema.xml. 
    * schema.xml can be found in conf directory under the solr home by default.
@@ -124,7 +124,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     return _fields.keySet();
   }
   
-  /** Set a field with implied null value for boost.
+  /** Set a field value; replacing the existing value if present.
    * 
    * @param name name of the field to set
    * @param value value of the field

@@ -48,7 +48,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.core.backup.BackupManager.BACKUP_NAME_PROP;
 import static org.apache.solr.core.backup.BackupManager.BACKUP_PROPS_FILE;
 import static org.apache.solr.core.backup.BackupManager.COLLECTION_NAME_PROP;

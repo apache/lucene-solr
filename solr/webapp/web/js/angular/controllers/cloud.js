@@ -454,7 +454,13 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
         host: [],
         hostname: [],
         port: [],
-        pathname: []
+        pathname: [],
+        replicaType: [],
+        base_url: [],
+        core: [],
+        node_name: [],
+        state: [],
+        core_node: []
     };
 
     $scope.next = function() {
@@ -518,7 +524,13 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                                     host: parts[2],
                                     hostname: parts[3],
                                     port: parseInt(parts[5] || 80, 10),
-                                    pathname: parts[6]
+                                    pathname: parts[6],
+                                    replicaType: replica.type,
+                                    base_url: replica.base_url,
+                                    core: replica.core,
+                                    node_name: replica.node_name,
+                                    state: replica.state,
+                                    core_node: n
                                 };
 
                                 $scope.helperData.protocol.push(uri_parts.protocol);
@@ -526,6 +538,12 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                                 $scope.helperData.hostname.push(uri_parts.hostname);
                                 $scope.helperData.port.push(uri_parts.port);
                                 $scope.helperData.pathname.push(uri_parts.pathname);
+                                $scope.helperData.replicaType.push(uri_parts.replicaType);
+                                $scope.helperData.base_url.push(uri_parts.base_url);
+                                $scope.helperData.core.push(uri_parts.core);
+                                $scope.helperData.node_name.push(uri_parts.node_name);
+                                $scope.helperData.state.push(uri_parts.state);
+                                $scope.helperData.core_node.push(uri_parts.core_node);
 
                                 var replica_status = replica.state;
 
@@ -573,6 +591,12 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                     $scope.helperData.hostname = $.unique($scope.helperData.hostname);
                     $scope.helperData.port = $.unique($scope.helperData.port);
                     $scope.helperData.pathname = $.unique($scope.helperData.pathname);
+                    $scope.helperData.replicaType = $.unique($scope.helperData.replicaType);
+                    $scope.helperData.base_url = $.unique($scope.helperData.base_url);
+                    $scope.helperData.core = $.unique($scope.helperData.core);
+                    $scope.helperData.node_name = $.unique($scope.helperData.node_name);
+                    $scope.helperData.state = $.unique($scope.helperData.state);
+                    $scope.helperData.core_node = $.unique($scope.helperData.core_node);
 
                     if (!isRadial && data.znode && data.znode.paging) {
                         $scope.showPaging = true;
@@ -614,7 +638,7 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
     };
 
     $scope.initGraph();
-    $scope.pos = 0;   
+    $scope.pos = 0;
 };
 
 solrAdminApp.directive('graph', function(Constants) {
@@ -659,6 +683,26 @@ solrAdminApp.directive('graph', function(Constants) {
                 return classes.join(' ');
             };
 
+            var helper_tooltip_text = function (d) {
+                if (!d.data || !d.data.uri) {
+                    return tooltip;
+                }
+
+                var tooltip = d.data.uri.core_node + " {<br/>";
+
+                if (0 !== scope.helperData.core.length) {
+                    tooltip += "core: [" + d.data.uri.core + "],<br/>";
+                }
+
+                if (0 !== scope.helperData.node_name.length) {
+                    tooltip += "node_name: [" + d.data.uri.node_name + "],<br/>";
+                }
+
+                tooltip += "}";
+
+                return tooltip;
+            };
+
             var helper_node_text = function (d) {
                 if (!d.data || !d.data.uri) {
                     return d.name;
@@ -678,6 +722,10 @@ solrAdminApp.directive('graph', function(Constants) {
                     name += d.data.uri.pathname;
                 }
 
+                if(0 !== scope.helperData.replicaType.length) {
+                    name += ' (' + d.data.uri.replicaType[0] + ')';
+                }
+
                 return name;
             };
 
@@ -689,6 +737,12 @@ solrAdminApp.directive('graph', function(Constants) {
                         flatGraph(element, scope.data, scope.leafCount);
                     }
                 }
+
+                $('text').tooltip({
+                    content: function() {
+                        return $(this).attr('title');
+                    }
+                });
             });
 
 
@@ -762,7 +816,8 @@ solrAdminApp.directive('graph', function(Constants) {
                     })
                     .attr('text-anchor', function (d) {
                         return 0 === d.depth ? 'end' : 'start';
-                    })                    
+                    })
+                    .attr("title", helper_tooltip_text)
                     .text(helper_node_text);
 
                 setNodeNavigationBehavior(node);
@@ -817,6 +872,7 @@ solrAdminApp.directive('graph', function(Constants) {
                     .attr('transform', function (d) {
                         return d.x < 180 ? null : 'rotate(180)';
                     })
+                    .attr("title", helper_tooltip_text)
                     .text(helper_node_text);
 
                 setNodeNavigationBehavior(node, "rgraph");

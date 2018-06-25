@@ -315,6 +315,8 @@ function print_usage() {
     echo ""
     echo "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\""
     echo ""
+    echo "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh."
+    echo ""
     echo "Pass -help after any COMMAND to see command-specific usage information,"
     echo "  such as:    ./solr start -help or ./solr stop -help"
     echo ""
@@ -325,8 +327,9 @@ function print_usage() {
     echo "  -f            Start Solr in foreground; default starts Solr in the background"
     echo "                  and sends stdout / stderr to solr-PORT-console.log"
     echo ""
-    echo "  -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied, an embedded Zookeeper"
-    echo "                  instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983"
+    echo "  -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in"
+    echo "                  solr.in.sh, an embedded ZooKeeper instance is started on Solr port+1000,"
+    echo "                  such as 9983 if Solr is bound to 8983"
     echo ""
     echo "  -h <host>     Specify the hostname for this Solr instance"
     echo ""
@@ -338,7 +341,8 @@ function print_usage() {
     echo "  -d <dir>      Specify the Solr server directory; defaults to server"
     echo ""
     echo "  -z <zkHost>   Zookeeper connection string; only used when running in SolrCloud mode using -c"
-    echo "                   To launch an embedded Zookeeper instance, don't pass this parameter."
+    echo "                   If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
+    echo "                   an embedded ZooKeeper instance will be launched."
     echo ""
     echo "  -m <memory>   Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
     echo "                  results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
@@ -398,7 +402,8 @@ function print_usage() {
     echo ""
     echo "  -c <collection>  Collection to run healthcheck against."
     echo ""
-    echo "  -z <zkHost>      Zookeeper connection string; default is localhost:9983"
+    echo "  -z <zkHost>      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;" 
+    echo "                     otherwise, default is localhost:9983"
     echo ""
     echo "  -V               Enable more verbose output"
     echo ""
@@ -611,7 +616,7 @@ function print_usage() {
     echo "  -updateIncludeFileOnly <true|false>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
     echo "                                         authentication (i.e. don't update security.json)"
     echo ""
-    echo "  -z zkHost                              Zookeeper connection string"
+    echo "  -z zkHost                              Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.sh."
     echo ""
     echo "  -d <dir>                               Specify the Solr server directory"
     echo ""
@@ -908,7 +913,45 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
 fi
 
 if [[ "$SCRIPT_CMD" == "config" ]]; then
-  run_tool config $*
+  CONFIG_PARAMS=()
+
+  if [ $# -gt 0 ]; then
+    while true; do
+      case "$1" in
+          -z|-zkhost|-zkHost)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
+                exit 1
+              fi
+              ZK_HOST="$2"
+              shift 2
+          ;;
+          -s|-scheme)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "URL scheme is required when using the $1 option!"
+                exit 1
+              fi
+              SOLR_URL_SCHEME="$2"
+              shift 2
+          ;;
+          *)  # Pass through all other params
+              if [ "$1" != "" ]; then
+                CONFIG_PARAMS+=($1)
+                shift
+              else
+                break
+              fi
+          ;;
+      esac
+    done
+  fi
+  if [[ -n "$ZK_HOST" ]]; then
+    CONFIG_PARAMS+=("-z" "$ZK_HOST")
+  fi
+  if [[ -n "$SOLR_URL_SCHEME" ]]; then
+    CONFIG_PARAMS+=("-scheme" "$SOLR_URL_SCHEME")
+  fi
+  run_tool config "${CONFIG_PARAMS[@]}"
   exit $?
 fi
 
@@ -1033,7 +1076,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
 
   if [[ "$CREATE_CONFDIR" == "_default" ]] && ([[ "$CREATE_CONFNAME" == "" ]] || [[ "$CREATE_CONFNAME" == "_default" ]]); then
     echo "WARNING: Using _default configset with data driven schema functionality. NOT RECOMMENDED for production use."
-    echo "         To turn off: bin/solr config -c $CREATE_NAME -p $CREATE_PORT -property update.autoCreateFields -value false"
+    echo "         To turn off: bin/solr config -c $CREATE_NAME -p $CREATE_PORT -action set-user-property -property update.autoCreateFields -value false"
   fi
 
   if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then

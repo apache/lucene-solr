@@ -145,12 +145,10 @@ public class CollectionAdminRequestRequiredParamsTest extends LuceneTestCase {
   public void testCreateCollection() {
     // shortest form
     assertContainsParams(CollectionAdminRequest.createCollection("foo", null, 1, 1).getParams(),
-                         ACTION, NAME, ZkStateReader.NUM_SHARDS_PROP,
-                         "replicationFactor", ZkStateReader.NRT_REPLICAS);
+                         ACTION, NAME, ZkStateReader.NUM_SHARDS_PROP, ZkStateReader.NRT_REPLICAS);
     // shortest form w/ "explicitly" choosing "implicit" router
     assertContainsParams(CollectionAdminRequest.createCollectionWithImplicitRouter("foo", null, "bar", 1).getParams(),
-                         ACTION, NAME, "shards", "router.name",
-                         "replicationFactor", ZkStateReader.NRT_REPLICAS);
+                         ACTION, NAME, "shards", "router.name", ZkStateReader.NRT_REPLICAS);
   }
   
   public void testReloadCollection() {

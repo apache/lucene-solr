@@ -27,6 +27,26 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 == Upgrading to 7.x Releases
 
+=== Solr 7.5
+When upgrading to Solr 7.4, users should be aware of the following major changes from v7.3:
+
+* When using the default TieredMergePolicy (TMP), optimize and expungeDeletes now respect the maxMergedSegmentMB configuration parameter, which defaults to 5,000 (5 gigaBytes). If it is absolutely necessary to control the number of segments present after optimize, specify maxSegments=# where # is a positive integer. TMP will also reclaim resources from segments that exceed maxMergedSegmentMB more aggressively.
+
+
+=== Solr 7.4
+
+See the https://wiki.apache.org/solr/ReleaseNote74[7.4 Release Notes] for an overview of the main new features in Solr 7.4.
+
+When upgrading to Solr 7.4, users should be aware of the following major changes from v7.3:
+
+* Solr now uses Log4j v2.11. The Log4j configuration is now in `log4j2.xml` rather than `log4j.properties` files. This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging implementation which is compatible with SLF4J. We now let Log4j handle rotation of solr logs at startup, and `bin/solr` start scripts will no longer attempt this nor move existing console or garbage collection logs into `logs/archived` either. See <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for more details about Solr logging.
+
+* Configuring `slowQueryThresholdMillis` now logs slow requests to a separate file named `solr_slow_requests.log`. Previously they would get logged in the `solr.log` file.
+
+* In the <<index-replication.adoc#index-replication,master-slave model>> of scaling Solr, a slave no longer commits an empty index when a completely new index is detected on master during replication. To return to the previous behavior pass `false` to `skipCommitOnMasterVersionZero` in the slave section of replication handler configuration, or pass it to the `fetchindex` command.
+
+If you are upgrading from a version earlier than Solr 7.3, please see previous version notes below.
+
 === Solr 7.3
 
 See the https://wiki.apache.org/solr/ReleaseNote73[7.3 Release Notes] for an overview of the main new features in Solr 7.3.
@@ -55,6 +75,8 @@ This means to upgrade to Solr 8 in the future, you will need to be on Solr 7.3 o
 
 * The top-level `<highlighting>` element in `solrconfig.xml` is now officially deprecated in favour of the equivalent `<searchComponent>` syntax. This element has been out of use in default Solr installations for several releases already.
 
+If you are upgrading from a version earlier than Solr 7.2, please see previous version notes below.
+
 === Solr 7.2
 
 See the https://wiki.apache.org/solr/ReleaseNote72[7.2 Release Notes] for an overview of the main new features in Solr 7.2.
@@ -74,6 +96,8 @@ If you must have full backwards compatibility, use `luceneMatchVersion=7.1.0` or
 For example, `{!prefix f=myfield v=enterp}` or `\_query_:"{!prefix f=myfield v=enterp}"` are not supported by default any longer. If you want to allow power-users to do this, set `uf=* _query_` or some other value that includes `\_query_`.
 +
 If you need full backwards compatibility for the time being, use `luceneMatchVersion=7.1.0` or something earlier.
+
+If you are upgrading from a version earlier than Solr 7.1, please see previous version notes below.
 
 === Solr 7.1
 
@@ -103,6 +127,8 @@ See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and C
 * The `RunExecutableListener` was removed for security reasons. If you want to listen to events caused by updates, commits, or optimize, write your own listener as native Java class as part of a Solr plugin.
 
 * In the XML query parser (`defType=xmlparser` or `{!xmlparser ... }`) the resolving of external entities is now disallowed by default.
+
+If you are upgrading from a version earlier than Solr 7.0, please see <<major-changes-in-solr-7.adoc#major-changes-in-solr-7,Major Changes in Solr 7>> before starting your upgrade.
 
 == Upgrading to 7.x from Any 6.x Release
 

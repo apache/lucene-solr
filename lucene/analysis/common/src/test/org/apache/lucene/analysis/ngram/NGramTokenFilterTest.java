@@ -17,22 +17,23 @@
 package org.apache.lucene.analysis.ngram;
 
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Random;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.TestUtil;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Random;
 
 /**
  * Tests {@link NGramTokenFilter} for correctness.
@@ -168,6 +169,16 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
         new int[]    {   11,   11,   11,   11,   11,   11,   11,   11,   11,   11,   11 },
         new int[]    {     1,   0,    0,    0,    0,    0,    0,    0,    0,    0,    0  });
     analyzer.close();
+  }
+
+  public void testEndPositionIncrement() throws IOException {
+    TokenStream source = whitespaceMockTokenizer("seventeen one two three four");
+    TokenStream input = new NGramTokenFilter(source, 8, 8, false);
+    PositionIncrementAttribute posIncAtt = input.addAttribute(PositionIncrementAttribute.class);
+    input.reset();
+    while (input.incrementToken()) {}
+    input.end();
+    assertEquals(4, posIncAtt.getPositionIncrement());
   }
   
   /** blast some random strings through the analyzer */

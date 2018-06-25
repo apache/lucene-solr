@@ -21,8 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -330,11 +330,13 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       assertNotNull("null facet results?", facetResponse);
       assertEquals("numFound mismatch with top count?",
                    rsp.getResults().getNumFound(), ((Number)facetResponse.get("count")).longValue());
-      if (0 == rsp.getResults().getNumFound()) {
-        // when the query matches nothing, we should expect no top level facets
-        expected = Collections.emptyMap();
-      }
+
+      // Note: even if the query has numFound=0, our explicit background query domain should
+      // still force facet results
+      // (even if the background query matches nothing, that just means there will be no
+      // buckets in those facets)
       assertFacetSKGsAreCorrect(maxBucketsToCheck, expected, baseParams, facetResponse);
+      
     } catch (AssertionError e) {
       throw new AssertionError(initParams + " ===> " + topNamedList + " --> " + e.getMessage(), e);
     } finally {
@@ -389,6 +391,18 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
           assertFacetSKGsAreCorrect(maxBucketsToCheck, facet.subFacets, verifyParams, bucket);
         }
       }
+    }
+    
+    { // make sure we don't have any facet keys we don't expect
+      // a little hackish because subfacets have extra keys...
+      final LinkedHashSet expectedKeys = new LinkedHashSet(expected.keySet());
+      expectedKeys.add("count");
+      if (0 <= actualFacetResponse.indexOf("val",0)) {
+        expectedKeys.add("val");
+        expectedKeys.add("skg");
+      }
+      assertEquals("Unexpected keys in facet response",
+                   expectedKeys, actualFacetResponse.asShallowMap().keySet());
     }
   }
 

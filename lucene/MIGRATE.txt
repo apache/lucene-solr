@@ -52,3 +52,8 @@ Memory codecs have been removed from the codebase (MemoryPostings, MemoryDocValu
 
 Caching everything is discouraged as it disables the ability to skip non-interesting documents.
 ALWAYS_CACHE can be replaced by a UsageTrackingQueryCachingPolicy with an appropriate config.
+
+## English stopwords are no longer removed by default in StandardAnalyzer (LUCENE_7444) ##
+
+To retain the old behaviour, pass StandardAnalyzer.ENGLISH_STOP_WORDS_SET as an argument
+to the constructor

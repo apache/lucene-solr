@@ -164,7 +164,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
         }
         docOrds[upto++] = ord;
       }
-      ords[newDocID] = Arrays.copyOfRange(docOrds, 0, upto);
+      ords[newDocID] = ArrayUtil.copyOfSubArray(docOrds, 0, upto);
     }
     return ords;
   }

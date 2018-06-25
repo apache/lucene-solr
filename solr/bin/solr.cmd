@@ -208,7 +208,6 @@ IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
 IF "%1"=="-version" goto get_version
 IF "%1"=="assert" goto run_assert
-if "%1"=="config" goto run_config
 
 REM Only allow the command to be the first argument, assume start if not supplied
 IF "%1"=="start" goto set_script_cmd
@@ -246,11 +245,17 @@ IF "%1"=="zk" (
   set ZK_RECURSE=false
   goto parse_zk_args
 )
-
 IF "%1"=="auth" (
   set SCRIPT_CMD=auth
   SHIFT
   goto run_auth
+)
+IF "%1"=="config" (
+  REM config uses different arg parsing strategy
+  set SCRIPT_CMD=config
+  SHIFT
+  set CONFIG_ARGS=
+  goto parse_config_args
 )
 
 goto parse_args
@@ -289,6 +294,8 @@ goto done
 @echo.
 @echo     solr start -c -m 1g -z localhost:2181 -a "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044"
 @echo.
+@echo   Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.cmd.
+@echo.
 @echo Pass -help after any COMMAND to see command-specific usage information,
 @echo   such as:    solr start -help or solr stop -help
 @echo.
@@ -301,8 +308,9 @@ goto done
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
-@echo   -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied, an embedded Zookeeper
-@echo                   instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983
+@echo   -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in
+@echo                   solr.in.cmd, an embedded ZooKeeper instance is started on Solr port+1000,
+@echo                   such as 9983 if Solr is bound to 8983
 @echo.
 @echo   -h host       Specify the hostname for this Solr instance
 @echo.
@@ -314,7 +322,8 @@ goto done
 @echo   -d dir        Specify the Solr server directory; defaults to server
 @echo.
 @echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
-@echo                   To launch an embedded Zookeeper instance, don't pass this parameter.
+@echo                   If neither ZK_HOST is defined in solr.in.cmd nor the -z parameter is specified,
+@echo                   an embedded ZooKeeper instance will be launched.
 @echo.
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
@@ -386,7 +395,8 @@ goto done
 @echo.
 @echo   -c collection  Collection to run healthcheck against.
 @echo.
-@echo   -z zkHost      Zookeeper connection string; default is localhost:9983
+@echo   -z zkHost      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.cmd; 
+@echo                    otherwise, default is localhost:9983
 @echo.
 @echo   -V             Enable more verbose output
 @echo.
@@ -507,7 +517,7 @@ echo         Can be run on remote (non-Solr^) hosts, as long as valid ZK_HOST in
 echo         Be sure to check the Solr logs in case of errors.
 echo.
 echo             -z zkHost       Optional Zookeeper connection string for all commands. If specified it
-echo                             overrides the 'ZK_HOST=...'' defined in solr.in.sh.
+echo                             overrides the 'ZK_HOST=...'' defined in solr.in.cmd.
 echo.
 echo             -V              Enable more verbose output.
 echo.
@@ -623,7 +633,7 @@ echo.
 echo   -updateIncludeFileOnly ^<true^|false^>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
 echo                                          authentication (i.e. don't update security.json^)"
 echo.
-echo   -z zkHost                    Zookeeper connection string
+echo   -z zkHost                    Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.cmd.
 echo.
 echo   -d ^<dir^>                     Specify the Solr server directory"
 echo.
@@ -667,6 +677,7 @@ IF "%1"=="-p" goto set_port
 IF "%1"=="-port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="-zkhost" goto set_zookeeper
+IF "%1"=="-zkHost" goto set_zookeeper
 IF "%1"=="-a" goto set_addl_opts
 IF "%1"=="-addlopts" goto set_addl_opts
 IF "%1"=="-j" goto set_addl_jetty_config
@@ -1352,6 +1363,7 @@ IF "%1"=="-c" goto set_healthcheck_collection
 IF "%1"=="-collection" goto set_healthcheck_collection
 IF "%1"=="-z" goto set_healthcheck_zk
 IF "%1"=="-zkhost" goto set_healthcheck_zk
+IF "%1"=="-zkHost" goto set_healthcheck_zk
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
@@ -1369,7 +1381,7 @@ SHIFT
 goto parse_healthcheck_args
 
 :set_healthcheck_zk
-set HEALTHCHECK_ZK_HOST=%~2
+set ZK_HOST=%~2
 SHIFT
 SHIFT
 goto parse_healthcheck_args
@@ -1378,10 +1390,11 @@ goto parse_healthcheck_args
 IF NOT DEFINED HEALTHCHECK_COLLECTION goto healthcheck_usage
 IF NOT DEFINED HEALTHCHECK_VERBOSE set "HEALTHCHECK_VERBOSE="
 IF NOT DEFINED HEALTHCHECK_ZK_HOST set "HEALTHCHECK_ZK_HOST=localhost:9983"
+echo ZK_HOST: !ZK_HOST!
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j2.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI healthcheck -collection !HEALTHCHECK_COLLECTION! -zkHost !HEALTHCHECK_ZK_HOST! %HEALTHCHECK_VERBOSE%
+  org.apache.solr.util.SolrCLI healthcheck -collection !HEALTHCHECK_COLLECTION! -zkHost !ZK_HOST! %HEALTHCHECK_VERBOSE%
 goto done
 
 :run_assert
@@ -1394,11 +1407,37 @@ if errorlevel 1 (
 )
 goto done
 
+:parse_config_args
+IF [%1]==[] goto run_config
+IF "%1"=="-z" goto set_config_zk
+IF "%1"=="-zkhost" goto set_config_zk
+IF "%1"=="-zkHost" goto set_config_zk
+IF "%1"=="-s" goto set_config_url_scheme
+IF "%1"=="-scheme" goto set_config_url_scheme
+set "CONFIG_ARGS=!CONFIG_ARGS! %1"
+SHIFT
+goto parse_config_args
+
+:set_config_zk
+set ZK_HOST=%~2
+SHIFT
+SHIFT
+goto parse_config_args
+
+:set_config_url_scheme
+set SOLR_URL_SCHEME=%~2
+SHIFT
+SHIFT
+goto parse_config_args
+
 :run_config
+IF NOT "!ZK_HOST!"=="" SET "CONFIG_ARGS=!CONFIG_ARGS! -z !ZK_HOST!"
+IF NOT "!SOLR_URL_SCHEME!"=="" SET "CONFIG_ARGS=!CONFIG_ARGS! -scheme !SOLR_URL_SCHEME!"
+
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j2.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI %* 
+  org.apache.solr.util.SolrCLI config !CONFIG_ARGS!
 if errorlevel 1 (
    exit /b 1
 )
@@ -1517,7 +1556,7 @@ if "!CREATE_PORT!"=="" (
 
 if "!CREATE_CONFDIR!"=="_default" (
   echo WARNING: Using _default configset with data driven schema functionality. NOT RECOMMENDED for production use.
-  echo          To turn off: bin\solr config -c !CREATE_NAME! -p !CREATE_PORT! -property update.autoCreateFields -value false
+  echo          To turn off: bin\solr config -c !CREATE_NAME! -p !CREATE_PORT! -action set-user-property -property update.autoCreateFields -value false
 )
 
 if "%SCRIPT_CMD%"=="create_core" (
