@@ -25,6 +25,10 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -70,9 +74,13 @@ public abstract class FieldOffsetStrategy {
 
     final List<OffsetsEnum> offsetsEnums = new ArrayList<>(terms.length + automata.length);
 
+    final boolean useWeightMatchesIter = phraseHelper.useWeightMatchesIter();
+
     // Handle position insensitive terms (a subset of this.terms field):
     final BytesRef[] insensitiveTerms;
-    if (phraseHelper.hasPositionSensitivity()) {
+    if (useWeightMatchesIter) {
+      insensitiveTerms = new BytesRef[0]; // don't -- WEIGHT_MATCHES will handle these
+    } else if (phraseHelper.hasPositionSensitivity()) {
       insensitiveTerms = phraseHelper.getAllPositionInsensitiveTerms();
       assert insensitiveTerms.length <= terms.length : "insensitive terms should be smaller set of all terms";
     } else {
@@ -82,16 +90,22 @@ public abstract class FieldOffsetStrategy {
       createOffsetsEnumsForTerms(insensitiveTerms, termsIndex, doc, offsetsEnums);
     }
 
+    // Handle Weight.matches approach
+    if (useWeightMatchesIter) {
+      createOffsetsEnumsWeightMatcher(leafReader, doc, offsetsEnums);
+    }
+
     // Handle spans
     if (phraseHelper.hasPositionSensitivity()) {
       phraseHelper.createOffsetsEnumsForSpans(leafReader, doc, offsetsEnums);
     }
 
     // Handle automata
-    if (automata.length > 0) {
+    if (automata.length > 0 && useWeightMatchesIter==false) {// WEIGHT_MATCHES handled these already
       createOffsetsEnumsForAutomata(termsIndex, doc, offsetsEnums);
     }
 
+    //TODO if only one OE then return it; don't wrap in Multi.  If none, return NONE
     return new OffsetsEnum.MultiOffsetsEnum(offsetsEnums);
   }
 
@@ -109,6 +123,28 @@ public abstract class FieldOffsetStrategy {
         }
       }
     }
+  }
+
+  protected void createOffsetsEnumsWeightMatcher(LeafReader leafReader, int docId, List<OffsetsEnum> results) throws IOException {
+    IndexSearcher indexSearcher = new IndexSearcher(leafReader);
+    indexSearcher.setQueryCache(null);
+    Matches matches = indexSearcher.rewrite(phraseHelper.getQuery())
+        .createWeight(indexSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f)
+        .matches(leafReader.getContext(), docId);
+    if (matches == null) {
+      return; // doc doesn't match
+    }
+    for (String field : matches) {
+      if (phraseHelper.getFieldMatcher().test(field)) {
+        MatchesIterator iterator = matches.getMatches(field);
+        if (iterator == null) {
+          continue;
+        }
+        //note: the iterator should be positioned on the first one already
+        results.add(new OffsetsEnum.OfMatchesIterator(iterator));
+      }
+    }
+
   }
 
   protected void createOffsetsEnumsForAutomata(Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {

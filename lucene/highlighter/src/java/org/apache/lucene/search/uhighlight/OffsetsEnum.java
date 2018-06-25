@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
@@ -153,6 +154,39 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
     }
   }
 
+  public static class OfMatchesIterator extends OffsetsEnum {
+    private final MatchesIterator matchesIterator;
+
+    public OfMatchesIterator(MatchesIterator matchesIterator) {
+      this.matchesIterator = matchesIterator;
+    }
+
+    @Override
+    public boolean nextPosition() throws IOException {
+      return matchesIterator.next();
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return 1; // nocommit terrible
+    }
+
+    @Override
+    public BytesRef getTerm() throws IOException {
+      return new BytesRef(); // nocommit terrible
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return matchesIterator.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return matchesIterator.endOffset();
+    }
+  }
+
   /**
    * Empty enumeration
    */
@@ -187,6 +221,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   /**
    * A view over several OffsetsEnum instances, merging them in-place
    */
+  //If OffsetsEnum and MatchesIterator ever truly merge then this could go away in lieu of DisjunctionMatchesIterator
   public static class MultiOffsetsEnum extends OffsetsEnum {
 
     private final PriorityQueue<OffsetsEnum> queue;

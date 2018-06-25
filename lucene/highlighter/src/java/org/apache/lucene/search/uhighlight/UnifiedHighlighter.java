@@ -769,6 +769,7 @@ public class UnifiedHighlighter {
 
   protected Set<HighlightFlag> getFlags(String field) {
     Set<HighlightFlag> highlightFlags = EnumSet.noneOf(HighlightFlag.class);
+    highlightFlags.add(HighlightFlag.WEIGHT_MATCHES);//nocommit for experimentation, use as default
     if (shouldHandleMultiTermQuery(field)) {
       highlightFlags.add(HighlightFlag.MULTI_TERM_QUERY);
     }
@@ -784,9 +785,14 @@ public class UnifiedHighlighter {
   protected PhraseHelper getPhraseHelper(String field, Query query, Set<HighlightFlag> highlightFlags) {
     boolean highlightPhrasesStrictly = highlightFlags.contains(HighlightFlag.PHRASES);
     boolean handleMultiTermQuery = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY);
+    boolean useWeightMatchesIter = highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES);
     return highlightPhrasesStrictly ?
         new PhraseHelper(query, field, getFieldMatcher(field),
-            this::requiresRewrite, this::preSpanQueryRewrite, !handleMultiTermQuery) : PhraseHelper.NONE;
+            this::requiresRewrite,
+            this::preSpanQueryRewrite,
+            !handleMultiTermQuery,
+            useWeightMatchesIter)
+        : PhraseHelper.NONE;
   }
 
   protected CharacterRunAutomaton[] getAutomata(String field, Query query, Set<HighlightFlag> highlightFlags) {
@@ -1090,7 +1096,8 @@ public class UnifiedHighlighter {
   public enum HighlightFlag {
     PHRASES,
     MULTI_TERM_QUERY,
-    PASSAGE_RELEVANCY_OVER_SPEED
+    PASSAGE_RELEVANCY_OVER_SPEED,
+    WEIGHT_MATCHES
     // TODO: ignoreQueryFields
     // TODO: useQueryBoosts
   }
