@@ -105,7 +105,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_UNSET;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -649,13 +648,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
         if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
             && !updateKey.equals(Overseer.QUEUE_OPERATION)
-            && !updateKey.equals(PROPERTY_UNSET) // handled below in a separate conditional
+            && updateEntry.getValue() != null // handled below in a separate conditional
             && !collection.get(updateKey).equals(updateEntry.getValue())){
           areChangesVisible = false;
           break;
         }
 
-        if (updateKey.equals(PROPERTY_UNSET) && collection.containsKey((String) updateEntry.getValue())) {
+        if (updateEntry.getValue() == null && collection.containsKey(updateKey)) {
           areChangesVisible = false;
           break;
         }

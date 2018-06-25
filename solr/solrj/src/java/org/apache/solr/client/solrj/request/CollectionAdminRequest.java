@@ -62,7 +62,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
-import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_UNSET;
 
 /**
  * This class is experimental and subject to change.
@@ -81,8 +80,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       MAX_SHARDS_PER_NODE,
       AUTO_ADD_REPLICAS,
       POLICY,
-      COLL_CONF,
-      PROPERTY_UNSET);
+      COLL_CONF);
 
   protected final CollectionAction action;
 
