@@ -27,7 +27,7 @@ Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
-Jetty 9.4.10.v20180503
+Jetty 9.4.11.v20180605
 
 Upgrade Notes
 ----------------------
@@ -98,6 +98,8 @@ Other Changes
   AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
 
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
+
+* SOLR-12468: Upgrade Jetty to 9.4.11.v20180605 (Michael Braun, shalin)
 
 ==================  7.4.0 ==================
 
