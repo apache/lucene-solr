@@ -33,6 +33,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
+
+  public static final String[] childrenIds = { "2", "3" };
+  public static final String grandChildId = "4";
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema15.xml");
@@ -45,8 +49,39 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDeeplyNestedURP() throws Exception {
-    final String grandChildId = "4";
+  public void testDeeplyNestedURPGrandChild() throws Exception {
+    indexSampleData();
+    assertJQ(req("q", IndexSchema.LEVEL_FIELD_NAME + ":2",
+        "fl","*",
+        "sort","id desc",
+        "wt","json"),
+        "/response/docs/[0]/id=='" + grandChildId + "'");
+
+    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*.grandChild",
+        "fl","*",
+        "sort","id desc",
+        "wt","json"),
+        "/response/docs/[0]/id=='" + grandChildId + "'");
+  }
+
+  @Test
+  public void testDeeplyNestedURPChildren() throws Exception {
+    final String[] childrenTests = {"/response/docs/[0]/id=='" + childrenIds[0] + "'", "/response/docs/[1]/id=='" + childrenIds[1] + "'"};
+    indexSampleData();
+    assertJQ(req("q", IndexSchema.LEVEL_FIELD_NAME + ":1",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        childrenTests);
+
+    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":children",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        childrenTests);
+  }
+
+  private void indexSampleData() throws Exception {
     final String jDoc = "{\n" +
         "    \"add\": {\n" +
         "        \"doc\": {\n" +
@@ -89,16 +124,5 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
       }
     }
     assertU(commit());
-    assertJQ(req("q", IndexSchema.LEVEL_FIELD_NAME + ":2",
-        "fl","*",
-        "sort","id desc",
-        "wt","json"),
-        "/response/docs/[0]/id=='" + grandChildId + "'");
-
-    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*.grandChild",
-        "fl","*",
-        "sort","id desc",
-        "wt","json"),
-        "/response/docs/[0]/id=='" + grandChildId + "'");
   }
 }
