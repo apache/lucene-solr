@@ -359,6 +359,10 @@ public class JsonRecordReader {
                 break;
               }
               if (event == OBJECT_START) {
+                // if single item in array will still be added as array
+                if(!values.containsKey(name)) {
+                  values.put(name, new ArrayList<>());
+                }
                 walkObject();
               }
             }

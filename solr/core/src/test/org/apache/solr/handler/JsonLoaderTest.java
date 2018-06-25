@@ -39,6 +39,8 @@ import org.noggit.ObjectBuilder;
 
 import static org.apache.solr.common.params.CommonParams.ANONYMOUS_CHILD_DOCS;
 
+import static org.apache.solr.common.params.CommonParams.ANONYMOUS_CHILD_DOCS;
+
 public class JsonLoaderTest extends SolrTestCaseJ4 {
 
   @BeforeClass
