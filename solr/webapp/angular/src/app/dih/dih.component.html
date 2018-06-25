@@ -1,3 +1,154 @@
-<p>
-  dih works!
-</p>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="dataimport" class="clearfix">
+
+  <div *ngIf="!hasHandlers">The solrconfig.xml file for this index does not have an operational DataImportHandler defined!</div>
+  <div id="frame" *ngIf="hasHandlers">
+    <div id="current_state" *ngIf="info" class="{{info.status}}">
+      <p class="last_update">Last Update: <abbr title="{{lastUpdateUTC}}">{{lastUpdate}}</abbr></p>
+      <div class="info">
+        <strong>{{info.text}}<span *ngIf="info.timeTaken"> (Duration: {{info.timeTaken}})</span>
+        </strong>
+        <div class="details" *ngIf="info.showDetails">
+          <!--div class="docs">
+              <span ng-repeat="doc in info.docs">
+                  <abbr style="display:inline" title="{{ doc.desc }}">{{ doc.name }}</abbr>: {{doc.value | number}}
+                  &nbsp;<span style="display:inline" ng-show="doc.speed">{{ doc.speed | number}}/s</span>
+                  <span style="display:inline" ng-show="!$last">, </span>
+              </span>
+          </div-->
+          <div class="dates">
+            <span *ngIf="info.started"><abbr title="Full Dump Started">Started</abbr>:<abbr class="time">{{ info.started | timeAgo }}</abbr></span>
+            <span *ngIf="info.aborted"><abbr title="Aborted">Aborted"</abbr>:<abbr class="time">{{ info.aborted | timeAgo }}</abbr></span>
+            <span *ngIf="info.rolledBack"><abbr title="Rolled Back">Rolled Back</abbr>:<abbr class="time">{{ info.rolledBack | timeAgo }}</abbr></span>
+            <span *ngIf="info.committed"><abbr title="Committed">Committed</abbr>:<abbr class="time">{{ info.committed | timeAgo }}</abbr></span>
+          </div>
+        </div>
+        <button class="abort-import" [ngClass]="{'warn': !isAborting, 'success': isAborting}" (click)="abort()" *ngIf="isRunning">
+            <span *ngIf="isAborting">Aborting Import</span>
+            <span *ngIf="!isAborting">Abort Import</span>
+        </button>
+      </div>
+    </div>
+    <div class="block" id="raw_output">
+      <h2>
+        <a class="toggle" (click)="toggleRawStatus()"><span>Raw Status-Output</span></a>
+      </h2>
+      <div class="message-container" *ngIf="showRawStatus">
+        <div class="message"></div>
+      </div>
+      <div class="content" *ngIf="showRawStatus">
+        <div id="raw_output_container"><pre class="syntax language-json"><code [innerHTML]="info.rawStatus"></code></pre></div>
+      </div>
+    </div>
+    <div class="block" id="config" [ngClass]="{'debug_mode':isDebugMode}">
+      <h2 class="clearfix">
+        <a class="toggle" (click)="toggleConfiguration()"><span>Configuration</span></a>
+        <a class="r reload_config" [ngClass]="{'success':reloaded}" (click)="reload()" title="Reload Configuration">Reload</a>
+        <a class="r debug_mode" (click)="toggleDebug()">Debug-Mode</a>
+      </h2>
+      <div class="message-container" *ngIf="showConfiguration">
+        <div class="message"></div>
+      </div>
+      <div class="content" *ngIf="showConfiguration">
+        <div id="dataimport_config">
+          <div class="formatted" *ngIf="!isDebugMode">
+            <pre class="syntax language-xml">{{config}}</pre>
+          </div>
+          <div class="editable" *ngIf="isDebugMode">
+            <textarea [(ngModel)]="config"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="block" id="debug_response" *ngIf="form_showDebug">
+      <h2>
+        <a class="toggle" (click)="toggleRawDebug()"><span>Raw Debug-Response</span></a>
+      </h2>
+      <div class="message-container" *ngIf="showRawDebug">
+        <div class="message"></div>
+      </div>
+      <div class="content" *ngIf="showRawDebug">
+        <span *ngIf="rawResponse">
+              <em>No Request executed</em>
+          </span>
+        <span *ngIf="rawResponse">
+            <pre class="syntax language-json"><code [innerHTML]="rawResponse"></code></pre>
+          </span>
+      </div>
+    </div>
+  </div>
+  <div id="form" *ngIf="hasHandlers">
+    <div id="navigation">
+      <ul>
+        <li [ngClass]="{'current': h == handler}" *ngFor="let h of handlers">
+          <a routerLink="/collections/{{sharedService.currentCollection}}/dataimport/{{h}}">{{h}} | {{handler}} | {{h==handler}}</a>
+        </li>
+      </ul>
+    </div>
+    <form>
+      <label for="command">
+        <a rel="help">Command</a>
+      </label>
+      <select name="command" id="command" [(ngModel)]="form_command" name="command">
+        <option>full-import</option>
+        <option>delta-import</option>
+      </select>
+      <label for="verbose" class="checkbox">
+        <input type="checkbox" name="verbose" id="verbose" [(ngModel)]="form_verbose" name="verbose">
+        Verbose
+      </label>
+      <label for="clean" class="checkbox">
+        <input type="checkbox" name="clean" id="clean" [(ngModel)]="form_clean" name="clean">
+        Clean
+      </label>
+      <label for="commit" class="checkbox">
+        <input type="checkbox" name="commit" id="commit" [(ngModel)]="form_commit" name="commit">
+        Commit
+      </label>
+      <label for="debug" class="checkbox">
+        <input type="checkbox" name="debug" id="debug" [(ngModel)]="form_showDebug" name="showDebug">
+        Debug
+      </label>
+      <label for="entity">
+        <a rel="help">Entity</a>
+      </label>
+      <select [(ngModel)]="form_entity" name="entity" id="entity">
+        <option value=""></option>
+        <option *ngFor="let entity of entities">{{entity}}</option>
+      </select>
+      <label for="start">
+        <a rel="help">Start</a>,
+        <a rel="help">Rows</a>
+      </label>
+      <div class="clearfix">
+        <input type="text" id="start" placeholder="0" [(ngModel)]="form_start" name="start">
+        <input type="text" id="rows" placeholder="10" [(ngModel)]="form_rows" name="rows">
+      </div>
+      <label for="custom_parameters">
+        <a rel="help">Custom Parameters</a>
+      </label>
+      <input type="text" id="custom_parameters" [(ngModel)]="form_custom" name="custom" placeholder="key1=val1&amp;key2=val2">
+    </form>
+    <button class="execute" type="submit" (click)="submit()">
+          <span *ngIf="isDebugMode">Execute with this Configuration →</span>
+          <span *ngIf="!isDebugMode">Execute</span>
+      </button>
+    <button class="refresh-status" (click)="refreshStatus()" [ngClass]="{'loader': isStatusLoading, 'success': statusUpdated}"><span>Refresh Status</span></button>
+    <p id="auto-refresh-status"><a (click)="updateAutoRefresh()" [ngClass]="{'on':autorefresh}">Auto-Refresh Status</a></p>
+  </div>
+</div>

@@ -22,37 +22,19 @@ import { Observable } from 'rxjs/Observable';
 import { of } from 'rxjs/observable/of';
 import { catchError, map, tap } from 'rxjs/operators';
 
-import { ListCollections } from './collections';
-import { Collection } from './collections.service';
-
 @Injectable()
-export class CoresService {
-
-  private coresUrl = '/solr/admin/cores';
+export class MbeansService {
 
   constructor(private http: HttpClient) {
   }
 
-  listCores(): Observable<String[]> {
-    const params: HttpParams = new HttpParams().set('indexInfo', 'false');
-    return this.http.get<HttpResponse<any>>(this.coresUrl, { observe: 'response', params: params }).pipe(map(lc => {
-      let cores: String[] = [];
-      const status: any = lc.body.status;
-      for (let corename in status) {
-        cores.push(corename);
-      }
-      return cores;
-    }));
+  data (collectionName: string): Observable<any> {
+      const params: HttpParams = new HttpParams().set('stats', 'true').set("wt", "json");
+      return this.http.get<HttpResponse<any>>(("/solr/" + collectionName + "/admin/mbeans"), { observe: 'response', params: params }).pipe(map(r => {
+        const body: any = r.body;           
+        return body['solr-mbeans'];
+      }));
   }
-  ping(coreName: string): Observable<number> {
-    const params: HttpParams = new HttpParams().set('wt', 'json');
-    return this.http.get<HttpResponse<any>>("/solr/" + coreName + "/admin/ping", { observe: 'response', params: params }).pipe(map(lc => {
-      const body: any = lc.body;
-      const status: string = body.status;
-      if (status == "OK") {
-        return body.responseHeader.QTime;
-      }
-      return null;
-    }));
-  }
+
+
 }

@@ -38,6 +38,7 @@ const routes: Routes = [
   { path: 'collections/:name/overview', component: CollectionsComponent },
   { path: 'collections/:name/analysis', component: AnalysisComponent },
   { path: 'collections/:name/dataimport', component: DihComponent },
+  { path: 'collections/:name/dataimport/:handler', component: DihComponent },
   { path: 'collections/:name/documents', component: DocumentsComponent },
   { path: 'collections/:name/files', component: FilesComponent },
   { path: 'collections/:name/query', component: QueryComponent },

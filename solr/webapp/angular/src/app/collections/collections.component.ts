@@ -283,6 +283,6 @@ export class CollectionsComponent implements OnInit {
   }
 
   deleteShard(shard: Shard) {
-
+    alert("delete shard not implemented");
   }
 }

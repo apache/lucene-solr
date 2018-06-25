@@ -28,7 +28,9 @@ import { SystemInfoService } from './systeminfo.service';
 import { AnalysisService } from './analysis.service';
 import { CollectionsService } from './collections.service';
 import { CoresService } from './cores.service';
+import { DihService } from './dih.service';
 import { LukeService } from './luke.service';
+import { MbeansService } from './mbeans.service';
 import { ZookeeperService } from './zookeeper.service';
 import { SharedService } from './shared.service';
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -79,7 +81,9 @@ import { SegmentsComponent } from './segments/segments.component';
     AnalysisService,
     CollectionsService,
     CoresService,
+    DihService,
     LukeService,
+    MbeansService,
     ZookeeperService
   ],
   bootstrap: [AppComponent]
