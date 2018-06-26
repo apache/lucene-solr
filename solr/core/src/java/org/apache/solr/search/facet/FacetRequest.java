@@ -16,6 +16,13 @@
  */
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
@@ -24,17 +31,28 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.*;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.FunctionQParser;
+import org.apache.solr.search.FunctionQParserPlugin;
+import org.apache.solr.search.JoinQParserPlugin;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryContext;
+import org.apache.solr.search.SolrConstantScoreQuery;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.join.GraphQuery;
 import org.apache.solr.search.join.GraphQueryParser;
-
-import java.io.IOException;
-import java.util.*;
+import org.apache.solr.util.RTimer;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
 
-
+/**
+ * A request to do facets/stats that might itself be composed of sub-FacetRequests.
+ * This is a cornerstone of the facet module.
+ *
+ * @see #parse(SolrQueryRequest, Map)
+ */
 public abstract class FacetRequest {
 
   public static enum SortDirection {
@@ -237,6 +255,39 @@ public abstract class FacetRequest {
     
   }
 
+  /**
+   * Factory method to parse a facet request tree.  The outer keys are arbitrary labels and their values are
+   * facet request specifications. Will throw a {@link SolrException} if it fails to parse.
+   * @param req the overall request
+   * @param params a typed parameter structure (unlike SolrParams which are all string values).
+   */
+  public static FacetRequest parse(SolrQueryRequest req, Map<String, Object> params) {
+    FacetParser parser = new FacetTopParser(req);
+    try {
+      return parser.parse(params);
+    } catch (SyntaxError syntaxError) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+    }
+  }
+
+  //TODO it would be nice if there was no distinction.  If the top level request had "type" as special then there wouldn't be a need.
+
+  /**
+   * Factory method to parse out a rooted facet request tree that would normally go one level below a label.
+   * The params must contain a "type".
+   * This is intended to be useful externally, such as by {@link org.apache.solr.request.SimpleFacets}.
+   * @param req the overall request
+   * @param params a typed parameter structure (unlike SolrParams which are all string values).
+   */
+  public static FacetRequest parseOneFacetReq(SolrQueryRequest req, Map<String, Object> params) {
+    FacetParser parser = new FacetTopParser(req);
+    try {
+      return (FacetRequest) parser.parseFacetOrStat("", params);
+    } catch (SyntaxError syntaxError) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+    }
+  }
+
   public FacetRequest() {
     facetStats = new LinkedHashMap<>();
     subFacets = new LinkedHashMap<>();
@@ -294,7 +345,46 @@ public abstract class FacetRequest {
     s += "}";
     return s;
   }
-  
+
+  /**
+   * Process this facet request against the given domain of docs.
+   * Note: this is currently used externally by {@link org.apache.solr.request.SimpleFacets}.
+   */
+  public final Object process(SolrQueryRequest req, DocSet domain) throws IOException {
+    //TODO check for FacetDebugInfo?  and if so set on fcontext
+    //  rb.req.getContext().get("FacetDebugInfo");
+    //TODO should the SolrQueryRequest be held on the FacetRequest?  It was created from parse(req,...) so is known.
+    FacetContext fcontext = new FacetContext();
+    fcontext.base = domain;
+    fcontext.req = req;
+    fcontext.searcher = req.getSearcher();
+    fcontext.qcontext = QueryContext.newContext(fcontext.searcher);
+
+    return process(fcontext);
+  }
+
+  /** Process the request with the facet context settings, a parameter-object. */
+  final Object process(FacetContext fcontext) throws IOException {
+    FacetProcessor facetProcessor = createFacetProcessor(fcontext);
+
+    FacetDebugInfo debugInfo = fcontext.getDebugInfo();
+    if (debugInfo == null) {
+      facetProcessor.process();
+    } else {
+      if (fcontext.filter != null) {
+        debugInfo.setFilter(fcontext.filter.toString());
+      }
+      debugInfo.setReqDescription(getFacetDescription());
+      debugInfo.setProcessor(getClass().getSimpleName());
+      debugInfo.putInfoItem("domainSize", (long) fcontext.base.size());
+      RTimer timer = new RTimer();
+      facetProcessor.process();
+      debugInfo.setElapse((long) timer.getTime());
+    }
+
+    return facetProcessor.getResponse(); // note: not captured in elapsed time above; good/bad?
+  }
+
   public abstract FacetProcessor createFacetProcessor(FacetContext fcontext);
 
   public abstract FacetMerger createFacetMerger(Object prototype);
@@ -453,12 +543,16 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
   public Object parseFacetOrStat(String key, String type, Object args) throws SyntaxError {
     // TODO: a place to register all these facet types?
 
-    if ("field".equals(type) || "terms".equals(type)) {
-      return parseFieldFacet(key, args);
-    } else if ("query".equals(type)) {
-      return parseQueryFacet(key, args);
-    } else if ("range".equals(type)) {
-      return parseRangeFacet(key, args);
+    switch (type) {
+      case "field":
+      case "terms":
+        return new FacetFieldParser(this, key).parse(args);
+      case "query":
+        return new FacetQueryParser(this, key).parse(args);
+      case "range":
+        return new FacetRangeParser(this, key).parse(args);
+      case "heatmap":
+        return new FacetHeatmap.Parser(this, key).parse(args);
     }
 
     AggValueSource stat = parseStat(key, type, args);
@@ -466,23 +560,6 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
       throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);
     }
     return stat;
-  }
-
-
-
-  FacetField parseFieldFacet(String key, Object args) throws SyntaxError {
-    FacetFieldParser parser = new FacetFieldParser(this, key);
-    return parser.parse(args);
-  }
-
-  FacetQuery parseQueryFacet(String key, Object args) throws SyntaxError {
-    FacetQueryParser parser = new FacetQueryParser(this, key);
-    return parser.parse(args);
-  }
-
-  FacetRange parseRangeFacet(String key, Object args) throws SyntaxError {
-    FacetRangeParser parser = new FacetRangeParser(this, key);
-    return parser.parse(args);
   }
 
   public Object parseStringFacetOrStat(String key, String s) throws SyntaxError {
@@ -621,6 +698,21 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
     }
 
     return ((Number)o).longValue();
+  }
+
+  public Double getDoubleOrNull(Map<String,Object> args, String paramName, boolean required) {
+    Object o = args.get(paramName);
+    if (o == null) {
+      if (required) {
+        throw err("Missing required parameter '" + paramName + "'");
+      }
+      return null;
+    }
+    if (!(o instanceof Number)) {
+      throw err("Expected double type for param '" + paramName + "' but got " + o);
+    }
+
+    return ((Number)o).doubleValue();
   }
 
   public boolean getBoolean(Map<String,Object> args, String paramName, boolean defVal) {

@@ -88,6 +88,8 @@ New Features
 
 * SOLR-12506: Add SolrJ support for the modify collection API. (shalin)
 
+* SOLR-12398: The JSON Facet API now supports type=heatmap facets, just as classic faceting does. (David Smiley)
+
 Bug Fixes
 ----------------------
 

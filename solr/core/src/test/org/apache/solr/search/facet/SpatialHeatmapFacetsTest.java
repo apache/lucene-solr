@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
+package org.apache.solr.search.facet;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +30,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/** Test Heatmap Facets (both impls) */
 public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   private static final String FIELD = "srpt_quad";
 
@@ -42,9 +43,10 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
     System.setProperty("java.awt.headless", "true");
   }
 
+  /** Tests SimpleFacets/Classic faceting implementation of heatmaps */
   @SuppressWarnings("unchecked")
   @Test
-  public void test() throws Exception {
+  public void testClassicFacets() throws Exception { // AKA SimpleFacets
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
@@ -165,18 +167,150 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
     Object v = getHmObj(query(params(baseParams, FacetParams.FACET_HEATMAP_FORMAT, "png"))).get("counts_png");
     assertTrue(v instanceof byte[]);
     //simply test we can read the image
-    assertNotNull(SpatialHeatmapFacets.PngHelper.readImage((byte[]) v));
+    assertNotNull(FacetHeatmap.PngHelper.readImage((byte[]) v));
     //good enough for this test method
-  }
-
-  private NamedList getHmObj(QueryResponse response) {
-    return (NamedList) response.getResponse().findRecursive("facet_counts", "facet_heatmaps", FIELD);
   }
 
   private ModifiableSolrParams params(SolrParams baseParams, String... moreParams) {
     final ModifiableSolrParams params = new ModifiableSolrParams(baseParams);
     params.add(params(moreParams));//actually replaces
     return params;
+  }
+
+  /** Tests JSON Facet module implementation of heatmaps. */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testJsonFacets() throws Exception {
+    /*
+    THIS IS THE MOSTLY SAME CODE as above with tweaks to request it using the JSON Facet approach.
+      Near-duplication is sad; not clear if one test doing both is better -- would be awkward
+     */
+    handle.clear();
+    handle.put("QTime", SKIPVAL);
+    handle.put("timestamp", SKIPVAL);
+    handle.put("maxScore", SKIPVAL);
+
+    SolrParams baseParams = params("q", "*:*", "rows", "0");
+
+    final String testBox = "[\"50 50\" TO \"180 90\"]";//top-right somewhere on edge (whatever)
+
+    // ------ Index data
+
+    index("id", "0", FIELD, "ENVELOPE(100, 120, 80, 40)");// on right side
+    index("id", "1", FIELD, "ENVELOPE(-120, -110, 80, 20)");// on left side (outside heatmap)
+    index("id", "3", FIELD, "POINT(70 60)");//just left of BOX 0
+    index("id", "4", FIELD, "POINT(91 89)");//just outside box 0 (above it) near pole,
+
+    commit();
+
+    //----- Test gridLevel derivation
+    try {
+      query(params(baseParams, "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", geom:'" + testBox + "', distErr:0}}"));
+      fail();
+    } catch (SolrException e) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    }
+    try {
+      query(params(baseParams, "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", geom:'" + testBox + "', distErrPct:0}}"));
+      fail();
+    } catch (SolrException e) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    }
+    // Monkeying with these params changes the gridLevel in different directions. We don't test the exact
+    // computation here; that's not _that_ relevant, and is Lucene spatial's job (not Solr) any way.
+    assertEquals(7, getHmObj(query(params(baseParams,
+        "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", geom:'" + testBox + "'}}"))).get("gridLevel"));//default
+    assertEquals(3, getHmObj(query(params(baseParams,
+        "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", geom:'" + testBox + "', gridLevel:3}}"))).get("gridLevel"));
+    assertEquals(2, getHmObj(query(params(baseParams,
+        "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", geom:'" + testBox + "', distErr:100}}"))).get("gridLevel"));
+    //TODO test impact of distance units
+    assertEquals(9, getHmObj(query(params(baseParams,
+        "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", geom:'" + testBox + "', distErrPct:0.05}}"))).get("gridLevel"));
+    assertEquals(6, getHmObj(query(params(baseParams,
+        "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", distErrPct:0.10}}"))).get("gridLevel"));
+
+    // ----- Search
+    // this test simply has some 0's, nulls, 1's and a 2 in there.
+    NamedList hmObj = getHmObj(query(params(baseParams,
+        "json.facet", "{f1:{type:heatmap, f:" + FIELD + " geom:'[\"50 20\" TO \"180 90\"]', gridLevel:4}}")));
+    List<List<Integer>> counts = (List<List<Integer>>) hmObj.get("counts_ints2D");
+    List<List<Integer>> expectedCounts1 = Arrays.asList(
+        Arrays.asList(0, 0, 2, 1, 0, 0),
+        Arrays.asList(0, 0, 1, 1, 0, 0),
+        Arrays.asList(0, 1, 1, 1, 0, 0),
+        Arrays.asList(0, 0, 1, 1, 0, 0),
+        Arrays.asList(0, 0, 1, 1, 0, 0),
+        null,
+        null
+    );
+    assertEquals( expectedCounts1, counts);
+
+    // now this time we add a filter query and exclude it
+    QueryResponse response = query(params(baseParams,
+        "fq", "{!tag=excludeme}id:0", // filter to only be id:0
+        "json.facet", "{f1:{type:heatmap, excludeTags:['excludeme'], f:" + FIELD + ", geom:'[\"50 20\" TO \"180 90\"]', gridLevel:4}}"));
+
+    assertEquals(1, response.getResults().getNumFound());// because of our 'fq'
+    hmObj = getHmObj(response);
+    counts = (List<List<Integer>>) hmObj.get("counts_ints2D");
+    assertEquals( expectedCounts1, counts);
+
+    {
+      // impractical example but nonetheless encloses the points of both doc3 and doc4 (both of which are points)
+      final String jsonHeatmap = "facet:{hm:{type:heatmap, f:" + FIELD + ", geom:'MULTIPOINT(70 60, 91 89)', distErrPct:0.2}}";
+      response = query(params(baseParams,
+          "json.facet", "{" +
+              "q1:{type:query, q:'id:3', " + jsonHeatmap + " }, " +
+              "q2:{type:query, q:'id:4', " + jsonHeatmap + " } " +
+              "}"));
+      {
+        final NamedList q1Res = (NamedList) response.getResponse().findRecursive("facets", "q1");
+        assertEquals("1", q1Res.get("count").toString());
+        final NamedList q2Res = (NamedList) response.getResponse().findRecursive("facets", "q2");
+        assertEquals("1", q2Res.get("count").toString());
+        // essentially, these will differ only in the heatmap counts but otherwise will be the same
+        assertNotNull(compare(q1Res, q2Res, flags, handle));
+      }
+    }
+
+    // test using a circle input shape
+    hmObj = getHmObj(query(params(baseParams,
+        "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", geom:'BUFFER(POINT(110 40), 7)', gridLevel:7}}")));
+    counts = (List<List<Integer>>) hmObj.get("counts_ints2D");
+    assertEquals(
+        Arrays.asList(
+            Arrays.asList(0, 1, 1, 1, 1, 1, 1, 0),//curved; we have a 0
+            Arrays.asList(0, 1, 1, 1, 1, 1, 1, 0),//curved; we have a 0
+            Arrays.asList(0, 1, 1, 1, 1, 1, 1, 0),//curved; we have a 0
+            Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1),
+            Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1),
+            Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1),
+            null, null, null, null, null//no data here (below edge of rect 0)
+        ),
+        counts
+    );
+
+    // Search in no-where ville and get null counts
+    assertNull(getHmObj(query(params(baseParams,
+        "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", geom:'ENVELOPE(0, 10, -80, -90)'}}"))).get("counts_ints2D"));
+
+    Object v = getHmObj(query(params(baseParams,
+        "json.facet", "{f1:{type:heatmap, f:" + FIELD + ", format:png }}"))).get("counts_png");
+    assertTrue(v instanceof byte[]);
+    //simply test we can read the image
+    assertNotNull(FacetHeatmap.PngHelper.readImage((byte[]) v));
+    //good enough for this test method
+  }
+
+  private NamedList getHmObj(QueryResponse response) {
+    // classic faceting
+    final NamedList classicResp = (NamedList) response.getResponse().findRecursive("facet_counts", "facet_heatmaps", FIELD);
+    if (classicResp != null) {
+      return classicResp;
+    }
+    // JSON Facet
+    return (NamedList) response.getResponse().findRecursive("facets", "f1");
   }
 
   @Test
@@ -197,14 +331,14 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
       }
     }
     // Round-trip
-    final byte[] bytes = SpatialHeatmapFacets.asPngBytes(columns, rows, counts, null);
+    final byte[] bytes = FacetHeatmap.asPngBytes(columns, rows, counts, null);
     int[] countsOut = random().nextBoolean() ? new int[columns * rows] : null;
     int base = 0;
     if (countsOut != null) {
       base = 9;
       Arrays.fill(countsOut, base);
     }
-    countsOut = SpatialHeatmapFacets.addPngToIntArray(bytes, countsOut);
+    countsOut = FacetHeatmap.addPngToIntArray(bytes, countsOut);
     // Test equal
     assertEquals(counts.length, countsOut.length);
     for (int i = 0; i < countsOut.length; i++) {
