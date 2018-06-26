@@ -35,12 +35,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.apache.solr.update.processor.DeeplyNestedUpdateProcessor.splitChar;
+import static org.apache.solr.update.processor.NestedUpdateProcessor.splitChar;
 
-public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
+public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
-  public static final String[] childrenIds = { "2", "3" };
-  public static final String grandChildId = "4";
+  private static final String[] childrenIds = { "2", "3" };
+  private static final String grandChildId = "4";
   private static final String jDoc = "{\n" +
       "    \"add\": {\n" +
       "        \"doc\": {\n" +

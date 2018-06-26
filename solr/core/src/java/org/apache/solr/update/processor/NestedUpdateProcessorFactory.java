@@ -32,13 +32,13 @@ import org.apache.solr.response.SolrQueryResponse;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-public class DeeplyNestedUpdateProcessorFactory extends UpdateRequestProcessorFactory {
+public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   private EnumSet<NestedFlag> fields;
   private static final List<String> allowedConfFields = Arrays.stream(NestedFlag.values()).map(e -> e.toString().toLowerCase(Locale.ROOT)).collect(Collectors.toList());
 
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next ) {
-    return new DeeplyNestedUpdateProcessor(req, rsp, fields, next);
+    return new NestedUpdateProcessor(req, rsp, fields, next);
   }
 
   @Override

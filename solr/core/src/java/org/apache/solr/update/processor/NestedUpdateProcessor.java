@@ -28,15 +28,15 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
-import static org.apache.solr.update.processor.DeeplyNestedUpdateProcessorFactory.NestedFlag;
+import static org.apache.solr.update.processor.NestedUpdateProcessorFactory.NestedFlag;
 
-public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
+public class NestedUpdateProcessor extends UpdateRequestProcessor {
   public static final String splitChar = ".";
   private EnumSet<NestedFlag> fields;
   SolrQueryRequest req;
 
 
-  protected DeeplyNestedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, EnumSet<NestedFlag> fields, UpdateRequestProcessor next) {
+  protected NestedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, EnumSet<NestedFlag> fields, UpdateRequestProcessor next) {
     super(next);
     this.req = req;
     this.fields = fields;
