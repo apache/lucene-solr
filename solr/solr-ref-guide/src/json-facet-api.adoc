@@ -300,6 +300,52 @@ By default, the ranges used to compute range faceting between `start` and `end` 
 |facet |Aggregations, metrics, or nested facets that will be calculated for every returned bucket
 |===
 
+== Heatmap Facet
+
+The heatmap facet generates a 2D grid of facet counts for documents having spatial data in each grid cell.
+
+This feature is primarily documented in the <<spatial-search.adoc#heatmap-faceting,spatial>> section of the reference guide.
+The key parameters are `type` to specify `heatmap` and `field` to indicate a spatial RPT field.
+The rest of the parameter names use the same names and semantics mirroring
+  facet.heatmap query-parameter style faceting, albeit without the "facet.heatmap." prefix.
+For example `geom` here corresponds to `facet.heatmap.geom` in a facet.heatmap command.
+
+Like the other facet types, heatmaps may have a custom domain (e.g. to exclude filters) and they can be subordinate to
+other facet types like a query facet.  However, unlike those, a heatmap facet cannot have facets or stats hang beneath --
+at least not yet.
+
+Here's an example query:
+[source,java]
+----
+{
+  hm : {
+    type : heatmap,
+    field : points_srpt,
+    geom : "[-49.492,-180 TO 64.701,73.125]",
+    distErrPct : 0.5
+  }
+}
+----
+
+And the facet response will look like:
+[source,json]
+----
+{
+"facets":{
+    "count":145725,
+    "hm":{
+      "gridLevel":1,
+      "columns":6,
+      "rows":4,
+      "minX":-180.0,
+      "maxX":90.0,
+      "minY":-90.0,
+      "maxY":90.0,
+      "counts_ints2D":[[68,1270,459,5359,39456,1713],[123,10472,13620,7777,18376,6239],[88,6,3898,989,1314,255],[0,0,30,1,0,1]]
+      }}}
+----
+
+
 == Filtering Facets
 
 One can filter the domain *before* faceting via the `filter` keyword in the `domain` block of the facet.
