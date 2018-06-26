@@ -18,7 +18,6 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.Objects;
 
 import org.apache.solr.common.SolrException;
@@ -28,18 +27,19 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
-import static org.apache.solr.update.processor.NestedUpdateProcessorFactory.NestedFlag;
 
 public class NestedUpdateProcessor extends UpdateRequestProcessor {
-  public static final String splitChar = ".";
-  private EnumSet<NestedFlag> fields;
+  public static final String PATH_SEP_CHAR = "/";
+  private boolean storePath;
+  private boolean storeParent;
   SolrQueryRequest req;
 
 
-  protected NestedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, EnumSet<NestedFlag> fields, UpdateRequestProcessor next) {
+  protected NestedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, boolean storeParent, boolean storePath, UpdateRequestProcessor next) {
     super(next);
     this.req = req;
-    this.fields = fields;
+    this.storeParent = storeParent;
+    this.storePath = storePath;
   }
 
   @Override
@@ -53,11 +53,11 @@ public class NestedUpdateProcessor extends UpdateRequestProcessor {
     for(SolrInputField field: doc.values()) {
       for(Object val: field) {
         if(val instanceof SolrInputDocument) {
-          if(field.getName().contains(splitChar)) {
+          if(field.getName().contains(PATH_SEP_CHAR)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + field.getName()
-                + "' contains: '" + splitChar + "' , which is reserved for the nested URP");
+                + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
           }
-          final String jointPath = Objects.isNull(fullPath) ? field.getName(): String.join(splitChar, fullPath, field.getName());
+          final String jointPath = Objects.isNull(fullPath) ? field.getName(): String.join(PATH_SEP_CHAR, fullPath, field.getName());
           processChildDoc((SolrInputDocument) val, doc, jointPath);
         }
       }
@@ -65,10 +65,10 @@ public class NestedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
-    if(fields.contains(NestedFlag.PATH)) {
+    if(storePath) {
       setPathField(sdoc, fullPath);
     }
-    if (fields.contains(NestedFlag.PARENT)) {
+    if (storeParent) {
       setParentKey(sdoc, parent);
     }
     processDocChildren(sdoc, fullPath);

@@ -31,9 +31,7 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <updateRequestProcessorChain name="nested">
-    <processor class="solr.NestedUpdateProcessorFactory">
-      <str name="fields">parent,path</str>
-    </processor>
+    <processor class="solr.NestedUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 

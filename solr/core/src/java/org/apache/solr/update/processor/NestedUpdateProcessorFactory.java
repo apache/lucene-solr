@@ -17,56 +17,26 @@
 
 package org.apache.solr.update.processor;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
-
-import org.apache.solr.common.SolrException;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import org.apache.solr.schema.IndexSchema;
 
 public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
-  private EnumSet<NestedFlag> fields;
-  private static final List<String> allowedConfFields = Arrays.stream(NestedFlag.values()).map(e -> e.toString().toLowerCase(Locale.ROOT)).collect(Collectors.toList());
-
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next ) {
-    return new NestedUpdateProcessor(req, rsp, fields, next);
+    boolean storeParent = shouldStoreDocParent(req.getSchema());
+    boolean storePath = shouldStoreDocPath(req.getSchema());
+    if(!(storeParent || storePath)) {
+      return next;
+    }
+    return new NestedUpdateProcessor(req, rsp, shouldStoreDocParent(req.getSchema()), shouldStoreDocPath(req.getSchema()), next);
   }
 
-  @Override
-  public void init( NamedList args )
-  {
-    Object tmp = args.remove("fields");
-    if (null == tmp) {
-      throw new SolrException(SERVER_ERROR,
-          "'fields' must be configured");
-    }
-    if (! (tmp instanceof String) ) {
-      throw new SolrException(SERVER_ERROR,
-          "'fields' must be configured as a <str>");
-    }
-    List<String> fields = StrUtils.splitSmart((String)tmp, ',');
-    if(!allowedConfFields.containsAll(fields)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nested URP may only contain: " + StringUtils.join(allowedConfFields, ", ") +
-      " got: " + StringUtils.join(fields, ", ") + " instead");
-    }
-    this.fields = generateNestedFlags(fields);
+  private static boolean shouldStoreDocParent(IndexSchema schema) {
+    return schema.getFields().containsKey(IndexSchema.PARENT_FIELD_NAME);
   }
 
-  private static EnumSet<NestedFlag> generateNestedFlags(List<String> fields) {
-    return EnumSet.copyOf(fields.stream().map(e -> NestedFlag.valueOf(e.toUpperCase(Locale.ROOT))).collect(Collectors.toList()));
-  }
-
-  public enum NestedFlag {
-    PATH,
-    PARENT
+  private static boolean shouldStoreDocPath(IndexSchema schema) {
+    return schema.getFields().containsKey(IndexSchema.PATH_FIELD_NAME);
   }
 }

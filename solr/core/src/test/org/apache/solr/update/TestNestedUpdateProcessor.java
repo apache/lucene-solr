@@ -35,10 +35,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.apache.solr.update.processor.NestedUpdateProcessor.splitChar;
-
 public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
+  private static final char PATH_SEP_CHAR = '/';
   private static final String[] childrenIds = { "2", "3" };
   private static final String grandChildId = "4";
   private static final String jDoc = "{\n" +
@@ -68,7 +67,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
       "    \"add\": {\n" +
       "        \"doc\": {\n" +
       "            \"id\": \"1\",\n" +
-      "            \"children" + splitChar + "a\": [\n" +
+      "            \"children" + PATH_SEP_CHAR + "a\": [\n" +
       "                {\n" +
       "                    \"id\": \"2\",\n" +
       "                    \"foo_s\": \"Yaz\"\n" +
@@ -105,7 +104,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPGrandChild() throws Exception {
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*.grandChild",
+    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*/grandChild",
         "fl","*",
         "sort","id desc",
         "wt","json"),
@@ -126,7 +125,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @Test
   public void testDeeplyNestedURPFieldNameException() throws Exception {
-    final String errMsg = "contains: '" + splitChar + "' , which is reserved for the nested URP";
+    final String errMsg = "contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP";
     thrown.expect(SolrException.class);
     indexSampleData(errDoc);
     thrown.expectMessage(errMsg);
