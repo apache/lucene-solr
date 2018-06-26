@@ -55,7 +55,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     }
     List<String> fields = StrUtils.splitSmart((String)tmp, ',');
     if(!allowedConfFields.containsAll(fields)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Deeply Nested URP may only contain: " + StringUtils.join(allowedConfFields, ", ") +
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nested URP may only contain: " + StringUtils.join(allowedConfFields, ", ") +
       " got: " + StringUtils.join(fields, ", ") + " instead");
     }
     this.fields = generateNestedFlags(fields);

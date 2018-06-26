@@ -30,8 +30,8 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
-  <updateRequestProcessorChain name="deeply-nested">
-    <processor class="solr.DeeplyNestedUpdateProcessorFactory">
+  <updateRequestProcessorChain name="nested">
+    <processor class="solr.NestedUpdateProcessorFactory">
       <str name="fields">parent,path</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />

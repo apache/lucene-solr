@@ -140,7 +140,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
     SolrQueryRequest req = null;
     try {
-      req = new SolrRequestParsers(h.getCore().getSolrConfig()).buildRequestFrom( h.getCore(), params("update.chain", "deeply-nested"), streams );
+      req = new SolrRequestParsers(h.getCore().getSolrConfig()).buildRequestFrom( h.getCore(), params("update.chain", "nested"), streams );
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       h.getCore().execute( h.getCore().getRequestHandler("/update"), req, rsp );
