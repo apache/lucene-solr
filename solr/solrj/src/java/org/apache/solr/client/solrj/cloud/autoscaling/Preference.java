@@ -77,7 +77,7 @@ public class Preference implements MapWriter {
             next.compare(r1, r2, useApprox)) : sort.sortval * result;
   }
 
-  private int compareWithTolerance(Double o1, Double o2, int percentage) {
+  static int compareWithTolerance(Double o1, Double o2, int percentage) {
     if (percentage == 0) return o1.compareTo(o2);
     if (o1.equals(o2)) return 0;
     double delta = Math.abs(o1 - o2);
