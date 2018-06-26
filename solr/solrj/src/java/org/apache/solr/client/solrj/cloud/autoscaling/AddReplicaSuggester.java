@@ -44,14 +44,15 @@ class AddReplicaSuggester extends Suggester {
     }
     for (Pair<String, String> shard : shards) {
       Replica.Type type = Replica.Type.get((String) hints.get(Hint.REPLICATYPE));
-      //iterate through elemenodesnts and identify the least loaded
+      //iterate through  nodes and identify the least loaded
       List<Violation> leastSeriousViolation = null;
       Row bestNode = null;
       for (int i = getMatrix().size() - 1; i >= 0; i--) {
         Row row = getMatrix().get(i);
         if (!isNodeSuitableForReplicaAddition(row)) continue;
         Row tmpRow = row.addReplica(shard.first(), shard.second(), type);
-        List<Violation> errs = testChangedMatrix(strict, tmpRow.session.matrix);
+        List<Violation> errs = testChangedMatrix(strict, tmpRow.session);
+
         if (!containsNewErrors(errs)) {
           if (isLessSerious(errs, leastSeriousViolation)) {
             leastSeriousViolation = errs;

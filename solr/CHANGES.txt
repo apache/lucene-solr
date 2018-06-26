@@ -61,6 +61,12 @@ New Features
 
 * SOLR-12398: The JSON Facet API now supports type=heatmap facets, just as classic faceting does. (David Smiley)
 
+* SOLR-11985: Support percentage values in replica attribute in autoscaling policy (noble)
+
+* SOLR-12511: Support non integer values for replica in autoscaling policy (noble)
+
+* SOLR-12517: Support range values for replica in autoscaling policy (noble)
+
 Bug Fixes
 ----------------------
 
