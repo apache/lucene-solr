@@ -174,6 +174,7 @@ public class Suggestion {
             row.forEachReplica(replicaInfo -> {
               if (replicaInfo.getCollection().equals(collection)) {
                 if (clause.getShard().op == Operand.WILDCARD || replicaInfo.getShard().equals(shard)) {
+                  if(cv.getClause().type == null || replicaInfo.getType() == cv.getClause().type)
                   totalReplicasOfInterest.incrementAndGet();
                 }
               }

@@ -1597,6 +1597,33 @@ public class TestPolicy extends SolrTestCaseJ4 {
     session = autoScalingConfig.getPolicy().createSession(cloudManagerWithData(dataproviderdata));
     violations = session.getViolations();
     assertEquals(0, violations.size());
+
+    dataproviderdata = "{" +
+        "  'liveNodes':[" +
+        "    '10.0.0.6:7574_solr'," +
+        "    '10.0.0.6:8983_solr']," +
+        "  'replicaInfo':{" +
+        "    '10.0.0.6:7574_solr':{}," +
+        "    '10.0.0.6:8983_solr':{'mycoll1':{" +
+        "        'shard1':[{'core_node4':{'type':'PULL'}}]," +
+        "        'shard1':[{'core_node3':{'type':'PULL'}}]," +
+        "        'shard3':[{'core_node2':{'type':'TLOG'}}]," +
+        "        'shard2':[{'core_node1':{'type':'TLOG'}}]}}}," +
+        "  'nodeValues':{" +
+        "    '10.0.0.6:7574_solr':{" +
+        "      'node':'10.0.0.6:7574_solr'," +
+        "      'cores':0}," +
+        "    '10.0.0.6:8983_solr':{" +
+        "      'node':'10.0.0.6:8983_solr'," +
+        "      'cores':2}}}";
+    autoScalingjson = "  { cluster-policy:[" +
+        "    { replica :'<51%',node:'#ANY' , type: TLOG } ,{ replica :'<51%',node:'#ANY' , type: PULL } ]," +
+        "  cluster-preferences :[{ minimize : cores }]}";
+    autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    session = autoScalingConfig.getPolicy().createSession(cloudManagerWithData(dataproviderdata));
+    violations = session.getViolations();
+    assertEquals(2, violations.size());
+
   }
 
   public void testReplicaZonesPercentage() {
