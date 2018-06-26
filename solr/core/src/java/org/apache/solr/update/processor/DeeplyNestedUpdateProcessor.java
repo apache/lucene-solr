@@ -18,11 +18,10 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.EnumSet;
-import java.util.Locale;
 import java.util.Objects;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
@@ -32,6 +31,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import static org.apache.solr.update.processor.DeeplyNestedUpdateProcessorFactory.NestedFlag;
 
 public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
+  private static final String splitChar = "\\.";
   private EnumSet<NestedFlag> fields;
   SolrQueryRequest req;
 
@@ -53,7 +53,11 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
     for(SolrInputField field: doc.values()) {
       for(Object val: field) {
         if(val instanceof SolrInputDocument) {
-          final String jointPath = Objects.isNull(fullPath) ? field.getName(): String.format(Locale.ROOT,"%s.%s", fullPath, field.getName());
+          if(field.getName().contains(splitChar)) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: " + field.getName()
+                + " contains: " + splitChar + " , which is reserved for the nested URP: ");
+          }
+          final String jointPath = Objects.isNull(fullPath) ? field.getName(): fullPath + splitChar + field.getName();
           processChildDoc((SolrInputDocument) val, doc, jointPath);
         }
       }
@@ -61,26 +65,13 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
-    if(fields == NestedFlag.ALL) {
+    if(fields.contains(NestedFlag.PATH)) {
       setPathField(sdoc, fullPath);
+    }
+    if (fields.contains(NestedFlag.PARENT)) {
       setParentKey(sdoc, parent);
-      setLevelKey(sdoc, fullPath);
-    } else {
-      if(fields.contains(NestedFlag.PATH)) {
-        setPathField(sdoc, fullPath);
-      }
-      if (fields.contains(NestedFlag.PARENT)) {
-        setParentKey(sdoc, parent);
-      }
-      if(fields.contains(NestedFlag.LEVEL)) {
-        setLevelKey(sdoc, fullPath);
-      }
     }
     processDocChildren(sdoc, fullPath);
-  }
-
-  private void setLevelKey(SolrInputDocument sdoc, String fullPath) {
-    sdoc.addField(IndexSchema.LEVEL_FIELD_NAME, fullPath.split("\\.").length);
   }
 
   private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {

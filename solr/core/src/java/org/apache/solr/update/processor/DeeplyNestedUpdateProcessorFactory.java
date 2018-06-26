@@ -17,6 +17,7 @@
 
 package org.apache.solr.update.processor;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -34,7 +35,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 public class DeeplyNestedUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   private EnumSet<NestedFlag> fields;
-  private static final List<String> allowedConfFields = NestedFlag.ALL.stream().map(e -> e.toString().toLowerCase(Locale.ROOT)).collect(Collectors.toList());
+  private static final List<String> allowedConfFields = Arrays.stream(NestedFlag.values()).map(e -> e.toString().toLowerCase(Locale.ROOT)).collect(Collectors.toList());
 
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next ) {
     return new DeeplyNestedUpdateProcessor(req, rsp, fields, next);
@@ -57,7 +58,7 @@ public class DeeplyNestedUpdateProcessorFactory extends UpdateRequestProcessorFa
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Deeply Nested URP may only contain: " + StringUtils.join(allowedConfFields, ", ") +
       " got: " + StringUtils.join(fields, ", ") + " instead");
     }
-    this.fields = fields.size() == NestedFlag.values().length ? NestedFlag.ALL: generateNestedFlags(fields);
+    this.fields = generateNestedFlags(fields);
   }
 
   private static EnumSet<NestedFlag> generateNestedFlags(List<String> fields) {
@@ -66,9 +67,6 @@ public class DeeplyNestedUpdateProcessorFactory extends UpdateRequestProcessorFa
 
   public enum NestedFlag {
     PATH,
-    PARENT,
-    LEVEL;
-
-    public static final EnumSet<NestedFlag> ALL = EnumSet.allOf(NestedFlag.class);
+    PARENT
   }
 }

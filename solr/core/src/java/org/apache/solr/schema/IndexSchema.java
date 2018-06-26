@@ -104,7 +104,6 @@ public class IndexSchema {
   public static final String FIELD_TYPE = "fieldType";
   public static final String FIELD_TYPES = FIELD_TYPE + "s";
   public static final String INTERNAL_POLY_FIELD_PREFIX = "*" + FieldType.POLY_FIELD_SEPARATOR;
-  public static final String LEVEL_FIELD_NAME = "_NEST_LEVEL_";
   public static final String LUCENE_MATCH_VERSION_PARAM = "luceneMatchVersion";
   public static final String MAX_CHARS = "maxChars";
   public static final String NAME = "name";

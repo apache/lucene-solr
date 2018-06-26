@@ -51,11 +51,6 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
   @Test
   public void testDeeplyNestedURPGrandChild() throws Exception {
     indexSampleData();
-    assertJQ(req("q", IndexSchema.LEVEL_FIELD_NAME + ":2",
-        "fl","*",
-        "sort","id desc",
-        "wt","json"),
-        "/response/docs/[0]/id=='" + grandChildId + "'");
 
     assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*.grandChild",
         "fl","*",
@@ -68,11 +63,6 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPChildren() throws Exception {
     final String[] childrenTests = {"/response/docs/[0]/id=='" + childrenIds[0] + "'", "/response/docs/[1]/id=='" + childrenIds[1] + "'"};
     indexSampleData();
-    assertJQ(req("q", IndexSchema.LEVEL_FIELD_NAME + ":1",
-        "fl","*",
-        "sort","id asc",
-        "wt","json"),
-        childrenTests);
 
     assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":children",
         "fl","*",
