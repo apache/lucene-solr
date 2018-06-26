@@ -31,7 +31,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import static org.apache.solr.update.processor.DeeplyNestedUpdateProcessorFactory.NestedFlag;
 
 public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
-  private static final String splitChar = "\\.";
+  public static final String splitChar = ".";
   private EnumSet<NestedFlag> fields;
   SolrQueryRequest req;
 
@@ -54,10 +54,10 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
       for(Object val: field) {
         if(val instanceof SolrInputDocument) {
           if(field.getName().contains(splitChar)) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: " + field.getName()
-                + " contains: " + splitChar + " , which is reserved for the nested URP: ");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + field.getName()
+                + "' contains: '" + splitChar + "' , which is reserved for the nested URP");
           }
-          final String jointPath = Objects.isNull(fullPath) ? field.getName(): fullPath + splitChar + field.getName();
+          final String jointPath = Objects.isNull(fullPath) ? field.getName(): String.join(splitChar, fullPath, field.getName());
           processChildDoc((SolrInputDocument) val, doc, jointPath);
         }
       }

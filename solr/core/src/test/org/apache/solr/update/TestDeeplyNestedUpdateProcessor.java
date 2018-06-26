@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -30,12 +31,64 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import static org.apache.solr.update.processor.DeeplyNestedUpdateProcessor.splitChar;
 
 public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   public static final String[] childrenIds = { "2", "3" };
   public static final String grandChildId = "4";
+  private static final String jDoc = "{\n" +
+      "    \"add\": {\n" +
+      "        \"doc\": {\n" +
+      "            \"id\": \"1\",\n" +
+      "            \"children\": [\n" +
+      "                {\n" +
+      "                    \"id\": \"2\",\n" +
+      "                    \"foo_s\": \"Yaz\"\n" +
+      "                    \"grandChild\": \n" +
+      "                          {\n" +
+      "                             \"id\": \""+ grandChildId + "\",\n" +
+      "                             \"foo_s\": \"Jazz\"\n" +
+      "                          },\n" +
+      "                },\n" +
+      "                {\n" +
+      "                    \"id\": \"3\",\n" +
+      "                    \"foo_s\": \"Bar\"\n" +
+      "                }\n" +
+      "            ]\n" +
+      "        }\n" +
+      "    }\n" +
+      "}";
+
+  private static final String errDoc = "{\n" +
+      "    \"add\": {\n" +
+      "        \"doc\": {\n" +
+      "            \"id\": \"1\",\n" +
+      "            \"children" + splitChar + "a\": [\n" +
+      "                {\n" +
+      "                    \"id\": \"2\",\n" +
+      "                    \"foo_s\": \"Yaz\"\n" +
+      "                    \"grandChild\": \n" +
+      "                          {\n" +
+      "                             \"id\": \""+ grandChildId + "\",\n" +
+      "                             \"foo_s\": \"Jazz\"\n" +
+      "                          },\n" +
+      "                },\n" +
+      "                {\n" +
+      "                    \"id\": \"3\",\n" +
+      "                    \"foo_s\": \"Bar\"\n" +
+      "                }\n" +
+      "            ]\n" +
+      "        }\n" +
+      "    }\n" +
+      "}";
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -50,7 +103,7 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @Test
   public void testDeeplyNestedURPGrandChild() throws Exception {
-    indexSampleData();
+    indexSampleData(jDoc);
 
     assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*.grandChild",
         "fl","*",
@@ -62,7 +115,7 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
   @Test
   public void testDeeplyNestedURPChildren() throws Exception {
     final String[] childrenTests = {"/response/docs/[0]/id=='" + childrenIds[0] + "'", "/response/docs/[1]/id=='" + childrenIds[1] + "'"};
-    indexSampleData();
+    indexSampleData(jDoc);
 
     assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":children",
         "fl","*",
@@ -71,32 +124,19 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
         childrenTests);
   }
 
-  private void indexSampleData() throws Exception {
-    final String jDoc = "{\n" +
-        "    \"add\": {\n" +
-        "        \"doc\": {\n" +
-        "            \"id\": \"1\",\n" +
-        "            \"children\": [\n" +
-        "                {\n" +
-        "                    \"id\": \"2\",\n" +
-        "                    \"foo_s\": \"Yaz\"\n" +
-        "                    \"grandChild\": \n" +
-        "                          {\n" +
-        "                             \"id\": \""+ grandChildId + "\",\n" +
-        "                             \"foo_s\": \"Jazz\"\n" +
-        "                          },\n" +
-        "                },\n" +
-        "                {\n" +
-        "                    \"id\": \"3\",\n" +
-        "                    \"foo_s\": \"Bar\"\n" +
-        "                }\n" +
-        "            ]\n" +
-        "        }\n" +
-        "    }\n" +
-        "}";
+  @Test
+  public void testDeeplyNestedURPFieldNameException() throws Exception {
+    final String errMsg = "Field name: children.a contains: '.' , which is reserved for the nested URP";
+    thrown.expect(SolrException.class);
+    indexSampleData(errDoc);
+    thrown.expectMessage(errMsg);
+  }
+
+  private void indexSampleData(String cmd) throws Exception {
+
 
     List<ContentStream> streams = new ArrayList<>( 1 );
-    streams.add( new ContentStreamBase.StringStream( jDoc ) );
+    streams.add( new ContentStreamBase.StringStream( cmd ) );
 
     SolrQueryRequest req = null;
     try {
