@@ -90,6 +90,8 @@ Bug Fixes
 
 * SOLR-12513: Reproducing TestCodecSupport.testMixedCompressionMode failure (Erick Erickson)
 
+* SOLR-11665: Improve error handling of shard splitting. Fix splitting of mixed replica types. (ab)
+
 Optimizations
 ----------------------
 
