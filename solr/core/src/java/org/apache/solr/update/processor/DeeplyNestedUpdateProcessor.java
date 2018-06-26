@@ -51,17 +51,10 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
 
   private void processDocChildren(SolrInputDocument doc, String fullPath) {
     for(SolrInputField field: doc.values()) {
-      if(field.getFirstValue() instanceof SolrInputDocument) {
-        Object val = field.getValue();
-        fullPath = Objects.isNull(fullPath) ? field.getName(): String.format(Locale.ROOT,"%s.%s", fullPath, field.getName());
-        if (val instanceof Collection) {
-          for(Object childDoc: (Collection) val) {
-            if(childDoc instanceof SolrInputDocument) {
-              processChildDoc((SolrInputDocument) childDoc, doc, fullPath);
-            }
-          }
-        } else {
-          processChildDoc((SolrInputDocument) val, doc, fullPath);
+      for(Object val: field) {
+        if(val instanceof SolrInputDocument) {
+          final String jointPath = Objects.isNull(fullPath) ? field.getName(): String.format(Locale.ROOT,"%s.%s", fullPath, field.getName());
+          processChildDoc((SolrInputDocument) val, doc, jointPath);
         }
       }
     }
