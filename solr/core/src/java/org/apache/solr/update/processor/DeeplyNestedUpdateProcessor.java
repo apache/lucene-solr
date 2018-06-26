@@ -75,11 +75,11 @@ public class DeeplyNestedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
-    sdoc.addField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue(req.getSchema().getUniqueKeyField().getName()));
+    sdoc.setField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue(req.getSchema().getUniqueKeyField().getName()));
   }
 
   private void setPathField(SolrInputDocument sdoc, String fullPath) {
-    sdoc.addField(IndexSchema.PATH_FIELD_NAME, fullPath);
+    sdoc.setField(IndexSchema.PATH_FIELD_NAME, fullPath);
   }
 
 }
