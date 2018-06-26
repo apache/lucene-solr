@@ -126,7 +126,7 @@ public class TestDeeplyNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @Test
   public void testDeeplyNestedURPFieldNameException() throws Exception {
-    final String errMsg = "Field name: children.a contains: '.' , which is reserved for the nested URP";
+    final String errMsg = "contains: '" + splitChar + "' , which is reserved for the nested URP";
     thrown.expect(SolrException.class);
     indexSampleData(errDoc);
     thrown.expectMessage(errMsg);
