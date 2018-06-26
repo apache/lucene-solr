@@ -47,11 +47,11 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     Object tmp = args.remove("fields");
     if (null == tmp) {
       throw new SolrException(SERVER_ERROR,
-          "'versionField' must be configured");
+          "'fields' must be configured");
     }
     if (! (tmp instanceof String) ) {
       throw new SolrException(SERVER_ERROR,
-          "'versionField' must be configured as a <str>");
+          "'fields' must be configured as a <str>");
     }
     List<String> fields = StrUtils.splitSmart((String)tmp, ',');
     if(!allowedConfFields.containsAll(fields)) {
