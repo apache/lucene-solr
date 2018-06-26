@@ -133,6 +133,8 @@ public class TestInjection {
 
   public static String splitFailureBeforeReplicaCreation = null;
 
+  public static String splitFailureAfterReplicaCreation = null;
+
   public static String waitForReplicasInSync = "true:60";
 
   public static String failIndexFingerprintRequests = null;
@@ -156,6 +158,7 @@ public class TestInjection {
     updateRandomPause = null;
     randomDelayInCoreCreation = null;
     splitFailureBeforeReplicaCreation = null;
+    splitFailureAfterReplicaCreation = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     waitForReplicasInSync = "true:60";
@@ -386,21 +389,28 @@ public class TestInjection {
     return true;
   }
 
-  public static boolean injectSplitFailureBeforeReplicaCreation() {
-    if (splitFailureBeforeReplicaCreation != null)  {
+  private static boolean injectSplitFailure(String probability, String label) {
+    if (probability != null)  {
       Random rand = random();
       if (null == rand) return true;
 
-      Pair<Boolean,Integer> pair = parseValue(splitFailureBeforeReplicaCreation);
+      Pair<Boolean,Integer> pair = parseValue(probability);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
-        log.info("Injecting failure in creating replica for sub-shard");
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create replica");
+        log.info("Injecting failure: " + label);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error: " + label);
       }
     }
-
     return true;
+  }
+
+  public static boolean injectSplitFailureBeforeReplicaCreation() {
+    return injectSplitFailure(splitFailureBeforeReplicaCreation, "before creating replica for sub-shard");
+  }
+
+  public static boolean injectSplitFailureAfterReplicaCreation() {
+    return injectSplitFailure(splitFailureAfterReplicaCreation, "after creating replica for sub-shard");
   }
 
   @SuppressForbidden(reason = "Need currentTimeMillis, because COMMIT_TIME_MSEC_KEY use currentTimeMillis as value")
