@@ -277,18 +277,18 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       restore.setTlogReplicas(restoreTlogReplicas);
       restore.setPullReplicas(restorePullReplicas);
     }
-    final int restoreMaxShardsPerNode = (int) Math.ceil((restoreReplFactor * numShards/(double) cluster.getJettySolrRunners().size()));
+    int computeRestoreMaxShardsPerNode = (int) Math.ceil((restoreReplFactor * numShards/(double) cluster.getJettySolrRunners().size()));
 
     if (restoreReplFactor > backupReplFactor) { //else the backup maxShardsPerNode should be enough
       log.info("numShards={} restoreReplFactor={} maxShardsPerNode={} totalNodes={}",
-          numShards, restoreReplFactor, restoreMaxShardsPerNode, cluster.getJettySolrRunners().size());
+          numShards, restoreReplFactor, computeRestoreMaxShardsPerNode, cluster.getJettySolrRunners().size());
 
       if (random().nextBoolean()) { //set it to -1
         isMaxShardsUnlimited = true;
         restore.setMaxShardsPerNode(-1);
       } else {
         isMaxShardsPerNodeExternal = true;
-        restore.setMaxShardsPerNode(restoreMaxShardsPerNode);
+        restore.setMaxShardsPerNode(computeRestoreMaxShardsPerNode);
       }
     }
 
@@ -302,12 +302,17 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       restore.setCreateNodeSet(String.join(",", nodeStrs));
       restore.setCreateNodeSetShuffle(usually());
       // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
+      isMaxShardsPerNodeExternal = true;
       if (restore.getMaxShardsPerNode() != null) {
-        restore.setMaxShardsPerNode(restore.getMaxShardsPerNode() * 2);
+        computeRestoreMaxShardsPerNode = restore.getMaxShardsPerNode() * 2;
+        restore.setMaxShardsPerNode(computeRestoreMaxShardsPerNode);
       } else {
+        computeRestoreMaxShardsPerNode = origShardToDocCount.size() * 2;
         restore.setMaxShardsPerNode(origShardToDocCount.size() * 2);
       }
     }
+
+    final int restoreMaxShardsPerNode = computeRestoreMaxShardsPerNode;
 
     Properties props = new Properties();
     props.setProperty("customKey", "customVal");
@@ -344,7 +349,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     });
     numReplicasByNodeName.forEach((k, v) -> {
       assertTrue("Node " + k + " has " + v + " replicas. Expected num replicas : " + restoreMaxShardsPerNode
-              + " state file \n" + restoreCollection, v <= restoreMaxShardsPerNode);
+              + ". state: \n" + restoreCollection, v <= restoreMaxShardsPerNode);
     });
 
     assertEquals(restoreCollection.toString(), restoreReplcationFactor, restoreCollection.getReplicationFactor().intValue());
