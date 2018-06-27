@@ -130,6 +130,10 @@ Changes in Runtime Behavior:
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
   findForcedMerges and findForcedDeletesMerges (Erick Erickson)
 
+Improvements
+
+* LUCENE-8367: Make per-dimension drill down optional for each facet dimension (Mike McCandless)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's

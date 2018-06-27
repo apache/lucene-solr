@@ -867,4 +867,30 @@ public class TestRangeFacetCounts extends FacetTestCase {
     writer.close();
     IOUtils.close(r, dir);
   }
+
+  public void testLongRangeEquals() throws Exception {
+    assertEquals(new LongRange("field", -7, true, 17, false),
+                 new LongRange("field", -7, true, 17, false));
+    assertEquals(new LongRange("field", -7, true, 17, false).hashCode(),
+                 new LongRange("field", -7, true, 17, false).hashCode());
+    assertFalse(new LongRange("field", -7, true, 17, false).equals(new LongRange("field", -7, true, 17, true)));
+    assertFalse(new LongRange("field", -7, true, 17, false).hashCode() ==
+                new LongRange("field", -7, true, 17, true).hashCode());
+    assertFalse(new LongRange("field", -7, true, 17, false).equals(new LongRange("field", -7, true, 18, false)));
+    assertFalse(new LongRange("field", -7, true, 17, false).hashCode() ==
+                new LongRange("field", -7, true, 18, false).hashCode());
+  }
+
+  public void testDoubleRangeEquals() throws Exception {
+    assertEquals(new DoubleRange("field", -7d, true, 17d, false),
+                 new DoubleRange("field", -7d, true, 17d, false));
+    assertEquals(new DoubleRange("field", -7d, true, 17d, false).hashCode(),
+                 new DoubleRange("field", -7d, true, 17d, false).hashCode());
+    assertFalse(new DoubleRange("field", -7d, true, 17d, false).equals(new DoubleRange("field", -7d, true, 17d, true)));
+    assertFalse(new DoubleRange("field", -7d, true, 17d, false).hashCode() ==
+                new DoubleRange("field", -7d, true, 17d, true).hashCode());
+    assertFalse(new DoubleRange("field", -7d, true, 17d, false).equals(new DoubleRange("field", -7d, true, 18d, false)));
+    assertFalse(new DoubleRange("field", -7d, true, 17d, false).hashCode() ==
+                new DoubleRange("field", -7d, true, 18, false).hashCode());
+  }
 }
