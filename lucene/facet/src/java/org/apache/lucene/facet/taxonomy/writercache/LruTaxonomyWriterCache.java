@@ -89,6 +89,7 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     cache = null;
   }
 
+  @Override
   public int size() {
     return cache.getSize();
   }
