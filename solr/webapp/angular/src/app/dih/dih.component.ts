@@ -15,18 +15,20 @@
  limitations under the License.
 */
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { SharedService } from '../shared.service';
 import { DihService, DihInfo } from '../dih.service';
-import { MbeansService } from '../mbeans.service';
+import { MbeansService } from '../mbeans.service'; import { Observable } from "rxjs";
+import { TimerObservable } from "rxjs/observable/TimerObservable";
+import 'rxjs/add/operator/takeWhile';
 
 
 @Component({
   selector: 'app-dih',
   templateUrl: './dih.component.html'
 })
-export class DihComponent implements OnInit {
+export class DihComponent implements OnInit, OnDestroy {
   sharedService: SharedService;
   collectionName: string;
   handler: string;
@@ -67,16 +69,20 @@ export class DihComponent implements OnInit {
     this.sharedService = sharedService;
   }
 
-  refresh() {
-    this.isAborting = false;
-    this.isRunning = false;
+  clearIndicators() {
     this.reloaded = false;
+    this.isAborting = false;
+    this.isStatusLoading = false;
+    this.statusUpdated = false;
+    this.isRunning = false;
+  }
+
+  refresh() {
+    this.clearIndicators();
     this.isDebugMode = false;
     this.showRawStatus = false;
     this.showConfiguration = false;
     this.showRawDebug = false;
-    this.isStatusLoading = false;
-    this.statusUpdated = false;
     this.autorefresh = false;
     this.rawResponse = null;
     this.form_command = null;
@@ -131,21 +137,26 @@ export class DihComponent implements OnInit {
           this.handler = this.handlers[0];
         }
         this.path = "/" + this.collectionName + (this.handler.startsWith("/") ? "" : "/") + this.handler;
-        this.runDih("status");
+        this.runDih(new Map([["command", "status"]]));
         this.refreshConfig();
       }
     }, (error => {
       this.sharedService.showError(error);
       return;
     }));
+    this.refreshLastUpdated();
+  }
+
+  refreshLastUpdated() {
     const now = new Date();
     this.lastUpdate = now.toTimeString().split(' ').shift();
     this.lastUpdateUTC = now.toUTCString();
   }
 
-  runDih(command: string, callback?: Function) {
-    this.dihService.dih(this.path, command, this.isDebugMode).subscribe(info => {
+  runDih(parameters: Map<string, string>, callback?: Function, usePost: boolean = false) {
+    this.dihService.dih(this.path, parameters, usePost).subscribe(info => {
       this.info = info;
+      this.refreshLastUpdated();
       if (callback) {
         callback();
       }
@@ -156,25 +167,85 @@ export class DihComponent implements OnInit {
   }
 
   refreshConfig() {
+    this.clearIndicators();
     this.dihService.config(this.path).subscribe(config => {
       this.config = config;
+      this.entities = [];
+      try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(this.config, "text/xml");
+        const elems: NodeList = xmlDoc.getElementsByTagName("entity");
+        for (let i = 0; i < elems.length; i++) {
+          this.entities.push(elems[i].attributes.getNamedItem("name").value);
+        }
+      } catch (e) {
+        this.sharedService.showError(e);
+      }
     });
   }
 
   refreshStatus() {
+    this.clearIndicators();
     this.isStatusLoading = true;
-    this.statusUpdated = false;
     const self = this;
-    this.runDih("status", function() { self.isStatusLoading = false; self.statusUpdated = true; });
+    this.runDih(new Map([["command", "status"]]), function() {
+      self.isStatusLoading = false;
+      self.statusUpdated = true;
+      self.isRunning = self.info.status == "busy";
+    });
   }
-
+  submit() {
+    if (!this.form_command) {
+      return;
+    }
+    this.clearIndicators();
+    const m = new Map();
+    m.set("command", this.form_command);
+    m.set("verbose", this.form_commandverbose ? "true" : "false");
+    m.set("clean", this.form_clean ? "true" : "false");
+    m.set("commit", this.form_commit ? "true" : "false");
+    m.set("debug", this.form_showDebug ? "true" : "false");
+    if (this.form_entity) {
+      m.set("entity", this.form_entity);
+    }
+    if (this.form_start) {
+      m.set("start", this.form_start);
+    }
+    if (this.form_rows) {
+      m.set("rows", this.form_rows);
+    }
+    if (this.form_custom) {
+      const customParams = this.form_custom.split("&");
+      for (let i in customParams) {
+        const parts = customParams[i].split("=");
+        m.set(parts[0], parts[1]);
+      }
+    }
+    if (this.isDebugMode) {
+      m.set("dataConfig", this.config);
+    }
+    this.isRunning = true;
+    const self = this;
+    this.runDih(m, function() {
+      self.isRunning = false;
+      self.rawResponse = self.info.rawStatus;
+    }, true);
+  }
   abort() {
+    this.clearIndicators();
     this.isAborting = true;
     const self = this;
-    this.runDih("abort", function() { self.isAborting = false; });
+    this.runDih(new Map([["command", "abort"]]), function() { self.isAborting = false; });
   }
   updateAutoRefresh() {
     this.autorefresh = !this.autorefresh;
+    if (this.autorefresh) {
+      TimerObservable.create(0, 2000)
+        .takeWhile(() => this.autorefresh)
+        .subscribe(() => {
+          this.refreshStatus();
+        });
+    }
   }
   toggleRawStatus() {
     this.showRawStatus = !this.showRawStatus;
@@ -189,12 +260,11 @@ export class DihComponent implements OnInit {
     this.showRawDebug = !this.showRawDebug;
   }
   reload() {
-    this.reloaded = false;
+    this.clearIndicators();
     const self = this;
-    this.runDih("reload", function() { self.reloaded = true; });
+    this.runDih(new Map([["command", "reload"]]), function() { self.reloaded = true; });
     this.refreshConfig();
   }
-
   ngOnInit() {
     this.route.params.subscribe(params => {
       this.collectionName = params['name'];
@@ -202,6 +272,8 @@ export class DihComponent implements OnInit {
       this.refresh();
     });
   }
-
+  ngOnDestroy() {
+    this.autorefresh = false;
+  }
 
 }

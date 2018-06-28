@@ -46,9 +46,9 @@ export class CollectionsService {
       const cluster: any = body.cluster;
       const collectionInfo = cluster.collections[collectionName];
       const shards = collectionInfo.shards;
-      let shardList : Shard[] = [];
+      let shardList: Shard[] = [];
       let numShards = 0;
-      for(let shard in shards) {
+      for (let shard in shards) {
         numShards++;
         let s: Shard = new Shard();
         let sObj = shards[shard];
@@ -61,13 +61,13 @@ export class CollectionsService {
         s.state = sObj.state;
         const replicas = sObj.replicas;
         let replicaList: Replica[] = [];
-        for(let replica in replicas) {
+        for (let replica in replicas) {
           let r: Replica = new Replica();
           let rObj = replicas[replica];
           r.shard = s;
           r.name = replica;
           r.show = false;
-          r.showDelete  = false;
+          r.showDelete = false;
           r.core = rObj.core;
           r.base_url = rObj.base_url;
           r.node_name = rObj.node_name;
@@ -92,18 +92,24 @@ export class CollectionsService {
   }
 
   addCollection(coll: Collection): Observable<any> {
-    const params: HttpParams = new HttpParams()
+    let params: HttpParams = new HttpParams()
       .set('action', 'CREATE')
       .set("wt", "json")
       .set('name', coll.name ? coll.name : '')
-      .set('router.name', coll.routerName ? coll.routerName : '')
       .set('numShards', coll.numShards ? coll.numShards.toString() : '1')
       .set('collection.configName', coll.configName ? coll.configName : '')
       .set('replicationFactor', coll.replicationFactor ? coll.replicationFactor.toString() : '1')
       .set('maxShardsPerNode', coll.maxShardsPerNode ? coll.maxShardsPerNode.toString() : '1')
-      .set('autoAddReplicas', coll.autoAddReplicas ? coll.autoAddReplicas.toString() : 'false')
-      .set('shards', coll.shards ? coll.shards : '')
-      .set('router.field', coll.routerField ? coll.routerField : '');
+      .set('autoAddReplicas', coll.autoAddReplicas ? coll.autoAddReplicas.toString() : 'false');
+    if (coll.routerName) {
+      params = params.set('router.name', coll.routerName);
+    }
+    if (coll.shards) {
+      params = params.set('shards', coll.shards);
+    }
+    if (coll.routerField) {
+      params = params.set('router.field', coll.routerField);
+    }
     return this.http.post<any>(this.collectionsUrl, coll, { params: params });
   }
 
@@ -113,7 +119,7 @@ export class CollectionsService {
       .set("wt", "json")
       .set('collection', collectionName)
       .set('shard', shardName);
-    if(replicaNodeName) {
+    if (replicaNodeName) {
       params = params.set('node', replicaNodeName);
     }
     return this.http.post<any>(this.collectionsUrl, null, { params: params });
@@ -124,11 +130,11 @@ export class CollectionsService {
       .set('action', 'CREATEALIAS')
       .set("wt", "json")
       .set('name', aliasName)
-      .set('collections', collectionNames.length==0 ? null : collectionNames.join());
+      .set('collections', collectionNames.length == 0 ? null : collectionNames.join());
     return this.http.post<any>(this.collectionsUrl, null, { params: params });
   }
 
-  deleteAlias(aliasName: string):  Observable<any> {
+  deleteAlias(aliasName: string): Observable<any> {
     const params: HttpParams = new HttpParams()
       .set('action', 'DELETEALIAS')
       .set("wt", "json")
@@ -187,10 +193,10 @@ export class Shard {
 }
 
 export class Replica {
-  shard : Shard;
+  shard: Shard;
   name: string;
   show: boolean;
-  showDelete : boolean;
+  showDelete: boolean;
   core: string;
   base_url: string;
   node_name: string;

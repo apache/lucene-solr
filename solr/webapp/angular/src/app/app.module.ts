@@ -16,13 +16,13 @@
 */
 
 import { AppRoutingModule } from './app-routing.module';
-import {NgModule} from '@angular/core';
-import {BrowserModule} from '@angular/platform-browser';
-import {HttpClientModule} from '@angular/common/http';
-import { FormsModule }   from '@angular/forms';
-import {TimeAgoPipe} from 'time-ago-pipe';
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { HttpClientModule } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { TimeAgoPipe } from 'time-ago-pipe';
 import { NgSelectModule } from '@ng-select/ng-select';
-import {AppComponent} from './app.component';
+import { AppComponent } from './app.component';
 import { CollectionsComponent } from './collections/collections.component';
 import { SystemInfoService } from './systeminfo.service';
 import { AnalysisService } from './analysis.service';
@@ -88,4 +88,4 @@ import { SegmentsComponent } from './segments/segments.component';
   ],
   bootstrap: [AppComponent]
 })
-export class AppModule {}
+export class AppModule { }

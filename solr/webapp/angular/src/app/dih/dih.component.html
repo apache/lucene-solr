@@ -24,13 +24,6 @@ limitations under the License.
         <strong>{{info.text}}<span *ngIf="info.timeTaken"> (Duration: {{info.timeTaken}})</span>
         </strong>
         <div class="details" *ngIf="info.showDetails">
-          <!--div class="docs">
-              <span ng-repeat="doc in info.docs">
-                  <abbr style="display:inline" title="{{ doc.desc }}">{{ doc.name }}</abbr>: {{doc.value | number}}
-                  &nbsp;<span style="display:inline" ng-show="doc.speed">{{ doc.speed | number}}/s</span>
-                  <span style="display:inline" ng-show="!$last">, </span>
-              </span>
-          </div-->
           <div class="dates">
             <span *ngIf="info.started"><abbr title="Full Dump Started">Started</abbr>:<abbr class="time">{{ info.started | timeAgo }}</abbr></span>
             <span *ngIf="info.aborted"><abbr title="Aborted">Aborted"</abbr>:<abbr class="time">{{ info.aborted | timeAgo }}</abbr></span>
@@ -83,7 +76,7 @@ limitations under the License.
         <div class="message"></div>
       </div>
       <div class="content" *ngIf="showRawDebug">
-        <span *ngIf="rawResponse">
+        <span *ngIf="!rawResponse">
               <em>No Request executed</em>
           </span>
         <span *ngIf="rawResponse">
@@ -96,7 +89,7 @@ limitations under the License.
     <div id="navigation">
       <ul>
         <li [ngClass]="{'current': h == handler}" *ngFor="let h of handlers">
-          <a routerLink="/collections/{{sharedService.currentCollection}}/dataimport/{{h}}">{{h}} | {{handler}} | {{h==handler}}</a>
+          <a routerLink="/collections/{{sharedService.currentCollection}}/dataimport/{{h}}">{{h}}</a>
         </li>
       </ul>
     </div>
@@ -104,24 +97,24 @@ limitations under the License.
       <label for="command">
         <a rel="help">Command</a>
       </label>
-      <select name="command" id="command" [(ngModel)]="form_command" name="command">
-        <option>full-import</option>
-        <option>delta-import</option>
+      <select name="command" id="command" [(ngModel)]="form_command">
+        <option value="full-import">full-import</option>
+        <option value="delta-import">delta-import</option>
       </select>
       <label for="verbose" class="checkbox">
-        <input type="checkbox" name="verbose" id="verbose" [(ngModel)]="form_verbose" name="verbose">
+        <input type="checkbox" name="verbose" id="verbose" [(ngModel)]="form_verbose">
         Verbose
       </label>
       <label for="clean" class="checkbox">
-        <input type="checkbox" name="clean" id="clean" [(ngModel)]="form_clean" name="clean">
+        <input type="checkbox" name="clean" id="clean" [(ngModel)]="form_clean">
         Clean
       </label>
       <label for="commit" class="checkbox">
-        <input type="checkbox" name="commit" id="commit" [(ngModel)]="form_commit" name="commit">
+        <input type="checkbox" name="commit" id="commit" [(ngModel)]="form_commit">
         Commit
       </label>
       <label for="debug" class="checkbox">
-        <input type="checkbox" name="debug" id="debug" [(ngModel)]="form_showDebug" name="showDebug">
+        <input type="checkbox" id="debug" [(ngModel)]="form_showDebug" name="showDebug">
         Debug
       </label>
       <label for="entity">
@@ -129,7 +122,7 @@ limitations under the License.
       </label>
       <select [(ngModel)]="form_entity" name="entity" id="entity">
         <option value=""></option>
-        <option *ngFor="let entity of entities">{{entity}}</option>
+        <option *ngFor="let entity of entities" [ngValue]="entity">{{entity}}</option>
       </select>
       <label for="start">
         <a rel="help">Start</a>,

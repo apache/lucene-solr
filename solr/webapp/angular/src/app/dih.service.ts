@@ -42,29 +42,40 @@ export class DihService {
     return this.http.request('get', uri, { observe: 'body', params: params, responseType: 'text' });
   }
 
-  dih(dihPath: string, command: string, debug: boolean): Observable<DihInfo> {
-    const params: HttpParams = new HttpParams().set("wt", "json").set("command", command).set("debug", debug ? "true" : "false");
+  dih(dihPath: string, paramMap: Map<string, string>, usePost: boolean): Observable<DihInfo> {
+    let params: HttpParams = new HttpParams().set("wt", "json");
+    paramMap.forEach((value: string, key: string) => {
+      params = params.set(key, value);
+    });
     const uri = "/solr" + (dihPath.startsWith("/") ? "" : "/") + dihPath;
-    return this.http.get<HttpResponse<any>>(uri, { observe: 'response', params: params})
-      .pipe(map(r => {
-        const info: DihInfo = new DihInfo();
-        const body: any = r.body;
-        const sm: any = body.statusMessages;
-        info.status = body.status;
-        info.importResponse = body.importResponse;
-        info.totalRequests = sm['Total Requests made to DataSource'];
-        info.totalRowsFetched = sm['Total Rows Fetched'];
-        info.totalDocumentsProcessed = sm['Total Documents Processed'];
-        info.totalDocumentsSkipped = sm['Total Documents Skipped'];
-        info.started = this.formatDate(sm['Full Dump Started']);
-        info.aborted = this.formatDate(sm['Aborted']);
-        info.rolledBack = this.formatDate(sm['Rolledback']);
-        info.committed = this.formatDate(sm['Committed']);
-        info.timeTaken = this.parseSeconds(sm['Time taken']);
-        info.text = sm[''];
-        info.rawStatus = JSON.stringify(body, null, 2);
-        return info;
-      }));
+    if (usePost) {
+      const header = new HttpHeaders().set("Content-Type", "application/x-www-form-urlencoded");
+      return this.http.post<HttpResponse<any>>(uri, params.toString(), { observe: 'response', headers: header })
+        .pipe(map(r => { return this.parseInfo(r.body); }));
+    } else {
+      return this.http.get<HttpResponse<any>>(uri, { observe: 'response', params: params })
+        .pipe(map(r => { return this.parseInfo(r.body); }));
+    }
+  }
+  private parseInfo(body: any): DihInfo {
+    const info: DihInfo = new DihInfo();
+    const sm: any = body['statusMessages'];
+    info.status = body['status'];
+    info.importResponse = body['importResponse'];
+    if (sm) {
+      info.totalRequests = sm['Total Requests made to DataSource'];
+      info.totalRowsFetched = sm['Total Rows Fetched'];
+      info.totalDocumentsProcessed = sm['Total Documents Processed'];
+      info.totalDocumentsSkipped = sm['Total Documents Skipped'];
+      info.started = this.formatDate(sm['Full Dump Started']);
+      info.aborted = this.formatDate(sm['Aborted']);
+      info.rolledBack = this.formatDate(sm['Rolledback']);
+      info.committed = this.formatDate(sm['Committed']);
+      info.timeTaken = this.parseSeconds(sm['Time taken']);
+      info.text = sm[''];
+    }
+    info.rawStatus = JSON.stringify(body, null, 2);
+    return info;
   }
   private parseSeconds(time: string): number {
     let seconds = 0;
