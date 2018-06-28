@@ -252,4 +252,16 @@ public class TestPriorityQueue extends LuceneTestCase {
       assertEquals(expected, actual);
     }
   }
+
+  public void testMaxIntSize() {
+    expectThrows(IllegalArgumentException.class, () -> {
+        new PriorityQueue<Boolean>(Integer.MAX_VALUE) {
+          @Override
+          public boolean lessThan(Boolean a, Boolean b) {
+            // uncalled
+            return true;
+          }
+        };
+      });
+  }
 }
