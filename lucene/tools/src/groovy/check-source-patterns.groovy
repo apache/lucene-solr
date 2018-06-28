@@ -66,6 +66,7 @@ def lineSplitter = ~$/[\r\n]+/$;
 def singleLineSplitter = ~$/\n\r?/$;
 def licenseMatcher = Defaults.createDefaultMatcher();
 def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
+def validLoggerNamePattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+(log|LOG)+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
 def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$;
 def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$;
 def sourceHeaderPattern = ~$/\[source\b.*/$;
@@ -168,6 +169,9 @@ ant.fileScanner{
     if (text.contains('org.slf4j.LoggerFactory')) {
       if (!validLoggerPattern.matcher(text).find()) {
         reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
+      }
+      if (f.toString().contains('solr/contrib') && !validLoggerNamePattern.matcher(text).find()) {
+        reportViolation(f, 'invalid logger name [not log or LOG]');
       }
     }
     checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
