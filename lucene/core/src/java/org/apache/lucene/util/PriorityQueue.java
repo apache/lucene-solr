@@ -53,7 +53,7 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
 
       if ((maxSize < 0) || (maxSize >= ArrayUtil.MAX_ARRAY_LENGTH)) {
         // Throw exception to prevent confusing OOME:
-        throw new IllegalArgumentException("maxSize must be positive and < " + (ArrayUtil.MAX_ARRAY_LENGTH) + "; got: " + maxSize);
+        throw new IllegalArgumentException("maxSize must be >= 0 and < " + (ArrayUtil.MAX_ARRAY_LENGTH) + "; got: " + maxSize);
       }
 
       // NOTE: we add +1 because all access to heap is
