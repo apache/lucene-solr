@@ -63,6 +63,26 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
       "    }\n" +
       "}";
 
+  private static final String noIdChildren = "{\n" +
+      "    \"add\": {\n" +
+      "        \"doc\": {\n" +
+      "            \"id\": \"1\",\n" +
+      "            \"children\": [\n" +
+      "                {\n" +
+      "                    \"foo_s\": \"Yaz\"\n" +
+      "                    \"grandChild\": \n" +
+      "                          {\n" +
+      "                             \"foo_s\": \"Jazz\"\n" +
+      "                          },\n" +
+      "                },\n" +
+      "                {\n" +
+      "                    \"foo_s\": \"Bar\"\n" +
+      "                }\n" +
+      "            ]\n" +
+      "        }\n" +
+      "    }\n" +
+      "}";
+
   private static final String errDoc = "{\n" +
       "    \"add\": {\n" +
       "        \"doc\": {\n" +
@@ -117,6 +137,18 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     indexSampleData(jDoc);
 
     assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":children",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        childrenTests);
+  }
+
+  @Test
+  public void testDeeplyNestedURPChildrenWoId() throws Exception {
+    final String[] childrenTests = {"/response/docs/[0]/id=='1" + PATH_SEP_CHAR + "children" + PATH_SEP_CHAR + "2'"};
+    indexSampleData(noIdChildren);
+
+    assertJQ(req("q", "foo_s:Bar",
         "fl","*",
         "sort","id asc",
         "wt","json"),

@@ -45,11 +45,13 @@ public class NestedUpdateProcessor extends UpdateRequestProcessor {
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument doc = cmd.getSolrInputDocument();
-    processDocChildren(doc, null);
+    String rootId = doc.getField(req.getSchema().getUniqueKeyField().getName()).getFirstValue().toString();
+    processDocChildren(doc, rootId, null);
     super.processAdd(cmd);
   }
 
-  private void processDocChildren(SolrInputDocument doc, String fullPath) {
+  private void processDocChildren(SolrInputDocument doc, String rootId, String fullPath) {
+    int childNum = 0;
     for(SolrInputField field: doc.values()) {
       for(Object val: field) {
         if(val instanceof SolrInputDocument) {
@@ -58,20 +60,29 @@ public class NestedUpdateProcessor extends UpdateRequestProcessor {
                 + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
           }
           final String jointPath = Objects.isNull(fullPath) ? field.getName(): String.join(PATH_SEP_CHAR, fullPath, field.getName());
-          processChildDoc((SolrInputDocument) val, doc, jointPath);
+          SolrInputDocument cDoc = (SolrInputDocument) val;
+          if(!cDoc.containsKey(req.getSchema().getUniqueKeyField().getName())) {
+            cDoc.setField(req.getSchema().getUniqueKeyField().getName(), generateChildUniqueId(rootId, jointPath, childNum));
+          }
+          processChildDoc((SolrInputDocument) val, doc, rootId, jointPath);
         }
+        ++childNum;
       }
     }
   }
 
-  private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
+  private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String rootId, String fullPath) {
     if(storePath) {
       setPathField(sdoc, fullPath);
     }
     if (storeParent) {
       setParentKey(sdoc, parent);
     }
-    processDocChildren(sdoc, fullPath);
+    processDocChildren(sdoc, rootId, fullPath);
+  }
+
+  private String generateChildUniqueId(String rootId, String childPath, int childNum) {
+    return String.join(PATH_SEP_CHAR, rootId, childPath, Integer.toString(childNum));
   }
 
   private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
