@@ -140,6 +140,11 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     }
   };
 
+  $scope.nextPage = function() {
+      $scope.pos += $scope.rows;
+      $scope.reload();
+  }
+  
   // Initializes the cluster state, list of nodes, collections etc
   $scope.initClusterState = function() {
     var nodes = {};
@@ -225,6 +230,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
         nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
         nodesParam = nodesToShow.join(',');
       }
+      $scope.nextEnabled = $scope.from + $scope.pageSize < hostNames.length;
     } else {
       nodesToShow = Object.keys(nodes);
       hostsToShow = Object.keys(hosts);

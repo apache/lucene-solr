@@ -75,11 +75,11 @@ limitations under the License.
              <option value="high_load">High load</option>
            </select>
          </span>
-         <span ng-show="filterType=='name'">
-           <input ng-model="pagingFilter" type="text" size="10" name="filter" ng-change="resetGraph()"/>&nbsp;
+         <span ng-show="filterType=='node'">
+           <input ng-model="pagingFilter" type="text" size="10" name="filter" ng-change="reload()"/>&nbsp;
          </span>
-         Show <input ng-model="rows" ng-change="resetGraph()" type="text" size="2" name="rows" /> per page.
-         <button ng-show="nextEnabled" ng-click="next()">Next &gt;</button>
+         Show <input ng-model="rows" ng-change="reload()" type="text" size="2" name="rows" /> per page.
+         <button ng-show="nextEnabled" ng-click="nextPage()">Next &gt;</button>
         </div>
       </div>
       <table id="nodes-table">
