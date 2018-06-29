@@ -29,6 +29,12 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
 Jetty 9.3.14.v20161028
 
+New Features
+----------------------
+
+* SOLR-12530: Ability to disable configset upload via -Dconfigset.upload.enabled=false startup parameter
+  (Ishan Chattopadhyaya)
+
 Bug Fixes
 ----------------------
 
