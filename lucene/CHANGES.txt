@@ -15,6 +15,10 @@ Bug Fixes:
    via LUCENE-8165 since we are now checking for offset+length going out of bounds.
    (Robert Muir, Nhat Nyugen, Simon Willnauer)
 
+* LUCENE-8370: Reproducing 
+  TestLucene{54,70}DocValuesFormat.testSortedSetVariableLengthBigVsStoredFields()
+  failures (Erick Erickson)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
