@@ -345,7 +345,17 @@ public class Clause implements MapWriter, Comparable<Clause> {
       @Override
       public String match(String val) {
         if (val != null && !val.isEmpty() && val.charAt(val.length() - 1) == '%') {
-          return val.substring(0, val.length() - 1);
+          String newVal = val.substring(0, val.length() - 1);
+          double d;
+          try {
+            d = Double.parseDouble(newVal);
+          } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid percentage value : " + val);
+          }
+          if (d < 0 || d > 100) {
+            throw new IllegalArgumentException("Percentage value must lie between [1 -100] : provided value : " + val);
+          }
+          return newVal;
         } else {
           return null;
         }
