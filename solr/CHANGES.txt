@@ -98,6 +98,8 @@ Bug Fixes
 * SOLR-12326: JSON Facet API: terms facet shard requests now indicate if they have more buckets to prevent
   unnecessary refinement requests. (yonk)
 
+* SOLR-12427: Improve error message for invalid 'start', 'rows' parameters. (Munendra S N via Jason Gerlowski)
+
 Optimizations
 ----------------------
 
