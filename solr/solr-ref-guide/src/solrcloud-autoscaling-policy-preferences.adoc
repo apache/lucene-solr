@@ -105,7 +105,7 @@ The type of the replica to which the policy rule should apply. If omitted, the r
 This is a required attribute. The number of replicas that must exist to satisfy the rule. This must be one of
 
 * a positive integer . e.g : "`3`"
-* an integer with a decimal value . e.g: "`1.66`" . This means both 1 and 2 are acceptable values but the system would prefer `2`
+* a number with a decimal value . e.g: "`1.66`" . This means both 1 and 2 are acceptable values but the system would prefer `2`
 * a number range. Such as `"3-5"` . This means `3,4,5` are acceptable values
 * a percentage value . e.g: `33%` . This is computed to a decimal value at runtime
 
