@@ -67,6 +67,9 @@ New Features
 
 * SOLR-12517: Support range values for replica in autoscaling policy (noble)
 
+* SOLR-12530: Ability to disable configset upload via -Dconfigset.upload.enabled=false startup parameter
+  (Ishan Chattopadhyaya)
+
 Bug Fixes
 ----------------------
 
