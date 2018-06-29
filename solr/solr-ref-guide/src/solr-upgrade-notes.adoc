@@ -30,7 +30,7 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 === Solr 7.5
 When upgrading to Solr 7.4, users should be aware of the following major changes from v7.3:
 
-* When using the default TieredMergePolicy (TMP), optimize and expungeDeletes now respect the maxMergedSegmentMB configuration parameter, which defaults to 5,000 (5 gigaBytes). If it is absolutely necessary to control the number of segments present after optimize, specify maxSegments=# where # is a positive integer. TMP will also reclaim resources from segments that exceed maxMergedSegmentMB more aggressively.
+* When using the default TieredMergePolicy (TMP), optimize and expungeDeletes now respect the maxMergedSegmentMB configuration parameter, which defaults to 5,000 (5 gigaBytes). If it is absolutely necessary to control the number of segments present after optimize, specify maxSegments=# where # is a positive integer. maxSegments > 1 are honored on a "best effort" basis. TMP will also reclaim resources from segments that exceed maxMergedSegmentMB more aggressively.
 
 
 === Solr 7.4

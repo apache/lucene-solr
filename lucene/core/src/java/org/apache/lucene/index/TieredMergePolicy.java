@@ -60,14 +60,21 @@ import java.util.Set;
  *  LogMergePolicy}.
  *
  *  <p><b>NOTE</b>: This policy always merges by byte size
- *  of the segments, always pro-rates by percent deletes,
- *  and does not apply any maximum segment size during
- *  forceMerge (unlike {@link LogByteSizeMergePolicy}).
+ *  of the segments, always pro-rates by percent deletes
  *
- *  <p><b>NOTE</b> As of Lucene 7.5, forceMerge (aka optimize)
- *  and expungeDeletes (findForcedMerges and
- *  findForcedDeletesMerges) respect the max segment
+ *  <p><b>NOTE</b> Starting with Lucene 7.5, there are several changes:
+ *
+ *  - findForcedMerges and findForcedDeletesMerges) respect the max segment
  *  size by default.
+ *
+ *  - When findforcedmerges is called with maxSegmentCount other than 1,
+ *  the resulting index is not guaranteed to have &lt;= maxSegmentCount segments.
+ *  Rather it is on a "best effort" basis. Specifically the theoretical ideal
+ *  segment size is calculated and a "fudge factor" of 25% is added as the
+ *  new maxSegmentSize, which is respected.
+ *
+ *  - findForcedDeletesMerges will not produce segments greater than
+ *  maxSegmentSize.
  *
  *  @lucene.experimental
  */

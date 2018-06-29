@@ -100,7 +100,7 @@ Default is `true`. Blocks until a new searcher is opened and registered as the m
 
 WARNING: expungeDeletes is "less expensive" than optimize, but the same warnings apply.
 
-`maxSegments`:: (optimize only) Default is unlimited, resulting segments respect the maxMergedSegmentMB setting. Merges the segments down to no more than this number of segments. Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
+`maxSegments`:: (optimize only) Default is unlimited, resulting segments respect the maxMergedSegmentMB setting. Makes a "best effort" attempt to merge the segments down to no more than this number of segments but does not guarantee that the goal will be achieved. Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
 
 Here are examples of <commit> and <optimize> using optional attributes:
 
