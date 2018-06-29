@@ -57,3 +57,8 @@ ALWAYS_CACHE can be replaced by a UsageTrackingQueryCachingPolicy with an approp
 
 To retain the old behaviour, pass StandardAnalyzer.ENGLISH_STOP_WORDS_SET as an argument
 to the constructor
+
+## StandardAnalyzer.ENGLISH_STOP_WORD_SET has been moved ##
+
+English stop words are now defined in EnglishAnalyzer#ENGLISH_STOP_WORD_SET in the
+analysis-common module

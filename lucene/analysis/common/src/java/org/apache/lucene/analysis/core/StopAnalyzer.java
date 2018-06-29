@@ -28,26 +28,11 @@ import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.en.EnglishAnalyzer;
 
 /** 
  * Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
  */
 public final class StopAnalyzer extends StopwordAnalyzerBase {
-
-  /** An unmodifiable set containing some common English words that are not usually useful
-    for searching.*/
-  @Deprecated
-  public static final CharArraySet ENGLISH_STOP_WORDS_SET = EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
-
-  /** Builds an analyzer which removes words in
-   *  {@link #ENGLISH_STOP_WORDS_SET}.
-   * @deprecated Use a constructor with a specific stop word set
-   */
-  @Deprecated
-  public StopAnalyzer() {
-    this(ENGLISH_STOP_WORDS_SET);
-  }
 
   /** Builds an analyzer with the stop words from the given set.
    * @param stopWords Set of stop words */

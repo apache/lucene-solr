@@ -50,6 +50,9 @@ API Changes
 * LUCENE-8356: StandardFilter and StandardFilterFactory have been removed
   (Alan Woodward)
 
+* LUCENE-8373: StandardAnalyzer.ENGLISH_STOP_WORD_SET has been removed
+  (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

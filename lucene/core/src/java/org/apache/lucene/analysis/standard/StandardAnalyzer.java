@@ -19,8 +19,6 @@ package org.apache.lucene.analysis.standard;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
-import java.util.List;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -34,40 +32,11 @@ import org.apache.lucene.analysis.WordlistLoader;
  * {@link StopFilter}, using a configurable list of stop words.
  */
 public final class StandardAnalyzer extends StopwordAnalyzerBase {
-
-  /**
-   * An unmodifiable set containing some common English words that are not
-   * usually useful for searching.
-   * @deprecated Use the stop words on EnglishAnalyzer in the analysis-common module
-   */
-  @Deprecated
-  public static final CharArraySet ENGLISH_STOP_WORDS_SET;
-
-  static {
-    final List<String> stopWords = Arrays.asList(
-      "a", "an", "and", "are", "as", "at", "be", "but", "by",
-      "for", "if", "in", "into", "is", "it",
-      "no", "not", "of", "on", "or", "such",
-      "that", "the", "their", "then", "there", "these",
-      "they", "this", "to", "was", "will", "with"
-    );
-    final CharArraySet stopSet = new CharArraySet(stopWords, false);
-    ENGLISH_STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet);
-  }
-
   
   /** Default maximum allowed token length */
   public static final int DEFAULT_MAX_TOKEN_LENGTH = 255;
 
   private int maxTokenLength = DEFAULT_MAX_TOKEN_LENGTH;
-
-  /**
-   * An unmodifiable set containing some common English words that are usually not
-   * useful for searching.
-   * @deprecated Use the stop words on EnglishAnalyzer in the analysis-common module
-   */
-  @Deprecated
-  public static final CharArraySet STOP_WORDS_SET = ENGLISH_STOP_WORDS_SET;
 
   /** Builds an analyzer with the given stop words.
    * @param stopWords stop words */
