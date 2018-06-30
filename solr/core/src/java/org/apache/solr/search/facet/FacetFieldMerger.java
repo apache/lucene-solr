@@ -33,7 +33,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
   FacetBucket missingBucket;
   FacetBucket allBuckets;
   FacetMerger numBuckets;
-  int[] numReturnedPerShard;
+  int[] numReturnedPerShard;  // TODO: this is currently unused?
 
   // LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
   // List<FacetBucket> sortedBuckets;
@@ -46,6 +46,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
   @Override
   public void merge(Object facetResult, Context mcontext) {
+    super.merge(facetResult, mcontext);
     if (numReturnedPerShard == null) {
       numReturnedPerShard = new int[mcontext.numShards];
     }

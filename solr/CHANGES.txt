@@ -95,6 +95,9 @@ Bug Fixes
 
 * SOLR-11665: Improve error handling of shard splitting. Fix splitting of mixed replica types. (ab)
 
+* SOLR-12326: JSON Facet API: terms facet shard requests now indicate if they have more buckets to prevent
+  unnecessary refinement requests. (yonk)
+
 Optimizations
 ----------------------
 

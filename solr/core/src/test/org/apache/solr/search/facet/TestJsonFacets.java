@@ -796,6 +796,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   public static void doStatsTemplated(Client client, ModifiableSolrParams p) throws Exception {
+    int numShards = client.local() ? 1 : client.getClientProvider().all().size();
     p.set("Z_num_i", "Z_" + p.get("num_i") );
     p.set("Z_num_l", "Z_" + p.get("num_l") );
     p.set("sparse_num_d", "sparse_" + p.get("num_d") );
@@ -1969,6 +1970,33 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
     //////////////////////////////////////////////////////////////// end phase testing
 
+    //
+    // Refinement should not be needed to get exact results here, so this tests that
+    // extra refinement requests are not sent out.  This currently relies on counting the number of times
+    // debug() aggregation is parsed... which is somewhat fragile.  Please replace this with something
+    // better in the future - perhaps debug level info about number of refinements or additional facet phases.
+    //
+    for (String facet_field : new String[]{cat_s,where_s,num_d,num_i,num_is,num_fs,super_s,date,val_b,multi_ss}) {
+      ModifiableSolrParams test = params(p, "q", "id:(1 2)", "facet_field",facet_field, "debug", "true"
+          , "json.facet", "{ " +
+              " f1:{type:terms, field:'${facet_field}',  refine:${refine},  facet:{x:'debug()'}   }" +
+              ",f2:{type:terms, method:dvhash, field:'${facet_field}',  refine:${refine},  facet:{x:'debug()'}   }" +
+              ",f3:{type:terms, field:'${facet_field}',  refine:${refine},  facet:{x:'debug()',  y:{type:terms,field:'${facet_field}',refine:${refine}}}   }" +  // facet within facet
+              " }"
+      );
+      long startParses = DebugAgg.parses.get();
+      client.testJQ(params(test, "refine", "false")
+          , "facets==" + ""
+      );
+      long noRefineParses = DebugAgg.parses.get() - startParses;
+
+      startParses = DebugAgg.parses.get();
+      client.testJQ(params(test, "refine", "true")
+          , "facets==" + ""
+      );
+      long refineParses = DebugAgg.parses.get() - startParses;
+      assertEquals(noRefineParses, refineParses);
+    }
 
 
   }

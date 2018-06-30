@@ -40,6 +40,7 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
 
   @Override
   public void merge(Object facetResult, Context mcontext) {
+    super.merge(facetResult, mcontext);
     merge((SimpleOrderedMap) facetResult , mcontext);
   }
 
