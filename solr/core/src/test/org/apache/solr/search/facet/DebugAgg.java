@@ -32,10 +32,12 @@ import org.apache.solr.search.ValueSourceParser;
 
 
 public class DebugAgg extends AggValueSource {
+  public static AtomicLong parses = new AtomicLong(0);
 
   public static class Parser extends ValueSourceParser {
     @Override
     public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+      parses.incrementAndGet();
       return new DebugAgg();
     }
 

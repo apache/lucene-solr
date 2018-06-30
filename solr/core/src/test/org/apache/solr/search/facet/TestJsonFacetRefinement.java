@@ -160,10 +160,25 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   @Test
   public void testMerge() throws Exception {
     doTestRefine("{x : {type:terms, field:X, limit:2, refine:true} }",  // the facet request
-        "{x: {buckets:[{val:x1, count:5}, {val:x2, count:3}] } }",  // shard0 response
-        "{x: {buckets:[{val:x2, count:4}, {val:x3, count:2}] } }",  // shard1 response
+        "{x: {buckets:[{val:x1, count:5}, {val:x2, count:3}], more:true } }",  // shard0 response
+        "{x: {buckets:[{val:x2, count:4}, {val:x3, count:2}], more:true } }",  // shard1 response
         null,              // shard0 expected refinement info
         "=={x:{_l:[x1]}}"  // shard1 expected refinement info
+    );
+
+    // same test as above, but shard1 indicates it doesn't have any more results, so there shouldn't be any refinement
+    doTestRefine("{x : {type:terms, field:X, limit:2, refine:true} }",  // the facet request
+        "{x: {buckets:[{val:x1, count:5}, {val:x2, count:3}], more:true } }",  // shard0 response
+        "{x: {buckets:[{val:x2, count:4}, {val:x3, count:2}] } }",  // shard1 response
+        null,              // shard0 expected refinement info
+        null               // shard1 expected refinement info
+    );
+
+    doTestRefine("{x : {type:terms, field:X, limit:2, refine:true} }",  // the facet request
+        "{x: {buckets:[{val:x1, count:5}, {val:x2, count:3}],more:true } }",  // shard0 response
+        "{x: {buckets:[{val:x2, count:4}, {val:x3, count:2}] } }",  // shard1 response
+        null,  // shard0 expected refinement info
+        null   // shard1 expected refinement info  // without more:true, we should not attempt to get extra bucket
     );
 
     // same test w/o refinement turned on
@@ -176,8 +191,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // same test, but nested in query facet
     doTestRefine("{top:{type:query, q:'foo_s:myquery', facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",  // the facet request
-        "{top: {x: {buckets:[{val:x1, count:5}, {val:x2, count:3}] } } }",  // shard0 response
-        "{top: {x: {buckets:[{val:x2, count:4}, {val:x3, count:2}] } } }",  // shard1 response
+        "{top: {x: {buckets:[{val:x1, count:5}, {val:x2, count:3}], more:true } } }",  // shard0 response
+        "{top: {x: {buckets:[{val:x2, count:4}, {val:x3, count:2}], more:true } } }",  // shard1 response
         null,              // shard0 expected refinement info
         "=={top:{x:{_l:[x1]}}}"  // shard1 expected refinement info
     );
@@ -192,8 +207,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // same test, but nested in a terms facet
     doTestRefine("{top:{type:terms, field:Afield, facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
-        "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}]} } ] } }",
-        "{top: {buckets:[{val:'A', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} } ] } }",
+        "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}], more:true} } ] } }",
+        "{top: {buckets:[{val:'A', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}], more:true} } ] } }",
         null,
         "=={top: {" +
             "_s:[  ['A' , {x:{_l:[x1]}} ]  ]" +
@@ -203,8 +218,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // same test, but nested in range facet
     doTestRefine("{top:{type:range, field:R, start:0, end:1, gap:1, facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
-        "{top: {buckets:[{val:0, count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}]} } ] } }",
-        "{top: {buckets:[{val:0, count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} } ] } }",
+        "{top: {buckets:[{val:0, count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ] } }",
+        "{top: {buckets:[{val:0, count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ] } }",
         null,
         "=={top: {" +
             "_s:[  [0 , {x:{_l:[x1]}} ]  ]" +
@@ -214,8 +229,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // for testing partial _p, we need a partial facet within a partial facet
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
-        "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}]} } ] } }",
-        "{top: {buckets:[{val:'B', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} } ] } }",
+        "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ],more:true } }",
+        "{top: {buckets:[{val:'B', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ],more:true } }",
         null,
         "=={top: {" +
             "_p:[  ['A' , {x:{_l:[x1]}} ]  ]" +
@@ -225,8 +240,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // test partial _p under a missing bucket
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, missing:true, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
-        "{top: {buckets:[], missing:{count:12, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} }  } }",
-        "{top: {buckets:[], missing:{count:10, x:{buckets:[{val:x1, count:5},{val:x4, count:3}]} }  } }",
+        "{top: {buckets:[], missing:{count:12, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} }  } }",
+        "{top: {buckets:[], missing:{count:10, x:{buckets:[{val:x1, count:5},{val:x4, count:3}],more:true} }  } }",
         "=={top: {" +
             "missing:{x:{_l:[x1]}}" +
             "    }  " +
