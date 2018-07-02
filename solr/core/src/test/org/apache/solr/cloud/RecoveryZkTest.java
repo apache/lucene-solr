@@ -59,6 +59,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void test() throws Exception {
 
     final String collection = "recoverytest";

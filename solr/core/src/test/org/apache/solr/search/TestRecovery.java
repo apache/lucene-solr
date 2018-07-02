@@ -24,6 +24,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.TimeOut;
@@ -1007,7 +1008,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
 
-    @Test
+  @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void testExistOldBufferLog() throws Exception {
 
     DirectUpdateHandler2.commitOnClose = false;
