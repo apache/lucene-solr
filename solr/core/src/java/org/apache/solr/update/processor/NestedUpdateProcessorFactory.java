@@ -104,6 +104,7 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private String generateChildUniqueId(String parentId, String childPath, int childNum) {
+    // combines parentId with the path and childNum. e.g. "3/book/pages/footnote/1"
     return String.join(PATH_SEP_CHAR, parentId, childPath, Integer.toString(childNum));
   }
 

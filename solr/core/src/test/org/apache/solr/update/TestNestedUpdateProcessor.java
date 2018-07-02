@@ -17,18 +17,9 @@
 
 package org.apache.solr.update;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -164,26 +155,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   }
 
   private void indexSampleData(String cmd) throws Exception {
-
-
-    List<ContentStream> streams = new ArrayList<>( 1 );
-    streams.add( new ContentStreamBase.StringStream( cmd ) );
-
-    SolrQueryRequest req = null;
-    try {
-      req = new SolrRequestParsers(h.getCore().getSolrConfig()).buildRequestFrom( h.getCore(), params("update.chain", "nested"), streams );
-      SolrQueryResponse rsp = new SolrQueryResponse();
-      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
-      h.getCore().execute( h.getCore().getRequestHandler("/update"), req, rsp );
-      if( rsp.getException() != null ) {
-        throw rsp.getException();
-      }
-    } finally {
-      if (req != null) {
-        req.close();
-        SolrRequestInfo.clearRequestInfo();
-      }
-    }
+    updateJ(cmd, params("update.chain", "nested"));
     assertU(commit());
   }
 }
