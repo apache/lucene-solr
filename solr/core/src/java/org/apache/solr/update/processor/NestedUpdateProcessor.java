@@ -29,23 +29,23 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
 
 public class NestedUpdateProcessor extends UpdateRequestProcessor {
-  public static final String PATH_SEP_CHAR = "/";
+  private static final String PATH_SEP_CHAR = "/";
   private boolean storePath;
   private boolean storeParent;
-  SolrQueryRequest req;
+  private String uniqueKeyFieldName;
 
 
   protected NestedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, boolean storeParent, boolean storePath, UpdateRequestProcessor next) {
     super(next);
-    this.req = req;
     this.storeParent = storeParent;
     this.storePath = storePath;
+    this.uniqueKeyFieldName = req.getSchema().getUniqueKeyField().getName();
   }
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument doc = cmd.getSolrInputDocument();
-    String rootId = doc.getField(req.getSchema().getUniqueKeyField().getName()).getFirstValue().toString();
+    String rootId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
     processDocChildren(doc, rootId, null);
     super.processAdd(cmd);
   }
@@ -61,8 +61,8 @@ public class NestedUpdateProcessor extends UpdateRequestProcessor {
           }
           final String jointPath = Objects.isNull(fullPath) ? field.getName(): String.join(PATH_SEP_CHAR, fullPath, field.getName());
           SolrInputDocument cDoc = (SolrInputDocument) val;
-          if(!cDoc.containsKey(req.getSchema().getUniqueKeyField().getName())) {
-            cDoc.setField(req.getSchema().getUniqueKeyField().getName(), generateChildUniqueId(rootId, jointPath, childNum));
+          if(!cDoc.containsKey(uniqueKeyFieldName)) {
+            cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(rootId, jointPath, childNum));
           }
           processChildDoc((SolrInputDocument) val, doc, rootId, jointPath);
         }
@@ -86,7 +86,7 @@ public class NestedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
-    sdoc.setField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue(req.getSchema().getUniqueKeyField().getName()));
+    sdoc.setField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue(uniqueKeyFieldName));
   }
 
   private void setPathField(SolrInputDocument sdoc, String fullPath) {
