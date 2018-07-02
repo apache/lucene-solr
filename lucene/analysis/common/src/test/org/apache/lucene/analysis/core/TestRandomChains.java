@@ -132,6 +132,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     // FlattenGraphFilter changes the output graph entirely, so wrapping it in a condition
     // can break position lengths
     avoidConditionals.add(FlattenGraphFilter.class);
+    // LimitToken*Filters don't set end offsets correctly
+    avoidConditionals.add(LimitTokenOffsetFilter.class);
+    avoidConditionals.add(LimitTokenCountFilter.class);
+    avoidConditionals.add(LimitTokenPositionFilter.class);
   }
 
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
