@@ -24,6 +24,10 @@ Bug Fixes:
   TestLucene{54,70}DocValuesFormat.testSortedSetVariableLengthBigVsStoredFields()
   failures (Erick Erickson)
 
+* LUCENE-8376, LUCENE-8371: ConditionalTokenFilter.end() would not propagate correctly
+  if the last token in the stream was subsequently dropped; FixedShingleFilter did
+  not set position increment in end() (Alan Woodward)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
