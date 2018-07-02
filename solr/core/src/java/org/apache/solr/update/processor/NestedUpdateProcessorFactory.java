@@ -17,9 +17,15 @@
 
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.update.AddUpdateCommand;
 
 public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
@@ -39,4 +45,74 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   private static boolean shouldStoreDocPath(IndexSchema schema) {
     return schema.getFields().containsKey(IndexSchema.PATH_FIELD_NAME);
   }
+}
+
+class NestedUpdateProcessor extends UpdateRequestProcessor {
+  private static final String PATH_SEP_CHAR = "/";
+  private boolean storePath;
+  private boolean storeParent;
+  private String uniqueKeyFieldName;
+
+
+  protected NestedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, boolean storeParent, boolean storePath, UpdateRequestProcessor next) {
+    super(next);
+    this.storeParent = storeParent;
+    this.storePath = storePath;
+    this.uniqueKeyFieldName = req.getSchema().getUniqueKeyField().getName();
+  }
+
+  @Override
+  public void processAdd(AddUpdateCommand cmd) throws IOException {
+    SolrInputDocument doc = cmd.getSolrInputDocument();
+    processDocChildren(doc, null);
+    super.processAdd(cmd);
+  }
+
+  private void processDocChildren(SolrInputDocument doc, String fullPath) {
+    int childNum = 0;
+    for(SolrInputField field: doc.values()) {
+      for(Object val: field) {
+        if(!(val instanceof SolrInputDocument)) {
+          // either all collection items are child docs or none are.
+          break;
+        }
+
+        if(field.getName().contains(PATH_SEP_CHAR)) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + field.getName()
+              + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
+        }
+        final String jointPath = fullPath == null ? field.getName(): String.join(PATH_SEP_CHAR, fullPath, field.getName());
+        SolrInputDocument cDoc = (SolrInputDocument) val;
+        if(!cDoc.containsKey(uniqueKeyFieldName)) {
+          String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
+          cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, jointPath, childNum));
+        }
+        processChildDoc((SolrInputDocument) val, doc, jointPath);
+        ++childNum;
+      }
+    }
+  }
+
+  private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
+    if(storePath) {
+      setPathField(sdoc, fullPath);
+    }
+    if (storeParent) {
+      setParentKey(sdoc, parent);
+    }
+    processDocChildren(sdoc, fullPath);
+  }
+
+  private String generateChildUniqueId(String parentId, String childPath, int childNum) {
+    return String.join(PATH_SEP_CHAR, parentId, childPath, Integer.toString(childNum));
+  }
+
+  private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
+    sdoc.setField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue(uniqueKeyFieldName));
+  }
+
+  private void setPathField(SolrInputDocument sdoc, String fullPath) {
+    sdoc.setField(IndexSchema.PATH_FIELD_NAME, fullPath);
+  }
+
 }
