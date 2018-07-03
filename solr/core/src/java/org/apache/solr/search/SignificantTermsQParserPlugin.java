@@ -39,7 +39,10 @@ import org.apache.solr.request.SolrQueryRequest;
 
 public class SignificantTermsQParserPlugin extends QParserPlugin {
 
-  public static final String NAME = "sigificantTerms";
+  @Deprecated
+  public static final String OLD_NAME = "sigificantTerms";
+
+  public static final String NAME = "significantTerms";
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
