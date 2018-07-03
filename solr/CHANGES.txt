@@ -130,6 +130,8 @@ Other Changes
 
 * SOLR-12468: Upgrade Jetty to 9.4.11.v20180605 (Michael Braun, shalin)
 
+* SOLR-12527: factor out a test-framework/ConfigRequest class (Christine Poerschke)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
