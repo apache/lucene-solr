@@ -66,6 +66,11 @@ public class TestStandardQParsers extends LuceneTestCase {
       }
     }
 
+    // for Solr 7.x backcompat only
+    mismatch.remove(SignificantTermsQParserPlugin.OLD_NAME
+        + " != " + SignificantTermsQParserPlugin.NAME
+        + "(" + SignificantTermsQParserPlugin.class.getName() + ")");
+
     assertTrue("All standard QParsers must have final NAME, broken: " + notFinal, 
                notFinal.isEmpty());
     assertTrue("All standard QParsers must have static NAME, broken: " + notStatic, 

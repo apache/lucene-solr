@@ -67,6 +67,8 @@ Upgrade Notes
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
   findForcedMerges (optimize) and findForcedDeletesMerges (expungeDeletes) (Erick Erickson)
 
+* SOLR-12395: SignificantTermsQParserPlugin's name is now 'significantTerms' and its old name 'sigificantTerms' is deprecated.
+
 New Features
 ----------------------
 
@@ -128,6 +130,9 @@ Bug Fixes
   unnecessary refinement requests. (yonk)
 
 * SOLR-12427: Improve error message for invalid 'start', 'rows' parameters. (Munendra S N via Jason Gerlowski)
+
+* SOLR-12395: Make 'significantTerms' the SignificantTermsQParserPlugin's name and deprecate its old 'sigificantTerms' name.
+  (Tobias Kässmann, Christine Poerschke)
 
 Optimizations
 ----------------------
