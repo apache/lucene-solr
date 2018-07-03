@@ -81,7 +81,7 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + field.getName()
               + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
         }
-        final String jointPath = fullPath == null ? field.getName(): String.join(PATH_SEP_CHAR, fullPath, field.getName());
+        final String jointPath = fullPath == null ? field.getName(): fullPath + PATH_SEP_CHAR + field.getName();
         SolrInputDocument cDoc = (SolrInputDocument) val;
         if(!cDoc.containsKey(uniqueKeyFieldName)) {
           String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
