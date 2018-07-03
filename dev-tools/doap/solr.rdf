@@ -125,6 +125,13 @@
     </release>
     <release>
       <Version>
+        <name>solr-6.6.5</name>
+        <created>2018-06-03</created>
+        <revision>6.6.5</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
         <name>solr-6.6.4</name>
         <created>2018-05-18</created>
         <revision>6.6.4</revision>
