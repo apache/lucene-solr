@@ -802,6 +802,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
       }
     }
+
+    // the index may ahead of the tlog's caches after recovery, by calling this tlog's caches will be purged
+    core.getUpdateHandler().getUpdateLog().openRealtimeSearcher();
     
     // solrcloud_debug
     cloudDebugLog(core, "replayed");
