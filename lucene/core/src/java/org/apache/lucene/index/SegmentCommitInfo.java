@@ -328,7 +328,7 @@ public class SegmentCommitInfo {
     if (delCount < 0 || delCount > info.maxDoc()) {
       throw new IllegalArgumentException("invalid delCount=" + delCount + " (maxDoc=" + info.maxDoc() + ")");
     }
-    assert softDelCount + delCount <= info.maxDoc();
+    assert softDelCount + delCount <= info.maxDoc() : "maxDoc=" + info.maxDoc() + ",delCount=" + delCount + ",softDelCount=" + softDelCount;
     this.delCount = delCount;
   }
 
@@ -336,7 +336,7 @@ public class SegmentCommitInfo {
     if (softDelCount < 0 || softDelCount > info.maxDoc()) {
       throw new IllegalArgumentException("invalid softDelCount=" + softDelCount + " (maxDoc=" + info.maxDoc() + ")");
     }
-    assert softDelCount + delCount <= info.maxDoc();
+    assert softDelCount + delCount <= info.maxDoc() : "maxDoc=" + info.maxDoc() + ",delCount=" + delCount + ",softDelCount=" + softDelCount;
     this.softDelCount = softDelCount;
   }
 
