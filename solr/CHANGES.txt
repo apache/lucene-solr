@@ -134,6 +134,8 @@ Bug Fixes
 * SOLR-12395: Make 'significantTerms' the SignificantTermsQParserPlugin's name and deprecate its old 'sigificantTerms' name.
   (Tobias Kässmann, Christine Poerschke)
 
+* SOLR-12533 Collection collection fails if metrics are called during core creation (Peter Cseh, Mano Kovacs)
+
 Optimizations
 ----------------------
 
