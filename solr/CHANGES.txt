@@ -38,7 +38,7 @@ New Features
 Bug Fixes
 ----------------------
 
- * SOLR-12450: Don't allow referal to external resources in various config files.
+* SOLR-12450: Don't allow referal to external resources in various config files (CVE-2018-8026).
   (Yuyang Xiao, Uwe Schindler)
 
 ==================  6.6.4 ==================
