@@ -48,6 +48,7 @@ import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -4382,25 +4383,52 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
-      int numSoftDeleted = 0;
-      for (SegmentReader reader : merge.readers) {
+      int softDeleteCount = 0;
+      for (int r = 0; r < merge.readers.size(); r++) {
+        SegmentReader reader = merge.readers.get(r);
         CodecReader wrappedReader = merge.wrapForMerge(reader);
         validateMergeReader(wrappedReader);
-        mergeReaders.add(wrappedReader);
         if (softDeletesEnabled) {
           if (reader != wrappedReader) { // if we don't have a wrapped reader we won't preserve any soft-deletes
-            Bits liveDocs = wrappedReader.getLiveDocs();
-            numSoftDeleted += PendingSoftDeletes.countSoftDeletes(
-                DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader),
-                liveDocs);
+            Bits hardLiveDocs = merge.hardLiveDocs.get(r);
+            Bits wrappedLiveDocs = wrappedReader.getLiveDocs();
+            int hardDeleteCount = 0;
+            DocIdSetIterator softDeletedDocs = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader);
+            if (softDeletedDocs != null) {
+              int docId;
+              while ((docId = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                if (wrappedLiveDocs == null || wrappedLiveDocs.get(docId)) {
+                  if (hardLiveDocs == null || hardLiveDocs.get(docId)) {
+                    softDeleteCount++;
+                  } else {
+                    hardDeleteCount++;
+                  }
+                }
+              }
+            }
+            // Wrap the wrapped reader again if we have excluded some hard-deleted docs
+            if (hardLiveDocs != null && hardDeleteCount > 0) {
+              Bits liveDocs = wrappedLiveDocs == null ? hardLiveDocs : new Bits() {
+                @Override
+                public boolean get(int index) {
+                  return hardLiveDocs.get(index) && wrappedLiveDocs.get(index);
+                }
+                @Override
+                public int length() {
+                  return hardLiveDocs.length();
+                }
+              };
+              wrappedReader = FilterCodecReader.wrapLiveDocs(wrappedReader, liveDocs, wrappedReader.numDocs() - hardDeleteCount);
+            }
           }
         }
+        mergeReaders.add(wrappedReader);
       }
       final SegmentMerger merger = new SegmentMerger(mergeReaders,
                                                      merge.info.info, infoStream, dirWrapper,
                                                      globalFieldNumberMap, 
                                                      context);
-      merge.info.setSoftDelCount(numSoftDeleted);
+      merge.info.setSoftDelCount(softDeleteCount);
       merge.checkAborted();
 
       merge.mergeStartNS = System.nanoTime();
