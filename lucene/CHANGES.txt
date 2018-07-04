@@ -129,6 +129,8 @@ API Changes:
 
 Bug Fixes:
 
+* LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
+
 * LUCENE-8164: IndexWriter silently accepts broken payload. This has been fixed
   via LUCENE-8165 since we are now checking for offset+length going out of bounds.
   (Robert Muir, Nhat Nyugen, Simon Willnauer)
