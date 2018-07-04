@@ -17,9 +17,14 @@
 
 package org.apache.solr.update;
 
+import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -136,14 +141,19 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @Test
   public void testDeeplyNestedURPChildrenWoId() throws Exception {
-    final String[] childrenTests = {"/response/docs/[0]/id=='1" + PATH_SEP_CHAR + "children" + PATH_SEP_CHAR + "2'"};
-    indexSampleData(noIdChildren);
-
-    assertJQ(req("q", "foo_s:Bar",
-        "fl","*",
-        "sort","id asc",
-        "wt","json"),
-        childrenTests);
+    final String parentId = "3";
+    final String childKey = "grandChild";
+    final String expectedId = parentId + PATH_SEP_CHAR + childKey + PATH_SEP_CHAR + "0";
+    SolrInputDocument noIdChildren = sdoc("id", "1", "children", sdocs(sdoc("id", "2", "name_s", "Yaz"), sdoc("id", parentId, "name_s", "Jazz", childKey, sdoc("names_s", "Gaz"))));
+    UpdateRequestProcessor nestedUpdate = new NestedUpdateProcessorFactory().getInstance(req(), null, null);
+    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = noIdChildren;
+    nestedUpdate.processAdd(cmd);
+    cmd.clear();
+    List children = (List) noIdChildren.get("children").getValues();
+    SolrInputDocument idLessChild = (SolrInputDocument)((SolrInputDocument) children.get(1)).get(childKey).getValue();
+    assertTrue("Id less child did not get an Id", idLessChild.containsKey("id"));
+    assertEquals("Id less child was assigned an unexpected id", expectedId, idLessChild.getFieldValue("id").toString());
   }
 
   @Test
