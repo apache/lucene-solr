@@ -569,6 +569,44 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     IOUtils.close(writer, dir);
   }
 
+  public void testMergeSoftDeleteAndHardDelete() throws Exception {
+    Directory dir = newDirectory();
+    String softDelete = "soft_delete";
+    IndexWriterConfig config = newIndexWriterConfig()
+        .setSoftDeletesField(softDelete)
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete",
+            MatchAllDocsQuery::new, new LogDocMergePolicy()));
+    config.setReaderPooling(true);
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "0", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "1", Field.Store.YES));
+    d.add(new NumericDocValuesField("soft_delete", 1));
+    writer.addDocument(d);
+    try (DirectoryReader reader = writer.getReader()) {
+      assertEquals(2, reader.maxDoc());
+      assertEquals(1, reader.numDocs());
+    }
+    while (true) {
+      try (DirectoryReader reader = writer.getReader()) {
+        TopDocs topDocs = new IndexSearcher(new NoDeletesWrapper(reader)).search(new TermQuery(new Term("id", "1")), 1);
+        assertEquals(1, topDocs.totalHits);
+        if (writer.tryDeleteDocument(reader, topDocs.scoreDocs[0].doc) > 0) {
+          break;
+        }
+      }
+    }
+    writer.forceMergeDeletes(true);
+    assertEquals(1, writer.segmentInfos.size());
+    SegmentCommitInfo si = writer.segmentInfos.info(0);
+    assertEquals(0, si.getSoftDelCount()); // hard-delete should supersede the soft-delete
+    assertEquals(0, si.getDelCount());
+    assertEquals(1, si.info.maxDoc());
+    IOUtils.close(writer, dir);
+  }
+
   static void doUpdate(Term doc, IndexWriter writer, Field... fields) throws IOException {
     long seqId = -1;
     do { // retry if we just committing a merge
