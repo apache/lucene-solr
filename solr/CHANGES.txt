@@ -106,6 +106,8 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-12533 Collection collection fails if metrics are called during core creation (gezapeti, manokovacs)
+
 * SOLR-12449: Response /autoscaling/diagnostics shows improper json (noble)
 
 * SOLR-11676: Keep nrtReplicas and replicationFactor in sync while creating a collection and modifying a collection
