@@ -243,7 +243,7 @@ New Features
 Bug Fixes
 ----------------------
 
- * SOLR-12450: Don't allow referal to external resources in various config files.
+* SOLR-12450: Don't allow referal to external resources in various config files (CVE-2018-8026).
   (Yuyang Xiao, Uwe Schindler)
 
 ==================  6.6.4 ==================
@@ -2251,8 +2251,10 @@ Other Changes
   (David Smiley)
 
 * SOLR-8842: security rules made foolproof by asking the requesthandler  about the well known
-  permission name.  The APIs are also modified to use 'index' as the unique identifier instead of name.
-  Name is an optional attribute   now and only to be used when specifying well-known permissions (noble)
+  permission name.
+ The APIs are also modified to use 'index' as the unique identifier instead of name.
+  Name is an optional attribute
+  now and only to be used when specifying well-known permissions (noble)
 
 * SOLR-8869: Optionally disable printing field cache entries in SolrFieldCacheMBean (Gregory Chanan)
 
