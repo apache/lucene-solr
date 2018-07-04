@@ -100,6 +100,8 @@ Bug Fixes
 
 * SOLR-12427: Improve error message for invalid 'start', 'rows' parameters. (Munendra S N via Jason Gerlowski)
 
+* SOLR-12533 Collection collection fails if metrics are called during core creation (Peter Cseh, Mano Kovacs)
+
 Optimizations
 ----------------------
 
