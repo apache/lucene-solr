@@ -40,6 +40,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -605,6 +607,26 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     assertEquals(0, si.getDelCount());
     assertEquals(1, si.info.maxDoc());
     IOUtils.close(writer, dir);
+  }
+
+  public void testSoftDeleteWithTryUpdateDocValue() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("soft_delete")
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete", MatchAllDocsQuery::new, newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, config);
+    SearcherManager sm = new SearcherManager(writer, new SearcherFactory());
+    Document d = new Document();
+    d.add(new StringField("id", "0", Field.Store.YES));
+    writer.addDocument(d);
+    sm.maybeRefreshBlocking();
+    doUpdate(new Term("id", "0"), writer,
+        new NumericDocValuesField("soft_delete", 1), new NumericDocValuesField("other-field", 1));
+    sm.maybeRefreshBlocking();
+    assertEquals(1, writer.segmentInfos.asList().size());
+    SegmentCommitInfo si = writer.segmentInfos.asList().get(0);
+    assertEquals(1, si.getSoftDelCount());
+    assertEquals(1, si.info.maxDoc());
+    IOUtils.close(sm, writer, dir);
   }
 
   static void doUpdate(Term doc, IndexWriter writer, Field... fields) throws IOException {
