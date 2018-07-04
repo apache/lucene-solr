@@ -190,10 +190,6 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testSignificantTermsQuery() throws Exception {
     SolrQueryRequest req = req("q", "*:*");
     try {
-      // for Solr 7.x backcompat only
-      assertQueryEquals(SignificantTermsQParserPlugin.OLD_NAME,
-          req, "{!"+SignificantTermsQParserPlugin.OLD_NAME+"}");
-
       assertQueryEquals(SignificantTermsQParserPlugin.NAME,
           req, "{!"+SignificantTermsQParserPlugin.NAME+"}");
     } finally {

@@ -28,11 +28,6 @@ public class SignificantTermsQParserPluginTest extends LuceneTestCase {
    */
   @Test
   public void testQParserBackwardsCompatibility() {
-    // for Solr 7.x backcompat only
-    assertEquals("sigificantTerms", SignificantTermsQParserPlugin.OLD_NAME);
-    assertEquals(SignificantTermsQParserPlugin.class,
-        QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.OLD_NAME).getClass());
-
     assertEquals("significantTerms", SignificantTermsQParserPlugin.NAME);
     assertEquals(SignificantTermsQParserPlugin.class,
         QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.NAME).getClass());
