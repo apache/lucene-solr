@@ -15,6 +15,9 @@ Bug Fixes:
  * LUCENE-8381: Fix IndexWriter incorrectly interprets hard-deletes as soft-deletes
    while wrapping reader for merges. (Simon Willnauer, Nhat Nguyen)
 
+ * LUCENE-8384: Fix missing advance docValues generation while handling docValues
+   update in PendingSoftDeletes. (Simon Willnauer, Nhat Nguyen)
+
 ======================= Lucene 7.4.0 =======================
 
 Upgrading
