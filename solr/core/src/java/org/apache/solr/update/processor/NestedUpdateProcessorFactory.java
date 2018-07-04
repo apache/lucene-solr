@@ -76,16 +76,17 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
           // either all collection items are child docs or none are.
           break;
         }
+        final String fieldName = field.getName();
 
-        if(field.getName().contains(PATH_SEP_CHAR)) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + field.getName()
+        if(fieldName.contains(PATH_SEP_CHAR)) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + fieldName
               + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
         }
-        final String jointPath = fullPath == null ? field.getName(): fullPath + PATH_SEP_CHAR + field.getName();
+        final String jointPath = fullPath == null ? fieldName: fullPath + PATH_SEP_CHAR + fieldName;
         SolrInputDocument cDoc = (SolrInputDocument) val;
         if(!cDoc.containsKey(uniqueKeyFieldName)) {
           String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
-          cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, jointPath, childNum));
+          cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, childNum));
         }
         processChildDoc((SolrInputDocument) val, doc, jointPath);
         ++childNum;
@@ -103,9 +104,9 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
     processDocChildren(sdoc, fullPath);
   }
 
-  private String generateChildUniqueId(String parentId, String childPath, int childNum) {
-    // combines parentId with the path and childNum. e.g. "3/book/pages/footnote/1"
-    return String.join(PATH_SEP_CHAR, parentId, childPath, Integer.toString(childNum));
+  private String generateChildUniqueId(String parentId, String childKey, int childNum) {
+    // combines parentId with the child's key and childNum. e.g. "10/footnote/1"
+    return String.join(PATH_SEP_CHAR, parentId, childKey, Integer.toString(childNum));
   }
 
   private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
