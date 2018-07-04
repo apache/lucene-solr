@@ -37,7 +37,6 @@ import org.apache.solr.common.util.Utils;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.PASS;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.EQUAL;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.GREATER_THAN;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.LESS_THAN;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.NOT_EQUAL;
@@ -103,7 +102,18 @@ public class Clause implements MapWriter, Comparable<Clause> {
         throw new RuntimeException("Invalid metrics: param in " + Utils.toJSONString(m) + " must have at 2 or 3 segments after 'metrics:' separated by ':'");
       }
     }
+    doPostValidate(collection, shard, replica, tag, globalTag);
     hasComputedValue = hasComputedValue();
+  }
+
+  private void doPostValidate(Condition... conditions) {
+    for (Condition condition : conditions) {
+      if (condition == null) continue;
+      String err = condition.varType.postValidate(condition);
+      if (err != null) {
+        throw new IllegalArgumentException(StrUtils.formatString("Error in clause : {0}, caused by : {1}", Utils.toJSONString(original), err));
+      }
+    }
   }
 
   public static Clause create(Map<String, Object> m) {
@@ -211,7 +221,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   //replica value is zero
   boolean isReplicaZero() {
-    return replica != null && replica.getOperand() == EQUAL &&
+    return replica != null && replica.getOperand() == Operand.EQUAL &&
         Preference.compareWithTolerance(0d, (Double) replica.val, 1) == 0;
   }
 
@@ -238,14 +248,14 @@ public class Clause implements MapWriter, Comparable<Clause> {
         else if (strVal.startsWith(NOT_EQUAL.operand)) operand = NOT_EQUAL;
         else if (strVal.startsWith(GREATER_THAN.operand)) operand = GREATER_THAN;
         else if (strVal.startsWith(LESS_THAN.operand)) operand = LESS_THAN;
-        else operand = EQUAL;
-        strVal = strVal.substring(EQUAL == operand || WILDCARD == operand ? 0 : 1);
+        else operand = Operand.EQUAL;
+        strVal = strVal.substring(Operand.EQUAL == operand || WILDCARD == operand ? 0 : 1);
         for (ComputationType t : ComputationType.values()) {
           String changedVal = t.match(strVal);
           if (changedVal != null) {
             computationType = t;
             strVal = changedVal;
-            if (varType == null || !varType.supportComputed(computationType)) {
+            if (varType == null || !varType.supportComputed(computationType, this)) {
               throw new IllegalArgumentException(StrUtils.formatString("''{0}'' is not allowed for variable :  ''{1}'' , in condition : ''{2}'' ",
                   t, conditionName, Utils.toJSONString(m)));
             }
@@ -255,7 +265,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
         expectedVal = validate(s, new Condition(s, strVal, operand, computationType, null), true);
 
       } else if (val instanceof Number) {
-        operand = EQUAL;
+        operand = Operand.EQUAL;
         operand = varType.getOperand(operand, val, null);
         expectedVal = validate(s, new Condition(s, val, operand, null, null), true);
       }
@@ -272,8 +282,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     ComputedValueEvaluator computedValueEvaluator = new ComputedValueEvaluator(session);
     Suggestion.ViolationCtx ctx = new Suggestion.ViolationCtx(this, session.matrix, computedValueEvaluator);
     if (isPerCollectiontag()) {
-      Map<String, Map<String, Map<String, ReplicaCount>>> replicaCount = computeReplicaCounts(session.matrix, computedValueEvaluator);
-      for (Map.Entry<String, Map<String, Map<String, ReplicaCount>>> e : replicaCount.entrySet()) {
+      Map<String, Map<String, Map<String, ReplicaCount>>> replicaCounts = computeReplicaCounts(session.matrix, computedValueEvaluator);
+      for (Map.Entry<String, Map<String, Map<String, ReplicaCount>>> e : replicaCounts.entrySet()) {
         computedValueEvaluator.collName = e.getKey();
         if (!collection.isPass(computedValueEvaluator.collName)) continue;
         for (Map.Entry<String, Map<String, ReplicaCount>> shardVsCount : e.getValue().entrySet()) {
@@ -281,15 +291,16 @@ public class Clause implements MapWriter, Comparable<Clause> {
           if (!shard.isPass(computedValueEvaluator.shardName)) continue;
           for (Map.Entry<String, ReplicaCount> counts : shardVsCount.getValue().entrySet()) {
             SealedClause sealedClause = getSealedClause(computedValueEvaluator);
-            if (!sealedClause.replica.isPass(counts.getValue())) {
+            ReplicaCount replicas = counts.getValue();
+            if (!sealedClause.replica.isPass(replicas)) {
               Violation violation = new Violation(sealedClause,
                   computedValueEvaluator.collName,
                   computedValueEvaluator.shardName,
                   tag.name.equals("node") ? counts.getKey() : null,
                   counts.getValue(),
-                  sealedClause.getReplica().delta(counts.getValue()),
+                  sealedClause.getReplica().delta(replicas),
                   counts.getKey());
-              Suggestion.getTagType(tag.name).addViolatingReplicas(ctx.reset(counts.getKey(), counts.getValue(), violation));
+              tag.varType.addViolatingReplicas(ctx.reset(counts.getKey(), replicas, violation));
             }
           }
         }
@@ -336,6 +347,21 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   enum ComputationType {
+    EQUAL() {
+      @Override
+      public String wrap(String value) {
+        return "#EQUAL";
+      }
+
+      @Override
+      public String match(String val) {
+        if ("#EQUAL".equals(val)) return "1";
+        return null;
+      }
+
+    },
+
+
     PERCENT {
       @Override
       public String wrap(String value) {
@@ -581,6 +607,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
       if (v >= max.doubleValue()) return v - max.doubleValue();
       if (v <= min.doubleValue()) return v - min.doubleValue();
       return 0d;
+    }
+
+    @Override
+    public String toString() {
+      return jsonStr();
     }
 
     @Override

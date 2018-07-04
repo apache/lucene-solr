@@ -72,6 +72,8 @@ New Features
 * SOLR-12530: Ability to disable configset upload via -Dconfigset.upload.enabled=false startup parameter
   (Ishan Chattopadhyaya)
 
+* SOLR-12495: An #EQUALS function for replica in autoscaling policy to equally distribute replicas (noble)
+
 Bug Fixes
 ----------------------
 

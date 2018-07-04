@@ -138,6 +138,7 @@ public class Suggestion {
 
       @Override
       public Operand getOperand(Operand expected, Object strVal, Clause.ComputationType computationType) {
+//        if (computationType == Clause.ComputationType.EQUAL) return expected;
         if (strVal instanceof String) {
           String s = ((String) strVal).trim();
           int hyphenIdx = s.indexOf('-');
@@ -161,29 +162,37 @@ public class Suggestion {
       }
 
       @Override
-      public boolean supportComputed(Clause.ComputationType computedType) {
-        return computedType == Clause.ComputationType.PERCENT;
+      public boolean supportComputed(Clause.ComputationType computedType, Clause clause) {
+        if (computedType == Clause.ComputationType.PERCENT || computedType == Clause.ComputationType.EQUAL) return true;
+        return false;
+      }
+
+      @Override
+      public String postValidate(Clause.Condition condition) {
+        if (condition.computationType == Clause.ComputationType.EQUAL) {
+          if (condition.getClause().tag != null &&
+              condition.getClause().tag.varType == NODE &&
+              condition.getClause().tag.op == Operand.WILDCARD) {
+            return null;
+          } else {
+            return "'replica': '#EQUAL` must be used with 'node':'#ANY'";
+          }
+        }
+        return null;
       }
 
       @Override
       public Object computeValue(Policy.Session session, Clause.Condition cv, String collection, String shard) {
-        if (cv.computationType == Clause.ComputationType.PERCENT) {
-          AtomicInteger totalReplicasOfInterest = new AtomicInteger(0);
-          Clause clause = cv.getClause();
-          for (Row row : session.matrix) {
-            row.forEachReplica(replicaInfo -> {
-              if (replicaInfo.getCollection().equals(collection)) {
-                if (clause.getShard().op == Operand.WILDCARD || replicaInfo.getShard().equals(shard)) {
-                  if(cv.getClause().type == null || replicaInfo.getType() == cv.getClause().type)
-                  totalReplicasOfInterest.incrementAndGet();
-                }
-              }
-            });
-          }
-
-          return totalReplicasOfInterest.doubleValue() * Clause.parseDouble(cv.name, cv.val).doubleValue() / 100;
+        if (cv.computationType == Clause.ComputationType.EQUAL) {
+          int relevantReplicasCount = getRelevantReplicasCount(session, cv, collection, shard);
+          if (relevantReplicasCount == 0) return 0;
+          return (double) session.matrix.size() / (double) relevantReplicasCount;
+        } else if (cv.computationType == Clause.ComputationType.PERCENT) {
+          int relevantReplicasCount = getRelevantReplicasCount(session, cv, collection, shard);
+          if (relevantReplicasCount == 0) return 0;
+          return (double) relevantReplicasCount * Clause.parseDouble(cv.name, cv.val).doubleValue() / 100;
         } else {
-          throw new RuntimeException("Unsupported type " + cv.computationType);
+          throw new IllegalArgumentException("Unsupported type " + cv.computationType);
 
         }
       }
@@ -346,6 +355,13 @@ public class Suggestion {
         }
 
       }
+
+      @Override
+      public void addViolatingReplicas(ViolationCtx ctx) {
+        for (Row r : ctx.allRows) {
+          if(r.node.equals(ctx.tagKey)) collectViolatingReplicas(ctx,r);
+        }
+      }
     },
     LAZY("LAZY", null, null, null, null) {
       @Override
@@ -398,14 +414,7 @@ public class Suggestion {
 
     public void addViolatingReplicas(ViolationCtx ctx) {
       for (Row row : ctx.allRows) {
-        row.forEachReplica(replica -> {
-          if (ctx.clause.replica.isPass(0) && !ctx.clause.tag.isPass(row)) return;
-          if (!ctx.clause.replica.isPass(0) && ctx.clause.tag.isPass(row)) return;
-          if (!ctx.currentViolation.matchShard(replica.getShard())) return;
-          if (!ctx.clause.collection.isPass(ctx.currentViolation.coll) || !ctx.clause.shard.isPass(ctx.currentViolation.shard))
-            return;
-          ctx.currentViolation.addReplica(new ReplicaInfoAndErr(replica).withDelta(ctx.clause.tag.delta(row.getVal(ctx.clause.tag.name))));
-        });
+        collectViolatingReplicas(ctx, row);
       }
     }
 
@@ -416,6 +425,10 @@ public class Suggestion {
 
     public Object convertVal(Object val) {
       return val;
+    }
+
+    public String postValidate(Clause.Condition condition) {
+      return null;
     }
 
     public Object validate(String name, Object val, boolean isRuleVal) {
@@ -472,13 +485,40 @@ public class Suggestion {
       return Math.abs(v1.replicaCountDelta) < Math.abs(v2.replicaCountDelta) ? -1 : 1;
     }
 
-    public boolean supportComputed(Clause.ComputationType computedType) {
+    public boolean supportComputed(Clause.ComputationType computedType, Clause clause) {
       return false;
     }
 
     public Object computeValue(Policy.Session session, Clause.Condition condition, String collection, String shard) {
       return condition.val;
     }
+  }
+
+  private static void collectViolatingReplicas(ViolationCtx ctx, Row row) {
+    row.forEachReplica(replica -> {
+      if (ctx.clause.replica.isPass(0) && !ctx.clause.tag.isPass(row)) return;
+      if (!ctx.clause.replica.isPass(0) && ctx.clause.tag.isPass(row)) return;
+      if (!ctx.currentViolation.matchShard(replica.getShard())) return;
+      if (!ctx.clause.collection.isPass(ctx.currentViolation.coll) || !ctx.clause.shard.isPass(ctx.currentViolation.shard))
+        return;
+      ctx.currentViolation.addReplica(new ReplicaInfoAndErr(replica).withDelta(ctx.clause.tag.delta(row.getVal(ctx.clause.tag.name))));
+    });
+  }
+
+  private static int getRelevantReplicasCount(Policy.Session session, Clause.Condition cv, String collection, String shard) {
+    AtomicInteger totalReplicasOfInterest = new AtomicInteger(0);
+    Clause clause = cv.getClause();
+    for (Row row : session.matrix) {
+      row.forEachReplica(replicaInfo -> {
+        if (replicaInfo.getCollection().equals(collection)) {
+          if (clause.getShard() ==null || clause.getShard().op == Operand.WILDCARD || replicaInfo.getShard().equals(shard)) {
+            if (cv.getClause().type == null || replicaInfo.getType() == cv.getClause().type)
+              totalReplicasOfInterest.incrementAndGet();
+          }
+        }
+      });
+    }
+    return totalReplicasOfInterest.get();
   }
 
   static class ViolationCtx {
