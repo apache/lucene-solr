@@ -60,7 +60,7 @@ echoRun "rvm $RUBY_VERSION@$GEMSET"      # Activate this project's gemset
 
 # Install gems in the gemset.  Param --force disables dependency conflict detection.
 echoRun "gem install --force --version 3.5.0 jekyll"
-echoRun "gem uninstall --all asciidoctor"  # Get rid of all versions
+echoRun "gem uninstall --all --ignore-dependencies asciidoctor"  # Get rid of all versions
 echoRun "gem install --force --version 1.5.6.2 asciidoctor"
 echoRun "gem install --force --version 2.1.0 jekyll-asciidoc"
 echoRun "gem install --force --version 1.1.2 pygments.rb"
