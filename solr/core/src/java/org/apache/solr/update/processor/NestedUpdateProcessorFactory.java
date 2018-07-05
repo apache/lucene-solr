@@ -49,6 +49,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 
 class NestedUpdateProcessor extends UpdateRequestProcessor {
   private static final String PATH_SEP_CHAR = "/";
+  private static final String NUM_SEP_CHAR = ",";
   private boolean storePath;
   private boolean storeParent;
   private String uniqueKeyFieldName;
@@ -83,7 +84,7 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
               + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
         }
         final String sChildNum = String.valueOf(childNum);
-        final String lastPath = fieldName + PATH_SEP_CHAR + sChildNum + PATH_SEP_CHAR;
+        final String lastPath = fieldName + NUM_SEP_CHAR + sChildNum + NUM_SEP_CHAR;
         final String jointPath = fullPath == null ? lastPath : fullPath + PATH_SEP_CHAR + lastPath;
         SolrInputDocument cDoc = (SolrInputDocument) val;
         if(!cDoc.containsKey(uniqueKeyFieldName)) {
@@ -108,7 +109,7 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
 
   private String generateChildUniqueId(String parentId, String childKey, String childNum) {
     // combines parentId with the child's key and childNum. e.g. "10/footnote/1"
-    return parentId + PATH_SEP_CHAR + childKey +PATH_SEP_CHAR + childNum;
+    return parentId + PATH_SEP_CHAR + childKey + NUM_SEP_CHAR + childNum;
   }
 
   private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
