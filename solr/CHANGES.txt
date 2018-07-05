@@ -138,6 +138,9 @@ Bug Fixes
 
 * SOLR-12533 Collection collection fails if metrics are called during core creation (Peter Cseh, Mano Kovacs)
 
+* SOLR-2834: Fix SolrJ Field and Document analyzes for types that include CharacterFilter (Alexandre Rafalovitch)
+
+
 Optimizations
 ----------------------
 
