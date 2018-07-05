@@ -259,7 +259,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
    * See SOLR-9439
    */
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //05-Jul-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15);
 
