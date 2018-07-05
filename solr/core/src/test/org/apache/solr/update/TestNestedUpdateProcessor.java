@@ -120,7 +120,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPGrandChild() throws Exception {
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*" + PATH_SEP_CHAR + "grandChild",
+    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*" + PATH_SEP_CHAR + "grandChild" + PATH_SEP_CHAR + "*" + PATH_SEP_CHAR,
         "fl","*",
         "sort","id desc",
         "wt","json"),
@@ -132,7 +132,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     final String[] childrenTests = {"/response/docs/[0]/id=='" + childrenIds[0] + "'", "/response/docs/[1]/id=='" + childrenIds[1] + "'"};
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":children",
+    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":children" + PATH_SEP_CHAR + "*" + PATH_SEP_CHAR,
         "fl","*",
         "sort","id asc",
         "wt","json"),
@@ -141,10 +141,10 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @Test
   public void testDeeplyNestedURPChildrenWoId() throws Exception {
-    final String parentId = "3";
+    final String rootId = "1";
     final String childKey = "grandChild";
-    final String expectedId = parentId + PATH_SEP_CHAR + childKey + PATH_SEP_CHAR + "0";
-    SolrInputDocument noIdChildren = sdoc("id", "1", "children", sdocs(sdoc("id", "2", "name_s", "Yaz"), sdoc("id", parentId, "name_s", "Jazz", childKey, sdoc("names_s", "Gaz"))));
+    final String expectedId = rootId + PATH_SEP_CHAR + "children" + PATH_SEP_CHAR + "1" + PATH_SEP_CHAR + childKey + PATH_SEP_CHAR + "0";
+    SolrInputDocument noIdChildren = sdoc("id", rootId, "children", sdocs(sdoc("name_s", "Yaz"), sdoc("name_s", "Jazz", childKey, sdoc("names_s", "Gaz"))));
     UpdateRequestProcessor nestedUpdate = new NestedUpdateProcessorFactory().getInstance(req(), null, null);
     AddUpdateCommand cmd = new AddUpdateCommand(req());
     cmd.solrDoc = noIdChildren;
