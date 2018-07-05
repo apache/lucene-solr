@@ -39,11 +39,11 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   }
 
   private static boolean shouldStoreDocParent(IndexSchema schema) {
-    return schema.getFields().containsKey(IndexSchema.PARENT_FIELD_NAME);
+    return schema.getFields().containsKey(IndexSchema.NEST_PARENT_FIELD_NAME);
   }
 
   private static boolean shouldStoreDocPath(IndexSchema schema) {
-    return schema.getFields().containsKey(IndexSchema.PATH_FIELD_NAME);
+    return schema.getFields().containsKey(IndexSchema.NEST_PATH_FIELD_NAME);
   }
 }
 
@@ -112,11 +112,11 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
-    sdoc.setField(IndexSchema.PARENT_FIELD_NAME, parent.getFieldValue(uniqueKeyFieldName));
+    sdoc.setField(IndexSchema.NEST_PARENT_FIELD_NAME, parent.getFieldValue(uniqueKeyFieldName));
   }
 
   private void setPathField(SolrInputDocument sdoc, String fullPath) {
-    sdoc.setField(IndexSchema.PATH_FIELD_NAME, fullPath);
+    sdoc.setField(IndexSchema.NEST_PATH_FIELD_NAME, fullPath);
   }
 
 }

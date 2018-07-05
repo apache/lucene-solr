@@ -120,7 +120,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPGrandChild() throws Exception {
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":*" + PATH_SEP_CHAR + "grandChild" + PATH_SEP_CHAR + "*" + PATH_SEP_CHAR,
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":*" + PATH_SEP_CHAR + "grandChild" + PATH_SEP_CHAR + "*" + PATH_SEP_CHAR,
         "fl","*",
         "sort","id desc",
         "wt","json"),
@@ -132,7 +132,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     final String[] childrenTests = {"/response/docs/[0]/id=='" + childrenIds[0] + "'", "/response/docs/[1]/id=='" + childrenIds[1] + "'"};
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.PATH_FIELD_NAME + ":children" + PATH_SEP_CHAR + "*" + PATH_SEP_CHAR,
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children" + PATH_SEP_CHAR + "*" + PATH_SEP_CHAR,
         "fl","*",
         "sort","id asc",
         "wt","json"),
