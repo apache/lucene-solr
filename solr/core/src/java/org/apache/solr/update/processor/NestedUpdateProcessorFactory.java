@@ -82,11 +82,13 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + fieldName
               + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
         }
-        final String jointPath = fullPath == null ? fieldName: fullPath + PATH_SEP_CHAR + fieldName;
+        final String sChildNum = String.valueOf(childNum);
+        final String lastPath = fieldName + PATH_SEP_CHAR + sChildNum + PATH_SEP_CHAR;
+        final String jointPath = fullPath == null ? lastPath : fullPath + PATH_SEP_CHAR + lastPath;
         SolrInputDocument cDoc = (SolrInputDocument) val;
         if(!cDoc.containsKey(uniqueKeyFieldName)) {
           String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
-          cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, childNum));
+          cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, sChildNum));
         }
         processChildDoc((SolrInputDocument) val, doc, jointPath);
         ++childNum;
@@ -104,9 +106,9 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
     processDocChildren(sdoc, fullPath);
   }
 
-  private String generateChildUniqueId(String parentId, String childKey, int childNum) {
+  private String generateChildUniqueId(String parentId, String childKey, String childNum) {
     // combines parentId with the child's key and childNum. e.g. "10/footnote/1"
-    return String.join(PATH_SEP_CHAR, parentId, childKey, Integer.toString(childNum));
+    return parentId + PATH_SEP_CHAR + childKey +PATH_SEP_CHAR + childNum;
   }
 
   private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
