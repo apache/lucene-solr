@@ -18,6 +18,7 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -50,6 +51,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 class NestedUpdateProcessor extends UpdateRequestProcessor {
   private static final String PATH_SEP_CHAR = "/";
   private static final String NUM_SEP_CHAR = ",";
+  private static final String SINGLE_VALUE_CHAR = "s";
   private boolean storePath;
   private boolean storeParent;
   private String uniqueKeyFieldName;
@@ -72,6 +74,7 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
   private void processDocChildren(SolrInputDocument doc, String fullPath) {
     int childNum = 0;
     for(SolrInputField field: doc.values()) {
+      boolean isSingleVal = !(field.getValue() instanceof Collection);
       for(Object val: field) {
         if(!(val instanceof SolrInputDocument)) {
           // either all collection items are child docs or none are.
@@ -83,7 +86,7 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + fieldName
               + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
         }
-        final String sChildNum = String.valueOf(childNum);
+        final String sChildNum = isSingleVal ? SINGLE_VALUE_CHAR: String.valueOf(childNum);
         final String lastPath = fieldName + NUM_SEP_CHAR + sChildNum + NUM_SEP_CHAR;
         final String jointPath = fullPath == null ? lastPath : fullPath + PATH_SEP_CHAR + lastPath;
         SolrInputDocument cDoc = (SolrInputDocument) val;

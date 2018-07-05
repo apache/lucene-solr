@@ -35,6 +35,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   private static final char PATH_SEP_CHAR = '/';
   private static final char NUM_SEP_CHAR = ',';
+  private static final String SINGLE_VAL_CHAR = "s";
   private static final String[] childrenIds = { "2", "3" };
   private static final String grandChildId = "4";
   private static final String jDoc = "{\n" +
@@ -144,7 +145,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPChildrenWoId() throws Exception {
     final String rootId = "1";
     final String childKey = "grandChild";
-    final String expectedId = rootId + PATH_SEP_CHAR + "children" + NUM_SEP_CHAR + "1" + PATH_SEP_CHAR + childKey + NUM_SEP_CHAR + "0";
+    final String expectedId = rootId + PATH_SEP_CHAR + "children" + NUM_SEP_CHAR + "1" + PATH_SEP_CHAR + childKey + NUM_SEP_CHAR + SINGLE_VAL_CHAR;
     SolrInputDocument noIdChildren = sdoc("id", rootId, "children", sdocs(sdoc("name_s", "Yaz"), sdoc("name_s", "Jazz", childKey, sdoc("names_s", "Gaz"))));
     UpdateRequestProcessor nestedUpdate = new NestedUpdateProcessorFactory().getInstance(req(), null, null);
     AddUpdateCommand cmd = new AddUpdateCommand(req());
