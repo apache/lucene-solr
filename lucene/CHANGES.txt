@@ -130,6 +130,8 @@ API Changes:
 * LUCENE-8378: Add DocIdSetIterator.range static method to return an iterator
   matching a range of docids (Mike McCandless)
 
+* LUCENE-8379: Add experimental TermQuery.getTermStates method (Mike McCandless)
+
 Bug Fixes:
 
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
