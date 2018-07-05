@@ -14,6 +14,9 @@ API Changes:
   StopAnalyzer is also deprecated, and a stop word set should be explicitly
   passed to the constructor.  (Alan Woodward)
 
+* LUCENE-8378: Add DocIdSetIterator.range static method to return an iterator
+  matching a range of docids (Mike McCandless)
+
 Bug Fixes:
 
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
