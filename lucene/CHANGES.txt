@@ -52,6 +52,9 @@ Bug Fixes:
    a "off by one" error in the UnifiedHighlighter's code that is only triggered when
    two nested SpanNearQueries contain the same term. (Marc-Andre Morissette via Simon Willnauer)
 
+ * LUCENE-8381: Fix IndexWriter incorrectly interprets hard-deletes as soft-deletes
+   while wrapping reader for merges. (Simon Willnauer, Nhat Nguyen)
+
 ======================= Lucene 7.4.0 =======================
 
 Upgrading
