@@ -234,10 +234,10 @@ public class TermQuery extends Query {
     return buffer.toString();
   }
 
-  /** Returns the {@link TermStates} passed to the constructor, or null if it was not passed.
+  /** Returns the {@link TermContext} passed to the constructor, or null if it was not passed.
    *
    * @lucene.experimental */
-  public TermStates getTermStates() {
+  public TermContext getTermContext() {
     return perReaderTermState;
   }
 

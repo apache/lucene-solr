@@ -92,10 +92,10 @@ public class TestTermQuery extends LuceneTestCase {
     IOUtils.close(reader, w, dir);
   }
 
-  public void testGetTermStates() throws Exception {
+  public void testGetTermContext() throws Exception {
 
     // no term states:
-    assertNull(new TermQuery(new Term("foo", "bar")).getTermStates());
+    assertNull(new TermQuery(new Term("foo", "bar")).getTermContext());
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
@@ -117,8 +117,8 @@ public class TestTermQuery extends LuceneTestCase {
     IndexSearcher noSeekSearcher = new IndexSearcher(noSeekReader);
     Query query = new TermQuery(new Term("foo", "bar"));
     TermQuery queryWithContext = new TermQuery(new Term("foo", "bar"),
-        TermStates.build(reader.getContext(), new Term("foo", "bar"), true));
-    assertNotNull(queryWithContext.getTermStates());
+        TermContext.build(reader.getContext(), new Term("foo", "bar")));
+    assertNotNull(queryWithContext.getTermContext());
     IOUtils.close(reader, w, dir);
   }
 
