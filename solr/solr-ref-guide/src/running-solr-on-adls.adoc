@@ -1,0 +1,161 @@
+= Running Solr on ADLS
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr has support for writing and reading its index and transaction log files to the ADLS distributed filesystem on the Microsoft Azure Platform.
+
+It only uses the ADLS filesystem for index and transaction log file storage.
+
+To use ADLS rather than a local filesystem, you must be using Hadoop 2.x and you will need to instruct Solr to use the `AdlsDirectoryFactory`. There are also several additional parameters to define. These can be set in one of three ways:
+
+* Pass JVM arguments to the `bin/solr` script. These would need to be passed every time you start Solr with `bin/solr`.
+* Modify `solr.in.sh` (or `solr.in.cmd` on Windows) to pass the JVM arguments automatically when using `bin/solr` without having to set them manually.
+* Define the properties in `solrconfig.xml`. These configuration changes would need to be repeated for every collection, so is a good option if you only want some of your collections stored in ADLS.
+
+== Starting Solr on ADLS
+
+=== Standalone Solr Instances ADLS
+
+For standalone Solr instances, there are a few parameters you should modify before starting Solr. These can be set in `solrconfig.xml` (more on that <<AdlsDirectoryFactory Parameters,below>>), or passed to the `bin/solr` script at startup.
+
+* You need to use an `AdlsDirectoryFactory` and a data directory in the form 'adl://storage account fully qualified name/directory'
+* You should specify a lock factory type of `'adls'`.
+* You need to create a service principal in your azure account and give it access to the ADLS account.
+
+If you do not modify `solrconfig.xml`, you can instead start Solr on HDFS with the following command:
+
+[source,bash]
+----
+bin/solr start -Dsolr.directoryFactory=AdlsDirectoryFactory
+     -Dsolr.lock.type=adls
+     -Dsolr.adls.home=adl://storage account FQN/path
+     -Ddfs.adls.oauth2.client.id=client id from service principal
+     -Ddfs.adls.oauth2.credential=client secret (you may have to enclose it in double quotes)
+     -Ddfs.adls.oauth2.refresh.url=oaut2 url
+
+----
+
+This example will start Solr in standalone mode, using the defined JVM properties (explained in more detail <<AdlsDirectoryFactory Parameters,below>>).
+
+=== SolrCloud Instances ADLS
+
+In SolrCloud mode, things are the same
+
+[source,bash]
+----
+bin/solr start -c  -Dsolr.directoryFactory=AdlsDirectoryFactory \
+     -Dsolr.lock.type=adls \
+     -Dsolr.adls.home=adl://storage account FQN/path \
+     -Ddfs.adls.oauth2.client.id=client id from service principal \
+     -Ddfs.adls.oauth2.credential=client secret (you may have to enclose it in double quotes) \
+     -Ddfs.adls.oauth2.refresh.url=oaut2 url
+----
+
+This command starts Solr in SolrCloud mode, using the defined JVM properties.
+
+
+=== Modifying solr.in.sh (*nix) or solr.in.cmd (Windows) ADLS
+
+The examples above assume you will pass JVM arguments as part of the start command every time you use `bin/solr` to start Solr. However, `bin/solr` looks for an include file named `solr.in.sh` (`solr.in.cmd` on Windows) to set environment variables. By default, this file is found in the `bin` directory, and you can modify it to permanently add the `AdlsDirectoryFactory` settings and ensure they are used every time Solr is started.
+
+For example, to set JVM arguments to always use ADLS when running in SolrCloud mode (as shown above), you would add a section such as this:
+
+[source,bash]
+----
+# Set AdlsDirectoryFactory & Settings
+-Dsolr.directoryFactory=AdlsDirectoryFactory \
+-Dsolr.lock.type=adls \
+-Dsolr.adls.home=adl://storage account FQN/path \
+-Ddfs.adls.oauth2.client.id=client id from service principal \
+-Ddfs.adls.oauth2.credential=client secret (you may have to enclose it in double quotes) \
+-Ddfs.adls.oauth2.refresh.url=oaut2 url
+----
+
+== The Block Cache ADLS
+
+For performance, the `AdlsDirectoryFactory` uses a Directory that will cache data blocks. This caching mechanism replaces the standard file system cache that Solr utilizes. By default, this cache is allocated off-heap. This cache will often need to be quite large and you may need to raise the off-heap memory limit for the specific JVM you are running Solr in. For the Oracle/OpenJDK JVMs, the following is an example command-line parameter that you can use to raise the limit when starting Solr:
+
+[source,bash]
+----
+-XX:MaxDirectMemorySize=20g
+----
+
+== AdlsDirectoryFactory Parameters
+
+The `AdlsDirectoryFactory` has a number of settings defined as part of the `directoryFactory` configuration.
+
+=== Solr ADLS Settings
+
+`solr.adls.home`::
+A root location in ADLS for Solr to write collection data to. Use this to specify one root location and have everything automatically created within this ADLS location. The structure of this parameter is `adl://storage account FQN/path`.
+
+=== Block Cache Settings ADLS
+
+`solr.adls.blockcache.enabled`::
+Enable the blockcache. The default is `true`.
+
+`solr.adls.blockcache.read.enabled`::
+Enable the read cache. The default is `true`.
+
+`solr.adls.blockcache.direct.memory.allocation`::
+Enable direct memory allocation. If this is `false`, heap is used. The default is `true`.
+
+`solr.adls.blockcache.slab.count`::
+Number of memory slabs to allocate. Each slab is 128 MB in size. The default is `1`.
+
+`solr.adls.blockcache.global`::
+Enable/Disable using one global cache for all SolrCores. The settings used will be from the first AdlsDirectoryFactory created. The default is `true`.
+
+=== NRTCachingDirectory Settings ADLS
+
+`solr.adls.nrtcachingdirectory.enable`:: true |
+Enable the use of NRTCachingDirectory. The default is `true`.
+
+`solr.adls.nrtcachingdirectory.maxmergesizemb`::
+NRTCachingDirectory max segment size for merges. The default is `16`.
+
+`solr.adls.nrtcachingdirectory.maxcachedmb`::
+NRTCachingDirectory max cache size. The default is `192`.
+
+=== Hadoop Cluster Client Configuration Settings ADLS
+
+`solr.hdfs.confdir`::
+If solr is running on a hadoop cluster, This is the location of the configuration files - The ADLS credentials can be specified in the configuration files.  They can also use values stored with the hadoop credential command.
+
+
+== Example solrconfig.xml for ADLS
+
+Here is a sample `solrconfig.xml` configuration for storing Solr indexes on ADLS:
+
+[source,xml]
+----
+<directoryFactory name="DirectoryFactory" class="solr.AdlsDirectoryFactory">
+   <str name="solr.adls.home">adl://storage account FQN/path</str>
+   <str name="dfs.adls.oauth2.client.id">client id from service principal</str>
+   <str name="dfs.adls.oauth2.credential">client secret</str>
+   <str name="dfs.adls.oauth2.refresh.url">client secret>oauth2 url</str>
+  <bool name="solr.adls.blockcache.enabled">true</bool>
+  <int name="solr.adls.blockcache.slab.count">1</int>
+  <bool name="solr.adls.blockcache.direct.memory.allocation">true</bool>
+  <int name="solr.adls.blockcache.blocksperbank">16384</int>
+  <bool name="solr.adls.blockcache.read.enabled">true</bool>
+  <bool name="solr.adls.nrtcachingdirectory.enable">true</bool>
+  <int name="solr.adls.nrtcachingdirectory.maxmergesizemb">16</int>
+  <int name="solr.adls.nrtcachingdirectory.maxcachedmb">192</int>
+</directoryFactory>
+----
+
