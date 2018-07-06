@@ -63,6 +63,7 @@ public abstract class PostingsEnum extends DocIdSetIterator {
     return (flags & feature) == feature;
   }
 
+  @Deprecated
   private AttributeSource atts = null;
 
   /** Sole constructor. (For invocation by subclass 
@@ -82,7 +83,11 @@ public abstract class PostingsEnum extends DocIdSetIterator {
    */
   public abstract int freq() throws IOException;
   
-  /** Returns the related attributes. */
+  /**
+   * Returns the related attributes.
+   * @deprecated this method is unused and will be removed in 7.0
+   */
+  @Deprecated
   public AttributeSource attributes() {
     if (atts == null) atts = new AttributeSource();
     return atts;

@@ -19,6 +19,8 @@ API Changes:
 
 * LUCENE-8379: Add experimental TermQuery.getTermStates method (Mike McCandless)
 
+* LUCENE-8388: PostingsEnum#attributes() has been deprecated (Alan Woodward)
+
 Bug Fixes:
 
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
