@@ -140,6 +140,8 @@ Bug Fixes
 
 * SOLR-2834: Fix SolrJ Field and Document analyzes for types that include CharacterFilter (Alexandre Rafalovitch)
 
+* SOLR-12516: Fix some bugs in 'type:range' Facet refinement when sub-facets are combined with non
+  default values for the 'other' and 'include' options. (hossman)
 
 Optimizations
 ----------------------
