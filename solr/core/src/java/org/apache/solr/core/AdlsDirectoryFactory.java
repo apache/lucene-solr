@@ -21,56 +21,35 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
-import com.microsoft.azure.datalake.store.ADLFileInputStream;
-import com.microsoft.azure.datalake.store.ADLFileOutputStream;
 import com.microsoft.azure.datalake.store.ADLStoreClient;
-import com.microsoft.azure.datalake.store.DirectoryEntry;
-import com.microsoft.azure.datalake.store.IfExists;
 import com.microsoft.azure.datalake.store.oauth2.AccessTokenProvider;
 import com.microsoft.azure.datalake.store.oauth2.ClientCredsTokenProvider;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileContext;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Options;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.store.adls.AdlsDirectory;
 import org.apache.solr.store.adls.AdlsLockFactory;
 import org.apache.solr.store.adls.AdlsProvider;
-import org.apache.solr.store.adls.FulAdlsProvider;
+import org.apache.solr.store.adls.FullAdlsProvider;
 import org.apache.solr.store.blockcache.BlockCache;
 import org.apache.solr.store.blockcache.BlockDirectory;
 import org.apache.solr.store.blockcache.BlockDirectoryCache;
@@ -78,9 +57,6 @@ import org.apache.solr.store.blockcache.BufferStore;
 import org.apache.solr.store.blockcache.Cache;
 import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
 import org.apache.solr.store.blockcache.Metrics;
-import org.apache.solr.store.hdfs.HdfsDirectory;
-import org.apache.solr.store.hdfs.HdfsLocalityReporter;
-import org.apache.solr.store.hdfs.HdfsLockFactory;
 import org.apache.solr.util.HdfsUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -141,7 +117,7 @@ public class AdlsDirectoryFactory extends CachingDirectoryFactory implements Sol
 
   private static BlockCache globalBlockCache;
 
-  public static Metrics metrics;
+  public static Metrics blockCacheMetrics;
   private static Boolean kerberosInit;
 
   private ADLStoreClient adlsClient1;
@@ -151,7 +127,7 @@ public class AdlsDirectoryFactory extends CachingDirectoryFactory implements Sol
   private final static class MetricsHolder {
     // [JCIP SE, Goetz, 16.6] Lazy initialization
     // Won't load until MetricsHolder is referenced
-    public static final Metrics metrics = new Metrics();
+    public static final Metrics blockCacheMetrics = new Metrics();
   }
 
   @Override
@@ -202,7 +178,7 @@ public class AdlsDirectoryFactory extends CachingDirectoryFactory implements Sol
     if (StringUtils.isEmpty(aprovider)){
       AccessTokenProvider provider = new ClientCredsTokenProvider(refreshUrl,clientId,crediential);
       this.adlsClient1 = ADLStoreClient.createClient(adlsAcctFqdn,provider);
-      this.provider  = new FulAdlsProvider(this.adlsClient1);
+      this.provider  = new FullAdlsProvider(this.adlsClient1);
     } else {
       try {
         LOG.info("using alternative ADLS provider {}",aprovider);
@@ -221,6 +197,7 @@ public class AdlsDirectoryFactory extends CachingDirectoryFactory implements Sol
     if (kerberosEnabled) {
       initKerberos();
     }
+;
   }
 
   @Override
@@ -255,8 +232,8 @@ public class AdlsDirectoryFactory extends CachingDirectoryFactory implements Sol
 
     LOG.info("creating directory factory for basedir {} path {}", adlsDataDir,path);
 
-    if (metrics == null) {
-      metrics = MetricsHolder.metrics;
+    if (blockCacheMetrics == null) {
+      blockCacheMetrics = MetricsHolder.blockCacheMetrics;
     }
 
     boolean blockCacheEnabled = getConfig(BLOCKCACHE_ENABLED, true);
@@ -299,7 +276,7 @@ public class AdlsDirectoryFactory extends CachingDirectoryFactory implements Sol
           blockSize, bankCount, directAllocation, slabSize,
           bsBufferSize, bsBufferCount, blockCacheGlobal);
 
-      Cache cache = new BlockDirectoryCache(blockCache, path, metrics, blockCacheGlobal);
+      Cache cache = new BlockDirectoryCache(blockCache, path, blockCacheMetrics, blockCacheGlobal);
       int readBufferSize = params.getInt("solr.adls.blockcache.read.buffersize", blockSize);
       dir = new AdlsDirectory(mypath, AdlsLockFactory.INSTANCE, provider, readBufferSize);
       dir = new BlockDirectory(mypath, dir, cache, null, blockCacheReadEnabled, false, cacheMerges, cacheReadOnce);
@@ -364,13 +341,13 @@ public class AdlsDirectoryFactory extends CachingDirectoryFactory implements Sol
   private BlockCache createBlockCache(int numberOfBlocksPerBank, int blockSize,
                                       int bankCount, boolean directAllocation, int slabSize, int bufferSize,
                                       int bufferCount) {
-    BufferStore.initNewBuffer(bufferSize, bufferCount, metrics);
+    BufferStore.initNewBuffer(bufferSize, bufferCount, blockCacheMetrics);
     long totalMemory = (long) bankCount * (long) numberOfBlocksPerBank
         * (long) blockSize;
 
     BlockCache blockCache;
     try {
-      blockCache = new BlockCache(metrics, directAllocation, totalMemory, slabSize, blockSize);
+      blockCache = new BlockCache(blockCacheMetrics, directAllocation, totalMemory, slabSize, blockSize);
     } catch (OutOfMemoryError e) {
       throw new RuntimeException(
           "The max direct memory is likely too low.  Either increase it (by adding -XX:MaxDirectMemorySize=<size>g -XX:+UseLargePages to your containers startup args)"
@@ -528,7 +505,7 @@ public class AdlsDirectoryFactory extends CachingDirectoryFactory implements Sol
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    MetricsHolder.metrics.initializeMetrics(manager, registry, tag, scope);
+    MetricsHolder.blockCacheMetrics.initializeMetrics(manager, registry, tag, scope);
   }
 
   @Override
@@ -642,14 +619,11 @@ public class AdlsDirectoryFactory extends CachingDirectoryFactory implements Sol
     String file2 = adlsDirPath+"/"+toName;
 
     LOG.debug("move {} to {} with overwrite",file1,file2);
-
     provider.rename(file1,file2,true);
   }
 
   @Override
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
-
-
     Directory baseFromDir = getBaseDir(fromDir);
     Directory baseToDir = getBaseDir(toDir);
 

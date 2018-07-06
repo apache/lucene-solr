@@ -27,15 +27,11 @@ import org.apache.lucene.util.TestRuleLimitSysouts;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.AdlsDirectoryFactory;
 import org.apache.solr.core.DirectoryFactory;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 @TestRuleLimitSysouts.Limit(bytes=100000)
 public class AdlsLockFactoryTest extends LuceneTestCase {
-
-
 
   @Test
   public void testBasic() throws IOException {

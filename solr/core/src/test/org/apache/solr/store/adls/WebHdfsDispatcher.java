@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 public class WebHdfsDispatcher extends QueueDispatcher {
   private static final MockResponse DEAD_LETTER = (new MockResponse()).setStatus("HTTP/1.1 503 shutting down");
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());;
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final BlockingQueue<MockResponse> responseQueue = new LinkedBlockingQueue();
   private MockResponse failFastResponse;
   private String path;

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.List;
 
 import com.microsoft.azure.datalake.store.ADLFileInputStream;
-import com.microsoft.azure.datalake.store.ADLFileOutputStream;
 import com.microsoft.azure.datalake.store.DirectoryEntry;
 import com.microsoft.azure.datalake.store.IfExists;
 
@@ -32,8 +31,8 @@ public interface AdlsProvider {
   boolean delete(String path) throws  IOException;
   DirectoryEntry getDirectoryEntry(String path) throws  IOException;
   List<DirectoryEntry> enumerateDirectory(String path) throws  IOException;
-  ADLFileOutputStream createFile(String path, IfExists mode) throws  IOException;
+  WrappedADLFileOutputStream createFile(String path, IfExists mode) throws  IOException;
   ADLFileInputStream getReadStream(String path) throws  IOException;
   boolean deleteRecursive(String path) throws  IOException;
-  ADLFileOutputStream getAppendStream(String path) throws  IOException;
+  WrappedADLFileOutputStream getAppendStream(String path) throws  IOException;
 }

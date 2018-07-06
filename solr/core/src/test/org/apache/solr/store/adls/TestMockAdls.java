@@ -49,7 +49,7 @@ public class TestMockAdls extends LuceneTestCase{
   @Test
   public void testMock() {
     try {
-      ADLFileOutputStream writer = mocker.createFile("/foo.txt", IfExists.FAIL);
+      WrappedADLFileOutputStream writer = mocker.createFile("/foo.txt", IfExists.FAIL);
       writer.write("LINE1\n".getBytes(Charset.forName("UTF-8")));
       writer.flush();
       writer.write("LINE2".getBytes(Charset.forName("UTF-8")));

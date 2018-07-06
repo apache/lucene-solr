@@ -19,6 +19,7 @@ package org.apache.solr.store.adls;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -38,8 +39,11 @@ import com.microsoft.azure.datalake.store.IfExists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MockAdlsProvider implements AdlsProvider {
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());;
   WebServerBuilder webServer;
   String authTokenEndpoint;
   String accountFQDN;
@@ -158,8 +162,9 @@ public class MockAdlsProvider implements AdlsProvider {
   }
 
   @Override
-  public ADLFileOutputStream createFile(String path, IfExists mode) throws IOException {
-    return adlsClient.createFile(path,mode);
+  public WrappedADLFileOutputStream createFile(String path, IfExists mode) throws IOException {
+    return new WrappedADLFileOutputStream(adlsClient.createFile(path,mode),path,
+        (item)->LOG.info("close stream "+path));
   }
 
   @Override
@@ -174,7 +179,8 @@ public class MockAdlsProvider implements AdlsProvider {
   }
 
   @Override
-  public ADLFileOutputStream getAppendStream(String path) throws IOException {
-    return adlsClient.getAppendStream(path);
+  public WrappedADLFileOutputStream getAppendStream(String path) throws IOException {
+    return new WrappedADLFileOutputStream(adlsClient.getAppendStream(path),path,
+        (item)->LOG.info("close append stream "+path));
   }
 }

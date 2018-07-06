@@ -41,6 +41,7 @@ import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.store.adls.AdlsProvider;
+import org.apache.solr.store.adls.WrappedADLFileOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +70,7 @@ public class AdlsTransactionLog extends TransactionLog {
   String tlogFile;
 
   private long finalLogSize;
-  private ADLFileOutputStream tlogOutStream;
+  private WrappedADLFileOutputStream tlogOutStream;
   private AdlsProvider provider;
 
   private volatile boolean isClosed = false;

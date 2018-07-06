@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.microsoft.azure.datalake.store.ADLFileInputStream;
-import com.microsoft.azure.datalake.store.ADLStoreClient;
 import com.microsoft.azure.datalake.store.DirectoryEntry;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.store.BaseDirectory;
@@ -35,9 +34,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockFactory;
 import org.apache.solr.core.AdlsDirectoryFactory;
-import org.apache.solr.search.LRUCache;
 import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
-import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,10 +47,6 @@ public class AdlsDirectory extends BaseDirectory {
   private AdlsProvider client;
 
   private final int bufferSize;
-
-  // since every stat call is an RPC, cache the entries so every length() or stat() call isn't an RPC.
-  // Merges issue a *TON* of these calls.
-  private ConcurrentLRUCache<String,DirectoryEntry> azureEntryCache = new ConcurrentLRUCache(1000,750);
 
   public AdlsDirectory(String adlsDirPath, AdlsProvider client) throws IOException {
     this(adlsDirPath, AdlsLockFactory.INSTANCE, client, DEFAULT_BUFFER_SIZE);
@@ -141,7 +134,6 @@ public class AdlsDirectory extends BaseDirectory {
   @Override
   public void deleteFile(String name) throws IOException {
     String path = adlsDirPath+"/"+name;
-    this.azureEntryCache.remove(path);
     LOG.info("Deleting {}", path);
     client.delete(path);
   }
@@ -149,9 +141,6 @@ public class AdlsDirectory extends BaseDirectory {
   @Override
   public void rename(String source, String dest) throws IOException {
     String sourcePath = this.adlsDirPath+"/"+source;
-
-    this.azureEntryCache.remove(sourcePath);
-
     String destPath = this.adlsDirPath+"/"+dest;
     client.rename(sourcePath,destPath,false);
   }
@@ -161,27 +150,25 @@ public class AdlsDirectory extends BaseDirectory {
     // TODO: how?
   }
 
+  private DirectoryEntry getStatusObject(String path) {
+    try {
+      //,(key)->getStatusObject(destPath)
+      return client.getDirectoryEntry(path);
+    } catch (Exception e){
+      throw new RuntimeException(e);
+    }
+
+  }
+
   @Override
   public long fileLength(String name) throws IOException {
     String en=this.adlsDirPath+"/"+name;
-    DirectoryEntry entry=azureEntryCache.get(en);
-    if (entry ==null){
-      LOG.info("get len for file {}",en);
-      entry = client.getDirectoryEntry(en);
-      azureEntryCache.put(name,entry);
-    }
-    return entry.length;
+    return client.getDirectoryEntry(en).length;
   }
-  
+
   public long fileModified(String name) throws IOException {
     String en = this.adlsDirPath+"/"+name;
-    DirectoryEntry entry=azureEntryCache.get(en);
-    if (entry ==null){
-      LOG.info("get modtime for file {}",en);
-      entry = client.getDirectoryEntry(en);
-      azureEntryCache.put(name,entry);
-    }
-    return entry.lastModifiedTime.getTime();
+    return client.getDirectoryEntry(en).lastModifiedTime.getTime();
   }
   
   @Override
