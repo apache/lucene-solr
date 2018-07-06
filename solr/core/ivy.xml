@@ -155,7 +155,14 @@
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
 
+
     <dependency org="org.rrd4j" name="rrd4j" rev="${/org.rrd4j/rrd4j}" conf="compile"/>
+
+    <dependency org="com.microsoft.azure" name="azure-data-lake-store-sdk" rev="${/com.microsoft.azure/azure-data-lake-store-sdk}" conf="compile"/>
+    <dependency org="com.squareup.okhttp3" name="okhttp" rev="${/com.squareup.okhttp3/okhttp}" conf="test"/>
+    <dependency org="com.squareup.okhttp3" name="mockwebserver" rev="${/com.squareup.okhttp3/okhttp}" conf="test"/>
+    <dependency org="com.squareup.okio" name="okio" rev="${/com.squareup.okio/okio}" conf="test"/>
+
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

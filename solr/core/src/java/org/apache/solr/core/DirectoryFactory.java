@@ -69,6 +69,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public final static String LOCK_TYPE_SINGLE = "single";
   public final static String LOCK_TYPE_NONE   = "none";
   public final static String LOCK_TYPE_HDFS   = "hdfs";
+  public final static String LOCK_TYPE_ADLS   = "adls";
+
 
   protected volatile CoreContainer coreContainer;
   

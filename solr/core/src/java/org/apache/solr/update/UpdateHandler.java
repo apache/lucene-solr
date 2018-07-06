@@ -24,6 +24,7 @@ import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.core.AdlsDirectoryFactory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
@@ -144,7 +145,8 @@ public abstract class UpdateHandler implements SolrInfoBean {
         } else {
           ulog = new HdfsUpdateLog();
         }
-
+      } else if (core.getDirectoryFactory() instanceof AdlsDirectoryFactory) {
+        ulog = new AdlsUpdateLog(((AdlsDirectoryFactory) core.getDirectoryFactory()).getProvider());
       } else {
         String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
         ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);

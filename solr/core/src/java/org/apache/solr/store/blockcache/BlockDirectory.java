@@ -30,6 +30,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.core.ShutdownAwareDirectory;
+import org.apache.solr.store.adls.AdlsDirectory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -274,6 +275,8 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
       return file.lastModified();
     } else if (in instanceof HdfsDirectory) {
       return ((HdfsDirectory) in).fileModified(name);
+    } else if (in instanceof AdlsDirectory) {
+      return ((AdlsDirectory) in).fileModified(name);
     } else {
       throw new UnsupportedOperationException();
     }
