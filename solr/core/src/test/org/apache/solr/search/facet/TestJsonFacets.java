@@ -212,6 +212,76 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
   }
 
+  /**
+   * whitebox sanity checks that a shard request range facet that returns "between" or "after"
+   * will cause the correct "actual_end" to be returned
+   */
+  public void testRangeOtherWhitebox() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    // false is default, but randomly check explicit false as well
+    final String nohardend = random().nextBoolean() ? "" : " hardend:false, ";
+    
+    { // first check some "phase #1" requests
+      
+      final SolrParams p = params("q", "*:*", "rows", "0", "isShard", "true", "distrib", "false",
+                                   "_facet_", "{}", "shards.purpose", ""+FacetModule.PURPOSE_GET_JSON_FACETS);
+      final String basic_opts = "type:range, field:num_d, start:-5, end:10, gap:7, ";
+      final String buckets = "buckets:[ {val:-5.0,count:1}, {val:2.0,count:2}, {val:9.0,count:1} ], ";
+      
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + nohardend + " other:before}}")
+                    , "facets=={count:6, f:{" + buckets
+                    // before doesn't need actual_end
+                    + "   before:{count:1}"
+                    + "} }"
+                    );
+      client.testJQ(params(p, "json.facet", "{f:{" + basic_opts + nohardend + "other:after}}")
+                    , "facets=={count:6, f:{" + buckets
+                    + "   after:{count:0}, _actual_end:'16.0'"
+                    + "} }"
+                    );
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + nohardend + "other:between}}")
+                    , "facets=={count:6, f:{" + buckets
+                    + "   between:{count:4}, _actual_end:'16.0'"
+                    + "} }"
+                    );
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + nohardend + "other:all}}")
+                    , "facets=={count:6, f:{" + buckets
+                    + "   before:{count:1},"
+                    + "   after:{count:0},"
+                    + "   between:{count:4},"
+                    + "   _actual_end:'16.0'"
+                    + "} }"
+                    );
+      // with hardend:true, not only do the buckets change, but actual_end should not need to be returned
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + " hardend:true, other:after}}")
+                    , "facets=={count:6, f:{"
+                    + "   buckets:[ {val:-5.0,count:1}, {val:2.0,count:2}, {val:9.0,count:0} ], "
+                    + "   after:{count:1}"
+                    + "} }"
+                    );
+    }
+
+    { // now check some "phase #2" requests with refinement buckets already specified
+
+      final String facet
+        = "{ top:{ type:range, field:num_i, start:-5, end:5, gap:7," + nohardend
+        + "        other:all, facet:{ x:{ type:terms, field:cat_s, limit:1, refine:true } } } }";
+
+      // the behavior should be the same, regardless of wether we pass actual_end to the shards
+      // because in a "mixed mode" rolling update, the shards should be smart enough to re-compute if
+      // the merging node is running an older version that doesn't send it
+      for (String actual_end : Arrays.asList(", _actual_end:'9'", "")) {
+        client.testJQ(params("q", "*:*", "rows", "0", "isShard", "true", "distrib", "false",
+                             "shards.purpose", ""+FacetModule.PURPOSE_REFINE_JSON_FACETS,
+                             "json.facet", facet,
+                             "_facet_", "{ refine: { top: { between:{ x:{ _l:[B] } }" + actual_end + "} } }")
+                      , "facets=={top:{ buckets:[], between:{x:{buckets:[{val:B,count:3}] }} } }");
+      }
+    }
+  }
+  
   @Test
   public void testExplicitQueryDomain() throws Exception {
     Client client = Client.localClient();
@@ -401,7 +471,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // to verify the raw counts/sizes
     assertJQ(req(nestedSKG,
                  // fake an initial shard request
-                 "distrib", "false", "isShard", "true", "_facet_", "{}", "shards.purpose", "2097216")
+                 "distrib", "false", "isShard", "true", "_facet_", "{}",
+                 "shards.purpose", ""+FacetModule.PURPOSE_GET_JSON_FACETS)
              , "facets=={count:5, x:{ buckets:["
              + "   { val:'B', count:3, "
              + "     skg : { "
