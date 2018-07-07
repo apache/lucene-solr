@@ -25,7 +25,6 @@ Versions of Major Components
 Apache Tika 1.17
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
 Jetty 9.4.11.v20180605
 
@@ -54,7 +53,6 @@ Versions of Major Components
 Apache Tika 1.17
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
 Jetty 9.4.11.v20180605
 
@@ -68,6 +66,8 @@ Upgrade Notes
   findForcedMerges (optimize) and findForcedDeletesMerges (expungeDeletes) (Erick Erickson)
 
 * SOLR-12395: SignificantTermsQParserPlugin's name is now 'significantTerms' and its old name 'sigificantTerms' is deprecated.
+
+* SOLR-11694: Extremely outdated UIMA contrib module has been removed
 
 New Features
 ----------------------
