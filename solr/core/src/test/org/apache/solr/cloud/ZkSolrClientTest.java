@@ -190,7 +190,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
   
-  public void testZkCmdExectutor() throws Exception {
+  public void testZkCmdExecutor() throws Exception {
     String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     ZkTestServer server = null;
 
@@ -207,14 +207,14 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       try {
       zkCmdExecutor.retryOperation(() -> {
         if (System.nanoTime() - start > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
-          throw new KeeperException.SessionExpiredException();
+          throw new KeeperException.AuthFailedException();
         }
         throw new KeeperException.ConnectionLossException();
       });
-      } catch(KeeperException.SessionExpiredException e) {
+      } catch(KeeperException.AuthFailedException e) {
         
       } catch (Exception e) {
-        fail("Expected " + KeeperException.SessionExpiredException.class.getSimpleName() + " but got " + e.getClass().getSimpleName());
+        fail("Expected " + KeeperException.AuthFailedException.class.getSimpleName() + " but got " + e.getClass().getSimpleName());
       }
     } finally {
       if (server != null) {

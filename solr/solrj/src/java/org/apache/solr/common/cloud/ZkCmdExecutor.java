@@ -58,7 +58,7 @@ public class ZkCmdExecutor {
     for (int i = 0; i < retryCount; i++) {
       try {
         return (T) operation.execute();
-      } catch (KeeperException.ConnectionLossException e) {
+      } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
         if (exception == null) {
           exception = e;
         }
