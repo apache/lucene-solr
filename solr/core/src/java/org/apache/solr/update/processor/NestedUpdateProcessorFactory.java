@@ -87,13 +87,13 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
               + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
         }
         final String sChildNum = isSingleVal ? SINGULAR_VALUE_CHAR : String.valueOf(childNum);
-        final String lastPath = fieldName + NUM_SEP_CHAR + sChildNum + NUM_SEP_CHAR;
-        final String jointPath = fullPath == null ? lastPath : fullPath + PATH_SEP_CHAR + lastPath;
         SolrInputDocument cDoc = (SolrInputDocument) val;
         if(!cDoc.containsKey(uniqueKeyFieldName)) {
           String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
           cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, sChildNum));
         }
+        final String lastPath = fieldName + NUM_SEP_CHAR + sChildNum + NUM_SEP_CHAR;
+        final String jointPath = fullPath == null ? lastPath : fullPath + PATH_SEP_CHAR + lastPath;
         processChildDoc((SolrInputDocument) val, doc, jointPath);
         ++childNum;
       }
