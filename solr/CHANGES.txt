@@ -67,7 +67,7 @@ Upgrade Notes
 
 * SOLR-12395: SignificantTermsQParserPlugin's name is now 'significantTerms' and its old name 'sigificantTerms' is deprecated.
 
-* SOLR-11694: Extremely outdated UIMA contrib module has been removed
+* SOLR-11694: Extremely outdated UIMA contrib module has been removed (Alexandre Rafalovitch)
 
 New Features
 ----------------------
