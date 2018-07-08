@@ -34,8 +34,8 @@ import org.junit.rules.ExpectedException;
 public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   private static final char PATH_SEP_CHAR = '/';
-  private static final char NUM_SEP_CHAR = ',';
-  private static final String SINGLE_VAL_CHAR = "s";
+  private static final char NUM_SEP_CHAR = '#';
+  private static final String SINGLE_VAL_CHAR = " ";
   private static final String[] childrenIds = { "2", "3" };
   private static final String grandChildId = "4";
   private static final String jDoc = "{\n" +
