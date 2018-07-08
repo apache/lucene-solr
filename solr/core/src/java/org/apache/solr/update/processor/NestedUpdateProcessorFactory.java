@@ -72,8 +72,8 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void processDocChildren(SolrInputDocument doc, String fullPath) {
-    int childNum = 0;
     for(SolrInputField field: doc.values()) {
+      int childNum = 0;
       boolean isSingleVal = !(field.getValue() instanceof Collection);
       for(Object val: field) {
         if(!(val instanceof SolrInputDocument)) {
