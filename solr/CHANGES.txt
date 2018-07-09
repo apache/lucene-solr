@@ -41,6 +41,10 @@ Upgrade Notes
 
 * SOLR-11694: Extremely outdated UIMA contrib module has been removed (Alexandre Rafalovitch)
 
+* SOLR-12008: The configuration file for log4j2.xml is now in ../server/resources/log4j2.xml. All other copies have been removed.
+  WINDOWS USERS: This JIRA corrects a bug in the start scripts that put example logs under ...\server, solr.log is
+  now under ...\example. (Erick Erickson)
+
 New Features
 ----------------------
 
@@ -96,7 +100,7 @@ Bug Fixes
 
 * SOLR-12413: If Zookeeper was pre-loaded with data before first-use, then the aliases information would be ignored.
   (David Smiley, Gaël Jourdan, Gus Heck)
-  
+
 * SOLR-12482: Config API returns status 0 for failed operations. (Steve Rowe)
 
 * SOLR-12513: Reproducing TestCodecSupport.testMixedCompressionMode failure (Erick Erickson)

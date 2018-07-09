@@ -16,38 +16,24 @@
   limitations under the License.
   -->
 
+<!-- Use this file for logging exlusively to the console, useful for 
+     some development tasks. Should not be used for production -->
 <Configuration>
   <Appenders>
-    <Console name="STDOUT" target="SYSTEM_OUT">
+    <Console name="STDERR" target="SYSTEM_ERR">
       <PatternLayout>
         <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+          %-5p - %d{yyyy-MM-dd HH:mm:ss.SSS}; %c; %m%n
         </Pattern>
       </PatternLayout>
     </Console>
-    <RollingFile
-        name="RollingFile"
-        fileName="${sys:solr.log.dir}/solr.log"
-        filePattern="${sys:solr.log.dir}/solr.log.%i" >
-      <PatternLayout>
-        <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
-        </Pattern>
-      </PatternLayout>
-      <Policies>
-        <SizeBasedTriggeringPolicy size="32 MB"/>
-      </Policies>
-      <DefaultRolloverStrategy max="10"/>
-    </RollingFile>
   </Appenders>
   <Loggers>
-    <Logger name="org.apache.hadoop" level="warn"/>
-    <Logger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
-    <Logger name="org.apache.zookeeper" level="warn"/>
+    <Logger name="org.apache.zookeeper" level="WARN"/>
+    <Logger name="org.apache.hadoop" level="WARN"/>
 
-    <Root level="info">
-      <AppenderRef ref="RollingFile"/>
-      <AppenderRef ref="STDOUT"/>
+    <Root level="INFO">
+      <AppenderRef ref="STDERR"/>
     </Root>
   </Loggers>
 </Configuration>
