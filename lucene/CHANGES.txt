@@ -21,6 +21,9 @@ API Changes:
 
 * LUCENE-8388: PostingsEnum#attributes() has been deprecated (Alan Woodward)
 
+* LUCENE-8390: MatchesIteratorSupplier replaced by IOSupplier (Alan Woodward,
+  David Smiley)
+
 Bug Fixes:
 
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
