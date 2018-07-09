@@ -35,9 +35,10 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   private static final char PATH_SEP_CHAR = '/';
   private static final char NUM_SEP_CHAR = '#';
-  private static final String SINGLE_VAL_CHAR = " ";
+  private static final String SINGLE_VAL_CHAR = "";
   private static final String[] childrenIds = { "2", "3" };
   private static final String grandChildId = "4";
+  private static final String secondChildList = "anotherChildList";
   private static final String jDoc = "{\n" +
       "    \"add\": {\n" +
       "        \"doc\": {\n" +
@@ -57,6 +58,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
       "                    \"foo_s\": \"Bar\"\n" +
       "                }\n" +
       "            ]\n" +
+                   secondChildList + ": [{\"id\": \"4\", \"last_s\": \"Smith\"}],\n" +
       "        }\n" +
       "    }\n" +
       "}";
@@ -120,25 +122,41 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @Test
   public void testDeeplyNestedURPGrandChild() throws Exception {
+    final String[] tests = {
+        "/response/docs/[0]/id=='" + grandChildId + "'",
+        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='children#0/grandChild#'"
+    };
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":*" + PATH_SEP_CHAR + "grandChild" + NUM_SEP_CHAR + "*" + NUM_SEP_CHAR,
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":*" + PATH_SEP_CHAR + "grandChild" + NUM_SEP_CHAR + "*",
         "fl","*",
         "sort","id desc",
         "wt","json"),
-        "/response/docs/[0]/id=='" + grandChildId + "'");
+        tests);
   }
 
   @Test
   public void testDeeplyNestedURPChildren() throws Exception {
-    final String[] childrenTests = {"/response/docs/[0]/id=='" + childrenIds[0] + "'", "/response/docs/[1]/id=='" + childrenIds[1] + "'"};
+    final String[] childrenTests = {
+        "/response/docs/[0]/id=='" + childrenIds[0] + "'",
+        "/response/docs/[1]/id=='" + childrenIds[1] + "'",
+        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='children#0'",
+        "/response/docs/[1]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='children#1'"
+    };
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children" + NUM_SEP_CHAR + "*" + NUM_SEP_CHAR,
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children" + NUM_SEP_CHAR + "?",
         "fl","*",
         "sort","id asc",
         "wt","json"),
         childrenTests);
+
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":" + secondChildList + NUM_SEP_CHAR + "?",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/docs/[0]/id=='4'",
+        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='" + secondChildList + "#0'");
   }
 
   @Test
