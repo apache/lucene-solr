@@ -344,6 +344,8 @@ public class TieredMergePolicy extends MergePolicy {
     int totalDelDocs = 0;
     int totalMaxDoc = 0;
 
+    long mergingBytes = 0;
+
     List<SegmentSizeAndDocs> sortedInfos = getSortedBySegmentSize(infos, mergeContext);
     Iterator<SegmentSizeAndDocs> iter = sortedInfos.iterator();
     while (iter.hasNext()) {
@@ -359,6 +361,7 @@ public class TieredMergePolicy extends MergePolicy {
         message("  seg=" + segString(mergeContext, Collections.singleton(segSizeDocs.segInfo)) + " size=" + String.format(Locale.ROOT, "%.3f", segBytes / 1024 / 1024.) + " MB" + extra, mergeContext);
       }
       if (merging.contains(segSizeDocs.segInfo)) {
+        mergingBytes += segSizeDocs.sizeInBytes;
         iter.remove();
       } else {
         totalDelDocs += segSizeDocs.delCount;
@@ -384,8 +387,6 @@ public class TieredMergePolicy extends MergePolicy {
     // 1> Overall percent deleted docs relatively small and this segment is larger than 50% maxSegSize
     // 2> overall percent deleted docs large and this segment is large and has few deleted docs
 
-    long mergingBytes = 0L;
-
     while (iter.hasNext()) {
       SegmentSizeAndDocs segSizeDocs = iter.next();
       double segDelPct = (double) segSizeDocs.delCount / (double) segSizeDocs.maxDoc;
@@ -393,8 +394,6 @@ public class TieredMergePolicy extends MergePolicy {
         iter.remove();
         tooBigCount++; // Just for reporting purposes.
         totIndexBytes -= segSizeDocs.sizeInBytes;
-      } else {
-        mergingBytes += segSizeDocs.sizeInBytes;
       }
     }
 
