@@ -42,7 +42,7 @@ public class FullAdlsProvider implements AdlsProvider {
     directoryEntryCache = Caffeine.newBuilder()
         .maximumSize(1000)
         .removalListener((key,value,cause)->{LOG.info("Expire file "+key+" because "+cause);})
-        .expireAfterAccess(60000, TimeUnit.MINUTES)
+        .expireAfterAccess(24, TimeUnit.HOURS)
         .build((key)->{
           LOG.info("Get file "+key+" info from ADLS");
           return getEntryQuietly((String)key);});
