@@ -51,7 +51,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 class NestedUpdateProcessor extends UpdateRequestProcessor {
   private static final String PATH_SEP_CHAR = "/";
   private static final String NUM_SEP_CHAR = "#";
-  private static final String SINGULAR_VALUE_CHAR = " ";
+  private static final String SINGULAR_VALUE_CHAR = "";
   private boolean storePath;
   private boolean storeParent;
   private String uniqueKeyFieldName;
@@ -92,9 +92,10 @@ class NestedUpdateProcessor extends UpdateRequestProcessor {
           String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
           cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, sChildNum));
         }
-        final String lastPath = fieldName + NUM_SEP_CHAR + sChildNum + NUM_SEP_CHAR;
-        final String jointPath = fullPath == null ? lastPath : fullPath + PATH_SEP_CHAR + lastPath;
-        processChildDoc((SolrInputDocument) val, doc, jointPath);
+        final String lastKeyPath = fieldName + NUM_SEP_CHAR + sChildNum;
+        // concat of all paths children.grandChild => children#1/grandChild#
+        final String childDocPath = fullPath == null ? lastKeyPath : fullPath + PATH_SEP_CHAR + lastKeyPath;
+        processChildDoc((SolrInputDocument) val, doc, childDocPath);
         ++childNum;
       }
     }
