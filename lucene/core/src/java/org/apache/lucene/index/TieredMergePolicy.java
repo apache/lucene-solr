@@ -371,21 +371,7 @@ public class TieredMergePolicy extends MergePolicy {
     assert totalMaxDoc >= 0;
     assert totalDelDocs >= 0;
 
-    // Compute max allowed segments in the index
-    long levelSize = Math.max(minSegmentBytes, floorSegmentBytes);
-    long bytesLeft = totIndexBytes;
-    double allowedSegCount = 0;
-    while (true) {
-      final double segCountLevel = bytesLeft / (double) levelSize;
-      if (segCountLevel < segsPerTier) {
-        allowedSegCount += Math.ceil(segCountLevel);
-        break;
-      }
-      allowedSegCount += segsPerTier;
-      bytesLeft -= segsPerTier * levelSize;
-      levelSize *= maxMergeAtOnce;
-    }
-
+    // If we have too-large segments, grace them out of the maximum segment count
     // If we're above certain thresholds, we can merge very large segments.
     double totalDelPct = (double) totalDelDocs / (double) totalMaxDoc;
     //TODO: See LUCENE-8263
@@ -406,11 +392,27 @@ public class TieredMergePolicy extends MergePolicy {
       if (segSizeDocs.sizeInBytes > maxMergedSegmentBytes / 2 && (totalDelPct < targetAsPct || segDelPct < targetAsPct)) {
         iter.remove();
         tooBigCount++; // Just for reporting purposes.
+        totIndexBytes -= segSizeDocs.sizeInBytes;
       } else {
         mergingBytes += segSizeDocs.sizeInBytes;
       }
-
     }
+
+    // Compute max allowed segments in the index
+    long levelSize = Math.max(minSegmentBytes, floorSegmentBytes);
+    long bytesLeft = totIndexBytes;
+    double allowedSegCount = 0;
+    while (true) {
+      final double segCountLevel = bytesLeft / (double) levelSize;
+      if (segCountLevel < segsPerTier) {
+        allowedSegCount += Math.ceil(segCountLevel);
+        break;
+      }
+      allowedSegCount += segsPerTier;
+      bytesLeft -= segsPerTier * levelSize;
+      levelSize *= maxMergeAtOnce;
+    }
+
     if (verbose(mergeContext) && tooBigCount > 0) {
       message("  allowedSegmentCount=" + allowedSegCount + " vs count=" + infos.size() +
           " (eligible count=" + sortedInfos.size() + ") tooBigCount= " + tooBigCount, mergeContext);

@@ -19,6 +19,10 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NullInfoStream;
@@ -28,6 +32,7 @@ import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -156,5 +161,89 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       return Collections.emptySet();
     }
   }
-  
+
+  /**
+   * Make a new {@link SegmentCommitInfo} with the given {@code maxDoc},
+   * {@code numDeletedDocs} and {@code sizeInBytes}, which are usually the
+   * numbers that merge policies care about.
+   */
+  protected static SegmentCommitInfo makeSegmentCommitInfo(String name, int maxDoc, int numDeletedDocs, double sizeMB) {
+    if (name.startsWith("_") == false) {
+      throw new IllegalArgumentException("name must start with an _, got " + name);
+    }
+    byte[] id = new byte[StringHelper.ID_LENGTH];
+    random().nextBytes(id);
+    SegmentInfo info = new SegmentInfo(FAKE_DIRECTORY, Version.LATEST, Version.LATEST, name, maxDoc, false, TestUtil.getDefaultCodec(), Collections.emptyMap(), id, Collections.emptyMap(), null);
+    info.setFiles(Collections.singleton(name + "_size=" + Long.toString((long) (sizeMB * 1024 * 1024)) + ".fake"));
+    return new SegmentCommitInfo(info, numDeletedDocs, 0, 0, 0, 0);
+  }
+
+  /** A directory that computes the length of a file based on its name. */
+  private static final Directory FAKE_DIRECTORY = new Directory() {
+
+    @Override
+    public String[] listAll() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void deleteFile(String name) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long fileLength(String name) throws IOException {
+      if (name.endsWith(".liv")) {
+        return 0L;
+      }
+      if (name.endsWith(".fake") == false) {
+        throw new IllegalArgumentException(name);
+      }
+      int startIndex = name.indexOf("_size=") + "_size=".length();
+      int endIndex = name.length() - ".fake".length();
+      return Long.parseLong(name.substring(startIndex, endIndex));
+    }
+
+    @Override
+    public IndexOutput createOutput(String name, IOContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void sync(Collection<String> names) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void rename(String source, String dest) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void syncMetaData() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IndexInput openInput(String name, IOContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Lock obtainLock(String name) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void close() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+  };
+
 }

@@ -25,9 +25,12 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.MergePolicy.MergeSpecification;
+import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
@@ -492,5 +495,33 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     r.close();
     w.close();
     dir.close();
+  }
+
+  public void testManyMaxSizeSegments() throws IOException {
+    TieredMergePolicy policy = new TieredMergePolicy();
+    policy.setMaxMergedSegmentMB(1024); // 1GB
+    SegmentInfos infos = new SegmentInfos(Version.LATEST.major);
+    int i = 0;
+    for (int j = 0; j < 30; ++j) {
+      infos.add(makeSegmentCommitInfo("_" + i, 1000, 0, 1024)); // max size 
+    }
+    for (int j = 0; j < 8; ++j) {
+      infos.add(makeSegmentCommitInfo("_" + i, 1000, 0, 102)); // 102MB flushes
+    }
+
+    // Only 8 segments on 1 tier in addition to the max-size segments, nothing to do
+    MergeSpecification mergeSpec = policy.findMerges(MergeTrigger.SEGMENT_FLUSH, infos, new MockMergeContext(SegmentCommitInfo::getDelCount));
+    assertNull(mergeSpec);
+
+    for (int j = 0; j < 5; ++j) {
+      infos.add(makeSegmentCommitInfo("_" + i, 1000, 0, 102)); // 102MB flushes
+    }
+
+    // Now 13 segments on 1 tier in addition to the max-size segments, 10 of them should get merged in one merge
+    mergeSpec = policy.findMerges(MergeTrigger.SEGMENT_FLUSH, infos, new MockMergeContext(SegmentCommitInfo::getDelCount));
+    assertNotNull(mergeSpec);
+    assertEquals(1, mergeSpec.merges.size());
+    OneMerge merge = mergeSpec.merges.get(0);
+    assertEquals(10, merge.segments.size());
   }
 }
