@@ -140,6 +140,8 @@ Other Changes
 
 * SOLR-12527: factor out a test-framework/ConfigRequest class (Christine Poerschke)
 
+* SOLR-12412: Leader should give up leadership when IndexWriter.tragedy occur (Cao Manh Dat, Tomas Fernandez-Lobbe)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
