@@ -34,8 +34,55 @@ import org.apache.lucene.util.Version;
 
 public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
-  public MergePolicy mergePolicy() {
+  @Override
+  public TieredMergePolicy mergePolicy() {
     return newTieredMergePolicy();
+  }
+
+  @Override
+  protected void assertSegmentInfos(MergePolicy policy, SegmentInfos infos) throws IOException {
+    TieredMergePolicy tmp = (TieredMergePolicy) policy;
+
+    final long maxMergedSegmentBytes = (long) (tmp.getMaxMergedSegmentMB() * 1024 * 1024);
+
+    long minSegmentBytes = Long.MAX_VALUE;
+    long totalBytes = 0;
+    for (SegmentCommitInfo sci : infos) {
+      long byteSize = sci.sizeInBytes();
+      double liveRatio = 1 - (double) sci.getDelCount() / sci.info.maxDoc();
+      long weightedByteSize = (long) Math.round(liveRatio * byteSize);
+      totalBytes += weightedByteSize;
+      minSegmentBytes = Math.min(minSegmentBytes, weightedByteSize);
+    }
+
+    long levelSize = Math.max(minSegmentBytes, (long) (tmp.getFloorSegmentMB() * 1024 * 1024));
+    long bytesLeft = totalBytes;
+    double allowedSegCount = 0;
+    // below we make the assumption that segments that reached the max segment
+    // size divided by 2 don't need merging anymore
+    int mergeFactor = (int) Math.min(tmp.getSegmentsPerTier(), tmp.getMaxMergeAtOnce());
+    while (true) {
+      final double segCountLevel = bytesLeft / (double) levelSize;
+      if (segCountLevel < tmp.getSegmentsPerTier() || levelSize > maxMergedSegmentBytes / 2) {
+        allowedSegCount += Math.ceil(segCountLevel);
+        break;
+      }
+      allowedSegCount += tmp.getSegmentsPerTier();
+      bytesLeft -= tmp.getSegmentsPerTier() * levelSize;
+      levelSize = Math.min(levelSize * mergeFactor, maxMergedSegmentBytes / 2);
+    }
+    allowedSegCount = Math.max(allowedSegCount, tmp.getSegmentsPerTier());
+
+    int numSegments = infos.asList().size();
+    assertTrue("numSegments=" + numSegments + ", allowed=" + allowedSegCount, numSegments <= allowedSegCount);
+  }
+
+  @Override
+  protected void assertMerge(MergePolicy policy, MergeSpecification merges) {
+    TieredMergePolicy tmp = (TieredMergePolicy) policy;
+    for (OneMerge merge : merges.merges) {
+      assertTrue(merge.segments.size() <= tmp.getMaxMergeAtOnce());
+    }
   }
 
   public void testForceMergeDeletes() throws Exception {
@@ -503,10 +550,10 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     SegmentInfos infos = new SegmentInfos(Version.LATEST.major);
     int i = 0;
     for (int j = 0; j < 30; ++j) {
-      infos.add(makeSegmentCommitInfo("_" + i, 1000, 0, 1024)); // max size 
+      infos.add(makeSegmentCommitInfo("_" + i, 1000, 0, 1024, IndexWriter.SOURCE_MERGE)); // max size 
     }
     for (int j = 0; j < 8; ++j) {
-      infos.add(makeSegmentCommitInfo("_" + i, 1000, 0, 102)); // 102MB flushes
+      infos.add(makeSegmentCommitInfo("_" + i, 1000, 0, 102, IndexWriter.SOURCE_FLUSH)); // 102MB flushes
     }
 
     // Only 8 segments on 1 tier in addition to the max-size segments, nothing to do
@@ -514,7 +561,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     assertNull(mergeSpec);
 
     for (int j = 0; j < 5; ++j) {
-      infos.add(makeSegmentCommitInfo("_" + i, 1000, 0, 102)); // 102MB flushes
+      infos.add(makeSegmentCommitInfo("_" + i, 1000, 0, 102, IndexWriter.SOURCE_FLUSH)); // 102MB flushes
     }
 
     // Now 13 segments on 1 tier in addition to the max-size segments, 10 of them should get merged in one merge
@@ -523,5 +570,21 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     assertEquals(1, mergeSpec.merges.size());
     OneMerge merge = mergeSpec.merges.get(0);
     assertEquals(10, merge.segments.size());
+  }
+
+  @Override
+  public void testSimulateAppendOnly() throws IOException {
+    TieredMergePolicy mergePolicy = mergePolicy();
+    // Avoid low values of the max merged segment size which prevent this merge policy from scaling well
+    mergePolicy.setMaxMergedSegmentMB(TestUtil.nextInt(random(), 1024, 10 * 1024));
+    doTestSimulateAppendOnly(mergePolicy, 100_000_000, 10_000);
+  }
+
+  @Override
+  public void testSimulateUpdates() throws IOException {
+    TieredMergePolicy mergePolicy = mergePolicy();
+    // Avoid low values of the max merged segment size which prevent this merge policy from scaling well
+    mergePolicy.setMaxMergedSegmentMB(TestUtil.nextInt(random(), 1024, 10 * 1024));
+    doTestSimulateUpdates(mergePolicy, 10_000_000, 2500);
   }
 }
