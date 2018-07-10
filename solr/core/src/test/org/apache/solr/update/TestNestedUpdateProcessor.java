@@ -36,7 +36,6 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   private static final char PATH_SEP_CHAR = '/';
   private static final char NUM_SEP_CHAR = '#';
   private static final String SINGLE_VAL_CHAR = "";
-  private static final String[] childrenIds = { "2", "3" };
   private static final String grandChildId = "4";
   private static final String secondChildList = "anotherChildList";
   private static final String jDoc = "{\n" +
@@ -123,12 +122,12 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   @Test
   public void testDeeplyNestedURPGrandChild() throws Exception {
     final String[] tests = {
-        "/response/docs/[0]/id=='" + grandChildId + "'",
+        "/response/docs/[0]/id=='4'",
         "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='children#0/grandChild#'"
     };
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":*" + PATH_SEP_CHAR + "grandChild" + NUM_SEP_CHAR + "*",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":*/grandChild#*",
         "fl","*",
         "sort","id desc",
         "wt","json"),
@@ -138,33 +137,58 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   @Test
   public void testDeeplyNestedURPChildren() throws Exception {
     final String[] childrenTests = {
-        "/response/docs/[0]/id=='" + childrenIds[0] + "'",
-        "/response/docs/[1]/id=='" + childrenIds[1] + "'",
+        "/response/docs/[0]/id=='2'",
+        "/response/docs/[1]/id=='3'",
         "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='children#0'",
         "/response/docs/[1]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='children#1'"
     };
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children" + NUM_SEP_CHAR + "?",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children#?",
         "fl","*",
         "sort","id asc",
         "wt","json"),
         childrenTests);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":" + secondChildList + NUM_SEP_CHAR + "?",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":anotherChildList#?",
         "fl","*",
         "sort","id asc",
         "wt","json"),
         "/response/docs/[0]/id=='4'",
-        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='" + secondChildList + "#0'");
+        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='anotherChildList#0'");
+  }
+
+  @Test
+  public void testDeeplyNestedURPSanity() throws Exception {
+    SolrInputDocument docHierarchy = sdoc("id", "1", "children", sdocs(sdoc("id", "2", "name_s", "Yaz"),
+        sdoc("id", "3", "name_s", "Jazz", "grandChild", sdoc("id", "4", "name_s", "Gaz"))), "lonelyChild", sdoc("id", "5", "name_s", "Loner"));
+    UpdateRequestProcessor nestedUpdate = new NestedUpdateProcessorFactory().getInstance(req(), null, null);
+    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = docHierarchy;
+    nestedUpdate.processAdd(cmd);
+    cmd.clear();
+
+    List children = (List) docHierarchy.get("children").getValues();
+
+    SolrInputDocument firstChild = (SolrInputDocument) children.get(0);
+    assertEquals("SolrInputDocument(fields: [id=2, name_s=Yaz, _NEST_PATH_=children#0, _NEST_PARENT_=1])", firstChild.toString());
+
+    SolrInputDocument secondChild = (SolrInputDocument) children.get(1);
+    assertEquals("SolrInputDocument(fields: [id=3, name_s=Jazz, grandChild=SolrInputDocument(fields: [id=4, name_s=Gaz, _NEST_PATH_=children#1/grandChild#, _NEST_PARENT_=3]), _NEST_PATH_=children#1, _NEST_PARENT_=1])", secondChild.toString());
+
+    SolrInputDocument grandChild = (SolrInputDocument)((SolrInputDocument) children.get(1)).get("grandChild").getValue();
+    assertEquals("SolrInputDocument(fields: [id=4, name_s=Gaz, _NEST_PATH_=children#1/grandChild#, _NEST_PARENT_=3])", grandChild.toString());
+
+    SolrInputDocument singularChild = (SolrInputDocument) docHierarchy.get("lonelyChild").getValue();
+    assertEquals("SolrInputDocument(fields: [id=5, name_s=Loner, _NEST_PATH_=lonelyChild#, _NEST_PARENT_=1])", singularChild.toString());
   }
 
   @Test
   public void testDeeplyNestedURPChildrenWoId() throws Exception {
     final String rootId = "1";
     final String childKey = "grandChild";
-    final String expectedId = rootId + PATH_SEP_CHAR + "children" + NUM_SEP_CHAR + "1" + PATH_SEP_CHAR + childKey + NUM_SEP_CHAR + SINGLE_VAL_CHAR;
-    SolrInputDocument noIdChildren = sdoc("id", rootId, "children", sdocs(sdoc("name_s", "Yaz"), sdoc("name_s", "Jazz", childKey, sdoc("names_s", "Gaz"))));
+    final String expectedId = rootId + "/children#1/" + childKey + NUM_SEP_CHAR + SINGLE_VAL_CHAR;
+    SolrInputDocument noIdChildren = sdoc("id", rootId, "children", sdocs(sdoc("name_s", "Yaz"), sdoc("name_s", "Jazz", childKey, sdoc("name_s", "Gaz"))));
     UpdateRequestProcessor nestedUpdate = new NestedUpdateProcessorFactory().getInstance(req(), null, null);
     AddUpdateCommand cmd = new AddUpdateCommand(req());
     cmd.solrDoc = noIdChildren;
