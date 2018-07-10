@@ -402,13 +402,13 @@ public class TieredMergePolicy extends MergePolicy {
     double allowedSegCount = 0;
     while (true) {
       final double segCountLevel = bytesLeft / (double) levelSize;
-      if (segCountLevel < segsPerTier) {
+      if (segCountLevel < segsPerTier || levelSize == maxMergedSegmentBytes) {
         allowedSegCount += Math.ceil(segCountLevel);
         break;
       }
       allowedSegCount += segsPerTier;
       bytesLeft -= segsPerTier * levelSize;
-      levelSize *= mergeFactor;
+      levelSize = Math.min(maxMergedSegmentBytes, levelSize * mergeFactor);
     }
 
     if (verbose(mergeContext) && tooBigCount > 0) {
