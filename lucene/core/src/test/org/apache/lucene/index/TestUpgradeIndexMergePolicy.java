@@ -16,11 +16,24 @@
  */
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
+import org.apache.lucene.index.MergePolicy.MergeSpecification;
 
 public class TestUpgradeIndexMergePolicy extends BaseMergePolicyTestCase {
 
   public MergePolicy mergePolicy() {
     return new UpgradeIndexMergePolicy(newMergePolicy(random()));
+  }
+
+  @Override
+  protected void assertSegmentInfos(MergePolicy policy, SegmentInfos infos) throws IOException {
+    // no-op
+  }
+
+  @Override
+  protected void assertMerge(MergePolicy policy, MergeSpecification merge) throws IOException {
+    // no-op
   }
 
 }
