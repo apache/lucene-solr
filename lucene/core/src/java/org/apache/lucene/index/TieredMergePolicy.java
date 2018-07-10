@@ -90,7 +90,9 @@ public class TieredMergePolicy extends MergePolicy {
    *  the index, then we disable compound file for it.
    *  @see MergePolicy#setNoCFSRatio */
   public static final double DEFAULT_NO_CFS_RATIO = 0.1;
-  
+
+  // User-specified maxMergeAtOnce. In practice we always take the min of its
+  // value and segsPerTier to avoid suboptimal merging.
   private int maxMergeAtOnce = 10;
   private long maxMergedSegmentBytes = 5*1024*1024*1024L;
   private int maxMergeAtOnceExplicit = 30;
@@ -255,10 +257,6 @@ public class TieredMergePolicy extends MergePolicy {
   /** Sets the allowed number of segments per tier.  Smaller
    *  values mean more merging but fewer segments.
    *
-   *  <p><b>NOTE</b>: this value should be {@code >=} the {@link
-   *  #setMaxMergeAtOnce} otherwise you'll force too much
-   *  merging to occur.</p>
-   *
    *  <p>Default is 10.0.</p> */
   public TieredMergePolicy setSegmentsPerTier(double v) {
     if (v < 2.0) {
@@ -397,6 +395,7 @@ public class TieredMergePolicy extends MergePolicy {
       }
     }
 
+    final int mergeFactor = (int) Math.min(maxMergeAtOnce, segsPerTier);
     // Compute max allowed segments in the index
     long levelSize = Math.max(minSegmentBytes, floorSegmentBytes);
     long bytesLeft = totIndexBytes;
@@ -409,20 +408,20 @@ public class TieredMergePolicy extends MergePolicy {
       }
       allowedSegCount += segsPerTier;
       bytesLeft -= segsPerTier * levelSize;
-      levelSize *= maxMergeAtOnce;
+      levelSize *= mergeFactor;
     }
 
     if (verbose(mergeContext) && tooBigCount > 0) {
       message("  allowedSegmentCount=" + allowedSegCount + " vs count=" + infos.size() +
           " (eligible count=" + sortedInfos.size() + ") tooBigCount= " + tooBigCount, mergeContext);
     }
-    return doFindMerges(sortedInfos, maxMergedSegmentBytes, maxMergeAtOnce, (int) allowedSegCount, MERGE_TYPE.NATURAL,
+    return doFindMerges(sortedInfos, maxMergedSegmentBytes, mergeFactor, (int) allowedSegCount, MERGE_TYPE.NATURAL,
         mergeContext, mergingBytes >= maxMergedSegmentBytes);
   }
 
   private MergeSpecification doFindMerges(List<SegmentSizeAndDocs> sortedEligibleInfos,
                                           final long maxMergedSegmentBytes,
-                                          final int maxMergeAtOnce, final int allowedSegCount,
+                                          final int mergeFactor, final int allowedSegCount,
                                           final MERGE_TYPE mergeType,
                                           MergeContext mergeContext,
                                           boolean maxMergeIsRunning) throws IOException {
@@ -486,7 +485,7 @@ public class TieredMergePolicy extends MergePolicy {
       long bestMergeBytes = 0;
 
       // Consider all merge starts.
-      int lim = sortedEligible.size() - maxMergeAtOnce; // assume the usual case of background merging.
+      int lim = sortedEligible.size() - mergeFactor; // assume the usual case of background merging.
 
       if (mergeType != MERGE_TYPE.NATURAL) { // The unusual case of forceMerge or expungeDeletes.
         // The incoming eligible list will have only segments with > forceMergeDeletesPctAllowed in the case of
@@ -502,7 +501,7 @@ public class TieredMergePolicy extends MergePolicy {
         final List<SegmentCommitInfo> candidate = new ArrayList<>();
         boolean hitTooLarge = false;
         long bytesThisMerge = 0;
-        for (int idx = startIdx; idx < sortedEligible.size() && candidate.size() < maxMergeAtOnce && bytesThisMerge < maxMergedSegmentBytes; idx++) {
+        for (int idx = startIdx; idx < sortedEligible.size() && candidate.size() < mergeFactor && bytesThisMerge < maxMergedSegmentBytes; idx++) {
           final SegmentSizeAndDocs segSizeDocs = sortedEligible.get(idx);
           final long segBytes = segSizeDocs.sizeInBytes;
 
@@ -601,7 +600,8 @@ public class TieredMergePolicy extends MergePolicy {
       // matter in this case because this merge will not
       // "cascade" and so it cannot lead to N^2 merge cost
       // over time:
-      skew = 1.0/maxMergeAtOnce;
+      final int mergeFactor = (int) Math.min(maxMergeAtOnce, segsPerTier);
+      skew = 1.0/mergeFactor;
     } else {
       skew = ((double) floorSize(segmentsSizes.get(candidate.get(0)).sizeInBytes)) / totAfterMergeBytesFloored;
     }
