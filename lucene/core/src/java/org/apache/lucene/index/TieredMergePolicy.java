@@ -410,6 +410,9 @@ public class TieredMergePolicy extends MergePolicy {
       bytesLeft -= segsPerTier * levelSize;
       levelSize = Math.min(maxMergedSegmentBytes, levelSize * mergeFactor);
     }
+    // allowedSegCount may occasionally be less than segsPerTier
+    // if segment sizes are below the floor size
+    allowedSegCount = Math.max(allowedSegCount, segsPerTier);
 
     if (verbose(mergeContext) && tooBigCount > 0) {
       message("  allowedSegmentCount=" + allowedSegCount + " vs count=" + infos.size() +
