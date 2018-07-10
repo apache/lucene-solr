@@ -197,6 +197,10 @@ public abstract class SolrCoreState {
   public Throwable getTragicException() throws IOException {
     RefCounted<IndexWriter> ref = getIndexWriter(null);
     if (ref == null) return null;
-    return ref.get().getTragicException();
+    try {
+      return ref.get().getTragicException();
+    } finally {
+      ref.decref();
+    }
   }
 }
