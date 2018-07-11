@@ -128,7 +128,29 @@ public abstract class FieldOffsetStrategy {
     }
   }
 
-  protected void createOffsetsEnumsWeightMatcher(LeafReader leafReader, int docId, List<OffsetsEnum> results) throws IOException {
+  protected void createOffsetsEnumsWeightMatcher(LeafReader _leafReader, int docId, List<OffsetsEnum> results) throws IOException {
+    // remap fieldMatcher/requireFieldMatch fields to the field we are highlighting
+    LeafReader leafReader = new FilterLeafReader(_leafReader) {
+      @Override
+      public Terms terms(String field) throws IOException {
+        if (components.getFieldMatcher().test(field)) {
+          return super.terms(components.getField());
+        } else {
+          return super.terms(field);
+        }
+      }
+
+      //these ought to be a default?  So many subclasses do this!
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return null;
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return null;
+      }
+    };
     IndexSearcher indexSearcher = new IndexSearcher(leafReader);
     indexSearcher.setQueryCache(null);
     Matches matches = indexSearcher.rewrite(phraseHelper.getQuery())
