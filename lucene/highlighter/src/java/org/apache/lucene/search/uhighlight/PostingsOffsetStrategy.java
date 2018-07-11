@@ -22,10 +22,6 @@ import java.util.List;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Uses offsets in postings -- {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}.  This
@@ -35,8 +31,8 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public class PostingsOffsetStrategy extends FieldOffsetStrategy {
 
-  public PostingsOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
-    super(field, queryTerms, phraseHelper, automata);
+  public PostingsOffsetStrategy(UHComponents components) {
+    super(components);
   }
 
   @Override

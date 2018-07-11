@@ -36,8 +36,14 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
   private static final BytesRef[] ZERO_LEN_BYTES_REF_ARRAY = new BytesRef[0];
 
-  public TokenStreamOffsetStrategy(String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer indexAnalyzer) {
-    super(field, ZERO_LEN_BYTES_REF_ARRAY, phraseHelper, convertTermsToAutomata(terms, automata), indexAnalyzer);
+  public TokenStreamOffsetStrategy(UHComponents components, Analyzer indexAnalyzer) {
+    super(new UHComponents(
+          components.getField(),
+          components.getFieldMatcher(),
+          ZERO_LEN_BYTES_REF_ARRAY,
+          components.getPhraseHelper(),
+          convertTermsToAutomata(components.getExtractedTerms(), components.getAutomata())),
+        indexAnalyzer);
     assert phraseHelper.hasPositionSensitivity() == false;
   }
 

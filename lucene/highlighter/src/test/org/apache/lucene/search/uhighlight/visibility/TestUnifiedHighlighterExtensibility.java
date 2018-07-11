@@ -40,6 +40,7 @@ import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.PhraseHelper;
 import org.apache.lucene.search.uhighlight.SplittingBreakIterator;
+import org.apache.lucene.search.uhighlight.UHComponents;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -58,10 +59,11 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
   @Test
   public void testFieldOffsetStrategyExtensibility() {
     final UnifiedHighlighter.OffsetSource offsetSource = UnifiedHighlighter.OffsetSource.NONE_NEEDED;
-    FieldOffsetStrategy strategy = new FieldOffsetStrategy("field",
+    FieldOffsetStrategy strategy = new FieldOffsetStrategy(new UHComponents("field",
+        (s) -> false,
         new BytesRef[0],
         PhraseHelper.NONE,
-        new CharacterRunAutomaton[0]) {
+        new CharacterRunAutomaton[0])) {
       @Override
       public UnifiedHighlighter.OffsetSource getOffsetSource() {
         return offsetSource;

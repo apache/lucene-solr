@@ -838,24 +838,24 @@ public class UnifiedHighlighter {
   protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms,
                                                   PhraseHelper phraseHelper, CharacterRunAutomaton[] automata,
                                                   Set<HighlightFlag> highlightFlags) {
+    final UHComponents components = new UHComponents(field, getFieldMatcher(field), terms, phraseHelper, automata);
     switch (offsetSource) {
       case ANALYSIS:
         if (!phraseHelper.hasPositionSensitivity() &&
             !highlightFlags.contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED)) {
           //skip using a memory index since it's pure term filtering
-          return new TokenStreamOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
+          return new TokenStreamOffsetStrategy(components, getIndexAnalyzer());
         } else {
-          return new MemoryIndexOffsetStrategy(field, getFieldMatcher(field), terms, phraseHelper, automata, getIndexAnalyzer(),
-              this::preMultiTermQueryRewrite);
+          return new MemoryIndexOffsetStrategy(components, getIndexAnalyzer(), this::preMultiTermQueryRewrite);
         }
       case NONE_NEEDED:
         return NoOpOffsetStrategy.INSTANCE;
       case TERM_VECTORS:
-        return new TermVectorOffsetStrategy(field, terms, phraseHelper, automata);
+        return new TermVectorOffsetStrategy(components);
       case POSTINGS:
-        return new PostingsOffsetStrategy(field, terms, phraseHelper, automata);
+        return new PostingsOffsetStrategy(components);
       case POSTINGS_WITH_TERM_VECTORS:
-        return new PostingsWithTermVectorsOffsetStrategy(field, terms, phraseHelper, automata);
+        return new PostingsWithTermVectorsOffsetStrategy(components);
       default:
         throw new IllegalArgumentException("Unrecognized offset source " + offsetSource);
     }

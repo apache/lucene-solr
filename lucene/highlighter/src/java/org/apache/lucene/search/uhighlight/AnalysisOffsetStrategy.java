@@ -23,8 +23,6 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Provides a base class for analysis based offset strategies to extend from.
@@ -37,8 +35,8 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
 
   protected final Analyzer analyzer;
 
-  public AnalysisOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer analyzer) {
-    super(field, queryTerms, phraseHelper, automata);
+  public AnalysisOffsetStrategy(UHComponents components, Analyzer analyzer) {
+    super(components);
     this.analyzer = analyzer;
     if (analyzer.getOffsetGap(field) != 1) { // note: 1 is the default. It is RARELY changed.
       throw new IllegalArgumentException(

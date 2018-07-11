@@ -24,8 +24,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Like {@link PostingsOffsetStrategy} but also uses term vectors (only terms needed) for multi-term queries.
@@ -34,8 +32,8 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public class PostingsWithTermVectorsOffsetStrategy extends FieldOffsetStrategy {
 
-  public PostingsWithTermVectorsOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
-    super(field, queryTerms, phraseHelper, automata);
+  public PostingsWithTermVectorsOffsetStrategy(UHComponents components) {
+    super(components);
   }
 
   @Override

@@ -41,16 +41,19 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public abstract class FieldOffsetStrategy {
 
+  protected final UHComponents components;
+  //nocommit remove these?:
   protected final String field;
   protected final PhraseHelper phraseHelper; // Query: position-sensitive information
   protected final BytesRef[] terms; // Query: all terms we extracted (some may be position sensitive)
   protected final CharacterRunAutomaton[] automata; // Query: wildcards (i.e. multi-term query), not position sensitive
 
-  public FieldOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
-    this.field = field;
-    this.terms = queryTerms;
-    this.phraseHelper = phraseHelper;
-    this.automata = automata;
+  public FieldOffsetStrategy(UHComponents components) {
+    this.components = components;
+    this.field = components.getField();
+    this.terms = components.getExtractedTerms();
+    this.phraseHelper = components.getPhraseHelper();
+    this.automata = components.getAutomata();
   }
 
   public String getField() {

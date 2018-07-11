@@ -50,15 +50,14 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
   private final LeafReader leafReader;
   private final CharacterRunAutomaton preMemIndexFilterAutomaton;
 
-  public MemoryIndexOffsetStrategy(String field, Predicate<String> fieldMatcher, BytesRef[] extractedTerms, PhraseHelper phraseHelper,
-                                   CharacterRunAutomaton[] automata, Analyzer analyzer,
+  public MemoryIndexOffsetStrategy(UHComponents components, Analyzer analyzer,
                                    Function<Query, Collection<Query>> multiTermQueryRewrite) {
-    super(field, extractedTerms, phraseHelper, automata, analyzer);
-    boolean storePayloads = phraseHelper.hasPositionSensitivity(); // might be needed
+    super(components, analyzer);
+    boolean storePayloads = components.getPhraseHelper().hasPositionSensitivity(); // might be needed
     memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
     leafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader(); // appears to be re-usable
     // preFilter for MemoryIndex
-    preMemIndexFilterAutomaton = buildCombinedAutomaton(fieldMatcher, terms, this.automata, phraseHelper, multiTermQueryRewrite);
+    preMemIndexFilterAutomaton = buildCombinedAutomaton(components.getFieldMatcher(), terms, this.automata, components.getPhraseHelper(), multiTermQueryRewrite);
   }
 
   /**
