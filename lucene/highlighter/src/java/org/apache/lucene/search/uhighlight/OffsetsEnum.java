@@ -47,6 +47,10 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
       if (cmp != 0) {
         return cmp; // vast majority of the time we return here.
       }
+      cmp = Integer.compare(endOffset(), other.endOffset());
+      if (cmp != 0) {
+        return cmp;
+      }
       final BytesRef thisTerm = this.getTerm();
       final BytesRef otherTerm = other.getTerm();
       if (thisTerm == null || otherTerm == null) {
