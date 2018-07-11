@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -68,7 +67,7 @@ public abstract class FieldOffsetStrategy {
    *
    * Callers are expected to close the returned OffsetsEnum when it has been finished with
    */
-  public abstract OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException;
+  public abstract OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException;
 
   protected OffsetsEnum createOffsetsEnumFromReader(LeafReader leafReader, int doc) throws IOException {
     final Terms termsIndex = leafReader.terms(field);

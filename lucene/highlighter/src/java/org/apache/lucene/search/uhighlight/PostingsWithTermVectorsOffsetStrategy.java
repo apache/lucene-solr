@@ -17,12 +17,8 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
 
 /**
@@ -37,22 +33,12 @@ public class PostingsWithTermVectorsOffsetStrategy extends FieldOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
-    LeafReader leafReader;
-    if (reader instanceof LeafReader) {
-      leafReader = (LeafReader) reader;
-    } else {
-      List<LeafReaderContext> leaves = reader.leaves();
-      LeafReaderContext LeafReaderContext = leaves.get(ReaderUtil.subIndex(docId, leaves));
-      leafReader = LeafReaderContext.reader();
-      docId -= LeafReaderContext.docBase; // adjust 'doc' to be within this atomic reader
-    }
-
+  public OffsetsEnum getOffsetsEnum(LeafReader leafReader, int docId, String content) throws IOException {
     Terms docTerms = leafReader.getTermVector(docId, field);
     if (docTerms == null) {
       return OffsetsEnum.EMPTY;
     }
-    leafReader = new TermVectorFilteredLeafReader(leafReader, docTerms);
+    leafReader = new TermVectorFilteredLeafReader(leafReader, docTerms, field);
 
     return createOffsetsEnumFromReader(leafReader, docId);
   }

@@ -48,6 +48,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -623,11 +624,20 @@ public class UnifiedHighlighter {
                   && indexReaderWithTermVecCache != null)
                   ? indexReaderWithTermVecCache
                   : searcher.getIndexReader();
+          final LeafReader leafReader;
+          if (indexReader instanceof LeafReader) {
+            leafReader = (LeafReader) indexReader;
+          } else {
+            List<LeafReaderContext> leaves = indexReader.leaves();
+            LeafReaderContext leafReaderContext = leaves.get(ReaderUtil.subIndex(docId, leaves));
+            leafReader = leafReaderContext.reader();
+            docId -= leafReaderContext.docBase; // adjust 'doc' to be within this leaf reader
+          }
           int docInIndex = docInIndexes[docIdx];//original input order
           assert resultByDocIn[docInIndex] == null;
           resultByDocIn[docInIndex] =
               fieldHighlighter
-                  .highlightFieldForDoc(indexReader, docId, content.toString());
+                  .highlightFieldForDoc(leafReader, docId, content.toString());
         }
 
       }
@@ -769,12 +779,14 @@ public class UnifiedHighlighter {
 
   protected Set<HighlightFlag> getFlags(String field) {
     Set<HighlightFlag> highlightFlags = EnumSet.noneOf(HighlightFlag.class);
-    highlightFlags.add(HighlightFlag.WEIGHT_MATCHES);//nocommit for experimentation, use as default
     if (shouldHandleMultiTermQuery(field)) {
       highlightFlags.add(HighlightFlag.MULTI_TERM_QUERY);
     }
     if (shouldHighlightPhrasesStrictly(field)) {
       highlightFlags.add(HighlightFlag.PHRASES);
+    }
+    if (highlightFlags.contains(HighlightFlag.PHRASES) && highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)) {
+      highlightFlags.add(HighlightFlag.WEIGHT_MATCHES);//nocommit for experimentation, use as default
     }
     if (shouldPreferPassageRelevancyOverSpeed(field)) {
       highlightFlags.add(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED);
@@ -791,7 +803,7 @@ public class UnifiedHighlighter {
             this::requiresRewrite,
             this::preSpanQueryRewrite,
             !handleMultiTermQuery,
-            useWeightMatchesIter)
+            useWeightMatchesIter && handleMultiTermQuery)
         : PhraseHelper.NONE;
   }
 
@@ -842,7 +854,8 @@ public class UnifiedHighlighter {
     switch (offsetSource) {
       case ANALYSIS:
         if (!phraseHelper.hasPositionSensitivity() &&
-            !highlightFlags.contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED)) {
+            !highlightFlags.contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED) &&
+            !highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES)) {
           //skip using a memory index since it's pure term filtering
           return new TokenStreamOffsetStrategy(components, getIndexAnalyzer());
         } else {

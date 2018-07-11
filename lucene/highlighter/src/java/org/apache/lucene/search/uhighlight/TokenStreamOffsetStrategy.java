@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -64,7 +64,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
     return new TokenStreamOffsetsEnum(tokenStream(content), automata);
   }
 

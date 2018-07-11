@@ -25,7 +25,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -70,7 +69,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       }
 
       @Override
-      public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
+      public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
         return OffsetsEnum.EMPTY;
       }
 
@@ -209,7 +208,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
     }
 
     @Override
-    public Object highlightFieldForDoc(IndexReader reader, int docId, String content) throws IOException {
+    public Object highlightFieldForDoc(LeafReader reader, int docId, String content) throws IOException {
       return super.highlightFieldForDoc(reader, docId, content);
     }
 

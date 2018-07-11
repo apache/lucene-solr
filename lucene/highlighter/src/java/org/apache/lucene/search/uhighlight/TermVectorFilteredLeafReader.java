@@ -37,21 +37,26 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
   // NOTE: super ("in") is baseLeafReader
 
   private final Terms filterTerms;
+  private final String fieldFilter;
 
   /**
    * <p>Construct a FilterLeafReader based on the specified base reader.
    * <p>Note that base reader is closed if this FilterLeafReader is closed.</p>
-   *
    * @param baseLeafReader full/original reader.
    * @param filterTerms set of terms to filter by -- probably from a TermVector or MemoryIndex.
+   * @param fieldFilter the field to do this on
    */
-  TermVectorFilteredLeafReader(LeafReader baseLeafReader, Terms filterTerms) {
+  TermVectorFilteredLeafReader(LeafReader baseLeafReader, Terms filterTerms, String fieldFilter) {
     super(baseLeafReader);
     this.filterTerms = filterTerms;
+    this.fieldFilter = fieldFilter;
   }
 
   @Override
   public Terms terms(String field) throws IOException {
+    if (!field.equals(fieldFilter)) {
+      return super.terms(field); // proceed like normal for fields we're not interested in
+    }
     Terms terms = in.terms(field);
     return terms==null ? null : new TermsFilteredTerms(terms, filterTerms);
   }
@@ -106,7 +111,7 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
       boolean termInBothTermsEnum = baseTermsEnum.seekExact(currentTerm);
 
       if (!termInBothTermsEnum) {
-        throw new IllegalStateException("Term vector term " + currentTerm + " does not appear in full index.");
+        throw new IllegalStateException("Term vector term '" + currentTerm.utf8ToString() + "' does not appear in full index.");
       }
     }
 

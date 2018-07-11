@@ -18,7 +18,7 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -41,7 +41,7 @@ public class NoOpOffsetStrategy extends FieldOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
     return OffsetsEnum.EMPTY;
   }
 

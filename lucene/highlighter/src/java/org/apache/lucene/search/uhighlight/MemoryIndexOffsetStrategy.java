@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.Query;
@@ -47,7 +46,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
 
   private final MemoryIndex memoryIndex;
-  private final LeafReader leafReader;
+  private final LeafReader memIndexLeafReader;
   private final CharacterRunAutomaton preMemIndexFilterAutomaton;
 
   public MemoryIndexOffsetStrategy(UHComponents components, Analyzer analyzer,
@@ -55,7 +54,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     super(components, analyzer);
     boolean storePayloads = components.getPhraseHelper().hasPositionSensitivity(); // might be needed
     memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
-    leafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader(); // appears to be re-usable
+    memIndexLeafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader(); // appears to be re-usable
     // preFilter for MemoryIndex
     preMemIndexFilterAutomaton = buildCombinedAutomaton(components.getFieldMatcher(), terms, this.automata, components.getPhraseHelper(), multiTermQueryRewrite);
   }
@@ -99,7 +98,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
     // note: don't need LimitTokenOffsetFilter since content is already truncated to maxLength
     TokenStream tokenStream = tokenStream(content);
 
@@ -107,11 +106,19 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     tokenStream = newKeepWordFilter(tokenStream, preMemIndexFilterAutomaton);
     memoryIndex.reset();
     memoryIndex.addField(field, tokenStream);//note: calls tokenStream.reset() & close()
-    docId = 0;
 
-    return createOffsetsEnumFromReader(leafReader, docId);
+    if (reader == null) {
+      return createOffsetsEnumFromReader(memIndexLeafReader, 0);
+    } else {
+      return createOffsetsEnumFromReader(
+          new OverlaySingleDocTermsLeafReader(
+              reader,
+              memIndexLeafReader,
+              field,
+              docId),
+          docId);
+    }
   }
-
 
   private static FilteringTokenFilter newKeepWordFilter(final TokenStream tokenStream,
                                                         final CharacterRunAutomaton charRunAutomaton) {
