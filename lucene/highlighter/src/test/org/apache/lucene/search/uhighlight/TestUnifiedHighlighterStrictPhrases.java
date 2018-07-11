@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -52,6 +53,7 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.uhighlight.UnifiedHighlighter.HighlightFlag;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -138,7 +140,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     String[] snippets = highlighter.highlight("body", query, topDocs);
 
-    assertArrayEquals(new String[]{"yin alone, <b>Yin</b> <b>yang</b>, yin gap yang"}, snippets);
+    assertArrayEquals(new String[]{"yin alone, <b>Yin yang</b>, yin gap yang"}, snippets);
   }
 
   public void testWithSameTermQuery() throws IOException {
@@ -155,7 +157,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     String[] snippets = highlighter.highlight("body", query, topDocs);
 
-    assertArrayEquals(new String[]{"<b>Yin</b> <b>yang</b>, <b>yin</b> gap yang"}, snippets);
+    assertArrayEquals(new String[]{"<b>Yin yang</b>, <b>yin</b> gap yang"}, snippets);
 
     // test the Passage only has 3 matches.  We don't want duplicates from "Yin" being in TermQuery & PhraseQuery.
     highlighter.setFormatter(new PassageFormatter() {
@@ -199,7 +201,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     String[] snippets = highlighter.highlight("body", query, topDocs);
 
-    assertArrayEquals(new String[]{"<b>alpha</b> <b>bravo</b> <b>charlie</b> - charlie bravo alpha"}, snippets);
+    assertArrayEquals(new String[]{"<b>alpha bravo charlie</b> - charlie bravo alpha"}, snippets);
 
     // test the Passage only has 3 matches.  We don't want duplicates from both PhraseQuery
     highlighter.setFormatter(new PassageFormatter() {
@@ -224,7 +226,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     String[] snippets = highlighter.highlight("body", query, topDocs);
 
-    assertArrayEquals(new String[]{"<b>mother</b> <b>father</b> w <b>mom</b> <b>father</b> w dad"}, snippets);
+    assertArrayEquals(new String[]{"<b>mother father</b> w <b>mom father</b> w dad"}, snippets);
   }
 
   /**
@@ -252,7 +254,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     String[] snippets = highlighter.highlight("body", query, topDocs);
 
-    assertArrayEquals(new String[]{"<b>alpha</b> <b>bravo</b> <b>charlie</b> - charlie bravo <b>alpha</b>"},
+    assertArrayEquals(new String[]{"<b>alpha bravo</b> <b>charlie</b> - charlie bravo <b>alpha</b>"},
         snippets);
 
     // do again, this time with MTQ disabled.  We should only find "alpha bravo".
@@ -288,7 +290,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     String[] snippets = highlighter.highlight("body", query, topDocs);
 
-    assertArrayEquals(new String[]{"<b>alpha</b> <b>bravo</b> <b>charlie</b> - charlie bravo alpha"},
+    assertArrayEquals(new String[]{"<b>alpha bravo</b> <b>charlie</b> - charlie bravo alpha"},
         snippets);
 
     // do again, this time with MTQ disabled.  We should only find "alpha bravo".
@@ -325,7 +327,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     String[] snippets = highlighter.highlight("body", query, topDocs);
 
-    assertArrayEquals(new String[]{"<b>alpha</b> <b>bravo</b> <b>charlie</b> - charlie bravo <b>alpha</b>"},
+    assertArrayEquals(new String[]{"<b>alpha bravo</b> <b>charlie</b> - charlie bravo <b>alpha</b>"},
         snippets);
 
     // do again, this time with MTQ disabled.
@@ -334,6 +336,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     snippets = highlighter.highlight("body", query, topDocs);
 
+    //note: without MTQ, the WEIGHT_MATCHES is disabled which affects the snippet boundaries
     assertArrayEquals(new String[]{"<b>alpha</b> <b>bravo</b> <b>charlie</b> - charlie bravo alpha"},
         snippets);
   }
@@ -351,7 +354,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     String[] snippets = highlighter.highlight("body", query, topDocs, 2);
 
-    assertArrayEquals(new String[]{"<b>one</b> <b>bravo</b> three... <b>four</b> <b>bravo</b> six"},
+    assertArrayEquals(new String[]{"<b>one bravo</b> three... <b>four bravo</b> six"},
         snippets);
 
 
@@ -381,7 +384,11 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     topDocs = searcher.search(query, 10);
     assertEquals(1, topDocs.totalHits.value);
     snippets = highlighter.highlight("body", query, topDocs, 2);
-    assertEquals("one <b>bravo</b> <b>three</b>... <b>four</b> <b>bravo</b> six", snippets[0]);
+    if (highlighter.getFlags("body").contains(HighlightFlag.WEIGHT_MATCHES)) {
+      assertEquals("one <b>bravo</b> <b>three</b>... four <b>bravo</b> six", snippets[0]);
+    } else {
+      assertEquals("one <b>bravo</b> <b>three</b>... <b>four</b> <b>bravo</b> six", snippets[0]);
+    }
   }
 
   public void testMaxLen() throws IOException {
@@ -390,18 +397,18 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     highlighter.setMaxLength(21);
 
     BooleanQuery query = new BooleanQuery.Builder()
-        .add(newPhraseQuery("body", "alpha bravo"), BooleanClause.Occur.MUST)
-        .add(newPhraseQuery("body", "gap alpha"), BooleanClause.Occur.MUST)
+        .add(newPhraseQuery("body", "alpha bravo"), BooleanClause.Occur.SHOULD)
+        .add(newPhraseQuery("body", "gap alpha"), BooleanClause.Occur.SHOULD)
         .add(newPhraseQuery("body", "charlie gap"), BooleanClause.Occur.SHOULD)
         .build();
 
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     String[] snippets = highlighter.highlight("body", query, topDocs);
 
-    if (fieldType == UHTestHelper.reanalysisType) {
-      assertArrayEquals(new String[]{"<b>alpha</b> <b>bravo</b> charlie -"}, snippets);
+    if (fieldType == UHTestHelper.reanalysisType || highlighter.getFlags("body").contains(HighlightFlag.WEIGHT_MATCHES)) {
+      assertArrayEquals(new String[]{"<b>alpha bravo</b> charlie -"}, snippets);
     } else {
-      assertArrayEquals(new String[]{"<b>alpha</b> <b>bravo</b> <b>charlie</b> -"}, snippets);
+      assertArrayEquals(new String[]{"<b>alpha bravo</b> <b>charlie</b> -"}, snippets);
     }
   }
 
@@ -436,6 +443,13 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     initReaderSearcherHighlighter();
 
     highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
+      @Override
+      protected Set<HighlightFlag> getFlags(String field) {
+        final Set<HighlightFlag> flags = super.getFlags(field);
+        flags.remove(HighlightFlag.WEIGHT_MATCHES);//unsupported
+        return flags;
+      }
+
       @Override
       protected Collection<Query> preSpanQueryRewrite(Query query) {
         if (query instanceof MyQuery) {
