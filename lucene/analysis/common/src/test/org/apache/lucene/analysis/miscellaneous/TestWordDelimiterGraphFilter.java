@@ -213,6 +213,19 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   }
 
   public void testPositionIncrements() throws Exception {
+
+    Analyzer a4 = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        final int flags = SPLIT_ON_NUMERICS | GENERATE_WORD_PARTS | PRESERVE_ORIGINAL | GENERATE_NUMBER_PARTS | SPLIT_ON_CASE_CHANGE;
+        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(tokenizer, flags, CharArraySet.EMPTY_SET));
+      }
+    };
+    assertAnalyzesTo(a4, "SAL_S8371 - SAL",
+        new String[]{ "SAL_S8371", "SAL", "S", "8371", "-", "SAL"},
+        new int[]{    1,            0,    1,    1,      1,    1});
+
     final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     final CharArraySet protWords = new CharArraySet(new HashSet<>(Arrays.asList("NUTCH")), false);
     
@@ -327,7 +340,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
         null,
         false);
 
-    IOUtils.close(a, a2, a3);
+    IOUtils.close(a, a2, a3, a4);
   }
   
   public void testKeywordFilter() throws Exception {
