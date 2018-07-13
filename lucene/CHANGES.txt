@@ -24,6 +24,8 @@ API Changes:
 * LUCENE-8390: MatchesIteratorSupplier replaced by IOSupplier (Alan Woodward,
   David Smiley)
 
+* LUCENE-8397: Add DirectoryTaxonomyWriter.getCache (Mike McCandless)
+
 Bug Fixes:
 
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
