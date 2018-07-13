@@ -61,18 +61,17 @@ import org.slf4j.LoggerFactory;
  * Note that unlike normal facet "count" verification, using a high limit + overrequest isn't a substitute 
  * for refinement in order to ensure accurate "skg" computation across shards.  For that reason, this 
  * tests forces <code>refine: true</code> (unlike {@link TestCloudJSONFacetJoinDomain}) and specifices a 
- * <code>domain: { 'query':'{!v=$back' }</code> for every facet, in order to garuntee that all popularity
- * &amp; relatedness values returned can be proven with validation requests.
+ * <code>domain: { 'query':'*:*' }</code> for every facet, in order to garuntee that all shards 
+ * participate in all facets, so that the popularity &amp; relatedness values returned can be proven 
+ * with validation requests.
  * </p>
  * <p>
- * (Refinement alone is not enough. Using the background query as the facet domain is neccessary to 
+ * (Refinement alone is not enough. Using the '*:*' query as the facet domain is neccessary to 
  * prevent situations where a single shardX may return candidate bucket with no child-buckets due to 
  * the normal facet intersections, but when refined on other shardY(s), can produce "high scoring" 
  * SKG child-buckets, which would then be missing the foreground/background "size" contributions from 
  * shardX.
  * </p>
- * 
- * 
  * 
  * @see TestCloudJSONFacetJoinDomain
  */
@@ -138,8 +137,19 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     for (int id = 0; id < numDocs; id++) {
       SolrInputDocument doc = sdoc("id", ""+id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
-        // NOTE: some docs may have no value in a field
-        final int numValsThisDoc = TestUtil.nextInt(random(), 0, (usually() ? 5 : 10));
+        // NOTE: we ensure every doc has at least one value in each field
+        // that way, if a term is returned for a parent there there is garunteed to be at least one
+        // one term in the child facet as well.
+        //
+        // otherwise, we'd face the risk of a single shardX returning parentTermX as a top term for
+        // the parent facet, but having no child terms -- meanwhile on refinement another shardY that
+        // did *not* returned parentTermX in phase#1, could return some *new* child terms under
+        // parentTermX, but their stats would not include the bgCount from shardX.
+        //
+        // in normal operation, this is an edge case that isn't a big deal because the ratios &
+        // relatedness scores are statistically approximate, but for the purpose of this test where
+        // we verify correctness via exactness we need all shards to contribute to the SKG statistics
+        final int numValsThisDoc = TestUtil.nextInt(random(), 1, (usually() ? 5 : 10));
         for (int v = 0; v < numValsThisDoc; v++) {
           final String fieldValue = randFieldValue(fieldNum);
           
@@ -259,7 +269,6 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     
     final int numIters = atLeast(10);
     for (int iter = 0; iter < numIters && 0 < maxBucketsToCheck.get(); iter++) {
-      
       assertFacetSKGsAreCorrect(maxBucketsToCheck, TermFacet.buildRandomFacets(),
                                 buildRandomQuery(), buildRandomQuery(), buildRandomQuery());
     }
@@ -489,8 +498,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       final StringBuilder sb
         = new StringBuilder("{ type:terms, field:" + field + limitStr + overrequestStr + sortStr);
 
-      // see class javadocs for why we always use refine:true & the query:$back domain for this test.
-      sb.append(", refine: true, domain: { query: '{!v=$back}' }, facet:");
+      // see class javadocs for why we always use refine:true & the query:'*:*' domain for this test.
+      sb.append(", refine: true, domain: { query: '*:*' }, facet:");
       sb.append(toJSONFacetParamValue(subFacets, "skg : 'relatedness($fore,$back)'"));
       sb.append("}");
       return sb;
