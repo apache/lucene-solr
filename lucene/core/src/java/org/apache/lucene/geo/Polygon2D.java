@@ -23,6 +23,8 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.ArrayUtil;
 
+import static org.apache.lucene.geo.GeoUtils.orient;
+
 /**
  * 2D polygon implementation represented as a balanced interval tree of edges.
  * <p>
@@ -453,25 +455,5 @@ public final class Polygon2D {
       newNode.max = Math.max(newNode.max, newNode.right.max);
     }
     return newNode;
-  }
-
-  /**
-   * Returns a positive value if points a, b, and c are arranged in counter-clockwise order,
-   * negative value if clockwise, zero if collinear.
-   */
-  // see the "Orient2D" method described here:
-  // http://www.cs.berkeley.edu/~jrs/meshpapers/robnotes.pdf
-  // https://www.cs.cmu.edu/~quake/robust.html
-  // Note that this one does not yet have the floating point tricks to be exact!
-  private static int orient(double ax, double ay, double bx, double by, double cx, double cy) {
-    double v1 = (bx - ax) * (cy - ay);
-    double v2 = (cx - ax) * (by - ay);
-    if (v1 > v2) {
-      return 1;
-    } else if (v1 < v2) {
-      return -1;
-    } else {
-      return 0;
-    }
   }
 }
