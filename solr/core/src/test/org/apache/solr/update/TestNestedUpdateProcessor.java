@@ -151,16 +151,16 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     List children = (List) docHierarchy.get("children").getValues();
 
     SolrInputDocument firstChild = (SolrInputDocument) children.get(0);
-    assertEquals("SolrInputDocument(fields: [id=2, name_s=Yaz, _NEST_PATH_=children#0, _NEST_PARENT_=1])", firstChild.toString());
+    assertEquals("SolrInputDocument(fields: [id=2, name_s=Yaz, _nest_path_=children#0, _nest_parent_=1])", firstChild.toString());
 
     SolrInputDocument secondChild = (SolrInputDocument) children.get(1);
-    assertEquals("SolrInputDocument(fields: [id=3, name_s=Jazz, grandChild=SolrInputDocument(fields: [id=4, name_s=Gaz, _NEST_PATH_=children#1/grandChild#, _NEST_PARENT_=3]), _NEST_PATH_=children#1, _NEST_PARENT_=1])", secondChild.toString());
+    assertEquals("SolrInputDocument(fields: [id=3, name_s=Jazz, grandChild=SolrInputDocument(fields: [id=4, name_s=Gaz, _nest_path_=children#1/grandChild#, _nest_parent_=3]), _nest_path_=children#1, _nest_parent_=1])", secondChild.toString());
 
     SolrInputDocument grandChild = (SolrInputDocument)((SolrInputDocument) children.get(1)).get("grandChild").getValue();
-    assertEquals("SolrInputDocument(fields: [id=4, name_s=Gaz, _NEST_PATH_=children#1/grandChild#, _NEST_PARENT_=3])", grandChild.toString());
+    assertEquals("SolrInputDocument(fields: [id=4, name_s=Gaz, _nest_path_=children#1/grandChild#, _nest_parent_=3])", grandChild.toString());
 
     SolrInputDocument singularChild = (SolrInputDocument) docHierarchy.get("lonelyChild").getValue();
-    assertEquals("SolrInputDocument(fields: [id=5, name_s=Loner, _NEST_PATH_=lonelyChild#, _NEST_PARENT_=1])", singularChild.toString());
+    assertEquals("SolrInputDocument(fields: [id=5, name_s=Loner, _nest_path_=lonelyChild#, _nest_parent_=1])", singularChild.toString());
   }
 
   @Test

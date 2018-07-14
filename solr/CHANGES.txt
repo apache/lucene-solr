@@ -79,7 +79,7 @@ New Features
 
 * SOLR-12495: An #EQUALS function for replica in autoscaling policy to equally distribute replicas (noble)
 
-* SOLR-12441: New NestedUpdateProcessorFactory (URP) to populate special fields _NEST_PARENT_ and _NEST_PATH_ of nested
+* SOLR-12441: New NestedUpdateProcessorFactory (URP) to populate special fields _nest_parent_ and _nest_path_ of nested
   (child) documents.  It will generate a uniqueKey of nested docs if they were blank too. (Moshe Bla, David Smiley)
 
 Bug Fixes
