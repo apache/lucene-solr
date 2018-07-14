@@ -169,6 +169,9 @@ Improvements
 
 * LUCENE-8367: Make per-dimension drill down optional for each facet dimension (Mike McCandless)
 
+* LUCENE-8396: Add Points Based Shape Indexing and Search that decomposes shapes
+  into a triangular mesh and indexes individual triangles as a 6 dimension point (Nick Knize)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
