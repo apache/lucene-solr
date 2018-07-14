@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -90,7 +91,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
 
     waitForThingsToLevelOut(15);
@@ -258,7 +259,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
    * See SOLR-9439
    */
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //05-Jul-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15);
 
@@ -279,13 +280,12 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       ClusterState state = zkStateReader.getClusterState();
       DocCollection collection = state.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
 
+      // should be cleaned up
       Slice shard10 = collection.getSlice(SHARD1_0);
-      assertEquals(Slice.State.CONSTRUCTION, shard10.getState());
-      assertEquals(1, shard10.getReplicas().size());
+      assertNull(shard10);
 
       Slice shard11 = collection.getSlice(SHARD1_1);
-      assertEquals(Slice.State.CONSTRUCTION, shard11.getState());
-      assertEquals(1, shard11.getReplicas().size());
+      assertNull(shard11);
 
       // lets retry the split
       TestInjection.reset(); // let the split succeed
@@ -305,6 +305,95 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   @Test
+  public void testSplitAfterFailedSplit2() throws Exception {
+    waitForThingsToLevelOut(15);
+
+    TestInjection.splitFailureAfterReplicaCreation = "true:100"; // we definitely want split to fail
+    try {
+      try {
+        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+        splitShard.setShardName(SHARD1);
+        splitShard.process(cloudClient);
+        fail("Shard split was not supposed to succeed after failure injection!");
+      } catch (Exception e) {
+        // expected
+      }
+
+      // assert that sub-shards cores exist and sub-shard is in construction state
+      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      zkStateReader.forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+      ClusterState state = zkStateReader.getClusterState();
+      DocCollection collection = state.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+
+      // should be cleaned up
+      Slice shard10 = collection.getSlice(SHARD1_0);
+      assertNull(shard10);
+
+      Slice shard11 = collection.getSlice(SHARD1_1);
+      assertNull(shard11);
+
+      // lets retry the split
+      TestInjection.reset(); // let the split succeed
+      try {
+        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+        splitShard.setShardName(SHARD1);
+        splitShard.process(cloudClient);
+        // Yay!
+      } catch (Exception e) {
+        log.error("Shard split failed", e);
+        fail("Shard split did not succeed after a previous failed split attempt left sub-shards in construction state");
+      }
+
+    } finally {
+      TestInjection.reset();
+    }
+  }
+
+  @Test
+  public void testSplitMixedReplicaTypes() throws Exception {
+    waitForThingsToLevelOut(15);
+    String collectionName = "testSplitMixedReplicaTypes";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2, 2, 2);
+    create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
+    create.process(cloudClient);
+    waitForRecoveriesToFinish(collectionName, false);
+
+    CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName);
+    splitShard.setShardName(SHARD1);
+    splitShard.process(cloudClient);
+    waitForThingsToLevelOut(15);
+
+    cloudClient.getZkStateReader().forceUpdateCollection(collectionName);
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    DocCollection coll = clusterState.getCollection(collectionName);
+    log.info("coll: " + coll);
+
+    // verify the original shard
+    verifyShard(coll, SHARD1, Slice.State.INACTIVE, 2, 2, 2);
+    // verify new sub-shards
+    verifyShard(coll, SHARD1_0, Slice.State.ACTIVE, 2, 2, 2);
+    verifyShard(coll, SHARD1_1, Slice.State.ACTIVE, 2, 2, 2);
+  }
+
+  private void verifyShard(DocCollection coll, String shard, Slice.State expectedState, int numNrt, int numTlog, int numPull) throws Exception {
+    Slice s = coll.getSlice(shard);
+    assertEquals("unexpected shard state", expectedState, s.getState());
+    AtomicInteger actualNrt = new AtomicInteger();
+    AtomicInteger actualTlog = new AtomicInteger();
+    AtomicInteger actualPull = new AtomicInteger();
+    s.getReplicas().forEach(r -> {
+      switch (r.getType()) {
+        case NRT: actualNrt.incrementAndGet(); break;
+        case TLOG: actualTlog.incrementAndGet(); break;
+        case PULL: actualPull.incrementAndGet(); break;
+      }
+    });
+    assertEquals("actual NRT", numNrt, actualNrt.get());
+    assertEquals("actual TLOG", numTlog, actualTlog.get());
+    assertEquals("actual PULL", numPull, actualPull.get());
+  }
+
+    @Test
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSplitWithChaosMonkey() throws Exception {
     waitForThingsToLevelOut(15);

@@ -21,11 +21,8 @@ import java.io.Reader;
 
 import morfologik.stemming.Dictionary;
 import morfologik.stemming.polish.PolishStemmer;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
@@ -60,7 +57,7 @@ public class MorfologikAnalyzer extends Analyzer {
    * @param field ignored field name
    * @return A {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter} and {@link MorfologikFilter}.
+   *         {@link MorfologikFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(final String field) {
@@ -68,11 +65,7 @@ public class MorfologikAnalyzer extends Analyzer {
     
     return new TokenStreamComponents(
         src, 
-        new MorfologikFilter(new StandardFilter(src), dictionary));
+        new MorfologikFilter(src, dictionary));
   }
 
-  @Override
-  protected TokenStream normalize(String fieldName, TokenStream in) {
-    return new StandardFilter(in);
-  }
 }

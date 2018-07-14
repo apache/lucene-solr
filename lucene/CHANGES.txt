@@ -47,6 +47,15 @@ API Changes
 * LUCENE-8144: Moved QueryCachingPolicy.ALWAYS_CACHE to the test framework.
   (Nhat Nguyen via Adrien Grand)
 
+* LUCENE-8356: StandardFilter and StandardFilterFactory have been removed
+  (Alan Woodward)
+
+* LUCENE-8373: StandardAnalyzer.ENGLISH_STOP_WORD_SET has been removed
+  (Alan Woodward)
+
+* LUCENE-8388: Unused PostingsEnum#attributes() method has been removed 
+  (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -72,6 +81,9 @@ Changes in Runtime Behavior
 
 * LUCENE-8031: Length normalization correctly reflects omission of term frequencies.
   (Robert Muir, Adrien Grand)
+
+* LUCENE-7444: StandardAnalyzer no longer defaults to removing English stopwords
+  (Alan Woodward)
 
 Improvements
 
@@ -107,7 +119,86 @@ Optimizations
   or phrase queries as sub queries, which know how to leverage this information
   to run faster. (Adrien Grand)
 
+======================= Lucene 7.5.0 =======================
+
+API Changes:
+
+* LUCENE-8356: StandardFilter is deprecated (Alan Woodward)
+
+* LUCENE-8373: ENGLISH_STOP_WORD_SET on StandardAnalyzer is deprecated.  Instead
+  use EnglishAnalyzer.ENGLISH_STOP_WORD_SET.  The default constructor for
+  StopAnalyzer is also deprecated, and a stop word set should be explicitly
+  passed to the constructor.  (Alan Woodward)
+
+* LUCENE-8378: Add DocIdSetIterator.range static method to return an iterator
+  matching a range of docids (Mike McCandless)
+
+* LUCENE-8379: Add experimental TermQuery.getTermStates method (Mike McCandless)
+
+* LUCENE-8390: MatchesIteratorSupplier replaced by IOSupplier (Alan Woodward,
+  David Smiley)
+
+* LUCENE-8397: Add DirectoryTaxonomyWriter.getCache (Mike McCandless)
+
+Bug Fixes:
+
+* LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
+
+* LUCENE-8164: IndexWriter silently accepts broken payload. This has been fixed
+  via LUCENE-8165 since we are now checking for offset+length going out of bounds.
+  (Robert Muir, Nhat Nyugen, Simon Willnauer)
+
+* LUCENE-8370: Reproducing 
+  TestLucene{54,70}DocValuesFormat.testSortedSetVariableLengthBigVsStoredFields()
+  failures (Erick Erickson)
+
+* LUCENE-8376, LUCENE-8371: ConditionalTokenFilter.end() would not propagate correctly
+  if the last token in the stream was subsequently dropped; FixedShingleFilter did
+  not set position increment in end() (Alan Woodward)
+
+* LUCENE-8395: WordDelimiterGraphFilter would incorrectly insert a hole into a
+  TokenStream if a token consisting entirely of delimiter characters was 
+  encountered, but preserve_original was set. (Alan Woodward)
+
+Changes in Runtime Behavior:
+
+* LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
+  findForcedMerges and findForcedDeletesMerges (Erick Erickson)
+
+Improvements
+
+* LUCENE-8367: Make per-dimension drill down optional for each facet dimension (Mike McCandless)
+
+* LUCENE-8396: Add Points Based Shape Indexing and Search that decomposes shapes
+  into a triangular mesh and indexes individual triangles as a 6 dimension point (Nick Knize)
+
+Other:
+
+* LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
+  Extended_Pictographic property. (Robert Muir)
+
+======================= Lucene 7.4.1 =======================
+
+Bug Fixes:
+ 
+ * LUCENE-8365: Fix ArrayIndexOutOfBoundsException in UnifiedHighlighter. This fixes 
+   a "off by one" error in the UnifiedHighlighter's code that is only triggered when
+   two nested SpanNearQueries contain the same term. (Marc-Andre Morissette via Simon Willnauer)
+
+ * LUCENE-8381: Fix IndexWriter incorrectly interprets hard-deletes as soft-deletes
+   while wrapping reader for merges. (Simon Willnauer, Nhat Nguyen)
+
+ * LUCENE-8384: Fix missing advance docValues generation while handling docValues
+   update in PendingSoftDeletes. (Simon Willnauer, Nhat Nguyen)
+
 ======================= Lucene 7.4.0 =======================
+
+Upgrading
+
+* LUCENE-8344: If you are using the AnalyzingSuggester or FuzzySuggester subclass, and if you
+  explicitly use the preservePositionIncrements=false setting (not the default), then you ought
+  to rebuild your suggester index. If you don't, queries or indexed data with trailing position
+  gaps (e.g. stop words) may not work correctly. (David Smiley, Jim Ferenczi)
 
 API Changes
 
@@ -263,9 +354,28 @@ Bug Fixes
 * LUCENE-8186: LowerCaseTokenizerFactory now lowercases text in multi-term
   queries. (Tim Allison via Adrien Grand)
 
+* LUCENE-8278: Some end-of-input no-scheme domain-only URL tokens are typed as
+  <ALPHANUM> rather than <URL>.  (Junte Zhang, Steve Rowe)
+
+* LUCENE-8355: Prevent IW from opening an already dropped segment while DV updates
+  are written. (Nhat Nguyen via Simon Willnauer)
+
+* LUCENE-8344: TokenStreamToAutomaton (used by some suggesters) was not ignoring a trailing
+  position increment when the preservePositionIncrement setting is false.
+  (David Smiley, Jim Ferenczi)
+
+* LUCENE-8357: FunctionScoreQuery.boostByQuery() and boostByValue() were
+  producing truncated Explanations (Markus Jelsma, Alan Woodward)
+
+* LUCENE-8360: NGramTokenFilter and EdgeNGramTokenFilter did not correctly
+  set position increments in end() (Alan Woodward)
+
 Other
 
 * LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
+
+* LUCENE-8299: Geo3D wrapper uses new polygon method factory that gives better
+  support for polygons with many points (>100). (Ignacio vera)
 
 * LUCENE-8261: InterpolatedProperties.interpolate and recursive property
   references. (Steve Rowe, Dawid Weiss)
@@ -953,6 +1063,9 @@ Other
 * LUCENE-7876: Avoid calls to LeafReader.fields() and MultiFields.getFields()
   that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
   (David Smiley)
+
+======================= Lucene 6.6.5 =======================
+(No Changes)
 
 ======================= Lucene 6.6.4 =======================
 (No Changes)

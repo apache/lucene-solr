@@ -50,14 +50,15 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
       // We allocate 1 extra to avoid if statement in top()
       heapSize = 2;
     } else {
+
+      if ((maxSize < 0) || (maxSize >= ArrayUtil.MAX_ARRAY_LENGTH)) {
+        // Throw exception to prevent confusing OOME:
+        throw new IllegalArgumentException("maxSize must be >= 0 and < " + (ArrayUtil.MAX_ARRAY_LENGTH) + "; got: " + maxSize);
+      }
+
       // NOTE: we add +1 because all access to heap is
       // 1-based not 0-based.  heap[0] is unused.
       heapSize = maxSize + 1;
-
-      if (heapSize > ArrayUtil.MAX_ARRAY_LENGTH) {
-        // Throw exception to prevent confusing OOME:
-        throw new IllegalArgumentException("maxSize must be <= " + (ArrayUtil.MAX_ARRAY_LENGTH-1) + "; got: " + maxSize);
-      }
     }
     // T is unbounded type, so this unchecked cast works always:
     @SuppressWarnings("unchecked") final T[] h = (T[]) new Object[heapSize];

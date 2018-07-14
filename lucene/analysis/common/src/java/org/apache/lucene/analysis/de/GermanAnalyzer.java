@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.IOUtils;
 
@@ -124,15 +123,14 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
+   *         {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided, {@link GermanNormalizationFilter} and {@link GermanLightStemFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new LowerCaseFilter(result);
+    TokenStream result = new LowerCaseFilter(source);
     result = new StopFilter(result, stopwords);
     result = new SetKeywordMarkerFilter(result, exclusionSet);
     result = new GermanNormalizationFilter(result);
@@ -142,8 +140,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new LowerCaseFilter(result);
+    TokenStream result = new LowerCaseFilter(in);
     result = new GermanNormalizationFilter(result);
     return result;
   }

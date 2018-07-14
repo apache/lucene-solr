@@ -539,6 +539,19 @@ public final class CheckIndex implements Closeable {
       return result;
     }
 
+    if (infoStream != null) {
+      int maxDoc = 0;
+      int delCount = 0;
+      for (SegmentCommitInfo info : sis) {
+        maxDoc += info.info.maxDoc();
+        delCount += info.getDelCount();
+      }
+      infoStream.println(String.format(Locale.ROOT, "%.2f%% total deletions; %d documents; %d deleteions",
+                                       100.*delCount/maxDoc,
+                                       maxDoc,
+                                       delCount));
+    }
+    
     // find the oldest and newest segment versions
     Version oldest = null;
     Version newest = null;

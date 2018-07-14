@@ -87,7 +87,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  // Removed BadApple on 18-May-2018
   public void leaderRecoverFromLogOnStartupTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     DirectUpdateHandler2.commitOnClose = false;

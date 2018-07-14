@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -655,6 +656,20 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
  }
+  @Test
+  public void testStreamingRequest() throws Exception {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    QueryResponse rsp = client.query( new SolrQuery( "*:*") );
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
+    NamedList<Object> result = client.request(new StreamingUpdateRequest("/update",
+        getFile("solrj/books.csv"), "application/csv")
+        .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
+    assertNotNull("Couldn't upload books.csv", result);
+    rsp = client.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 10, rsp.getResults().getNumFound() );
+  }
 
  @Test
  public void testMultiContentStreamRequest() throws Exception {

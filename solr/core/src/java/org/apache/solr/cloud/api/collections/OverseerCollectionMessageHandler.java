@@ -129,8 +129,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   public static final String REQUESTID = "requestid";
 
-  public static final String COLL_CONF = "collection.configName";
-
   public static final String COLL_PROP_PREFIX = "property.";
 
   public static final String ONLY_IF_DOWN = "onlyIfDown";
@@ -141,7 +139,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   static final String SKIP_CREATE_REPLICA_IN_CLUSTER_STATE = "skipCreateReplicaInClusterState";
 
-  public static final Map<String, Object> COLL_PROPS = Collections.unmodifiableMap(makeMap(
+  public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS = Collections.unmodifiableMap(makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       ZkStateReader.REPLICATION_FACTOR, "1",
       ZkStateReader.NRT_REPLICAS, "1",
@@ -628,7 +626,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     //the rest of the processing is based on writing cluster state properties
     //remove the property here to avoid any errors down the pipeline due to this property appearing
-    String configName = (String) message.getProperties().remove(COLL_CONF);
+    String configName = (String) message.getProperties().remove(CollectionAdminParams.COLL_CONF);
     
     if(configName != null) {
       validateConfigOrThrowSolrException(configName);
@@ -638,7 +636,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
     }
     
-    overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
 
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
     boolean areChangesVisible = true;
@@ -647,9 +645,16 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       areChangesVisible = true;
       for (Map.Entry<String,Object> updateEntry : message.getProperties().entrySet()) {
         String updateKey = updateEntry.getKey();
+
         if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
             && !updateKey.equals(Overseer.QUEUE_OPERATION)
+            && updateEntry.getValue() != null // handled below in a separate conditional
             && !collection.get(updateKey).equals(updateEntry.getValue())){
+          areChangesVisible = false;
+          break;
+        }
+
+        if (updateEntry.getValue() == null && collection.containsKey(updateKey)) {
           areChangesVisible = false;
           break;
         }

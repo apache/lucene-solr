@@ -102,7 +102,12 @@ The name of the shard to which the policy rule should apply. If omitted, the rul
 The type of the replica to which the policy rule should apply. If omitted, the rule is applied for all replica types of this collection/shard. The allowed values are `NRT`, `TLOG` and `PULL`
 
 `replica`::
-The number of replicas that must exist to satisfy the rule. This must be a positive integer. This is a required attribute.
+This is a required attribute. The number of replicas that must exist to satisfy the rule. This must be one of
+
+* a positive integer . e.g : "`3`"
+* a number with a decimal value . e.g: "`1.66`" . This means both 1 and 2 are acceptable values but the system would prefer `2`
+* a number range. Such as `"3-5"` . This means `3,4,5` are acceptable values
+* a percentage value . e.g: `33%` . This is computed to a decimal value at runtime
 
 `strict`::
 An optional boolean value. The default is `true`. If true, the rule must be satisfied. If false, Solr tries to satisfy the rule on a best effort basis but if no node can satisfy the rule then any node may be chosen.
@@ -151,7 +156,15 @@ Each attribute in the policy may specify one of the following operators along wi
 * `<`: Less than
 * `>`: Greater than
 * `!`: Not
+* Range operator `(-)` : a value such as `"3-5"` means a value between 3 to 5 (inclusive). This is only supported in the following attributes
+** `replica`
 * None means equal
+
+==== Special functions
+This supports values calculated at the time of execution.
+
+* `%` : A certain percentage of the value. This is supported by the following attributes
+** `replica`
 
 === Examples of Policy Rules
 
@@ -179,6 +192,35 @@ Place all replicas on a node with system property `availability_zone=us-east-1a`
 [source,json]
 {"replica": 0, "sysprop.availability_zone": "!us-east-1a"}
 
+===== Use Percentage
+
+====== example 1
+Place roughly a maximum of a 3rd of the replicas of a shard in a node. In the following example, the value of replica is computed in real time.
+[source,json]
+{"replica": "33%", "shard": "#EACH", "node": "#ANY"}
+
+If the no:of of replicas in a shard is `2` , `33% of 2 = 0.66` . This means a node may have a maximum of `1` and a minimum of `0` replicas of each shard.
+
+It is possible to get the same effect by hard coding the value of replica as follows
+
+[source,json]
+{"replica": 0.66, "shard": "#EACH", "node": "#ANY"}
+
+or using the range operator
+
+[source,json]
+{"replica": "0-1", "shard": "#EACH", "node": "#ANY"}
+
+====== example 2
+Distribute  replicas across  datacenters east and west at a `1:2` ratio
+
+[source,json]
+{"replica": "33%", "shard": "#EACH", "sysprop.zone": "east"}
+{"replica": "66%", "shard": "#EACH", "sysprop.zone": "west"}
+
+For the above rule to work, all nodes must the started with a system property called `"zone"`
+
+
 ==== Place Replicas Based on Node Role
 Do not place any replica on a node which has the overseer role. Note that the role is added by the `addRole` collection API. It is *not* automatically the node which is currently the overseer.
 
@@ -197,12 +239,12 @@ Place all replicas in nodes with freedisk more than 500GB when possible. Here we
 [source,json]
 {"replica": 0, "freedisk": "<500", "strict" : false}
 
-==== Try to Place all Replicas of type TLOG in nodes with SSD drives
+==== Try to Place all Replicas of type TLOG on Nodes with SSD Drives
 
 [source,json]
 { "replica": 0,  "diskType" : "!ssd",  "type" : "TLOG" }
 
-==== Try to Place all Replicas of type PULL on nodes with rotational disk drives
+==== Try to Place all Replicas of type PULL on Nodes with Rotational Disk Drives
 
 [source,json]
 { "replica": 0,  "diskType" : "!rotational",  "type" : "PULL" }

@@ -1361,19 +1361,6 @@ Spanish stemmer, Spanish words:
 
 *Out:* "cant", "cant"
 
-== Standard Filter
-
-This filter removes dots from acronyms and the substring "'s" from the end of tokens. This filter depends on the tokens being tagged with the appropriate term-type to recognize acronyms and words with apostrophes.
-
-*Factory class:* `solr.StandardFilterFactory`
-
-*Arguments:* None
-
-[WARNING]
-====
-This filter is no longer operational in Solr when the `luceneMatchVersion` (in `solrconfig.xml`) is higher than "3.1".
-====
-
 == Stop Filter
 
 This filter discards, or _stops_ analysis of, tokens that are on the given stop words list. A standard stop words list is included in the Solr `conf` directory, named `stopwords.txt`, which is appropriate for typical English language text.
@@ -1428,7 +1415,7 @@ Case-sensitive matching, capitalized words not stopped. Token positions skip sto
 
 Like <<Stop Filter>>, this filter discards, or _stops_ analysis of, tokens that are on the given stop words list.
 
-Suggest Stop Filter differs from Stop Filter in that it will not remove the last token unless it is followed by a token separator. For example, a query `"find the"` would preserve the `'the'` since it was not followed by a space, punctuation etc., and mark it as a `KEYWORD` so that following filters will not change or remove it.
+Suggest Stop Filter differs from Stop Filter in that it will not remove the last token unless it is followed by a token separator. For example, a query `"find the"` would preserve the `'the'` since it was not followed by a space, punctuation, etc., and mark it as a `KEYWORD` so that following filters will not change or remove it.
 
 By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopword, since it's followed by a space. When using one of the analyzing suggesters, you would normally use the ordinary `StopFilterFactory` in your index analyzer and then SuggestStopFilter in your query analyzer.
 

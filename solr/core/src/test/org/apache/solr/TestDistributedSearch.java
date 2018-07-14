@@ -108,7 +108,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  //05-Jul-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void test() throws Exception {
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
@@ -1211,6 +1211,16 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   private void validateCommonQueryParameters() throws Exception {
     ignoreException("parameter cannot be negative");
+
+    try {
+      SolrQuery query = new SolrQuery();
+      query.setParam("start", "non_numeric_value").setQuery("*");
+      QueryResponse resp = query(query);
+      fail("Expected the last query to fail, but got response: " + resp);
+    } catch (SolrException e) {
+      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
+    }
+
     try {
       SolrQuery query = new SolrQuery();
       query.setStart(-1).setQuery("*");
@@ -1223,6 +1233,15 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     try {
       SolrQuery query = new SolrQuery();
       query.setRows(-1).setStart(0).setQuery("*");
+      QueryResponse resp = query(query);
+      fail("Expected the last query to fail, but got response: " + resp);
+    } catch (SolrException e) {
+      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
+    }
+
+    try {
+      SolrQuery query = new SolrQuery();
+      query.setParam("rows", "non_numeric_value").setQuery("*");
       QueryResponse resp = query(query);
       fail("Expected the last query to fail, but got response: " + resp);
     } catch (SolrException e) {

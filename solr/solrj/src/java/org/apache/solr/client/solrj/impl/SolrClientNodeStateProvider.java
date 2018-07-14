@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.params.CommonParams;
@@ -70,19 +70,31 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
   private final CloudSolrClient solrClient;
-  private final ZkStateReader zkStateReader;
   private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
   private Map<String, Object> snitchSession = new HashMap<>();
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
   public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
     this.solrClient = solrClient;
-    this.zkStateReader = solrClient.getZkStateReader();
-    ClusterState clusterState = zkStateReader.getClusterState();
+    try {
+      readReplicaDetails();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    if(log.isDebugEnabled()) INST = this;
+  }
+
+  protected ClusterStateProvider getClusterStateProvider() {
+    return solrClient.getClusterStateProvider();
+  }
+
+  private void readReplicaDetails() throws IOException {
+    ClusterStateProvider clusterStateProvider = getClusterStateProvider();
+    ClusterState clusterState = clusterStateProvider.getClusterState();
     if (clusterState == null) { // zkStateReader still initializing
       return;
     }
-    Map<String, ClusterState.CollectionRef> all = clusterState.getCollectionStates();
+    Map<String, ClusterState.CollectionRef> all = clusterStateProvider.getClusterState().getCollectionStates();
     all.forEach((collName, ref) -> {
       DocCollection coll = ref.get();
       if (coll == null) return;
@@ -93,7 +105,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         replicas.add(new ReplicaInfo(collName, shard, replica, new HashMap<>(replica.getProperties())));
       });
     });
-    if(log.isDebugEnabled()) INST = this;
   }
 
   @Override
@@ -106,11 +117,20 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   @Override
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+    Map<String, Object> tagVals = fetchTagValues(node, tags);
+    nodeVsTags.put(node, tagVals);
+    return tagVals;
+  }
+
+  protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
     AutoScalingSnitch snitch = new AutoScalingSnitch();
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, node, snitchSession, solrClient);
     snitch.getTags(node, new HashSet<>(tags), ctx);
-    nodeVsTags.put(node, ctx.getTags());
     return ctx.getTags();
+  }
+
+  public void forEachReplica(String node, Consumer<ReplicaInfo> consumer){
+    Row.forEachReplica(nodeVsCollectionVsShardVsReplicaInfo.get(node), consumer);
   }
 
 
@@ -122,16 +142,23 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       Row.forEachReplica(result, r -> {
         for (String key : keys) {
           if (r.getVariables().containsKey(key)) continue;
-          keyVsReplica.put("solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":" + key, new Pair<>(key, r));
+          String perReplicaAttrKeyPrefix = "solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":";
+          Suggestion.ConditionType tagType = Suggestion.getTagType(key);
+          String perReplicaValue = key;
+          if (tagType != null) {
+            perReplicaValue = tagType.metricsAttribute;
+            perReplicaValue = perReplicaValue == null ? key : perReplicaValue;
+          }
+          perReplicaAttrKeyPrefix += perReplicaValue;
+          keyVsReplica.put(perReplicaAttrKeyPrefix, new Pair<>(key, r));
         }
       });
 
       if (!keyVsReplica.isEmpty()) {
-        ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient);
-        fetchMetrics(node, ctx,
+        Map<String, Object> tags = fetchReplicaMetrics(node,
             keyVsReplica.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey)));
-        ctx.getTags().forEach((k, o) -> {
+        tags.forEach((k, o) -> {
           Pair<String, ReplicaInfo> p = keyVsReplica.get(k);
           Suggestion.ConditionType validator = Suggestion.getTagType(p.first());
           if (validator != null) o = validator.convertVal(o);
@@ -143,7 +170,14 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return result;
   }
 
-  static void fetchMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
+  protected  Map<String,Object> fetchReplicaMetrics(String solrNode, Map<String, Object> metricsKeyVsTag) {
+    ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient);
+    fetchReplicaMetrics(solrNode, ctx,metricsKeyVsTag);
+    return ctx.getTags();
+
+  }
+
+  static void fetchReplicaMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
     try {
@@ -196,7 +230,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         });
       }
       if (!metricsKeyVsTag.isEmpty()) {
-        fetchMetrics(solrNode, snitchContext, metricsKeyVsTag);
+        fetchReplicaMetrics(solrNode, snitchContext, metricsKeyVsTag);
       }
 
       Set<String> groups = new HashSet<>();

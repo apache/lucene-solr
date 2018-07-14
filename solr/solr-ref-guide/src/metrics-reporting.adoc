@@ -520,7 +520,7 @@ A few query parameters are available to limit your request to only certain metri
 
 `prefix`:: The first characters of metric name that will filter the metrics returned to those starting with the provided string. It can be combined with `group` and/or `type` parameters. More than one prefix can be specified in a request; multiple prefixes should be separated by a comma. Prefix matching is also case-sensitive.
 
-`regex`:: A regular expression matching metric names. Note: dot separators in metric names must be escaped, eg.
+`regex`:: A regular expression matching metric names. Note: dot separators in metric names must be escaped, e.g.,
 `QUERY\./select\..*` is a valid regex that matches all metrics with the `QUERY./select.` prefix.
 
 `property`:: Allows requesting only this metric from any compound metric. Multiple `property` parameters can be combined to act as an OR request. For example, to only get the 99th and 999th percentile values from all metric types and groups, you can add `&property=p99_ms&property=p999_ms` to your request. This can be combined with `group`, `type`, and `prefix` as necessary.

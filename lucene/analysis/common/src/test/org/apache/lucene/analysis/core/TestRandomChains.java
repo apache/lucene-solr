@@ -88,6 +88,7 @@ import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.snowball.TestSnowball;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymMap;
@@ -124,6 +125,17 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     avoidConditionals.add(FingerprintFilter.class);
     avoidConditionals.add(MinHashFilter.class);
     avoidConditionals.add(ConcatenateGraphFilter.class);
+    // ShingleFilter doesn't handle input graphs correctly, so wrapping it in a condition can
+    // expose inconsistent offsets
+    // https://issues.apache.org/jira/browse/LUCENE-4170
+    avoidConditionals.add(ShingleFilter.class);
+    // FlattenGraphFilter changes the output graph entirely, so wrapping it in a condition
+    // can break position lengths
+    avoidConditionals.add(FlattenGraphFilter.class);
+    // LimitToken*Filters don't set end offsets correctly
+    avoidConditionals.add(LimitTokenOffsetFilter.class);
+    avoidConditionals.add(LimitTokenCountFilter.class);
+    avoidConditionals.add(LimitTokenPositionFilter.class);
   }
 
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
@@ -620,7 +632,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       return sb.toString();
     }
     
-    private <T> T createComponent(Constructor<T> ctor, Object[] args, StringBuilder descr) {
+    private <T> T createComponent(Constructor<T> ctor, Object[] args, StringBuilder descr, boolean isConditional) {
       try {
         final T instance = ctor.newInstance(args);
         /*
@@ -629,6 +641,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         }
         */
         descr.append("\n  ");
+        if (isConditional) {
+          descr.append("Conditional:");
+        }
         descr.append(ctor.getDeclaringClass().getName());
         String params = Arrays.deepToString(args);
         params = params.substring(1, params.length()-1);
@@ -667,7 +682,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         if (broken(ctor, args)) {
           continue;
         }
-        spec.tokenizer = createComponent(ctor, args, descr);
+        spec.tokenizer = createComponent(ctor, args, descr, false);
         if (spec.tokenizer != null) {
           spec.toString = descr.toString();
         }
@@ -687,7 +702,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           if (broken(ctor, args)) {
             continue;
           }
-          reader = createComponent(ctor, args, descr);
+          reader = createComponent(ctor, args, descr, false);
           if (reader != null) {
             spec.reader = reader;
             break;
@@ -719,8 +734,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
               if (broken(ctor, args)) {
                 return in;
               }
-              descr.append("ConditionalTokenFilter: ");
-              TokenStream ts = createComponent(ctor, args, descr);
+              TokenStream ts = createComponent(ctor, args, descr, true);
               if (ts == null) {
                 return in;
               }
@@ -746,7 +760,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
             if (broken(ctor, args)) {
               continue;
             }
-            final TokenFilter flt = createComponent(ctor, args, descr);
+            final TokenFilter flt = createComponent(ctor, args, descr, false);
             if (flt != null) {
               spec.stream = flt;
               break;

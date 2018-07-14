@@ -429,11 +429,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     Directory dir;
     long size = 0;
     try {
-      dir = directoryFactory.get(getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
-      try {
-        size = DirectoryFactory.sizeOfDirectory(dir);
-      } finally {
-        directoryFactory.release(dir);
+      if (directoryFactory.exists(getIndexDir())) {
+        dir = directoryFactory.get(getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
+        try {
+          size = DirectoryFactory.sizeOfDirectory(dir);
+        } finally {
+          directoryFactory.release(dir);
+        }
       }
     } catch (IOException e) {
       SolrException.log(log, "IO error while trying to get the size of the Directory", e);

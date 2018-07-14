@@ -35,6 +35,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
@@ -94,12 +95,12 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     NamedList<Object> rsp = solrClient.request(createHistoryRequest(params(CommonParams.ACTION, "list")));
     assertNotNull(rsp);
     // expected solr.jvm, solr.node and solr.collection..system
-    List<String> lst = (List<String>)rsp.get("metrics");
+    SimpleOrderedMap<Object> lst = (SimpleOrderedMap<Object>) rsp.get("metrics");
     assertNotNull(lst);
     assertEquals(lst.toString(), 3, lst.size());
-    assertTrue(lst.toString(), lst.contains("solr.jvm"));
-    assertTrue(lst.toString(), lst.contains("solr.node"));
-    assertTrue(lst.toString(), lst.contains("solr.collection..system"));
+    assertNotNull(lst.toString(), lst.get("solr.jvm"));
+    assertNotNull(lst.toString(), lst.get("solr.node"));
+    assertNotNull(lst.toString(), lst.get("solr.collection..system"));
   }
 
   @Test

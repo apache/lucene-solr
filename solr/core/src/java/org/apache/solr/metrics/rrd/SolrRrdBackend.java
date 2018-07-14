@@ -19,6 +19,7 @@ package org.apache.solr.metrics.rrd;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.rrd4j.core.RrdByteArrayBackend;
@@ -36,14 +37,27 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
   private final ReentrantLock lock = new ReentrantLock();
   private volatile boolean dirty = false;
   private volatile boolean closed = false;
+  private volatile long lastModifiedTime;
+
+  public static final class SyncData {
+    public byte[] data;
+    public long timestamp;
+
+    public SyncData(byte[] data, long timestamp) {
+      this.data = data;
+      this.timestamp = timestamp;
+    }
+  }
 
   public SolrRrdBackend(String path, boolean readOnly, SolrRrdBackendFactory factory) {
     super(path);
     this.factory = factory;
+    this.lastModifiedTime = TimeUnit.MILLISECONDS.convert(factory.getTimeSource().getEpochTimeNs(), TimeUnit.NANOSECONDS);
     try {
-      byte[] data = factory.getData(path);
-      if (data != null) {
-        this.buffer = data;
+      SyncData syncData = factory.getData(path);
+      if (syncData != null) {
+        this.buffer = syncData.data;
+        this.lastModifiedTime = syncData.timestamp;
       }
     } catch (IOException e) {
       log.warn("Exception retrieving data from " + path + ", store will be readOnly", e);
@@ -60,6 +74,7 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
     super(other.getPath());
     readOnly = true;
     factory = null;
+    this.lastModifiedTime = other.lastModifiedTime;
     byte[] otherBuffer = other.buffer;
     buffer = new byte[otherBuffer.length];
     System.arraycopy(otherBuffer, 0, buffer, 0, otherBuffer.length);
@@ -67,6 +82,10 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
 
   public boolean isReadOnly() {
     return readOnly;
+  }
+
+  public long getLastModifiedTime() {
+    return lastModifiedTime;
   }
 
   @Override
@@ -77,13 +96,14 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
     lock.lock();
     try {
       super.write(offset, bytes);
+      lastModifiedTime = TimeUnit.MILLISECONDS.convert(factory.getTimeSource().getEpochTimeNs(), TimeUnit.NANOSECONDS);
       dirty = true;
     } finally {
       lock.unlock();
     }
   }
 
-  public byte[] getSyncData() {
+  public SyncData getSyncData() {
     if (readOnly || closed) {
       return null;
     }
@@ -95,7 +115,7 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
     try {
       byte[] bufferCopy = new byte[buffer.length];
       System.arraycopy(buffer, 0, bufferCopy, 0, buffer.length);
-      return bufferCopy;
+      return new SyncData(bufferCopy, lastModifiedTime);
     } finally {
       lock.unlock();
     }

@@ -2532,6 +2532,13 @@ public class SolrCLI {
               .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
               .create("solrUrl"),
           OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Address of the Zookeeper ensemble")
+              .withLongOpt("zkHost")
+              .create('z'),
+          OptionBuilder
               .withArgName("PORT")
               .hasArg()
               .isRequired(false)

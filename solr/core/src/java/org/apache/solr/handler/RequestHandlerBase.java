@@ -208,6 +208,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         }
       }
     } catch (Exception e) {
+      if (req.getCore() != null) {
+        req.getCore().getCoreContainer().checkTragicException(req.getCore());
+      }
       boolean incrementErrors = true;
       boolean isServerError = true;
       if (e instanceof SolrException) {

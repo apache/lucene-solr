@@ -92,6 +92,36 @@ public class TestTermQuery extends LuceneTestCase {
     IOUtils.close(reader, w, dir);
   }
 
+  public void testGetTermStates() throws Exception {
+
+    // no term states:
+    assertNull(new TermQuery(new Term("foo", "bar")).getTermStates());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    // segment that contains the term
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.NO));
+    w.addDocument(doc);
+    w.getReader().close();
+    // segment that does not contain the term
+    doc = new Document();
+    doc.add(new StringField("foo", "baz", Store.NO));
+    w.addDocument(doc);
+    w.getReader().close();
+    // segment that does not contain the field
+    w.addDocument(new Document());
+
+    DirectoryReader reader = w.getReader();
+    FilterDirectoryReader noSeekReader = new NoSeekDirectoryReader(reader);
+    IndexSearcher noSeekSearcher = new IndexSearcher(noSeekReader);
+    Query query = new TermQuery(new Term("foo", "bar"));
+    TermQuery queryWithContext = new TermQuery(new Term("foo", "bar"),
+        TermStates.build(reader.getContext(), new Term("foo", "bar"), true));
+    assertNotNull(queryWithContext.getTermStates());
+    IOUtils.close(reader, w, dir);
+  }
+
   private static class NoSeekDirectoryReader extends FilterDirectoryReader {
 
     public NoSeekDirectoryReader(DirectoryReader in) throws IOException {

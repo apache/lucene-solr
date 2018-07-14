@@ -156,9 +156,11 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
 [[modifycollection]]
 == MODIFYCOLLECTION: Modify Attributes of a Collection
 
-`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>_`
+`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>_&<yet_another_attribute_name>=`
 
 It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+
+An attribute can be deleted by passing an empty value e.g. `yet_another_attribute_name=` will delete the `yet_another_attribute_name` parameter from the collection.
 
 === MODIFYCOLLECTION Parameters
 
@@ -166,8 +168,10 @@ It's possible to edit multiple attributes at a time. Changing these values only 
 The name of the collection to be modified. This parameter is required.
 
 `_attribute_=_value_`::
-Key-value pairs of attribute names and attribute values. At least one of these is required.
-+
+Key-value pairs of attribute names and attribute values.
+
+At least one `_attribute_` parameter is required.
+
 The attributes that can be modified are:
 
 * maxShardsPerNode
@@ -247,7 +251,7 @@ The split is performed by dividing the original shard's hash range into two equa
 
 The newly created shards will have as many replicas as the parent shard.
 
-You must ensure that the node running the leader of the parent shard has enough free disk space i.e. more than twice the index size, for the split to succeed. The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+You must ensure that the node running the leader of the parent shard has enough free disk space i.e., more than twice the index size, for the split to succeed. The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
 Shard splitting can be a long running process. In order to avoid timeouts, you should run this as an <<Asynchronous Calls,asynchronous call>>.
 
@@ -2178,6 +2182,15 @@ Defines the name of the configurations to use for this collection. These must al
 
 `replicationFactor`::
 The number of replicas to be created for each shard.
+
+`nrtReplicas`::
+The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. This parameter behaves the same way as setting replicationFactor parameter.
+
+`tlogReplicas`::
+The number of TLOG replicas to create for this collection. This type of replica maintains a transaction log but only updates its index via replication from a leader. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`pullReplicas`::
+The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
 `maxShardsPerNode`::
 When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node.

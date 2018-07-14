@@ -94,7 +94,7 @@ Example: `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
 Description of some of the keys in the above example:
 
 * `**documentation**`: URL to the online Solr reference guide section for this API
-* `**description**`: A text description of the feature/variable/command etc.
+* `**description**`: A text description of the feature/variable/command, etc.
 * `**spec/methods**`: HTTP methods supported by this API
 * `**spec/url/paths**`: URL paths supported by this API
 * `**spec/url/params**`: List of supported URL request params

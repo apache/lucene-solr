@@ -217,6 +217,13 @@ public class TermQuery extends Query {
     return buffer.toString();
   }
 
+  /** Returns the {@link TermStates} passed to the constructor, or null if it was not passed.
+   *
+   * @lucene.experimental */
+  public TermStates getTermStates() {
+    return perReaderTermState;
+  }
+
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object other) {

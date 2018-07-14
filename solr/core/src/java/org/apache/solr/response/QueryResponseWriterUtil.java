@@ -24,8 +24,8 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.FastWriter;
 
 /**
  * Static utility methods relating to {@link QueryResponseWriter}s

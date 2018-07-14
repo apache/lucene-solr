@@ -22,9 +22,12 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -33,9 +36,12 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -45,12 +51,21 @@ import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -68,13 +83,23 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).configure();
+    configureCluster(4).configure();
+  }
+
+  @Before
+  public void doBefore() throws Exception {
     solrClient = getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
     System.out.println("SolrClient: " + solrClient);
     if (solrClient instanceof CloudSolrClient) {
-      System.out.println(((CloudSolrClient)solrClient).getClusterStateProvider());
+      System.out.println(((CloudSolrClient) solrClient).getClusterStateProvider());
     }
+  }
+
+  @After
+  public void doAfter() throws Exception {
+    cluster.deleteAllCollections(); // deletes aliases too
+    solrClient.close();
   }
 
   @AfterClass
@@ -82,48 +107,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     IOUtils.close(solrClient);
   }
 
+  @Slow
   @Test
   public void test() throws Exception {
-
-    // First create a configSet
-    // Then we create a collection with the name of the eventual config.
-    // We configure it, and ultimately delete the collection, leaving a modified config-set behind.
-    // Then when we create the "real" collections referencing this modified config-set.
-    assertEquals(0, new ConfigSetAdminRequest.Create()
-        .setConfigSetName(configName)
-        .setBaseConfigSetName("_default")
-        .process(solrClient).getStatus());
-
-    CollectionAdminRequest.createCollection(configName, configName, 1, 1).process(solrClient);
-
-    // manipulate the config...
-    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
-            "  'set-user-property' : {'update.autoCreateFields':false}," + // no data driven
-            "  'add-updateprocessor' : {" +
-            "    'name':'tolerant', 'class':'solr.TolerantUpdateProcessorFactory'" +
-            "  }," +
-            "  'add-updateprocessor' : {" + // for testing
-            "    'name':'inc', 'class':'" + IncrementURPFactory.class.getName() + "'," +
-            "    'fieldName':'" + intField + "'" +
-            "  }," +
-            "}").build()));
-    // only sometimes test with "tolerant" URP:
-    final String urpNames = "inc" + (random().nextBoolean() ? ",tolerant" : "");
-    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config/params")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
-            "  'set' : {" +
-            "    '_UPDATE' : {'processor':'" + urpNames + "'}" +
-            "  }" +
-            "}").build()));
-
-    CollectionAdminRequest.deleteCollection(configName).process(solrClient);
-    assertTrue(
-        new ConfigSetAdminRequest.List().process(solrClient).getConfigSets()
-            .contains(configName)
-    );
+    String configName = TimeRoutedAliasUpdateProcessorTest.configName + getTestName();
+    createConfigSet(configName);
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
     //  This tests we may pre-create the collection and it's acceptable.
@@ -135,9 +123,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
     List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
-    assertTrue("We only expect 2 configSets",
-        expectedConfigSetNames.size() == retrievedConfigSetNames.size());
-    assertTrue("ConfigNames should be :" + expectedConfigSetNames, expectedConfigSetNames.containsAll(retrievedConfigSetNames) && retrievedConfigSetNames.containsAll(expectedConfigSetNames));
+
+    // config sets leak between tests so we can't be any more specific than this on the next 2 asserts
+    assertTrue("We expect at least 2 configSets",
+        retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
+    assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
     CollectionAdminRequest.createTimeRoutedAlias(alias, "2017-10-23T00:00:00Z", "+1DAY", timeField,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
@@ -217,6 +207,144 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     );
     numDocsDeletedOrFailed += numDocsToBeAutoDeleted;
     assertInvariants(alias + "_2017-10-27", alias + "_2017-10-26");
+  }
+
+  private void createConfigSet(String configName) throws SolrServerException, IOException {
+    // First create a configSet
+    // Then we create a collection with the name of the eventual config.
+    // We configure it, and ultimately delete the collection, leaving a modified config-set behind.
+    // Later we create the "real" collections referencing this modified config-set.
+    assertEquals(0, new ConfigSetAdminRequest.Create()
+        .setConfigSetName(configName)
+        .setBaseConfigSetName("_default")
+        .process(solrClient).getStatus());
+
+    CollectionAdminRequest.createCollection(configName, configName, 1, 1).process(solrClient);
+
+    // manipulate the config...
+    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{" +
+            "  'set-user-property' : {'update.autoCreateFields':false}," + // no data driven
+            "  'add-updateprocessor' : {" +
+            "    'name':'tolerant', 'class':'solr.TolerantUpdateProcessorFactory'" +
+            "  }," +
+            // if other tracking tests are written, add another TUPF with a unique group name, don't re-use this one!
+            // See TrackingUpdateProcessorFactory javadocs for details...
+            "  'add-updateprocessor' : {" +
+            "    'name':'tracking-testSliceRouting', 'class':'solr.TrackingUpdateProcessorFactory', 'group':'testSliceRouting'" +
+            "  }," +
+            "  'add-updateprocessor' : {" + // for testing
+            "    'name':'inc', 'class':'" + IncrementURPFactory.class.getName() + "'," +
+            "    'fieldName':'" + intField + "'" +
+            "  }," +
+            "}").build()));
+    // only sometimes test with "tolerant" URP:
+    final String urpNames = "inc" + (random().nextBoolean() ? ",tolerant" : "");
+    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config/params")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{" +
+            "  'set' : {" +
+            "    '_UPDATE' : {'processor':'" + urpNames + "'}" +
+            "  }" +
+            "}").build()));
+
+    CollectionAdminRequest.deleteCollection(configName).process(solrClient);
+    assertTrue(
+        new ConfigSetAdminRequest.List().process(solrClient).getConfigSets()
+            .contains(configName)
+    );
+  }
+
+  /**
+   * Test that the Tracking Update Processor Factory routes documents to leader shards and thus
+   * avoids the possibility of introducing an extra hop to find the leader.
+   *
+   * @throws Exception when it blows up unexpectedly :)
+   */
+  @Slow
+  @Nightly
+  @Test
+  public void testSliceRouting() throws Exception {
+    String configName = TimeRoutedAliasUpdateProcessorTest.configName + getTestName();
+    createConfigSet(configName);
+
+    // each collection has 4 shards with 3 replicas for 12 possible destinations
+    // 4 of which are leaders, and 8 of which should fail this test.
+    final int numShards = 1 + random().nextInt(4);
+    final int numReplicas = 1 + random().nextInt(3);
+    CollectionAdminRequest.createTimeRoutedAlias(alias, "2017-10-23T00:00:00Z", "+1DAY", timeField,
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
+            .setMaxShardsPerNode(numReplicas))
+        .process(solrClient);
+
+    // cause some collections to be created
+    assertUpdateResponse(solrClient.add(alias, new SolrInputDocument("id","1","timestamp_dt", "2017-10-25T00:00:00Z")));
+    assertUpdateResponse(solrClient.commit(alias));
+
+    // wait for all the collections to exist...
+    waitCol("2017-10-23", numShards);
+    waitCol("2017-10-24", numShards);
+    waitCol("2017-10-25", numShards);
+
+    // at this point we now have 3 collections with 4 shards each, and 3 replicas per shard for a total of
+    // 36 total replicas, 1/3 of which are leaders. We will add 3 docs and each has a 33% chance of hitting a
+    // leader randomly and not causing a failure if the code is broken, but as a whole this test will therefore only have
+    // about a 3.6% false positive rate (0.33^3). If that's not good enough, add more docs or more replicas per shard :).
+
+    try {
+      TrackingUpdateProcessorFactory.startRecording(getTestName());
+
+      // cause some collections to be created
+
+      ModifiableSolrParams params = params("post-processor", "tracking-" + getTestName());
+      assertUpdateResponse(add(alias, Arrays.asList(
+          sdoc("id", "2", "timestamp_dt", "2017-10-24T00:00:00Z"),
+          sdoc("id", "3", "timestamp_dt", "2017-10-25T00:00:00Z"),
+          sdoc("id", "4", "timestamp_dt", "2017-10-23T00:00:00Z")),
+          params));
+    } finally {
+      TrackingUpdateProcessorFactory.stopRecording(getTestName());
+    }
+
+    try (CloudSolrClient cloudSolrClient = getCloudSolrClient(cluster)) {
+      ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();
+      clusterStateProvider.connect();
+      Set<String> leaders = getLeaderCoreNames(clusterStateProvider.getClusterState());
+      assertEquals("should have " + 3 * numShards + " leaders, " + numShards + " per collection", 3 * numShards, leaders.size());
+
+      List<UpdateCommand> updateCommands = TrackingUpdateProcessorFactory.commandsForGroup(getTestName());
+      assertEquals(3, updateCommands.size());
+      for (UpdateCommand updateCommand : updateCommands) {
+        String node = (String) updateCommand.getReq().getContext().get(TrackingUpdateProcessorFactory.REQUEST_NODE);
+        assertTrue("Update was not routed to a leader (" + node + " not in list of leaders" + leaders, leaders.contains(node));
+      }
+    }
+  }
+
+  private Set<String> getLeaderCoreNames(ClusterState clusterState) {
+    Set<String> leaders = new TreeSet<>(); // sorted just to make it easier to read when debugging...
+    List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
+    for (JettySolrRunner jettySolrRunner : jettySolrRunners) {
+      List<CoreDescriptor> coreDescriptors = jettySolrRunner.getCoreContainer().getCoreDescriptors();
+      for (CoreDescriptor core : coreDescriptors) {
+        String nodeName = jettySolrRunner.getNodeName();
+        String collectionName = core.getCollectionName();
+        DocCollection collectionOrNull = clusterState.getCollectionOrNull(collectionName);
+        List<Replica> leaderReplicas = collectionOrNull.getLeaderReplicas(nodeName);
+        if (leaderReplicas != null) {
+          for (Replica leaderReplica : leaderReplicas) {
+            leaders.add(leaderReplica.getCoreName());
+          }
+        }
+      }
+    }
+    return leaders;
+  }
+
+  private void waitCol(final String datePart, int slices) {
+    waitForState("waiting for collections to be created",alias + "_" + datePart,
+        (liveNodes, collectionState) -> collectionState.getActiveSlices().size() == slices);
   }
 
   private void testFailedDocument(Instant timestamp, String errorMsg) throws SolrServerException, IOException {
@@ -351,6 +479,16 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     return sdoc("id", Integer.toString(++lastDocId),
         timeField, timestamp.toString(),
         intField, "0"); // always 0
+  }
+
+  /** Adds the docs to Solr via {@link #solrClient} with the params */
+  private static UpdateResponse add(String collection, Collection<SolrInputDocument> docs, SolrParams params) throws SolrServerException, IOException {
+    UpdateRequest req = new UpdateRequest();
+    if (params != null) {
+      req.setParams(new ModifiableSolrParams(params));// copy because will be modified
+    }
+    req.add(docs);
+    return req.process(solrClient, collection);
   }
 
   @Test

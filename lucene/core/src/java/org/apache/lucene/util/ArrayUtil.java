@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.util;
 
-import java.util.Arrays;
+import java.lang.reflect.Array;
 import java.util.Comparator;
 
 /**
@@ -211,94 +211,172 @@ public final class ArrayUtil {
     }
   }
 
+  /** Returns a new array whose size is exact the specified {@code newLength} without over-allocating */
+  public static <T> T[] growExact(T[] array, int newLength) {
+    Class<? extends Object[]> type = array.getClass();
+    @SuppressWarnings("unchecked")
+    T[] copy = (type == Object[].class)
+        ? (T[]) new Object[newLength]
+        : (T[]) Array.newInstance(type.getComponentType(), newLength);
+    System.arraycopy(array, 0, copy, 0, array.length);
+    return copy;
+  }
+
+  /** Returns an array whose size is at least {@code minSize}, generally over-allocating exponentially */
   public static <T> T[] grow(T[] array, int minSize) {
-    assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
+    assert minSize >= 0 : "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      return Arrays.copyOf(array, oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
+      final int newLength = oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+      return growExact(array, newLength);
     } else
       return array;
   }
 
+  /** Returns a new array whose size is exact the specified {@code newLength} without over-allocating */
+  public static short[] growExact(short[] array, int newLength) {
+    short[] copy = new short[newLength];
+    System.arraycopy(array, 0, copy, 0, array.length);
+    return copy;
+  }
+
+  /** Returns an array whose size is at least {@code minSize}, generally over-allocating exponentially */
   public static short[] grow(short[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      return Arrays.copyOf(array, oversize(minSize, Short.BYTES));
+      return growExact(array, oversize(minSize, Short.BYTES));
     } else
       return array;
   }
 
+  /** Returns a larger array, generally over-allocating exponentially */
   public static short[] grow(short[] array) {
     return grow(array, 1 + array.length);
   }
-  
+
+  /** Returns a new array whose size is exact the specified {@code newLength} without over-allocating */
+  public static float[] growExact(float[] array, int newLength) {
+    float[] copy = new float[newLength];
+    System.arraycopy(array, 0, copy, 0, array.length);
+    return copy;
+  }
+
+  /** Returns an array whose size is at least {@code minSize}, generally over-allocating exponentially */
   public static float[] grow(float[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      return Arrays.copyOf(array, oversize(minSize, Float.BYTES));
+      float[] copy = new float[oversize(minSize, Float.BYTES)];
+      System.arraycopy(array, 0, copy, 0, array.length);
+      return copy;
     } else
       return array;
   }
 
+  /** Returns a larger array, generally over-allocating exponentially */
   public static float[] grow(float[] array) {
     return grow(array, 1 + array.length);
   }
 
+  /** Returns a new array whose size is exact the specified {@code newLength} without over-allocating */
+  public static double[] growExact(double[] array, int newLength) {
+    double[] copy = new double[newLength];
+    System.arraycopy(array, 0, copy, 0, array.length);
+    return copy;
+  }
+
+  /** Returns an array whose size is at least {@code minSize}, generally over-allocating exponentially */
   public static double[] grow(double[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      return Arrays.copyOf(array, oversize(minSize, Double.BYTES));
+      return growExact(array, oversize(minSize, Double.BYTES));
     } else
       return array;
   }
 
+  /** Returns a larger array, generally over-allocating exponentially */
   public static double[] grow(double[] array) {
     return grow(array, 1 + array.length);
   }
 
+  /** Returns a new array whose size is exact the specified {@code newLength} without over-allocating */
+  public static int[] growExact(int[] array, int newLength) {
+    int[] copy = new int[newLength];
+    System.arraycopy(array, 0, copy, 0, array.length);
+    return copy;
+  }
+
+  /** Returns an array whose size is at least {@code minSize}, generally over-allocating exponentially */
   public static int[] grow(int[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      return Arrays.copyOf(array, oversize(minSize, Integer.BYTES));
+      return growExact(array, oversize(minSize, Integer.BYTES));
     } else
       return array;
   }
 
+  /** Returns a larger array, generally over-allocating exponentially */
   public static int[] grow(int[] array) {
     return grow(array, 1 + array.length);
   }
 
+  /** Returns a new array whose size is exact the specified {@code newLength} without over-allocating */
+  public static long[] growExact(long[] array, int newLength) {
+    long[] copy = new long[newLength];
+    System.arraycopy(array, 0, copy, 0, array.length);
+    return copy;
+  }
+
+  /** Returns an array whose size is at least {@code minSize}, generally over-allocating exponentially */
   public static long[] grow(long[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      return Arrays.copyOf(array, oversize(minSize, Long.BYTES));
+      return growExact(array, oversize(minSize, Long.BYTES));
     } else
       return array;
   }
 
+  /** Returns a larger array, generally over-allocating exponentially */
   public static long[] grow(long[] array) {
     return grow(array, 1 + array.length);
   }
 
+  /** Returns a new array whose size is exact the specified {@code newLength} without over-allocating */
+  public static byte[] growExact(byte[] array, int newLength) {
+    byte[] copy = new byte[newLength];
+    System.arraycopy(array, 0, copy, 0, array.length);
+    return copy;
+  }
+
+  /** Returns an array whose size is at least {@code minSize}, generally over-allocating exponentially */
   public static byte[] grow(byte[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      return Arrays.copyOf(array, oversize(minSize, Byte.BYTES));
+      return growExact(array, oversize(minSize, Byte.BYTES));
     } else
       return array;
   }
 
+  /** Returns a larger array, generally over-allocating exponentially */
   public static byte[] grow(byte[] array) {
     return grow(array, 1 + array.length);
   }
 
+  /** Returns a new array whose size is exact the specified {@code newLength} without over-allocating */
+  public static char[] growExact(char[] array, int newLength) {
+    char[] copy = new char[newLength];
+    System.arraycopy(array, 0, copy, 0, array.length);
+    return copy;
+  }
+
+  /** Returns an array whose size is at least {@code minSize}, generally over-allocating exponentially */
   public static char[] grow(char[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      return Arrays.copyOf(array, oversize(minSize, Character.BYTES));
+      return growExact(array, oversize(minSize, Character.BYTES));
     } else
       return array;
   }
 
+  /** Returns a larger array, generally over-allocating exponentially */
   public static char[] grow(char[] array) {
     return grow(array, 1 + array.length);
   }
@@ -429,4 +507,104 @@ public final class ArrayUtil {
     }.select(from, to, k);
   }
 
+  /**
+   * Copies the specified range of the given array into a new sub array.
+   * @param array the input array
+   * @param from  the initial index of range to be copied (inclusive)
+   * @param to    the final index of range to be copied (exclusive)
+   */
+  public static byte[] copyOfSubArray(byte[] array, int from, int to) {
+    final byte[] copy = new byte[to-from];
+    System.arraycopy(array, from, copy, 0, to-from);
+    return copy;
+  }
+
+  /**
+   * Copies the specified range of the given array into a new sub array.
+   * @param array the input array
+   * @param from  the initial index of range to be copied (inclusive)
+   * @param to    the final index of range to be copied (exclusive)
+   */
+  public static char[] copyOfSubArray(char[] array, int from, int to) {
+    final char[] copy = new char[to-from];
+    System.arraycopy(array, from, copy, 0, to-from);
+    return copy;
+  }
+
+  /**
+   * Copies the specified range of the given array into a new sub array.
+   * @param array the input array
+   * @param from  the initial index of range to be copied (inclusive)
+   * @param to    the final index of range to be copied (exclusive)
+   */
+  public static short[] copyOfSubArray(short[] array, int from, int to) {
+    final short[] copy = new short[to-from];
+    System.arraycopy(array, from, copy, 0, to-from);
+    return copy;
+  }
+
+  /**
+   * Copies the specified range of the given array into a new sub array.
+   * @param array the input array
+   * @param from  the initial index of range to be copied (inclusive)
+   * @param to    the final index of range to be copied (exclusive)
+   */
+  public static int[] copyOfSubArray(int[] array, int from, int to) {
+    final int[] copy = new int[to-from];
+    System.arraycopy(array, from, copy, 0, to-from);
+    return copy;
+  }
+
+  /**
+   * Copies the specified range of the given array into a new sub array.
+   * @param array the input array
+   * @param from  the initial index of range to be copied (inclusive)
+   * @param to    the final index of range to be copied (exclusive)
+   */
+  public static long[] copyOfSubArray(long[] array, int from, int to) {
+    final long[] copy = new long[to-from];
+    System.arraycopy(array, from, copy, 0, to-from);
+    return copy;
+  }
+
+  /**
+   * Copies the specified range of the given array into a new sub array.
+   * @param array the input array
+   * @param from  the initial index of range to be copied (inclusive)
+   * @param to    the final index of range to be copied (exclusive)
+   */
+  public static float[] copyOfSubArray(float[] array, int from, int to) {
+    final float[] copy = new float[to-from];
+    System.arraycopy(array, from, copy, 0, to-from);
+    return copy;
+  }
+
+  /**
+   * Copies the specified range of the given array into a new sub array.
+   * @param array the input array
+   * @param from  the initial index of range to be copied (inclusive)
+   * @param to    the final index of range to be copied (exclusive)
+   */
+  public static double[] copyOfSubArray(double[] array, int from, int to) {
+    final double[] copy = new double[to-from];
+    System.arraycopy(array, from, copy, 0, to-from);
+    return copy;
+  }
+
+  /**
+   * Copies the specified range of the given array into a new sub array.
+   * @param array the input array
+   * @param from  the initial index of range to be copied (inclusive)
+   * @param to    the final index of range to be copied (exclusive)
+   */
+  public static <T> T[] copyOfSubArray(T[] array, int from, int to) {
+    final int subLength = to - from;
+    final Class<? extends Object[]> type = array.getClass();
+    @SuppressWarnings("unchecked")
+    final T[] copy = (type == Object[].class)
+        ? (T[]) new Object[subLength]
+        : (T[]) Array.newInstance(type.getComponentType(), subLength);
+    System.arraycopy(array, from, copy, 0, subLength);
+    return copy;
+  }
 }

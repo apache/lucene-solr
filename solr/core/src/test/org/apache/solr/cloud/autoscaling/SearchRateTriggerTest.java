@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -84,6 +85,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testTrigger() throws Exception {
     JettySolrRunner targetNode = cluster.getJettySolrRunner(0);
     SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
