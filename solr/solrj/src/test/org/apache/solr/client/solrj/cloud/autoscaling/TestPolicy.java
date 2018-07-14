@@ -256,9 +256,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertFalse(clause.replica.isPass(6));
     assertFalse(clause.replica.isPass(2));
 
-    assertEquals(new Double(1.0), clause.replica.delta(6));
-    assertEquals(new Double(-1.0), clause.replica.delta(2));
-    assertEquals(new Double(0.0), clause.replica.delta(4));
+    assertEquals(Double.valueOf(1.0), clause.replica.delta(6));
+    assertEquals(Double.valueOf(-1.0), clause.replica.delta(2));
+    assertEquals(Double.valueOf(0.0), clause.replica.delta(4));
 
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create((Map<String, Object>) Utils.fromJSONString("{replica: '-33%', node:'#ANY'}")));
