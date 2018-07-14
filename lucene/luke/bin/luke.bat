@@ -1,1 +1,1 @@
-start javaw -jar .\target\luke-javafx-with-deps.jar
+start javaw -classpath .lib\* org.apache.lucene.luke.app.desktop.LukeMain

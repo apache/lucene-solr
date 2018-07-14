@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.models.search;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.apache.lucene.analysis.Analyzer;
@@ -66,7 +67,7 @@ import java.util.stream.Collectors;
 
 public final class SearchImpl extends LukeModel implements Search {
 
-  private static final Logger logger = LoggerFactory.getLogger(SearchImpl.class);
+  private final Logger logger;
 
   private static final int DEFAULT_PAGE_SIZE = 10;
 
@@ -90,9 +91,15 @@ public final class SearchImpl extends LukeModel implements Search {
    * Constructs a SearchImpl that holds given {@link IndexReader}
    * @param reader - the index reader
    */
-  public SearchImpl(@Nonnull IndexReader reader) {
+  SearchImpl(@Nonnull IndexReader reader) {
+    this(reader, LoggerFactory.getLogger(SearchImpl.class));
+  }
+
+  @VisibleForTesting
+  SearchImpl(@Nonnull IndexReader reader, @Nonnull Logger logger) {
     super(reader);
     this.searcher = new IndexSearcher(reader);
+    this.logger = logger;
   }
 
   @Override

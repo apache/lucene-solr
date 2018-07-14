@@ -45,7 +45,7 @@ public final class OverviewImpl extends LukeModel implements Overview {
    * @param indexPath - the (root) index directory path
    * @throws LukeException - if an internal error is occurred when accessing index
    */
-  public OverviewImpl(@Nonnull IndexReader reader, @Nonnull String indexPath) {
+  OverviewImpl(@Nonnull IndexReader reader, @Nonnull String indexPath) {
     super(reader);
     this.indexPath = indexPath;
     try {

@@ -42,7 +42,7 @@ public class TextAreaAppender extends AbstractAppender {
   private final Lock readLock = rwLock.readLock();
 
   protected TextAreaAppender(String name, Filter filter,
-                                 Layout<? extends Serializable> layout, final boolean ignoreExceptions) {
+                             Layout<? extends Serializable> layout, final boolean ignoreExceptions) {
     super(name, filter, layout, ignoreExceptions);
   }
 

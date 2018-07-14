@@ -20,32 +20,32 @@ package org.apache.lucene.luke.models.documents;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.util.IndexUtils;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.NumericUtils;
 import org.junit.Test;
+import org.slf4j.helpers.NOPLogger;
 
 import java.util.List;
 
 
-public class DocumentsImplTest extends DocumentsTestBase {
+public class TestDocumentsImpl extends DocumentsTestBase {
 
   @Test
   public void testGetMaxDoc() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     assertEquals(5, documents.getMaxDoc());
   }
 
   @Test
   public void testIsLive() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     assertTrue(documents.isLive(0));
   }
 
   @Test
   public void testGetDocumentFields() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     List<DocumentField> fields = documents.getDocumentFields(0);
     assertEquals(5, fields.size());
 
@@ -124,7 +124,7 @@ public class DocumentsImplTest extends DocumentsTestBase {
 
   @Test
   public void testFirstTerm() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     Term term = documents.firstTerm("title").orElseThrow(IllegalStateException::new);
     assertEquals("title", documents.getCurrentField());
     assertEquals("adventures", term.text());
@@ -132,14 +132,14 @@ public class DocumentsImplTest extends DocumentsTestBase {
 
   @Test
   public void testFirstTerm_notAvailable() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     assertFalse(documents.firstTerm("subject").isPresent());
     assertNull(documents.getCurrentField());
   }
 
   @Test
   public void testNextTerm() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     documents.firstTerm("title").orElseThrow(IllegalStateException::new);
     Term term = documents.nextTerm().orElseThrow(IllegalStateException::new);
     assertEquals("alice's", term.text());
@@ -151,13 +151,13 @@ public class DocumentsImplTest extends DocumentsTestBase {
 
   @Test
   public void testNextTerm_unPositioned() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     assertFalse(documents.nextTerm().isPresent());
   }
 
   @Test
   public void testSeekTerm() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     documents.firstTerm("title").orElseThrow(IllegalStateException::new);
     Term term = documents.seekTerm("pri").orElseThrow(IllegalStateException::new);
     assertEquals("pride", term.text());
@@ -167,13 +167,13 @@ public class DocumentsImplTest extends DocumentsTestBase {
 
   @Test
   public void testSeekTerm_unPositioned() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     assertFalse(documents.seekTerm("a").isPresent());
   }
 
   @Test
   public void testFirstTermDoc() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     documents.firstTerm("title").orElseThrow(IllegalStateException::new);
     Term term = documents.seekTerm("adv").orElseThrow(IllegalStateException::new);
     assertEquals("adventures", term.text());
@@ -183,13 +183,13 @@ public class DocumentsImplTest extends DocumentsTestBase {
 
   @Test
   public void testFirstTermDoc_unPositioned() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     assertFalse(documents.firstTermDoc().isPresent());
   }
 
   @Test
   public void testNextTermDoc() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     Term term = documents.firstTerm("title").orElseThrow(IllegalStateException::new);
     term = documents.seekTerm("adv").orElseThrow(IllegalStateException::new);
     assertEquals("adventures", term.text());
@@ -202,14 +202,14 @@ public class DocumentsImplTest extends DocumentsTestBase {
 
   @Test
   public void testNextTermDoc_unPositioned() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     Term term = documents.firstTerm("title").orElseThrow(IllegalStateException::new);
     assertFalse(documents.nextTermDoc().isPresent());
   }
 
   @Test
   public void testTermPositions() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     Term term = documents.firstTerm("author").orElseThrow(IllegalStateException::new);
     term = documents.seekTerm("carroll").orElseThrow(IllegalStateException::new);
     int docid = documents.firstTermDoc().orElseThrow(IllegalStateException::new);
@@ -222,14 +222,14 @@ public class DocumentsImplTest extends DocumentsTestBase {
 
   @Test
   public void testTermPositions_unPositioned() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     Term term = documents.firstTerm("author").orElseThrow(IllegalStateException::new);
     assertEquals(0, documents.getTermPositions().size());
   }
 
   @Test
   public void testTermPositions_noPositions() {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     Term term = documents.firstTerm("title").orElseThrow(IllegalStateException::new);
     int docid = documents.firstTermDoc().orElseThrow(IllegalStateException::new);
     assertEquals(0, documents.getTermPositions().size());
@@ -237,7 +237,7 @@ public class DocumentsImplTest extends DocumentsTestBase {
 
   @Test(expected = AlreadyClosedException.class)
   public void testClose() throws Exception {
-    DocumentsImpl documents = new DocumentsImpl(reader);
+    DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     reader.close();
     IndexUtils.getFieldNames(reader);
   }

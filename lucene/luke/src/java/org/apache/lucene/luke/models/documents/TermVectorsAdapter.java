@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.models.documents;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -35,8 +36,6 @@ import java.util.List;
  */
 final class TermVectorsAdapter {
 
-  private static Logger logger = LoggerFactory.getLogger(TermVectorsAdapter.class);
-
   private IndexReader reader;
 
   TermVectorsAdapter(@Nonnull IndexReader reader) {
@@ -50,13 +49,11 @@ final class TermVectorsAdapter {
    * @param docid - document id
    * @param field - field name
    * @return list of term vector elements
-   * @throws IOException
    */
   List<TermVectorEntry> getTermVector(int docid, String field) throws IOException {
     Terms termVector = reader.getTermVector(docid, field);
     if (termVector == null) {
       // no term vector available
-      logger.warn("No term vector indexed for doc: #{} and field: {}", docid, field);
       return Collections.emptyList();
     }
 

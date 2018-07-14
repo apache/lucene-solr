@@ -69,7 +69,7 @@ public final class IndexToolsImpl extends LukeModel implements IndexTools {
    * @param useCompound - if true, compound file format is used
    * @param keepAllCommits - if true, all commit points are reserved
    */
-  public IndexToolsImpl(@Nonnull Directory dir, boolean useCompound, boolean keepAllCommits) {
+  IndexToolsImpl(@Nonnull Directory dir, boolean useCompound, boolean keepAllCommits) {
     super(dir);
     this.useCompound = useCompound;
     this.keepAllCommits = keepAllCommits;

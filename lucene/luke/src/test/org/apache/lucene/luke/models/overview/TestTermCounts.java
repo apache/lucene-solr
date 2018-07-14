@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
-public class TermCountsTest extends OverviewTestBase {
+public class TestTermCounts extends OverviewTestBase {
 
   @Test
   public void testNumTerms() throws Exception {

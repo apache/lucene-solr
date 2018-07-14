@@ -34,7 +34,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collections;
 
-public class DocValuesAdapterTest extends DocumentsTestBase {
+public class TestDocValuesAdapter extends DocumentsTestBase {
+
+
 
   @Override
   protected void createIndex() throws IOException {

@@ -31,6 +31,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.helpers.NOPLogger;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -38,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class CommitsImplTest extends LuceneTestCase {
+public class TestCommitsImpl extends LuceneTestCase {
 
   private DirectoryReader reader;
 
@@ -96,7 +98,7 @@ public class CommitsImplTest extends LuceneTestCase {
 
   @Test
   public void testListCommits() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     List<Commit> commitList = commits.listCommits();
     assertEquals(2, commitList.size());
     assertEquals(2, commitList.get(0).getGeneration());
@@ -105,7 +107,7 @@ public class CommitsImplTest extends LuceneTestCase {
 
   @Test
   public void testGetCommit() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     Optional<Commit> commit = commits.getCommit(1);
     assertTrue(commit.isPresent());
     assertEquals(1, commit.get().getGeneration());
@@ -113,13 +115,13 @@ public class CommitsImplTest extends LuceneTestCase {
 
   @Test
   public void testGetCommit_generation_notfound() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     assertFalse(commits.getCommit(3).isPresent());
   }
 
   @Test
   public void testGetFiles() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     List<File> files = commits.getFiles(1);
     assertTrue(files.size() > 0);
     assertTrue(files.stream().anyMatch(file -> file.getFileName().equals("segments_1")));
@@ -127,40 +129,34 @@ public class CommitsImplTest extends LuceneTestCase {
 
   @Test
   public void testGetFiles_generation_notfound() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     assertTrue(commits.getFiles(10).isEmpty());
   }
 
   @Test
   public void testGetSegments() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     List<Segment> segments = commits.getSegments(1);
     assertTrue(segments.size() > 0);
   }
 
   @Test
-  public void testGetSegments_generation_notfound() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
-    assertTrue(commits.getSegments(3).isEmpty());
-  }
-
-  @Test
   public void testGetSegmentAttributes() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     Map<String, String> attributes = commits.getSegmentAttributes(1, "_0");
     assertTrue(attributes.size() > 0);
   }
 
   @Test
   public void testGetSegmentAttributes_generation_notfound() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     Map<String, String> attributes = commits.getSegmentAttributes(3, "_0");
     assertTrue(attributes.isEmpty());
   }
 
   @Test
   public void testGetSegmentAttributes_invalid_name() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     Map<String, String> attributes = commits.getSegmentAttributes(1, "xxx");
     assertTrue(attributes.isEmpty());
   }
@@ -168,42 +164,42 @@ public class CommitsImplTest extends LuceneTestCase {
 
   @Test
   public void testGetSegmentDiagnostics() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     Map<String, String> diagnostics = commits.getSegmentDiagnostics(1, "_0");
     assertTrue(diagnostics.size() > 0);
   }
 
   @Test
   public void testGetSegmentDiagnostics_generation_notfound() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     assertTrue(commits.getSegmentDiagnostics(3, "_0").isEmpty());
   }
 
 
   @Test
   public void testGetSegmentDiagnostics_invalid_name() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     Map<String, String> diagnostics = commits.getSegmentDiagnostics(1,"xxx");
     assertTrue(diagnostics.isEmpty());
   }
 
   @Test
   public void testSegmentCodec() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     Optional<Codec> codec = commits.getSegmentCodec(1, "_0");
     assertTrue(codec.isPresent());
   }
 
   @Test
   public void testSegmentCodec_generation_notfound() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     Optional<Codec> codec = commits.getSegmentCodec(3, "_0");
     assertFalse(codec.isPresent());
   }
 
   @Test
   public void testSegmentCodec_invalid_name() {
-    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
+    CommitsImpl commits = new CommitsImpl(reader, indexDir.toString(), NOPLogger.NOP_LOGGER);
     Optional<Codec> codec = commits.getSegmentCodec(1, "xxx");
     assertFalse(codec.isPresent());
 

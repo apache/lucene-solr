@@ -36,6 +36,7 @@
     <pathelement path="${queryparser.jar}"/>
     <pathelement path="${queries.jar}"/>
     <fileset dir="lib" />
+    <path refid="base.classpath"/>
   </path>
 
   <target name="javadocs" depends="javadocs-analyzers-common,javadocs-queryparser,javadocs-facet,javadocs-expressions,compile-core,check-javadocs-uptodate"
@@ -68,7 +69,6 @@
     <copy file="${analyzers-common.jar}" todir="${luke.work.dir}/lib"/>
     <copy file="${analyzers-icu.jar}" todir="${luke.work.dir}/lib"/>
     <copy file="${analyzers-kuromoji.jar}" todir="${luke.work.dir}/lib"/>
-    <!--copy file="${analyzers-morfologik.jar}" todir="${luke.work.dir}/lib"/-->
     <copy file="${analyzers-nori.jar}" todir="${luke.work.dir}/lib"/>
     <copy file="${analyzers-opennlp.jar}" todir="${luke.work.dir}/lib"/>
     <copy file="${analyzers-phonetic.jar}" todir="${luke.work.dir}/lib"/>

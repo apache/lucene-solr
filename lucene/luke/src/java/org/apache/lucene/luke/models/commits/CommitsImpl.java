@@ -17,11 +17,13 @@
 
 package org.apache.lucene.luke.models.commits;
 
+import javax.annotation.Nonnull;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.luke.models.LukeModel;
 import org.apache.lucene.luke.models.LukeException;
@@ -40,7 +42,7 @@ import java.util.stream.Collectors;
 
 public final class CommitsImpl extends LukeModel implements Commits {
 
-  private static final Logger logger = LoggerFactory.getLogger(CommitsImpl.class);
+  private final Logger logger;
 
   private final String indexPath;
 
@@ -52,10 +54,8 @@ public final class CommitsImpl extends LukeModel implements Commits {
    * @param dir - the index directory
    * @param indexPath - the path to index directory
    */
-  public CommitsImpl(Directory dir, String indexPath) {
-    super(dir);
-    this.indexPath = indexPath;
-    this.commitMap = initCommitMap();
+  CommitsImpl(Directory dir, String indexPath) {
+    this(dir, indexPath, LoggerFactory.getLogger(CommitsImpl.class));
   }
 
   /**
@@ -64,11 +64,23 @@ public final class CommitsImpl extends LukeModel implements Commits {
    * @param reader - the index reader
    * @param indexPath - the path to index directory
    */
-  public CommitsImpl(DirectoryReader reader, String indexPath) {
-    super(reader.directory());
+  CommitsImpl(DirectoryReader reader, String indexPath) {
+    this(reader.directory(), indexPath, LoggerFactory.getLogger(CommitsImpl.class));
+  }
+
+  @VisibleForTesting
+  CommitsImpl(DirectoryReader reader, String indexPath, @Nonnull Logger logger) {
+    this(reader.directory(), indexPath, logger);
+  }
+
+  @VisibleForTesting
+  CommitsImpl(Directory dir, String indexPath, @Nonnull Logger logger) {
+    super(dir);
     this.indexPath = indexPath;
     this.commitMap = initCommitMap();
+    this.logger = logger;
   }
+
 
   private Map<Long, IndexCommit> initCommitMap() {
     try {

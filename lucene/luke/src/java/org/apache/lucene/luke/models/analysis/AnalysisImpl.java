@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.models.analysis;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -32,8 +33,6 @@ import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -55,13 +54,11 @@ import java.util.stream.Collectors;
 
 public final class AnalysisImpl implements Analysis {
 
-  private static final Logger logger = LoggerFactory.getLogger(AnalysisImpl.class);
-
   private final List<Class<? extends Analyzer>> presetAnalyzerTypes;
 
   private Analyzer analyzer;
 
-  public AnalysisImpl() {
+  AnalysisImpl() {
     presetAnalyzerTypes = new ArrayList<>();
     for (Class<? extends Analyzer> clazz : getInstantiableSubTypesBuiltIn(Analyzer.class)) {
       try {
@@ -71,6 +68,11 @@ public final class AnalysisImpl implements Analysis {
       } catch (NoSuchMethodException e) {
       }
     }
+  }
+
+  @VisibleForTesting
+  AnalysisImpl(List<Class<? extends Analyzer>> presetAnalyzerTypes) {
+    this.presetAnalyzerTypes = presetAnalyzerTypes;
   }
 
   @Override

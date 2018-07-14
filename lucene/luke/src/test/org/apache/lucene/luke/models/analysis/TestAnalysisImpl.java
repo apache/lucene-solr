@@ -18,13 +18,13 @@
 package org.apache.lucene.luke.models.analysis;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.luke.models.LukeException;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 import java.nio.file.Files;
@@ -33,44 +33,33 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-public class AnalysisImplTest extends AnalysisTestBase {
-
-  @Test
-  public void testGetPresetAnalyzerTypes() throws Exception {
-    AnalysisImpl analysis = new AnalysisImpl();
-    Collection<Class<? extends Analyzer>> analyerTypes = analysis.getPresetAnalyzerTypes();
-    assertNotNull(analyerTypes);
-    for (Class<? extends Analyzer> clazz : analyerTypes) {
-      clazz.newInstance();
-    }
-  }
+public class TestAnalysisImpl extends LuceneTestCase {
 
   @Test
   public void testGetAvailableCharFilterFactories() {
-    AnalysisImpl analysis = new AnalysisImpl();
+    AnalysisImpl analysis = new AnalysisImpl(Collections.emptyList());
     Collection<Class<? extends CharFilterFactory>> charFilterFactories = analysis.getAvailableCharFilterFactories();
     assertNotNull(charFilterFactories);
   }
 
   @Test
   public void testGetAvailableTokenizerFactories() {
-    AnalysisImpl analysis = new AnalysisImpl();
+    AnalysisImpl analysis = new AnalysisImpl(Collections.emptyList());
     Collection<Class<? extends TokenizerFactory>> tokenizerFactories = analysis.getAvailableTokenizerFactories();
     assertNotNull(tokenizerFactories);
   }
 
   @Test
   public void testGetAvailableTokenFilterFactories() {
-    AnalysisImpl analysis = new AnalysisImpl();
+    AnalysisImpl analysis = new AnalysisImpl(Collections.emptyList());
     Collection<Class<? extends TokenFilterFactory>> tokenFilterFactories = analysis.getAvailableTokenFilterFactories();
     assertNotNull(tokenFilterFactories);
   }
 
   @Test
-  public void testAnalyze_preset() throws Exception {
-    AnalysisImpl analysis = new AnalysisImpl();
+  public void testAnalyze_preset() {
+    AnalysisImpl analysis = new AnalysisImpl(Collections.emptyList());
     String analyzerType = "org.apache.lucene.analysis.standard.StandardAnalyzer";
     Analyzer analyzer = analysis.createAnalyzerFromClassName(analyzerType);
     assertEquals(analyzerType, analyzer.getClass().getName());
@@ -78,12 +67,11 @@ public class AnalysisImplTest extends AnalysisTestBase {
     String text = "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.";
     List<Analysis.Token> tokens = analysis.analyze(text);
     assertNotNull(tokens);
-    printTokens(tokens);
   }
 
   @Test
-  public void testAnalyze_custom() throws Exception {
-    AnalysisImpl analysis = new AnalysisImpl();
+  public void testAnalyze_custom() {
+    AnalysisImpl analysis = new AnalysisImpl(Collections.emptyList());
     CustomAnalyzerConfig.Builder builder = new CustomAnalyzerConfig.Builder(
         "org.apache.lucene.analysis.core.KeywordTokenizerFactory",
         ImmutableMap.of("maxTokenLen", "128"))
@@ -96,7 +84,6 @@ public class AnalysisImplTest extends AnalysisTestBase {
     String text = "Apache Lucene";
     List<Analysis.Token> tokens = analysis.analyze(text);
     assertNotNull(tokens);
-    printTokens(tokens);
   }
 
   @Test
@@ -105,7 +92,7 @@ public class AnalysisImplTest extends AnalysisTestBase {
     Path stopFile = Files.createFile(Paths.get(confDir.toString(), "stop.txt"));
     Files.write(stopFile, "of\nthe\nby\nfor\n".getBytes());
 
-    AnalysisImpl analysis = new AnalysisImpl();
+    AnalysisImpl analysis = new AnalysisImpl(Collections.emptyList());
     CustomAnalyzerConfig.Builder builder = new CustomAnalyzerConfig.Builder(
         "org.apache.lucene.analysis.core.WhitespaceTokenizerFactory",
         ImmutableMap.of("maxTokenLen", "128"))
@@ -122,26 +109,13 @@ public class AnalysisImplTest extends AnalysisTestBase {
     String text = "Government of the People, by the People, for the People";
     List<Analysis.Token> tokens = analysis.analyze(text);
     assertNotNull(tokens);
-    printTokens(tokens);
   }
 
   @Test(expected = LukeException.class)
-  public void testAnalyze_not_set() throws Exception {
-    AnalysisImpl analysis = new AnalysisImpl();
+  public void testAnalyze_not_set() {
+    AnalysisImpl analysis = new AnalysisImpl(Collections.emptyList());
     String text = "This test must fail.";
     analysis.analyze(text);
-  }
-
-  private void printTokens(List<Analysis.Token> tokens) {
-    for (Analysis.Token token : tokens) {
-      System.out.println("---- Token(term=" + token.getTerm() + ") ----");
-      for (Analysis.TokenAttribute att : token.getAttributes()) {
-        System.out.println(att.getAttClass());
-        for (Map.Entry<String, String> entry : att.getAttValues().entrySet()) {
-          System.out.println(String.format("  %s=%s", entry.getKey(), entry.getValue()));
-        }
-      }
-    }
   }
 
 }

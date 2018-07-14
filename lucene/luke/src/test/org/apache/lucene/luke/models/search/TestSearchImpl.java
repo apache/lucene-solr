@@ -45,6 +45,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
+import org.slf4j.helpers.NOPLogger;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -54,7 +55,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class SearchImplTest extends LuceneTestCase {
+public class TestSearchImpl extends LuceneTestCase {
 
   private IndexReader reader;
   private Directory dir;
@@ -159,27 +160,27 @@ public class SearchImplTest extends LuceneTestCase {
 
   @Test
   public void testGetSortableFieldNames() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     assertArrayEquals(new String[]{"f2", "f3", "f4", "f5", "f6", "f7"},
         search.getSortableFieldNames().toArray());
   }
 
   @Test
   public void testGetSearchableFieldNames() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     assertArrayEquals(new String[]{"f1"},
         search.getSearchableFieldNames().toArray());
   }
 
   @Test
   public void testGetRangeSearchableFieldNames() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     assertArrayEquals(new String[]{"f8", "f9", "f10", "f11"}, search.getRangeSearchableFieldNames().toArray());
   }
 
   @Test
   public void testParseClassic() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     QueryParserConfig config = new QueryParserConfig.Builder()
         .allowLeadingWildcard(true)
         .defaultOperator(QueryParserConfig.Operator.AND)
@@ -192,7 +193,7 @@ public class SearchImplTest extends LuceneTestCase {
 
   @Test
   public void testParsePointRange() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     Map<String, Class<? extends Number>> types = new HashMap<>();
     types.put("f8", Integer.class);
 
@@ -208,7 +209,7 @@ public class SearchImplTest extends LuceneTestCase {
 
   @Test
   public void testGuessSortTypes() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
 
     assertTrue(search.guessSortTypes("f1").isEmpty());
 
@@ -257,13 +258,13 @@ public class SearchImplTest extends LuceneTestCase {
 
   @Test(expected = LukeException.class)
   public void testGuessSortTypesNoSuchField() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     search.guessSortTypes("unknown");
   }
 
   @Test
   public void testGetSortType() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
 
     assertFalse(search.getSortType("f1", "STRING", false).isPresent());
 
@@ -293,26 +294,25 @@ public class SearchImplTest extends LuceneTestCase {
 
   @Test(expected = LukeException.class)
   public void testGetSortTypeNoSuchField() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
 
     search.getSortType("unknown", "STRING", false);
   }
 
   @Test
   public void testSearch() throws Exception {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     Query query = new QueryParser("f1", new StandardAnalyzer()).parse("apple");
     SearchResults res = search.search(query, new SimilarityConfig.Builder().build(), null, 10);
 
     assertEquals(10, res.getTotalHits());
     assertEquals(10, res.size());
     assertEquals(0, res.getOffset());
-    printResults(res);
   }
 
   @Test
   public void testSearchWithSort() throws Exception {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     Query query = new QueryParser("f1", new StandardAnalyzer()).parse("apple");
     Sort sort = new Sort(new SortField("f2", SortField.Type.STRING, true));
     SearchResults res = search.search(query, new SimilarityConfig.Builder().build(), sort, null, 10);
@@ -320,12 +320,11 @@ public class SearchImplTest extends LuceneTestCase {
     assertEquals(10, res.getTotalHits());
     assertEquals(10, res.size());
     assertEquals(0, res.getOffset());
-    printResults(res);
   }
 
   @Test
   public void testNextPage() throws Exception {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     Query query = new QueryParser("f1", new StandardAnalyzer()).parse("pie");
     search.search(query, new SimilarityConfig.Builder().build(), null, 10);
     Optional<SearchResults> opt = search.nextPage();
@@ -335,18 +334,17 @@ public class SearchImplTest extends LuceneTestCase {
     assertEquals(20, res.getTotalHits());
     assertEquals(10, res.size());
     assertEquals(10, res.getOffset());
-    printResults(res);
   }
 
   @Test(expected = LukeException.class)
   public void testNextPageSearchNotStarted() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     search.nextPage();
   }
 
   @Test
   public void testNextPageNoMoreResults() throws Exception {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     Query query = new QueryParser("f1", new StandardAnalyzer()).parse("pie");
     search.search(query, new SimilarityConfig.Builder().build(), null, 10);
     search.nextPage();
@@ -355,7 +353,7 @@ public class SearchImplTest extends LuceneTestCase {
 
   @Test
   public void testPrevPage() throws Exception {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     Query query = new QueryParser("f1", new StandardAnalyzer()).parse("pie");
     search.search(query, new SimilarityConfig.Builder().build(), null, 10);
     search.nextPage();
@@ -366,36 +364,20 @@ public class SearchImplTest extends LuceneTestCase {
     assertEquals(20, res.getTotalHits());
     assertEquals(10, res.size());
     assertEquals(0, res.getOffset());
-    printResults(res);
   }
 
   @Test(expected = LukeException.class)
   public void testPrevPageSearchNotStarted() {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     search.prevPage();
   }
 
   @Test
   public void testPrevPageNoMoreResults() throws Exception {
-    SearchImpl search = new SearchImpl(reader);
+    SearchImpl search = new SearchImpl(reader, NOPLogger.NOP_LOGGER);
     Query query = new QueryParser("f1", new StandardAnalyzer()).parse("pie");
     search.search(query, new SimilarityConfig.Builder().build(), null, 10);
     assertFalse(search.prevPage().isPresent());
   }
 
-  private void printResults(SearchResults res) {
-    System.out.println("**search results**");
-    System.out.println("total=" + res.getTotalHits());
-    System.out.println("offset=" + res.getOffset());
-    System.out.println("hits:");
-    for (SearchResults.Doc doc : res.getHits()) {
-      System.out.print(" id=" + doc.getDocId());
-      System.out.print(" score=" + doc.getScore());
-      System.out.print(" values=" + String.join(",",
-          doc.getFieldValues().entrySet().stream().map(e ->
-              e.getKey() + ":" + String.join(";", Arrays.asList(e.getValue())))
-              .collect(Collectors.toList())));
-      System.out.println();
-    }
-  }
 }

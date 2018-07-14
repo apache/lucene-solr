@@ -42,6 +42,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -79,15 +80,12 @@ import java.util.stream.StreamSupport;
  */
 public final class IndexUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(IndexUtils.class);
-
   /**
    * Opens index(es) reader for given index path.
    *
    * @param indexPath - path to the index directory
    * @param dirImpl - class name for the specific directory implementation
    * @return index reader
-   * @throws Exception
    */
   public static IndexReader openIndex(@Nonnull String indexPath, @Nullable String dirImpl)
       throws Exception {
@@ -113,8 +111,6 @@ public final class IndexUtils {
       throw new RuntimeException("No valid directory at the location: " + indexPath);
     }
 
-    logger.info(String.format("IndexReaders (%d leaf readers) successfully opened. Index path=%s", readers.size(), indexPath));
-
     if (readers.size() == 1) {
       return readers.get(0);
     } else {
@@ -130,12 +126,10 @@ public final class IndexUtils {
    * @param dirPath - index directory path
    * @param dirImpl - class name for the specific directory implementation
    * @return directory
-   * @throws IOException
    */
   public static Directory openDirectory(@Nonnull String dirPath, @Nullable String dirImpl) throws IOException {
     final Path path = FileSystems.getDefault().getPath(dirPath);
     Directory dir = openDirectory(path, dirImpl);
-    logger.info(String.format("DirectoryReader successfully opened. Directory path=%s", dirPath));
     return dir;
   }
 
@@ -173,10 +167,9 @@ public final class IndexUtils {
     try {
       if (dir != null) {
         dir.close();
-        logger.info("Directory successfully closed.");
       }
     } catch (IOException e) {
-      logger.error(e.getMessage(), e);
+      throw new LukeException(e.getMessage(), e);
     }
   }
 
@@ -189,15 +182,13 @@ public final class IndexUtils {
     try {
       if (reader != null) {
         reader.close();
-        logger.info("IndexReader successfully closed.");
         if (reader instanceof DirectoryReader) {
           Directory dir = ((DirectoryReader) reader).directory();
           dir.close();
-          logger.info("Directory successfully closed.");
         }
       }
     } catch (IOException e) {
-      logger.error(e.getMessage(), e);
+      throw new LukeException(e.getMessage(), e);
     }
   }
 
@@ -209,7 +200,6 @@ public final class IndexUtils {
    * @param useCompound - if true, compound index files are used
    * @param keepAllCommits - if true, all commit generations are kept
    * @return new index writer
-   * @throws IOException
    */
   public static IndexWriter createWriter(@Nonnull Directory dir, Analyzer analyzer, boolean useCompound, boolean keepAllCommits) throws IOException {
     return createWriter(dir, analyzer, useCompound, keepAllCommits, null);
@@ -224,7 +214,6 @@ public final class IndexUtils {
    * @param keepAllCommits - if true, all commit generations are kept
    * @param ps - information stream
    * @return new index writer
-   * @throws IOException
    */
   public static IndexWriter createWriter(@Nonnull Directory dir, Analyzer analyzer, boolean useCompound, boolean keepAllCommits,
                                          @Nullable PrintStream ps) throws IOException {
@@ -249,7 +238,6 @@ public final class IndexUtils {
    * @param writer - index writer
    * @param expunge - if true, only segments having deleted documents are merged
    * @param maxNumSegments - max number of segments
-   * @throws IOException
    */
   public static void optimizeIndex(@Nonnull IndexWriter writer, boolean expunge, int maxNumSegments) throws IOException {
     if (expunge) {
@@ -265,7 +253,6 @@ public final class IndexUtils {
    * @param dir - index directory for checking
    * @param ps - information stream
    * @return - index status
-   * @throws IOException
    */
   public static CheckIndex.Status checkIndex(@Nonnull Directory dir, @Nullable PrintStream ps) throws IOException {
     try (CheckIndex ci = new CheckIndex(dir)) {
@@ -282,7 +269,6 @@ public final class IndexUtils {
    * @param dir - index directory for repairing
    * @param st - index status
    * @param ps - information stream
-   * @throws IOException
    */
   public static void tryRepairIndex(@Nonnull Directory dir, @Nonnull CheckIndex.Status st, @Nullable PrintStream ps) throws IOException {
     try (CheckIndex ci = new CheckIndex(dir)) {
@@ -297,7 +283,6 @@ public final class IndexUtils {
    * Returns the string representation for Lucene codec version when the index was written.
    *
    * @param dir - index directory
-   * @throws IOException
    */
   public static String getIndexFormat(@Nonnull Directory dir) throws IOException {
     return new SegmentInfos.FindSegmentsFile<String>(dir) {
@@ -313,8 +298,10 @@ public final class IndexUtils {
               format = "Lucene 7.0 or later";
             } else if (actualVersion == SegmentInfos.VERSION_72) {
               format = "Lucene 7.2 or later";
-            } else if (actualVersion > SegmentInfos.VERSION_72) {
-              format = "Lucene 7.2 or later (UNSUPPORTED)";
+            } else if (actualVersion == SegmentInfos.VERSION_74) {
+              format = "Lucene 7.4 or later";
+            } else if (actualVersion > SegmentInfos.VERSION_74) {
+              format = "Lucene 7.4 or later (UNSUPPORTED)";
             }
           } else {
             format = "Lucene 5.x or prior (UNSUPPORTED)";
@@ -329,7 +316,6 @@ public final class IndexUtils {
    * Returns user data written with the specified commit.
    *
    * @param ic - index commit
-   * @throws IOException
    */
   public static String getCommitUserData(@Nonnull IndexCommit ic) throws IOException {
     Map<String, String> userDataMap = ic.getUserData();
@@ -346,7 +332,6 @@ public final class IndexUtils {
    * @param reader - index reader
    * @param fields - field names
    * @return a map contains terms and their occurrence frequencies
-   * @throws IOException
    */
   public static Map<String, Long> countTerms(IndexReader reader, Collection<String> fields) throws IOException {
     Map<String, Long> res = new HashMap<>();
@@ -417,7 +402,6 @@ public final class IndexUtils {
    *
    * @param reader - index reader
    * @param field - field name
-   * @throws IOException
    */
   public static Terms getTerms(IndexReader reader, String field) throws IOException {
     if (reader instanceof LeafReader) {
@@ -432,7 +416,6 @@ public final class IndexUtils {
    *
    * @param reader - index reader
    * @param field - field name
-   * @throws IOException
    */
   public static BinaryDocValues getBinaryDocValues(IndexReader reader, String field) throws IOException {
     if (reader instanceof LeafReader) {
@@ -447,7 +430,6 @@ public final class IndexUtils {
    *
    * @param reader - index reader
    * @param field - field name
-   * @throws IOException
    */
   public static NumericDocValues getNumericDocValues(IndexReader reader, String field) throws IOException {
     if (reader instanceof LeafReader) {
@@ -462,7 +444,6 @@ public final class IndexUtils {
    *
    * @param reader - index reader
    * @param field - field name
-   * @throws IOException
    */
   public static SortedNumericDocValues getSortedNumericDocValues(IndexReader reader, String field) throws IOException {
     if (reader instanceof LeafReader) {
@@ -477,7 +458,6 @@ public final class IndexUtils {
    *
    * @param reader - index reader
    * @param field - field name
-   * @throws IOException
    */
   public static SortedDocValues getSortedDocValues(IndexReader reader, String field) throws IOException {
     if (reader instanceof LeafReader) {
@@ -492,7 +472,6 @@ public final class IndexUtils {
    *
    * @param reader - index reader
    * @param field - field name
-   * @throws IOException
    */
   public static SortedSetDocValues getSortedSetDocvalues(IndexReader reader, String field) throws IOException {
     if (reader instanceof LeafReader) {

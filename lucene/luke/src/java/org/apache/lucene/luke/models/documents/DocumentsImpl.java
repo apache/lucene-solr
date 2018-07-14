@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.models.documents;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
@@ -42,7 +43,7 @@ import java.util.Optional;
 
 public final class DocumentsImpl extends LukeModel implements Documents {
 
-  private static final Logger logger = LoggerFactory.getLogger(DocumentsImpl.class);
+  private final Logger logger;
 
   private final TermVectorsAdapter tvAdapter;
 
@@ -58,10 +59,16 @@ public final class DocumentsImpl extends LukeModel implements Documents {
    * Constructs an DocumentsImpl that holds given {@link IndexReader}.
    * @param reader - the index reader
    */
-  public DocumentsImpl(@Nonnull IndexReader reader) {
+  DocumentsImpl(@Nonnull IndexReader reader) {
+    this(reader, LoggerFactory.getLogger(DocumentsImpl.class));
+  }
+
+  @VisibleForTesting
+  DocumentsImpl(@Nonnull IndexReader reader, @Nonnull Logger logger) {
     super(reader);
     this.tvAdapter = new TermVectorsAdapter(reader);
     this.dvAdapter = new DocValuesAdapter(reader);
+    this.logger = logger;
   }
 
   @Override

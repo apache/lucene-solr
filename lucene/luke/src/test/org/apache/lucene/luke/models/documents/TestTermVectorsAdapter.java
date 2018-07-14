@@ -28,7 +28,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class TermVectorsAdapterTest extends DocumentsTestBase {
+public class TestTermVectorsAdapter extends DocumentsTestBase {
 
   @Override
   protected void createIndex() throws IOException {
