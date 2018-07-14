@@ -26,6 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.junit.Ignore;
 
 /** Test case for indexing polygons and querying by bounding box */
 public class TestLatLonShape extends LuceneTestCase {
@@ -41,39 +42,28 @@ public class TestLatLonShape extends LuceneTestCase {
     return LatLonShape.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
   }
 
+  @Ignore
   public void testRandomPolygons() throws Exception {
-    long avgIdxTime = 0;
     int numVertices;
-    int numPolys = RandomNumbers.randomIntBetween(random(), 50, 100);
+    int numPolys = RandomNumbers.randomIntBetween(random(), 10, 20);
 
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    long start, end;
 
     Polygon polygon;
     Document document;
-    System.out.println("generating " + numPolys + " polygons");
     for (int i = 0; i < numPolys;) {
       document = new Document();
-      numVertices = TestUtil.nextInt(random(), 200000, 500000);
+      numVertices = TestUtil.nextInt(random(), 100000, 200000);
       polygon = GeoTestUtil.createRegularPolygon(0, 0, atLeast(1000000), numVertices);
-      System.out.println("adding polygon " + i);
-      start = System.currentTimeMillis();
       addPolygonsToDoc(FIELDNAME, document, polygon);
       writer.addDocument(document);
-      end = System.currentTimeMillis();
-      avgIdxTime += ((end - start) - avgIdxTime) / ++i;
     }
-    System.out.println("avg index time: " + avgIdxTime);
 
-    // search within 50km and verify we found our doc
+    // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    start = System.currentTimeMillis();
     assertEquals(0, searcher.count(newRectQuery("field", -89.9, -89.8, -179.9, -179.8d)));
-    end = System.currentTimeMillis();
-
-    System.out.println("search: " + (end - start));
 
     reader.close();
     writer.close();
