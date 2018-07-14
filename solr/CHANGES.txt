@@ -177,6 +177,8 @@ Other Changes
 
 * SOLR-12412: Leader should give up leadership when IndexWriter.tragedy occur (Cao Manh Dat, Tomas Fernandez-Lobbe)
 
+* SOLR-12551: Upgrade to Tika 1.18 (Tim Allison via Erick Erickson)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
