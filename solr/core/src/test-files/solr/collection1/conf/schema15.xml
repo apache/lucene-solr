@@ -566,8 +566,8 @@
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
   <!-- required for NestedUpdateProcessor -->
-  <field name="_NEST_PARENT_" type="string" indexed="true" stored="true"/>
-  <field name="_NEST_PATH_" type="string" indexed="true" stored="true"/>
+  <field name="_nest_parent_" type="string" indexed="true" stored="true"/>
+  <field name="_nest_path_" type="string" indexed="true" stored="true"/>
 
   <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
 
