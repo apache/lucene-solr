@@ -181,6 +181,7 @@ public class SortController {
     return new Sort(li.toArray(new SortField[li.size()]));
   }
 
+  @SuppressWarnings("rawtypes")
   private boolean isReverse(ChoiceBox order) {
     return Order.valueOf(order.getValue().toString()) == Order.DESC;
   }

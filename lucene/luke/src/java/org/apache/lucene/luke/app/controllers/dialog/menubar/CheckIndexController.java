@@ -182,7 +182,7 @@ public class CheckIndexController implements DialogWindowController {
   private void repairIndex() {
     ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    Task task = new IndexTask<Void>(indicatorPane) {
+    Task<Void> task = new IndexTask<Void>(indicatorPane) {
       @Override
       protected Void call() {
         try {

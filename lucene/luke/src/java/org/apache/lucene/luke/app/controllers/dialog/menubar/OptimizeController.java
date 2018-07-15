@@ -117,7 +117,7 @@ public class OptimizeController implements DialogWindowController {
   private void optimize() {
     ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    Task task = new IndexTask<Void>(indicatorPane) {
+    Task<Void> task = new IndexTask<Void>(indicatorPane) {
 
       @Override
       protected Void call() {

@@ -124,6 +124,7 @@ public class AddDocumentController implements DialogWindowController {
   private TableColumn<NewField, String> nameColumn;
 
   @FXML
+  @SuppressWarnings("rawtypes")
   private TableColumn<NewField, Class> typeColumn;
 
   @FXML
@@ -144,6 +145,7 @@ public class AddDocumentController implements DialogWindowController {
   private TextArea info;
 
   @FXML
+  @SuppressWarnings("rawtypes")
   private void initialize() {
     changeAnalyzer.setOnAction(e -> {
       parent.switchTab(LukeController.Tab.ANALYZER);
@@ -407,7 +409,7 @@ public class AddDocumentController implements DialogWindowController {
     analyzerName.setText(analyzer.getClass().getName());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static List<Class<? extends Field>> presetFields() {
     final Class[] presetFieldClasses = new Class[]{
         TextField.class, StringField.class,

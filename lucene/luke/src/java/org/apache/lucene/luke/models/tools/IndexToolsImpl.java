@@ -54,6 +54,8 @@ public final class IndexToolsImpl extends LukeModel implements IndexTools {
 
   private final boolean keepAllCommits;
 
+
+  @SuppressWarnings("rawtypes")
   private static final Class[] presetFieldClasses = new Class[]{
       TextField.class, StringField.class,
       IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class,

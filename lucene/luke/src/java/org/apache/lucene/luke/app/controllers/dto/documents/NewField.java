@@ -44,6 +44,7 @@ public class NewField {
 
   private String name;
 
+  @SuppressWarnings("rawtypes")
   private ObjectProperty<Class> typeProperty;
 
   private Hyperlink option;
@@ -89,14 +90,17 @@ public class NewField {
     this.name = name;
   }
 
+  @SuppressWarnings("rawtypes")
   public ObjectProperty<Class> getTypeProperty() {
     return typeProperty;
   }
 
+  @SuppressWarnings("rawtypes")
   public Class getType() {
     return typeProperty.get();
   }
 
+  @SuppressWarnings("rawtypes")
   public void setType(Class type) {
     this.typeProperty.set(type);
   }
@@ -105,6 +109,7 @@ public class NewField {
     return option;
   }
 
+  @SuppressWarnings("rawtypes")
   public void resetFieldType(Class type) {
     if (type.equals(TextField.class)) {
       fieldType = new TextField("", "", Field.Store.NO).fieldType();
