@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.response.ResultContext;
 
 /**
@@ -95,4 +96,10 @@ public class DocTransformers extends DocTransformer
     return false;
   }
 
+  @Override
+  public void close() {
+    for( DocTransformer a : children ) {
+      IOUtils.closeQuietly(a);
+    }
+  }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.solr.common.SolrDocument;
@@ -33,7 +34,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * @see TransformerFactory
  *
  */
-public abstract class DocTransformer {
+public abstract class DocTransformer implements Closeable {
   protected ResultContext context;
   /**
    *
@@ -55,7 +56,7 @@ public abstract class DocTransformer {
   /**
    * Indicates if this transformer requires access to the underlying index to perform it's functions.
    *
-   * In some situations (notably RealTimeGet) this method <i>may</i> be called before {@link #setContext} 
+   * In some situations (notably RealTimeGet) this method <i>may</i> be called before {@link #setContext(ResultContext)}
    * to determine if the transformer must be given a "full" ResultContext and accurate docIds 
    * that can be looked up using {@link ResultContext#getSearcher}, or if optimizations can be taken 
    * advantage of such that {@link ResultContext#getSearcher} <i>may</i> return null, and docIds passed to 
@@ -108,6 +109,10 @@ public abstract class DocTransformer {
    */
   public String[] getExtraRequestFields() {
     return null;
+  }
+
+  @Override
+  public void close(){
   }
   
   @Override

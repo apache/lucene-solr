@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.BinaryField;
 import org.apache.solr.schema.BoolField;
@@ -76,10 +77,12 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     transformer = rctx.getReturnFields().getTransformer();
     docIterator = this.docs.iterator();
     docFetcher = rctx.getSearcher().getDocFetcher();
-
     retrieveFieldsOptimizer = RetrieveFieldsOptimizer.create(docFetcher, rctx.getReturnFields());
     retrieveFieldsOptimizer.optimize(docFetcher);
-    if (transformer != null) transformer.setContext(rctx);
+    if (transformer != null) {
+      transformer.setContext(rctx);
+      SolrRequestInfo.getRequestInfo().addCloseHook(transformer);
+    }
   }
 
   public int currentIndex() {
