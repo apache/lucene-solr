@@ -72,41 +72,61 @@ public class TestTermVectorsAdapter extends DocumentsTestBase {
     TermVectorsAdapter adapterImpl = new TermVectorsAdapter(reader);
     List<TermVectorEntry> tvEntries = adapterImpl.getTermVector(0, "text1");
 
-    assertEquals(11, tvEntries.size());
+    assertEquals(18, tvEntries.size());
 
-    assertEquals("acknowledged", tvEntries.get(0).getTermText());
-    assertEquals(1, tvEntries.get(0).getFreq());
-    assertEquals(0, tvEntries.get(0).getPositions().size());
+    assertEquals("a", tvEntries.get(0).getTermText());
+    assertEquals(4, tvEntries.get(0).getFreq());
 
-    assertEquals("fortune", tvEntries.get(1).getTermText());
+    assertEquals("acknowledged", tvEntries.get(1).getTermText());
     assertEquals(1, tvEntries.get(1).getFreq());
 
-    assertEquals("good", tvEntries.get(2).getTermText());
+    assertEquals("be", tvEntries.get(2).getTermText());
     assertEquals(1, tvEntries.get(2).getFreq());
 
-    assertEquals("man", tvEntries.get(3).getTermText());
+    assertEquals("fortune", tvEntries.get(3).getTermText());
     assertEquals(1, tvEntries.get(3).getFreq());
 
-    assertEquals("must", tvEntries.get(4).getTermText());
+    assertEquals("good", tvEntries.get(4).getTermText());
     assertEquals(1, tvEntries.get(4).getFreq());
 
-    assertEquals("possession", tvEntries.get(5).getTermText());
-    assertEquals(1, tvEntries.get(5).getFreq());
+    assertEquals("in", tvEntries.get(5).getTermText());
+    assertEquals(2, tvEntries.get(5).getFreq());
 
-    assertEquals("single", tvEntries.get(6).getTermText());
+    assertEquals("is", tvEntries.get(6).getTermText());
     assertEquals(1, tvEntries.get(6).getFreq());
 
-    assertEquals("truth", tvEntries.get(7).getTermText());
+    assertEquals("it", tvEntries.get(7).getTermText());
     assertEquals(1, tvEntries.get(7).getFreq());
 
-    assertEquals("universally", tvEntries.get(8).getTermText());
+    assertEquals("man", tvEntries.get(8).getTermText());
     assertEquals(1, tvEntries.get(8).getFreq());
 
-    assertEquals("want", tvEntries.get(9).getTermText());
+    assertEquals("must", tvEntries.get(9).getTermText());
     assertEquals(1, tvEntries.get(9).getFreq());
 
-    assertEquals("wife", tvEntries.get(10).getTermText());
-    assertEquals(1, tvEntries.get(10).getFreq());
+    assertEquals("of", tvEntries.get(10).getTermText());
+    assertEquals(2, tvEntries.get(10).getFreq());
+
+    assertEquals("possession", tvEntries.get(11).getTermText());
+    assertEquals(1, tvEntries.get(11).getFreq());
+
+    assertEquals("single", tvEntries.get(12).getTermText());
+    assertEquals(1, tvEntries.get(12).getFreq());
+
+    assertEquals("that", tvEntries.get(13).getTermText());
+    assertEquals(1, tvEntries.get(13).getFreq());
+
+    assertEquals("truth", tvEntries.get(14).getTermText());
+    assertEquals(1, tvEntries.get(14).getFreq());
+
+    assertEquals("universally", tvEntries.get(15).getTermText());
+    assertEquals(1, tvEntries.get(15).getFreq());
+
+    assertEquals("want", tvEntries.get(16).getTermText());
+    assertEquals(1, tvEntries.get(16).getFreq());
+
+    assertEquals("wife", tvEntries.get(17).getTermText());
+    assertEquals(1, tvEntries.get(17).getFreq());
   }
 
   @Test
@@ -114,13 +134,11 @@ public class TestTermVectorsAdapter extends DocumentsTestBase {
     TermVectorsAdapter adapterImpl = new TermVectorsAdapter(reader);
     List<TermVectorEntry> tvEntries = adapterImpl.getTermVector(0, "text2");
 
-    assertEquals(11, tvEntries.size());
+    assertEquals(18, tvEntries.size());
 
-    assertEquals("acknowledged", tvEntries.get(0).getTermText());
-    assertEquals(1, tvEntries.get(0).getFreq());
-    assertEquals(5, tvEntries.get(0).getPositions().get(0).getPosition());
-    assertFalse(tvEntries.get(0).getPositions().get(0).getStartOffset().isPresent());
-    assertFalse(tvEntries.get(0).getPositions().get(0).getEndOffset().isPresent());
+    assertEquals("acknowledged", tvEntries.get(1).getTermText());
+    assertEquals(1, tvEntries.get(1).getFreq());
+    assertEquals(5, tvEntries.get(1).getPositions().get(0).getPosition());
   }
 
   @Test
@@ -128,13 +146,13 @@ public class TestTermVectorsAdapter extends DocumentsTestBase {
     TermVectorsAdapter adapterImpl = new TermVectorsAdapter(reader);
     List<TermVectorEntry> tvEntries = adapterImpl.getTermVector(0, "text3");
 
-    assertEquals(11, tvEntries.size());
+    assertEquals(18, tvEntries.size());
 
-    assertEquals("acknowledged", tvEntries.get(0).getTermText());
-    assertEquals(1, tvEntries.get(0).getFreq());
-    assertEquals(5, tvEntries.get(0).getPositions().get(0).getPosition());
-    assertEquals(26, tvEntries.get(0).getPositions().get(0).getStartOffset().orElse(-1));
-    assertEquals(38, tvEntries.get(0).getPositions().get(0).getEndOffset().orElse(-1));
+    assertEquals("acknowledged", tvEntries.get(1).getTermText());
+    assertEquals(1, tvEntries.get(1).getFreq());
+    assertEquals(5, tvEntries.get(1).getPositions().get(0).getPosition());
+    assertEquals(26, tvEntries.get(1).getPositions().get(0).getStartOffset().orElse(-1));
+    assertEquals(38, tvEntries.get(1).getPositions().get(0).getEndOffset().orElse(-1));
   }
 
   @Test

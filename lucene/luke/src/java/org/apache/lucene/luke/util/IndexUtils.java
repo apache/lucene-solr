@@ -291,10 +291,8 @@ public final class IndexUtils {
         String format = "unknown";
         try (IndexInput in = dir.openInput(segmentFileName, IOContext.READ)) {
           if (CodecUtil.CODEC_MAGIC == in.readInt()) {
-            int actualVersion = CodecUtil.checkHeaderNoMagic(in, "segments", SegmentInfos.VERSION_53, Integer.MAX_VALUE);
-            if (actualVersion == SegmentInfos.VERSION_53) {
-              format = "Lucene 5.3 or later";
-            } else if (actualVersion == SegmentInfos.VERSION_70) {
+            int actualVersion = CodecUtil.checkHeaderNoMagic(in, "segments", SegmentInfos.VERSION_70, Integer.MAX_VALUE);
+            if (actualVersion == SegmentInfos.VERSION_70) {
               format = "Lucene 7.0 or later";
             } else if (actualVersion == SegmentInfos.VERSION_72) {
               format = "Lucene 7.2 or later";
@@ -304,7 +302,7 @@ public final class IndexUtils {
               format = "Lucene 7.4 or later (UNSUPPORTED)";
             }
           } else {
-            format = "Lucene 5.x or prior (UNSUPPORTED)";
+            format = "Lucene 6.x or prior (UNSUPPORTED)";
           }
         }
         return format;

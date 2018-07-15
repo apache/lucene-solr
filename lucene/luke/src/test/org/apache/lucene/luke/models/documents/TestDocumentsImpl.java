@@ -127,7 +127,7 @@ public class TestDocumentsImpl extends DocumentsTestBase {
     DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     Term term = documents.firstTerm("title").orElseThrow(IllegalStateException::new);
     assertEquals("title", documents.getCurrentField());
-    assertEquals("adventures", term.text());
+    assertEquals("a", term.text());
   }
 
   @Test
@@ -142,10 +142,10 @@ public class TestDocumentsImpl extends DocumentsTestBase {
     DocumentsImpl documents = new DocumentsImpl(reader, NOPLogger.NOP_LOGGER);
     documents.firstTerm("title").orElseThrow(IllegalStateException::new);
     Term term = documents.nextTerm().orElseThrow(IllegalStateException::new);
-    assertEquals("alice's", term.text());
+    assertEquals("adventures", term.text());
 
     while (documents.nextTerm().isPresent()) {
-      Integer freq = documents.getDocFreq().orElseThrow(IllegalStateException::new);
+      documents.getDocFreq().orElseThrow(IllegalStateException::new);
     }
   }
 
