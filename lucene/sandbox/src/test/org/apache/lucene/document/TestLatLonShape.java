@@ -19,8 +19,12 @@ package org.apache.lucene.document;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -72,10 +76,20 @@ public class TestLatLonShape extends LuceneTestCase {
 
   /** test we can search for a point */
   public void testBasicIntersects() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-
     int numVertices = TestUtil.nextInt(random(), 200000, 500000);
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    int mbd = iwc.getMaxBufferedDocs();
+    if (mbd != -1 && mbd < numVertices/100) {
+      iwc.setMaxBufferedDocs(numVertices/100);
+    }
+    Directory dir;
+    if (numVertices > 300000) {
+      dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
+    } else {
+      dir = newDirectory();
+    }
+    IndexWriter writer = new IndexWriter(dir, iwc);
 
     // add a random polygon without a hole
     Polygon p = GeoTestUtil.createRegularPolygon(0, 90, atLeast(1000000), numVertices);
@@ -94,7 +108,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
     ////// search /////
     // search an intersecting bbox
-    IndexReader reader = writer.getReader();
+    IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = newSearcher(reader);
     Query q = newRectQuery(FIELDNAME, -1d, 1d, p.minLon, p.maxLon);
     assertEquals(1, searcher.count(q));
