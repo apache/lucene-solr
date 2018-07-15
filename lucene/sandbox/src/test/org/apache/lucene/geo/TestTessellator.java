@@ -18,24 +18,19 @@ package org.apache.lucene.geo;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-import static org.apache.lucene.geo.GeoTestUtil.nextBox;
+import static org.apache.lucene.geo.GeoTestUtil.nextBoxNotCrossingDateline;
 
 /** Test case for the Polygon {@link Tessellator} class */
 public class TestTessellator extends LuceneTestCase {
 
+  /** test line intersection */
   public void testLinesIntersect() {
-    Rectangle rect = nextBox();
-    // quantize lat/lon of bounding box:
-    int minX = encodeLongitude(rect.minLon);
-    int maxX = encodeLongitude(rect.maxLon);
-    int minY = encodeLatitude(rect.minLat);
-    int maxY = encodeLatitude(rect.maxLat);
+    Rectangle rect = nextBoxNotCrossingDateline();
     // simple case; test intersecting diagonals
-    assertTrue(Tessellator.linesIntersect(minX, minY, maxX, maxY, maxX, minY, minX, maxY));
+    // note: we don't quantize because the tessellator operates on non quantized vertices
+    assertTrue(Tessellator.linesIntersect(rect.minLon, rect.minLat, rect.maxLon, rect.maxLat, rect.maxLon, rect.minLat, rect.minLon, rect.maxLat));
     // test closest encoded value
-    assertFalse(Tessellator.linesIntersect(minX, maxY, maxX, maxY, minX - 1, minY, minX - 1, maxY));
+    assertFalse(Tessellator.linesIntersect(rect.minLon, rect.maxLat, rect.maxLon, rect.maxLat, rect.minLon - 1d, rect.minLat, rect.minLon - 1, rect.maxLat));
   }
 
   public void testSimpleTessellation() throws Exception {
