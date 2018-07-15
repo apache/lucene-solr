@@ -28,6 +28,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Ignore;
@@ -74,8 +75,48 @@ public class TestLatLonShape extends LuceneTestCase {
     dir.close();
   }
 
-  /** test we can search for a point */
+  /** test we can search for a point with a standard number of vertices*/
   public void testBasicIntersects() throws Exception {
+    int numVertices = TestUtil.nextInt(random(), 50, 100);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add a random polygon without a hole
+    Polygon p = GeoTestUtil.createRegularPolygon(0, 90, atLeast(1000000), numVertices);
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, p);
+    writer.addDocument(document);
+
+    // add a random polygon with a hole
+    Polygon inner = new Polygon(new double[] {-1d, -1d, 1d, 1d, -1d},
+        new double[] {-91d, -89d, -89d, -91.0, -91.0});
+    Polygon outer = GeoTestUtil.createRegularPolygon(0, -90, atLeast(1000000), numVertices);
+
+    document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, new Polygon(outer.getPolyLats(), outer.getPolyLons(), inner));
+    writer.addDocument(document);
+
+    ////// search /////
+    // search an intersecting bbox
+    IndexReader reader = writer.getReader();
+    writer.close();
+    IndexSearcher searcher = newSearcher(reader);
+    Query q = newRectQuery(FIELDNAME, -1d, 1d, p.minLon, p.maxLon);
+    assertEquals(1, searcher.count(q));
+
+    // search a disjoint bbox
+    q = newRectQuery(FIELDNAME, p.minLat-1d, p.minLat+1, p.minLon-1d, p.minLon+1d);
+    assertEquals(0, searcher.count(q));
+
+    // search a bbox in the hole
+    q = newRectQuery(FIELDNAME, inner.minLat + 1e-6, inner.maxLat - 1e-6, inner.minLon + 1e-6, inner.maxLon - 1e-6);
+    assertEquals(0, searcher.count(q));
+
+    IOUtils.close(reader, dir);
+  }
+
+  /** test we can search for a point with a large number of vertices*/
+  public void testLargeVertexPolygon() throws Exception {
     int numVertices = TestUtil.nextInt(random(), 200000, 500000);
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergeScheduler(new SerialMergeScheduler());
@@ -83,12 +124,7 @@ public class TestLatLonShape extends LuceneTestCase {
     if (mbd != -1 && mbd < numVertices/100) {
       iwc.setMaxBufferedDocs(numVertices/100);
     }
-    Directory dir;
-    if (numVertices > 300000) {
-      dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
-    } else {
-      dir = newDirectory();
-    }
+    Directory dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
     IndexWriter writer = new IndexWriter(dir, iwc);
 
     // add a random polygon without a hole
@@ -109,6 +145,7 @@ public class TestLatLonShape extends LuceneTestCase {
     ////// search /////
     // search an intersecting bbox
     IndexReader reader = DirectoryReader.open(writer);
+    writer.close();
     IndexSearcher searcher = newSearcher(reader);
     Query q = newRectQuery(FIELDNAME, -1d, 1d, p.minLon, p.maxLon);
     assertEquals(1, searcher.count(q));
@@ -121,8 +158,6 @@ public class TestLatLonShape extends LuceneTestCase {
     q = newRectQuery(FIELDNAME, inner.minLat + 1e-6, inner.maxLat - 1e-6, inner.minLon + 1e-6, inner.maxLon - 1e-6);
     assertEquals(0, searcher.count(q));
 
-    reader.close();
-    writer.close();
-    dir.close();
+    IOUtils.close(reader, dir);
   }
 }
