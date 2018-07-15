@@ -50,7 +50,7 @@
         </FlowPane>
         <Label text="https://lucene.apache.org/"/>
         <TextArea editable="false"
-                  text="Created by Andrzej Bialecki &lt;ab@getopt.org&gt;&#10;Further developed by: Dmitry Kan &lt;dmitry.lucene@gmail.com&gt;, Tomoko Uchida &lt;tomoko.uchida.1111@gmail.com&gt;&#10;Backed by pull-requests from our fantastic community.&#10;&#10;[Copyright]&#10;&#10;Luke is distributed under Apache License Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)&#10;and includes The Elegant Icon Font (https://www.elegantthemes.com/blog/resources/elegant-icon-font) licensed under MIT (https://opensource.org/licenses/MIT).&#10;&#10;&#10;"
+                  text="Created by Andrzej Bialecki &#10;Further developed by: Dmitry Kan, Tomoko Uchida &#10;Backed by pull-requests from our fantastic community.&#10;&#10;[Copyright]&#10;&#10;Luke is distributed under Apache License Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)&#10;and includes The Elegant Icon Font (https://www.elegantthemes.com/blog/resources/elegant-icon-font) licensed under MIT (https://opensource.org/licenses/MIT).&#10;&#10;&#10;"
                   wrapText="true">
           <font>
             <Font size="14.0"/>
