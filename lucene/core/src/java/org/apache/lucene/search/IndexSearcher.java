@@ -131,7 +131,7 @@ public class IndexSearcher {
   protected final IndexReaderContext readerContext;
   protected final List<LeafReaderContext> leafContexts;
   /** used with executor - each slice holds a set of leafs executed within one thread */
-  protected final LeafSlice[] leafSlices;
+  private final LeafSlice[] leafSlices;
 
   // These are only used for multi-threaded search
   private final ExecutorService executor;
@@ -397,6 +397,14 @@ public class IndexSearcher {
     return search(query, collectorManager);
   }
 
+  /** Returns the leaf slices used for concurrent searching, or null if no {@code ExecutorService} was
+   *  passed to the constructor.
+   *
+   * @lucene.experimental */
+  public LeafSlice[] getSlices() {
+      return leafSlices;
+  }
+  
   /** Finds the top <code>n</code>
    * hits for <code>query</code> where all results are after a previous 
    * result (<code>after</code>).
@@ -763,7 +771,11 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public static class LeafSlice {
-    final LeafReaderContext[] leaves;
+
+    /** The leaves that make up this slice.
+     *
+     *  @lucene.experimental */
+    public final LeafReaderContext[] leaves;
     
     public LeafSlice(LeafReaderContext... leaves) {
       this.leaves = leaves;
