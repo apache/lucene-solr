@@ -30,7 +30,7 @@ import org.apache.solr.common.util.Utils;
 public class Violation implements MapWriter {
   final String shard, coll, node;
   final Object actualVal;
-  final Double replicaCountDelta;//how far is the actual value from the expected value
+  final Double replicaCountDelta;//how many extra replicas
   final Object tagKey;
   private final int hash;
   private final Clause clause;
