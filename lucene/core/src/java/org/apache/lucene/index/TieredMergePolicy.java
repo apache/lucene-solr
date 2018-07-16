@@ -192,7 +192,7 @@ public class TieredMergePolicy extends MergePolicy {
    *
    * @see #setMaxMergedSegmentMB */
   public double getMaxMergedSegmentMB() {
-    return maxMergedSegmentBytes/1024/1024.;
+    return maxMergedSegmentBytes/1024.0/1024.0;
   }
 
   /** Controls how aggressively merges that reclaim more

@@ -160,6 +160,9 @@ Bug Fixes:
   TokenStream if a token consisting entirely of delimiter characters was 
   encountered, but preserve_original was set. (Alan Woodward)
 
+
+* LUCENE-8398: TieredMergePolicy.getMaxMergedSegmentMB has rounding error (Erick Erickson)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
