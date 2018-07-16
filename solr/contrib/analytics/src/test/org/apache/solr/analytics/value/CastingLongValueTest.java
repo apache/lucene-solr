@@ -67,11 +67,11 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
     AnalyticsValue casted = (AnalyticsValue)val;
 
     val.setValue(20L).setExists(true);
-    assertEquals(new Long(20), casted.getObject());
+    assertEquals(20L, casted.getObject());
     assertTrue(casted.exists());
 
     val.setValue(1234L).setExists(true);
-    assertEquals(new Long(1234), casted.getObject());
+    assertEquals(1234L, casted.getObject());
     assertTrue(casted.exists());
   }
 
@@ -159,7 +159,7 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValue(20L).setExists(true);
-    Iterator<Object> values = Arrays.<Object>asList(new Long(20L)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(20L).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

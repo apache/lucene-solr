@@ -61,7 +61,7 @@ class SegmentTerminateEarlyTestState {
     for (int cc = 1; cc <= numCommits; ++cc) {
       for (int nn = 1; nn <= numDocsPerCommit; ++nn) {
         ++numDocs;
-        final Integer docKey = new Integer(numDocs);
+        final Integer docKey = numDocs;
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField(KEY_FIELD, ""+docKey);
         final int MM = rand.nextInt(60); // minutes
@@ -69,17 +69,17 @@ class SegmentTerminateEarlyTestState {
           if (minTimestampMM != null && MM < minTimestampMM.intValue()) {
             minTimestampDocKeys.clear();
           }
-          minTimestampMM = new Integer(MM);
+          minTimestampMM = MM;
           minTimestampDocKeys.add(docKey);
         }
         if (maxTimestampMM == null || maxTimestampMM.intValue() <= MM) {
           if (maxTimestampMM != null && maxTimestampMM.intValue() < MM) {
             maxTimestampDocKeys.clear();
           }
-          maxTimestampMM = new Integer(MM);
+          maxTimestampMM = MM;
           maxTimestampDocKeys.add(docKey);
         }
-        doc.setField(TIMESTAMP_FIELD, (Integer)MM);
+        doc.setField(TIMESTAMP_FIELD, MM);
         doc.setField(ODD_FIELD, ""+(numDocs % 2));
         doc.setField(QUAD_FIELD, ""+(numDocs % 4)+1);
         cloudSolrClient.add(doc);
@@ -94,7 +94,7 @@ class SegmentTerminateEarlyTestState {
   void queryTimestampDescending(CloudSolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
-    final Long oddFieldValue = new Long(maxTimestampDocKeys.iterator().next().intValue()%2);
+    final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
@@ -120,13 +120,13 @@ class SegmentTerminateEarlyTestState {
   void queryTimestampDescendingSegmentTerminateEarlyYes(CloudSolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
-    final Long oddFieldValue = new Long(maxTimestampDocKeys.iterator().next().intValue()%2);
+    final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     final int rowsWanted = 1;
     query.setRows(rowsWanted);
-    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
+    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : rand.nextBoolean());
     if (shardsInfoWanted != null) {
       query.set(ShardParams.SHARDS_INFO, shardsInfoWanted.booleanValue());
     }
@@ -170,12 +170,12 @@ class SegmentTerminateEarlyTestState {
   void queryTimestampDescendingSegmentTerminateEarlyNo(CloudSolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
-    final Long oddFieldValue = new Long(maxTimestampDocKeys.iterator().next().intValue()%2);
+    final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
-    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
+    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : rand.nextBoolean());
     if (shardsInfoWanted != null) {
       query.set(ShardParams.SHARDS_INFO, shardsInfoWanted.booleanValue());
     }
@@ -217,7 +217,7 @@ class SegmentTerminateEarlyTestState {
   void queryTimestampDescendingSegmentTerminateEarlyYesGrouped(CloudSolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
-    final Long oddFieldValue = new Long(maxTimestampDocKeys.iterator().next().intValue()%2);
+    final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
@@ -247,7 +247,7 @@ class SegmentTerminateEarlyTestState {
   void queryTimestampAscendingSegmentTerminateEarlyYes(CloudSolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(minTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
-    final Long oddFieldValue = new Long(minTimestampDocKeys.iterator().next().intValue()%2);
+    final Long oddFieldValue = (long) (minTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
     query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.asc); // a sort order that is _not_ compatible with the merge sort order
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);

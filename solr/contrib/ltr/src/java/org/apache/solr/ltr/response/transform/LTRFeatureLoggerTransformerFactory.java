@@ -255,7 +255,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     @Override
     public void transform(SolrDocument doc, int docid, float score)
         throws IOException {
-      implTransform(doc, docid, new Float(score));
+      implTransform(doc, docid, score);
     }
 
     @Override

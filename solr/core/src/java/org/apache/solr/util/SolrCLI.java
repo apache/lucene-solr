@@ -3339,7 +3339,7 @@ public class SolrCLI {
         int attempts = 3;
         while (value != null && --attempts > 0) {
           try {
-            inputAsInt = new Integer(value);
+            inputAsInt = Integer.valueOf(value);
 
             if (min != null) {
               if (inputAsInt < min) {
@@ -4349,8 +4349,8 @@ public class SolrCLI {
         out("Rotating solr logs, keeping a max of "+generations+" generations");
         try (Stream<Path> files = Files.find(logsPath, 1, 
             (f, a) -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr.log."))
-            .sorted((b,a) -> new Integer(a.getFileName().toString().substring(9))
-                  .compareTo(new Integer(b.getFileName().toString().substring(9))))) {
+            .sorted((b,a) -> Integer.valueOf(a.getFileName().toString().substring(9))
+                  .compareTo(Integer.valueOf(b.getFileName().toString().substring(9))))) {
           files.forEach(p -> {
             try {
               int number = Integer.parseInt(p.getFileName().toString().substring(9));

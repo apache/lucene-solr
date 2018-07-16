@@ -246,11 +246,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     private RegressionTreeNode root;
 
     public void setWeight(float weight) {
-      this.weight = new Float(weight);
+      this.weight = weight;
     }
 
     public void setWeight(String weight) {
-      this.weight = new Float(weight);
+      this.weight = Float.valueOf(weight);
     }
 
     public void setRoot(Object root) {
