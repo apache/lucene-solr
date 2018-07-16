@@ -146,8 +146,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
     List<Long> removeList = new ArrayList<Long>();
-    removeList.add(new Long(222));
-    removeList.add(new Long(333));
+    removeList.add(222L);
+    removeList.add(333L);
     doc.setField("intRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
@@ -158,8 +158,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
     removeList = new ArrayList<Long>();
-    removeList.add(new Long(222));
-    removeList.add(new Long(333));    
+    removeList.add(222L);
+    removeList.add(333L);
     doc.setField("intRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
@@ -214,8 +214,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
     List<Long> removeList = new ArrayList<Long>();
-    removeList.add(new Long(222));
-    removeList.add(new Long(333));
+    removeList.add(222L);
+    removeList.add(333L);
     doc.setField("intRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
@@ -226,8 +226,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
     removeList = new ArrayList<Long>();
-    removeList.add(new Long(222));
-    removeList.add(new Long(333));    
+    removeList.add(222L);
+    removeList.add(333L);
     doc.setField("intRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());

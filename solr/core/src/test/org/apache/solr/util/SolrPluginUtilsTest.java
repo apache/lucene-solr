@@ -415,7 +415,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInvokeSetters() {
-    final Float theFloat = new Float(random().nextFloat());
+    final Float theFloat = random().nextFloat();
     implTestInvokeSetters(theFloat, theFloat);
     implTestInvokeSetters(theFloat, theFloat.toString());
   }

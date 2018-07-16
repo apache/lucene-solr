@@ -758,8 +758,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     assertEquals( 23.0, ((Double)stats.getMin()).doubleValue(), 0 );
     assertEquals(94.0, ((Double) stats.getMax()).doubleValue(), 0);
-    assertEquals( new Long(nums.length), stats.getCount() );
-    assertEquals( new Long(0), stats.getMissing() );
+    assertEquals(Long.valueOf(nums.length), stats.getCount() );
+    assertEquals(Long.valueOf(0), stats.getMissing() );
     assertEquals( "26.4", stats.getStddev().toString().substring(0, 4) );
     
     // now lets try again with a new set...  (odd median)
@@ -784,8 +784,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     assertEquals(5.0, ((Double) stats.getMin()).doubleValue(), 0);
     assertEquals( 20.0, ((Double)stats.getMax()).doubleValue(), 0 );
-    assertEquals(new Long(nums.length), stats.getCount());
-    assertEquals( new Long(0), stats.getMissing() );
+    assertEquals(Long.valueOf(nums.length), stats.getCount());
+    assertEquals(Long.valueOf(0), stats.getMissing() );
     
     // Now try again with faceting
     //---------------------------------

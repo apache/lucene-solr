@@ -279,7 +279,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
     LTRScoringQuery.ModelWeight wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
-    modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
+    modelScr.getDocInfo().setOriginalDocScore(1f);
     for (final Scorer.ChildScorer feat : modelScr.getChildren()) {
       assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }
@@ -295,7 +295,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     query = new LTRScoringQuery(ltrScoringModel);
     wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     modelScr = wgt.scorer(null);
-    modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
+    modelScr.getDocInfo().setOriginalDocScore(1f);
     for (final Scorer.ChildScorer feat : modelScr.getChildren()) {
       assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }

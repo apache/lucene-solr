@@ -33,7 +33,7 @@ public class SolrDocumentTest extends LuceneTestCase
 {
   public void testSimple() 
   {
-    Float fval = new Float( 10.01f );
+    Float fval = 10.01f;
     Boolean bval = Boolean.TRUE;
     String sval = "12qwaszx";
     
@@ -184,9 +184,9 @@ public class SolrDocumentTest extends LuceneTestCase
    
   public void testDuplicate() 
   {
-    Float fval0 = new Float( 10.01f );
-    Float fval1 = new Float( 11.01f );
-    Float fval2 = new Float( 12.01f );
+    Float fval0 = 10.01f;
+    Float fval1 = 11.01f;
+    Float fval2 = 12.01f;
     
     // Set up a simple document
     SolrInputDocument doc = new SolrInputDocument();
