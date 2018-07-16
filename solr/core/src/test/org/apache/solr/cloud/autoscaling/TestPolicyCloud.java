@@ -119,8 +119,15 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     Policy.Session session = config.getPolicy().createSession(cloudManager);
 
+    for (Row row : session.getSortedNodes()) {
+      Object val = row.getVal(Suggestion.ConditionType.TOTALDISK.tagName, null);
+      log.info("node: {} , totaldisk : {}, freedisk : {}", row.node, val, row.getVal("freedisk",null));
+      assertTrue(val != null);
+
+    }
+
     count .set(0);
-    for (Row row : session.getSorted()) {
+    for (Row row : session.getSortedNodes()) {
       row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
         for (ReplicaInfo replicaInfo : replicaInfos) {
           if (replicaInfo.getVariables().containsKey(Suggestion.ConditionType.CORE_IDX.tagName)) count.incrementAndGet();

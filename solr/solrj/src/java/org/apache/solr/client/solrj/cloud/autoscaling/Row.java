@@ -96,7 +96,7 @@ public class Row implements MapWriter {
     return null;
   }
 
-  Object getVal(String name, Object def) {
+  public Object getVal(String name, Object def) {
     for (Cell cell : cells)
       if (cell.name.equals(name)) {
         return cell.val == null ? def : cell.val;

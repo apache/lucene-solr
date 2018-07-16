@@ -92,7 +92,7 @@ public class TestPolicyCloud extends SimSolrCloudTestCase {
     Policy.Session session = config.getPolicy().createSession(cluster);
 
     AtomicInteger count = new AtomicInteger(0);
-    for (Row row : session.getSorted()) {
+    for (Row row : session.getSortedNodes()) {
       row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
         for (ReplicaInfo replicaInfo : replicaInfos) {
           if (replicaInfo.getVariables().containsKey(Suggestion.ConditionType.CORE_IDX.tagName)) count.incrementAndGet();
