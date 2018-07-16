@@ -25,8 +25,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
@@ -218,5 +218,27 @@ public class TestIndexSearcher extends LuceneTestCase {
     IndexSearcher.setDefaultQueryCachingPolicy(dummyPolicy);
     searcher = new IndexSearcher(new MultiReader());
     assertEquals(dummyPolicy, searcher.getQueryCachingPolicy());
+  }
+
+  public void testGetSlices() throws Exception {
+    assertNull(new IndexSearcher(new MultiReader()).getSlices());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    w.addDocument(new Document());
+    IndexReader r = w.getReader();
+    w.close();
+
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+                                   new LinkedBlockingQueue<Runnable>(),
+                                   new NamedThreadFactory("TestIndexSearcher"));
+    IndexSearcher s = new IndexSearcher(r, service);
+    IndexSearcher.LeafSlice[] slices = s.getSlices();
+    assertNotNull(slices);
+    assertEquals(1, slices.length);
+    assertEquals(1, slices[0].leaves.length);
+    assertTrue(slices[0].leaves[0] == r.leaves().get(0));
+    service.shutdown();
+    IOUtils.close(r, dir);
   }
 }

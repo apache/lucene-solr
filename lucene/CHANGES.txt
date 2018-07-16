@@ -140,6 +140,10 @@ API Changes:
 
 * LUCENE-8397: Add DirectoryTaxonomyWriter.getCache (Mike McCandless)
 
+* LUCENE-8387: Add experimental IndexSearcher.getSlices API to see which slices
+  IndexSearcher is searching concurrently when it's created with an ExecutorService
+  (Mike McCandless)
+
 Bug Fixes:
 
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
