@@ -110,8 +110,6 @@ New Features
 * SOLR-12441: New NestedUpdateProcessorFactory (URP) to populate special fields _nest_parent_ and _nest_path_ of nested
   (child) documents.  It will generate a uniqueKey of nested docs if they were blank too. (Moshe Bla, David Smiley)
 
-* SOLR-11986: Allow percentage in freedisk attribute in autoscaling policy rules (noble)
-
 Bug Fixes
 ----------------------
 

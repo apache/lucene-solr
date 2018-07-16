@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -88,7 +87,7 @@ public class Policy implements MapWriter {
   final Map<String, List<Clause>> policies;
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
-  final List<Pair<String, ConditionType>> params;
+  final List<Pair<String, Suggestion.ConditionType>> params;
   final List<String> perReplicaAttributes;
 
   public Policy() {
@@ -120,15 +119,6 @@ public class Policy implements MapWriter {
         })
         .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
-    for (String newParam : new ArrayList<>(newParams)) {
-      ConditionType t = Suggestion.getTagType(newParam);
-      if(t != null && !t.associatedPerNodeValues.isEmpty()){
-        for (String s : t.associatedPerNodeValues) {
-          if(!newParams.contains(s)) newParams.add(s);
-        }
-      }
-    }
-
     this.policies = Collections.unmodifiableMap(
         policiesFromMap((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
     this.params = Collections.unmodifiableList(newParams.stream()
@@ -139,7 +129,7 @@ public class Policy implements MapWriter {
 
   private List<String> readPerReplicaAttrs() {
     return this.params.stream()
-        .map(s -> s.second().perReplicaValue)
+        .map(s -> Suggestion.tagVsPerReplicaVal.get(s.first()))
         .filter(Objects::nonNull)
         .collect(Collectors.toList());
   }
@@ -581,7 +571,7 @@ public class Policy implements MapWriter {
       return Utils.toJSONString(toMap(new LinkedHashMap<>()));
     }
 
-    public List<Row> getSortedNodes() {
+    public List<Row> getSorted() {
       return Collections.unmodifiableList(matrix);
     }
 

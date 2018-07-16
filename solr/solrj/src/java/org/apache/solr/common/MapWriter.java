@@ -107,11 +107,6 @@ public interface MapWriter extends MapSerializable {
       return this;
     }
 
-    default EntryWriter putStringIfNotNull(String k, Object v) throws IOException {
-      if(v != null) put(k,String.valueOf(v));
-      return this;
-    }
-
 
     default EntryWriter put(String k, int v) throws IOException {
       put(k, (Integer) v);

@@ -58,8 +58,6 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.METRICS_PREFIX;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.TOTALDISK;
 
 /**
  *
@@ -217,15 +215,18 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         }
       }
       if (requestedTags.contains(ImplicitSnitch.DISKTYPE)) {
-        metricsKeyVsTag.put("solr.node:CONTAINER.fs.coreRoot.spins", (Function<Object, Pair<String, Object>>) o -> {
-          if("true".equals(String.valueOf(o))){
-            return new Pair<>(ImplicitSnitch.DISKTYPE, "rotational");
-          }
-          if("false".equals(String.valueOf(o))){
-            return new Pair<>(ImplicitSnitch.DISKTYPE, "ssd");
-          }
-          return new Pair<>(ImplicitSnitch.DISKTYPE,null);
+        metricsKeyVsTag.put("solr.node:CONTAINER.fs.coreRoot.spins", new Function<Object, Pair<String,Object>>() {
+          @Override
+          public Pair<String, Object> apply(Object o) {
+            if("true".equals(String.valueOf(o))){
+              return new Pair<>(ImplicitSnitch.DISKTYPE, "rotational");
+            }
+            if("false".equals(String.valueOf(o))){
+              return new Pair<>(ImplicitSnitch.DISKTYPE, "ssd");
+            }
+            return new Pair<>(ImplicitSnitch.DISKTYPE,null);
 
+          }
         });
       }
       if (!metricsKeyVsTag.isEmpty()) {
@@ -237,10 +238,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       if (requestedTags.contains(DISK)) {
         groups.add("solr.node");
         prefixes.add("CONTAINER.fs.usableSpace");
-      }
-      if (requestedTags.contains(TOTALDISK.tagName)) {
-        groups.add("solr.node");
-        prefixes.add("CONTAINER.fs.totalSpace");
       }
       if (requestedTags.contains(CORES)) {
         groups.add("solr.core");
@@ -263,13 +260,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       try {
         SimpleSolrResponse rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
         Map m = rsp.nl.asMap(4);
-        if (requestedTags.contains(FREEDISK.tagName)) {
+        if (requestedTags.contains(DISK)) {
           Object n = Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.usableSpace");
-          if (n != null) ctx.getTags().put(FREEDISK.tagName, FREEDISK.convertVal(n));
-        }
-        if (requestedTags.contains(TOTALDISK.tagName)) {
-          Object n = Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.totalSpace");
-          if (n != null) ctx.getTags().put(TOTALDISK.tagName, TOTALDISK.convertVal(n));
+          if (n != null) ctx.getTags().put(DISK, Suggestion.getTagType(DISK).convertVal(n));
         }
         if (requestedTags.contains(CORES)) {
           int count = 0;
