@@ -230,6 +230,7 @@ public class TestPriorityQueue extends LuceneTestCase {
     });
   }
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8402")
   public void testIteratorRandom() {
     final int maxSize = TestUtil.nextInt(random(), 1, 20);
     IntegerQueue queue = new IntegerQueue(maxSize);
