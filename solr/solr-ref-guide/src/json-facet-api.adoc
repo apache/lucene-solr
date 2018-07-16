@@ -169,7 +169,7 @@ json.facet={
 |refine |If true, turns on distributed facet refining. This uses a second phase to retrieve selected stats from shards so that every shard contributes to every returned bucket in this facet and any sub-facets.  This makes stats for returned buckets exact.
 |overrequest |Number of buckets beyond the limit to request internally during distributed search. -1 means default.
 |mincount |Only return buckets with a count of at least this number. Defaults to 1.
-|sort |Specifies how to sort the buckets produced. “count” specifies document count, “index” sorts by the index (natural) order of the bucket value. One can also sort by any facet function / statistic that occurs in the bucket. The default is “count desc”. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
+|sort |Specifies how to sort the buckets produced. “count” specifies document count, “index” sorts by the index (natural) order of the bucket value. One can also sort by any <<json-facet-api.adoc#aggregation-functions,facet function / statistic>> that occurs in the bucket. The default is “count desc”. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
 |missing |A boolean that specifies if a special “missing” bucket should be returned that is defined by documents without a value in the field. Defaults to false.
 |numBuckets |A boolean. If true, adds “numBuckets” to the response, an integer representing the number of buckets for the facet (as opposed to the number of buckets returned). Defaults to false.
 |allBuckets |A boolean. If true, adds an “allBuckets” bucket to the response, representing the union of all of the buckets. For multi-valued fields, this is different than a bucket for all of the documents in the domain since a single document can belong to multiple buckets. Defaults to false.
@@ -302,7 +302,7 @@ By default, the ranges used to compute range faceting between `start` and `end` 
 
 == Heatmap Facet
 
-The heatmap facet generates a 2D grid of facet counts for documents having spatial data in each grid cell.
+The `heatmap` facet generates a 2D grid of facet counts for documents having spatial data in each grid cell.
 
 This feature is primarily documented in the <<spatial-search.adoc#heatmap-faceting,spatial>> section of the reference guide.
 The key parameters are `type` to specify `heatmap` and `field` to indicate a spatial RPT field.
@@ -310,9 +310,8 @@ The rest of the parameter names use the same names and semantics mirroring
   facet.heatmap query-parameter style faceting, albeit without the "facet.heatmap." prefix.
 For example `geom` here corresponds to `facet.heatmap.geom` in a facet.heatmap command.
 
-Like the other facet types, heatmaps may have a custom domain (e.g. to exclude filters) and they can be subordinate to
-other facet types like a query facet.  However, unlike those, a heatmap facet cannot have facets or stats hang beneath --
-at least not yet.
+NOTE: Unlike other facets that partition the domain into buckets, `heatmap` facets do not currently support <<Nested Facets>>.
+
 
 Here's an example query:
 [source,java]
@@ -345,51 +344,9 @@ And the facet response will look like:
       }}}
 ----
 
-
-== Filtering Facets
-
-One can filter the domain *before* faceting via the `filter` keyword in the `domain` block of the facet.
-
-Example:
-[source,java]
-----
-{
-  categories : {
-     type : terms,
-     field : cat,
-     domain : { filter : "popularity:[5 TO 10]" }
-   }
-}
-----
-The value of `filter` can be a single query to treat as a filter, or a list of filter queries.  Each one can be:
-
-* a string containing a query in Solr query syntax
-* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
-
-== Filter Exclusions
-One can exclude top-level filters and query *before* faceting via the `excludeTags` keywords in the `domain` block of the facet.
-
-Example:
-[source,bash]
-----
-&q={!tag=top}"running shorts"
-&fq={!tag=COLOR}color:Blue
-&json={
-   filter:"{!tag=BRAND}brand:Bosco"
-   facet:{
-      sizes:{type:terms, field:size},
-      colors:{type:terms, field:color, domain:{excludeTags:COLOR} },
-      brands:{type:terms, field:brand, domain:{excludeTags:"BRAND,top"} }
-   }
-}
-----
-
-The value of `excludeTags` can be a single string tag, array of string tags or comma-separated tags in the single string.
-See also the section on <<faceting.adoc#tagging-and-excluding-filters,multi-select faceting>>.
-
 == Aggregation Functions
 
-Aggregation functions, also called *facet functions, analytic functions,* or **metrics**, calculate something interesting over a domain (each facet bucket).
+Unlike all the facets discussed so far, Aggregation functions (also called *facet functions*, *analytic functions*, or *metrics*) do not partition data into buckets.  Instead, they calculate something over all the documents in the domain.
 
 [width="100%",cols="10%,30%,60%",options="header",]
 |===
@@ -399,7 +356,7 @@ Aggregation functions, also called *facet functions, analytic functions,* or **m
 |min |`min(salary)` |minimum value
 |max |`max(mul(price,popularity))` |maximum value
 |unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate
-|uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly requires <<uploading-data-with-index-handlers.adoc#nested-child-documents, block index>>. The given field is expected to be unique across blocks, now only singlevalued string fields are supported, docValues are recommended.
+|uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly for <<json-facet-api.adoc#block-join-counts,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
 |hll |`hll(author)` |distributed cardinality estimate via hyper-log-log algorithm
 |percentile |`percentile(salary,50,75,99,99.9)` |Percentile estimates via t-digest algorithm. When sorting by this metric, the first percentile listed is used as the sort value.
 |sumsq |`sumsq(rent)` |sum of squares of field or function
@@ -410,28 +367,11 @@ Aggregation functions, also called *facet functions, analytic functions,* or **m
 
 Numeric aggregation functions such as `avg` can be on any numeric field, or on another function of multiple numeric fields such as `avg(mul(price,popularity))`.
 
-=== Sorting Facets
-
-The default sort for a field or terms facet is by bucket count descending. We can optionally sort ascending or descending by any facet function that appears in each bucket.
-
-[source,java]
-----
-{
-  categories:{
-    type : terms      // terms facet creates a bucket for each indexed term in the field
-    field : cat,
-    sort : "x desc",  // can also use sort:{x:desc}
-    facet : {
-      x : "avg(price)",     // x = average price for each facet bucket
-      y : "max(popularity)" // y = max popularity value in each facet bucket
-    }
-  }
-}
-----
-
 == Nested Facets
 
-Nested facets, or **sub-facets**, allow one to nest bucketing facet commands like **terms**, **range**, or *query* facets under other facet commands. The syntax is identical to top-level facets - just add the facet command to the facet command block of the parent facet. Technically, every facet command is actually a sub-facet since we start off with a single facet bucket with a domain defined by the main query and filters.
+Nested facets, or **sub-facets**, allow one to nest facet commands under any facet command that partitions the domain into buckets (ie: `terms`, `range`, `query`).  These sub-facets are then evaluated against the domains defined by the set of all documents in each bucket of their parent.
+
+The syntax is identical to top-level facets - just add a `facet` command to the facet command block of the parent facet.  Technically, every facet command is actually a sub-facet since we start off with a single facet bucket with a domain defined by the main query and filters.
 
 === Nested Facet Example
 
@@ -502,57 +442,247 @@ And the response will look something like:
 By default "top authors" is defined by simple document count descending, but we could use our aggregation functions to sort by more interesting metrics.
 
 
-== Block Join Facets
+=== Sorting Facets By Nested Functions
 
-Block Join Facets facets allow bucketing <<uploading-data-with-index-handlers.adoc#nested-child-documents, child documents>> as attributes of their parents.
+The default sort for a field or terms facet is by bucket count descending. We can optionally sort ascending or descending by any facet function that appears in each bucket.
 
-=== Block Join Facet Example
+[source,java]
+----
+{
+  categories:{
+    type : terms      // terms facet creates a bucket for each indexed term in the field
+    field : cat,
+    sort : "x desc",  // can also use sort:{x:desc}
+    facet : {
+      x : "avg(price)",     // x = average price for each facet bucket
+      y : "max(popularity)" // y = max popularity value in each facet bucket
+    }
+  }
+}
+----
+
+== Changing The Domain
+
+As discussed above, facets compute buckets or statistics based on a "domain" which is typically implicit:
+
+ * By default, facets use the set of all documents matching the main query as their domain.
+ * Nested "sub-facets" are computed for every bucket of their parent facet, using a domain containing all documents in that bucket.
+
+But users can also override the "domain" of a facet that partitions data, using an explicit `domain` attribute whose value is a JSON Object that can support various options for restricting, expanding, or completley changing the original domain before the buckets are computed for the associated facet.
+
+[NOTE]
+====
+`domain` changes can only be specified on individual facets that do data partitioning -- not statistical/metric facets, or groups of facets.
+
+A `\*:*` query facet with a `domain` change can be used to group multiple sub-facets of any type, for the purpose of applying a common domain change.
+====
+
+
+=== Adding Domain Filters
+
+The simplest example of a domain change is to specify an additional filter which will be applied to the existing domain.  This can be done via the `filter` keyword in the `domain` block of the facet.
+
+Example:
+[source,java]
+----
+{
+  categories : {
+     type : terms,
+     field : cat,
+     domain : { filter : "popularity:[5 TO 10]" }
+   }
+}
+----
+
+The value of `filter` can be a single query to treat as a filter, or a JSON list of filter queries.  Each query can be:
+
+* a string containing a query in Solr query syntax
+* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
+
+When a `filter` option is combined with other `domain` changing options, the filtering is applied _after_ the other domain changes take place.
+
+=== Filter Exclusions
+
+Domains can also exclude the top-level query or filters via the `excludeTags` keywords in the `domain` block of the facet, expanding the existing domain.
+
+Example:
+[source,bash]
+----
+&q={!tag=top}"running shorts"
+&fq={!tag=COLOR}color:Blue
+&json={
+   filter:"{!tag=BRAND}brand:Bosco"
+   facet:{
+      sizes:{type:terms, field:size},
+      colors:{type:terms, field:color, domain:{excludeTags:COLOR} },
+      brands:{type:terms, field:brand, domain:{excludeTags:"BRAND,top"} }
+   }
+}
+----
+
+The value of `excludeTags` can be a single string tag, array of string tags or comma-separated tags in the single string.
+
+When an `excludeTags` option is combined with other `domain` changing options, it expands the domain _before_ any other domain changes take place. 
+
+See also the section on <<faceting.adoc#tagging-and-excluding-filters,multi-select faceting>>.
+
+=== Arbitrary Domain Query
+
+A `query` domain can be specified when you wish to compute a facet against an arbitrary set of documents, regardless of the original domain.  The most common use case would be to compute a top level facet against a specific subset of the collection, regardless of the main query.  But it can also be useful on nested facets when building <<Semantic Knowledge Graphs>>. 
+
+Example:
+[source,json]
+----
+{
+  "categories" : {
+     "type" : "terms",
+     "field" : "cat",
+     "domain" : { "query" : "*:*" }
+   }
+}
+----
+
+The value of `query` can be a single query, or a JSON list of queries.  Each query can be:
+
+* a string containing a query in Solr query syntax
+* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
+
+NOTE: While a `query` domain can be comibined with an additional domain `filter`, It is not possible to also use `excludeTags`, because the tags would be meaningless: The `query` domain already completely ignores the top-level query and all previous filters.
+
+=== Block Join Domain Changes
+
+When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` or `blockParent` domain options can be used transform an existing domain containing one type of document, into a domain containing the documents with the specified relationship (child or parent of) to the documents from the original domain.
+
+Both of these options work similar to the corrisponding <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> by taking in a single String query that exclusively matches all parent documents in the collection.  If `blockParent` is used, then the resulting domain will contain all parent documents of the children from the original domain.  If If `blockChildren` is used, then the resulting domain will contain all child documents of the parents from the original domain.
+
+Example:
+[source,json,subs="verbatim,callouts"]]
+----
+{
+  "colors" : {                         // <1>
+    "type" : "terms",
+    "field" : "sku_color",             // <2>
+    "facet" : {
+      "brands" : {
+        "type" : "terms",
+        "field" : "product_brand",     // <3>
+        "domain" : {
+          "blockParent" : "doc_type:product"
+        }
+      }
+    }
+  }
+}
+----
+<1> This example assumes we parent documents corrisponding to Products, with child documents corrisponding to individual SKUs with unique colors, and that our original query was against SKU documents.
+<2> The `colors` facet will be computed against all of the original SKU documents matching our search.
+<3> For each bucket in the `colors` facet, the set of all matching SKU documents will be transformed into the set of corrisponding parent Product documents.  The resulting `brands` sub-facet will count how many Product documents (that have SKUs with the associated color) exist for each Brand.
+
+=== Join Query Domain Changes
+
+A `join` domain change option can be used to specify arbitrary `from` and `to` fields to use in transforming from the existing domain to a related set of documents.
+
+This works very similar to the <<other-parsers.adoc#join-query-parser,Join Query Parser>>, and has the same limitations when dealing with multi-shard collections.
+
+Example:
+[source,json]
+----
+{
+  "colors" : {
+    "type" : "terms",
+    "field" : "sku_color",
+    "facet" : {
+      "brands" : {
+        "type" : "terms",
+        "field" : "product_brand",
+        "domain" : {
+          "join" : {
+            "from" : "product_id_of_this_sku",         
+            "to" : "id"
+          },
+          "filter" : "doc_type:product"
+        }
+      }
+    }
+  }
+}
+
+----
+
+=== Graph Traversal Domain Changes
+
+A `graph` domain change option works similarly to the `join` domain option, but can do traversal multiple hops `from` the existing domain `to` other documents.
+
+This works very similar to the <<other-parsers.adoc#graph-query-parser,Graph Query Parser>>, supporting all of it's optional paramaters, and has the same limitations when dealing with multi-shard collections.
+
+Example:
+[source,json]
+----
+{
+  "related_brands" : {
+    "type" : "terms",
+    "field" : "brand",
+    "domain" : {
+      "graph" : {
+        "from" : "related_product_ids",         
+        "to" : "id",
+        "maxDepth" : 3
+      }
+    }
+  }
+}
+----
+
+== Block Join Counts
+
+When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` and `blockParent` domain changes mentioned above can be useful when searching for parent documents and you want to compute stats against all of the affected children documents (or vice versa).  But in the situation where the _count_ of all the blocks that exist in the current domain is sufficient, a more effecient option is the `uniqueBlock()` aggregate function.
+
+=== Block Join Counts Example
 
 Suppose we have products with multiple SKUs, and we want to count products for each color.
 
 [source,java]
 ----
 {
-    "id": "1", "type": "product", "name": "Solr T-Shirt",
-    "_childDocuments_": [
-      { "id": "11", "type": "SKU", "color": "Red",  "size": "L" },
-      { "id": "12", "type": "SKU", "color": "Blue", "size": "L" },
-      { "id": "13", "type": "SKU", "color": "Red",  "size": "M" },
-      { "id": "14", "type": "SKU", "color": "Blue", "size": "S" }
-    ]
-  }
+  "id": "1", "type": "product", "name": "Solr T-Shirt",
+  "_childDocuments_": [
+    { "id": "11", "type": "SKU", "color": "Red",  "size": "L" },
+    { "id": "12", "type": "SKU", "color": "Blue", "size": "L" },
+    { "id": "13", "type": "SKU", "color": "Red",  "size": "M" }
+  ]
+},
+{
+  "id": "2", "type": "product", "name": "Solr T-Shirt",
+  "_childDocuments_": [
+    { "id": "21", "type": "SKU", "color": "Blue", "size": "S" }
+  ]
+}
 ----
 
-For *SKU domain* we can request
+When searching against a set of SKU documents, we can ask for a facet on color, with a nested statistic counting all the "blocks" -- aka: products:
 
 [source,java]
 ----
-  color: {
-    type: terms,
-    field: color,
-    limit: -1,
-    facet: {
-      productsCount: "uniqueBlock(_root_)"
-    }
+color: {
+  type: terms,
+  field: color,
+  limit: -1,
+  facet: {
+    productsCount: "uniqueBlock(_root_)"
   }
+}
 ----
 
-and get
+and get:
 
 [source,java]
 ----
-
-  [...]
-  color:{
-     buckets:[
-        {
-          val:Red, count:2, productsCount:1
-        },
-        {
-          val:Blue, count:2, productsCount:1
-        }
-     ]
-  }
+color:{
+   buckets:[
+      { val:Blue, count:2, productsCount:2 },
+      { val:Red, count:2, productsCount:1 }
+   ]
+}
 ----
 
 Please notice that `\_root_` is an internal field added by Lucene to each child document to reference on parent one.
