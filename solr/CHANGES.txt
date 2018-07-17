@@ -157,6 +157,8 @@ Other Changes
 
 * SOLR-12464: Reduce Overseer.close() logging (for non-Overseer leaders) (Christine Poerschke)
 
+* SOLR-12454: Tweak Overseer leadership transition related logging for easier troubleshooting. (Christine Poerschke)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
