@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.MockDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,64 +45,71 @@ import org.slf4j.LoggerFactory;
 
 public class LeaderTragicEventTest extends SolrCloudTestCase {
 
-  private static final String COLLECTION = "collection1";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("solr.mscheduler", "org.apache.solr.core.MockConcurrentMergeScheduler");
+    System.setProperty(MockDirectoryFactory.SOLR_TESTS_USING_MOCK_DIRECTORY_WRAPPER, "true");
 
     configureCluster(2)
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
-
-    cluster.getSolrClient().setDefaultCollection(COLLECTION);
   }
 
   @AfterClass
   public static void cleanup() {
     System.clearProperty("solr.mscheduler");
+    System.clearProperty(MockDirectoryFactory.SOLR_TESTS_USING_MOCK_DIRECTORY_WRAPPER);
   }
 
 
   @Test
   public void test() throws Exception {
+    final String collection = "collection1";
+    cluster.getSolrClient().setDefaultCollection(collection);
     CollectionAdminRequest
-        .createCollection(COLLECTION, "config", 1, 2)
+        .createCollection(collection, "config", 1, 2)
         .process(cluster.getSolrClient());
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), COLLECTION, 120000);
+    ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
+    try {
+      List<String> addedIds = new ArrayList<>();
+      Replica oldLeader = corruptLeader(collection, addedIds);
 
-    List<String> addedIds = new ArrayList<>();
-    Replica oldLeader = corruptLeader(addedIds);
+      waitForState("Timeout waiting for new replica become leader", collection, (liveNodes, collectionState) -> {
+        Slice slice = collectionState.getSlice("shard1");
 
-    waitForState("Timeout waiting for new replica become leader", COLLECTION, (liveNodes, collectionState) -> {
-      Slice slice = collectionState.getSlice("shard1");
+        if (slice.getReplicas().size() != 2) return false;
+        if (slice.getLeader() == null) return false;
+        if (slice.getLeader().getName().equals(oldLeader.getName())) return false;
 
-      if (slice.getReplicas().size() != 2) return false;
-      if (slice.getLeader().getName().equals(oldLeader.getName())) return false;
+        return true;
+      });
+      ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
+      Slice shard = getCollectionState(collection).getSlice("shard1");
+      assertNotSame(shard.getLeader().getNodeName(), oldLeader.getNodeName());
+      assertEquals(getNonLeader(shard).getNodeName(), oldLeader.getNodeName());
 
-      return true;
-    });
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), COLLECTION, 120000);
-    Slice shard = getCollectionState(COLLECTION).getSlice("shard1");
-    assertNotSame(shard.getLeader().getNodeName(), oldLeader.getNodeName());
-    assertEquals(getNonLeader(shard).getNodeName(), oldLeader.getNodeName());
+      for (String id : addedIds) {
+        assertNotNull(cluster.getSolrClient().getById(collection,id));
+      }
+      log.info("The test success oldLeader:{} currentState:{}", oldLeader, getCollectionState(collection));
 
-    for (String id : addedIds) {
-      assertNotNull(cluster.getSolrClient().getById(COLLECTION,id));
+    } finally {
+      CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
     }
-    log.info("The test success oldLeader:{} currentState:{}", oldLeader, getCollectionState(COLLECTION));
-
-    CollectionAdminRequest.deleteCollection(COLLECTION).process(cluster.getSolrClient());
   }
 
-  private Replica corruptLeader(List<String> addedIds) throws IOException {
-    DocCollection dc = getCollectionState(COLLECTION);
+  private Replica corruptLeader(String collection, List<String> addedIds) throws IOException {
+    DocCollection dc = getCollectionState(collection);
     Replica oldLeader = dc.getLeader("shard1");
+    log.info("Corrupt leader : {}", oldLeader);
+
     CoreContainer leaderCC = cluster.getReplicaJetty(oldLeader).getCoreContainer();
     SolrCore leaderCore = leaderCC.getCores().iterator().next();
-    MockDirectoryWrapper dir = (MockDirectoryWrapper) leaderCore.getDirectoryFactory().get(leaderCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, leaderCore.getSolrConfig().indexConfig.lockType);
-    leaderCore.getDirectoryFactory().release(dir);
+    MockDirectoryWrapper mockDir = (MockDirectoryWrapper) leaderCore.getDirectoryFactory()
+        .get(leaderCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, leaderCore.getSolrConfig().indexConfig.lockType);
+    leaderCore.getDirectoryFactory().release(mockDir);
 
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder(dc.getLeader("shard1").getCoreUrl()).build()) {
       for (int i = 0; i < 100; i++) {
@@ -110,16 +119,21 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         solrClient.commit();
         addedIds.add(i + "");
 
-        for (String file : dir.listAll()) {
+        for (String file : mockDir.listAll()) {
           if (file.contains("segments_")) continue;
           if (file.endsWith("si")) continue;
           if (file.endsWith("fnm")) continue;
           if (random().nextBoolean()) continue;
 
-          dir.corruptFiles(Collections.singleton(file));
+          try {
+            mockDir.corruptFiles(Collections.singleton(file));
+          } catch (RuntimeException | FileNotFoundException e) {
+            // merges can lead to this exception
+          }
         }
       }
     } catch (Exception e) {
+      log.info("Corrupt leader ex: ",e);
       // Expected
     }
     return oldLeader;
@@ -132,34 +146,39 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
   @Test
   public void testOtherReplicasAreNotActive() throws Exception {
+    final String collection = "collection2";
+    cluster.getSolrClient().setDefaultCollection(collection);
     int numReplicas = random().nextInt(2) + 1;
     // won't do anything if leader is the only one active replica in the shard
     CollectionAdminRequest
-        .createCollection(COLLECTION, "config", 1, numReplicas)
+        .createCollection(collection, "config", 1, numReplicas)
         .process(cluster.getSolrClient());
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), COLLECTION, 120000);
+    ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
 
-    JettySolrRunner otherReplicaJetty = null;
-    if (numReplicas == 2) {
-      Slice shard = getCollectionState(COLLECTION).getSlice("shard1");
-      otherReplicaJetty = cluster.getReplicaJetty(getNonLeader(shard));
-      otherReplicaJetty.stop();
-      waitForState("Timeout waiting for replica get down", COLLECTION, (liveNodes, collectionState) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
+    try {
+      JettySolrRunner otherReplicaJetty = null;
+      if (numReplicas == 2) {
+        Slice shard = getCollectionState(collection).getSlice("shard1");
+        otherReplicaJetty = cluster.getReplicaJetty(getNonLeader(shard));
+        log.info("Stop jetty node : {} state:{}", otherReplicaJetty.getBaseUrl(), getCollectionState(collection));
+        otherReplicaJetty.stop();
+        waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
+      }
+
+      Replica oldLeader = corruptLeader(collection, new ArrayList<>());
+
+      //TODO better way to test this
+      Thread.sleep(5000);
+      Replica leader = getCollectionState(collection).getSlice("shard1").getLeader();
+      assertEquals(leader.getName(), oldLeader.getName());
+
+      if (otherReplicaJetty != null) {
+        // won't be able to do anything here, since this replica can't recovery from the leader
+        otherReplicaJetty.start();
+      }
+    } finally {
+      CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
     }
-
-    Replica oldLeader = corruptLeader(new ArrayList<>());
-
-    //TODO better way to test this
-    Thread.sleep(5000);
-    Replica leader = getCollectionState(COLLECTION).getSlice("shard1").getLeader();
-    assertEquals(leader.getName(), oldLeader.getName());
-
-    if (otherReplicaJetty != null) {
-      // won't be able to do anything here, since this replica can't recovery from the leader
-      otherReplicaJetty.start();
-    }
-
-    CollectionAdminRequest.deleteCollection(COLLECTION).process(cluster.getSolrClient());
   }
 
 
