@@ -171,7 +171,7 @@ public class Suggestion {
     @Meta(name = "replica",
         type = Double.class,
         min = 0, max = -1,
-        computedValues = {ComputedType.EQUAL, ComputedType.PERCENT})
+        computedValues = {ComputedType.EQUAL, ComputedType.PERCENT, ComputedType.ALL})
     REPLICA() {
       @Override
       public Object validate(String name, Object val, boolean isRuleVal) {
@@ -180,6 +180,7 @@ public class Suggestion {
 
       @Override
       public Operand getOperand(Operand expected, Object strVal, ComputedType computedType) {
+        if (computedType == ComputedType.ALL) return expected;
         if (strVal instanceof String) {
           String s = ((String) strVal).trim();
           int hyphenIdx = s.indexOf('-');
@@ -218,6 +219,8 @@ public class Suggestion {
 
       @Override
       public Object computeValue(Policy.Session session, Clause.Condition cv, String collection, String shard, String node) {
+        if (cv.computedType == ComputedType.ALL)
+          return new Double(getRelevantReplicasCount(session, cv, collection, shard));
         if (cv.computedType == ComputedType.EQUAL) {
           int relevantReplicasCount = getRelevantReplicasCount(session, cv, collection, shard);
           if (relevantReplicasCount == 0) return 0;
@@ -474,12 +477,6 @@ public class Suggestion {
 
       }
 
-      /*@Override
-      public void addViolatingReplicas(ViolationCtx ctx) {
-        for (Row r : ctx.allRows) {
-          if(r.node.equals(ctx.tagKey)) collectViolatingReplicas(ctx,r);
-        }
-      }*/
     },
 
     @Meta(name = "LAZY",

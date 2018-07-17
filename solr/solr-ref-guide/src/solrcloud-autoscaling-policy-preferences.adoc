@@ -107,8 +107,10 @@ This is a required attribute. The number of replicas that must exist to satisfy 
 * a positive integer . e.g : "`3`"
 * a number with a decimal value . e.g: "`1.66`" . This means both 1 and 2 are acceptable values but the system would prefer `2`
 * a number range. Such as `"3-5"` . This means `3,4,5` are acceptable values
+* `#ALL` : All replicas of a given collection or shard
 * a percentage value . e.g: `33%` . This is computed to a decimal value at runtime
-* `#EQUAL` : means divide it equally among all the nodes qualifying a certain property
+* `#EQUAL` : Divide the no:of replicas equally among all the nodes qualifying a certain property and place equal no:of them in each node
+
 
 `strict`::
 An optional boolean value. The default is `true`. If true, the rule must be satisfied. If false, Solr tries to satisfy the rule on a best effort basis but if no node can satisfy the rule then any node may be chosen.
@@ -167,6 +169,8 @@ This supports values calculated at the time of execution.
 * `%` : A certain percentage of the value. This is supported by the following attributes
 ** `replica`
 ** `freedisk`
+* `#ALL` : This is applied to the `replica` attribute only. This means all replicas qualifying a certain clause
+* `#EQUAL`:  This is applied to the `replica` attribute only. This means equal no:of replicas in each bucket
 
 === Examples of Policy Rules
 
@@ -189,10 +193,10 @@ Place exactly 1 replica of each shard of collection `xyz` on a node running on p
 {"replica": 1, "shard": "#EACH", "collection": "xyz", "port": "8983"}
 
 ==== Place Replicas Based on a System Property
-Place all replicas on a node with system property `availability_zone=us-east-1a`. Note that we have to write this rule in the negative sense i.e., *0* replicas must be on nodes *not* having the system property `availability_zone=us-east-1a`
+Place all replicas on a node with system property `availability_zone=us-east-1a`.
 
 [source,json]
-{"replica": 0, "sysprop.availability_zone": "!us-east-1a"}
+{"replica": "#ALL", "sysprop.availability_zone": "us-east-1a"}
 
 ===== Use Percentage
 
@@ -233,28 +237,28 @@ Do not place any replica on a node which has the overseer role. Note that the ro
 Place all replicas in nodes with freedisk more than 500GB. Here again, we have to write the rule in the negative sense.
 
 [source,json]
-{"replica": 0, "freedisk": "<500"}
+{"replica": "#ALL", "freedisk": ">500"}
 
 Do not use more than `50%` of diskspace in any node
 [source,json]
-{"replica": 0, "freedisk": "<50%"}
+{"replica": "#ALL", "freedisk": ">50%"}
 
 
 ==== Try to Place Replicas Based on Free Disk
 Place all replicas in nodes with freedisk more than 500GB when possible. Here we use the strict keyword to signal that this rule is to be honored on a best effort basis.
 
 [source,json]
-{"replica": 0, "freedisk": "<500", "strict" : false}
+{"replica": "#ALL", "freedisk": ">500", "strict" : false}
 
 ==== Try to Place all Replicas of type TLOG on Nodes with SSD Drives
 
 [source,json]
-{ "replica": 0,  "diskType" : "!ssd",  "type" : "TLOG" }
+{ "replica": "#ALL","type" : "TLOG",  "diskType" : "ssd" }
 
 ==== Try to Place all Replicas of type PULL on Nodes with Rotational Disk Drives
 
 [source,json]
-{ "replica": 0,  "diskType" : "!rotational",  "type" : "PULL" }
+{ "replica": "#ALL",   "type" : "PULL" , "diskType" : "rotational"}
 
 [[collection-specific-policy]]
 == Defining Collection-Specific Policies
