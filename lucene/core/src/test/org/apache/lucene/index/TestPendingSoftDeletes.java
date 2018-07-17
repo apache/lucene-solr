@@ -50,6 +50,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
         .setSoftDeletesField("_soft_deletes")
         // make sure all docs will end up in the same segment
         .setMaxBufferedDocs(10)
+        .setMergePolicy(NoMergePolicy.INSTANCE)
         .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
@@ -89,6 +90,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
         .setSoftDeletesField("_soft_deletes")
         // make sure all docs will end up in the same segment
         .setMaxBufferedDocs(10)
+        .setMergePolicy(NoMergePolicy.INSTANCE)
         .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
