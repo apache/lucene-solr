@@ -144,7 +144,7 @@ public class TestNormsFieldExistsQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(0, searcher.search(new NormsFieldExistsQuery("f"), 1).totalHits);
+    assertEquals(0, searcher.count(new NormsFieldExistsQuery("f")));
     reader.close();
     dir.close();
   }
@@ -159,7 +159,7 @@ public class TestNormsFieldExistsQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(1, searcher.search(new NormsFieldExistsQuery("f"), 1).totalHits);
+    assertEquals(1, searcher.count(new NormsFieldExistsQuery("f")));
     reader.close();
     dir.close();
   }
@@ -177,7 +177,7 @@ public class TestNormsFieldExistsQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(1, searcher.search(new NormsFieldExistsQuery("f"), 1).totalHits);
+    assertEquals(1, searcher.count(new NormsFieldExistsQuery("f")));
     reader.close();
     dir.close();
   }

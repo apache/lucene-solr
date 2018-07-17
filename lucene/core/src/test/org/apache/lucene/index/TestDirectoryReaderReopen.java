@@ -680,7 +680,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     });
     
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(new TermQuery(new Term("id", "id")), 1).totalHits);
+    assertEquals(1, s.count(new TermQuery(new Term("id", "id"))));
 
     r.close();
     w.close();

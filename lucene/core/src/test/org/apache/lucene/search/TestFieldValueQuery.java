@@ -160,7 +160,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(0, searcher.search(new DocValuesFieldExistsQuery("f"), 1).totalHits);
+    assertEquals(0, searcher.count(new DocValuesFieldExistsQuery("f")));
     reader.close();
     dir.close();
   }
@@ -175,7 +175,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(1, searcher.search(new DocValuesFieldExistsQuery("f"), 1).totalHits);
+    assertEquals(1, searcher.count(new DocValuesFieldExistsQuery("f")));
     reader.close();
     dir.close();
   }
@@ -193,7 +193,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(1, searcher.search(new DocValuesFieldExistsQuery("f"), 1).totalHits);
+    assertEquals(1, searcher.count(new DocValuesFieldExistsQuery("f")));
     reader.close();
     dir.close();
   }

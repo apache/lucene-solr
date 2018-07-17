@@ -318,7 +318,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     // Test with filter on child docs:
     fullChildQuery.add(new TermQuery(new Term("skill", "foosball")), Occur.FILTER);
-    assertEquals(0, s.search(fullChildQuery.build(), 1).totalHits);
+    assertEquals(0, s.count(fullChildQuery.build()));
 
     r.close();
     dir.close();
@@ -375,25 +375,25 @@ public class TestBlockJoin extends LuceneTestCase {
     // up to corresponding parent:
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery.build(), parentsFilter, ScoreMode.Avg);
 
-    assertEquals("no filter - both passed", 2, s.search(childJoinQuery, 10).totalHits);
+    assertEquals("no filter - both passed", 2, s.count(childJoinQuery));
 
     Query query = new BooleanQuery.Builder()
         .add(childJoinQuery, Occur.MUST)
         .add(new TermQuery(new Term("docType", "resume")), Occur.FILTER)
         .build();
-    assertEquals("dummy filter passes everyone ", 2, s.search(query, 10).totalHits);
+    assertEquals("dummy filter passes everyone ", 2, s.count(query));
     query = new BooleanQuery.Builder()
         .add(childJoinQuery, Occur.MUST)
         .add(new TermQuery(new Term("docType", "resume")), Occur.FILTER)
         .build();
-    assertEquals("dummy filter passes everyone ", 2, s.search(query, 10).totalHits);
+    assertEquals("dummy filter passes everyone ", 2, s.count(query));
 
     // not found test
     query = new BooleanQuery.Builder()
         .add(childJoinQuery, Occur.MUST)
         .add(new TermQuery(new Term("country", "Oz")), Occur.FILTER)
         .build();
-    assertEquals("noone live there", 0, s.search(query, 1).totalHits);
+    assertEquals("noone live there", 0, s.count(query));
 
     // apply the UK filter by the searcher
     query = new BooleanQuery.Builder()
@@ -416,14 +416,14 @@ public class TestBlockJoin extends LuceneTestCase {
 
     TermQuery us = new TermQuery(new Term("country", "United States"));
     assertEquals("@ US we have java and ruby", 2,
-        s.search(new ToChildBlockJoinQuery(us,
-                          parentsFilter), 10).totalHits );
+        s.count(new ToChildBlockJoinQuery(us,
+                          parentsFilter)) );
 
     query = new BooleanQuery.Builder()
         .add(new ToChildBlockJoinQuery(us, parentsFilter), Occur.MUST)
         .add(skill("java"), Occur.FILTER)
         .build();
-    assertEquals("java skills in US", 1, s.search(query, 10).totalHits );
+    assertEquals("java skills in US", 1, s.count(query));
 
     BooleanQuery.Builder rubyPython = new BooleanQuery.Builder();
     rubyPython.add(new TermQuery(new Term("skill", "ruby")), Occur.SHOULD);
@@ -432,7 +432,7 @@ public class TestBlockJoin extends LuceneTestCase {
         .add(new ToChildBlockJoinQuery(us, parentsFilter), Occur.MUST)
         .add(rubyPython.build(), Occur.FILTER)
         .build();
-    assertEquals("ruby skills in US", 1, s.search(query, 10).totalHits );
+    assertEquals("ruby skills in US", 1, s.count(query) );
 
     r.close();
     dir.close();
