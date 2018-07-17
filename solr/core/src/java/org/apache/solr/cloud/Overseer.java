@@ -544,7 +544,9 @@ public class Overseer implements SolrCloseable {
     updaterThread.start();
     ccThread.start();
     triggerThread.start();
-    assert ObjectReleaseTracker.track(this);
+    if (this.id != null) {
+      assert ObjectReleaseTracker.track(this);
+    }
   }
 
   public Stats getStats() {
@@ -584,11 +586,15 @@ public class Overseer implements SolrCloseable {
   
   public synchronized void close() {
     if (closed) return;
-    log.info("Overseer (id=" + id + ") closing");
+    if (this.id != null) {
+      log.info("Overseer (id=" + id + ") closing");
+    }
     
     doClose();
     this.closed = true;
-    assert ObjectReleaseTracker.release(this);
+    if (this.id != null) {
+      assert ObjectReleaseTracker.release(this);
+    }
   }
 
   @Override
