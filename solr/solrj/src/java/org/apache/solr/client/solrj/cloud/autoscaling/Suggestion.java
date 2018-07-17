@@ -220,7 +220,7 @@ public class Suggestion {
       @Override
       public Object computeValue(Policy.Session session, Clause.Condition cv, String collection, String shard, String node) {
         if (cv.computedType == ComputedType.ALL)
-          return new Double(getRelevantReplicasCount(session, cv, collection, shard));
+          return Double.valueOf(getRelevantReplicasCount(session, cv, collection, shard));
         if (cv.computedType == ComputedType.EQUAL) {
           int relevantReplicasCount = getRelevantReplicasCount(session, cv, collection, shard);
           if (relevantReplicasCount == 0) return 0;
