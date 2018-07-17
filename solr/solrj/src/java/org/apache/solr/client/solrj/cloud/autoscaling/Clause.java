@@ -387,8 +387,19 @@ public class Clause implements MapWriter, Comparable<Clause> {
       }
 
     },
+    ALL() {
+      @Override
+      public String wrap(String value) {
+        return "#ALL";
+      }
 
+      @Override
+      public String match(String val) {
+        if ("#ALL".equals(val)) return "1";
+        return null;
+      }
 
+    },
     PERCENT {
       @Override
       public String wrap(String value) {
@@ -512,9 +523,17 @@ public class Clause implements MapWriter, Comparable<Clause> {
         } else {
           return 0d;
         }
-      } else return op
-          .opposite(getClause().isReplicaZero() && this == getClause().getTag())
-          .delta(this.val, val);
+      } else {
+        if (this == getClause().getReplica()) {
+          Double delta = op.delta(this.val, val);
+          return getClause().isReplicaZero() ? -1 * delta : delta;
+        } else {
+          return op
+              .opposite(getClause().isReplicaZero() && this == getClause().getTag())
+              .delta(this.val, val);
+        }
+
+      }
     }
 
     public String getName() {

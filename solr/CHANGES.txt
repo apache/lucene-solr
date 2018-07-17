@@ -105,12 +105,14 @@ New Features
 * SOLR-12530: Ability to disable configset upload via -Dconfigset.upload.enabled=false startup parameter
   (Ishan Chattopadhyaya)
 
-* SOLR-12495: An #EQUALS function for replica in autoscaling policy to equally distribute replicas (noble)
+* SOLR-12495: An #EQUAL function for replica in autoscaling policy to equally distribute replicas (noble)
 
 * SOLR-12441: New NestedUpdateProcessorFactory (URP) to populate special fields _nest_parent_ and _nest_path_ of nested
   (child) documents.  It will generate a uniqueKey of nested docs if they were blank too. (Moshe Bla, David Smiley)
 
 * SOLR-11986: Allow percentage in freedisk attribute in autoscaling policy rules (noble)
+
+* SOLR-12522: Support a runtime function `#ALL` for 'replica' in autoscaling policies (noble)
 
 Bug Fixes
 ----------------------

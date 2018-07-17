@@ -73,7 +73,7 @@ public enum Operand {
   EQUAL("", 0) {
     @Override
     public double _delta(double expected, double actual) {
-      return expected - actual;
+      return actual - expected;
     }
   },
   RANGE_NOT_EQUAL("", 2) {

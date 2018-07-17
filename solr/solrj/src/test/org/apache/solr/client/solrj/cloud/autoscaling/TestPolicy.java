@@ -282,6 +282,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
         () -> Clause.create("{replica:'<3', shard: '#ANV', node:'#ANY'}"));
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{replica:'<3', shard: '#EACH', node:'#E4CH'}"));
+
+    clause = Clause.create("{replica: '#ALL',  freedisk:'>20%'}");
+    clause = Clause.create("{replica: '#ALL',  sysprop.zone :'west'}");
   }
 
 
@@ -1880,6 +1883,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
     assertEquals(1, violations.size());
     assertEquals(4, violations.get(0).getViolatingReplicas().size());
+    assertEquals(-4, violations.get(0).replicaCountDelta, 0.1);
     for (Violation.ReplicaInfoAndErr r : violations.get(0).getViolatingReplicas()) {
       assertEquals(500d, r.delta, 0.1);
 
@@ -1887,6 +1891,34 @@ public class TestPolicy extends SolrTestCaseJ4 {
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
     assertEquals(3, l.size());
     Map m = l.get(0).toMap(new LinkedHashMap<>());
+    assertEquals("r4", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
+    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+
+    m = l.get(1).toMap(new LinkedHashMap<>());
+    assertEquals("r3", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
+    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+
+    m = l.get(2).toMap(new LinkedHashMap<>());
+    assertEquals("r2", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
+    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+
+
+    autoScalingjson = "  { cluster-policy:[" +
+        "    { replica :'#ALL', freedisk:'>1000'}," +
+        "    { nodeRole : overseer, replica :0}]," +
+        "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
+    cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
+    assertEquals(-4, violations.get(0).replicaCountDelta, 0.1);
+    assertEquals(1, violations.size());
+    assertEquals(4, violations.get(0).getViolatingReplicas().size());
+    for (Violation.ReplicaInfoAndErr r : violations.get(0).getViolatingReplicas()) {
+      assertEquals(500d, r.delta, 0.1);
+
+    }
+    l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
+    assertEquals(3, l.size());
+    m = l.get(0).toMap(new LinkedHashMap<>());
     assertEquals("r4", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
     assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
 
@@ -2939,6 +2971,22 @@ public void testUtilizeNodeFailure2() throws Exception {
         "}";
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) Utils.fromJSONString(dataproviderdata))).getViolations();
+    assertEquals(1, violations.size());
+    assertEquals(4, violations.get(0).getViolatingReplicas().size());
+    for (Violation.ReplicaInfoAndErr r : violations.get(0).getViolatingReplicas()) {
+      assertEquals(10.0d, r.delta.doubleValue(), 0.1);
+    }
+    autoScalingjson = "{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 3}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica':'#ALL' ,  freedisk : '>30%'}" +
+        "  ]" +
+        "}";
+    cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) Utils.fromJSONString(dataproviderdata))).getViolations();
     assertEquals(1, violations.size());
     assertEquals(4, violations.get(0).getViolatingReplicas().size());
     for (Violation.ReplicaInfoAndErr r : violations.get(0).getViolatingReplicas()) {
