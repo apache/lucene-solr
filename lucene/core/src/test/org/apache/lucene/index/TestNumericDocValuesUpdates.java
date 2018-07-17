@@ -375,6 +375,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // update and delete different documents in the same commit session
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    conf.setMergePolicy(NoMergePolicy.INSTANCE); // otherwise a singleton merge could get rid of the delete
     conf.setMaxBufferedDocs(10); // control segment flushing
     IndexWriter writer = new IndexWriter(dir, conf);
     

@@ -46,14 +46,22 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     final long maxMergedSegmentBytes = (long) (tmp.getMaxMergedSegmentMB() * 1024 * 1024);
 
     long minSegmentBytes = Long.MAX_VALUE;
+    int totalDelCount = 0;
+    int totalMaxDoc = 0;
     long totalBytes = 0;
     for (SegmentCommitInfo sci : infos) {
+      totalDelCount += sci.getDelCount();
+      totalMaxDoc += sci.info.maxDoc();
       long byteSize = sci.sizeInBytes();
       double liveRatio = 1 - (double) sci.getDelCount() / sci.info.maxDoc();
       long weightedByteSize = (long) Math.round(liveRatio * byteSize);
       totalBytes += weightedByteSize;
       minSegmentBytes = Math.min(minSegmentBytes, weightedByteSize);
     }
+
+    final double delPercentage = 100.0 * totalDelCount / totalMaxDoc;
+    assertTrue("Percentage of deleted docs " + delPercentage + " is larger than the target: " + tmp.getDeletesPctAllowed(),
+        delPercentage <= tmp.getDeletesPctAllowed());
 
     long levelSize = Math.max(minSegmentBytes, (long) (tmp.getFloorSegmentMB() * 1024 * 1024));
     long bytesLeft = totalBytes;
@@ -63,7 +71,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     int mergeFactor = (int) Math.min(tmp.getSegmentsPerTier(), tmp.getMaxMergeAtOnce());
     while (true) {
       final double segCountLevel = bytesLeft / (double) levelSize;
-      if (segCountLevel < tmp.getSegmentsPerTier() || levelSize > maxMergedSegmentBytes / 2) {
+      if (segCountLevel < tmp.getSegmentsPerTier() || levelSize >= maxMergedSegmentBytes / 2) {
         allowedSegCount += Math.ceil(segCountLevel);
         break;
       }
@@ -80,8 +88,9 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
   @Override
   protected void assertMerge(MergePolicy policy, MergeSpecification merges) {
     TieredMergePolicy tmp = (TieredMergePolicy) policy;
+    final int mergeFactor = (int) Math.min(tmp.getMaxMergeAtOnce(), tmp.getSegmentsPerTier());
     for (OneMerge merge : merges.merges) {
-      assertTrue(merge.segments.size() <= tmp.getMaxMergeAtOnce());
+      assertTrue(merge.segments.size() <= mergeFactor);
     }
   }
 
@@ -93,6 +102,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     conf.setMaxBufferedDocs(4);
     tmp.setMaxMergeAtOnce(100);
     tmp.setSegmentsPerTier(100);
+    tmp.setDeletesPctAllowed(50.0);
     tmp.setForceMergeDeletesPctAllowed(30.0);
     IndexWriter w = new IndexWriter(dir, conf);
     for(int i=0;i<80;i++) {
@@ -572,6 +582,27 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     assertEquals(10, merge.segments.size());
   }
 
+  /**
+   * Make sure that singleton merges are considered when the max number of deletes is crossed.
+   */
+  public void testMergePurelyToReclaimDeletes() throws IOException {
+    TieredMergePolicy mergePolicy = mergePolicy();
+    SegmentInfos infos = new SegmentInfos(Version.LATEST.major);
+    // single 1GB segment with no deletes
+    infos.add(makeSegmentCommitInfo("_0", 1_000_000, 0, 1024, IndexWriter.SOURCE_MERGE));
+
+    // not eligible for merging
+    assertNull(mergePolicy.findMerges(MergeTrigger.EXPLICIT, infos, new MockMergeContext(SegmentCommitInfo::getDelCount)));
+
+    // introduce 15% deletes, still not eligible
+    infos = applyDeletes(infos, (int) (0.15 * 1_000_000));
+    assertNull(mergePolicy.findMerges(MergeTrigger.EXPLICIT, infos, new MockMergeContext(SegmentCommitInfo::getDelCount)));
+
+    // now cross the delete threshold, becomes eligible
+    infos = applyDeletes(infos, (int) ((mergePolicy.getDeletesPctAllowed() - 15 + 1) / 100 * 1_000_000));
+    assertNotNull(mergePolicy.findMerges(MergeTrigger.EXPLICIT, infos, new MockMergeContext(SegmentCommitInfo::getDelCount)));
+  }
+
   @Override
   public void testSimulateAppendOnly() throws IOException {
     TieredMergePolicy mergePolicy = mergePolicy();
@@ -587,4 +618,5 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     mergePolicy.setMaxMergedSegmentMB(TestUtil.nextInt(random(), 1024, 10 * 1024));
     doTestSimulateUpdates(mergePolicy, 10_000_000, 2500);
   }
+
 }

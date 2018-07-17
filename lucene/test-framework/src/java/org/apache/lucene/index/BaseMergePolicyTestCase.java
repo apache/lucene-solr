@@ -359,6 +359,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
 
       MergeSpecification merges = mergePolicy.findMerges(MergeTrigger.SEGMENT_FLUSH, segmentInfos, mergeContext);
       while (merges != null) {
+        assertTrue(merges.merges.size() > 0);
         assertMerge(mergePolicy, merges);
         for (OneMerge oneMerge : merges.merges) {
           segmentInfos = applyMerge(segmentInfos, oneMerge, "_" + segNameGenerator.getAndIncrement(), stats);

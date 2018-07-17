@@ -387,10 +387,11 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     Document tombstone = new Document();
     tombstone.add(new NumericDocValuesField("soft_delete", 1));
     writer.softUpdateDocument(new Term("id", "1"), tombstone, new NumericDocValuesField("soft_delete", 1));
-    writer.forceMergeDeletes(true); // Internally, forceMergeDeletes will call flush to flush pending updates
-    // Thus, we will have two segments - both having soft-deleted documents.
+    writer.flush(false, true); // flush pending updates but don't trigger a merge, we run forceMergeDeletes below
+    // Now we have have two segments - both having soft-deleted documents.
     // We expect any MP to merge these segments into one segment
     // when calling forceMergeDeletes.
+    writer.forceMergeDeletes(true);
     assertEquals(1, writer.segmentInfos.asList().size());
     assertEquals(1, writer.numDocs());
     assertEquals(1, writer.maxDoc());
