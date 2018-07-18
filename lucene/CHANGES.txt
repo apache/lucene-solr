@@ -29,7 +29,7 @@ API Changes
 * LUCENE-8099: CustomScoreQuery, BoostedQuery and BoostingQuery have been
   removed (Alan Woodward)
 
-* LUCENE-8012: Explanation now takes Number rather than float (Alan Woodward, 
+* LUCENE-8012: Explanation now takes Number rather than float (Alan Woodward,
   Robert Muir)
 
 * LUCENE-8116: SimScorer now only takes a frequency and a norm as per-document
@@ -141,6 +141,8 @@ API Changes:
   matching a range of docids (Mike McCandless)
 
 * LUCENE-8379: Add experimental TermQuery.getTermStates method (Mike McCandless)
+
+* LUCENE-8407: Add experimental SpanTermQuery.getTermStates method (David Smiley)
 
 * LUCENE-8390: MatchesIteratorSupplier replaced by IOSupplier (Alan Woodward,
   David Smiley)
