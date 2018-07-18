@@ -156,11 +156,11 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
 [[modifycollection]]
 == MODIFYCOLLECTION: Modify Attributes of a Collection
 
-`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>_&<yet_another_attribute_name>=`
+`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>_&__<attribute-name>__=__<attribute-value>__&__<another-attribute-name>__=__<another-value>__&__<yet_another_attribute_name>__=`
 
 It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
 
-An attribute can be deleted by passing an empty value e.g. `yet_another_attribute_name=` will delete the `yet_another_attribute_name` parameter from the collection.
+An attribute can be deleted by passing an empty value. For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
 
 === MODIFYCOLLECTION Parameters
 
@@ -181,7 +181,7 @@ The attributes that can be modified are:
 * rule
 * snitch
 * policy
-+
+
 See the <<create,CREATE action>> section above for details on these attributes.
 
 [[reload]]
