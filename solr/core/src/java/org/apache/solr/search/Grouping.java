@@ -731,7 +731,7 @@ public class Grouping {
         return totalCount == TotalCount.grouped ? allGroupsCollector : null;
       }
 
-      topGroups = format == Format.grouped ? firstPass.getTopGroups(offset, false) : firstPass.getTopGroups(0, false);
+      topGroups = format == Format.grouped ? firstPass.getTopGroups(offset) : firstPass.getTopGroups(0);
       if (topGroups == null) {
         if (totalCount == TotalCount.grouped) {
           allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(groupBy));
@@ -747,7 +747,7 @@ public class Grouping {
       groupedDocsToCollect = Math.max(groupedDocsToCollect, 1);
       Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
       secondPass = new TopGroupsCollector<>(new TermGroupSelector(groupBy),
-          topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores, false
+          topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores
       );
 
       if (totalCount == TotalCount.grouped) {
@@ -850,7 +850,7 @@ public class Grouping {
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         subCollector = topCollector = TopScoreDocCollector.create(groupDocsToCollect);
       } else {
-        topCollector = TopFieldCollector.create(searcher.weightSort(withinGroupSort), groupDocsToCollect, false, needScores, true);
+        topCollector = TopFieldCollector.create(searcher.weightSort(withinGroupSort), groupDocsToCollect, needScores, true);
         if (needScores) {
           maxScoreCollector = new MaxScoreCollector();
           subCollector = MultiCollector.wrap(topCollector, maxScoreCollector);
@@ -936,7 +936,7 @@ public class Grouping {
         return totalCount == TotalCount.grouped ? allGroupsCollector : null;
       }
 
-      topGroups = format == Format.grouped ? firstPass.getTopGroups(offset, false) : firstPass.getTopGroups(0, false);
+      topGroups = format == Format.grouped ? firstPass.getTopGroups(offset) : firstPass.getTopGroups(0);
       if (topGroups == null) {
         if (totalCount == TotalCount.grouped) {
           allGroupsCollector = new AllGroupsCollector<>(newSelector());
@@ -952,7 +952,7 @@ public class Grouping {
       groupdDocsToCollect = Math.max(groupdDocsToCollect, 1);
       Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
       secondPass = new TopGroupsCollector<>(newSelector(),
-          topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores, false
+          topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores
       );
 
       if (totalCount == TotalCount.grouped) {

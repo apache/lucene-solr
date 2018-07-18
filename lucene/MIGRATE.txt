@@ -76,3 +76,9 @@ separate query:
 Thanks to other optimizations that were added to Lucene 8, this query will be
 able to efficiently select the top-scoring document without having to visit
 all matches.
+
+## TopFieldCollector always assumes fillFields=true ##
+
+Because filling sort values doesn't have a significant overhead, the fillFields
+option has been removed from TopFieldCollector factory methods. Everything
+behaves as if it was set to true.

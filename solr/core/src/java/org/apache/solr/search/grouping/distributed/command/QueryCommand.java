@@ -130,7 +130,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
     if (sort == null || sort.equals(Sort.RELEVANCE)) {
       subCollector = topDocsCollector = TopScoreDocCollector.create(docsToCollect);
     } else {
-      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, true, needScores, true);
+      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, needScores, true);
       if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         subCollector = MultiCollector.wrap(topDocsCollector, maxScoreCollector);

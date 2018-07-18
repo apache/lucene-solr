@@ -145,7 +145,7 @@ public class TestGrouping extends LuceneTestCase {
     final FirstPassGroupingCollector<?> c1 = createRandomFirstPassCollector(groupField, groupSort, 10);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
 
-    final TopGroupsCollector<?> c2 = createSecondPassCollector(c1, groupSort, Sort.RELEVANCE, 0, 5, true, true, true);
+    final TopGroupsCollector<?> c2 = createSecondPassCollector(c1, groupSort, Sort.RELEVANCE, 0, 5, true, true);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c2);
 
     final TopGroups<?> groups = c2.getTopGroups(0);
@@ -219,11 +219,10 @@ public class TestGrouping extends LuceneTestCase {
                                                                        int groupOffset,
                                                                        int maxDocsPerGroup,
                                                                        boolean getScores,
-                                                                       boolean getMaxScores,
-                                                                       boolean fillSortFields) throws IOException {
+                                                                       boolean getMaxScores) throws IOException {
 
-    Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(groupOffset, fillSortFields);
-    return new TopGroupsCollector<>(firstPassGroupingCollector.getGroupSelector(), searchGroups, groupSort, sortWithinGroup, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
+    Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(groupOffset);
+    return new TopGroupsCollector<>(firstPassGroupingCollector.getGroupSelector(), searchGroups, groupSort, sortWithinGroup, maxDocsPerGroup, getScores, getMaxScores);
   }
 
   // Basically converts searchGroups from MutableValue to BytesRef if grouping by ValueSource
@@ -235,11 +234,10 @@ public class TestGrouping extends LuceneTestCase {
                                                                    Sort sortWithinGroup,
                                                                    int maxDocsPerGroup,
                                                                    boolean getScores,
-                                                                   boolean getMaxScores,
-                                                                   boolean fillSortFields) throws IOException {
+                                                                   boolean getMaxScores) throws IOException {
     if (firstPassGroupingCollector.getGroupSelector().getClass().isAssignableFrom(TermGroupSelector.class)) {
       GroupSelector<BytesRef> selector = (GroupSelector<BytesRef>) firstPassGroupingCollector.getGroupSelector();
-      return new TopGroupsCollector<>(selector, searchGroups, groupSort, sortWithinGroup, maxDocsPerGroup , getScores, getMaxScores, fillSortFields);
+      return new TopGroupsCollector<>(selector, searchGroups, groupSort, sortWithinGroup, maxDocsPerGroup , getScores, getMaxScores);
     } else {
       ValueSource vs = new BytesRefFieldSource(groupField);
       List<SearchGroup<MutableValue>> mvalSearchGroups = new ArrayList<>(searchGroups.size());
@@ -256,7 +254,7 @@ public class TestGrouping extends LuceneTestCase {
         mvalSearchGroups.add(sg);
       }
       ValueSourceGroupSelector selector = new ValueSourceGroupSelector(vs, new HashMap<>());
-      return new TopGroupsCollector<>(selector, mvalSearchGroups, groupSort, sortWithinGroup, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
+      return new TopGroupsCollector<>(selector, mvalSearchGroups, groupSort, sortWithinGroup, maxDocsPerGroup, getScores, getMaxScores);
     }
   }
 
@@ -288,13 +286,13 @@ public class TestGrouping extends LuceneTestCase {
     }
   }
 
-  private Collection<SearchGroup<BytesRef>> getSearchGroups(FirstPassGroupingCollector<?> c, int groupOffset, boolean fillFields) throws IOException {
+  private Collection<SearchGroup<BytesRef>> getSearchGroups(FirstPassGroupingCollector<?> c, int groupOffset) throws IOException {
     if (TermGroupSelector.class.isAssignableFrom(c.getGroupSelector().getClass())) {
       FirstPassGroupingCollector<BytesRef> collector = (FirstPassGroupingCollector<BytesRef>) c;
-      return collector.getTopGroups(groupOffset, fillFields);
+      return collector.getTopGroups(groupOffset);
     } else if (ValueSourceGroupSelector.class.isAssignableFrom(c.getGroupSelector().getClass())) {
       FirstPassGroupingCollector<MutableValue> collector = (FirstPassGroupingCollector<MutableValue>) c;
-      Collection<SearchGroup<MutableValue>> mutableValueGroups = collector.getTopGroups(groupOffset, fillFields);
+      Collection<SearchGroup<MutableValue>> mutableValueGroups = collector.getTopGroups(groupOffset);
       if (mutableValueGroups == null) {
         return null;
       }
@@ -439,7 +437,6 @@ public class TestGrouping extends LuceneTestCase {
 
   private TopGroups<BytesRef> slowGrouping(GroupDoc[] groupDocs,
                                            String searchTerm,
-                                           boolean fillFields,
                                            boolean getScores,
                                            boolean getMaxScores,
                                            boolean doAllGroups,
@@ -480,9 +477,7 @@ public class TestGrouping extends LuceneTestCase {
       if (l == null) {
         //System.out.println("    add sortedGroup=" + groupToString(d.group));
         sortedGroups.add(d.group);
-        if (fillFields) {
-          sortedGroupFields.add(fillFields(d, groupSort));
-        }
+        sortedGroupFields.add(fillFields(d, groupSort));
         l = new ArrayList<>();
         groups.put(d.group, l);
       }
@@ -512,11 +507,7 @@ public class TestGrouping extends LuceneTestCase {
         for(int docIDX=docOffset; docIDX < docIDXLimit; docIDX++) {
           final GroupDoc d = docs.get(docIDX);
           final FieldDoc fd;
-          if (fillFields) {
-            fd = new FieldDoc(d.id, getScores ? d.score : Float.NaN, fillFields(d, docSort));
-          } else {
-            fd = new FieldDoc(d.id, getScores ? d.score : Float.NaN);
-          }
+          fd = new FieldDoc(d.id, getScores ? d.score : Float.NaN, fillFields(d, docSort));
           hits[docIDX-docOffset] = fd;
         }
       } else  {
@@ -528,7 +519,7 @@ public class TestGrouping extends LuceneTestCase {
                                                         docs.size(),
                                                         hits,
                                                         group,
-                                                        fillFields ? sortedGroupFields.get(idx) : null);
+                                                        sortedGroupFields.get(idx));
     }
 
     if (doAllGroups) {
@@ -838,7 +829,6 @@ public class TestGrouping extends LuceneTestCase {
         }
         
         final String searchTerm = "real" + random().nextInt(3);
-        final boolean fillFields = random().nextBoolean();
         boolean getScores = random().nextBoolean();
         final boolean getMaxScores = random().nextBoolean();
         final Sort groupSort = getRandomSort();
@@ -929,7 +919,7 @@ public class TestGrouping extends LuceneTestCase {
         }
         
         // Get 1st pass top groups
-        final Collection<SearchGroup<BytesRef>> topGroups = getSearchGroups(c1, groupOffset, fillFields);
+        final Collection<SearchGroup<BytesRef>> topGroups = getSearchGroups(c1, groupOffset);
         final TopGroups<BytesRef> groupsResult;
         if (VERBOSE) {
           System.out.println("TEST: first pass topGroups");
@@ -956,7 +946,7 @@ public class TestGrouping extends LuceneTestCase {
             }
           }
           
-          c2 = createSecondPassCollector(c1, groupSort, docSort, groupOffset, docOffset + docsPerGroup, getScores, getMaxScores, fillFields);
+          c2 = createSecondPassCollector(c1, groupSort, docSort, groupOffset, docOffset + docsPerGroup, getScores, getMaxScores);
           if (doCache) {
             if (cCache.isCached()) {
               if (VERBOSE) {
@@ -987,7 +977,7 @@ public class TestGrouping extends LuceneTestCase {
           }
         }
         
-        final TopGroups<BytesRef> expectedGroups = slowGrouping(groupDocs, searchTerm, fillFields, getScores, getMaxScores, doAllGroups, groupSort, docSort, topNGroups, docsPerGroup, groupOffset, docOffset);
+        final TopGroups<BytesRef> expectedGroups = slowGrouping(groupDocs, searchTerm, getScores, getMaxScores, doAllGroups, groupSort, docSort, topNGroups, docsPerGroup, groupOffset, docOffset);
         
         if (VERBOSE) {
           if (expectedGroups == null) {
@@ -1033,10 +1023,10 @@ public class TestGrouping extends LuceneTestCase {
           }
         }
         
-        assertEquals(docIDToID, expectedGroups, groupsResult, true, true, true, getScores, true);
+        assertEquals(docIDToID, expectedGroups, groupsResult, true, true, getScores, true);
         
         // Confirm merged shards match:
-        assertEquals(docIDToID, expectedGroups, topGroupsShards, true, false, fillFields, getScores, true);
+        assertEquals(docIDToID, expectedGroups, topGroupsShards, true, false, getScores, true);
         if (topGroupsShards != null) {
           verifyShards(shards.docStarts, topGroupsShards);
         }
@@ -1059,7 +1049,7 @@ public class TestGrouping extends LuceneTestCase {
         // Get block grouping result:
         sBlocks.search(query, c4);
         @SuppressWarnings({"unchecked","rawtypes"})
-        final TopGroups<BytesRef> tempTopGroupsBlocks = (TopGroups<BytesRef>) c3.getTopGroups(docSort, groupOffset, docOffset, docOffset+docsPerGroup, fillFields);
+        final TopGroups<BytesRef> tempTopGroupsBlocks = (TopGroups<BytesRef>) c3.getTopGroups(docSort, groupOffset, docOffset, docOffset+docsPerGroup);
         final TopGroups<BytesRef> groupsResultBlocks;
         if (doAllGroups && tempTopGroupsBlocks != null) {
           assertEquals((int) tempTopGroupsBlocks.totalGroupCount, allGroupsCollector2.getGroupCount());
@@ -1132,8 +1122,8 @@ public class TestGrouping extends LuceneTestCase {
           }
         }
         
-        assertEquals(docIDToIDBlocks, expectedGroups, groupsResultBlocks, false, true, true, getScores, false);
-        assertEquals(docIDToIDBlocks, expectedGroups, topGroupsBlockShards, false, false, fillFields, getScores, false);
+        assertEquals(docIDToIDBlocks, expectedGroups, groupsResultBlocks, false, true, getScores, false);
+        assertEquals(docIDToIDBlocks, expectedGroups, topGroupsBlockShards, false, false, getScores, false);
       }
       
       r.close();
@@ -1187,7 +1177,7 @@ public class TestGrouping extends LuceneTestCase {
       }
       firstPassGroupingCollectors.add(firstPassCollector);
       subSearchers[shardIDX].search(w, firstPassCollector);
-      final Collection<SearchGroup<BytesRef>> topGroups = getSearchGroups(firstPassCollector, 0, true);
+      final Collection<SearchGroup<BytesRef>> topGroups = getSearchGroups(firstPassCollector, 0);
       if (topGroups != null) {
         if (VERBOSE) {
           System.out.println("  shard " + shardIDX + " s=" + subSearchers[shardIDX] + " totalGroupedHitCount=?" + " " + topGroups.size() + " groups:");
@@ -1218,7 +1208,7 @@ public class TestGrouping extends LuceneTestCase {
       final TopGroups<BytesRef>[] shardTopGroups = new TopGroups[subSearchers.length];
       for(int shardIDX=0;shardIDX<subSearchers.length;shardIDX++) {
         final TopGroupsCollector<?> secondPassCollector = createSecondPassCollector(firstPassGroupingCollectors.get(shardIDX),
-            groupField, mergedTopGroups, groupSort, docSort, docOffset + topNDocs, getScores, getMaxScores, true);
+            groupField, mergedTopGroups, groupSort, docSort, docOffset + topNDocs, getScores, getMaxScores);
         subSearchers[shardIDX].search(w, secondPassCollector);
         shardTopGroups[shardIDX] = getTopGroups(secondPassCollector, 0);
         if (VERBOSE) {
@@ -1242,7 +1232,7 @@ public class TestGrouping extends LuceneTestCase {
     }
   }
 
-  private void assertEquals(int[] docIDtoID, TopGroups<BytesRef> expected, TopGroups<BytesRef> actual, boolean verifyGroupValues, boolean verifyTotalGroupCount, boolean verifySortValues, boolean testScores, boolean idvBasedImplsUsed) {
+  private void assertEquals(int[] docIDtoID, TopGroups<BytesRef> expected, TopGroups<BytesRef> actual, boolean verifyGroupValues, boolean verifyTotalGroupCount, boolean testScores, boolean idvBasedImplsUsed) {
     if (expected == null) {
       assertNull(actual);
       return;
@@ -1274,9 +1264,7 @@ public class TestGrouping extends LuceneTestCase {
         }
 
       }
-      if (verifySortValues) {
-        assertArrayEquals(expectedGroup.groupSortValues, actualGroup.groupSortValues);
-      }
+      assertArrayEquals(expectedGroup.groupSortValues, actualGroup.groupSortValues);
 
       // TODO
       // assertEquals(expectedGroup.maxScore, actualGroup.maxScore);
@@ -1297,9 +1285,7 @@ public class TestGrouping extends LuceneTestCase {
           // TODO: too anal for now
           //assertEquals(Float.NaN, actualFD.score);
         }
-        if (verifySortValues) {
-          assertArrayEquals(expectedFD.fields, actualFD.fields);
-        }
+        assertArrayEquals(expectedFD.fields, actualFD.fields);
       }
     }
   }

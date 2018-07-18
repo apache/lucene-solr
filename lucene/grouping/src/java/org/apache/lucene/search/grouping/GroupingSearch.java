@@ -50,7 +50,6 @@ public class GroupingSearch {
 
   private int groupDocsOffset;
   private int groupDocsLimit = 1;
-  private boolean fillSortFields;
   private boolean includeScores = true;
   private boolean includeMaxScore = true;
 
@@ -147,7 +146,7 @@ public class GroupingSearch {
     matchingGroupHeads = allGroupHeads ? allGroupHeadsCollector.retrieveGroupHeads(searcher.getIndexReader().maxDoc())
         : new Bits.MatchNoBits(searcher.getIndexReader().maxDoc());
 
-    Collection<SearchGroup> topSearchGroups = firstPassCollector.getTopGroups(groupOffset, fillSortFields);
+    Collection<SearchGroup> topSearchGroups = firstPassCollector.getTopGroups(groupOffset);
     if (topSearchGroups == null) {
       return new TopGroups(new SortField[0], new SortField[0], 0, 0, new GroupDocs[0], Float.NaN);
     }
@@ -155,7 +154,7 @@ public class GroupingSearch {
     int topNInsideGroup = groupDocsOffset + groupDocsLimit;
     TopGroupsCollector secondPassCollector
         = new TopGroupsCollector(grouper, topSearchGroups, groupSort, sortWithinGroup, topNInsideGroup,
-                                         includeScores, includeMaxScore, fillSortFields);
+                                         includeScores, includeMaxScore);
 
     if (cachedCollector != null && cachedCollector.isCached()) {
       cachedCollector.replay(secondPassCollector);
@@ -177,7 +176,7 @@ public class GroupingSearch {
     BlockGroupingCollector c = new BlockGroupingCollector(groupSort, topN, includeScores, groupEndDocs);
     searcher.search(query, c);
     int topNInsideGroup = groupDocsOffset + groupDocsLimit;
-    return c.getTopGroups(sortWithinGroup, groupOffset, groupDocsOffset, topNInsideGroup, fillSortFields);
+    return c.getTopGroups(sortWithinGroup, groupOffset, groupDocsOffset, topNInsideGroup);
   }
 
   /**
@@ -266,17 +265,6 @@ public class GroupingSearch {
    */
   public GroupingSearch setGroupDocsLimit(int groupDocsLimit) {
     this.groupDocsLimit = groupDocsLimit;
-    return this;
-  }
-
-  /**
-   * Whether to also fill the sort fields per returned group and groups docs.
-   *
-   * @param fillSortFields Whether to also fill the sort fields per returned group and groups docs
-   * @return <code>this</code>
-   */
-  public GroupingSearch setFillSortFields(boolean fillSortFields) {
-    this.fillSortFields = fillSortFields;
     return this;
   }
 

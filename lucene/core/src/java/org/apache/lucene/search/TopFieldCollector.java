@@ -28,7 +28,7 @@ import org.apache.lucene.util.PriorityQueue;
  * A {@link Collector} that sorts by {@link SortField} using
  * {@link FieldComparator}s.
  * <p>
- * See the {@link #create(org.apache.lucene.search.Sort, int, boolean, boolean, boolean)} method
+ * See the {@link #create(org.apache.lucene.search.Sort, int, boolean, boolean)} method
  * for instantiating a TopFieldCollector.
  *
  * @lucene.experimental
@@ -97,9 +97,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final boolean mayNeedScoresTwice;
     final boolean trackTotalHits;
 
-    public SimpleFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, boolean fillFields,
+    public SimpleFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits,
         boolean trackDocScores, boolean trackTotalHits) {
-      super(queue, numHits, fillFields, sort.needsScores() || trackDocScores);
+      super(queue, numHits, sort.needsScores() || trackDocScores);
       this.sort = sort;
       this.queue = queue;
       this.trackDocScores = trackDocScores;
@@ -189,9 +189,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final boolean mayNeedScoresTwice;
     final boolean trackTotalHits;
 
-    public PagingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits, boolean fillFields,
+    public PagingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits,
                                 boolean trackDocScores, boolean trackTotalHits) {
-      super(queue, numHits, fillFields, trackDocScores || sort.needsScores());
+      super(queue, numHits, trackDocScores || sort.needsScores());
       this.sort = sort;
       this.queue = queue;
       this.trackDocScores = trackDocScores;
@@ -290,8 +290,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
 
-  private final boolean fillFields;
-
   final int numHits;
   FieldValueHitQueue.Entry bottom = null;
   boolean queueFull;
@@ -304,11 +302,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // internal versions. If someone will define a constructor with any other
   // visibility, then anyone will be able to extend the class, which is not what
   // we want.
-  private TopFieldCollector(PriorityQueue<Entry> pq, int numHits, boolean fillFields, boolean needsScores) {
+  private TopFieldCollector(PriorityQueue<Entry> pq, int numHits, boolean needsScores) {
     super(pq);
     this.needsScores = needsScores;
     this.numHits = numHits;
-    this.fillFields = fillFields;
   }
 
   @Override
@@ -328,9 +325,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          the sort criteria (SortFields).
    * @param numHits
    *          the number of results to collect.
-   * @param fillFields
-   *          specifies whether the actual field values should be returned on
-   *          the results (FieldDoc).
    * @param trackDocScores
    *          specifies whether document scores should be tracked and set on the
    *          results. Note that if set to false, then the results' scores will
@@ -346,8 +340,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *         the sort criteria.
    */
   public static TopFieldCollector create(Sort sort, int numHits,
-      boolean fillFields, boolean trackDocScores, boolean trackTotalHits) {
-    return create(sort, numHits, null, fillFields, trackDocScores, trackTotalHits);
+      boolean trackDocScores, boolean trackTotalHits) {
+    return create(sort, numHits, null, trackDocScores, trackTotalHits);
   }
 
   /**
@@ -364,9 +358,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          the number of results to collect.
    * @param after
    *          only hits after this FieldDoc will be collected
-   * @param fillFields
-   *          specifies whether the actual field values should be returned on
-   *          the results (FieldDoc).
    * @param trackDocScores
    *          specifies whether document scores should be tracked and set on the
    *          results. Note that if set to false, then the results' scores will
@@ -383,7 +374,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *         the sort criteria.
    */
   public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
-      boolean fillFields, boolean trackDocScores, boolean trackTotalHits) {
+      boolean trackDocScores, boolean trackTotalHits) {
 
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
@@ -396,7 +387,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
 
     if (after == null) {
-      return new SimpleFieldCollector(sort, queue, numHits, fillFields, trackDocScores, trackTotalHits);
+      return new SimpleFieldCollector(sort, queue, numHits, trackDocScores, trackTotalHits);
     } else {
       if (after.fields == null) {
         throw new IllegalArgumentException("after.fields wasn't set; you must pass fillFields=true for the previous search");
@@ -406,7 +397,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         throw new IllegalArgumentException("after.fields has " + after.fields.length + " values but sort has " + sort.getSort().length);
       }
 
-      return new PagingFieldCollector(sort, queue, after, numHits, fillFields, trackDocScores, trackTotalHits);
+      return new PagingFieldCollector(sort, queue, after, numHits, trackDocScores, trackTotalHits);
     }
   }
 
@@ -434,17 +425,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   @Override
   protected void populateResults(ScoreDoc[] results, int howMany) {
-    if (fillFields) {
-      // avoid casting if unnecessary.
-      FieldValueHitQueue<Entry> queue = (FieldValueHitQueue<Entry>) pq;
-      for (int i = howMany - 1; i >= 0; i--) {
-        results[i] = queue.fillFields(queue.pop());
-      }
-    } else {
-      for (int i = howMany - 1; i >= 0; i--) {
-        Entry entry = pq.pop();
-        results[i] = new FieldDoc(entry.doc, entry.score);
-      }
+    // avoid casting if unnecessary.
+    FieldValueHitQueue<Entry> queue = (FieldValueHitQueue<Entry>) pq;
+    for (int i = howMany - 1; i >= 0; i--) {
+      results[i] = queue.fillFields(queue.pop());
     }
   }
 

@@ -140,7 +140,7 @@ public class TopDocs {
             }
             final FieldDoc fd = (FieldDoc) sd;
             if (fd.fields == null) {
-              throw new IllegalArgumentException("shard " + shardIDX + " did not set sort field values (FieldDoc.fields is null); you must pass fillFields=true to IndexSearcher.search on each shard");
+              throw new IllegalArgumentException("shard " + shardIDX + " did not set sort field values (FieldDoc.fields is null)");
             }
           }
         }

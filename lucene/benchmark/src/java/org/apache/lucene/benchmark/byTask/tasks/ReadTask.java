@@ -112,7 +112,7 @@ public abstract class ReadTask extends PerfTask {
             // Weight public again, we can go back to
             // pulling the Weight ourselves:
             TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
-                                                                   true, withScore(),
+                                                                   withScore(),
                                                                    withTotalHits());
             searcher.search(q, collector);
             hits = collector.topDocs();

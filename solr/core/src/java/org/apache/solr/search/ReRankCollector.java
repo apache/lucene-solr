@@ -67,7 +67,7 @@ public class ReRankCollector extends TopDocsCollector {
     } else {
       sort = sort.rewrite(searcher);
       //scores are needed for Rescorer (regardless of whether sort needs it)
-      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true);
+      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), true, true);
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;

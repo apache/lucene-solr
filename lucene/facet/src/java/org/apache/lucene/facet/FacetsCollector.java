@@ -228,10 +228,8 @@ public class FacetsCollector extends SimpleCollector implements Collector {
           // remove this
           throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
         }
-        boolean fillFields = true;
         hitsCollector = TopFieldCollector.create(sort, n,
                                                  (FieldDoc) after,
-                                                 fillFields,
                                                  doDocScores,
                                                  true); // TODO: can we disable exact hit counts
       } else {

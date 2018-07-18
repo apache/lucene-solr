@@ -136,11 +136,11 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       ValueSource vs = fieldType.getValueSource(field, null);
       Collection<SearchGroup<MutableValue>> v = GroupConverter.toMutable(field, firstPhaseGroups);
       secondPassCollector = new TopGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()),
-          v, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true
+          v, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore
       );
     } else {
       secondPassCollector = new TopGroupsCollector<>(new TermGroupSelector(field.getName()),
-          firstPhaseGroups, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true
+          firstPhaseGroups, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore
       );
     }
     collectors.add(secondPassCollector);

@@ -270,10 +270,8 @@ public class BlockGroupingCollector extends SimpleCollector {
    *    within each group
    *  @param maxDocsPerGroup How many top documents to keep
    *     within each group.
-   *  @param fillSortFields If true then the Comparable
-   *     values for the sort fields will be set
    */
-  public TopGroups<?> getTopGroups(Sort withinGroupSort, int groupOffset, int withinGroupOffset, int maxDocsPerGroup, boolean fillSortFields) throws IOException {
+  public TopGroups<?> getTopGroups(Sort withinGroupSort, int groupOffset, int withinGroupOffset, int maxDocsPerGroup) throws IOException {
 
     //if (queueFull) {
     //System.out.println("getTopGroups groupOffset=" + groupOffset + " topNGroups=" + topNGroups);
@@ -306,7 +304,7 @@ public class BlockGroupingCollector extends SimpleCollector {
         collector = TopScoreDocCollector.create(maxDocsPerGroup);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, needsScores, true); // TODO: disable exact counts?
+        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, needsScores, true); // TODO: disable exact counts?
       }
 
       float groupMaxScore = needsScores ? Float.NEGATIVE_INFINITY : Float.NaN;
@@ -325,13 +323,9 @@ public class BlockGroupingCollector extends SimpleCollector {
 
       final Object[] groupSortValues;
 
-      if (fillSortFields) {
-        groupSortValues = new Comparable<?>[comparators.length];
-        for(int sortFieldIDX=0;sortFieldIDX<comparators.length;sortFieldIDX++) {
-          groupSortValues[sortFieldIDX] = comparators[sortFieldIDX].value(og.comparatorSlot);
-        }
-      } else {
-        groupSortValues = null;
+      groupSortValues = new Comparable<?>[comparators.length];
+      for(int sortFieldIDX=0;sortFieldIDX<comparators.length;sortFieldIDX++) {
+        groupSortValues[sortFieldIDX] = comparators[sortFieldIDX].value(og.comparatorSlot);
       }
 
       final TopDocs topDocs = collector.topDocs(withinGroupOffset, maxDocsPerGroup);

@@ -512,9 +512,8 @@ public class IndexSearcher {
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
-        final boolean fillFields = true;
         // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, fillFields, doDocScores, true);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, doDocScores, true);
       }
 
       @Override

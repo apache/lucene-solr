@@ -60,6 +60,9 @@ API Changes
   no longer have an option to compute the maximum score when sorting by field.
   (Adrien Grand)
 
+* LUCENE-8411: TopFieldCollector no longer takes a fillFields options, it now
+  always fills fields. (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
