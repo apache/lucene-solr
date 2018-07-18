@@ -60,6 +60,13 @@ public class SpanTermQuery extends SpanQuery {
   /** Return the term whose spans are matched. */
   public Term getTerm() { return term; }
 
+  /** Returns the {@link TermContext} passed to the constructor, or null if it was not passed.
+   *
+   * @lucene.experimental */
+  public TermContext getTermContext() {
+    return termContext;
+  }
+
   @Override
   public String getField() { return term.field(); }
 

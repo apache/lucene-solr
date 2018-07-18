@@ -19,6 +19,8 @@ API Changes:
 
 * LUCENE-8379: Add experimental TermQuery.getTermStates method (Mike McCandless)
 
+* LUCENE-8407: Add experimental SpanTermQuery.getTermStates method (David Smiley)
+
 * LUCENE-8388: PostingsEnum#attributes() has been deprecated (Alan Woodward)
 
 * LUCENE-8390: MatchesIteratorSupplier replaced by IOSupplier (Alan Woodward,
