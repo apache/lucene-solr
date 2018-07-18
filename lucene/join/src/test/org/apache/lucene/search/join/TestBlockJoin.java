@@ -1013,7 +1013,7 @@ public class TestBlockJoin extends LuceneTestCase {
   private void compareHits(IndexReader r, IndexReader joinR, TopDocs controlHits, Map<Integer, TopDocs> joinResults) throws Exception {
     int currentParentID = -1;
     int childHitSlot = 0;
-    TopDocs childHits = new TopDocs(0, new ScoreDoc[0], 0f);
+    TopDocs childHits = new TopDocs(0, new ScoreDoc[0]);
     for (ScoreDoc controlHit : controlHits.scoreDocs) {
       Document controlDoc = r.document(controlHit.doc);
       int parentID = Integer.parseInt(controlDoc.get("parentID"));

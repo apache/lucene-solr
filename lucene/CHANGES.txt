@@ -56,6 +56,10 @@ API Changes
 * LUCENE-8388: Unused PostingsEnum#attributes() method has been removed 
   (Alan Woodward)
 
+* LUCENE-8405: TopDocs.maxScore is removed. IndexSearcher and TopFieldCollector
+  no longer have an option to compute the maximum score when sorting by field.
+  (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

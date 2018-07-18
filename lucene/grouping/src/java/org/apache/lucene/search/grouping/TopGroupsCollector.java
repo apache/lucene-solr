@@ -17,15 +17,23 @@
 
 package org.apache.lucene.search.grouping;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import org.apache.lucene.search.FilterCollector;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * A second-pass collector that collects the TopDocs for each group, and
@@ -60,17 +68,64 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
 
   }
 
-  private static class TopDocsReducer<T> extends GroupReducer<T, TopDocsCollector<?>> {
+  private static class MaxScoreCollector extends SimpleCollector {
+    private Scorer scorer;
+    private float maxScore = Float.MIN_VALUE;
+    private boolean collectedAnyHits = false;
 
-    private final Supplier<TopDocsCollector<?>> supplier;
+    public MaxScoreCollector() {}
+
+    public float getMaxScore() {
+      return collectedAnyHits ? maxScore : Float.NaN;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
+    }
+
+    @Override
+    public void setScorer(Scorer scorer) {
+      this.scorer = scorer;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      collectedAnyHits = true;
+      maxScore = Math.max(scorer.score(), maxScore);
+    }
+  }
+
+  private static class TopDocsAndMaxScoreCollector extends FilterCollector {
+    private final TopDocsCollector<?> topDocsCollector;
+    private final MaxScoreCollector maxScoreCollector;
+    private final boolean sortedByScore;
+    
+    public TopDocsAndMaxScoreCollector(boolean sortedByScore, TopDocsCollector<?> topDocsCollector, MaxScoreCollector maxScoreCollector) {
+      super(MultiCollector.wrap(topDocsCollector, maxScoreCollector));
+      this.sortedByScore = sortedByScore;
+      this.topDocsCollector = topDocsCollector;
+      this.maxScoreCollector = maxScoreCollector;
+    }
+  }
+
+  private static class TopDocsReducer<T> extends GroupReducer<T, TopDocsAndMaxScoreCollector> {
+
+    private final Supplier<TopDocsAndMaxScoreCollector> supplier;
     private final boolean needsScores;
 
     TopDocsReducer(Sort withinGroupSort,
                    int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) {
       this.needsScores = getScores || getMaxScores || withinGroupSort.needsScores();
-      this.supplier = withinGroupSort == Sort.RELEVANCE ?
-          () -> TopScoreDocCollector.create(maxDocsPerGroup) :
-          () -> TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, getScores, getMaxScores, true); // TODO: disable exact counts?
+      if (withinGroupSort == Sort.RELEVANCE) {
+        supplier = () -> new TopDocsAndMaxScoreCollector(true, TopScoreDocCollector.create(maxDocsPerGroup), null);
+      } else {
+        supplier = () -> {
+          TopFieldCollector topDocsCollector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, getScores, true); // TODO: disable exact counts?
+          MaxScoreCollector maxScoreCollector = getMaxScores ? new MaxScoreCollector() : null;
+          return new TopDocsAndMaxScoreCollector(false, topDocsCollector, maxScoreCollector);
+        };
+      }
     }
 
     @Override
@@ -79,7 +134,7 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
     }
 
     @Override
-    protected TopDocsCollector<?> newCollector() {
+    protected TopDocsAndMaxScoreCollector newCollector() {
       return supplier.get();
     }
   }
@@ -95,15 +150,33 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
     int groupIDX = 0;
     float maxScore = Float.MIN_VALUE;
     for(SearchGroup<T> group : groups) {
-      TopDocsCollector<?> collector = (TopDocsCollector<?>) groupReducer.getCollector(group.groupValue);
-      final TopDocs topDocs = collector.topDocs(withinGroupOffset, maxDocsPerGroup);
+      TopDocsAndMaxScoreCollector collector = (TopDocsAndMaxScoreCollector) groupReducer.getCollector(group.groupValue);
+      final TopDocs topDocs;
+      final float groupMaxScore;
+      if (collector.sortedByScore) {
+        TopDocs allTopDocs = collector.topDocsCollector.topDocs();
+        groupMaxScore = allTopDocs.scoreDocs.length == 0 ? Float.NaN : allTopDocs.scoreDocs[0].score;
+        if (allTopDocs.scoreDocs.length <= withinGroupOffset) {
+          topDocs = new TopDocs(allTopDocs.totalHits, new ScoreDoc[0]);
+        } else {
+          topDocs = new TopDocs(allTopDocs.totalHits, ArrayUtil.copyOfSubArray(allTopDocs.scoreDocs, withinGroupOffset, Math.min(allTopDocs.scoreDocs.length, withinGroupOffset + maxDocsPerGroup)));
+        }
+      } else {
+        topDocs = collector.topDocsCollector.topDocs(withinGroupOffset, maxDocsPerGroup);
+        if (collector.maxScoreCollector == null) {
+          groupMaxScore = Float.NaN;
+        } else {
+          groupMaxScore = collector.maxScoreCollector.getMaxScore();
+        }
+      }
+      
       groupDocsResult[groupIDX++] = new GroupDocs<>(Float.NaN,
-          topDocs.getMaxScore(),
+          groupMaxScore,
           topDocs.totalHits,
           topDocs.scoreDocs,
           group.groupValue,
           group.sortValues);
-      maxScore = Math.max(maxScore, topDocs.getMaxScore());
+      maxScore = Math.max(maxScore, groupMaxScore);
     }
 
     return new TopGroups<>(groupSort.getSort(),

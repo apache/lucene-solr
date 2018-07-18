@@ -216,14 +216,13 @@ public class TestSearchAfter extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " sort=" + sort + " pageSize=" + pageSize);
     }
-    final boolean doMaxScore = random().nextBoolean();
     final boolean doScores = random().nextBoolean();
     if (sort == null) {
       all = searcher.search(query, maxDoc);
     } else if (sort == Sort.RELEVANCE) {
-      all = searcher.search(query, maxDoc, sort, true, doMaxScore);
+      all = searcher.search(query, maxDoc, sort, true);
     } else {
-      all = searcher.search(query, maxDoc, sort, doScores, doMaxScore);
+      all = searcher.search(query, maxDoc, sort, doScores);
     }
     if (VERBOSE) {
       System.out.println("  all.totalHits=" + all.totalHits);
@@ -246,9 +245,9 @@ public class TestSearchAfter extends LuceneTestCase {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
         if (sort == Sort.RELEVANCE) {
-          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, true, doMaxScore);
+          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, true);
         } else {
-          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, doScores, doMaxScore);
+          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, doScores);
         }
       }
       if (VERBOSE) {

@@ -67,7 +67,7 @@ public class ReRankCollector extends TopDocsCollector {
     } else {
       sort = sort.rewrite(searcher);
       //scores are needed for Rescorer (regardless of whether sort needs it)
-      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true, true);
+      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true);
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
@@ -118,7 +118,8 @@ public class ReRankCollector extends TopDocsCollector {
 
         IntIntHashMap boostedDocs = QueryElevationComponent.getBoostDocs((SolrIndexSearcher)searcher, boostedPriority, requestContext);
 
-        Arrays.sort(rescoredDocs.scoreDocs, new BoostedComp(boostedDocs, mainDocs.scoreDocs, rescoredDocs.getMaxScore()));
+        float maxScore = rescoredDocs.scoreDocs.length == 0 ? Float.NaN : rescoredDocs.scoreDocs[0].score;
+        Arrays.sort(rescoredDocs.scoreDocs, new BoostedComp(boostedDocs, mainDocs.scoreDocs, maxScore));
       }
 
       if(howMany == rescoredDocs.scoreDocs.length) {

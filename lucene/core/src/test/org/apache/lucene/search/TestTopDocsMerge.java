@@ -275,13 +275,13 @@ public class TestTopDocsMerge extends LuceneTestCase {
             tempTopHits.scoreDocs = newScoreDocs;
             topHits = tempTopHits;
           } else {
-            topHits = new TopDocs(tempTopHits.totalHits, new ScoreDoc[0], tempTopHits.getMaxScore());
+            topHits = new TopDocs(tempTopHits.totalHits, new ScoreDoc[0]);
           }
         } else {
           topHits = searcher.search(query, numHits);
         }
       } else {
-        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true, true);
+        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true);
         searcher.search(query, c);
         if (useFrom) {
           from = TestUtil.nextInt(random(), 0, numHits - 1);
@@ -295,7 +295,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
             tempTopHits.scoreDocs = newScoreDocs;
             topHits = tempTopHits;
           } else {
-            topHits = new TopDocs(tempTopHits.totalHits, new ScoreDoc[0], tempTopHits.getMaxScore());
+            topHits = new TopDocs(tempTopHits.totalHits, new ScoreDoc[0]);
           }
         } else {
           topHits = c.topDocs(0, numHits);
@@ -306,7 +306,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         if (useFrom) {
           System.out.println("from=" + from + " size=" + size);
         }
-        System.out.println("  top search: " + topHits.totalHits + " totalHits; hits=" + (topHits.scoreDocs == null ? "null" : topHits.scoreDocs.length + " maxScore=" + topHits.getMaxScore()));
+        System.out.println("  top search: " + topHits.totalHits + " totalHits; hits=" + (topHits.scoreDocs == null ? "null" : topHits.scoreDocs.length));
         if (topHits.scoreDocs != null) {
           for(int hitIDX=0;hitIDX<topHits.scoreDocs.length;hitIDX++) {
             final ScoreDoc sd = topHits.scoreDocs[hitIDX];
@@ -330,7 +330,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         if (sort == null) {
           subHits = subSearcher.search(w, numHits);
         } else {
-          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true, true);
+          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true);
           subSearcher.search(w, c);
           subHits = c.topDocs(0, numHits);
         }

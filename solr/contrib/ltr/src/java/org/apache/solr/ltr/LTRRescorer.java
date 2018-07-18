@@ -135,7 +135,7 @@ public class LTRRescorer extends Rescorer {
       }
     });
 
-    return new TopDocs(firstPassTopDocs.totalHits, reranked, reranked[0].score);
+    return new TopDocs(firstPassTopDocs.totalHits, reranked);
   }
 
   public void scoreFeatures(IndexSearcher indexSearcher, TopDocs firstPassTopDocs,

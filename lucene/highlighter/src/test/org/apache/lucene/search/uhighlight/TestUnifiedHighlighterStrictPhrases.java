@@ -540,7 +540,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     final String indexedText = "x y z x z x a";
     indexWriter.addDocument(newDoc(indexedText));
     initReaderSearcherHighlighter();
-    TopDocs topDocs = new TopDocs(1, new ScoreDoc[]{new ScoreDoc(0, 1f)}, 1f);
+    TopDocs topDocs = new TopDocs(1, new ScoreDoc[]{new ScoreDoc(0, 1f)});
 
     String expected = "<b>x</b> <b>y</b> <b>z</b> x z x <b>a</b>";
     Query q = new SpanNearQuery(new SpanQuery[] {

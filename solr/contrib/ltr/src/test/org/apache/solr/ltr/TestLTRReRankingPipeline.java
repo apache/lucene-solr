@@ -245,7 +245,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
 
       final ScoreDoc[] slice = new ScoreDoc[topN];
       System.arraycopy(hits.scoreDocs, 0, slice, 0, topN);
-      hits = new TopDocs(hits.totalHits, slice, hits.getMaxScore());
+      hits = new TopDocs(hits.totalHits, slice);
       hits = rescorer.rescore(searcher, hits, topN);
       for (int i = topN - 1, j = 0; i >= 0; i--, j++) {
         log.info("doc {} in pos {}", searcher.doc(hits.scoreDocs[j].doc)

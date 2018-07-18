@@ -116,7 +116,7 @@ public class TestExpressionSorts extends LuceneTestCase {
 
   void assertQuery(Query query, Sort sort) throws Exception {
     int size = TestUtil.nextInt(random(), 1, searcher.getIndexReader().maxDoc() / 5);
-    TopDocs expected = searcher.search(query, size, sort, random().nextBoolean(), random().nextBoolean());
+    TopDocs expected = searcher.search(query, size, sort, random().nextBoolean());
     
     // make our actual sort, mutating original by replacing some of the 
     // sortfields with equivalent expressions
@@ -137,7 +137,7 @@ public class TestExpressionSorts extends LuceneTestCase {
     }
     
     Sort mutatedSort = new Sort(mutated);
-    TopDocs actual = searcher.search(query, size, mutatedSort, random().nextBoolean(), random().nextBoolean());
+    TopDocs actual = searcher.search(query, size, mutatedSort, random().nextBoolean());
     CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
     
     if (size < actual.totalHits) {

@@ -88,7 +88,6 @@ public class TestParentChildrenBlockJoinQuery extends LuceneTestCase {
       TopDocs topDocs = searcher.search(parentChildrenBlockJoinQuery, maxChildDocsPerParent);
       assertEquals(expectedChildDocs, topDocs.totalHits);
       if (expectedChildDocs > 0) {
-        assertEquals(expectedChildDocs, topDocs.getMaxScore(), 0);
         for (int i = 0; i < topDocs.scoreDocs.length; i++) {
           ScoreDoc childScoreDoc = topDocs.scoreDocs[i];
           assertEquals(expectedChildDocs - i, childScoreDoc.score, 0);

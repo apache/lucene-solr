@@ -36,13 +36,13 @@ public class TestSortedNumericSortField extends LuceneTestCase {
   
     Sort sort = new Sort();
     sort.setSort(new SortedNumericSortField("sortednumeric", SortField.Type.LONG));
-    TopDocs td = empty.search(query, 10, sort, true, true);
+    TopDocs td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits);
     
     // for an empty index, any selector should work
     for (SortedNumericSelector.Type v : SortedNumericSelector.Type.values()) {
       sort.setSort(new SortedNumericSortField("sortednumeric", SortField.Type.LONG, false, v));
-      td = empty.search(query, 10, sort, true, true);
+      td = empty.search(query, 10, sort, true);
       assertEquals(0, td.totalHits);
     }
   }
