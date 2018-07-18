@@ -29,7 +29,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -49,6 +48,7 @@ import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -592,21 +592,29 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             }
 
             // Sort by largest ramBytesUsed:
-            PriorityQueue<ReadersAndUpdates> queue = readerPool.getReadersByRam();
+            final List<ReadersAndUpdates> list = readerPool.getReadersByRam();
             int count = 0;
-            while (ramBytesUsed > 0.5 * ramBufferSizeMB * 1024 * 1024) {
-              ReadersAndUpdates rld = queue.poll();
-              if (rld == null) {
+            for (ReadersAndUpdates rld : list) {
+
+              if (ramBytesUsed <= 0.5 * ramBufferSizeMB * 1024 * 1024) {
                 break;
               }
-
               // We need to do before/after because not all RAM in this RAU is used by DV updates, and
               // not all of those bytes can be written here:
               long bytesUsedBefore = rld.ramBytesUsed.get();
-
+              if (bytesUsedBefore == 0) {
+                continue; // nothing to do here - lets not acquire the lock
+              }
               // Only acquire IW lock on each write, since this is a time consuming operation.  This way
               // other threads get a chance to run in between our writes.
               synchronized (this) {
+                // It's possible that the segment of a reader returned by readerPool#getReadersByRam
+                // is dropped before being processed here. If it happens, we need to skip that reader.
+                // this is also best effort to free ram, there might be some other thread writing this rld concurrently
+                // which wins and then if readerPooling is off this rld will be dropped.
+                if (readerPool.get(rld.info, false) == null) {
+                  continue;
+                }
                 if (rld.writeFieldUpdates(directory, globalFieldNumberMap, bufferedUpdatesStream.getCompletedDelGen(), infoStream)) {
                   checkpointNoSIS();
                 }
@@ -4375,25 +4383,52 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
-      int numSoftDeleted = 0;
-      for (SegmentReader reader : merge.readers) {
+      int softDeleteCount = 0;
+      for (int r = 0; r < merge.readers.size(); r++) {
+        SegmentReader reader = merge.readers.get(r);
         CodecReader wrappedReader = merge.wrapForMerge(reader);
         validateMergeReader(wrappedReader);
-        mergeReaders.add(wrappedReader);
         if (softDeletesEnabled) {
           if (reader != wrappedReader) { // if we don't have a wrapped reader we won't preserve any soft-deletes
-            Bits liveDocs = wrappedReader.getLiveDocs();
-            numSoftDeleted += PendingSoftDeletes.countSoftDeletes(
-                DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader),
-                liveDocs);
+            Bits hardLiveDocs = merge.hardLiveDocs.get(r);
+            Bits wrappedLiveDocs = wrappedReader.getLiveDocs();
+            int hardDeleteCount = 0;
+            DocIdSetIterator softDeletedDocs = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader);
+            if (softDeletedDocs != null) {
+              int docId;
+              while ((docId = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                if (wrappedLiveDocs == null || wrappedLiveDocs.get(docId)) {
+                  if (hardLiveDocs == null || hardLiveDocs.get(docId)) {
+                    softDeleteCount++;
+                  } else {
+                    hardDeleteCount++;
+                  }
+                }
+              }
+            }
+            // Wrap the wrapped reader again if we have excluded some hard-deleted docs
+            if (hardLiveDocs != null && hardDeleteCount > 0) {
+              Bits liveDocs = wrappedLiveDocs == null ? hardLiveDocs : new Bits() {
+                @Override
+                public boolean get(int index) {
+                  return hardLiveDocs.get(index) && wrappedLiveDocs.get(index);
+                }
+                @Override
+                public int length() {
+                  return hardLiveDocs.length();
+                }
+              };
+              wrappedReader = FilterCodecReader.wrapLiveDocs(wrappedReader, liveDocs, wrappedReader.numDocs() - hardDeleteCount);
+            }
           }
         }
+        mergeReaders.add(wrappedReader);
       }
       final SegmentMerger merger = new SegmentMerger(mergeReaders,
                                                      merge.info.info, infoStream, dirWrapper,
                                                      globalFieldNumberMap, 
                                                      context);
-      merge.info.setSoftDelCount(numSoftDeleted);
+      merge.info.setSoftDelCount(softDeleteCount);
       merge.checkAborted();
 
       merge.mergeStartNS = System.nanoTime();

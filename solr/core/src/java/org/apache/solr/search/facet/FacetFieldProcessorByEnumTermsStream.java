@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -62,6 +63,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
   PostingsEnum postingsEnum;
   BytesRef startTermBytes;
   BytesRef term;
+  AtomicBoolean shardHasMoreBuckets = new AtomicBoolean(false);  // set after streaming as finished
 
   // at any point in processing where we need a SlotContext, all we care about is the current 'term'
   private IntFunction<SlotContext> slotContext = (slotNum) -> {
@@ -132,6 +134,9 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
         throw new UnsupportedOperationException();
       }
     });
+    if (fcontext.isShard()) {
+      response.add("more", shardHasMoreBuckets);  // lazily evaluated
+    }
   }
 
   private void setup() throws IOException {
@@ -325,6 +330,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
         }
 
         if (freq.limit >= 0 && ++bucketsReturned > freq.limit) {
+          shardHasMoreBuckets.set(true);
           return null;
         }
 

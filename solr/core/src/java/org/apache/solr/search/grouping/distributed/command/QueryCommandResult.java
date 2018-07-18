@@ -25,10 +25,12 @@ public class QueryCommandResult {
 
   private final TopDocs topDocs;
   private final int matches;
+  private final float maxScore;
 
-  public QueryCommandResult(TopDocs topDocs, int matches) {
+  public QueryCommandResult(TopDocs topDocs, int matches, float maxScore) {
     this.topDocs = topDocs;
     this.matches = matches;
+    this.maxScore = maxScore;
   }
 
   public TopDocs getTopDocs() {
@@ -37,5 +39,9 @@ public class QueryCommandResult {
 
   public int getMatches() {
     return matches;
+  }
+
+  public float getMaxScore() {
+    return maxScore;
   }
 }

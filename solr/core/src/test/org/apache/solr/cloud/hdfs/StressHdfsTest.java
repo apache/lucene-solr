@@ -97,7 +97,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void test() throws Exception {
     randomlyEnableAutoSoftCommit();
     

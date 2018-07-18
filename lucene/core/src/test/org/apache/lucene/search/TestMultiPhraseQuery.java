@@ -153,7 +153,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     qb.add(new Term("body", "blueberry"));
     qb.add(new Term("body", "chocolate"));
     qb.add(new Term[] {new Term("body", "pie"), new Term("body", "tart")});
-    assertEquals(2, searcher.search(qb.build(), 1).totalHits);
+    assertEquals(2, searcher.count(qb.build()));
     r.close();
     indexStore.close();
   }
@@ -173,7 +173,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     qb.add(new Term[] {new Term("body", "a"), new Term("body", "b")});
     qb.add(new Term[] {new Term("body", "a")});
     qb.setSlop(6);
-    assertEquals(1, searcher.search(qb.build(), 1).totalHits); // should match on "a b"
+    assertEquals(1, searcher.count(qb.build())); // should match on "a b"
     
     r.close();
     indexStore.close();
@@ -190,7 +190,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
     qb.add(new Term[] {new Term("body", "a"), new Term("body", "d")}, 0);
     qb.add(new Term[] {new Term("body", "a"), new Term("body", "f")}, 2);
-    assertEquals(1, searcher.search(qb.build(), 1).totalHits); // should match on "a b"
+    assertEquals(1, searcher.count(qb.build())); // should match on "a b"
     r.close();
     indexStore.close();
   }
@@ -277,7 +277,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     qb.add(new Term[] {new Term("body", "nope"), new Term("body", "nope")});
     MultiPhraseQuery q = qb.build();
     assertEquals("Wrong number of hits", 0,
-        searcher.search(q, 1).totalHits);
+        searcher.count(q));
     
     // just make sure no exc:
     searcher.explain(q, 0);

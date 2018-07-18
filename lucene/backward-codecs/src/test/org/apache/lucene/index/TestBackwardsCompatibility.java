@@ -300,7 +300,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "7.3.0-cfs",
     "7.3.0-nocfs",
     "7.3.1-cfs",
-    "7.3.1-nocfs"
+    "7.3.1-nocfs",
+    "7.4.0-cfs",
+    "7.4.0-nocfs"
   };
 
   public static String[] getOldNames() {
@@ -314,7 +316,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "sorted.7.2.0",
     "sorted.7.2.1",
     "sorted.7.3.0",
-    "sorted.7.3.1"
+    "sorted.7.3.1",
+    "sorted.7.4.0"
   };
 
   public static String[] getOldSortedNames() {
@@ -485,7 +488,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "6.6.3-cfs",
       "6.6.3-nocfs",
       "6.6.4-cfs",
-      "6.6.4-nocfs"
+      "6.6.4-nocfs",
+      "6.6.5-cfs",
+      "6.6.5-nocfs"
   };
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:

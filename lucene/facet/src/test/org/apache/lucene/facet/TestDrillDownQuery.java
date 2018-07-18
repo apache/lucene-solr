@@ -252,4 +252,44 @@ public class TestDrillDownQuery extends FacetTestCase {
     Query rewrite = q.rewrite(reader).rewrite(reader);
     assertEquals(base, rewrite);
   }
+
+  public void testRequireDimensionDrillDown() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+                  newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)));
+    Directory taxoDir = newDirectory();
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
+    FacetsConfig config = new FacetsConfig();
+
+    config.setRequireDimensionDrillDown("a", true);
+    config.setRequireDimensionDrillDown("b", false);
+
+    Document doc = new Document();
+    doc.add(new FacetField("a", "1"));
+    doc.add(new FacetField("b", "2"));
+    writer.addDocument(config.build(taxoWriter, doc));
+    taxoWriter.close();
+
+    IndexReader reader = writer.getReader();
+    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+    IndexSearcher searcher = newSearcher(reader);
+
+    DrillDownQuery q = new DrillDownQuery(config);
+    q.add("a", "1");
+    assertEquals(1, searcher.count(q));
+
+    q = new DrillDownQuery(config);
+    q.add("a");
+    assertEquals(1, searcher.count(q));
+
+    q = new DrillDownQuery(config);
+    q.add("b", "2");
+    assertEquals(1, searcher.count(q));
+
+    q = new DrillDownQuery(config);
+    q.add("b");
+    // no hits because we disabled dimension drill down for dimension "b":
+    assertEquals(0, searcher.count(q));
+    IOUtils.close(taxoReader, reader, writer, dir, taxoDir);
+  }
 }

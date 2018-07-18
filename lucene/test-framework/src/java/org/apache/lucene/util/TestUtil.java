@@ -1042,7 +1042,6 @@ public final class TestUtil {
 
   public static void assertEquals(TopDocs expected, TopDocs actual) {
     Assert.assertEquals("wrong total hits", expected.totalHits, actual.totalHits);
-    Assert.assertEquals("wrong maxScore", expected.getMaxScore(), actual.getMaxScore(), 0.0);
     Assert.assertEquals("wrong hit count", expected.scoreDocs.length, actual.scoreDocs.length);
     for(int hitIDX=0;hitIDX<expected.scoreDocs.length;hitIDX++) {
       final ScoreDoc expectedSD = expected.scoreDocs[hitIDX];

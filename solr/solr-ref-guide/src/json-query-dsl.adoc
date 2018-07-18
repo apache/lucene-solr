@@ -168,3 +168,20 @@ curl -XGET http://localhost:8983/solr/books/query -d '
         { "lucene" : {"df: "content", query : "lucene solr" }}
     ]
 }'
+
+== Tagging in JSON Query DSL
+Queries and filters might be tagged by inserting JSON object with the single property with name starting with a hash (`#`). Tags can be applied to the single string syntax and to a full JSON object query as well:
+
+[source,bash]
+curl -XGET http://localhost:8983/solr/books/query -d '
+{
+    "filter: [          // this applies `titletag`
+        {"#titletag": "title:solr"},
+        {               // this applies `tagcontent`
+          "#tagcontent":
+            {"lucene": {"df:"content", query :"lucene solr"}}
+        }
+    ]
+}'
+
+There might be many comma separated tags like `{"#title,tag2,tag3":"title:solr"}`. Tags can be used in <<faceting.adoc#tagging-and-excluding-filters,old facets>> and in <<json-facet-api.adoc#filter-exclusions,JSON Facets'>> `excludeTags` as well. Notice that the leading hash requires to use double quotes as in regular JSON.

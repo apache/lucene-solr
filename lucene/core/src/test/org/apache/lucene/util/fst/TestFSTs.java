@@ -913,7 +913,7 @@ public class TestFSTs extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: TermQuery " + (exists ? "" : "non-exist ") + " id=" + id);
         }
-        assertEquals((exists ? "" : "non-exist ") + "id=" + id, exists ? 1 : 0, s.search(new TermQuery(new Term("id", id)), 1).totalHits);
+        assertEquals((exists ? "" : "non-exist ") + "id=" + id, exists ? 1 : 0, s.count(new TermQuery(new Term("id", id))));
       }
 
       // Verify w/ MultiTermsEnum
@@ -1016,7 +1016,7 @@ public class TestFSTs extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: term=" + term);
       }
-      assertEquals("term=" + term, 1, s.search(new TermQuery(new Term("field", term)), 1).totalHits);
+      assertEquals("term=" + term, 1, s.count(new TermQuery(new Term("field", term))));
     }
 
     r.close();

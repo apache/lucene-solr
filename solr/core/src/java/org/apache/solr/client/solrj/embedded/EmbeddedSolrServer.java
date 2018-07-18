@@ -20,7 +20,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.google.common.base.Strings;
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -30,12 +33,15 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter.BAOS;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
@@ -130,19 +136,8 @@ public class EmbeddedSolrServer extends SolrClient {
     SolrRequestHandler handler = coreContainer.getRequestHandler(path);
     if (handler != null) {
       try {
-        SolrQueryRequest req = _parser.buildRequestFrom(null, request.getParams(), Collections.singleton(new ContentStreamBase() {
-          @Override
-          public InputStream getStream() throws IOException {
-            BAOS baos = new BAOS();
-            new BinaryRequestWriter().write(request, baos);
-            return new ByteArrayInputStream(baos.getbuf());
-          }
-          @Override
-          public String getContentType() {
-            return CommonParams.JAVABIN_MIME;
-
-          }
-        }));
+        SolrQueryRequest req = _parser.buildRequestFrom(null, request.getParams(), getContentStreams(request));
+        req.getContext().put("httpMethod", request.getMethod().name());
         req.getContext().put(PATH, path);
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(req, resp);
@@ -187,7 +182,7 @@ public class EmbeddedSolrServer extends SolrClient {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "unknown handler: " + path);
       }
 
-      req = _parser.buildRequestFrom(core, params, request.getContentStreams());
+      req = _parser.buildRequestFrom(core, params, getContentStreams(request));
       req.getContext().put(PATH, path);
       req.getContext().put("httpMethod", request.getMethod().name());
       SolrQueryResponse rsp = new SolrQueryResponse();
@@ -240,6 +235,37 @@ public class EmbeddedSolrServer extends SolrClient {
       if (req != null) req.close();
       SolrRequestInfo.clearRequestInfo();
     }
+  }
+
+  private Set<ContentStream> getContentStreams(SolrRequest request) throws IOException {
+    if (request.getMethod() == SolrRequest.METHOD.GET) return null;
+    if (request instanceof ContentStreamUpdateRequest) {
+      ContentStreamUpdateRequest csur = (ContentStreamUpdateRequest) request;
+      Collection<ContentStream> cs = csur.getContentStreams();
+      if (cs != null) return new HashSet<>(cs);
+    }
+    RequestWriter.ContentWriter contentWriter = request.getContentWriter(CommonParams.JAVABIN_MIME);
+    final String cType = contentWriter == null ? CommonParams.JAVABIN_MIME : contentWriter.getContentType();
+
+    return Collections.singleton(new ContentStreamBase() {
+
+      @Override
+      public InputStream getStream() throws IOException {
+        BAOS baos = new BAOS();
+        if (contentWriter != null) {
+          contentWriter.write(baos);
+        } else {
+          new BinaryRequestWriter().write(request, baos);
+        }
+        return new ByteArrayInputStream(baos.toByteArray());
+      }
+
+      @Override
+      public String getContentType() {
+        return cType;
+
+      }
+    });
   }
 
   private JavaBinCodec createJavaBinCodec(final StreamingResponseCallback callback, final BinaryResponseWriter.Resolver resolver) {

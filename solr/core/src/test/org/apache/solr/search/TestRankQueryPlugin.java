@@ -723,7 +723,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
         }
       });
       ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
-      return new TopDocs(list.size(), scoreDocs, 0.0f);
+      return new TopDocs(list.size(), scoreDocs);
     }
 
     public TopDocs topDocs(int start, int len) {
@@ -785,7 +785,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
         }
       });
       ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
-      return new TopDocs(list.size(), scoreDocs, 0.0f);
+      return new TopDocs(list.size(), scoreDocs);
     }
 
     public TopDocs topDocs(int start, int len) {

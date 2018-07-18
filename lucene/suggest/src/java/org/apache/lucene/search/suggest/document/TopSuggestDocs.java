@@ -31,7 +31,7 @@ public class TopSuggestDocs extends TopDocs {
   /**
    * Singleton for empty {@link TopSuggestDocs}
    */
-  public final static TopSuggestDocs EMPTY = new TopSuggestDocs(0, new SuggestScoreDoc[0], 0);
+  public final static TopSuggestDocs EMPTY = new TopSuggestDocs(0, new SuggestScoreDoc[0]);
 
   /**
    * {@link org.apache.lucene.search.ScoreDoc} with an
@@ -92,8 +92,8 @@ public class TopSuggestDocs extends TopDocs {
    * {@link TopSuggestDocs.SuggestScoreDoc}
    * instead of {@link org.apache.lucene.search.ScoreDoc}
    */
-  public TopSuggestDocs(int totalHits, SuggestScoreDoc[] scoreDocs, float maxScore) {
-    super(totalHits, scoreDocs, maxScore);
+  public TopSuggestDocs(int totalHits, SuggestScoreDoc[] scoreDocs) {
+    super(totalHits, scoreDocs);
   }
 
   /**
@@ -124,7 +124,7 @@ public class TopSuggestDocs extends TopDocs {
     }
     SuggestScoreDoc[] topNResults = priorityQueue.getResults();
     if (topNResults.length > 0) {
-      return new TopSuggestDocs(topNResults.length, topNResults, topNResults[0].score);
+      return new TopSuggestDocs(topNResults.length, topNResults);
     } else {
       return TopSuggestDocs.EMPTY;
     }

@@ -831,7 +831,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     for (Map<String, Object> violation : violations) {
       assertEquals("readApiTestViolations", violation.get("collection"));
       assertEquals("shard1", violation.get("shard"));
-      assertEquals(2l, getObjectByPath(violation, true, "violation/delta"));
+      assertEquals(2d, getObjectByPath(violation, true, "violation/delta"));
       assertEquals(3l, getObjectByPath(violation, true, "violation/replica/NRT"));
       assertNotNull(violation.get("clause"));
     }
@@ -842,7 +842,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     List l = (List) response.get("suggestions");
     assertNotNull(l);
-    assertEquals(1, l.size());
+    assertEquals(2, l.size());
     for (int i = 0; i < l.size(); i++) {
       Object suggestion = l.get(i);
       assertEquals("violation", Utils.getObjectByPath(suggestion, true, "type"));

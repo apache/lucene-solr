@@ -43,24 +43,29 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
   private final class OneTimeWrapper extends TokenStream {
 
     private final OffsetAttribute offsetAtt;
+    private final PositionIncrementAttribute posIncAtt;
 
     public OneTimeWrapper(AttributeSource attributeSource) {
       super(attributeSource);
       this.offsetAtt = attributeSource.addAttribute(OffsetAttribute.class);
+      this.posIncAtt = attributeSource.addAttribute(PositionIncrementAttribute.class);
     }
 
     @Override
     public boolean incrementToken() throws IOException {
       if (state == TokenState.PREBUFFERING) {
+        if (posIncAtt.getPositionIncrement() == 0) {
+          adjustPosition = true;
+          posIncAtt.setPositionIncrement(1);
+        }
         state = TokenState.DELEGATING;
         return true;
       }
       assert state == TokenState.DELEGATING;
-      boolean more = input.incrementToken();
-      if (more && shouldFilter()) {
-        return true;
-      }
-      if (more) {
+      if (input.incrementToken()) {
+        if (shouldFilter()) {
+          return true;
+        }
         endOffset = offsetAtt.endOffset();
         bufferedState = captureState();
       }
@@ -96,10 +101,11 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
   private boolean lastTokenFiltered;
   private State bufferedState = null;
   private boolean exhausted;
+  private boolean adjustPosition;
   private State endState = null;
   private int endOffset;
 
-  private PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
 
   /**
    * Create a new ConditionalTokenFilter
@@ -124,6 +130,7 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
     this.lastTokenFiltered = false;
     this.bufferedState = null;
     this.exhausted = false;
+    this.adjustPosition = false;
     this.endOffset = -1;
     this.endState = null;
   }
@@ -152,6 +159,7 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
 
   @Override
   public final boolean incrementToken() throws IOException {
+    lastTokenFiltered = false;
     while (true) {
       if (state == TokenState.READING) {
         if (bufferedState != null) {
@@ -168,16 +176,6 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
           return false;
         }
         if (shouldFilter()) {
-          // we're chopping the underlying Tokenstream up into fragments, and presenting
-          // only those parts of it that pass the filter to the delegate, so the delegate is
-          // in effect seeing multiple tokenstream snippets.  Tokenstreams can't have an initial
-          // position increment of 0, so if the snippet starts on a stacked token we need to
-          // offset it here and then correct the increment back again after delegation
-          boolean adjustPosition = false;
-          if (posIncAtt.getPositionIncrement() == 0) {
-            posIncAtt.setPositionIncrement(1);
-            adjustPosition = true;
-          }
           lastTokenFiltered = true;
           state = TokenState.PREBUFFERING;
           // we determine that the delegate has emitted all the tokens it can at the current
@@ -192,32 +190,44 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
               int posInc = posIncAtt.getPositionIncrement();
               posIncAtt.setPositionIncrement(posInc - 1);
             }
+            adjustPosition = false;
           }
           else {
-            lastTokenFiltered = false;
             state = TokenState.READING;
-            if (bufferedState != null) {
-              delegate.end();
-              int posInc = posIncAtt.getPositionIncrement();
-              restoreState(bufferedState);
-              posIncAtt.setPositionIncrement(posIncAtt.getPositionIncrement() + posInc);
-              bufferedState = null;
-              return true;
-            }
+            return endDelegating();
           }
-          return more || bufferedState != null;
+          return true;
         }
-        lastTokenFiltered = false;
         return true;
       }
       if (state == TokenState.DELEGATING) {
+        lastTokenFiltered = true;
         if (delegate.incrementToken()) {
           return true;
         }
         // no more cached tokens
         state = TokenState.READING;
+        return endDelegating();
       }
     }
+  }
+
+  private boolean endDelegating() throws IOException {
+    if (bufferedState == null) {
+      assert exhausted == true;
+      return false;
+    }
+    delegate.end();
+    int posInc = posIncAtt.getPositionIncrement();
+    restoreState(bufferedState);
+    // System.out.println("Buffered posInc: " + posIncAtt.getPositionIncrement() + "   Delegated posInc: " + posInc);
+    posIncAtt.setPositionIncrement(posIncAtt.getPositionIncrement() + posInc);
+    if (adjustPosition) {
+      posIncAtt.setPositionIncrement(posIncAtt.getPositionIncrement() - 1);
+      adjustPosition = false;
+    }
+    bufferedState = null;
+    return true;
   }
 
 }

@@ -223,7 +223,7 @@ public class DrillSideways {
    * drill down and sideways counts.
    */
   public DrillSidewaysResult search(DrillDownQuery query, Query filter, FieldDoc after, int topN, Sort sort,
-          boolean doDocScores, boolean doMaxScore) throws IOException {
+          boolean doDocScores) throws IOException {
     if (filter != null) {
       query = new DrillDownQuery(config, filter, query);
     }
@@ -241,7 +241,7 @@ public class DrillSideways {
 
                   @Override
                   public TopFieldCollector newCollector() throws IOException {
-                    return TopFieldCollector.create(sort, fTopN, after, true, doDocScores, doMaxScore, true);
+                    return TopFieldCollector.create(sort, fTopN, after, true, doDocScores, true);
                   }
 
                   @Override
@@ -260,7 +260,7 @@ public class DrillSideways {
       } else {
 
         final TopFieldCollector hitCollector =
-                TopFieldCollector.create(sort, fTopN, after, true, doDocScores, doMaxScore, true);
+                TopFieldCollector.create(sort, fTopN, after, true, doDocScores, true);
         DrillSidewaysResult r = search(query, hitCollector);
         return new DrillSidewaysResult(r.facets, hitCollector.topDocs());
       }

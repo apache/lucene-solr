@@ -77,8 +77,6 @@ import org.apache.lucene.util.Version;
  *       Analyzer for Simplified Chinese, which indexes words.
  *   <li><a href="{@docRoot}/../analyzers-stempel/overview-summary.html">Stempel</a>:
  *       Algorithmic Stemmer for the Polish Language.
- *   <li><a href="{@docRoot}/../analyzers-uima/overview-summary.html">UIMA</a>: 
- *       Analysis integration with Apache UIMA. 
  * </ul>
  */
 public abstract class Analyzer implements Closeable {

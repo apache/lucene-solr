@@ -813,7 +813,7 @@ public class TestDrillSideways extends FacetTestCase {
       }
 
       // Retrieve all facets:
-      DrillSidewaysResult actual = ds.search(ddq, filter, null, numDocs, sort, true, true);
+      DrillSidewaysResult actual = ds.search(ddq, filter, null, numDocs, sort, true);
 
       TopDocs hits = s.search(baseQuery, numDocs);
       Map<String, Float> scores = new HashMap<>();
@@ -1145,8 +1145,7 @@ public class TestDrillSideways extends FacetTestCase {
     DrillSidewaysResult r = ds.search(ddq, 10); // this used to fail on IllegalArgEx
     assertEquals(0, r.hits.totalHits);
 
-    r = ds.search(ddq, null, null, 10, new Sort(new SortField("foo", SortField.Type.INT)), false,
-            false); // this used to fail on IllegalArgEx
+    r = ds.search(ddq, null, null, 10, new Sort(new SortField("foo", SortField.Type.INT)), false); // this used to fail on IllegalArgEx
     assertEquals(0, r.hits.totalHits);
 
     writer.close();

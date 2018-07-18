@@ -464,6 +464,35 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     assertArrayEquals(new String[]{"There is no <b>accord</b> <b>and</b> <b>satisfaction</b> with this - <b>Consideration</b> of the <b>accord</b> is arbitrary."}, snippets);
   }
 
+  // Tests that terms collected out of order due to being present in multiple Spans are handled correctly
+  // See LUCENE-8365
+  public void testReverseOrderSpanCollection() throws IOException {
+    // Processing order may depend on various optimizations or other weird factor.
+    indexWriter.addDocument(newDoc("alpha bravo - alpha charlie"));
+    indexWriter.addDocument(newDoc("alpha charlie - alpha bravo"));
+    initReaderSearcherHighlighter();
+
+    SpanNearQuery query = new SpanNearQuery(new SpanQuery[]{
+        new SpanNearQuery(new SpanQuery[]{
+            new SpanTermQuery(new Term("body", "alpha")),
+            new SpanTermQuery(new Term("body", "bravo"))
+        }, 0, true),
+        new SpanNearQuery(new SpanQuery[]{
+            new SpanTermQuery(new Term("body", "alpha")),
+            new SpanTermQuery(new Term("body", "charlie"))
+        }, 0, true)
+    }, 10, false);
+
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    String[] snippets = highlighter.highlight("body", query, topDocs);
+
+    assertArrayEquals(new String[]{
+            "<b>alpha</b> <b>bravo</b> - <b>alpha</b> <b>charlie</b>",
+            "<b>alpha</b> <b>charlie</b> - <b>alpha</b> <b>bravo</b>",
+        },
+        snippets);
+  }
+
   private static class MyQuery extends Query {
 
     private final Query wrapped;
@@ -511,7 +540,7 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     final String indexedText = "x y z x z x a";
     indexWriter.addDocument(newDoc(indexedText));
     initReaderSearcherHighlighter();
-    TopDocs topDocs = new TopDocs(1, new ScoreDoc[]{new ScoreDoc(0, 1f)}, 1f);
+    TopDocs topDocs = new TopDocs(1, new ScoreDoc[]{new ScoreDoc(0, 1f)});
 
     String expected = "<b>x</b> <b>y</b> <b>z</b> x z x <b>a</b>";
     Query q = new SpanNearQuery(new SpanQuery[] {
@@ -564,5 +593,4 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     if (VERBOSE) System.out.println("Expected: \"" + expected + "\n" + "Observed: \"" + observed);
     assertEquals("Nested SpanNear query within SpanOr not properly highlighted.", expected, observed);
   }
-
 }

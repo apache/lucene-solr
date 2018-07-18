@@ -127,4 +127,27 @@ public abstract class FilterCodecReader extends CodecReader {
     in.checkIntegrity();
   }
 
+  /**
+   * Returns a filtered codec reader with the given live docs and numDocs.
+   */
+  static FilterCodecReader wrapLiveDocs(CodecReader reader, Bits liveDocs, int numDocs) {
+    return new FilterCodecReader(reader) {
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return reader.getCoreCacheHelper();
+      }
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return null; // we are altering live docs
+      }
+      @Override
+      public Bits getLiveDocs() {
+        return liveDocs;
+      }
+      @Override
+      public int numDocs() {
+        return numDocs;
+      }
+    };
+  }
 }

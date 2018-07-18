@@ -288,13 +288,13 @@ public class JsonRecordReader {
         event = parser.nextEvent();
         if (event == EOF) break;
         if (event == OBJECT_START) {
-          handleObjectStart(parser, handler, values, new Stack<>(), recordStarted, null);
+          handleObjectStart(parser, handler, new LinkedHashMap<>(), new Stack<>(), recordStarted, null);
         } else if (event == ARRAY_START) {
           for (; ; ) {
             event = parser.nextEvent();
             if (event == ARRAY_END) break;
             if (event == OBJECT_START) {
-              handleObjectStart(parser, handler, values, new Stack<>(), recordStarted, null);
+              handleObjectStart(parser, handler, new LinkedHashMap<>(), new Stack<>(), recordStarted, null);
             }
           }
         }
@@ -348,7 +348,16 @@ public class JsonRecordReader {
           } else if (event == ARRAY_START) {
             for (; ; ) {
               event = parser.nextEvent();
-              if (event == ARRAY_END) break;
+              if (event == ARRAY_END) {
+                // ensure that the value is of type List
+                final Object val = values.get(name);
+                if (val != null && !(val instanceof List)) {
+                  final ArrayList listVal = new ArrayList(1);
+                  listVal.add(val);
+                  values.put(name, listVal);
+                }
+                break;
+              }
               if (event == OBJECT_START) {
                 walkObject();
               }
@@ -359,7 +368,7 @@ public class JsonRecordReader {
         void walkObject() throws IOException {
           if (node.isChildRecord) {
             node.handleObjectStart(parser,
-                (record, path) -> addChildDoc2ParentDoc(record, values),
+                (record, path) -> addChildDoc2ParentDoc(record, values, getPathSuffix(path)),
                 new LinkedHashMap<>(),
                 new Stack<>(),
                 true,
@@ -433,23 +442,22 @@ public class JsonRecordReader {
           for (String fld : valuesAddedinThisFrame) {
             values.remove(fld);
           }
-          values.remove(null);
         }
       }
     }
 
-    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values) {
+    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values, String key) {
       record =  Utils.getDeepCopy(record, 2);
-      Object oldVal = values.get(null);
+      Object oldVal = values.get(key);
       if (oldVal == null) {
-        values.put(null, record);
+        values.put(key, record);
       } else if (oldVal instanceof List) {
         ((List) oldVal).add(record);
       } else {
         ArrayList l = new ArrayList();
         l.add(oldVal);
         l.add(record);
-        values.put(null, l);
+        values.put(key, l);
       }
     }
 
@@ -486,6 +494,12 @@ public class JsonRecordReader {
       values.put(fieldName, l);
     }
 
+    // returns the last key of the path
+    private String getPathSuffix(String path) {
+      int indexOf = path.lastIndexOf("/");
+      if (indexOf == -1) return path;
+      return path.substring(indexOf + 1);
+    }
 
     @Override
     public String toString() {

@@ -1540,7 +1540,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // ... see comments in populateNextCursorMarkFromTopDocs for cache issues (SOLR-5595)
       final boolean fillFields = (null != cursor);
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, fillFields, needScores, needScores, true);
+      return TopFieldCollector.create(weightedSort, len, searchAfter, fillFields, needScores, true);
     }
   }
 
@@ -1617,14 +1617,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
+      MaxScoreCollector maxScoreCollector = null;
       Collector collector = topCollector;
+      if ((cmd.getFlags() & GET_SCORES) != 0) {
+        maxScoreCollector = new MaxScoreCollector();
+        collector = MultiCollector.wrap(topCollector, maxScoreCollector);
+      }
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
       totalHits = topCollector.getTotalHits();
       TopDocs topDocs = topCollector.topDocs(0, len);
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
 
-      maxScore = totalHits > 0 ? topDocs.getMaxScore() : 0.0f;
+      maxScore = totalHits > 0 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore()) : 0.0f;
       nDocsReturned = topDocs.scoreDocs.length;
       ids = new int[nDocsReturned];
       scores = (cmd.getFlags() & GET_SCORES) != 0 ? new float[nDocsReturned] : null;
@@ -1712,7 +1717,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
       DocSetCollector setCollector = new DocSetCollector(maxDoc);
-      Collector collector = MultiCollector.wrap(topCollector, setCollector);
+      MaxScoreCollector maxScoreCollector = null;
+      List<Collector> collectors = new ArrayList<>(Arrays.asList(topCollector, setCollector));
+
+      if ((cmd.getFlags() & GET_SCORES) != 0) {
+        maxScoreCollector = new MaxScoreCollector();
+        collectors.add(maxScoreCollector);
+      }
+
+      Collector collector = MultiCollector.wrap(collectors);
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
@@ -1723,7 +1736,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       TopDocs topDocs = topCollector.topDocs(0, len);
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
-      maxScore = totalHits > 0 ? topDocs.getMaxScore() : 0.0f;
+      maxScore = totalHits > 0 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore()) : 0.0f;
       nDocsReturned = topDocs.scoreDocs.length;
 
       ids = new int[nDocsReturned];

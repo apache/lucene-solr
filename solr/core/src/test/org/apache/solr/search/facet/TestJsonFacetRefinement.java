@@ -18,6 +18,7 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.solr.JSONTestUtil;
@@ -160,10 +161,25 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   @Test
   public void testMerge() throws Exception {
     doTestRefine("{x : {type:terms, field:X, limit:2, refine:true} }",  // the facet request
-        "{x: {buckets:[{val:x1, count:5}, {val:x2, count:3}] } }",  // shard0 response
-        "{x: {buckets:[{val:x2, count:4}, {val:x3, count:2}] } }",  // shard1 response
+        "{x: {buckets:[{val:x1, count:5}, {val:x2, count:3}], more:true } }",  // shard0 response
+        "{x: {buckets:[{val:x2, count:4}, {val:x3, count:2}], more:true } }",  // shard1 response
         null,              // shard0 expected refinement info
         "=={x:{_l:[x1]}}"  // shard1 expected refinement info
+    );
+
+    // same test as above, but shard1 indicates it doesn't have any more results, so there shouldn't be any refinement
+    doTestRefine("{x : {type:terms, field:X, limit:2, refine:true} }",  // the facet request
+        "{x: {buckets:[{val:x1, count:5}, {val:x2, count:3}], more:true } }",  // shard0 response
+        "{x: {buckets:[{val:x2, count:4}, {val:x3, count:2}] } }",  // shard1 response
+        null,              // shard0 expected refinement info
+        null               // shard1 expected refinement info
+    );
+
+    doTestRefine("{x : {type:terms, field:X, limit:2, refine:true} }",  // the facet request
+        "{x: {buckets:[{val:x1, count:5}, {val:x2, count:3}],more:true } }",  // shard0 response
+        "{x: {buckets:[{val:x2, count:4}, {val:x3, count:2}] } }",  // shard1 response
+        null,  // shard0 expected refinement info
+        null   // shard1 expected refinement info  // without more:true, we should not attempt to get extra bucket
     );
 
     // same test w/o refinement turned on
@@ -176,8 +192,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // same test, but nested in query facet
     doTestRefine("{top:{type:query, q:'foo_s:myquery', facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",  // the facet request
-        "{top: {x: {buckets:[{val:x1, count:5}, {val:x2, count:3}] } } }",  // shard0 response
-        "{top: {x: {buckets:[{val:x2, count:4}, {val:x3, count:2}] } } }",  // shard1 response
+        "{top: {x: {buckets:[{val:x1, count:5}, {val:x2, count:3}], more:true } } }",  // shard0 response
+        "{top: {x: {buckets:[{val:x2, count:4}, {val:x3, count:2}], more:true } } }",  // shard1 response
         null,              // shard0 expected refinement info
         "=={top:{x:{_l:[x1]}}}"  // shard1 expected refinement info
     );
@@ -192,8 +208,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // same test, but nested in a terms facet
     doTestRefine("{top:{type:terms, field:Afield, facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
-        "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}]} } ] } }",
-        "{top: {buckets:[{val:'A', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} } ] } }",
+        "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}], more:true} } ] } }",
+        "{top: {buckets:[{val:'A', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}], more:true} } ] } }",
         null,
         "=={top: {" +
             "_s:[  ['A' , {x:{_l:[x1]}} ]  ]" +
@@ -203,8 +219,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // same test, but nested in range facet
     doTestRefine("{top:{type:range, field:R, start:0, end:1, gap:1, facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
-        "{top: {buckets:[{val:0, count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}]} } ] } }",
-        "{top: {buckets:[{val:0, count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} } ] } }",
+        "{top: {buckets:[{val:0, count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ] } }",
+        "{top: {buckets:[{val:0, count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ] } }",
         null,
         "=={top: {" +
             "_s:[  [0 , {x:{_l:[x1]}} ]  ]" +
@@ -212,10 +228,68 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
     );
 
+    // same test, but now the range facet includes "other" buckets
+    // (so we also verify that the "_actual_end" is echoed back)
+    doTestRefine("{top:{type:range, other:all, field:R, start:0, end:1, gap:1, " +
+                 "      facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
+                 // phase #1
+                 "{top: {buckets:[{val:0, count:2, x:{more:true,buckets:[{val:x1, count:5},{val:x2, count:3}]} } ]," +
+                 "       before:{count:0},after:{count:0}," +
+                 "       between:{count:2,x:{more:true,buckets:[{val:x1, count:5},{val:x2, count:3}]} }," +
+                 "       '_actual_end':'does_not_matter_must_be_echoed_back' } }",
+                 "{top: {buckets:[{val:0, count:1, x:{more:true,buckets:[{val:x2, count:4},{val:x3, count:2}]} } ]," +
+                 "       before:{count:0},after:{count:0}," +
+                 "       between:{count:1,x:{more:true,buckets:[{val:x2, count:4},{val:x3, count:2}]} }," +
+                 "       '_actual_end':'does_not_matter_must_be_echoed_back' } }",
+                 // refinement...
+                 null,
+                 "=={top: {" +
+                 "    _s:[  [0 , {x:{_l:[x1]}} ]  ]," +
+                 "    between:{ x:{_l : [x1]} }," +
+                 "    '_actual_end':'does_not_matter_must_be_echoed_back'" +
+                 "} } ");
+    // imagine that all the nodes we query in phase#1 are running "old" versions of solr that
+    // don't know they are suppose to compute _actual_end ... our merger should not fail or freak out
+    // trust that in the phase#2 refinement request either:
+    //  - the processor will re-compute it (if refine request goes to "new" version of solr)
+    //  - the processor wouldn't know what to do with an _actual_end sent by the merger anyway
+    doTestRefine("{top:{type:range, other:all, field:R, start:0, end:1, gap:1, " +
+                 "      facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
+                 // phase #1
+                 "{top: {buckets:[{val:0, count:2, x:{more:true,buckets:[{val:x1, count:5},{val:x2, count:3}]} } ]," +
+                 "       before:{count:0},after:{count:0}," +
+                 "       between:{count:2,x:{more:true,buckets:[{val:x1, count:5},{val:x2, count:3}]} }," +
+                 "       } }", // no actual_end
+                 "{top: {buckets:[{val:0, count:1, x:{more:true,buckets:[{val:x2, count:4},{val:x3, count:2}]} } ]," +
+                 "       before:{count:0},after:{count:0}," +
+                 "       between:{count:1,x:{more:true,buckets:[{val:x2, count:4},{val:x3, count:2}]} }," +
+                 "       } }", // no actual_end
+                 // refinement...
+                 null,
+                 "=={top: {" +
+                 "    _s:[  [0 , {x:{_l:[x1]}} ]  ]," +
+                 "    between:{ x:{_l : [x1]} }" + 
+                 "} } ");
+    // a range face w/o any sub facets shouldn't require any refinement
+    doTestRefine("{top:{type:range, other:all, field:R, start:0, end:3, gap:2 } }" +
+                 // phase #1
+                 "{top: {buckets:[{val:0, count:2}, {val:2, count:2}]," +
+                 "       before:{count:3},after:{count:47}," +
+                 "       between:{count:5}," +
+                 "       } }",
+                 "{top: {buckets:[{val:0, count:2}, {val:2, count:19}]," +
+                 "       before:{count:22},after:{count:0}," +
+                 "       between:{count:21}," +
+                 "       } }",
+                 // refinement...
+                 null,
+                 null);
+    
+
     // for testing partial _p, we need a partial facet within a partial facet
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
-        "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}]} } ] } }",
-        "{top: {buckets:[{val:'B', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} } ] } }",
+        "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ],more:true } }",
+        "{top: {buckets:[{val:'B', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ],more:true } }",
         null,
         "=={top: {" +
             "_p:[  ['A' , {x:{_l:[x1]}} ]  ]" +
@@ -225,8 +299,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // test partial _p under a missing bucket
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, missing:true, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
-        "{top: {buckets:[], missing:{count:12, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} }  } }",
-        "{top: {buckets:[], missing:{count:10, x:{buckets:[{val:x1, count:5},{val:x4, count:3}]} }  } }",
+        "{top: {buckets:[], missing:{count:12, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} }  } }",
+        "{top: {buckets:[], missing:{count:10, x:{buckets:[{val:x1, count:5},{val:x4, count:3}],more:true} }  } }",
         "=={top: {" +
             "missing:{x:{_l:[x1]}}" +
             "    }  " +
@@ -365,17 +439,34 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       );
 
       // basic refining test through/under a range facet
-      client.testJQ(params(p, "q", "*:*",
-          "json.facet", "{" +
-              "r1 : { type:range, field:${num_d} start:-20, end:20, gap:40   , facet:{" +
-              "cat0:{${terms} type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true}" +
-              "}}" +
-              "}"
-          )
-          , "facets=={ count:8" +
-              ", r1:{ buckets:[{val:-20.0,count:8,  cat0:{buckets:[{val:A,count:4}]}  }]   }" +
-              "}"
-      );
+      for (String end : Arrays.asList(// all of these end+hardened options should produce the same buckets
+                                      "end:20, hardend:true", // evenly divisible so shouldn't matter
+                                      "end:20, hardend:false", "end:20", // defaults to hardened:false
+                                      "end:5, hardend:false", "end:5")) {
+        // since the gap divides the start/end divide eveningly, 
+        // all of these hardend params should we should produce identical results
+        String sub = "cat0:{${terms} type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true}";
+
+        // single bucket, all 'other' buckets
+        client.testJQ(params(p, "q", "*:*", "json.facet"
+                             , "{ r1 : { type:range, field:${num_d} other:all, start:-20, gap:40, " + end
+                             + "         , facet:{" + sub + "}}}")
+                      , "facets=={ count:8"
+                      + ", r1:{ buckets:[{val:-20.0,count:8,  cat0:{buckets:[{val:A,count:4}]}  }],"
+                      + "       before:{count:0}, after:{count:0}"
+                      + "       between:{count:8, cat0:{buckets:[{val:A,count:4}]}}"
+                      + "}}");
+        // multiple buckets, only one 'other' buckets
+        client.testJQ(params(p, "q", "*:*", "json.facet"
+                             , "{ r1 : { type:range, field:${num_d} other:between, start:-20, gap:20, " + end
+                             + "         , facet:{" + sub + "}}}")
+                      , "facets=={ count:8"
+                      // NOTE: in both buckets A & B are tied, but index order should break tie
+                      + ", r1:{ buckets:[{val:-20.0, count:4,  cat0:{buckets:[{val:A,count:2}]} },"
+                      + "                {val:  0.0, count:4,  cat0:{buckets:[{val:A,count:2}]} } ],"
+                      + "       between:{count:8, cat0:{buckets:[{val:A,count:4}]}}"
+                      + "}}");
+      }
 
       // test that basic stats work for refinement
       client.testJQ(params(p, "q", "*:*",

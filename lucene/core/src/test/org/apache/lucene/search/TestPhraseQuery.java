@@ -585,21 +585,21 @@ public class TestPhraseQuery extends LuceneTestCase {
     PhraseQuery.Builder pqBuilder = new PhraseQuery.Builder();
     pqBuilder.add(new Term("field", "a"), 0);
     pqBuilder.add(new Term("field", "b"), 1);
-    assertEquals(1, searcher.search(pqBuilder.build(), 1).totalHits);
+    assertEquals(1, searcher.count(pqBuilder.build()));
 
     // Now with "a|aa b"
     pqBuilder = new PhraseQuery.Builder();
     pqBuilder.add(new Term("field", "a"), 0);
     pqBuilder.add(new Term("field", "aa"), 0);
     pqBuilder.add(new Term("field", "b"), 1);
-    assertEquals(1, searcher.search(pqBuilder.build(), 1).totalHits);
+    assertEquals(1, searcher.count(pqBuilder.build()));
 
     // Now with "a|z b" which should not match; this isn't a MultiPhraseQuery
     pqBuilder = new PhraseQuery.Builder();
     pqBuilder.add(new Term("field", "a"), 0);
     pqBuilder.add(new Term("field", "z"), 0);
     pqBuilder.add(new Term("field", "b"), 1);
-    assertEquals(0, searcher.search(pqBuilder.build(), 1).totalHits);
+    assertEquals(0, searcher.count(pqBuilder.build()));
 
     r.close();
     dir.close();

@@ -419,7 +419,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       result = new ArrayList<>(vals.length);
       for (int i = 0; i < vals.length; i++) {
         try {
-          result.add(new Integer(vals[i]));
+          result.add(Integer.valueOf(vals[i]));
         } catch (NumberFormatException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
         }

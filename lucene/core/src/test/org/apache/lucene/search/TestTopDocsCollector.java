@@ -46,15 +46,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
         return EMPTY_TOPDOCS;
       }
       
-      float maxScore = Float.NaN;
-      if (start == 0) {
-        maxScore = results[0].score;
-      } else {
-        for (int i = pq.size(); i > 1; i--) { pq.pop(); }
-        maxScore = pq.pop().score;
-      }
-      
-      return new TopDocs(totalHits, results, maxScore);
+      return new TopDocs(totalHits, results);
     }
     
     @Override
@@ -186,18 +178,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
     tdc = doSearch(15);
     // get the last 5 only.
     assertEquals(5, tdc.topDocs(10).scoreDocs.length);
-  }
-  
-  public void testMaxScore() throws Exception {
-    // ask for all results
-    TopDocsCollector<ScoreDoc> tdc = doSearch(15);
-    TopDocs td = tdc.topDocs();
-    assertEquals(MAX_SCORE, td.getMaxScore(), 0f);
-    
-    // ask for 5 last results
-    tdc = doSearch(15);
-    td = tdc.topDocs(10);
-    assertEquals(MAX_SCORE, td.getMaxScore(), 0f);
   }
   
   // This does not test the PQ's correctness, but whether topDocs()

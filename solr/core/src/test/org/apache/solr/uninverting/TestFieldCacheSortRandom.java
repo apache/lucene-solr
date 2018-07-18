@@ -168,9 +168,9 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
       int queryType = random.nextInt(2);
       if (queryType == 0) {
         hits = s.search(new ConstantScoreQuery(f),
-                        hitCount, sort, random.nextBoolean(), random.nextBoolean());
+                        hitCount, sort, random.nextBoolean());
       } else {
-        hits = s.search(f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+        hits = s.search(f, hitCount, sort, random.nextBoolean());
       }
 
       if (VERBOSE) {

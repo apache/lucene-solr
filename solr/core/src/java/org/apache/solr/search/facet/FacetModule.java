@@ -37,8 +37,6 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.QueryContext;
-import org.apache.solr.search.SyntaxError;
-import org.apache.solr.util.RTimer;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
@@ -98,13 +96,7 @@ public class FacetModule extends SearchComponent {
     rb.setNeedDocSet(true);
 
     // Parse the facet in the prepare phase?
-    FacetParser parser = new FacetTopParser(rb.req);
-    FacetRequest facetRequest = null;
-    try {
-      facetRequest = parser.parse(jsonFacet);
-    } catch (SyntaxError syntaxError) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-    }
+    FacetRequest facetRequest = FacetRequest.parse(rb.req, jsonFacet);
 
     FacetComponentState fcState = new FacetComponentState();
     fcState.rb = rb;
@@ -138,28 +130,15 @@ public class FacetModule extends SearchComponent {
         fcontext.flags |= FacetContext.SKIP_FACET; // the root bucket should have been received from all shards previously
       }
     }
-
-    FacetProcessor fproc = facetState.facetRequest.createFacetProcessor(fcontext);
     if (rb.isDebug()) {
       FacetDebugInfo fdebug = new FacetDebugInfo();
       fcontext.setDebugInfo(fdebug);
-      fdebug.setReqDescription(facetState.facetRequest.getFacetDescription());
-      fdebug.setProcessor(fproc.getClass().getSimpleName());
-     
-      final RTimer timer = new RTimer();
-      fproc.process();
-      long timeElapsed = (long) timer.getTime();
-      fdebug.setElapse(timeElapsed);
-      fdebug.putInfoItem("domainSize", (long)fcontext.base.size());
       rb.req.getContext().put("FacetDebugInfo", fdebug);
-    } else {
-      fproc.process();
     }
-    
-    rb.rsp.add("facets", fproc.getResponse());
+
+    final Object results = facetState.facetRequest.process(fcontext);
+    rb.rsp.add("facets", results);
   }
-
-
 
 
   private void clearFaceting(List<ShardRequest> outgoing) {

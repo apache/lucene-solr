@@ -212,6 +212,76 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
   }
 
+  /**
+   * whitebox sanity checks that a shard request range facet that returns "between" or "after"
+   * will cause the correct "actual_end" to be returned
+   */
+  public void testRangeOtherWhitebox() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    // false is default, but randomly check explicit false as well
+    final String nohardend = random().nextBoolean() ? "" : " hardend:false, ";
+    
+    { // first check some "phase #1" requests
+      
+      final SolrParams p = params("q", "*:*", "rows", "0", "isShard", "true", "distrib", "false",
+                                   "_facet_", "{}", "shards.purpose", ""+FacetModule.PURPOSE_GET_JSON_FACETS);
+      final String basic_opts = "type:range, field:num_d, start:-5, end:10, gap:7, ";
+      final String buckets = "buckets:[ {val:-5.0,count:1}, {val:2.0,count:2}, {val:9.0,count:1} ], ";
+      
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + nohardend + " other:before}}")
+                    , "facets=={count:6, f:{" + buckets
+                    // before doesn't need actual_end
+                    + "   before:{count:1}"
+                    + "} }"
+                    );
+      client.testJQ(params(p, "json.facet", "{f:{" + basic_opts + nohardend + "other:after}}")
+                    , "facets=={count:6, f:{" + buckets
+                    + "   after:{count:0}, _actual_end:'16.0'"
+                    + "} }"
+                    );
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + nohardend + "other:between}}")
+                    , "facets=={count:6, f:{" + buckets
+                    + "   between:{count:4}, _actual_end:'16.0'"
+                    + "} }"
+                    );
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + nohardend + "other:all}}")
+                    , "facets=={count:6, f:{" + buckets
+                    + "   before:{count:1},"
+                    + "   after:{count:0},"
+                    + "   between:{count:4},"
+                    + "   _actual_end:'16.0'"
+                    + "} }"
+                    );
+      // with hardend:true, not only do the buckets change, but actual_end should not need to be returned
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + " hardend:true, other:after}}")
+                    , "facets=={count:6, f:{"
+                    + "   buckets:[ {val:-5.0,count:1}, {val:2.0,count:2}, {val:9.0,count:0} ], "
+                    + "   after:{count:1}"
+                    + "} }"
+                    );
+    }
+
+    { // now check some "phase #2" requests with refinement buckets already specified
+
+      final String facet
+        = "{ top:{ type:range, field:num_i, start:-5, end:5, gap:7," + nohardend
+        + "        other:all, facet:{ x:{ type:terms, field:cat_s, limit:1, refine:true } } } }";
+
+      // the behavior should be the same, regardless of wether we pass actual_end to the shards
+      // because in a "mixed mode" rolling update, the shards should be smart enough to re-compute if
+      // the merging node is running an older version that doesn't send it
+      for (String actual_end : Arrays.asList(", _actual_end:'9'", "")) {
+        client.testJQ(params("q", "*:*", "rows", "0", "isShard", "true", "distrib", "false",
+                             "shards.purpose", ""+FacetModule.PURPOSE_REFINE_JSON_FACETS,
+                             "json.facet", facet,
+                             "_facet_", "{ refine: { top: { between:{ x:{ _l:[B] } }" + actual_end + "} } }")
+                      , "facets=={top:{ buckets:[], between:{x:{buckets:[{val:B,count:3}] }} } }");
+      }
+    }
+  }
+  
   @Test
   public void testExplicitQueryDomain() throws Exception {
     Client client = Client.localClient();
@@ -401,7 +471,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // to verify the raw counts/sizes
     assertJQ(req(nestedSKG,
                  // fake an initial shard request
-                 "distrib", "false", "isShard", "true", "_facet_", "{}", "shards.purpose", "2097216")
+                 "distrib", "false", "isShard", "true", "_facet_", "{}",
+                 "shards.purpose", ""+FacetModule.PURPOSE_GET_JSON_FACETS)
              , "facets=={count:5, x:{ buckets:["
              + "   { val:'B', count:3, "
              + "     skg : { "
@@ -796,6 +867,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   public static void doStatsTemplated(Client client, ModifiableSolrParams p) throws Exception {
+    int numShards = client.local() ? 1 : client.getClientProvider().all().size();
     p.set("Z_num_i", "Z_" + p.get("num_i") );
     p.set("Z_num_l", "Z_" + p.get("num_l") );
     p.set("sparse_num_d", "sparse_" + p.get("num_d") );
@@ -1969,6 +2041,33 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
     //////////////////////////////////////////////////////////////// end phase testing
 
+    //
+    // Refinement should not be needed to get exact results here, so this tests that
+    // extra refinement requests are not sent out.  This currently relies on counting the number of times
+    // debug() aggregation is parsed... which is somewhat fragile.  Please replace this with something
+    // better in the future - perhaps debug level info about number of refinements or additional facet phases.
+    //
+    for (String facet_field : new String[]{cat_s,where_s,num_d,num_i,num_is,num_fs,super_s,date,val_b,multi_ss}) {
+      ModifiableSolrParams test = params(p, "q", "id:(1 2)", "facet_field",facet_field, "debug", "true"
+          , "json.facet", "{ " +
+              " f1:{type:terms, field:'${facet_field}',  refine:${refine},  facet:{x:'debug()'}   }" +
+              ",f2:{type:terms, method:dvhash, field:'${facet_field}',  refine:${refine},  facet:{x:'debug()'}   }" +
+              ",f3:{type:terms, field:'${facet_field}',  refine:${refine},  facet:{x:'debug()',  y:{type:terms,field:'${facet_field}',refine:${refine}}}   }" +  // facet within facet
+              " }"
+      );
+      long startParses = DebugAgg.parses.get();
+      client.testJQ(params(test, "refine", "false")
+          , "facets==" + ""
+      );
+      long noRefineParses = DebugAgg.parses.get() - startParses;
+
+      startParses = DebugAgg.parses.get();
+      client.testJQ(params(test, "refine", "true")
+          , "facets==" + ""
+      );
+      long refineParses = DebugAgg.parses.get() - startParses;
+      assertEquals(noRefineParses, refineParses);
+    }
 
 
   }

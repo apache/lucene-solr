@@ -135,7 +135,7 @@ public class Trie {
     boolean br = false;
     
     for (int i = 0; i < key.length() - 1; i++) {
-      Character ch = new Character(e.next());
+      Character ch = e.next();
       w = now.getCmd(ch);
       if (w >= 0) {
         int n = w;
@@ -158,7 +158,7 @@ public class Trie {
       }
     }
     if (br == false) {
-      w = now.getCmd(new Character(e.next()));
+      w = now.getCmd(e.next());
       if (w >= 0) {
         int n = w;
         for (int j = 0; j < resc; j++) {
@@ -235,7 +235,7 @@ public class Trie {
     Character aux = null;
     
     for (int i = 0; i < key.length();) {
-      ch = new Character(e.next());
+      ch = e.next();
       i++;
       
       c = now.at(ch);
@@ -247,7 +247,7 @@ public class Trie {
       
       for (int skip = c.skip; skip > 0; skip--) {
         if (i < key.length()) {
-          aux = new Character(e.next());
+          aux = e.next();
         } else {
           return null;
         }
@@ -278,7 +278,7 @@ public class Trie {
     StrEnum e = new StrEnum(key, forward);
     
     for (int i = 0; i < key.length() - 1; i++) {
-      Character ch = new Character(e.next());
+      Character ch = e.next();
       w = now.getCmd(ch);
       if (w >= 0) {
         last = cmds.get(w);
@@ -290,7 +290,7 @@ public class Trie {
         return last;
       }
     }
-    w = now.getCmd(new Character(e.next()));
+    w = now.getCmd(e.next());
     return (w >= 0) ? cmds.get(w) : last;
   }
   
@@ -351,7 +351,7 @@ public class Trie {
     StrEnum e = new StrEnum(key, forward);
     
     for (int i = 0; i < e.length() - 1; i++) {
-      Character ch = new Character(e.next());
+      Character ch = e.next();
       node = r.getRef(ch);
       if (node >= 0) {
         r = getRow(node);
@@ -363,7 +363,7 @@ public class Trie {
         r = n;
       }
     }
-    r.setCmd(new Character(e.next()), id_cmd);
+    r.setCmd(e.next(), id_cmd);
   }
   
   /**

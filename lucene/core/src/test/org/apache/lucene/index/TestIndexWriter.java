@@ -49,6 +49,7 @@ import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -3193,7 +3194,16 @@ public class TestIndexWriter extends LuceneTestCase {
               }
             }
           }
-      ));
+      ) {
+        @Override
+        public int numDeletesToMerge(SegmentCommitInfo info, int delCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+          if (mergeAwaySoftDeletes.get()) {
+            return super.numDeletesToMerge(info, delCount, readerSupplier);
+          } else {
+            return 0;
+          }
+        }
+      });
     }
     IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
     Thread[] threads = new Thread[2 + random().nextInt(3)];
@@ -3499,5 +3509,19 @@ public class TestIndexWriter extends LuceneTestCase {
     w = new IndexWriter(dir, config);
     w.close();
     dir.close();
+  }
+
+  public void testBrokenPayload() throws Exception {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document doc = new Document();
+    Token token = new Token("bar", 0, 3);
+    BytesRef evil = new BytesRef(new byte[1024]);
+    evil.offset = 1000; // offset + length is now out of bounds.
+    token.setPayload(evil);
+    doc.add(new TextField("foo", new CannedTokenStream(token)));
+    expectThrows(IndexOutOfBoundsException.class, () -> w.addDocument(doc));
+    w.close();
+    d.close();
   }
 }

@@ -320,9 +320,27 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testUploadDisabled() throws Exception {
+    try (SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
+        AbstractZkTestCase.TIMEOUT, 45000, null)) {
+
+      for (boolean enabled: new boolean[] {true, false}) {
+        System.setProperty("configset.upload.enabled", String.valueOf(enabled));
+        try {
+          long statusCode = uploadConfigSet("regular", "test-enabled-is-" + enabled, null, null, zkClient);
+          assertEquals("ConfigSet upload enabling/disabling not working as expected for enabled=" + enabled + ".",
+              enabled? 0l: 400l, statusCode);
+        } finally {
+          System.clearProperty("configset.upload.enabled");
+        }
+      }
+    }
+  }
+
+  @Test
   public void testUpload() throws Exception {
     String suffix = "-untrusted";
-    uploadConfigSet("regular", suffix, null, null);
+    uploadConfigSetWithAssertions("regular", suffix, null, null);
     // try to create a collection with the uploaded configset
     createCollection("newcollection", "regular" + suffix, 1, 1, solrCluster.getSolrClient());
   }
@@ -334,10 +352,10 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       if (withAuthorization) {
         suffix = "-trusted";
         protectConfigsHandler();
-        uploadConfigSet("with-script-processor", suffix, "solr", "SolrRocks");
+        uploadConfigSetWithAssertions("with-script-processor", suffix, "solr", "SolrRocks");
       } else {
         suffix = "-untrusted";
-        uploadConfigSet("with-script-processor", suffix, null, null);
+        uploadConfigSetWithAssertions("with-script-processor", suffix, null, null);
       }
       // try to create a collection with the uploaded configset
       CollectionAdminResponse resp = createCollection("newcollection2", "with-script-processor"+suffix,
@@ -391,23 +409,11 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     Thread.sleep(5000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
   }
 
-  private void uploadConfigSet(String configSetName, String suffix, String username, String password) throws Exception {
-    // Read zipped sample config
-    ByteBuffer sampleZippedConfig = TestDynamicLoading
-        .getFileContent(
-            createTempZipFile("solr/configsets/upload/"+configSetName), false);
-
+  private void uploadConfigSetWithAssertions(String configSetName, String suffix, String username, String password) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, 45000, null);
     try {
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertFalse(configManager.configExists(configSetName+suffix));
-
-      Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
-          solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix,
-          sampleZippedConfig, username, password);
-      assertNotNull(map);
-      long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+      long statusCode = uploadConfigSet(configSetName, suffix, username, password, zkClient);
       assertEquals(0l, statusCode);
 
       assertTrue("managed-schema file should have been uploaded",
@@ -426,6 +432,24 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     } finally {
       zkClient.close();
     }
+  }
+
+  private long uploadConfigSet(String configSetName, String suffix, String username, String password,
+      SolrZkClient zkClient) throws IOException {
+    // Read zipped sample config
+    ByteBuffer sampleZippedConfig = TestDynamicLoading
+        .getFileContent(
+            createTempZipFile("solr/configsets/upload/"+configSetName), false);
+
+    ZkConfigManager configManager = new ZkConfigManager(zkClient);
+    assertFalse(configManager.configExists(configSetName+suffix));
+
+    Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
+        solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix,
+        sampleZippedConfig, username, password);
+    assertNotNull(map);
+    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+    return statusCode;
   }
   
   /**

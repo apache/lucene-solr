@@ -378,6 +378,6 @@ public class FloatPointNearestNeighbor {
       NearestHit hit = hits[i];
       scoreDocs[i] = new FieldDoc(hit.docID, 0.0f, new Object[] { (float)Math.sqrt(hit.distanceSquared) });
     }
-    return new TopFieldDocs(totalHits, scoreDocs, null, 0.0f);
+    return new TopFieldDocs(totalHits, scoreDocs, null);
   }
 }

@@ -60,7 +60,7 @@ public class MoveReplicaSuggester extends Suggester {
         Pair<Row, ReplicaInfo> pair = targetRow.session.getNode(fromRow.node).removeReplica(ri.getCollection(), ri.getShard(), ri.getType());//then remove replica from source node
         if (pair == null) continue;//should not happen
         Row srcRowModified = pair.first();//this is the final state of the source row and session
-        List<Violation> errs = testChangedMatrix(strict, srcRowModified.session.matrix);
+        List<Violation> errs = testChangedMatrix(strict, srcRowModified.session);
         srcRowModified.session.applyRules();// now resort the nodes with the new values
         Policy.Session tmpSession = srcRowModified.session;
         if (!containsNewErrors(errs) &&
