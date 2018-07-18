@@ -130,8 +130,10 @@ public final class BytesRefHash {
    * Note: This is a destructive operation. {@link #clear()} must be called in
    * order to reuse this {@link BytesRefHash} instance.
    * </p>
+   *
+   * @lucene.internal
    */
-  int[] compact() {
+  public int[] compact() {
     assert bytesStart != null : "bytesStart is null - not initialized";
     int upto = 0;
     for (int i = 0; i < hashSize; i++) {
