@@ -67,6 +67,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
  *
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+//05-Jul-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12392")
 public class IndexSizeTriggerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -136,6 +137,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testTrigger() throws Exception {
     String collectionName = "testTrigger_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -233,6 +235,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testSplitIntegration() throws Exception {
     String collectionName = "testSplitIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -345,6 +348,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testMergeIntegration() throws Exception {
     String collectionName = "testMergeIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -454,6 +458,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testMixedBounds() throws Exception {
 //    if (cloudManager instanceof SimCloudManager) {
 //      log.warn("Requires SOLR-12208");

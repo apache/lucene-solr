@@ -1287,7 +1287,6 @@ public class TestJoinUtil extends LuceneTestCase {
         System.out.printf(Locale.ENGLISH, "Expected score: %f | Actual score: %f\n", expectedTopDocs.scoreDocs[i].score, actualTopDocs.scoreDocs[i].score);
       }
     }
-    assertEquals(expectedTopDocs.getMaxScore(), actualTopDocs.getMaxScore(), 0.0f);
 
     for (int i = 0; i < expectedTopDocs.scoreDocs.length; i++) {
       assertEquals(expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
@@ -1647,7 +1646,7 @@ public class TestJoinUtil extends LuceneTestCase {
       Map.Entry<Integer,JoinScore> hit = hits.get(i);
       scoreDocs[i] = new ScoreDoc(hit.getKey(), hit.getValue().score(scoreMode));
     }
-    return new TopDocs(hits.size(), scoreDocs, hits.isEmpty() ? Float.NaN : hits.get(0).getValue().score(scoreMode));
+    return new TopDocs(hits.size(), scoreDocs);
   }
 
   private BitSet createExpectedResult(String queryValue, boolean from, IndexReader topLevelReader, IndexIterationContext context) throws IOException {

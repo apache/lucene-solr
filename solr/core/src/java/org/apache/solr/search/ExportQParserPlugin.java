@@ -180,7 +180,7 @@ public class ExportQParserPlugin extends QParserPlugin {
 
       ScoreDoc[] scoreDocs = getScoreDocs(howMany);
       assert scoreDocs.length <= totalHits;
-      return new TopDocs(totalHits, scoreDocs, 0.0f);
+      return new TopDocs(totalHits, scoreDocs);
     }
 
     @Override

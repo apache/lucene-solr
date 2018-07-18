@@ -90,7 +90,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
-import org.apache.solr.search.facet.FacetProcessor;
+import org.apache.solr.search.facet.FacetRequest;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -565,29 +565,20 @@ public class SimpleFacets {
             }
             jsonFacet.put(SORT, sortVal );
 
-            Map<String, Object> topLevel = new HashMap<>();
-            topLevel.put(field, jsonFacet);
-              
-            topLevel.put("processEmpty", true);
-
-            FacetProcessor fproc = FacetProcessor.createProcessor(rb.req, topLevel, // rb.getResults().docSet
-                                                                    docs );
             //TODO do we handle debug?  Should probably already be handled by the legacy code
-            fproc.process();
 
+            Object resObj = FacetRequest.parseOneFacetReq(req, jsonFacet).process(req, docs);
             //Go through the response to build the expected output for SimpleFacets
-            Object res = fproc.getResponse();
-            counts = new NamedList<Integer>();
-            if(res != null) {
-              SimpleOrderedMap<Object> som = (SimpleOrderedMap<Object>)res;
-              SimpleOrderedMap<Object> asdf = (SimpleOrderedMap<Object>) som.get(field);
+            counts = new NamedList<>();
+            if(resObj != null) {
+              NamedList<Object> res = (NamedList<Object>) resObj;
 
-              List<SimpleOrderedMap<Object>> buckets = (List<SimpleOrderedMap<Object>>)asdf.get("buckets");
-              for(SimpleOrderedMap<Object> b : buckets) {
+              List<NamedList<Object>> buckets = (List<NamedList<Object>>)res.get("buckets");
+              for(NamedList<Object> b : buckets) {
                 counts.add(b.get("val").toString(), (Integer)b.get("count"));
               }
               if(missing) {
-                SimpleOrderedMap<Object> missingCounts = (SimpleOrderedMap<Object>) asdf.get("missing");
+                NamedList<Object> missingCounts = (NamedList<Object>) res.get("missing");
                 counts.add(null, (Integer)missingCounts.get("count"));
               }
             }

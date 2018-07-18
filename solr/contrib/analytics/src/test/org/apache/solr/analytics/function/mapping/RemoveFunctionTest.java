@@ -367,7 +367,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     assertFalse(func.exists());
 
     val.setExists(false);
-    remover.setValue(new Boolean(true)).setExists(true);
+    remover.setValue(Boolean.TRUE).setExists(true);
     func.getObject();
     assertFalse(func.exists());
     
@@ -377,14 +377,14 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     assertEquals("abc123", func.getObject());
     assertTrue(func.exists());
 
-    val.setValue(new Double(23423.0)).setExists(true);
-    remover.setValue(new Double(23423.0)).setExists(true);
+    val.setValue(23423.0d).setExists(true);
+    remover.setValue(23423.0d).setExists(true);
     func.getObject();
     assertFalse(func.exists());
     
-    val.setValue(new Long(234)).setExists(true);
+    val.setValue(234L).setExists(true);
     remover.setExists(false);
-    assertEquals(new Long(234), func.getObject());
+    assertEquals(234L, func.getObject());
     assertTrue(func.exists());
   }
 
@@ -813,27 +813,27 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     });
     
     // Values exist
-    val.setValues("asdfs", new Date(12312), new Long(213123L), new Date(12312));
+    val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     remover.setValue(new Date(12312)).setExists(true);
-    Iterator<Object> values1 = Arrays.<Object>asList("asdfs", new Long(213123L)).iterator();
+    Iterator<Object> values1 = Arrays.<Object>asList("asdfs", 213123L).iterator();
     func.streamObjects( value -> {
       assertTrue(values1.hasNext());
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
 
-    val.setValues("asdfs", new Date(12312), new Long(213123L), new Date(12312));
+    val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     remover.setExists(false);
-    Iterator<Object> values2 = Arrays.<Object>asList("asdfs", new Date(12312), new Long(213123L), new Date(12312)).iterator();
+    Iterator<Object> values2 = Arrays.<Object>asList("asdfs", new Date(12312), 213123L, new Date(12312)).iterator();
     func.streamObjects( value -> {
       assertTrue(values2.hasNext());
       assertEquals(values2.next(), value);
     });
     assertFalse(values2.hasNext());
 
-    val.setValues(new Date(3), "3", new Float(3F));
+    val.setValues(new Date(3), "3", 3F);
     remover.setValue(new Date(4)).setExists(true);
-    Iterator<Object> values3 = Arrays.<Object>asList(new Date(3), "3", new Float(3F)).iterator();
+    Iterator<Object> values3 = Arrays.<Object>asList(new Date(3), "3", 3F).iterator();
     func.streamObjects( value -> {
       assertTrue(values3.hasNext());
       assertEquals(values3.next(), value);

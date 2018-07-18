@@ -161,13 +161,11 @@ public class TopGroups<T> {
 
         if (docSort.equals(Sort.RELEVANCE)) {
           shardTopDocs[shardIDX] = new TopDocs(shardGroupDocs.totalHits,
-                                               shardGroupDocs.scoreDocs,
-                                               shardGroupDocs.maxScore);
+                                               shardGroupDocs.scoreDocs);
         } else {
           shardTopDocs[shardIDX] = new TopFieldDocs(shardGroupDocs.totalHits,
               shardGroupDocs.scoreDocs,
-              docSort.getSort(),
-              shardGroupDocs.maxScore);
+              docSort.getSort());
         }
         maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
         totalHits += shardGroupDocs.totalHits;

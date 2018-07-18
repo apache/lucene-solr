@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,9 +34,24 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted> extends FacetBucketMerger<FacetRequestT> {
   LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
   List<FacetBucket> sortedBuckets;
+  BitSet shardHasMoreBuckets;  // null, or "true" if we saw a result from this shard and it indicated that there are more results
+
 
   public FacetRequestSortedMerger(FacetRequestT freq) {
     super(freq);
+  }
+
+  @Override
+  public void merge(Object facetResult, Context mcontext) {
+    SimpleOrderedMap res = (SimpleOrderedMap)facetResult;
+    Boolean more = (Boolean)res.get("more");
+    if (more != null && more) {
+      if (shardHasMoreBuckets == null) {
+        // We really only need this if it's a partial facet (has a limit)
+        shardHasMoreBuckets = new BitSet(mcontext.numShards);
+      }
+      shardHasMoreBuckets.set(mcontext.shardNum);
+    }
   }
 
   private static class SortVal implements Comparable<SortVal> {
@@ -159,15 +175,16 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     Collection<String> tagsWithPartial = mcontext.getSubsWithPartial(freq);
 
     boolean thisMissing = mcontext.bucketWasMissing(); // Was this whole facet missing (i.e. inside a bucket that was missing)?
+    boolean shardHasMore = shardHasMoreBuckets != null && shardHasMoreBuckets.get(mcontext.shardNum);  // shard indicated it has more buckets
+    shardHasMore |= thisMissing;  // if we didn't hear from the shard at all, assume it as more buckets
 
-    // TODO: add information in sub-shard response about dropped buckets (i.e. not all returned due to limit)
     // If we know we've seen all the buckets from a shard, then we don't have to add to leafBuckets or partialBuckets, only skipBuckets
     boolean isCommandPartial = freq.returnsPartial() || freq.processEmpty; // TODO: should returnsPartial() check processEmpty internally?
-    boolean returnedAllBuckets = !isCommandPartial && !thisMissing;  // did the shard return all of the possible buckets?
+    boolean returnedAllBuckets = !shardHasMore && !freq.processEmpty;  // did the shard return all of the possible buckets at this level? (pretend it didn't if processEmpty is set)
 
     if (returnedAllBuckets && tags.isEmpty() && tagsWithPartial.isEmpty()) {
-      // this facet returned all possible buckets, and there were no sub-facets with partial results
-      // and sub-facets that require refining
+      // this shard returned all of its possible buckets, and there were no sub-facets with partial results
+      // or sub-facets that require refining
       return null;
     }
 
@@ -197,8 +214,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       // if this bucket is missing,
       assert thisMissing == false || thisMissing == true && mcontext.getShardFlag(bucket.bucketNumber) == false;
       boolean saw = !thisMissing && mcontext.getShardFlag(bucket.bucketNumber);
-      if (!saw) {
-        // we didn't see the bucket for this shard
+      if (!saw && !returnedAllBuckets) {
+        // we didn't see the bucket for this shard, and it's possible that the shard has it
         Map<String,Object> bucketRefinement = null;
 
         // find facets that we need to fill in buckets for

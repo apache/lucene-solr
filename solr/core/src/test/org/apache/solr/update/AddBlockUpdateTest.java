@@ -658,8 +658,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
     AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
     for (SolrInputDocument doc: docs) {
-      long version = getNewClock();
-      updateCmd.setVersion(Math.abs(version));
       updateCmd.solrDoc = doc;
       h.getCore().getUpdateHandler().addDoc(updateCmd);
       updateCmd.clear();
@@ -667,10 +665,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  private long getNewClock() {
-    return h.getCore().getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
-  }
-  
   /**
    * Merges two documents like
    * 

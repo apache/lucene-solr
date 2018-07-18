@@ -57,10 +57,10 @@ public class NormalizeEvaluatorTest extends LuceneTestCase {
     values.put("singleInt", singleInt);
     Tuple tuple = new Tuple(values);
 
-    assertSimilar(StatUtils.normalize(Arrays.stream(ints).mapToDouble(Double::new).toArray()), factory.constructEvaluator("norm(ints)").evaluate(tuple));
-    assertSimilar(StatUtils.normalize(Arrays.stream(longs).mapToDouble(Double::new).toArray()), factory.constructEvaluator("norm(longs)").evaluate(tuple));
+    assertSimilar(StatUtils.normalize(Arrays.stream(ints).mapToDouble(Double::valueOf).toArray()), factory.constructEvaluator("norm(ints)").evaluate(tuple));
+    assertSimilar(StatUtils.normalize(Arrays.stream(longs).mapToDouble(Double::valueOf).toArray()), factory.constructEvaluator("norm(longs)").evaluate(tuple));
     assertSimilar(StatUtils.normalize(doubles), factory.constructEvaluator("norm(doubles)").evaluate(tuple));
-    assertSimilar(StatUtils.normalize(Arrays.stream(singleInt).mapToDouble(Double::new).toArray()), factory.constructEvaluator("norm(singleInt)").evaluate(tuple));
+    assertSimilar(StatUtils.normalize(Arrays.stream(singleInt).mapToDouble(Double::valueOf).toArray()), factory.constructEvaluator("norm(singleInt)").evaluate(tuple));
   }
   
   private void assertSimilar(double[] expected, Object actual){

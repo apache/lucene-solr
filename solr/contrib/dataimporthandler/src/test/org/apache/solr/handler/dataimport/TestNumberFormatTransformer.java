@@ -48,8 +48,8 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
     Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
     Map<String,Object> m = createMap("num", "123" + GROUPING_SEP + "567", "localizedNum", "123" + GERMAN_GROUPING_SEP + "567");
     new NumberFormatTransformer().transformRow(m, c);
-    assertEquals(new Long(123567), m.get("num"));
-    assertEquals(new Long(123567), m.get("localizedNum"));
+    assertEquals(123567L, m.get("num"));
+    assertEquals(123567L, m.get("localizedNum"));
   }
 
   @Test
@@ -73,8 +73,8 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
     new NumberFormatTransformer().transformRow(row, context);
 
     List<Long> output = new ArrayList<>();
-    output.add(new Long(123567));
-    output.add(new Long(245678));
+    output.add(123567L);
+    output.add(245678L);
     Map<String, Object> outputRow = createMap("inputs", inputs, "outputs", output);
 
     assertEquals(outputRow, row);
@@ -155,6 +155,6 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
     Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
     Map<String, Object> m = createMap("num", "123" + GROUPING_SEP + GROUPING_SEP + "789");
     new NumberFormatTransformer().transformRow(m, c);
-    assertEquals(new Long(123789), m.get("num"));
+    assertEquals(123789L, m.get("num"));
   }
 }

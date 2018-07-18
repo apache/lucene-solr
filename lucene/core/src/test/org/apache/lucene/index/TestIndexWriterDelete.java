@@ -1146,6 +1146,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testDeletesCheckIndexOutput() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     iwc.setMaxBufferedDocs(2);
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();

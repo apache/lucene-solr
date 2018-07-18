@@ -107,6 +107,8 @@ public class IndexSchema {
   public static final String LUCENE_MATCH_VERSION_PARAM = "luceneMatchVersion";
   public static final String MAX_CHARS = "maxChars";
   public static final String NAME = "name";
+  public static final String NEST_PARENT_FIELD_NAME = "_nest_parent_";
+  public static final String NEST_PATH_FIELD_NAME = "_nest_path_";
   public static final String REQUIRED = "required";
   public static final String SCHEMA = "schema";
   public static final String SIMILARITY = "similarity";

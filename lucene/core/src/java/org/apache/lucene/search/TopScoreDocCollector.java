@@ -148,7 +148,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
     @Override
     protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
-      return results == null ? new TopDocs(totalHits, new ScoreDoc[0], Float.NaN) : new TopDocs(totalHits, results);
+      return results == null ? new TopDocs(totalHits, new ScoreDoc[0]) : new TopDocs(totalHits, results);
     }
 
     @Override
@@ -240,19 +240,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       return EMPTY_TOPDOCS;
     }
 
-    // We need to compute maxScore in order to set it in TopDocs. If start == 0,
-    // it means the largest element is already in results, use its score as
-    // maxScore. Otherwise pop everything else, until the largest element is
-    // extracted and use its score as maxScore.
-    float maxScore = Float.NaN;
-    if (start == 0) {
-      maxScore = results[0].score;
-    } else {
-      for (int i = pq.size(); i > 1; i--) { pq.pop(); }
-      maxScore = pq.pop().score;
-    }
-
-    return new TopDocs(totalHits, results, maxScore);
+    return new TopDocs(totalHits, results);
   }
 
   @Override

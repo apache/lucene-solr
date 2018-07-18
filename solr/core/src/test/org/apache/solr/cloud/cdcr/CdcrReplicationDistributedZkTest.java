@@ -149,6 +149,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testReplicationStartStop() throws Exception {
     int start = 0;
     List<SolrInputDocument> docs = new ArrayList<>();
@@ -209,6 +210,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
    */
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testReplicationAfterRestart() throws Exception {
     log.info("Starting CDCR");
 
@@ -279,6 +281,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
    */
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testReplicationAfterLeaderChange() throws Exception {
     log.info("Starting CDCR");
 
@@ -362,6 +365,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
    */
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testUpdateLogSynchronisation() throws Exception {
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
     this.waitForCdcrStateReplication(SOURCE_COLLECTION);
@@ -412,6 +416,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
    */
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testBufferOnNonLeader() throws Exception {
     // buffering is enabled by default, so disable it
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.DISABLEBUFFER);
@@ -449,6 +454,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
    */
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testOps() throws Exception {
     // Index documents
     List<SolrInputDocument> docs = new ArrayList<>();
@@ -482,6 +488,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
    */
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testBatchAddsWithDelete() throws Exception {
     // Index 50 documents
     int start = 0;
@@ -539,6 +546,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
    */
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testBatchBoundaries() throws Exception {
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
     this.waitForCdcrStateReplication(SOURCE_COLLECTION);
@@ -570,6 +578,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
    */
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testResilienceWithDeleteByQueryOnTarget() throws Exception {
     // Index 50 documents
     int start = 0;

@@ -536,6 +536,7 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner getReplicaJetty(Replica replica) {
     for (JettySolrRunner jetty : jettys) {
+      if (jetty.isStopped()) continue;
       if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString()))
         return jetty;
     }

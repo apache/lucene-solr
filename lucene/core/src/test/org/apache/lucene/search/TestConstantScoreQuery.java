@@ -171,7 +171,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
         .add(query, Occur.MUST)
         .add(filterB, Occur.FILTER)
         .build();
-    assertEquals(1, s.search(filtered, 1).totalHits); // Query for field:b, Filter field:b
+    assertEquals(1, s.count(filtered)); // Query for field:b, Filter field:b
 
     Query filterA = new QueryWrapper(new TermQuery(new Term("field", "a")));
     query = new ConstantScoreQuery(filterA);
@@ -180,7 +180,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
         .add(query, Occur.MUST)
         .add(filterB, Occur.FILTER)
         .build();
-    assertEquals(0, s.search(filtered, 1).totalHits); // Query field:b, Filter field:a
+    assertEquals(0, s.count(filtered)); // Query field:b, Filter field:a
 
     r.close();
     d.close();

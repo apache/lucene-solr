@@ -108,7 +108,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  //05-Jul-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void test() throws Exception {
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
@@ -289,9 +289,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.range.end",900,
           "facet.range.other","all");
     assertEquals(tlong, response.getFacetRanges().get(0).getName());
-    assertEquals(new Integer(6), response.getFacetRanges().get(0).getBefore());
-    assertEquals(new Integer(5), response.getFacetRanges().get(0).getBetween());
-    assertEquals(new Integer(2), response.getFacetRanges().get(0).getAfter());
+    assertEquals(6, response.getFacetRanges().get(0).getBefore());
+    assertEquals(5, response.getFacetRanges().get(0).getBetween());
+    assertEquals(2, response.getFacetRanges().get(0).getAfter());
 
     // Test mincounts. Do NOT want to go through all the stuff where with validateControlData in query() method
     // Purposely packing a _bunch_ of stuff together here to insure that the proper level of mincount is used for
@@ -448,7 +448,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       // long
       FieldStatsInfo s = rsp.getFieldStatsInfo().get(tlong);
       assertNotNull("missing stats", s);
-      assertEquals("wrong cardinality", new Long(13), s.getCardinality());
+      assertEquals("wrong cardinality", Long.valueOf(13), s.getCardinality());
       //
       assertNull("expected null for min", s.getMin());
       assertNull("expected null for mean", s.getMean());
@@ -464,7 +464,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       // string
       s = rsp.getFieldStatsInfo().get(oddField);
       assertNotNull("missing stats", s);
-      assertEquals("wrong cardinality", new Long(1), s.getCardinality());
+      assertEquals("wrong cardinality", Long.valueOf(1), s.getCardinality());
       //
       assertNull("expected null for min", s.getMin());
       assertNull("expected null for mean", s.getMean());
@@ -727,7 +727,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNotNull(p+" no stats for " + i1, s);
       //
       assertEquals(p+" wrong min", -987.0D, (Double)s.getMin(), 0.0001D );
-      assertEquals(p+" wrong calcDistinct", new Long(13), s.getCountDistinct());
+      assertEquals(p+" wrong calcDistinct", Long.valueOf(13), s.getCountDistinct());
       assertNotNull(p+" expected non-null list for distinct vals", s.getDistinctValues());
       assertEquals(p+" expected list for distinct vals", 13, s.getDistinctValues().size());
       //
@@ -1211,6 +1211,16 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   private void validateCommonQueryParameters() throws Exception {
     ignoreException("parameter cannot be negative");
+
+    try {
+      SolrQuery query = new SolrQuery();
+      query.setParam("start", "non_numeric_value").setQuery("*");
+      QueryResponse resp = query(query);
+      fail("Expected the last query to fail, but got response: " + resp);
+    } catch (SolrException e) {
+      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
+    }
+
     try {
       SolrQuery query = new SolrQuery();
       query.setStart(-1).setQuery("*");
@@ -1223,6 +1233,15 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     try {
       SolrQuery query = new SolrQuery();
       query.setRows(-1).setStart(0).setQuery("*");
+      QueryResponse resp = query(query);
+      fail("Expected the last query to fail, but got response: " + resp);
+    } catch (SolrException e) {
+      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
+    }
+
+    try {
+      SolrQuery query = new SolrQuery();
+      query.setParam("rows", "non_numeric_value").setQuery("*");
       QueryResponse resp = query(query);
       fail("Expected the last query to fail, but got response: " + resp);
     } catch (SolrException e) {

@@ -95,7 +95,6 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
   }
 
   public void testSimpleRangeFacetsOfSymetricRates() throws Exception {
-
     for (boolean use_mincount : Arrays.asList(true, false)) {
     
       // exchange rates relative to USD...
@@ -201,7 +200,6 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         } catch (AssertionError|RuntimeException ae) {
           throw new AssertionError(solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
         }
-        
       }
     }
   }
@@ -342,10 +340,15 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     // the *facet* results should be the same regardless of wether we filter via fq, or using a domain filter on the top facet
     for (boolean use_domain : Arrays.asList(true, false)) {
       final String domain = use_domain ? "domain: { filter:'" + filter + "'}," : "";
+
+      // both of these options should produce same results since hardened:false is default
+      final String end = random().nextBoolean() ? "end:'20,EUR'" : "end:'15,EUR'";
+        
+      
       final SolrQuery solrQuery = new SolrQuery("q", (use_domain ? "*:*" : filter),
                                                 "rows", "0", "json.facet",
                                                 "{ bar:{ type:range, field:"+FIELD+", " + domain + 
-                                                "        start:'0,EUR', gap:'10,EUR', end:'20,EUR', other:all " +
+                                                "        start:'0,EUR', gap:'10,EUR', "+end+", other:all " +
                                                 "        facet: { foo:{ type:terms, field:x_s, " +
                                                 "                       refine:true, limit:2, overrequest:0" +
                                                 " } } } }");

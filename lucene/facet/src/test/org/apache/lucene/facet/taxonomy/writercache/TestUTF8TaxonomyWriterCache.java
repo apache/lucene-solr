@@ -28,6 +28,16 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.TestUtil;
 
 public class TestUTF8TaxonomyWriterCache extends FacetTestCase {
+  public void testPageOverflow() throws Exception {
+    UTF8TaxonomyWriterCache cache = new UTF8TaxonomyWriterCache();
+    for (int ord = 0; ord < 65536 * 2; ord++) {
+      cache.put(new FacetLabel("foo:", Integer.toString(ord)), ord);
+    }
+
+    for (int ord = 0; ord < 65536 * 2; ord++) {
+      assertEquals(ord, cache.get(new FacetLabel("foo:", Integer.toString(ord))));
+    }
+  }
 
   public void testRandom() throws Exception {
     LabelToOrdinal map = new LabelToOrdinalMap();
@@ -36,8 +46,6 @@ public class TestUTF8TaxonomyWriterCache extends FacetTestCase {
 
     final int n = atLeast(10 * 1000);
     final int numUniqueValues = 50 * 1000;
-
-    byte[] buffer = new byte[50];
 
     Random random = random();
     Set<String> uniqueValuesSet = new HashSet<>();

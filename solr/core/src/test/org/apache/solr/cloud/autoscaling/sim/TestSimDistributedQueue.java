@@ -39,6 +39,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
   protected ExecutorService executor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("sdqtest-"));
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testDistributedQueue() throws Exception {
     String dqZNode = "/distqueue/test1";
     byte[] data = "hello world".getBytes(UTF8);

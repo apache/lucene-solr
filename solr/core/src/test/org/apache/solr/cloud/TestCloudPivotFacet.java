@@ -107,6 +107,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void test() throws Exception {
 
     sanityCheckAssertNumerics();
@@ -752,25 +753,25 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   private void sanityCheckAssertNumerics() {
     
     assertNumerics("Null?", null, null);
-    assertNumerics("large a", 
-                   new Double(2.3005390038169265E9), 
-                   new Double(2.300539003816927E9));
+    assertNumerics("large a",
+        2.3005390038169265E9,
+        2.300539003816927E9);
     assertNumerics("large b",
-                   new Double(1.2722582464444444E9),
-                   new Double(1.2722582464444442E9));
-    assertNumerics("small", 
-                   new Double(2.3005390038169265E-9), 
-                   new Double(2.300539003816927E-9));
+        1.2722582464444444E9,
+        1.2722582464444442E9);
+    assertNumerics("small",
+        2.3005390038169265E-9,
+        2.300539003816927E-9);
     
-    assertNumerics("large a negative", 
-                   new Double(-2.3005390038169265E9), 
-                   new Double(-2.300539003816927E9));
+    assertNumerics("large a negative",
+        -2.3005390038169265E9,
+        -2.300539003816927E9);
     assertNumerics("large b negative",
-                   new Double(-1.2722582464444444E9),
-                   new Double(-1.2722582464444442E9));
-    assertNumerics("small negative", 
-                   new Double(-2.3005390038169265E-9), 
-                   new Double(-2.300539003816927E-9));
+        -1.2722582464444444E9,
+        -1.2722582464444442E9);
+    assertNumerics("small negative",
+        -2.3005390038169265E-9,
+        -2.300539003816927E-9);
     
     assertNumerics("high long", Long.MAX_VALUE, Long.MAX_VALUE);
     assertNumerics("high int", Integer.MAX_VALUE, Integer.MAX_VALUE);
@@ -803,15 +804,15 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     } catch (AssertionError e) {}
   
     try {
-      assertNumerics("diff", 
-                     new Double(2.3005390038169265E9), 
-                     new Double(2.267272520100462E9));
+      assertNumerics("diff",
+          2.3005390038169265E9,
+          2.267272520100462E9);
       throw new RuntimeException("did not get assertion failure when args are big & too diff");
     } catch (AssertionError e) {}
     try {
-      assertNumerics("diff", 
-                     new Double(2.3005390038169265E-9), 
-                     new Double(2.267272520100462E-9));
+      assertNumerics("diff",
+          2.3005390038169265E-9,
+          2.267272520100462E-9);
       throw new RuntimeException("did not get assertion failure when args are small & too diff");
     } catch (AssertionError e) {}
   

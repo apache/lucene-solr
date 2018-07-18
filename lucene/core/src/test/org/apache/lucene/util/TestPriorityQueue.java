@@ -144,7 +144,7 @@ public class TestPriorityQueue extends LuceneTestCase {
     // Basic insertion of new content
     ArrayList<Integer> sds = new ArrayList<Integer>(numDocsInPQ);
     for (int i = 0; i < numDocsInPQ * 10; i++) {
-      Integer newEntry = new Integer(Math.abs(random.nextInt()));
+      Integer newEntry = Math.abs(random.nextInt());
       sds.add(newEntry);
       Integer evicted = pq.insertWithOverflow(newEntry);
       pq.checkValidity();
@@ -174,7 +174,7 @@ public class TestPriorityQueue extends LuceneTestCase {
       assertTrue(sds.remove(element) == objectToRemove);
       assertTrue(pq.remove(objectToRemove));
       pq.checkValidity();
-      Integer newEntry = new Integer(Math.abs(random.nextInt()));
+      Integer newEntry = Math.abs(random.nextInt());
       sds.add(newEntry);
       assertNull(pq.insertWithOverflow(newEntry));
       pq.checkValidity();
@@ -230,6 +230,7 @@ public class TestPriorityQueue extends LuceneTestCase {
     });
   }
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8402")
   public void testIteratorRandom() {
     final int maxSize = TestUtil.nextInt(random(), 1, 20);
     IntegerQueue queue = new IntegerQueue(maxSize);
@@ -237,7 +238,7 @@ public class TestPriorityQueue extends LuceneTestCase {
     final List<Integer> expected = new ArrayList<>();
     for (int iter = 0; iter < iters; ++iter) {
       if (queue.size() == 0 || (queue.size() < maxSize && random().nextBoolean())) {
-        final Integer value = new Integer(random().nextInt(10));
+        final Integer value = random().nextInt(10);
         queue.add(value);
         expected.add(value);
       } else {
@@ -251,5 +252,17 @@ public class TestPriorityQueue extends LuceneTestCase {
       CollectionUtil.introSort(actual);
       assertEquals(expected, actual);
     }
+  }
+
+  public void testMaxIntSize() {
+    expectThrows(IllegalArgumentException.class, () -> {
+        new PriorityQueue<Boolean>(Integer.MAX_VALUE) {
+          @Override
+          public boolean lessThan(Boolean a, Boolean b) {
+            // uncalled
+            return true;
+          }
+        };
+      });
   }
 }

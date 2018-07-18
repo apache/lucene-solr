@@ -108,11 +108,11 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         ScoreDoc[] scoreDocs = transformToNativeShardDoc(documents, groupSort, shard, schema);
         final TopDocs topDocs;
         if (withinGroupSort.equals(Sort.RELEVANCE)) {
-          topDocs = new TopDocs(totalHits.longValue(), scoreDocs, maxScore);
+          topDocs = new TopDocs(totalHits.longValue(), scoreDocs);
         } else {
-          topDocs = new TopFieldDocs(totalHits.longValue(), scoreDocs, withinGroupSort.getSort(), maxScore);
+          topDocs = new TopFieldDocs(totalHits.longValue(), scoreDocs, withinGroupSort.getSort());
         }
-        result.put(key, new QueryCommandResult(topDocs, matches));
+        result.put(key, new QueryCommandResult(topDocs, matches, maxScore));
         continue;
       }
 
@@ -242,8 +242,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     queryResult.add("matches", result.getMatches());
     queryResult.add("totalHits", result.getTopDocs().totalHits);
     // debug: assert !Float.isNaN(result.getTopDocs().getMaxScore()) == rb.getGroupingSpec().isNeedScore();
-    if (!Float.isNaN(result.getTopDocs().getMaxScore())) {
-      queryResult.add("maxScore", result.getTopDocs().getMaxScore());
+    if (!Float.isNaN(result.getMaxScore())) {
+      queryResult.add("maxScore", result.getMaxScore());
     }
     List<NamedList> documents = new ArrayList<>();
     queryResult.add("documents", documents);

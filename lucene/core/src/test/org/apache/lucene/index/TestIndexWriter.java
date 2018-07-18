@@ -3194,7 +3194,16 @@ public class TestIndexWriter extends LuceneTestCase {
               }
             }
           }
-      ));
+      ) {
+        @Override
+        public int numDeletesToMerge(SegmentCommitInfo info, int delCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+          if (mergeAwaySoftDeletes.get()) {
+            return super.numDeletesToMerge(info, delCount, readerSupplier);
+          } else {
+            return 0;
+          }
+        }
+      });
     }
     IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
     Thread[] threads = new Thread[2 + random().nextInt(3)];

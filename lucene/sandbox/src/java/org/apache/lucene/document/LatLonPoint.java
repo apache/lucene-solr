@@ -330,6 +330,6 @@ public class LatLonPoint extends Field {
       NearestNeighbor.NearestHit hit = hits[i];
       scoreDocs[i] = new FieldDoc(hit.docID, 0.0f, new Object[] {Double.valueOf(hit.distanceMeters)});
     }
-    return new TopFieldDocs(totalHits, scoreDocs, null, 0.0f);
+    return new TopFieldDocs(totalHits, scoreDocs, null);
   }
 }

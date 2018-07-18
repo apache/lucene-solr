@@ -237,7 +237,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     }
   }
 
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 29-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   @Test
   public void testBootstrapWithContinousIndexingOnSourceCluster() throws Exception {
     // start the target first so that we know its zkhost

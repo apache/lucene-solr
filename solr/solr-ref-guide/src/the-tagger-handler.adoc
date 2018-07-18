@@ -199,7 +199,7 @@ Using bin/post:
 [source,bash]
 ----
 bin/post -c geonames -type text/csv \
-  -params 'optimize=true&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate' \
+  -params 'optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate' \
   /tmp/cities1000.txt
 ----
 
@@ -208,14 +208,14 @@ or using curl:
 [source,bash]
 ----
 curl -X POST --data-binary @/path/to/cities1000.txt -H 'Content-type:application/csv' \
-  'http://localhost:8983/solr/geonames/update?commit=true&optimize=true&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate'
+  'http://localhost:8983/solr/geonames/update?commit=true&optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate'
 ----
 
 That might take around 35 seconds; it depends. It can be a lot faster if
 the schema were tuned to only have what we truly need (no text search if
 not needed).
 
-In that command we said `optimize=true` to put the index in a state that
+In that command we said `optimize=true&maxSegments=1` to put the index in a state that
 will make tagging faster. The `encapsulator=%00` is a bit of a hack to
 disable the default double-quote.
 

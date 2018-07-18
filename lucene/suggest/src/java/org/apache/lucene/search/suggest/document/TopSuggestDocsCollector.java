@@ -177,7 +177,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
     }
 
     if (suggestScoreDocs.length > 0) {
-      return new TopSuggestDocs(suggestScoreDocs.length, suggestScoreDocs, suggestScoreDocs[0].score);
+      return new TopSuggestDocs(suggestScoreDocs.length, suggestScoreDocs);
     } else {
       return TopSuggestDocs.EMPTY;
     }

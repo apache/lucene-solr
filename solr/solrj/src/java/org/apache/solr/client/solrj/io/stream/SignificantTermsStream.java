@@ -382,7 +382,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
-      params.add("fq","{!sigificantTerms}");
+      params.add("fq","{!significantTerms}");
 
       for(String key : paramsMap.keySet()) {
         params.add(key, paramsMap.get(key));

@@ -1131,7 +1131,7 @@ public abstract class LuceneTestCase extends Assert {
       tmp.setSegmentsPerTier(TestUtil.nextInt(r, 10, 50));
     }
     configureRandom(r, tmp);
-    tmp.setReclaimDeletesWeight(r.nextDouble()*4);
+    tmp.setDeletesPctAllowed(20 + random().nextDouble() * 30);
     return tmp;
   }
 
@@ -1266,7 +1266,7 @@ public abstract class LuceneTestCase extends Assert {
           tmp.setSegmentsPerTier(TestUtil.nextInt(r, 10, 50));
         }
         configureRandom(r, tmp);
-        tmp.setReclaimDeletesWeight(r.nextDouble()*4);
+        tmp.setDeletesPctAllowed(20 + random().nextDouble() * 30);
       }
       didChange = true;
     }

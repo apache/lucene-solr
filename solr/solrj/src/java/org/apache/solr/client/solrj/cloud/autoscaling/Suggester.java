@@ -129,6 +129,9 @@ public abstract class Suggester implements MapWriter {
       this.operation = init();
       isInitialized = true;
     }
+    if (operation != null && session.transaction != null && session.transaction.isOpen()) {
+      session.transaction.updateSession(session);
+    }
     return operation;
   }
 
@@ -178,9 +181,15 @@ public abstract class Suggester implements MapWriter {
       for (int i = 0; i < fresh.size(); i++) {
         Violation freshViolation = fresh.get(i);
         Violation oldViolation = null;
-        for (Violation v : old) {
+        for (Violation v : old) {//look for exactly same clause being violated
           if (v.equals(freshViolation)) oldViolation = v;
         }
+        if (oldViolation == null) {//if no match, look for similar violation
+          for (Violation v : old) {
+            if (v.isSimilarViolation(freshViolation)) oldViolation = v;
+          }
+        }
+
         if (oldViolation != null && freshViolation.isLessSerious(oldViolation)) return true;
       }
     }
@@ -188,7 +197,10 @@ public abstract class Suggester implements MapWriter {
   }
 
   boolean containsNewErrors(List<Violation> violations) {
+    boolean isTxOpen = session.transaction != null && session.transaction.isOpen();
     for (Violation v : violations) {
+      //the computed value can change over time. So it's better to evaluate it in the end
+      if (isTxOpen && v.getClause().hasComputedValue) continue;
       int idx = originalViolations.indexOf(v);
       if (idx < 0 /*|| originalViolations.get(idx).isLessSerious(v)*/) return true;
     }
@@ -221,12 +233,12 @@ public abstract class Suggester implements MapWriter {
     }
   }
 
-  List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
-    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, rows);
+  List<Violation> testChangedMatrix(boolean strict, Policy.Session session) {
+    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       if (strict || clause.strict) {
-        List<Violation> errs = clause.test(rows);
+        List<Violation> errs = clause.test(session);
         if (!errs.isEmpty()) {
           errors.addAll(errs);
         }

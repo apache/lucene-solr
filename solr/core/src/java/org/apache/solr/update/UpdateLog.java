@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -1302,6 +1303,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     if (bufferTlog != null) return;
     String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
     bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
+    bufferTlog.isBuffer = true;
   }
 
   // Cleanup old buffer tlogs
@@ -1398,6 +1400,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     HashMap<Long, Update> updates;
     List<Update> deleteByQueryList;
     List<DeleteUpdate> deleteList;
+    Set<Long> bufferUpdates = new HashSet<>();
 
     public RecentUpdates(Deque<TransactionLog> logList) {
       this.logList = logList;
@@ -1416,6 +1419,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     public  List<Long> getVersions(int n){
       return getVersions(n, Long.MAX_VALUE);
+    }
+
+    public Set<Long> getBufferUpdates() {
+      return Collections.unmodifiableSet(bufferUpdates);
     }
 
     public List<Long> getVersions(int n, long maxVersion) {
@@ -1478,6 +1485,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               int opAndFlags = (Integer)entry.get(UpdateLog.FLAGS_IDX);
               int oper = opAndFlags & UpdateLog.OPERATION_MASK;
               long version = (Long) entry.get(UpdateLog.VERSION_IDX);
+
+              if (oldLog.isBuffer) bufferUpdates.add(version);
 
               switch (oper) {
                 case UpdateLog.ADD:

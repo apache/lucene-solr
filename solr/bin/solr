@@ -315,6 +315,8 @@ function print_usage() {
     echo ""
     echo "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\""
     echo ""
+    echo "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh."
+    echo ""
     echo "Pass -help after any COMMAND to see command-specific usage information,"
     echo "  such as:    ./solr start -help or ./solr stop -help"
     echo ""
@@ -325,8 +327,9 @@ function print_usage() {
     echo "  -f            Start Solr in foreground; default starts Solr in the background"
     echo "                  and sends stdout / stderr to solr-PORT-console.log"
     echo ""
-    echo "  -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied, an embedded Zookeeper"
-    echo "                  instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983"
+    echo "  -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in"
+    echo "                  solr.in.sh, an embedded ZooKeeper instance is started on Solr port+1000,"
+    echo "                  such as 9983 if Solr is bound to 8983"
     echo ""
     echo "  -h <host>     Specify the hostname for this Solr instance"
     echo ""
@@ -338,7 +341,8 @@ function print_usage() {
     echo "  -d <dir>      Specify the Solr server directory; defaults to server"
     echo ""
     echo "  -z <zkHost>   Zookeeper connection string; only used when running in SolrCloud mode using -c"
-    echo "                   To launch an embedded Zookeeper instance, don't pass this parameter."
+    echo "                   If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
+    echo "                   an embedded ZooKeeper instance will be launched."
     echo ""
     echo "  -m <memory>   Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
     echo "                  results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
@@ -398,7 +402,8 @@ function print_usage() {
     echo ""
     echo "  -c <collection>  Collection to run healthcheck against."
     echo ""
-    echo "  -z <zkHost>      Zookeeper connection string; default is localhost:9983"
+    echo "  -z <zkHost>      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;" 
+    echo "                     otherwise, default is localhost:9983"
     echo ""
     echo "  -V               Enable more verbose output"
     echo ""
@@ -611,7 +616,7 @@ function print_usage() {
     echo "  -updateIncludeFileOnly <true|false>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
     echo "                                         authentication (i.e. don't update security.json)"
     echo ""
-    echo "  -z zkHost                              Zookeeper connection string"
+    echo "  -z zkHost                              Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.sh."
     echo ""
     echo "  -d <dir>                               Specify the Solr server directory"
     echo ""
@@ -693,7 +698,7 @@ function jetty_port() {
 function run_tool() {
 
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS $SOLR_ZK_CREDS_AND_ACLS -Dsolr.install.dir="$SOLR_TIP" \
-    -Dlog4j.configurationFile="file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j2.xml" \
+    -Dlog4j.configurationFile="file:$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*" \
     org.apache.solr.util.SolrCLI "$@"
 
@@ -1840,7 +1845,7 @@ if [ -z "$SOLR_LOGS_DIR" ]; then
 fi
 EXAMPLE_DIR="$SOLR_TIP/example"
 if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
-  LOG4J_PROPS="$EXAMPLE_DIR/resources/log4j2.xml"
+  LOG4J_PROPS="$DEFAULT_SERVER_DIR/resources/log4j2.xml"
   SOLR_LOGS_DIR="$SOLR_HOME/../logs"
 fi
 
@@ -1990,7 +1995,7 @@ if [ -z "$SOLR_TIMEZONE" ]; then
 fi
 
 # Launches Solr in foreground/background depending on parameters
-function launch_solr() {
+function start_solr() {
 
   run_in_foreground="$1"
   stop_port="$STOP_PORT"
@@ -2160,6 +2165,6 @@ function launch_solr() {
   fi
 }
 
-launch_solr "$FG" "$ADDITIONAL_CMD_OPTS" "$ADDITIONAL_JETTY_CONFIG"
+start_solr "$FG" "$ADDITIONAL_CMD_OPTS" "$ADDITIONAL_JETTY_CONFIG"
 
 exit $?

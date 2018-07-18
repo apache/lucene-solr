@@ -30,7 +30,6 @@ import org.apache.lucene.search.SortField;
 public class SearchWithSortTask extends ReadTask {
 
   private boolean doScore = true;
-  private boolean doMaxScore = true;
   private Sort sort;
 
   public SearchWithSortTask(PerfRunData runData) {
@@ -63,9 +62,6 @@ public class SearchWithSortTask extends ReadTask {
         sortField0 = SortField.FIELD_SCORE;
       } else if (field.equals("noscore")) {
         doScore = false;
-        continue;
-      } else if (field.equals("nomaxscore")) {
-        doMaxScore = false;
         continue;
       } else {
         int index = field.lastIndexOf(":");
@@ -123,11 +119,6 @@ public class SearchWithSortTask extends ReadTask {
   @Override
   public boolean withScore() {
     return doScore;
-  }
-
-  @Override
-  public boolean withMaxScore() {
-    return doMaxScore;
   }
   
   @Override

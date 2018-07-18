@@ -91,8 +91,8 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         command.add("matches", queryCommandResult.getMatches());
         SolrDocumentList docList = new SolrDocumentList();
         docList.setNumFound(queryCommandResult.getTopDocs().totalHits);
-        if (!Float.isNaN(queryCommandResult.getTopDocs().getMaxScore())) {
-          docList.setMaxScore(queryCommandResult.getTopDocs().getMaxScore());
+        if (!Float.isNaN(queryCommandResult.getMaxScore())) {
+          docList.setMaxScore(queryCommandResult.getMaxScore());
         }
         docList.setStart(rb.getGroupingSpec().getWithinGroupOffset());
         for (ScoreDoc scoreDoc :queryCommandResult.getTopDocs().scoreDocs){

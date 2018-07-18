@@ -132,7 +132,7 @@ public class Overseer implements SolrCloseable {
         isLeader = amILeader();  // not a no, not a yes, try ask again
       }
 
-      log.debug("Starting to work on the main queue");
+      log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
       try {
         ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
@@ -302,12 +302,12 @@ public class Overseer implements SolrCloseable {
         return;//shutting down no need to go further
       }
       org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
-      String path = OVERSEER_ELECT + "/leader";
+      final String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
         data = zkClient.getData(path, null, stat, true);
       } catch (Exception e) {
-        log.error("could not read the data" ,e);
+        log.error("could not read the "+path+" data" ,e);
         return;
       }
       try {
@@ -315,16 +315,17 @@ public class Overseer implements SolrCloseable {
         String id = (String) m.get(ID);
         if(overseerCollectionConfigSetProcessor.getId().equals(id)){
           try {
-            log.warn("I'm exiting, but I'm still the leader");
+            log.warn("I (id={}) am exiting, but I'm still the leader",
+                overseerCollectionConfigSetProcessor.getId());
             zkClient.delete(path,stat.getVersion(),true);
           } catch (KeeperException.BadVersionException e) {
             //no problem ignore it some other Overseer has already taken over
           } catch (Exception e) {
-            log.error("Could not delete my leader node ", e);
+            log.error("Could not delete my leader node "+path, e);
           }
 
         } else{
-          log.debug("somebody else has already taken up the overseer position");
+          log.info("somebody else (id={}) has already taken up the overseer position", id);
         }
       } finally {
         //if I am not shutting down, Then I need to rejoin election
@@ -413,10 +414,12 @@ public class Overseer implements SolrCloseable {
     private LeaderStatus amILeader() {
       Timer.Context timerContext = stats.time("am_i_leader");
       boolean success = true;
+      String propsId = null;
       try {
         ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
             OVERSEER_ELECT + "/leader", null, null, true));
-        if (myId.equals(props.getStr(ID))) {
+        propsId = props.getStr(ID);
+        if (myId.equals(propsId)) {
           return LeaderStatus.YES;
         }
       } catch (KeeperException e) {
@@ -426,6 +429,8 @@ public class Overseer implements SolrCloseable {
           return LeaderStatus.DONT_KNOW;
         } else if (e.code() != KeeperException.Code.SESSIONEXPIRED) {
           log.warn("", e);
+        } else {
+          log.debug("", e);
         }
       } catch (InterruptedException e) {
         success = false;
@@ -438,7 +443,7 @@ public class Overseer implements SolrCloseable {
           stats.error("am_i_leader");
         }
       }
-      log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
+      log.info("According to ZK I (id={}) am no longer a leader. propsId={}", myId, propsId);
       return LeaderStatus.NO;
     }
 
@@ -544,7 +549,9 @@ public class Overseer implements SolrCloseable {
     updaterThread.start();
     ccThread.start();
     triggerThread.start();
-    assert ObjectReleaseTracker.track(this);
+    if (this.id != null) {
+      assert ObjectReleaseTracker.track(this);
+    }
   }
 
   public Stats getStats() {
@@ -584,11 +591,15 @@ public class Overseer implements SolrCloseable {
   
   public synchronized void close() {
     if (closed) return;
-    log.info("Overseer (id=" + id + ") closing");
+    if (this.id != null) {
+      log.info("Overseer (id=" + id + ") closing");
+    }
     
     doClose();
     this.closed = true;
-    assert ObjectReleaseTracker.release(this);
+    if (this.id != null) {
+      assert ObjectReleaseTracker.release(this);
+    }
   }
 
   @Override

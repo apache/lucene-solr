@@ -26,7 +26,6 @@
   <fieldType name="text" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
     </analyzer>
   </fieldType>
 

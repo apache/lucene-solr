@@ -76,7 +76,7 @@ import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAut
 @TimeoutSuite(millis = 4 * 3600 * 1000)
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @ThreadLeakLingering(linger = 20000) // ComputePlanAction may take significant time to complete
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12075")
+//05-Jul-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12075")
 public class TestLargeCluster extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -155,6 +155,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testBasic() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
@@ -265,6 +266,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void testAddNode() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
@@ -371,6 +373,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testNodeLost() throws Exception {
     doTestNodeLost(waitForSeconds, 5000, 0);
   }
@@ -584,7 +587,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
-  //@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String collectionName = "testSearchRate";

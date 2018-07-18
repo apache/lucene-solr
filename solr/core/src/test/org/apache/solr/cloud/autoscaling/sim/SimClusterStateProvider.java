@@ -969,7 +969,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
     opDelay(collectionName, CollectionParams.CollectionAction.SPLITSHARD.name());
 
-    SplitShardCmd.fillRanges(cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames);
+    SplitShardCmd.fillRanges(cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames, true);
     // add replicas for new subShards
     int repFactor = parentSlice.getReplicas().size();
     List<ReplicaPosition> replicaPositions = Assign.identifyNodes(cloudManager,

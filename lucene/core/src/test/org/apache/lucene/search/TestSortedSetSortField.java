@@ -37,13 +37,13 @@ public class TestSortedSetSortField extends LuceneTestCase {
   
     Sort sort = new Sort();
     sort.setSort(new SortedSetSortField("sortedset", false));
-    TopDocs td = empty.search(query, 10, sort, true, true);
+    TopDocs td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits);
     
     // for an empty index, any selector should work
     for (SortedSetSelector.Type v : SortedSetSelector.Type.values()) {
       sort.setSort(new SortedSetSortField("sortedset", false, v));
-      td = empty.search(query, 10, sort, true, true);
+      td = empty.search(query, 10, sort, true);
       assertEquals(0, td.totalHits);
     }
   }

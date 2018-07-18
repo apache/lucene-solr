@@ -375,10 +375,13 @@ When using this field type, you will likely _not_ want to mark the field as stor
 
 The RPT field supports generating a 2D grid of facet counts for documents having spatial data in each grid cell. For high-detail grids, this can be used to plot points, and for lesser detail it can be used for heatmap generation. The grid cells are determined at index-time based on RPT's configuration. At facet counting time, the indexed cells in the region of interest are traversed and a grid of counters corresponding to each cell are incremented. Solr can return the data in a straight-forward 2D array of integers or in a PNG which compresses better for larger data sets but must be decoded.
 
-The heatmap feature is accessed from Solr's faceting feature. As a part of faceting, it supports the `key` local parameter as well as excluding tagged filter queries, just like other types of faceting do. This allows multiple heatmaps to be returned on the same field with different filters.
+The heatmap feature is accessible both from Solr's standard faceting feature, plus the newer more flexible <<json-facet-api.adoc#heatmap-facet,JSON Facet API>>.
+We'll proceed now with standard faceting.
+As a part of faceting, it supports the `key` local parameter as well as excluding tagged filter queries, just like other types of faceting do.
+This allows multiple heatmaps to be returned on the same field with different filters.
 
 `facet`::
-Set to `true` to enable faceting.
+Set to `true` to enable standard faceting.
 
 `facet.heatmap`::
 The field name of type RPT.

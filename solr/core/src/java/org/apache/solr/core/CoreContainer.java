@@ -1806,6 +1806,22 @@ public class CoreContainer {
     return false;
   }
 
+  public void checkTragicException(SolrCore solrCore) {
+    Throwable tragicException = null;
+    try {
+      tragicException = solrCore.getSolrCoreState().getTragicException();
+    } catch (IOException e) {
+      // failed to open an indexWriter
+      tragicException = e;
+    }
+
+    if (tragicException != null) {
+      if (isZooKeeperAware()) {
+        getZkController().giveupLeadership(solrCore.getCoreDescriptor(), tragicException);
+      }
+    }
+  }
+
 }
 
 class CloserThread extends Thread {

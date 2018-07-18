@@ -25,9 +25,8 @@ Versions of Major Components
 Apache Tika 1.17
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
-Jetty 9.4.10.v20180503
+Jetty 9.4.11.v20180605
 
 Upgrade Notes
 ----------------------
@@ -54,15 +53,25 @@ Versions of Major Components
 Apache Tika 1.17
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.11
-Jetty 9.4.10.v20180503
+Jetty 9.4.11.v20180605
 
 Upgrade Notes
 ----------------------
 
 * The data-driven schema no longer returns the *_str field-copy of text fields by default. The *_str field is still 
-  created and can be used for e.g. sorting, but to retrieve it you now need to explicitly list it in "fl" (SOLR-12350) 
+  created and can be used for e.g. sorting, but to retrieve it you now need to explicitly list it in "fl" (SOLR-12350)
+
+* LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
+  findForcedMerges (optimize) and findForcedDeletesMerges (expungeDeletes) (Erick Erickson)
+
+* SOLR-12395: SignificantTermsQParserPlugin's name is now 'significantTerms' and its old name 'sigificantTerms' is deprecated.
+
+* SOLR-11694: Extremely outdated UIMA contrib module has been removed (Alexandre Rafalovitch)
+
+* SOLR-12008: The configuration file for log4j2.xml is now in ../server/resources/log4j2.xml. All other copies have been removed.
+  WINDOWS USERS: This JIRA corrects a bug in the start scripts that put example logs under ...\server, solr.log is
+  now under ...\example. (Erick Erickson)
 
 New Features
 ----------------------
@@ -74,10 +83,76 @@ New Features
 
 * SOLR-12474: Add an UpdateRequest Object that implements RequestWriter.ContentWriter (noble)
 
+* SOLR-12362: Uploading docs in JSON now supports child documents as field values, thus providing a label to the
+  relationship instead of the current "anonymous" relationship.  Use of this experimental feature requires
+  anonChildDocs=false parameter.  (Moshe Bla, David Smiley)
+
+* SOLR-11578: Solr 7 Admin UI (Cloud > Graph) should reflect the Replica type to give a more accurate representation
+  of the cluster. (Rhoit Singh via Erick Erickson)
+
+* SOLR-12507: Modify collection API should support un-setting properties. (shalin)
+
+* SOLR-12506: Add SolrJ support for the modify collection API. (shalin)
+
+* SOLR-12398: The JSON Facet API now supports type=heatmap facets, just as classic faceting does. (David Smiley)
+
+* SOLR-11985: Support percentage values in replica attribute in autoscaling policy (noble)
+
+* SOLR-12511: Support non integer values for replica in autoscaling policy (noble)
+
+* SOLR-12517: Support range values for replica in autoscaling policy (noble)
+
+* SOLR-12530: Ability to disable configset upload via -Dconfigset.upload.enabled=false startup parameter
+  (Ishan Chattopadhyaya)
+
+* SOLR-12495: An #EQUAL function for replica in autoscaling policy to equally distribute replicas (noble)
+
+* SOLR-12441: New NestedUpdateProcessorFactory (URP) to populate special fields _nest_parent_ and _nest_path_ of nested
+  (child) documents.  It will generate a uniqueKey of nested docs if they were blank too. (Moshe Bla, David Smiley)
+
+* SOLR-11986: Allow percentage in freedisk attribute in autoscaling policy rules (noble)
+
+* SOLR-12522: Support a runtime function `#ALL` for 'replica' in autoscaling policies (noble)
+
 Bug Fixes
 ----------------------
 
 * SOLR-12449: Response /autoscaling/diagnostics shows improper json (noble)
+
+* SOLR-11676: Keep nrtReplicas and replicationFactor in sync while creating a collection and modifying a collection
+  (Varun Thacker)
+
+* SOLR-12489: User specified replicationFactor and maxShardsPerNode is used when specified during a restore operation.
+  A user can now specify nrtReplicas/tlogReplicas/pullReplicas while restoring the collection.
+  Specifying replicationFactor or nrtReplicas have the same effect and only one can be specified (Varun Thacker)
+
+* SOLR-11216: Race condition in PeerSync (Cao Manh Dat)
+
+* SOLR-11807: Restoring collection now treats maxShardsPerNode=-1 as unlimited (Varun Thacker)
+
+* SOLR-12413: If Zookeeper was pre-loaded with data before first-use, then the aliases information would be ignored.
+  (David Smiley, Gaël Jourdan, Gus Heck)
+
+* SOLR-12482: Config API returns status 0 for failed operations. (Steve Rowe)
+
+* SOLR-12513: Reproducing TestCodecSupport.testMixedCompressionMode failure (Erick Erickson)
+
+* SOLR-11665: Improve error handling of shard splitting. Fix splitting of mixed replica types. (ab)
+
+* SOLR-12326: JSON Facet API: terms facet shard requests now indicate if they have more buckets to prevent
+  unnecessary refinement requests. (yonk)
+
+* SOLR-12427: Improve error message for invalid 'start', 'rows' parameters. (Munendra S N via Jason Gerlowski)
+
+* SOLR-12395: Make 'significantTerms' the SignificantTermsQParserPlugin's name and deprecate its old 'sigificantTerms' name.
+  (Tobias Kässmann, Christine Poerschke)
+
+* SOLR-12533 Collection collection fails if metrics are called during core creation (Peter Cseh, Mano Kovacs)
+
+* SOLR-2834: Fix SolrJ Field and Document analyzes for types that include CharacterFilter (Alexandre Rafalovitch)
+
+* SOLR-12516: Fix some bugs in 'type:range' Facet refinement when sub-facets are combined with non
+  default values for the 'other' and 'include' options. (hossman)
 
 Optimizations
 ----------------------
@@ -85,6 +160,9 @@ Optimizations
 * SOLR-12350: Do not use docValues as stored for _str (copy)fields in _default configset (janhoy)
 
 * SOLR-12455: Refactor JSON serialization code into SolrJ package (noble)
+
+* SOLR-11654: Time Routed Alias will now route documents to the ideal shard of a collection, thus avoiding a hop.
+  Usually documents were already routed well but not always.  (Gus Heck, David Smiley)
 
 Other Changes
 ----------------------
@@ -96,6 +174,18 @@ Other Changes
   AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
 
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
+
+* SOLR-12468: Upgrade Jetty to 9.4.11.v20180605 (Michael Braun, shalin)
+
+* SOLR-12527: factor out a test-framework/ConfigRequest class (Christine Poerschke)
+
+* SOLR-12412: Leader should give up leadership when IndexWriter.tragedy occur (Cao Manh Dat, Tomas Fernandez-Lobbe)
+
+* SOLR-12551: Upgrade to Tika 1.18 (Tim Allison via Erick Erickson)
+
+* SOLR-12464: Reduce Overseer.close() logging (for non-Overseer leaders) (Christine Poerschke)
+
+* SOLR-12454: Tweak Overseer leadership transition related logging for easier troubleshooting. (Christine Poerschke)
 
 ==================  7.4.0 ==================
 
@@ -169,7 +259,7 @@ New Features
 * SOLR-8998: introducing uniqueBlock(_root_) aggregation as faster alternative to unique(_root_) for counting
   child value facets in parents via json.facet on block index (Dr Oleg Savrasov, Mikhail Khludnev)
 
-* SOLR-11278: Add IgnoreLargeDocumentProcessFactory (Cao Manh Dat, David Smiley)
+* SOLR-12278: Add IgnoreLargeDocumentProcessFactory (Cao Manh Dat, David Smiley)
 
 * SOLR-11277: Add auto hard-commit settings based on tlog size (Rupa Shankar, Anshum Gupta)
 
@@ -369,6 +459,12 @@ Bug Fixes
   but 'bin/solr create' tells users to use the default action 'set-property', which fails
   because the property is not editable. (Steve Rowe)
 
+* SOLR-12416: When creating a time routed alias, the router.autoDeleteAge option wasn't considered.
+  (Joachim Sauer via David Smiley)
+
+* SOLR-12450: Don't allow referal to external resources in various config files (CVE-2018-8026).
+  (Yuyang Xiao, Uwe Schindler)
+
 Optimizations
 ----------------------
 
@@ -477,6 +573,13 @@ Other Changes
   RefCounted API.  (David Smiley)
 
 * SOLR-12183: Refactor Streaming Expression test cases (Joel Bernstein)
+
+* SOLR-12437: Document 'bin/solr config' in the ref guide. (Steve Rowe)
+
+* SOLR-12435: Fix bin/solr help and ref guide text to describe ZK_HOST in solr.in.sh/solr.in.cmd
+  as an alternative to -z cmdline param. (Steve Rowe)
+
+* SOLR-12428: Solr LTR jar now included in _default configset's solrconfig.xml (Ishan Chattopadhyaya)
 
 ==================  7.3.1 ==================
 
@@ -2233,6 +2336,31 @@ Other Changes
   (Uwe Schindler)
 
 * SOLR-11324: Clean up mention of trie fields in documentation and source comments. (Steve Rowe)
+
+==================  6.6.5 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+New Features
+----------------------
+
+* SOLR-12530: Ability to disable configset upload via -Dconfigset.upload.enabled=false startup parameter
+  (Ishan Chattopadhyaya)
+
+Bug Fixes
+----------------------
+
+* SOLR-12450: Don't allow referal to external resources in various config files (CVE-2018-8026).
+  (Yuyang Xiao, Uwe Schindler)
 
 ==================  6.6.4 ==================
 

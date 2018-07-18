@@ -158,7 +158,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     //they should all have the exact same score, because they all contain seventy once, and we set
     //all the other similarity factors to be 1
 
-    assertTrue(hits.getMaxScore() + " does not equal: " + 1, hits.getMaxScore() == 1);
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       ScoreDoc doc = hits.scoreDocs[i];
       assertTrue(doc.score + " does not equal: " + 1, doc.score == 1);
@@ -200,7 +199,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     //all the other similarity factors to be 1
 
     //System.out.println("Hash: " + seventyHash + " Twice Hash: " + 2*seventyHash);
-    assertTrue(hits.getMaxScore() + " does not equal: " + 4.0, hits.getMaxScore() == 4.0);
     //there should be exactly 10 items that score a 4, all the rest should score a 2
     //The 10 items are: 70 + i*100 where i in [0-9]
     int numTens = 0;
