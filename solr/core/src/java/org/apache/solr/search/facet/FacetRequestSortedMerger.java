@@ -35,7 +35,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
   List<FacetBucket> sortedBuckets;
   BitSet shardHasMoreBuckets;  // null, or "true" if we saw a result from this shard and it indicated that there are more results
-
+  Context mcontext;  // HACK: this should be passed in getMergedResult as well!
 
   public FacetRequestSortedMerger(FacetRequestT freq) {
     super(freq);
@@ -43,6 +43,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
   @Override
   public void merge(Object facetResult, Context mcontext) {
+    this.mcontext = mcontext;
     SimpleOrderedMap res = (SimpleOrderedMap)facetResult;
     Boolean more = (Boolean)res.get("more");
     if (more != null && more) {
@@ -155,6 +156,16 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     }
   }
 
+  boolean isBucketComplete(FacetBucket bucket, Context mcontext) {
+    if (mcontext.numShards <= 1 || shardHasMoreBuckets==null) return true;
+    for (int shard=0; shard < mcontext.numShards; shard++) {
+      // bucket is incomplete if we didn't see the bucket for this shard, and the shard has more buckets
+      if (!mcontext.getShardFlag(bucket.bucketNumber, shard) && shardHasMoreBuckets!=null && shardHasMoreBuckets.get(shard)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   @Override
   public Map<String, Object> getRefinement(Context mcontext) {
@@ -188,13 +199,45 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       return null;
     }
 
+    long numBucketsToCheck = Integer.MAX_VALUE; // use max-int instead of max-long to avoid overflow
+    if (freq.limit >= 0) {
+      numBucketsToCheck = freq.offset + freq.limit; // effective limit
+      if (-1 == freq.overrefine) { // DEFAULT: use heuristic for overrefinement
 
-    int num = freq.limit < 0 ? Integer.MAX_VALUE : (int)(freq.offset + freq.limit);
-    int numBucketsToCheck = Math.min(buckets.size(), num);
+        // when we don't have to worry about mincount pruning, there is no need for any
+        // over refinement for these sorts..
+        if (freq.mincount <= 1 && ("index".equals(freq.sortVariable)
+                                   || ("count".equals(freq.sortVariable)
+                                       && FacetRequest.SortDirection.desc == freq.sortDirection))) {
+          // No-Op
+        } else if (0 <= freq.overrequest) {
+          // if user asked for an explicit amount of overrequesting,
+          // (but did not provide an explicit amount of overrefinement)
+          // then use the same amount for overrefinement
+          numBucketsToCheck += freq.overrequest;
+        } else {
+          // default: add 10% plus 4 
+          numBucketsToCheck = (long) (numBucketsToCheck * 1.1 +4); 
+        }
+
+        // TODO: should we scale our 'overrefine' (heuristic) value based on 'mincount' ?
+        //
+        // If mincount=M > 1 should we be doing something like numBucketsToCheck *= M ?
+        // Perhaps that would make more sense in the 'overrequest' heuristic calc?
+        //
+        // Maybe we should look at how many buckets were fully populated in phase#1 AND
+        // already meet the 'mincount', and use the the difference between that number
+        // and 'limit' to decide a scaling factor for 'overrefine' ?
+        
+      } else { // user requested an explicit amount of overrefinement
+        numBucketsToCheck += freq.overrefine;
+      }
+    }
+    numBucketsToCheck = Math.min(buckets.size(), numBucketsToCheck);
 
     Collection<FacetBucket> bucketList;
-    if (buckets.size() < num) {
-      // no need to sort
+    if (buckets.size() < numBucketsToCheck) {
+      // no need to sort (yet)
       // todo: but we may need to filter.... simplify by always sorting?
       bucketList = buckets.values();
     } else {
