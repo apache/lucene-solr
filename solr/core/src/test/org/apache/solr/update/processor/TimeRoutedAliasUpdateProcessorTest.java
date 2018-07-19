@@ -18,6 +18,7 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -54,6 +55,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -68,15 +70,18 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final String configName = "timeConfig";
-  static final String alias = "myalias";
-  static final String timeField = "timestamp_dt";
-  static final String intField = "integer_i";
+  private static final String configName = "timeConfig";
+  private static final String alias = "myalias";
+  private static final String timeField = "timestamp_dt";
+  private static final String intField = "integer_i";
 
-  static SolrClient solrClient;
+  private static SolrClient solrClient;
 
   private int lastDocId = 0;
   private int numDocsDeletedOrFailed = 0;
@@ -87,7 +92,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   }
 
   @Before
-  public void doBefore() throws Exception {
+  public void doBefore() {
     solrClient = getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
     System.out.println("SolrClient: " + solrClient);
@@ -322,6 +327,59 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testPreemptiveCreation() throws Exception {
+    String configName = TimeRoutedAliasUpdateProcessorTest.configName + getTestName();
+    createConfigSet(configName);
+
+    final int numShards = 1 ;
+    final int numReplicas = 1 ;
+    CollectionAdminRequest.createTimeRoutedAlias(alias, "2017-10-23T00:00:00Z", "+1DAY", timeField,
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
+            .setMaxShardsPerNode(numReplicas)).setPreemptiveCreateWindow("3HOUR")
+        .process(solrClient);
+
+    // cause some collections to be created
+    assertUpdateResponse(solrClient.add(alias, new SolrInputDocument("id","1","timestamp_dt", "2017-10-25T00:00:00Z")));
+    assertUpdateResponse(solrClient.commit(alias));
+
+    // wait for all the collections to exist...
+    waitCol("2017-10-23", numShards);
+    waitCol("2017-10-24", numShards);
+    waitCol("2017-10-25", numShards);
+
+    // cause some collections to be created
+
+    ModifiableSolrParams params = params();
+    assertUpdateResponse(add(alias, Arrays.asList(
+        sdoc("id", "2", "timestamp_dt", "2017-10-24T00:00:00Z"),
+        sdoc("id", "3", "timestamp_dt", "2017-10-25T00:00:00Z"),
+        sdoc("id", "4", "timestamp_dt", "2017-10-23T00:00:00Z"),
+        sdoc("id", "5", "timestamp_dt", "2017-10-25T23:00:00Z")), // should cause preemptive creation
+        params));
+
+    // given the long sleep below (without which the alias isn't available and we fail, make a request in the meantime
+    // targeting the new collection to ensure things don't blow up if docs come in while creation is in progress.
+    assertUpdateResponse(add(alias, Arrays.asList(
+        sdoc("id", "6", "timestamp_dt", "2017-10-25T23:01:00Z")), // should cause preemptive creation
+        params));
+    assertUpdateResponse(solrClient.commit(alias));
+
+    waitCol("2017-10-26", numShards); // this seems to only wait for the collection to exist, but
+                                              // not for the replicas to be created and the alias updated
+
+    // yuck, but collection creation seems to take 3sec on my machine doubling for slow, test loaded machines.
+    Thread.sleep(6000);
+
+    final List<String> cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertEquals(4,cols.size());
+
+    final QueryResponse resp = solrClient.query(alias, params(
+        "q", "*:*",
+        "rows", "10"));
+    assertEquals(6, resp.getResults().getNumFound());
+  }
+
   private Set<String> getLeaderCoreNames(ClusterState clusterState) {
     Set<String> leaders = new TreeSet<>(); // sorted just to make it easier to read when debugging...
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
@@ -344,7 +402,15 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   private void waitCol(final String datePart, int slices) {
     waitForState("waiting for collections to be created",alias + "_" + datePart,
-        (liveNodes, collectionState) -> collectionState.getActiveSlices().size() == slices);
+        (liveNodes, collectionState) -> {
+          if (collectionState == null) {
+            // per predicate javadoc, this is what we get if the collection doesn't exist at all.
+            return false;
+          }
+          Collection<Slice> activeSlices = collectionState.getActiveSlices();
+          int size = activeSlices.size();
+          return size == slices;
+        });
   }
 
   private void testFailedDocument(Instant timestamp, String errorMsg) throws SolrServerException, IOException {
@@ -482,6 +548,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   }
 
   /** Adds the docs to Solr via {@link #solrClient} with the params */
+  @SuppressWarnings("SameParameterValue")
   private static UpdateResponse add(String collection, Collection<SolrInputDocument> docs, SolrParams params) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     if (params != null) {
