@@ -160,16 +160,27 @@ json.facet={
 
 // TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
 
-[width="100%",cols="10%,90%",options="header",]
+[width="100%",cols="20%,90%",options="header",]
 |===
 |Parameter |Description
 |field |The field name to facet over.
 |offset |Used for paging, this skips the first N buckets. Defaults to 0.
 |limit |Limits the number of buckets returned. Defaults to 10.
-|refine |If true, turns on distributed facet refining. This uses a second phase to retrieve selected stats from shards so that every shard contributes to every returned bucket in this facet and any sub-facets.  This makes stats for returned buckets exact.
-|overrequest |Number of buckets beyond the limit to request internally during distributed search. -1 means default.
-|mincount |Only return buckets with a count of at least this number. Defaults to 1.
 |sort |Specifies how to sort the buckets produced. “count” specifies document count, “index” sorts by the index (natural) order of the bucket value. One can also sort by any <<json-facet-api.adoc#aggregation-functions,facet function / statistic>> that occurs in the bucket. The default is “count desc”. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
+|overrequest a|
+Number of buckets beyond the `limit` to internally request from shards during a distributed search.
+
+Larger values can increase the accuracy of the final "Top Terms" returned when the individual shards have very diff top terms.
+
+The default of `-1` causes a hueristic to be applied based on the other options specified.
+|refine |If `true`, turns on distributed facet refining. This uses a second phase to retrieve any buckets needed for the final result from shards that did not include those buckets in their initial internal results, so that every shard contributes to every returned bucket in this facet and any sub-facets.  This makes counts & stats for returned buckets exact.
+|overrefine a|
+Number of buckets beyond the `limit` to consider internally during a distributed search when determining which buckets to refine.
+
+Larger values can increase the accuracy of the final "Top Terms" returned when the individual shards have very diff top terms, and the current `sort` option can result in refinement pushing terms lower down the sorted list (ex: `sort:"count asc"`)
+
+The default of `-1` causes a hueristic to be applied based on other options specified.
+|mincount |Only return buckets with a count of at least this number. Defaults to 1.
 |missing |A boolean that specifies if a special “missing” bucket should be returned that is defined by documents without a value in the field. Defaults to false.
 |numBuckets |A boolean. If true, adds “numBuckets” to the response, an integer representing the number of buckets for the facet (as opposed to the number of buckets returned). Defaults to false.
 |allBuckets |A boolean. If true, adds an “allBuckets” bucket to the response, representing the union of all of the buckets. For multi-valued fields, this is different than a bucket for all of the documents in the domain since a single document can belong to multiple buckets. Defaults to false.

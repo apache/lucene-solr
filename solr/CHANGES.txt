@@ -126,6 +126,9 @@ Bug Fixes
 * SOLR-12516: Fix some bugs in 'type:range' Facet refinement when sub-facets are combined with non
   default values for the 'other' and 'include' options. (hossman)
 
+* SOLR-12343: Fixed a bug in JSON Faceting that could cause incorrect counts/stats when using non default
+  sort options.  This also adds a new configurable "overrefine" option. (Yonik Seeley, hossman)
+
 Optimizations
 ----------------------
 
