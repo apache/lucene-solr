@@ -650,7 +650,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     init();
     synchronized(this) {
-      if (createdFiles.contains(name) && !name.equals("segments.gen")) {
+      if (createdFiles.contains(name)) {
         throw new IOException("file \"" + name + "\" was already written to");
       }
     }
@@ -750,9 +750,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw randomState.nextBoolean() ? new FileNotFoundException(name + " in dir=" + in) : new NoSuchFileException(name + " in dir=" + in);
     }
 
-    // cannot open a file for input if it's still open for
-    // output, except for segments.gen and segments_N
-    if (!allowReadingFilesStillOpenForWrite && openFilesForWrite.contains(name) && !name.startsWith("segments")) {
+    // cannot open a file for input if it's still open for output.
+    if (!allowReadingFilesStillOpenForWrite && openFilesForWrite.contains(name)) {
       throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 

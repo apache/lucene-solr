@@ -456,11 +456,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
               } catch (FileNotFoundException | NoSuchFileException e) {
                 // ignore
               } catch (IOException e) {
-                if (e.getMessage() != null && e.getMessage().contains("still open for writing")) {
-                  // ignore
-                } else {
-                  throw new RuntimeException(e);
-                }
+                throw new RuntimeException(e);
               }
               if (random().nextBoolean()) {
                 break;
