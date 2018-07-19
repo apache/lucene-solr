@@ -48,6 +48,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
+import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * Finds all previously indexed shapes that intersect the specified bounding box.
@@ -85,6 +86,33 @@ class LatLonShapeBoundingBoxQuery extends Query {
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
+      private boolean edgeIntersectsQuery(double ax, double ay, double bx, double by) {
+        // top
+        if (orient(ax, ay, bx, by, minX, maxY) * orient(ax, ay, bx, by, maxX, maxY) <= 0 &&
+            orient(minX, maxY, maxX, maxY, ax, ay) * orient(minX, maxY, maxX, maxY, bx, by) <= 0) {
+          return true;
+        }
+
+        // right
+        if (orient(ax, ay, bx, by, maxX, maxY) * orient(ax, ay, bx, by, maxX, minY) <= 0 &&
+            orient(maxX, maxY, maxX, minY, ax, ay) * orient(maxX, maxY, maxX, minY, bx, by) <= 0) {
+          return true;
+        }
+
+        // bottom
+        if (orient(ax, ay, bx, by, maxX, minY) * orient(ax, ay, bx, by, minX, minY) <= 0 &&
+            orient(maxX, minY, minX, minY, ax, ay) * orient(maxX, minY, minX, minY, bx, by) <= 0) {
+          return true;
+        }
+
+        // left
+        if (orient(ax, ay, bx, by, minX, minY) * orient(ax, ay, bx, by, minX, maxY) <= 0 &&
+            orient(minX, minY, minX, maxY, ax, ay) * orient(minX, minY, minX, maxY, bx, by) <= 0) {
+          return true;
+        }
+        return false;
+      }
+
       private boolean queryContains(byte[] t, int point) {
         final int yIdx = 2 * LatLonPoint.BYTES * point;
         final int xIdx = yIdx + LatLonPoint.BYTES;
@@ -99,31 +127,10 @@ class LatLonShapeBoundingBoxQuery extends Query {
       }
 
       private boolean queryIntersects(int ax, int ay, int bx, int by, int cx, int cy) {
-        // top
-        if (Tessellator.linesIntersect(minX, maxY, maxX, maxY, ax, ay, bx, by) ||
-            Tessellator.linesIntersect(minX, maxY, maxX, maxY, bx, by, cx, cy) ||
-            Tessellator.linesIntersect(minX, maxY, maxX, maxY, cx, cy, ax, ay)) {
-          return true;
-        }
-
-        // bottom
-        if (Tessellator.linesIntersect(minX, minY, maxX, minY, ax, ay, bx, by) ||
-            Tessellator.linesIntersect(minX, minY, maxX, minY, bx, by, cx, cy) ||
-            Tessellator.linesIntersect(minX, minY, maxX, minY, cx, cy, ax, ay)) {
-          return true;
-        }
-
-        // left
-        if (Tessellator.linesIntersect(minX, minY, minX, maxY, ax, ay, bx, by) ||
-            Tessellator.linesIntersect(minX, minY, minX, maxY, bx, by, cx, cy) ||
-            Tessellator.linesIntersect(minX, minY, minX, maxY, cx, cy, ax, ay)) {
-          return true;
-        }
-
-        // right
-        if (Tessellator.linesIntersect(maxX, minY, maxX, maxY, ax, ay, bx, by) ||
-            Tessellator.linesIntersect(maxX, minY, maxX, maxY, bx, by, cx, cy) ||
-            Tessellator.linesIntersect(maxX, minY, maxX, maxY, cx, cy, ax, ay)) {
+        // check each edge of the triangle against the query
+        if (edgeIntersectsQuery(ax, ay, bx, by) ||
+            edgeIntersectsQuery(bx, by, cx, cy) ||
+            edgeIntersectsQuery(cx, cy, ax, ay)) {
           return true;
         }
         return false;

@@ -44,7 +44,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -54,7 +53,6 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 
 /** base Test case for {@link LatLonShape} indexing and search */
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8399")
 public class TestLatLonShapeQueries extends LuceneTestCase {
   protected static final String FIELD_NAME = "shape";
 
