@@ -17,6 +17,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -117,6 +119,7 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String start = message.getStr(TimeRoutedAlias.ROUTER_START);
     Instant startTime = parseStart(start, timeRoutedAlias.getTimeZone());
+    checkPreemptiveCreateWindow(timeRoutedAlias.getPreemptiveCreateWindow());
 
     String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, startTime);
 
@@ -134,6 +137,16 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
     Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
     checkMilis(start);
     return start;
+  }
+
+  private void checkPreemptiveCreateWindow(String str) {
+    if (StringUtils.isNotBlank(str)) {
+      try {
+        new DateMathParser().parseMath( "-" + str);
+      } catch (ParseException e) {
+        throw new SolrException(BAD_REQUEST, "Invalid date math for preemptiveCreateWindow:" + str);
+      }
+    }
   }
 
   private void checkMilis(Instant date) {

@@ -1482,6 +1482,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public static final String ROUTER_START = "router.start";
     public static final String ROUTER_INTERVAL = "router.interval";
     public static final String ROUTER_MAX_FUTURE = "router.maxFutureMs";
+    public static final String ROUTER_PREEMPTIVE_CREATE_WINDOW = "router.preemptiveCreateWindow";
 
     private final String aliasName;
     private final String routerField;
@@ -1490,6 +1491,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     //Optional:
     private TimeZone tz;
     private Integer maxFutureMs;
+    private String preemptiveCreateWindow;
 
     private final Create createCollTemplate;
 
@@ -1514,6 +1516,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public CreateTimeRoutedAlias setPreemptiveCreateWindow(String preemptiveCreateWindow) {
+      this.preemptiveCreateWindow = preemptiveCreateWindow;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1527,6 +1534,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (maxFutureMs != null) {
         params.add(ROUTER_MAX_FUTURE, ""+maxFutureMs);
+      }
+      if (preemptiveCreateWindow != null) {
+        params.add(ROUTER_PREEMPTIVE_CREATE_WINDOW, preemptiveCreateWindow);
       }
 
       // merge the above with collectionParams.  Above takes precedence.
