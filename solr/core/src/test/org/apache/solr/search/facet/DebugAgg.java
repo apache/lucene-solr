@@ -38,7 +38,14 @@ public class DebugAgg extends AggValueSource {
     @Override
     public ValueSource parse(FunctionQParser fp) throws SyntaxError {
       parses.incrementAndGet();
-      return new DebugAgg();
+      final String what = fp.hasMoreArguments() ? fp.parseId() : "debug";
+
+      switch (what) {
+        case "debug": return new DebugAgg();
+        case "numShards": return new DebugAggNumShards();
+        default: /* No-Op */
+      }
+      throw new RuntimeException("No idea what to do with " + what);
     }
 
     @Override
@@ -150,4 +157,63 @@ public class DebugAgg extends AggValueSource {
     return new FacetLongMerger();
   }
 
+  /** A simple agg that just returns the number of shards contributing to a bucket */
+  public static class DebugAggNumShards extends AggValueSource {
+    public DebugAggNumShards() {
+      super("debugNumShards");
+    }
+    
+    @Override
+    public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) {
+      return new NumShardsAcc(fcontext, numDocs, numSlots);
+    }
+    
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+    
+    @Override
+    public String description() {
+      return "debug(numShards)";
+    }
+    
+    public static class NumShardsAcc extends SlotAcc {
+      public NumShardsAcc(FacetContext fcontext, int numDocs, int numSlots) {
+        super(fcontext);
+      }
+      
+      @Override
+      public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+        // No-Op
+      }
+      
+      @Override
+      public int compare(int slotA, int slotB) {
+        return 0;
+      }
+      
+      @Override
+      public Object getValue(int slotNum) throws IOException {
+        return 1L;
+      }
+      
+      @Override
+      public void reset() throws IOException {
+        // No-Op
+      }
+      
+      @Override
+      public void resize(Resizer resizer) {
+        // No-op
+      }
+      
+    }
+    
+    @Override
+    public FacetMerger createFacetMerger(Object prototype) {
+      return new FacetLongMerger();
+    }
+    
+  }
 }
