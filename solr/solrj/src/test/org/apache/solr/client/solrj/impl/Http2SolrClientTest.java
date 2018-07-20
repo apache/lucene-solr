@@ -48,7 +48,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SolrTestCaseJ4.SuppressSSL
 public class Http2SolrClientTest extends SolrJettyTestBase {
 
   private static final String EXPECTED_USER_AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
