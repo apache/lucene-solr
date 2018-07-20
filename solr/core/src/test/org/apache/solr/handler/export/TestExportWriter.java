@@ -14,20 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response;
+package org.apache.solr.handler.export;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.ResultContext;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -140,6 +150,189 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testSmallChains() throws Exception {
+    clearIndex();
+
+    assertU(adoc("id","1",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p","1"));
+    assertU(commit());
+
+    assertU(adoc("id","2",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p",Integer.toString(Integer.MIN_VALUE + 1)));
+    assertU(commit());
+
+    assertU(adoc("id","3",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p",Integer.toString(Integer.MIN_VALUE)));
+    assertU(commit());
+
+    //Test single value DocValue output
+    //Expected for asc sort doc3 -> doc2 -> doc1
+    String s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "field1_i_p asc,field2_i_p asc"));
+    assertJsonEquals(s, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":3,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"3\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"1\"}]}}");
+
+    clearIndex();
+    //Adding 3 docs of integers with the following values
+    //  doc1: Integer.MIN_VALUE,1,2,Integer.MAX_VALUE,3,4,5,6
+    //  doc2: Integer.MIN_VALUE,Integer.MIN_VALUE,2,Integer.MAX_VALUE,4,4,5,6
+    //  doc3: Integer.MIN_VALUE,Integer.MIN_VALUE,2,Integer.MAX_VALUE,3,4,5,6
+
+    assertU(adoc("id","1",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p","1",
+        "field3_i_p","2",
+        "field4_i_p",Integer.toString(Integer.MAX_VALUE),
+        "field5_i_p","3",
+        "field6_i_p","4",
+        "field7_i_p","5",
+        "field8_i_p","6"));
+    assertU(commit());
+
+    assertU(adoc("id","2",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field3_i_p","2",
+        "field4_i_p",Integer.toString(Integer.MAX_VALUE),
+        "field5_i_p","4",
+        "field6_i_p","4",
+        "field7_i_p","5",
+        "field8_i_p","6"));
+    assertU(commit());
+
+    assertU(adoc("id","3",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field3_i_p","2",
+        "field4_i_p",Integer.toString(Integer.MAX_VALUE),
+        "field5_i_p","3",
+        "field6_i_p","4",
+        "field7_i_p","5",
+        "field8_i_p","6"));
+    assertU(commit());
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "field1_i_p asc,field2_i_p asc,field3_i_p asc,field4_i_p asc,field5_i_p desc,field6_i_p desc,field7_i_p desc,field8_i_p asc"));
+    assertJsonEquals(s, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":3,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"3\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"1\"}]}}");
+
+  }
+
+  @Test
+  public void testIndexOrder() throws Exception {
+    clearIndex();
+
+    assertU(adoc("id","1", "stringdv","a"));
+    assertU(adoc("id","2", "stringdv","a"));
+
+    assertU(commit());
+
+    assertU(adoc("id","3", "stringdv","a"));
+    assertU(adoc("id","4", "stringdv","a"));
+
+    assertU(commit());
+
+    String expectedResult = "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":4,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"1\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"3\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"4\"}]}}";
+
+    String s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv asc"));
+    assertJsonEquals(s, expectedResult);
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc"));
+    assertJsonEquals(s, expectedResult);
+
+  }
+
+  @Test
+  public void testStringWithCase() throws Exception {
+    clearIndex();
+
+    assertU(adoc("id","1", "stringdv","a"));
+    assertU(adoc("id","2", "stringdv","ABC"));
+
+    assertU(commit());
+
+    assertU(adoc("id","3", "stringdv","xyz"));
+    assertU(adoc("id","4", "stringdv","a"));
+
+    assertU(commit());
+
+    String s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc"));
+    assertJsonEquals(s, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":4,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"3\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"1\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"4\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"2\"}]}}");
+  }
+
+  @Test
+  public void testBooleanField() throws Exception {
+    clearIndex();
+
+    assertU(adoc("id","1",
+        "booleandv","true"));
+    assertU(commit());
+
+    assertU(adoc("id","2",
+        "booleandv","false"));
+    assertU(commit());
+
+    String s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "booleandv asc"));
+    assertJsonEquals(s, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":2,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"1\"}]}}");
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "booleandv desc"));
+    assertJsonEquals(s, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":2,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"1\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"2\"}]}}");
+  }
+
+  @Test
   public void testSortingOutput() throws Exception {
 
     //Test single value DocValue output
@@ -193,6 +386,38 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     //Test four sort fields
     s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "floatdv asc,floatdv desc,floatdv asc,intdv desc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}}");
+
+    //Test five sort fields
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "intdv desc,floatdv asc,floatdv desc,floatdv asc,intdv desc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}}");
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "floatdv desc,intdv asc,floatdv desc,floatdv desc,intdv desc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":1},{\"intdv\":2},{\"intdv\":3}]}}");
+
+    //Test six sort fields
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "floatdv asc,intdv desc,floatdv asc,floatdv desc,floatdv asc,intdv asc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}}");
+
+    //Test seven sort fields
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "floatdv desc,intdv asc,floatdv desc,floatdv asc,floatdv desc,floatdv asc,intdv desc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":1},{\"intdv\":2},{\"intdv\":3}]}}");
+
+    //Test eight sort fields
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "floatdv asc,intdv desc,floatdv asc,floatdv desc,floatdv asc,floatdv desc,floatdv asc,intdv asc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}}");
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "intdv asc,floatdv desc,floatdv asc,floatdv desc,floatdv asc,floatdv desc,floatdv asc,intdv desc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":1},{\"intdv\":2},{\"intdv\":3}]}}");
+
+    //Test nine sort fields
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "intdv asc,floatdv desc,floatdv asc,floatdv desc,floatdv asc,floatdv desc,intdv asc,intdv desc,floatdv asc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":1},{\"intdv\":2},{\"intdv\":3}]}}");
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "floatdv asc,intdv desc,floatdv asc,floatdv desc,floatdv asc,floatdv desc,intdv desc,intdv asc,floatdv asc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}}");
+
+    //Test ten sort fields
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "intdv asc,floatdv desc,floatdv asc,floatdv desc,floatdv asc,floatdv desc,intdv asc,intdv desc,floatdv desc,floatdv asc"));
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":1},{\"intdv\":2},{\"intdv\":3}]}}");
+    s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "floatdv asc,intdv desc,floatdv asc,floatdv desc,floatdv asc,floatdv desc,intdv desc,intdv asc,floatdv desc,floatdv asc"));
     assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":2},{\"intdv\":1}]}}");
 
     s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
@@ -329,6 +554,160 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     doTestQuery("id:[0 TO 2]", trieFields, pointFields);// "id" field is really a string, this is not a numeric range query
     doTestQuery("id:[0 TO 9]", trieFields, pointFields);
     doTestQuery("id:DOES_NOT_EXIST", trieFields, pointFields);
+  }
+
+  @Test
+  public void testMultipleSorts() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    int numDocs = 1000;
+
+    //10 unique values
+    String[] str_vals = new String[10];
+    for (int i=0; i<str_vals.length; i++) {
+      str_vals[i] = TestUtil.randomSimpleString(random(), 10);
+    }
+
+    float[] float_vals = new float[10];
+    float_vals[0] = 0.0f;
+    float_vals[1] = +0.0f;
+    float_vals[2] = -0.0f;
+    float_vals[3] = +0.00001f;
+    float_vals[4] = +0.000011f;
+    float_vals[5] = Float.MAX_VALUE;
+    float_vals[6] = Float.MIN_VALUE;
+    float_vals[7] = 1/3f; //0.33333334
+    float_vals[8] = 0.33333333f;
+    float_vals[9] = random().nextFloat();
+
+    for (int i = 0; i < numDocs; i++) {
+      int number = TestUtil.nextInt(random(), 0, 9);
+      assertU(adoc("id", String.valueOf(i),
+          "floatdv", String.valueOf(number),
+          "intdv", String.valueOf(number),
+          "stringdv", String.valueOf(str_vals[number]),
+          "longdv", String.valueOf(number),
+          "doubledv", String.valueOf(number),
+          "datedv", randomSkewedDate(),
+          "booleandv", String.valueOf(random().nextBoolean()),
+          "field1_s_dv", String.valueOf(str_vals[number]),
+          "field2_i_p", String.valueOf(number),
+          "field3_l_p", String.valueOf(number)));
+      if (numDocs % 3000 ==0) {
+        assertU(commit());
+      }
+    }
+    assertU(commit());
+
+    validateSort(numDocs);
+  }
+
+  private void validateSort(int numDocs) throws Exception {
+    // 10 fields
+    List<String> fieldNames = new ArrayList<>(Arrays.asList("floatdv", "intdv", "stringdv", "longdv", "doubledv",
+        "datedv", "booleandv", "field1_s_dv", "field2_i_p", "field3_l_p"));
+
+    SortFields[] fieldSorts = new SortFields[TestUtil.nextInt(random(), 1, fieldNames.size())];
+    for (int i = 0; i < fieldSorts.length; i++) {
+      fieldSorts[i] = new SortFields(fieldNames.get(TestUtil.nextInt(random(), 0, fieldNames.size() - 1)));
+      fieldNames.remove(fieldSorts[i].getField());
+    }
+    String[] fieldWithOrderStrs = new String[fieldSorts.length];
+    String[] fieldStrs = new String[fieldSorts.length];
+    for (int i = 0; i < fieldSorts.length; i++) {
+      fieldWithOrderStrs[i] = fieldSorts[i].getFieldWithOrder();
+      fieldStrs[i] = fieldSorts[i].getField();
+    }
+
+    String sortStr = String.join(",", fieldWithOrderStrs); // sort : field1 asc, field2 desc
+    String fieldsStr = String.join(",", fieldStrs); // fl :  field1, field2
+
+    String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id," + fieldsStr, "sort", sortStr));
+
+    //We cannot compare /select vs /export as for docs with the same values ( ties ) the ordering is different
+    SolrQueryRequest req = null;
+    try {
+      req = req("q", "*:*", "qt", "/select", "fl", "id," + fieldsStr, "sort", sortStr, "rows", Integer.toString(numDocs));
+
+      SolrQueryResponse selectRsp = h.queryAndResponse("", req);
+      DocList selectDocList = ((ResultContext)selectRsp.getResponse()).getDocList();
+      assert selectDocList.size() == numDocs;
+      DocIterator selectDocListIter = selectDocList.iterator();
+
+      ObjectMapper mapper = new ObjectMapper();
+      HashMap respMap = mapper.readValue(resp, HashMap.class);
+      List docs = (ArrayList) ((HashMap) respMap.get("response")).get("docs");
+      assert docs.size() == numDocs;
+
+      for (int i = 0; i < docs.size() - 1; i++) { // docs..
+        assertEquals("Position:" + i + " has different id value" , String.valueOf(selectDocListIter.nextDoc()), String.valueOf(((HashMap) docs.get(i)).get("id")));
+
+        for (int j = 0; j < fieldSorts.length; j++) { // fields ..
+          String field = fieldSorts[j].getField();
+          String sort = fieldSorts[j].getSort();
+          String fieldVal1 = String.valueOf(((HashMap) docs.get(i)).get(field)); // 1st doc
+          String fieldVal2 = String.valueOf(((HashMap) docs.get(i + 1)).get(field)); // 2nd obj
+          if (fieldVal1.equals(fieldVal2)) {
+            continue;
+          } else {
+            if (sort.equals("asc")) {
+              if (field.equals("stringdv") || field.equals("field1_s_dv")|| field.equals("datedv") || field.equals("booleandv")) { // use string comparator
+                assertTrue(fieldVal1.compareTo(fieldVal2) < 0);
+              } else if (field.equals("doubledv")){
+                assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) <= 0);
+              } else if(field.equals("floatdv")) {
+                assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) <= 0);
+              } else if(field.equals("intdv") || "field2_i_p".equals(field)) {
+                assertTrue(Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) <= 0);
+              } else if(field.equals("longdv") || field.equals("field3_l_p")) {
+                assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) <= 0);
+              }
+            } else {
+              if (field.equals("stringdv") || field.equals("field1_s_dv")|| field.equals("datedv") || field.equals("booleandv")) { // use string comparator
+                assertTrue(fieldVal1.compareTo(fieldVal2) > 0);
+              } else if (field.equals("doubledv")){
+                assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) >= 0);
+              } else if(field.equals("floatdv")) {
+                assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) >= 0);
+              } else if(field.equals("intdv") || "field2_i_p".equals(field)) {
+                assertTrue(Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) >= 0);
+              } else if(field.equals("longdv") || field.equals("field3_l_p")) {
+                assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) >= 0);
+              }
+            }
+            break;
+          }
+        }
+      }
+    } finally {
+      if (req != null) {
+        req.close();
+      }
+    }
+  }
+
+  private class SortFields {
+    String fieldName;
+    String sortOrder;
+    String[] orders = {"asc", "desc"};
+
+    SortFields(String fn) {
+      this.fieldName = fn;
+      this.sortOrder = orders[random().nextInt(2)];
+    }
+
+    public String getFieldWithOrder() {
+      return this.fieldName + " " + this.sortOrder;
+    }
+
+    public String getField() {
+      return this.fieldName;
+    }
+
+    public String getSort() {
+      return this.sortOrder;
+    }
   }
 
   private void doTestQuery(String query, List<String> trieFields, List<String> pointFields) throws Exception {
