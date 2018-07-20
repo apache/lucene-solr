@@ -1046,15 +1046,6 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     dir.close();
   }
   
-  public void testDoubleCloseDirectory() throws Throwable {
-    Directory dir = getDirectory(createTempDir());
-    IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
-    out.writeString("testing");
-    out.close();
-    dir.close();
-    dir.close(); // close again
-  }
-  
   public void testDoubleCloseOutput() throws Throwable {
     Directory dir = getDirectory(createTempDir());
     IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
@@ -1098,13 +1089,13 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     dir.close();
   }
 
-  public void testCreateOutput() throws IOException {
+  public void testCreateOutputForExistingFile() throws IOException {
     try (Directory dir = getDirectory(createTempDir())) {
       String name = "file";
       try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
       }
 
-      // Try to create an existing file.
+      // Try to create an existing file should fail.
       expectThrows(FileAlreadyExistsException.class, () -> {
         try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
         }
@@ -1113,6 +1104,19 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       // Delete file and try to recreate it.
       dir.deleteFile(name);
       try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+      }
+    }
+  }
+
+  public void testReadFileOpenForWrites() throws IOException {
+    try (Directory dir = getDirectory(createTempDir())) {
+      String name = "file";
+      try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+        // Shouldn't be able to open this file for reading.
+        expectThrows(IOException.class, () -> {
+          try (IndexInput in = dir.openInput(name, IOContext.DEFAULT)) {
+          }
+        });
       }
     }
   }
