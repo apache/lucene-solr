@@ -169,6 +169,10 @@ Optimizations
 * SOLR-11654: Time Routed Alias will now route documents to the ideal shard of a collection, thus avoiding a hop.
   Usually documents were already routed well but not always.  (Gus Heck, David Smiley)
 
+* SOLR-11598: The export handler does not limit users to 4 sort fields and is now unlimited. However the speed at
+  which we can export is directly proportional to the number of sort fields specified. This change also allows streaming
+  expressions to group by on more than 4 fields. (Aroop Ganguly, Amrit Sarkar, Varun Thacker)
+
 Other Changes
 ----------------------
 
