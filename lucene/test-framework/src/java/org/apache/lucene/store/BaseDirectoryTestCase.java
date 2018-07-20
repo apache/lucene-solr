@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -1097,6 +1098,25 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     dir.close();
   }
 
+  public void testCreateOutput() throws IOException {
+    try (Directory dir = getDirectory(createTempDir())) {
+      String name = "file";
+      try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+      }
+
+      // Try to create an existing file.
+      expectThrows(FileAlreadyExistsException.class, () -> {
+        try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+        }
+      });
+
+      // Delete file and try to recreate it.
+      dir.deleteFile(name);
+      try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+      }
+    }
+  }
+
   public void testSeekToEndOfFile() throws IOException {
     try (Directory dir = getDirectory(createTempDir())) {
       try (IndexOutput out = dir.createOutput("a", IOContext.DEFAULT)) {
@@ -1181,7 +1201,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     try (Directory dir = getDirectory(createTempDir())) {
       int count = atLeast(20);
       Set<String> names = new HashSet<>();
-      while(names.size() < count) {
+      while (names.size() < count) {
         // create a random filename (segment file name style), so it cannot hit windows problem with special filenames ("con", "com1",...):
         String name = IndexFileNames.segmentFileName(TestUtil.randomSimpleString(random(), 1, 6), TestUtil.randomSimpleString(random()), "test");
         if (random().nextInt(5) == 1) {
@@ -1197,7 +1217,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       String[] actual = dir.listAll();
       String[] expected = actual.clone();
       Arrays.sort(expected);
-      assertEquals(expected, actual);
+      assertArrayEquals(expected, actual);
     }
   }
 }
