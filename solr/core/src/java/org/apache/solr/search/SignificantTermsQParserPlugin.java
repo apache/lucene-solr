@@ -55,11 +55,17 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
     @Override
     public Query parse() throws SyntaxError {
       String field = getParam("field");
-      int numTerms = Integer.parseInt(params.get("numTerms", "20"));
-      float minDocs = Float.parseFloat(params.get("minDocFreq", "5"));
-      float maxDocs = Float.parseFloat(params.get("maxDocFreq", ".3"));
-      int minTermLength = Integer.parseInt(params.get("minTermLength", "4"));
+      int numTerms = Integer.parseInt(getParamWithDefault("numTerms", "20"));
+      float minDocs = Float.parseFloat(getParamWithDefault("minDocFreq", "5"));
+      float maxDocs = Float.parseFloat(getParamWithDefault("maxDocFreq", ".3"));
+      int minTermLength = Integer.parseInt(getParamWithDefault("minTermLength", "4"));
+
       return new SignificantTermsQuery(field, numTerms, minDocs, maxDocs, minTermLength);
+    }
+
+    private String getParamWithDefault(String paramName, String defaultValue) {
+      String result = getParam(paramName);
+      return (result != null)? result: defaultValue;
     }
   }
 
