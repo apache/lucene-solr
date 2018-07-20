@@ -149,6 +149,10 @@ Optimizations
 * SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery. 
   (Cao Manh Dat)
 
+* SOLR-11598: The export handler does not limit users to 4 sort fields and is now unlimited. However the speed at
+  which we can export is directly proportional to the number of sort fields specified. This change also allows streaming
+  expressions to group by on more than 4 fields. (Aroop Ganguly, Amrit Sarkar, Varun Thacker)
+
 Other Changes
 ----------------------
 

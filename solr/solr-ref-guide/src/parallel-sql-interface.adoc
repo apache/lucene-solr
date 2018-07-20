@@ -321,10 +321,6 @@ The Column Identifiers can contain both fields in the Solr index and aggregate f
 
 The non-function fields in the field list determine the fields to calculate the aggregations over.
 
-*`GROUP BY` Clause*
-
-The `GROUP BY` clause can contain up to 4 fields in the Solr index. These fields should correspond with the non-function fields in the field list.
-
 === HAVING Clause
 
 The `HAVING` clause may contain any function listed in the field list. Complex `HAVING` clauses such as this are supported:
