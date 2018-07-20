@@ -94,6 +94,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
+  //TODO using Http2Client
   protected HttpClient httpClient;
   private ArrayList<Pattern> excludePatterns;
   

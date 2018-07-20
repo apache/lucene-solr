@@ -574,6 +574,7 @@ public class HttpSolrCall {
     }
   }
 
+  //TODO using Http2Client
   private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
     HttpRequestBase method = null;
     HttpEntity httpEntity = null;

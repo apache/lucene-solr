@@ -84,9 +84,11 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -285,6 +287,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     sslConfig = buildSSLConfig();
     // based on randomized SSL config, set SchemaRegistryProvider appropriately
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
+    Http2SolrClient.setSslContextFactory(SSLConfig.createContextFactory(sslConfig));
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
       System.setProperty("urlScheme", "https");
@@ -322,6 +325,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("solr.peerSync.useRangeVersions");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       HttpClientUtil.resetHttpClientBuilder();
+      Http2SolrClient.resetSslContextFactory();
 
       clearNumericTypesProperties();
       

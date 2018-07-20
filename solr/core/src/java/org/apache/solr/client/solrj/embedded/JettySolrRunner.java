@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -229,16 +230,17 @@ public class JettySolrRunner {
       // talking to that server, but for the purposes of testing that should 
       // be good enough
       final SslContextFactory sslcontext = SSLConfig.createContextFactory(config.sslConfig);
-      
+
+      HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector;
       if (sslcontext != null) {
-        HttpConfiguration configuration = new HttpConfiguration();
         configuration.setSecureScheme("https");
         configuration.addCustomizer(new SecureRequestCustomizer());
         connector = new ServerConnector(server, new SslConnectionFactory(sslcontext, "http/1.1"),
             new HttpConnectionFactory(configuration));
       } else {
-        connector = new ServerConnector(server, new HttpConnectionFactory());
+        connector = new ServerConnector(server, new HttpConnectionFactory(configuration),
+            new HTTP2CServerConnectionFactory(configuration));
       }
 
       connector.setReuseAddress(true);
@@ -250,7 +252,8 @@ public class JettySolrRunner {
       server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
     } else {
-      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
+      HttpConfiguration configuration = new HttpConfiguration();
+      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
       connector.setPort(port);
       connector.setSoLingerTime(-1);
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
