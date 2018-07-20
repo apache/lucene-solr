@@ -56,7 +56,6 @@ Bug Fixes:
   TokenStream if a token consisting entirely of delimiter characters was 
   encountered, but preserve_original was set. (Alan Woodward)
 
-
 * LUCENE-8398: TieredMergePolicy.getMaxMergedSegmentMB has rounding error (Erick Erickson)
 
 Changes in Runtime Behavior:
@@ -82,6 +81,9 @@ Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
   Extended_Pictographic property. (Robert Muir)
+
+* LUCENE-8408: original Highlighter:  Remove obsolete static AttributeFactory instance
+  in TokenStreamFromTermVector.  (Michael Braun, David Smiley)
 
 ======================= Lucene 7.4.1 =======================
 

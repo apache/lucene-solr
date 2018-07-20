@@ -21,13 +21,11 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -51,11 +49,6 @@ import org.apache.lucene.util.UnicodeUtil;
  * @lucene.internal
  */
 public final class TokenStreamFromTermVector extends TokenStream {
-
-  //This attribute factory uses less memory when captureState() is called.
-  public static final AttributeFactory ATTRIBUTE_FACTORY =
-      AttributeFactory.getStaticImplementation(
-          AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, PackedTokenAttributeImpl.class);
 
   private final Terms vector;
 
@@ -89,7 +82,6 @@ public final class TokenStreamFromTermVector extends TokenStream {
    * @param maxStartOffset if a token's start offset exceeds this then the token is not added. -1 disables the limit.
    */
   public TokenStreamFromTermVector(Terms vector, int maxStartOffset) throws IOException {
-    super(ATTRIBUTE_FACTORY);
     this.maxStartOffset = maxStartOffset < 0 ? Integer.MAX_VALUE : maxStartOffset;
     assert !hasAttribute(PayloadAttribute.class) : "AttributeFactory shouldn't have payloads *yet*";
     if (!vector.hasPositions() && !vector.hasOffsets()) {
