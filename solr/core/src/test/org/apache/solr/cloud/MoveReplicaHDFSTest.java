@@ -66,6 +66,7 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
 
   @Test
   //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void testNormalFailedMove() throws Exception {
     inPlaceMove = false;
     testFailedMove();
