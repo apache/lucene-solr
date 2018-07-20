@@ -129,6 +129,8 @@ Bug Fixes
 * SOLR-12343: Fixed a bug in JSON Faceting that could cause incorrect counts/stats when using non default
   sort options.  This also adds a new configurable "overrefine" option. (Yonik Seeley, hossman)
 
+* SOLR-12553: Allow SignificantTerms Query Parser to use local parameters (Alexandre Rafalovitch)
+
 Optimizations
 ----------------------
 
