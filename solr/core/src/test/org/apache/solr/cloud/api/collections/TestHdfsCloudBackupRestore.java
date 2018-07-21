@@ -62,7 +62,6 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 //05-Jul-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   public static final String SOLR_XML = "<solr>\n" +
       "\n" +
