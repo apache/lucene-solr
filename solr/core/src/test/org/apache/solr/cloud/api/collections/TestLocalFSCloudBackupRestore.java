@@ -24,7 +24,6 @@ import org.junit.BeforeClass;
  * Note that the Solr backup/restore still requires a "shared" file-system. Its just that in this case
  * such file-system would be exposed via local file-system API.
  */
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   private static String backupLocation;
 
