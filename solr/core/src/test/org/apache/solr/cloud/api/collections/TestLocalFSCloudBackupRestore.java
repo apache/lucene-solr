@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 
 /**
