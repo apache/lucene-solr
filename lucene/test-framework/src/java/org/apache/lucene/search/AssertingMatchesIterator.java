@@ -67,15 +67,4 @@ class AssertingMatchesIterator implements MatchesIterator {
     return in.endOffset();
   }
 
-  @Override
-  public MatchesIterator getSubMatches() throws IOException {
-    assert state == State.ITERATING : state;
-    return in.getSubMatches();
-  }
-
-  @Override
-  public Object label() {
-    assert state == State.ITERATING : state;
-    return in.label();
-  }
 }

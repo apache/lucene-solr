@@ -158,13 +158,4 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
     return queue.top().endOffset();
   }
 
-  @Override
-  public MatchesIterator getSubMatches() throws IOException {
-    return queue.top().getSubMatches();
-  }
-
-  @Override
-  public Object label() {
-    return queue.top().label();
-  }
 }

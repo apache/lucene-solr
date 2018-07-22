@@ -149,48 +149,4 @@ final class ExactPhraseMatcher extends PhraseMatcher {
     return postings[postings.length - 1].postings.endOffset();
   }
 
-  @Override
-  MatchesIterator getSubMatches() {
-    return new MatchesIterator() {
-
-      int upTo = -1;
-
-      @Override
-      public boolean next() throws IOException {
-        upTo++;
-        return upTo < postings.length;
-      }
-
-      @Override
-      public int startPosition() {
-        return postings[upTo].pos;
-      }
-
-      @Override
-      public int endPosition() {
-        return postings[upTo].pos;
-      }
-
-      @Override
-      public int startOffset() throws IOException {
-        return postings[upTo].postings.startOffset();
-      }
-
-      @Override
-      public int endOffset() throws IOException {
-        return postings[upTo].postings.endOffset();
-      }
-
-      @Override
-      public MatchesIterator getSubMatches() throws IOException {
-        return MatchesIterator.EMPTY_ITERATOR;
-      }
-
-      @Override
-      public Object label() {
-        return this;
-      }
-    };
-  }
-
 }
