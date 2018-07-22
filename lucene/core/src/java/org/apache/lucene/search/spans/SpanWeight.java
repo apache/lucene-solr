@@ -18,8 +18,6 @@ package org.apache.lucene.search.spans;
 
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -29,8 +27,6 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
@@ -157,132 +153,5 @@ public abstract class SpanWeight extends Weight {
     }
 
     return Explanation.noMatch("no matching term");
-  }
-
-  @Override
-  public Matches matches(LeafReaderContext context, int doc) throws IOException {
-    return Matches.forField(field, () -> {
-      Spans spans = getSpans(context, Postings.OFFSETS);
-      if (spans == null) {
-        return null;
-      }
-      if (spans.advance(doc) != doc) {
-        return null;
-      }
-      return new MatchesIterator() {
-
-        int innerTermCount = 0;
-        int[][] innerTerms = new int[2][3];
-        SpanCollector termCollector = new SpanCollector() {
-          @Override
-          public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
-            innerTermCount++;
-            if (innerTermCount > innerTerms.length) {
-              int[][] temp = new int[innerTermCount][3];
-              System.arraycopy(innerTerms, 0, temp, 0, innerTermCount - 1);
-              innerTerms = temp;
-            }
-            innerTerms[innerTermCount - 1][0] = position;
-            innerTerms[innerTermCount - 1][1] = postings.startOffset();
-            innerTerms[innerTermCount - 1][2] = postings.endOffset();
-          }
-
-          @Override
-          public void reset() {
-            innerTermCount = 0;
-          }
-        };
-
-        @Override
-        public boolean next() throws IOException {
-          innerTermCount = 0;
-          return spans.nextStartPosition() != Spans.NO_MORE_POSITIONS;
-        }
-
-        @Override
-        public int startPosition() {
-          return spans.startPosition();
-        }
-
-        @Override
-        public int endPosition() {
-          return spans.endPosition() - 1;
-        }
-
-        @Override
-        public int startOffset() throws IOException {
-          if (innerTermCount == 0) {
-            collectInnerTerms();
-          }
-          return innerTerms[0][1];
-        }
-
-        @Override
-        public int endOffset() throws IOException {
-          if (innerTermCount == 0) {
-            collectInnerTerms();
-          }
-          return innerTerms[innerTermCount - 1][2];
-        }
-
-        @Override
-        public MatchesIterator getSubMatches() throws IOException {
-          if (innerTermCount == 0) {
-            collectInnerTerms();
-          }
-          return new MatchesIterator() {
-
-            int upto = -1;
-
-            @Override
-            public boolean next() throws IOException {
-              upto++;
-              return upto < innerTermCount;
-            }
-
-            @Override
-            public int startPosition() {
-              return innerTerms[upto][0];
-            }
-
-            @Override
-            public int endPosition() {
-              return innerTerms[upto][0];
-            }
-
-            @Override
-            public int startOffset() throws IOException {
-              return innerTerms[upto][1];
-            }
-
-            @Override
-            public int endOffset() throws IOException {
-              return innerTerms[upto][2];
-            }
-
-            @Override
-            public MatchesIterator getSubMatches() throws IOException {
-              return MatchesIterator.EMPTY_ITERATOR;
-            }
-
-            @Override
-            public Object label() {
-              return this;
-            }
-          };
-        }
-
-        @Override
-        public Object label() {
-          return SpanWeight.this;
-        }
-
-        void collectInnerTerms() throws IOException {
-          termCollector.reset();
-          spans.collect(termCollector);
-          Arrays.sort(innerTerms, 0, innerTermCount, Comparator.comparing(a -> a[0]));
-        }
-      };
-    });
   }
 }

@@ -55,14 +55,13 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
   private final int slop;
   private final int numPostings;
   private final PhraseQueue pq; // for advancing min position
-  private final boolean captureLeadMatch;
 
   private int end; // current largest phrase position
 
   private int leadPosition;
   private int leadOffset;
-  private int leadEndOffset;
-  private int leadOrd;
+  private int currentEndPostings;
+  private int advanceEndPostings;
 
   private boolean hasRpts; // flag indicating that there are repetitions (as checked in first candidate doc)
   private boolean checkedRpts; // flag to only check for repetitions in first candidate doc
@@ -73,11 +72,10 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
   private boolean positioned;
   private int matchLength;
 
-  SloppyPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, int slop, float matchCost, boolean captureLeadMatch) {
+  SloppyPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, int slop, float matchCost) {
     super(approximation(postings), matchCost);
     this.slop = slop;
     this.numPostings = postings.length;
-    this.captureLeadMatch = captureLeadMatch;
     pq = new PhraseQueue(postings.length);
     phrasePositions = new PhrasePositions[postings.length];
     for (int i = 0; i < postings.length; ++i) {
@@ -123,8 +121,10 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
       return false;
     }
     PhrasePositions pp = pq.pop();
-    assert pp != null;  // if the pq is not full, then positioned == false
-    captureLead(pp);
+    assert pp != null;  // if the pq is empty, then positioned == false
+    leadPosition = pp.position + pp.offset;
+    leadOffset = pp.postings.startOffset();
+    currentEndPostings = advanceEndPostings;
     matchLength = end - pp.position;
     int next = pq.top().position; 
     while (advancePP(pp)) {
@@ -138,7 +138,6 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
         }
         pp = pq.pop();
         next = pq.top().position;
-        assert pp != null;  // if the pq is not full, then positioned == false
         matchLength = end - pp.position;
       } else {
         int matchLength2 = end - pp.position;
@@ -146,20 +145,12 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
           matchLength = matchLength2;
         }
       }
-      captureLead(pp);
+      leadPosition = pp.position + pp.offset;
+      leadOffset = pp.postings.startOffset();
+      currentEndPostings = advanceEndPostings;
     }
     positioned = false;
     return matchLength <= slop;
-  }
-
-  private void captureLead(PhrasePositions pp) throws IOException {
-    if (captureLeadMatch == false) {
-      return;
-    }
-    leadOrd = pp.ord;
-    leadPosition = pp.position + pp.offset;
-    leadOffset = pp.postings.startOffset();
-    leadEndOffset = pp.postings.endOffset();
   }
 
   @Override
@@ -170,7 +161,6 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
     // However, the priority queue doesn't guarantee that the top postings is in fact the
     // earliest in the list, so we need to cycle through all terms to check.
     // this is slow, but Matches is slow anyway...
-    int leadPosition = this.leadPosition;
     for (PhrasePositions pp : phrasePositions) {
       leadPosition = Math.min(leadPosition, pp.position + pp.offset);
     }
@@ -179,13 +169,7 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
 
   @Override
   public int endPosition() {
-    int endPosition = leadPosition;
-    for (PhrasePositions pp : phrasePositions) {
-      if (pp.ord != leadOrd) {
-        endPosition = Math.max(endPosition, pp.position + pp.offset);
-      }
-    }
-    return endPosition;
+    return phrasePositions[currentEndPostings].position + phrasePositions[currentEndPostings].offset;
   }
 
   @Override
@@ -196,7 +180,6 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
     // However, the priority queue doesn't guarantee that the top postings is in fact the
     // earliest in the list, so we need to cycle through all terms to check
     // this is slow, but Matches is slow anyway...
-    int leadOffset = this.leadOffset;
     for (PhrasePositions pp : phrasePositions) {
       leadOffset = Math.min(leadOffset, pp.postings.startOffset());
     }
@@ -205,69 +188,7 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
 
   @Override
   public int endOffset() throws IOException {
-    int endOffset = leadEndOffset;
-    for (PhrasePositions pp : phrasePositions) {
-      if (pp.ord != leadOrd) {
-        endOffset = Math.max(endOffset, pp.postings.endOffset());
-      }
-    }
-    return endOffset;
-  }
-
-  @Override
-  MatchesIterator getSubMatches() throws IOException {
-    int[][] submatches = new int[phrasePositions.length][3];
-    for (PhrasePositions pp : phrasePositions) {
-      if (pp.ord == leadOrd) {
-        submatches[pp.ord][0] = leadPosition;
-        submatches[pp.ord][1] = leadOffset;
-        submatches[pp.ord][2] = leadEndOffset;
-      }
-      else {
-        submatches[pp.ord][0] = pp.position + pp.offset;
-        submatches[pp.ord][1] = pp.postings.startOffset();
-        submatches[pp.ord][2] = pp.postings.endOffset();
-      }
-    }
-    Arrays.sort(submatches, Comparator.comparingInt(a -> a[0]));
-    return new MatchesIterator() {
-      int upTo = -1;
-      @Override
-      public boolean next() throws IOException {
-        upTo++;
-        return upTo < submatches.length;
-      }
-
-      @Override
-      public int startPosition() {
-        return submatches[upTo][0];
-      }
-
-      @Override
-      public int endPosition() {
-        return submatches[upTo][0];
-      }
-
-      @Override
-      public int startOffset() {
-        return submatches[upTo][1];
-      }
-
-      @Override
-      public int endOffset() {
-        return submatches[upTo][2];
-      }
-
-      @Override
-      public MatchesIterator getSubMatches() {
-        return MatchesIterator.EMPTY_ITERATOR;
-      }
-
-      @Override
-      public Object label() {
-        return this;
-      }
-    };
+    return phrasePositions[currentEndPostings].postings.endOffset();
   }
 
   /** advance a PhrasePosition and update 'end', return false if exhausted */
@@ -277,6 +198,12 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
     }
     if (pp.position > end) {
       end = pp.position;
+      advanceEndPostings = pp.ord;
+    }
+    if (pp.position == end) {
+      if (pp.ord > advanceEndPostings) {
+        advanceEndPostings = pp.ord;
+      }
     }
     return true;
   }
@@ -381,6 +308,12 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
       pp.firstPosition();
       if (pp.position > end) {
         end = pp.position;
+        advanceEndPostings = pp.ord;
+      }
+      if (pp.position == end) {
+        if (pp.ord > advanceEndPostings) {
+          advanceEndPostings = pp.ord;
+        }
       }
       pq.add(pp);
     }
@@ -410,6 +343,12 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
     for (PhrasePositions pp : phrasePositions) {  // iterate cyclic list: done once handled max
       if (pp.position > end) {
         end = pp.position;
+        advanceEndPostings = pp.ord;
+      }
+      if (pp.position == end) {
+        if (pp.ord > advanceEndPostings) {
+          advanceEndPostings = pp.ord;
+        }
       }
       pq.add(pp);
     }
