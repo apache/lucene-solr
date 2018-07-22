@@ -18,8 +18,12 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -29,9 +33,14 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -99,7 +108,7 @@ public class TestMatchesIterator extends LuceneTestCase {
       "nothing matches this document"
   };
 
-  void checkMatches(Query q, String field, int[][] expected) throws IOException {
+  private void checkMatches(Query q, String field, int[][] expected) throws IOException {
     Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(expected[i][0], searcher.leafContexts));
@@ -112,14 +121,40 @@ public class TestMatchesIterator extends LuceneTestCase {
       MatchesIterator it = matches.getMatches(field);
       if (expected[i].length == 1) {
         assertNull(it);
-        return;
+        continue;
       }
       checkFieldMatches(it, expected[i]);
       checkFieldMatches(matches.getMatches(field), expected[i]);  // test multiple calls
     }
   }
 
-  void checkFieldMatches(MatchesIterator it, int[] expected) throws IOException {
+  private void checkLabelCount(Query q, String field, int[] expected) throws IOException {
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    for (int i = 0; i < expected.length; i++) {
+      LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
+      int doc = i - ctx.docBase;
+      Matches matches = w.matches(ctx, doc);
+      if (matches == null) {
+        assertEquals("Expected to get matches on document " + i, 0, expected[i]);
+        continue;
+      }
+      MatchesIterator it = matches.getMatches(field);
+      if (expected[i] == 0) {
+        assertNull(it);
+        continue;
+      }
+      else {
+        assertNotNull(it);
+      }
+      IdentityHashMap<Query, Integer> labels = new IdentityHashMap<>();
+      while (it.next()) {
+        labels.put(it.getQuery(), 1);
+      }
+      assertEquals(expected[i], labels.size());
+    }
+  }
+
+  private void checkFieldMatches(MatchesIterator it, int[] expected) throws IOException {
     int pos = 1;
     while (it.next()) {
       //System.out.println(expected[i][pos] + "->" + expected[i][pos + 1] + "[" + expected[i][pos + 2] + "->" + expected[i][pos + 3] + "]");
@@ -132,7 +167,7 @@ public class TestMatchesIterator extends LuceneTestCase {
     assertEquals(expected.length, pos);
   }
 
-  void checkNoPositionsMatches(Query q, String field, boolean[] expected) throws IOException {
+  private void checkNoPositionsMatches(Query q, String field, boolean[] expected) throws IOException {
     Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
@@ -148,8 +183,109 @@ public class TestMatchesIterator extends LuceneTestCase {
     }
   }
 
+  private void assertIsLeafMatch(Query q, String field) throws IOException {
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    for (int i = 0; i < searcher.reader.maxDoc(); i++) {
+      LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
+      int doc = i - ctx.docBase;
+      Matches matches = w.matches(ctx, doc);
+      if (matches == null) {
+        return;
+      }
+      MatchesIterator mi = matches.getMatches(field);
+      if (mi == null) {
+        return;
+      }
+      while (mi.next()) {
+        assertNull(mi.getSubMatches());
+      }
+    }
+  }
+
+  private void checkTermMatches(Query q, String field, TermMatch[][][] expected) throws IOException {
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    for (int i = 0; i < expected.length; i++) {
+      LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
+      int doc = i - ctx.docBase;
+      Matches matches = w.matches(ctx, doc);
+      if (matches == null) {
+        assertEquals(expected[i].length, 0);
+        continue;
+      }
+      MatchesIterator it = matches.getMatches(field);
+      if (expected[i].length == 0) {
+        assertNull(it);
+        continue;
+      }
+      checkTerms(expected[i], it);
+    }
+  }
+
+  private void checkTerms(TermMatch[][] expected, MatchesIterator it) throws IOException {
+    int upTo = 0;
+    while (it.next()) {
+      Set<TermMatch> expectedMatches = new HashSet<>(Arrays.asList(expected[upTo]));
+      MatchesIterator submatches = it.getSubMatches();
+      while (submatches.next()) {
+        TermMatch tm = new TermMatch(submatches.startPosition(), submatches.startOffset(), submatches.endOffset());
+        if (expectedMatches.remove(tm) == false) {
+          fail("Unexpected term match: " + tm);
+        }
+      }
+      if (expectedMatches.size() != 0) {
+        fail("Missing term matches: " + expectedMatches.stream().map(Object::toString).collect(Collectors.joining(", ")));
+      }
+      upTo++;
+    }
+    if (upTo < expected.length - 1) {
+      fail("Missing expected match");
+    }
+  }
+
+  static class TermMatch {
+
+    public final int position;
+
+    public final int startOffset;
+
+    public final int endOffset;
+
+    public TermMatch(PostingsEnum pe, int position) throws IOException {
+      this.position = position;
+      this.startOffset = pe.startOffset();
+      this.endOffset = pe.endOffset();
+    }
+
+    public TermMatch(int position, int startOffset, int endOffset) {
+      this.position = position;
+      this.startOffset = startOffset;
+      this.endOffset = endOffset;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      TermMatch termMatch = (TermMatch) o;
+      return position == termMatch.position &&
+          startOffset == termMatch.startOffset &&
+          endOffset == termMatch.endOffset;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(position, startOffset, endOffset);
+    }
+
+    @Override
+    public String toString() {
+      return position + "[" + startOffset + "->" + endOffset + "]";
+    }
+  }
+
   public void testTermQuery() throws IOException {
-    Query q = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1"));
+    Term t = new Term(FIELD_WITH_OFFSETS, "w1");
+    Query q = new TermQuery(t);
     checkMatches(q, FIELD_WITH_OFFSETS, new int[][]{
         { 0, 0, 0, 0, 2 },
         { 1, 0, 0, 0, 2 },
@@ -157,6 +293,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, 0, 2, 2, 2, 6, 8 },
         { 4 }
     });
+    checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 1, 1, 1, 1, 0, 0 });
+    assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
   }
 
   public void testTermQueryNoStoredOffsets() throws IOException {
@@ -191,6 +329,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, 0, 2, 2, 2, 6, 8, 5, 5, 15, 17 },
         { 4 }
     });
+    checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 2, 2, 1, 2, 0, 0 });
+    assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
   }
 
   public void testDisjunctionNoPositions() throws IOException {
@@ -215,6 +355,7 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, 0, 2, 2, 2, 6, 8, 5, 5, 15, 17 },
         { 4 }
     });
+    checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 2, 2, 0, 2, 0, 0 });
   }
 
   public void testReqOptNoPositions() throws IOException {
@@ -248,6 +389,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, 0, 2, 2, 2, 6, 8, 3, 3, 9, 11, 5, 5, 15, 17 },
         { 4 }
     });
+    checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 3, 1, 3, 3, 0, 0 });
+    assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
   }
 
   public void testMinShouldMatchNoPositions() throws IOException {
@@ -331,6 +474,8 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 },
         { 4 }
     });
+    checkLabelCount(rq, FIELD_WITH_OFFSETS, new int[]{ 1, 1, 1, 1, 0 });
+    assertIsLeafMatch(rq, FIELD_WITH_OFFSETS);
 
   }
 
@@ -357,6 +502,7 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 3, 0, 0, 0, 2, 1, 1, 3, 5, 2, 2, 6, 8, 4, 4, 12, 14 },
         { 4 }
     });
+    assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
   }
 
   public void testSynonymQueryNoPositions() throws IOException {
@@ -392,12 +538,25 @@ public class TestMatchesIterator extends LuceneTestCase {
   //  0         1         2         3         4         5         6         7
   // "a phrase sentence with many phrase sentence iterations of a phrase sentence",
 
+  public void testSloppyPhraseQueryWithRepeats() throws IOException {
+    Term p = new Term(FIELD_WITH_OFFSETS, "phrase");
+    Term s = new Term(FIELD_WITH_OFFSETS, "sentence");
+    PhraseQuery pq = new PhraseQuery(10, FIELD_WITH_OFFSETS, "phrase", "sentence", "sentence");
+    checkMatches(pq, FIELD_WITH_OFFSETS, new int[][]{
+        { 0 }, { 1 }, { 2 }, { 3 },
+        { 4, 1, 6, 2, 43, 2, 11, 9, 75, 5, 11, 28, 75, 6, 11, 35, 75 }
+    });
+    checkLabelCount(pq, FIELD_WITH_OFFSETS, new int[]{ 0, 0, 0, 0, 1 });
+    assertIsLeafMatch(pq, FIELD_WITH_OFFSETS);
+  }
+
   public void testSloppyPhraseQuery() throws IOException {
     PhraseQuery pq = new PhraseQuery(4, FIELD_WITH_OFFSETS, "a", "sentence");
     checkMatches(pq, FIELD_WITH_OFFSETS, new int[][]{
         { 0 }, { 1 }, { 2 }, { 3 },
         { 4, 0, 2, 0, 17, 6, 9, 35, 59, 9, 11, 58, 75 }
     });
+    assertIsLeafMatch(pq, FIELD_WITH_OFFSETS);
   }
 
   public void testExactPhraseQuery() throws IOException {
@@ -407,29 +566,36 @@ public class TestMatchesIterator extends LuceneTestCase {
         { 4, 1, 2, 2, 17, 5, 6, 28, 43, 10, 11, 60, 75 }
     });
 
+    Term a = new Term(FIELD_WITH_OFFSETS, "a");
+    Term s = new Term(FIELD_WITH_OFFSETS, "sentence");
     PhraseQuery pq2 = new PhraseQuery.Builder()
-        .add(new Term(FIELD_WITH_OFFSETS, "a"))
-        .add(new Term(FIELD_WITH_OFFSETS, "sentence"), 2)
+        .add(a)
+        .add(s, 2)
         .build();
     checkMatches(pq2, FIELD_WITH_OFFSETS, new int[][]{
         { 0 }, { 1 }, { 2 }, { 3 },
         { 4, 0, 2, 0, 17, 9, 11, 58, 75 }
     });
+    assertIsLeafMatch(pq2, FIELD_WITH_OFFSETS);
   }
 
   //  0         1         2         3         4         5         6         7
   // "a phrase sentence with many phrase sentence iterations of a phrase sentence",
 
   public void testSloppyMultiPhraseQuery() throws IOException {
+    Term p = new Term(FIELD_WITH_OFFSETS, "phrase");
+    Term s = new Term(FIELD_WITH_OFFSETS, "sentence");
+    Term i = new Term(FIELD_WITH_OFFSETS, "iterations");
     MultiPhraseQuery mpq = new MultiPhraseQuery.Builder()
-        .add(new Term(FIELD_WITH_OFFSETS, "phrase"))
-        .add(new Term[]{ new Term(FIELD_WITH_OFFSETS, "sentence"), new Term(FIELD_WITH_OFFSETS, "iterations") })
+        .add(p)
+        .add(new Term[]{ s, i })
         .setSlop(4)
         .build();
     checkMatches(mpq, FIELD_WITH_OFFSETS, new int[][]{
         { 0 }, { 1 }, { 2 }, { 3 },
-        { 4, 1, 2, 2, 17, 5, 7, 28, 54, 5, 7, 28, 54, 10, 11, 60, 75 }
+        { 4, 1, 2, 2, 17, 5, 6, 28, 43, 5, 7, 28, 54, 10, 11, 60, 75 }
     });
+    assertIsLeafMatch(mpq, FIELD_WITH_OFFSETS);
   }
 
   public void testExactMultiPhraseQuery() throws IOException {
@@ -449,6 +615,38 @@ public class TestMatchesIterator extends LuceneTestCase {
     checkMatches(mpq2, FIELD_WITH_OFFSETS, new int[][]{
         { 0 }, { 1 }, { 2 }, { 3 },
         { 4, 0, 1, 0, 8, 4, 5, 23, 34, 9, 10, 58, 66 }
+    });
+    assertIsLeafMatch(mpq2, FIELD_WITH_OFFSETS);
+  }
+
+  //  0         1         2         3         4         5         6         7
+  // "a phrase sentence with many phrase sentence iterations of a phrase sentence",
+
+  public void testSpanQuery() throws IOException {
+    SpanQuery subq = SpanNearQuery.newOrderedNearQuery(FIELD_WITH_OFFSETS)
+        .addClause(new SpanTermQuery(new Term(FIELD_WITH_OFFSETS, "with")))
+        .addClause(new SpanTermQuery(new Term(FIELD_WITH_OFFSETS, "many")))
+        .build();
+    Query q = SpanNearQuery.newOrderedNearQuery(FIELD_WITH_OFFSETS)
+        .addClause(new SpanTermQuery(new Term(FIELD_WITH_OFFSETS, "sentence")))
+        .addClause(new SpanOrQuery(subq, new SpanTermQuery(new Term(FIELD_WITH_OFFSETS, "iterations"))))
+        .build();
+    checkMatches(q, FIELD_WITH_OFFSETS, new int[][]{
+        { 0 }, { 1 }, { 2 }, { 3 },
+        { 4, 2, 4, 9, 27, 6, 7, 35, 54 }
+    });
+    checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 0, 0, 0, 0, 1 });
+    checkTermMatches(q, FIELD_WITH_OFFSETS, new TermMatch[][][]{
+        {}, {}, {}, {},
+        {
+            {
+                new TermMatch(2, 9, 17),
+                new TermMatch(3, 18, 22),
+                new TermMatch(4, 23, 27)
+            }, {
+              new TermMatch(6, 35, 43), new TermMatch(7, 44, 54)
+        }
+        }
     });
   }
 
