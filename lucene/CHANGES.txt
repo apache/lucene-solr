@@ -198,6 +198,9 @@ Improvements
 * LUCENE-8345, GitHub PR #392: Remove instantiation of redundant wrapper classes for primitives;
   add wrapper class constructors to forbiddenapis.  (Michael Braun via Uwe Schindler)
 
+* LUCENE-8306: Matches API now allows iteration over sub-matches in Spans (Alan Woodward,
+  Jim Ferenczi, David Smiley)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
