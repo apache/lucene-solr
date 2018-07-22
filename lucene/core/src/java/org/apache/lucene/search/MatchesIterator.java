@@ -28,6 +28,9 @@ import org.apache.lucene.index.LeafReaderContext;
  * positions and/or offsets after each call.  You should not call the position or offset methods
  * before {@link #next()} has been called, or after {@link #next()} has returned {@code false}.
  *
+ * Matches from some queries may span multiple positions.  You can retrieve the positions of
+ * individual matching terms on the current match by calling {@link #getSubMatches()}.
+ *
  * Matches are ordered by start position, and then by end position.  Match intervals may overlap.
  *
  * @see Weight#matches(LeafReaderContext, int)
@@ -69,5 +72,26 @@ public interface MatchesIterator {
    * Should only be called after {@link #next()} has returned {@code true}
    */
   int endOffset() throws IOException;
+
+  /**
+   * Returns a MatchesIterator that iterates over the positions and offsets of individual
+   * terms within the current match
+   *
+   * Returns {@code null} if there are no submatches (ie the current iterator is at the
+   * leaf level)
+   *
+   * Should only be called after {@link #next()} has returned {@code true}
+   */
+  MatchesIterator getSubMatches() throws IOException;
+
+  /**
+   * Returns the Query causing the current match
+   *
+   * If this {@link MatchesIterator} has been returned from a {@link #getSubMatches()}
+   * call, then returns a {@link TermQuery} equivalent to the current match
+   *
+   * Should only be called after {@link #next()} has returned {@code true}
+   */
+  Query getQuery();
 
 }

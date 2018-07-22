@@ -93,7 +93,7 @@ public class TermQuery extends Query {
         if (pe.advance(doc) != doc) {
           return null;
         }
-        return new TermMatchesIterator(pe);
+        return new TermMatchesIterator(getQuery(), pe);
       });
     }
 

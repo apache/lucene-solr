@@ -226,7 +226,7 @@ public class TermInSetQuery extends Query implements Accountable {
         if (terms == null || terms.hasPositions() == false) {
           return super.matches(context, doc);
         }
-        return Matches.forField(field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, field, termData.iterator()));
+        return Matches.forField(field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, getQuery(), field, termData.iterator()));
       }
 
       /**
