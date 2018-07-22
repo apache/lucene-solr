@@ -67,4 +67,54 @@ class TermMatchesIterator implements MatchesIterator {
     return pe.endOffset();
   }
 
+  @Override
+  public Object label() {
+    return pe;
+  }
+
+  @Override
+  public MatchesIterator getSubMatches() throws IOException {
+    return new MatchesIterator() {
+
+      boolean exhausted = false;
+
+      @Override
+      public boolean next() {
+        if (exhausted) {
+          return false;
+        }
+        return exhausted = true;
+      }
+
+      @Override
+      public int startPosition() {
+        return pos;
+      }
+
+      @Override
+      public int endPosition() {
+        return pos;
+      }
+
+      @Override
+      public int startOffset() throws IOException {
+        return pe.startOffset();
+      }
+
+      @Override
+      public int endOffset() throws IOException {
+        return pe.endOffset();
+      }
+
+      @Override
+      public MatchesIterator getSubMatches() {
+        return MatchesIterator.EMPTY_ITERATOR;
+      }
+
+      @Override
+      public Object label() {
+        return this;
+      }
+    };
+  }
 }
