@@ -90,4 +90,6 @@ abstract class PhraseMatcher {
   public float getMatchCost() {
     return matchCost;
   }
+
+  abstract MatchesIterator getSubMatches() throws IOException;
 }
