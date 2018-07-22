@@ -446,7 +446,7 @@ public class PhraseQuery extends Query {
             return null;
           }
           te.seekExact(t.bytes(), state);
-          PostingsEnum postingsEnum = te.postings(null, exposeOffsets ? PostingsEnum.ALL : PostingsEnum.POSITIONS);
+          PostingsEnum postingsEnum = te.postings(null, exposeOffsets ? PostingsEnum.OFFSETS : PostingsEnum.POSITIONS);
           postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
           totalMatchCost += termPositionsCost(te);
         }
@@ -457,7 +457,7 @@ public class PhraseQuery extends Query {
           return new ExactPhraseMatcher(postingsFreqs, totalMatchCost);
         }
         else {
-          return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost, exposeOffsets);
+          return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost);
         }
       }
 
