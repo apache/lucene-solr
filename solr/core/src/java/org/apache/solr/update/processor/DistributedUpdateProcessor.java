@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -1083,7 +1084,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // The leader forwarded us this update.
             cmd.setVersion(versionOnUpdate);
 
-            if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
+            if (shouldBufferUpdate(cmd, isReplayOrPeersync, ulog.getState())) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
               ulog.add(cmd);
@@ -1132,9 +1133,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   }
                 }
               }
-            }
-
-            if (!cmd.isInPlaceUpdate()) {
+            } else {
               // if we aren't the leader, then we need to check that updates were not re-ordered
               if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
                 // we're OK... this update has a version higher than anything we've seen
@@ -1176,6 +1175,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       vinfo.unlockForUpdate();
     }
     return false;
+  }
+
+  @VisibleForTesting
+  boolean shouldBufferUpdate(AddUpdateCommand cmd, boolean isReplayOrPeersync, UpdateLog.State state) {
+    if (state == UpdateLog.State.APPLYING_BUFFERED
+        && !isReplayOrPeersync
+        && !cmd.isInPlaceUpdate()) {
+      // this a new update sent from the leader, it contains whole document therefore it won't depend on other updates
+      return false;
+    }
+
+    return state != UpdateLog.State.ACTIVE && isReplayOrPeersync == false;
   }
 
   /**

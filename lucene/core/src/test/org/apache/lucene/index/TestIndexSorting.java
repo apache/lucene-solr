@@ -2324,11 +2324,11 @@ public class TestIndexSorting extends LuceneTestCase {
         System.out.println("TEST: iter=" + iter + " numHits=" + numHits);
       }
 
-      TopFieldCollector c1 = TopFieldCollector.create(sort, numHits, true, true);
+      TopFieldCollector c1 = TopFieldCollector.create(sort, numHits, true);
       s1.search(new MatchAllDocsQuery(), c1);
       TopDocs hits1 = c1.topDocs();
 
-      TopFieldCollector c2 = TopFieldCollector.create(sort, numHits, true, false);
+      TopFieldCollector c2 = TopFieldCollector.create(sort, numHits, false);
       s2.search(new MatchAllDocsQuery(), c2);
 
       TopDocs hits2 = c2.topDocs();

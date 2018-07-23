@@ -241,7 +241,7 @@ public class DrillSideways {
 
                   @Override
                   public TopFieldCollector newCollector() throws IOException {
-                    return TopFieldCollector.create(sort, fTopN, after, doDocScores, true);
+                    return TopFieldCollector.create(sort, fTopN, after, true);
                   }
 
                   @Override
@@ -255,14 +255,22 @@ public class DrillSideways {
 
                 };
         ConcurrentDrillSidewaysResult<TopFieldDocs> r = search(query, collectorManager);
-        return new DrillSidewaysResult(r.facets, r.collectorResult);
+        TopFieldDocs topDocs = r.collectorResult;
+        if (doDocScores) {
+          TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, query);
+        }
+        return new DrillSidewaysResult(r.facets, topDocs);
 
       } else {
 
         final TopFieldCollector hitCollector =
-                TopFieldCollector.create(sort, fTopN, after, doDocScores, true);
+                TopFieldCollector.create(sort, fTopN, after, true);
         DrillSidewaysResult r = search(query, hitCollector);
-        return new DrillSidewaysResult(r.facets, hitCollector.topDocs());
+        TopFieldDocs topDocs = hitCollector.topDocs();
+        if (doDocScores) {
+          TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, query);
+        }
+        return new DrillSidewaysResult(r.facets, topDocs);
       }
     } else {
       return search(after, query, topN);
