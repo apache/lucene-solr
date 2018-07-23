@@ -34,6 +34,8 @@ import java.nio.file.attribute.FileAttribute;
  * All other filesystem operations are passed thru as normal.
  */
 public class ExtrasFS extends FilterFileSystemProvider {
+  private final static String EXTRA_FILE_NAME = "extra0";
+
   final boolean active;
   final boolean createDirectory;
   
@@ -57,7 +59,7 @@ public class ExtrasFS extends FilterFileSystemProvider {
     if (active) {
       // lets add a bogus file... if this fails, we don't care, its best effort.
       try {
-        Path target = dir.resolve("extra0");
+        Path target = dir.resolve(EXTRA_FILE_NAME);
         if (createDirectory) {
           super.createDirectory(target);
         } else {
@@ -73,4 +75,10 @@ public class ExtrasFS extends FilterFileSystemProvider {
   // our fake files. But this is tricky because its hooked into several places. 
   // Currently MDW has a hack so we don't break disk full tests.
 
+  /**
+   * @return Return true if {@code fileName} is one of the extra files added by this class.
+   */
+  public static boolean isExtra(String fileName) {
+    return fileName.equals(EXTRA_FILE_NAME);
+  }
 }

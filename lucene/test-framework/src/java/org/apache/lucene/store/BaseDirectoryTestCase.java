@@ -36,6 +36,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.CRC32;
 
@@ -45,6 +46,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexNotFoundException;
+import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -410,7 +412,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
         try {
           Random rnd = new Random(RandomizedTest.randomLong() + 1);
           for (int i = 0, max = RandomizedTest.randomIntBetween(500, 1000); i < max; i++) {
-            String fileName = "T1-" + i;
+            String fileName = "file-" + i;
             try (IndexOutput output = dir.createOutput(fileName, newIOContext(random()))) {
               // Add some lags so that the other thread can read the content of the directory.
               Thread.yield();
@@ -428,22 +430,23 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
         try {
           Random rnd = new Random(RandomizedTest.randomLong());
           while (!stop.get()) {
-            String[] files = dir.listAll();
-            if (files.length == 0) {
-              continue;
-            }
+            String [] files = Arrays.stream(dir.listAll())
+                .filter(name -> !ExtrasFS.isExtra(name)) // Ignore anything from ExtraFS.
+                .toArray(String[]::new);
 
-            do {
-              String file = RandomPicks.randomFrom(rnd, files);
-              try (IndexInput input = dir.openInput(file, newIOContext(random()))) {
-                // Just open, nothing else.
-              } catch (AccessDeniedException e) {
-                // Access denied is allowed for files for which the output is still open.
-                // Since we don't synchronize with the writer thread, just ignore it.
-              } catch (IOException e) {
-                throw new UncheckedIOException("Something went wrong when opening: " + file, e);
-              }
-            } while (rnd.nextInt(3) != 0); // Sometimes break and list files again.
+            if (files.length > 0) {
+              do {
+                String file = RandomPicks.randomFrom(rnd, files);
+                try (IndexInput input = dir.openInput(file, newIOContext(random()))) {
+                  // Just open, nothing else.
+                } catch (AccessDeniedException e) {
+                  // Access denied is allowed for files for which the output is still open.
+                  // Since we don't synchronize with the writer thread, just ignore it.
+                } catch (IOException e) {
+                  throw new UncheckedIOException("Something went wrong when opening: " + file, e);
+                }
+              } while (rnd.nextInt(3) != 0); // Sometimes break and list files again.
+            }
           }
         } catch (IOException e) {
           throw new UncheckedIOException(e);
@@ -1025,9 +1028,11 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
         assertEquals(iter, in.readVInt());
         in.close();
       }
-      Set<String> files = new HashSet<String>(Arrays.asList(dir.listAll()));
-      // In case ExtrasFS struck:
-      files.remove("extra0");
+
+      Set<String> files = Arrays.stream(dir.listAll())
+          .filter(file -> !ExtrasFS.isExtra(file)) // remove any ExtrasFS stuff.
+          .collect(Collectors.toSet());
+
       assertEquals(new HashSet<String>(names), files);
     }
   }
