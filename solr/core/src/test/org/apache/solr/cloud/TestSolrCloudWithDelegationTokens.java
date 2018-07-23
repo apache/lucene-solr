@@ -383,33 +383,31 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     SolrRequest request = getAdminRequest(new ModifiableSolrParams());
 
     // test without token
-    HttpSolrClient ss =
-        new HttpSolrClient.Builder(solrClientPrimary.getBaseURL().toString())
-            .withResponseParser(solrClientPrimary.getParser())
-            .build();
+    final HttpSolrClient ssWoToken =
+      new HttpSolrClient.Builder(solrClientPrimary.getBaseURL().toString())
+          .withResponseParser(solrClientPrimary.getParser())
+          .build();
     try {
-      doSolrRequest(ss, request, ErrorCode.UNAUTHORIZED.code);
+      doSolrRequest(ssWoToken, request, ErrorCode.UNAUTHORIZED.code);
     } finally {
-      ss.close();
+      ssWoToken.close();
     }
 
-    ss = new HttpSolrClient.Builder(solrClientPrimary.getBaseURL().toString())
+    final HttpSolrClient ssWToken = new HttpSolrClient.Builder(solrClientPrimary.getBaseURL().toString())
         .withKerberosDelegationToken(token)
         .withResponseParser(solrClientPrimary.getParser())
         .build();
     try {
       // test with token via property
-      doSolrRequest(ss, request, HttpStatus.SC_OK);
+      doSolrRequest(ssWToken, request, HttpStatus.SC_OK);
 
       // test with param -- should throw an exception
       ModifiableSolrParams tokenParam = new ModifiableSolrParams();
       tokenParam.set("delegation", "invalidToken");
-      try {
-        doSolrRequest(ss, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code);
-        Assert.fail("Expected exception");
-      } catch (IllegalArgumentException ex) {}
+      expectThrows(IllegalArgumentException.class,
+          () -> doSolrRequest(ssWToken, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code));
     } finally {
-      ss.close();
+      ssWToken.close();
     }
   }
 }

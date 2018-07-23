@@ -29,6 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -78,17 +79,11 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     MockAuthenticationPlugin.expectedPassword = "s0lrRocks";
 
     // Should fail with 401
-    try {
-      collectionCreateSearchDeleteTwice();
-      fail("Should've returned a 401 error");
-    } catch (Exception ex) {
-      if (!ex.getMessage().contains("Error 401")) {
-        fail("Should've returned a 401 error");
-      }
-    } finally {
-      MockAuthenticationPlugin.expectedUsername = null;
-      MockAuthenticationPlugin.expectedPassword = null;
-    }
+    HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class,
+        this::collectionCreateSearchDeleteTwice);
+    assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
+    MockAuthenticationPlugin.expectedUsername = null;
+    MockAuthenticationPlugin.expectedPassword = null;
   }
 
   @Override

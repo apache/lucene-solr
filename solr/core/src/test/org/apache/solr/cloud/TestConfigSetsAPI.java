@@ -632,13 +632,9 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private void verifyException(SolrClient solrClient, ConfigSetAdminRequest request,
       String errorContains) throws Exception {
-    try {
-      solrClient.request(request);
-      Assert.fail("Expected exception");
-    } catch (Exception e) {
-      assertTrue("Expected exception message to contain: " + errorContains
-          + " got: " + e.getMessage(), e.getMessage().contains(errorContains));
-    }
+    Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
+    assertTrue("Expected exception message to contain: " + errorContains
+        + " got: " + e.getMessage(), e.getMessage().contains(errorContains));
   }
 
   @Test

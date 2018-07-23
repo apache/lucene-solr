@@ -178,14 +178,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // test put file
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "putfile", "/solr.xml", SOLR_HOME + File.separator + "not-there.xml"};
-    try {
-      ZkCLI.main(args);
-      fail("Should have had a file not found exception");
-    } catch (FileNotFoundException fne) {
-      String msg = fne.getMessage();
-      assertTrue("Didn't find expected error message containing 'not-there.xml' in " + msg,
-          msg.indexOf("not-there.xml") != -1);
-    }
+    FileNotFoundException e = expectThrows(FileNotFoundException.class, () -> ZkCLI.main(args));
+    assertTrue("Didn't find expected error message containing 'not-there.xml' in " + e.getMessage(),
+        e.getMessage().indexOf("not-there.xml") != -1);
   }
 
   @Test
@@ -332,11 +327,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     File file = createTempFile("newfile", null).toFile();
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
-    try {
-      ZkCLI.main(args);
-      fail("Expected NoNodeException");
-    } catch (KeeperException.NoNodeException ex) {
-    }
+    KeeperException e = expectThrows(KeeperException.class, () -> ZkCLI.main(args));
+    assertEquals(e.code(), KeeperException.Code.NONODE);
   }
 
   @Test(expected = SolrException.class)

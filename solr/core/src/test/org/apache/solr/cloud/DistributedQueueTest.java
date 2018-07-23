@@ -57,12 +57,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
     // basic ops
     assertNull(dq.poll());
-    try {
-      dq.remove();
-      fail("NoSuchElementException expected");
-    } catch (NoSuchElementException expected) {
-      // expected
-    }
+    expectThrows(NoSuchElementException.class, dq::remove);
 
     dq.offer(data);
     assertArrayEquals(dq.peek(500), data);
@@ -128,13 +123,9 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     ZkDistributedQueue dq = makeDistributedQueue(dqZNode);
 
     assertNull(dq.peek());
-    Future<String> future = executor.submit(() -> new String(dq.peek(true), UTF8));
-    try {
-      future.get(1000, TimeUnit.MILLISECONDS);
-      fail("TimeoutException expected");
-    } catch (TimeoutException expected) {
-      assertFalse(future.isDone());
-    }
+    final Future<String> future = executor.submit(() -> new String(dq.peek(true), UTF8));
+    expectThrows(TimeoutException.class, () -> future.get(1000, TimeUnit.MILLISECONDS));
+    assertFalse("expected future to time out", future.isDone());
 
     // Ultimately trips the watcher, triggering child refresh
     dq.offer(testData.getBytes(UTF8));
@@ -154,13 +145,9 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertEquals(0, dq.watcherCount());
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
-    future = executor.submit(() -> new String(dq.peek(true), UTF8));
-    try {
-      future.get(1000, TimeUnit.MILLISECONDS);
-      fail("TimeoutException expected");
-    } catch (TimeoutException expected) {
-      assertFalse(future.isDone());
-    }
+    final Future<String> futureReRun = executor.submit(() -> new String(dq.peek(true), UTF8));
+    expectThrows(TimeoutException.class, () -> futureReRun.get(1000, TimeUnit.MILLISECONDS));
+    assertFalse("expected future to time out", futureReRun.isDone());
 
     // Ultimately trips the watcher, triggering child refresh
     dq.offer(testData.getBytes(UTF8));

@@ -144,20 +144,15 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 2).process(cluster.getSolrClient());
     waitForState("Expected a single shard with a single replica", collectionName, clusterShape(1, 1));
-    
-    try {
-      CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 1).process(cluster.getSolrClient());
-      fail("Expected Exception, Can't delete the last replica by count");
-    } catch (SolrException e) {
-      // expected
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-      assertTrue(e.getMessage().contains("There is only one replica available"));
-    }
+
+    SolrException e = expectThrows(SolrException.class,
+        () -> CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 1).process(cluster.getSolrClient())
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("There is only one replica available"));
     DocCollection docCollection = getCollectionState(collectionName);
     // We know that since leaders are preserved, PULL replicas should not be left alone in the shard
     assertEquals(0, docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).size());
-    
-
   }
 
   @Test
@@ -257,6 +252,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
           return false;
         }
         LOG.info("Running delete core {}",cd);
+
         try {
           ZkNodeProps m = new ZkNodeProps(
               Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),

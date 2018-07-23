@@ -842,13 +842,13 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     throws Exception {
 
     try {
-      ignoreException(expSubstr);
-      assertJQ(req(p));
-      fail("no exception matching expected: " + expCode.code + ": " + expSubstr);
-    } catch (SolrException e) {
+      SolrException e = expectThrows(SolrException.class, () -> {
+        ignoreException(expSubstr);
+        assertJQ(req(p));
+      });
       assertEquals(expCode.code, e.code());
       assertTrue("Expected substr not found: " + expSubstr + " <!< " + e.getMessage(),
-                 e.getMessage().contains(expSubstr));
+          e.getMessage().contains(expSubstr));
     } finally {
       unIgnoreException(expSubstr);
     }
