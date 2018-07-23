@@ -34,11 +34,11 @@ import org.apache.lucene.util.IOUtils;
  * Implementing classes must comply with the following:
  *
  * <ul>
- *   <li>A file in a directory can be created ({@link #createOutput}) and appended
- *   to, then closed. </li>
- *   <li>A file open for writing must not be available
+ *   <li>A file in a directory can be created ({@link #createOutput}), appended
+ *   to, then closed.</li>
+ *   <li>A file open for writing may not be available
  *   for read access until the corresponding {@link IndexOutput} is closed.</li>
- *   <li>Once a file is created it may only be opened for input ({@link #openInput}), or
+ *   <li>Once a file is created it must only be opened for input ({@link #openInput}), or
  *   deleted ({@link #deleteFile}). Calling {@link #createOutput} on an existing file
  *   must throw {@link java.nio.file.FileAlreadyExistsException}.</li>
  * </ul>
@@ -101,7 +101,7 @@ public abstract class Directory implements Closeable {
 
   /**
    * Ensures that any writes to these files are moved to
-   * stable storage.
+   * stable storage (made durable).
    *
    * Lucene uses this to properly commit changes to the index, to prevent a machine/OS crash
    * from corrupting the index.
