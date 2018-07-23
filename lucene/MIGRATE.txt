@@ -82,3 +82,10 @@ all matches.
 Because filling sort values doesn't have a significant overhead, the fillFields
 option has been removed from TopFieldCollector factory methods. Everything
 behaves as if it was set to true.
+
+## TopFieldCollector no longer takes a trackDocScores option ##
+
+Computing scores at collection time is less efficient than running a second
+request in order to only compute scores for documents that made it to the top
+hits. As a consequence, the trackDocScores option has been removed and can be
+replaced with the new TopFieldCollector#populateScores helper method.

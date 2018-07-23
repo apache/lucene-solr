@@ -386,10 +386,10 @@ public class TestBoolean2 extends LuceneTestCase {
         }
 
         // check diff (randomized) scorers (from AssertingSearcher) produce the same results
-        TopFieldCollector collector = TopFieldCollector.create(sort, 1000, true, false);
+        TopFieldCollector collector = TopFieldCollector.create(sort, 1000, false);
         searcher.search(q1, collector);
         ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
-        collector = TopFieldCollector.create(sort, 1000, true, false);
+        collector = TopFieldCollector.create(sort, 1000, false);
         searcher.search(q1, collector);
         ScoreDoc[] hits2 = collector.topDocs().scoreDocs;
         tot+=hits2.length;
@@ -402,10 +402,10 @@ public class TestBoolean2 extends LuceneTestCase {
         assertEquals(mulFactor*collector.totalHits + NUM_EXTRA_DOCS/2, hits4.totalHits);
 
         // test diff (randomized) scorers produce the same results on bigSearcher as well
-        collector = TopFieldCollector.create(sort, 1000 * mulFactor, true, false);
+        collector = TopFieldCollector.create(sort, 1000 * mulFactor, false);
         bigSearcher.search(q1, collector);
         hits1 = collector.topDocs().scoreDocs;
-        collector = TopFieldCollector.create(sort, 1000 * mulFactor, true, false);
+        collector = TopFieldCollector.create(sort, 1000 * mulFactor, false);
         bigSearcher.search(q1, collector);
         hits2 = collector.topDocs().scoreDocs;
         CheckHits.checkEqual(q1, hits1, hits2);

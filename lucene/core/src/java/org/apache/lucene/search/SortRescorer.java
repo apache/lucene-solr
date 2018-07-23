@@ -44,17 +44,12 @@ public class SortRescorer extends Rescorer {
 
     // Copy ScoreDoc[] and sort by ascending docID:
     ScoreDoc[] hits = firstPassTopDocs.scoreDocs.clone();
-    Arrays.sort(hits,
-                new Comparator<ScoreDoc>() {
-                  @Override
-                  public int compare(ScoreDoc a, ScoreDoc b) {
-                    return a.doc - b.doc;
-                  }
-                });
+    Comparator<ScoreDoc> docIdComparator = Comparator.comparingInt(sd -> sd.doc);
+    Arrays.sort(hits, docIdComparator);
 
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
-    TopFieldCollector collector = TopFieldCollector.create(sort, topN, true, true);
+    TopFieldCollector collector = TopFieldCollector.create(sort, topN, true);
 
     // Now merge sort docIDs from hits, with reader's leaves:
     int hitUpto = 0;
@@ -90,7 +85,15 @@ public class SortRescorer extends Rescorer {
       hitUpto++;
     }
 
-    return collector.topDocs();
+    TopDocs rescoredDocs = collector.topDocs();
+    // set scores from the original score docs
+    assert hits.length == rescoredDocs.scoreDocs.length;
+    ScoreDoc[] rescoredDocsClone = rescoredDocs.scoreDocs.clone();
+    Arrays.sort(rescoredDocsClone, docIdComparator);
+    for (int i = 0; i < rescoredDocsClone.length; ++i) {
+      rescoredDocsClone[i].score = hits[i].score;
+    }
+    return rescoredDocs;
   }
 
   @Override

@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -44,6 +45,7 @@ import org.rrd4j.core.RrdDb;
  *
  */
 @LogLevel("org.apache.solr.cloud=DEBUG")
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   private static SolrCloudManager cloudManager;

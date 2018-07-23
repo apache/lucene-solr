@@ -60,8 +60,12 @@ API Changes
   no longer have an option to compute the maximum score when sorting by field.
   (Adrien Grand)
 
-* LUCENE-8411: TopFieldCollector no longer takes a fillFields options, it now
+* LUCENE-8411: TopFieldCollector no longer takes a fillFields option, it now
   always fills fields. (Adrien Grand)
+
+* LUCENE-8412: TopFieldCollector no longer takes a trackDocScores option. Scores
+  need to be set on top hits via TopFieldCollector#populateScores instead.
+  (Adrien Grand)
 
 Changes in Runtime Behavior
 
@@ -177,7 +181,6 @@ Bug Fixes:
   TokenStream if a token consisting entirely of delimiter characters was 
   encountered, but preserve_original was set. (Alan Woodward)
 
-
 * LUCENE-8398: TieredMergePolicy.getMaxMergedSegmentMB has rounding error (Erick Erickson)
 
 Changes in Runtime Behavior:
@@ -203,6 +206,12 @@ Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
   Extended_Pictographic property. (Robert Muir)
+
+* LUCENE-8408: original Highlighter:  Remove obsolete static AttributeFactory instance
+  in TokenStreamFromTermVector.  (Michael Braun, David Smiley)
+
+* LUCENE-8420: Upgrade OpenNLP to 1.9.0 so OpenNLP tool can read the new model format which 1.8.x
+  cannot read. 1.9.0 can read the old format. (Koji Sekiguchi)
 
 ======================= Lucene 7.4.1 =======================
 
