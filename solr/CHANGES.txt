@@ -173,6 +173,9 @@ Optimizations
   which we can export is directly proportional to the number of sort fields specified. This change also allows streaming
   expressions to group by on more than 4 fields. (Aroop Ganguly, Amrit Sarkar, Varun Thacker)
 
+* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery. 
+  (Cao Manh Dat)
+
 Other Changes
 ----------------------
 
