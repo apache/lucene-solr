@@ -1532,12 +1532,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return TopScoreDocCollector.create(len);
     } else {
       // we have a sort
-      final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
       final Sort weightedSort = weightSort(cmd.getSort());
       final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, needScores, true);
+      return TopFieldCollector.create(weightedSort, len, searchAfter, true);
     }
   }
 
@@ -1624,6 +1623,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       totalHits = topCollector.getTotalHits();
       TopDocs topDocs = topCollector.topDocs(0, len);
+      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+        TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+      }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
 
       maxScore = totalHits > 0 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore()) : 0.0f;
@@ -1732,6 +1734,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       assert (totalHits == set.size());
 
       TopDocs topDocs = topCollector.topDocs(0, len);
+      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+        TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+      }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
       maxScore = totalHits > 0 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore()) : 0.0f;
       nDocsReturned = topDocs.scoreDocs.length;

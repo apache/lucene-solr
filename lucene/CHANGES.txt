@@ -60,8 +60,12 @@ API Changes
   no longer have an option to compute the maximum score when sorting by field.
   (Adrien Grand)
 
-* LUCENE-8411: TopFieldCollector no longer takes a fillFields options, it now
+* LUCENE-8411: TopFieldCollector no longer takes a fillFields option, it now
   always fills fields. (Adrien Grand)
+
+* LUCENE-8412: TopFieldCollector no longer takes a trackDocScores option. Scores
+  need to be set on top hits via TopFieldCollector#populateScores instead.
+  (Adrien Grand)
 
 Changes in Runtime Behavior
 

@@ -50,7 +50,6 @@ public class GroupingSearch {
 
   private int groupDocsOffset;
   private int groupDocsLimit = 1;
-  private boolean includeScores = true;
   private boolean includeMaxScore = true;
 
   private Double maxCacheRAMMB;
@@ -153,8 +152,7 @@ public class GroupingSearch {
 
     int topNInsideGroup = groupDocsOffset + groupDocsLimit;
     TopGroupsCollector secondPassCollector
-        = new TopGroupsCollector(grouper, topSearchGroups, groupSort, sortWithinGroup, topNInsideGroup,
-                                         includeScores, includeMaxScore);
+        = new TopGroupsCollector(grouper, topSearchGroups, groupSort, sortWithinGroup, topNInsideGroup, includeMaxScore);
 
     if (cachedCollector != null && cachedCollector.isCached()) {
       cachedCollector.replay(secondPassCollector);
@@ -173,7 +171,7 @@ public class GroupingSearch {
     int topN = groupOffset + groupLimit;
     final Query endDocsQuery = searcher.rewrite(this.groupEndDocs);
     final Weight groupEndDocs = searcher.createWeight(endDocsQuery, ScoreMode.COMPLETE_NO_SCORES, 1);
-    BlockGroupingCollector c = new BlockGroupingCollector(groupSort, topN, includeScores, groupEndDocs);
+    BlockGroupingCollector c = new BlockGroupingCollector(groupSort, topN, groupSort.needsScores() || sortWithinGroup.needsScores(), groupEndDocs);
     searcher.search(query, c);
     int topNInsideGroup = groupDocsOffset + groupDocsLimit;
     return c.getTopGroups(sortWithinGroup, groupOffset, groupDocsOffset, topNInsideGroup);
@@ -265,17 +263,6 @@ public class GroupingSearch {
    */
   public GroupingSearch setGroupDocsLimit(int groupDocsLimit) {
     this.groupDocsLimit = groupDocsLimit;
-    return this;
-  }
-
-  /**
-   * Whether to include the scores per doc inside a group.
-   *
-   * @param includeScores Whether to include the scores per doc inside a group
-   * @return <code>this</code>
-   */
-  public GroupingSearch setIncludeScores(boolean includeScores) {
-    this.includeScores = includeScores;
     return this;
   }
 

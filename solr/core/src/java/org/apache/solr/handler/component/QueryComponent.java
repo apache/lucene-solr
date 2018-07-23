@@ -1327,6 +1327,7 @@ public class QueryComponent extends SearchComponent
 
       secondPhaseBuilder.addCommandField(
           new TopGroupsFieldCommand.Builder()
+              .setQuery(cmd.getQuery())
               .setField(schemaField)
               .setGroupSort(groupingSpec.getGroupSort())
               .setSortWithinGroup(groupingSpec.getSortWithinGroup())

@@ -304,7 +304,7 @@ public class BlockGroupingCollector extends SimpleCollector {
         collector = TopScoreDocCollector.create(maxDocsPerGroup);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, needsScores, true); // TODO: disable exact counts?
+        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, true); // TODO: disable exact counts?
       }
 
       float groupMaxScore = needsScores ? Float.NEGATIVE_INFINITY : Float.NaN;
