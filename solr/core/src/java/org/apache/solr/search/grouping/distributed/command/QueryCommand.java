@@ -114,6 +114,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
   private TopDocsCollector topDocsCollector;
   private FilterCollector filterCollector;
   private MaxScoreCollector maxScoreCollector;
+  private TopDocs topDocs;
 
   private QueryCommand(Sort sort, Query query, int docsToCollect, boolean needScores, DocSet docSet, String queryString) {
     this.sort = sort;
@@ -130,7 +131,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
     if (sort == null || sort.equals(Sort.RELEVANCE)) {
       subCollector = topDocsCollector = TopScoreDocCollector.create(docsToCollect);
     } else {
-      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, needScores, true);
+      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, true);
       if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         subCollector = MultiCollector.wrap(topDocsCollector, maxScoreCollector);
@@ -143,8 +144,15 @@ public class QueryCommand implements Command<QueryCommandResult> {
   }
 
   @Override
-  public QueryCommandResult result() {
-    TopDocs topDocs = topDocsCollector.topDocs();
+  public void postCollect(IndexSearcher searcher) throws IOException {
+    topDocs = topDocsCollector.topDocs();
+    if (needScores) {
+      TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, query);
+    }
+  }
+
+  @Override
+  public QueryCommandResult result() throws IOException {
     float maxScore;
     if (sort == null) {
       maxScore = topDocs.scoreDocs.length == 0 ? Float.NaN : topDocs.scoreDocs[0].score;

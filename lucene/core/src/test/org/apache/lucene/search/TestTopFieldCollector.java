@@ -18,11 +18,14 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -70,8 +73,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     Sort[] sort = new Sort[] { new Sort(SortField.FIELD_DOC), new Sort() };
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10,
-          false, true);
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true);
       
       is.search(q, tdc);
       
@@ -83,14 +85,13 @@ public class TestTopFieldCollector extends LuceneTestCase {
     }
   }
 
-  public void testSortWithoutScoreTracking() throws Exception {
+  public void testSort() throws Exception {
 
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, false,
-          true);
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true);
       
       is.search(q, tdc);
       
@@ -110,10 +111,10 @@ public class TestTopFieldCollector extends LuceneTestCase {
       // the index is not sorted
       TopDocsCollector<Entry> tdc;
       if (i % 2 == 0) {
-        tdc =  TopFieldCollector.create(sort, 10, false, false);
+        tdc =  TopFieldCollector.create(sort, 10, false);
       } else {
         FieldDoc fieldDoc = new FieldDoc(1, Float.NaN, new Object[] { 1 });
-        tdc = TopFieldCollector.create(sort, 10, fieldDoc, false, false);
+        tdc = TopFieldCollector.create(sort, 10, fieldDoc, false);
       }
 
       is.search(q, tdc);
@@ -125,32 +126,13 @@ public class TestTopFieldCollector extends LuceneTestCase {
       }
     }
   }
-  
-  public void testSortWithScoreTracking() throws Exception {
-    
-    // Two Sort criteria to instantiate the multi/single comparators.
-    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
-    for(int i = 0; i < sort.length; i++) {
-      Query q = new MatchAllDocsQuery();
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true,
-          true);
-      
-      is.search(q, tdc);
-      
-      TopDocs td = tdc.topDocs();
-      ScoreDoc[] sd = td.scoreDocs;
-      for(int j = 0; j < sd.length; j++) {
-        assertTrue(!Float.isNaN(sd[j].score));
-      }
-    }
-  }
 
-  public void testSortWithScoreTrackingNoResults() throws Exception {
+  public void testSortNoResults() throws Exception {
     
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for(int i = 0; i < sort.length; i++) {
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true);
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true);
       TopDocs td = tdc.topDocs();
       assertEquals(0, td.totalHits);
     }
@@ -182,58 +164,111 @@ public class TestTopFieldCollector extends LuceneTestCase {
         .build();
     final IndexSearcher searcher = new IndexSearcher(reader);
     for (Sort sort : new Sort[] {new Sort(SortField.FIELD_SCORE), new Sort(new SortField("f", SortField.Type.SCORE))}) {
-      for (boolean doDocScores : new boolean[] {false, true}) {
-        final TopFieldCollector topCollector = TopFieldCollector.create(sort, TestUtil.nextInt(random(), 1, 2), doDocScores, true);
-        final Collector assertingCollector = new Collector() {
-          @Override
-          public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-            final LeafCollector in = topCollector.getLeafCollector(context);
-            return new FilterLeafCollector(in) {
-              @Override
-              public void setScorer(final Scorer scorer) throws IOException {
-                Scorer s = new Scorer(null) {
+      final TopFieldCollector topCollector = TopFieldCollector.create(sort, TestUtil.nextInt(random(), 1, 2), true);
+      final Collector assertingCollector = new Collector() {
+        @Override
+        public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+          final LeafCollector in = topCollector.getLeafCollector(context);
+          return new FilterLeafCollector(in) {
+            @Override
+            public void setScorer(final Scorer scorer) throws IOException {
+              Scorer s = new Scorer(null) {
 
-                  int lastComputedDoc = -1;
+                int lastComputedDoc = -1;
 
-                  @Override
-                  public float score() throws IOException {
-                    if (lastComputedDoc == docID()) {
-                      throw new AssertionError("Score computed twice on " + docID());
-                    }
-                    lastComputedDoc = docID();
-                    return scorer.score();
+                @Override
+                public float score() throws IOException {
+                  if (lastComputedDoc == docID()) {
+                    throw new AssertionError("Score computed twice on " + docID());
                   }
+                  lastComputedDoc = docID();
+                  return scorer.score();
+                }
 
-                  @Override
-                  public float getMaxScore(int upTo) throws IOException {
-                    return scorer.getMaxScore(upTo);
-                  }
+                @Override
+                public float getMaxScore(int upTo) throws IOException {
+                  return scorer.getMaxScore(upTo);
+                }
 
-                  @Override
-                  public int docID() {
-                    return scorer.docID();
-                  }
+                @Override
+                public int docID() {
+                  return scorer.docID();
+                }
 
-                  @Override
-                  public DocIdSetIterator iterator() {
-                    return scorer.iterator();
-                  }
+                @Override
+                public DocIdSetIterator iterator() {
+                  return scorer.iterator();
+                }
 
-                };
-                super.setScorer(s);
-              }
-            };
-          }
-          @Override
-          public ScoreMode scoreMode() {
-            return topCollector.scoreMode();
-          }
-        };
-        searcher.search(query, assertingCollector);
-      }
+              };
+              super.setScorer(s);
+            }
+          };
+        }
+        @Override
+        public ScoreMode scoreMode() {
+          return topCollector.scoreMode();
+        }
+      };
+      searcher.search(query, assertingCollector);
     }
     reader.close();
     w.close();
+    dir.close();
+  }
+
+  public void testPopulateScores() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    TextField field = new TextField("f", "foo bar", Store.NO);
+    doc.add(field);
+    NumericDocValuesField sortField = new NumericDocValuesField("sort", 0);
+    doc.add(sortField);
+    w.addDocument(doc);
+
+    field.setStringValue("");
+    sortField.setLongValue(3);
+    w.addDocument(doc);
+
+    field.setStringValue("foo foo bar");
+    sortField.setLongValue(2);
+    w.addDocument(doc);
+
+    w.flush();
+
+    field.setStringValue("foo");
+    sortField.setLongValue(2);
+    w.addDocument(doc);
+
+    field.setStringValue("bar bar bar");
+    sortField.setLongValue(0);
+    w.addDocument(doc);
+
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    for (String queryText : new String[] { "foo", "bar" }) {
+      Query query = new TermQuery(new Term("f", queryText));
+      for (boolean reverse : new boolean[] {false, true}) {
+        ScoreDoc[] sortedByDoc = searcher.search(query, 10).scoreDocs;
+        Arrays.sort(sortedByDoc, Comparator.comparingInt(sd -> sd.doc));
+
+        Sort sort = new Sort(new SortField("sort", SortField.Type.LONG, reverse));
+        ScoreDoc[] sortedByField = searcher.search(query, 10, sort).scoreDocs;
+        ScoreDoc[] sortedByFieldClone = sortedByField.clone();
+        TopFieldCollector.populateScores(sortedByFieldClone, searcher, query);
+        for (int i = 0; i < sortedByFieldClone.length; ++i) {
+          assertEquals(sortedByFieldClone[i].doc, sortedByField[i].doc);
+          assertSame(((FieldDoc) sortedByFieldClone[i]).fields, ((FieldDoc) sortedByField[i]).fields);
+          assertEquals(sortedByFieldClone[i].score,
+              sortedByDoc[Arrays.binarySearch(sortedByDoc, sortedByFieldClone[i], Comparator.comparingInt(sd -> sd.doc))].score, 0f);
+        }
+      }
+    }
+
+    reader.close();
     dir.close();
   }
 

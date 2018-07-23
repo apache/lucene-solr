@@ -230,7 +230,6 @@ public class FacetsCollector extends SimpleCollector implements Collector {
         }
         hitsCollector = TopFieldCollector.create(sort, n,
                                                  (FieldDoc) after,
-                                                 doDocScores,
                                                  true); // TODO: can we disable exact hit counts
       } else {
         hitsCollector = TopScoreDocCollector.create(n, after, true);
@@ -238,6 +237,9 @@ public class FacetsCollector extends SimpleCollector implements Collector {
       searcher.search(q, MultiCollector.wrap(hitsCollector, fc));
     
       topDocs = hitsCollector.topDocs();
+      if (doDocScores) {
+        TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, q);
+      }
     }
     return topDocs;
   }

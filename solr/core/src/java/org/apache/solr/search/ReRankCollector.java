@@ -27,6 +27,7 @@ import com.carrotsearch.hppc.IntIntHashMap;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
@@ -49,6 +50,8 @@ public class ReRankCollector extends TopDocsCollector {
   final private int length;
   final private Set<BytesRef> boostedPriority; // order is the "priority"
   final private Rescorer reRankQueryRescorer;
+  final private Sort sort;
+  final private Query query;
 
 
   public ReRankCollector(int reRankDocs,
@@ -61,13 +64,15 @@ public class ReRankCollector extends TopDocsCollector {
     this.reRankDocs = reRankDocs;
     this.length = length;
     this.boostedPriority = boostedPriority;
+    this.query = cmd.getQuery();
     Sort sort = cmd.getSort();
     if(sort == null) {
+      this.sort = null;
       this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
     } else {
-      sort = sort.rewrite(searcher);
+      this.sort = sort = sort.rewrite(searcher);
       //scores are needed for Rescorer (regardless of whether sort needs it)
-      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), true, true);
+      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), true);
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
@@ -84,7 +89,7 @@ public class ReRankCollector extends TopDocsCollector {
 
   @Override
   public ScoreMode scoreMode() {
-    return ScoreMode.COMPLETE; // since the scores will be needed by Rescorer as input regardless of mainCollector
+    return sort == null || sort.needsScores() ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
   }
 
   public TopDocs topDocs(int start, int howMany) {
@@ -95,6 +100,10 @@ public class ReRankCollector extends TopDocsCollector {
 
       if(mainDocs.totalHits == 0 || mainDocs.scoreDocs.length == 0) {
         return mainDocs;
+      }
+
+      if (sort != null) {
+        TopFieldCollector.populateScores(mainDocs.scoreDocs, searcher, query);
       }
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;

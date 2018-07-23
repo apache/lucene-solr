@@ -54,13 +54,12 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
    * @param groupSort         the order in which groups are returned
    * @param withinGroupSort   the order in which documents are sorted in each group
    * @param maxDocsPerGroup   the maximum number of docs to collect for each group
-   * @param getScores         if true, record the scores of all docs in each group
    * @param getMaxScores      if true, record the maximum score for each group
    */
   public TopGroupsCollector(GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, Sort groupSort, Sort withinGroupSort,
-                            int maxDocsPerGroup, boolean getScores, boolean getMaxScores) {
+                            int maxDocsPerGroup, boolean getMaxScores) {
     super(groupSelector, groups,
-        new TopDocsReducer<>(withinGroupSort, maxDocsPerGroup, getScores, getMaxScores));
+        new TopDocsReducer<>(withinGroupSort, maxDocsPerGroup, getMaxScores));
     this.groupSort = Objects.requireNonNull(groupSort);
     this.withinGroupSort = Objects.requireNonNull(withinGroupSort);
     this.maxDocsPerGroup = maxDocsPerGroup;
@@ -114,13 +113,13 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
     private final boolean needsScores;
 
     TopDocsReducer(Sort withinGroupSort,
-                   int maxDocsPerGroup, boolean getScores, boolean getMaxScores) {
-      this.needsScores = getScores || getMaxScores || withinGroupSort.needsScores();
+                   int maxDocsPerGroup, boolean getMaxScores) {
+      this.needsScores = getMaxScores || withinGroupSort.needsScores();
       if (withinGroupSort == Sort.RELEVANCE) {
         supplier = () -> new TopDocsAndMaxScoreCollector(true, TopScoreDocCollector.create(maxDocsPerGroup), null);
       } else {
         supplier = () -> {
-          TopFieldCollector topDocsCollector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, getScores, true); // TODO: disable exact counts?
+          TopFieldCollector topDocsCollector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, true); // TODO: disable exact counts?
           MaxScoreCollector maxScoreCollector = getMaxScores ? new MaxScoreCollector() : null;
           return new TopDocsAndMaxScoreCollector(false, topDocsCollector, maxScoreCollector);
         };

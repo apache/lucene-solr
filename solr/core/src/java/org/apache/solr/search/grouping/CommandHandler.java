@@ -163,6 +163,10 @@ public class CommandHandler {
     } else {
       searchWithTimeLimiter(query, filter, null);
     }
+
+    for (Command command : commands) {
+      command.postCollect(searcher);
+    }
   }
 
   private DocSet computeGroupedDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
