@@ -68,6 +68,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -3348,12 +3349,11 @@ public class TestIndexWriter extends LuceneTestCase {
   private static void assertFiles(IndexWriter writer) throws IOException {
     Predicate<String> filter = file -> file.startsWith("segments") == false && file.equals("write.lock") == false;
     // remove segment files we don't know if we have committed and what is kept around
-    Set<String> segFiles = new HashSet<>(writer.segmentInfos.files(true)).stream()
+    Set<String> segFiles = writer.segmentInfos.files(true).stream()
         .filter(filter).collect(Collectors.toSet());
-    Set<String> dirFiles = new HashSet<>(Arrays.asList(writer.getDirectory().listAll()))
-        .stream().filter(filter).collect(Collectors.toSet());
-    // ExtraFS might add an extra0 file, ignore it
-    dirFiles.remove("extra0");
+    Set<String> dirFiles = Arrays.stream(writer.getDirectory().listAll())
+        .filter(file -> !ExtrasFS.isExtra(file)) // ExtraFS might add an files, ignore them
+        .filter(filter).collect(Collectors.toSet());
     assertEquals(segFiles.size(), dirFiles.size());
   }
 

@@ -29,9 +29,11 @@ import java.nio.file.attribute.FileAttribute;
  * create special files themselves (.DS_Store, thumbs.db, .nfsXXX, ...),
  * so we add them and see what breaks. 
  * <p>
- * When a directory is created, sometimes a file or directory named 
- * "extra0" will be included with it.
- * All other filesystem operations are passed thru as normal.
+ * When a directory is created, sometimes an "extra" file or directory
+ * will be included with it (use {@link #isExtra(String)} to check if it's one
+ * of those files).
+ *
+ * All other filesystem operations are delegated as normal.
  */
 public class ExtrasFS extends FilterFileSystemProvider {
   private final static String EXTRA_FILE_NAME = "extra0";
