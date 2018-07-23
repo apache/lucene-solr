@@ -206,6 +206,9 @@ Other:
 * LUCENE-8408: original Highlighter:  Remove obsolete static AttributeFactory instance
   in TokenStreamFromTermVector.  (Michael Braun, David Smiley)
 
+* LUCENE-8420: Upgrade OpenNLP to 1.9.0 so OpenNLP tool can read the new model format which 1.8.x
+  cannot read. 1.9.0 can read the old format. (Koji Sekiguchi)
+
 ======================= Lucene 7.4.1 =======================
 
 Bug Fixes:
