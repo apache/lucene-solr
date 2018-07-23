@@ -159,6 +159,9 @@ Bug Fixes
 
 * SOLR-12553: Allow SignificantTerms Query Parser to use local parameters (Alexandre Rafalovitch)
 
+* SOLR-12570: OpenNLPExtractNamedEntitiesUpdateProcessor cannot support multi fields because pattern replacement
+  doesn't work correctly. (Koji Sekiguchi)
+
 Optimizations
 ----------------------
 
