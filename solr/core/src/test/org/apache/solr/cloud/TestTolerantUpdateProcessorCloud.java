@@ -239,17 +239,20 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       assertQueryDocIds(c, false, "id_not_exists");
 
       // verify adding 2 broken docs causes a clint exception
-      SolrException e = expectThrows(SolrException.class, () ->
-        update(params(),
-            doc(f("id", S_ONE_PRE + "X"), f("foo_i", "bogus_val_X")),
-            doc(f("id", S_TWO_PRE + "Y"), f("foo_i", "bogus_val_Y"))
-        ).process(c)
+      SolrException e = expectThrows(SolrException.class,
+          "did not get a top level exception when more then 10 docs failed", () ->
+              update(params(),
+                  doc(f("id", S_ONE_PRE + "X"), f("foo_i", "bogus_val_X")),
+                  doc(f("id", S_TWO_PRE + "Y"), f("foo_i", "bogus_val_Y"))
+              ).process(c)
       );
       assertEquals("not the type of error we were expecting ("+e.code()+"): " + e.toString(),
           400, e.code());
         
       // verify malformed deleteByQuerys fail
-      e = expectThrows(SolrException.class, () -> update(params()).deleteByQuery("foo_i:not_a_num").process(c));
+      e = expectThrows(SolrException.class,
+          "sanity check for malformed DBQ didn't fail",
+          () -> update(params()).deleteByQuery("foo_i:not_a_num").process(c));
       assertEquals("not the expected DBQ failure: " + e.getMessage(), 400, e.code());
       
       // verify opportunistic concurrency deletions fail as we expect when docs are / aren't present
@@ -257,7 +260,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
           update(params("commit", "true")).deleteById(S_ONE_PRE + "1", -1L),
           update(params("commit", "true")).deleteById(S_TWO_PRE + "2", -1L),
           update(params("commit", "true")).deleteById("id_not_exists",  1L)    }) {
-        e = expectThrows(SolrException.class, () -> r.process(c));
+        e = expectThrows(SolrException.class, "sanity check for opportunistic concurrency delete didn't fail",
+            () -> r.process(c)
+        );
         assertEquals("not the expected opportunistic concurrency failure code: "
             + r.toString() + " => " + e.getMessage(), 409, e.code());
       }
@@ -527,29 +532,31 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
     
     // many docs from diff shards, more then 10 (total) should fail
-    SolrException e = expectThrows(SolrException.class, () -> update(params("update.chain", "tolerant-chain-max-errors-10",
-        "commit", "true"),
-        doc(f("id", S_ONE_PRE + "11")),
-        doc(f("id", S_TWO_PRE + "21"), f("foo_i", "bogus_val")),
-        doc(f("id", S_ONE_PRE + "12")),
-        doc(f("id", S_TWO_PRE + "22"), f("foo_i", "bogus_val")),
-        doc(f("id", S_ONE_PRE + "13")),
-        doc(f("id", S_TWO_PRE + "23"), f("foo_i", "bogus_val")),
-        doc(f("id", S_ONE_PRE + "14"), f("foo_i", "bogus_val")),
-        doc(f("id", S_TWO_PRE + "24")),
-        doc(f("id", S_ONE_PRE + "15"), f("foo_i", "bogus_val")),
-        doc(f("id", S_TWO_PRE + "25")),
-        doc(f("id", S_ONE_PRE + "16"), f("foo_i", "bogus_val")),
-        doc(f("id", S_TWO_PRE + "26"), f("foo_i", "bogus_val")),
-        doc(f("id", S_ONE_PRE + "17")),
-        doc(f("id", S_TWO_PRE + "27")),
-        doc(f("id", S_ONE_PRE + "18"), f("foo_i", "bogus_val")),
-        doc(f("id", S_TWO_PRE + "28"), f("foo_i", "bogus_val")),
-        doc(f("id", S_ONE_PRE + "19"), f("foo_i", "bogus_val")),
-        doc(f("id", S_TWO_PRE + "29"), f("foo_i", "bogus_val")),
-        doc(f("id", S_ONE_PRE + "10")), // may be skipped, more then 10 fails
-        doc(f("id", S_TWO_PRE + "20"))  // may be skipped, more then 10 fails
-    ).process(client));
+    SolrException e = expectThrows(SolrException.class,
+        "did not get a top level exception when more then 10 docs failed",
+        () -> update(params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
+            doc(f("id", S_ONE_PRE + "11")),
+            doc(f("id", S_TWO_PRE + "21"), f("foo_i", "bogus_val")),
+            doc(f("id", S_ONE_PRE + "12")),
+            doc(f("id", S_TWO_PRE + "22"), f("foo_i", "bogus_val")),
+            doc(f("id", S_ONE_PRE + "13")),
+            doc(f("id", S_TWO_PRE + "23"), f("foo_i", "bogus_val")),
+            doc(f("id", S_ONE_PRE + "14"), f("foo_i", "bogus_val")),
+            doc(f("id", S_TWO_PRE + "24")),
+            doc(f("id", S_ONE_PRE + "15"), f("foo_i", "bogus_val")),
+            doc(f("id", S_TWO_PRE + "25")),
+            doc(f("id", S_ONE_PRE + "16"), f("foo_i", "bogus_val")),
+            doc(f("id", S_TWO_PRE + "26"), f("foo_i", "bogus_val")),
+            doc(f("id", S_ONE_PRE + "17")),
+            doc(f("id", S_TWO_PRE + "27")),
+            doc(f("id", S_ONE_PRE + "18"), f("foo_i", "bogus_val")),
+            doc(f("id", S_TWO_PRE + "28"), f("foo_i", "bogus_val")),
+            doc(f("id", S_ONE_PRE + "19"), f("foo_i", "bogus_val")),
+            doc(f("id", S_TWO_PRE + "29"), f("foo_i", "bogus_val")),
+            doc(f("id", S_ONE_PRE + "10")), // may be skipped, more then 10 fails
+            doc(f("id", S_TWO_PRE + "20"))  // may be skipped, more then 10 fails
+            ).process(client)
+    );
     {
       // we can't make any reliable assertions about the error message, because
       // it varies based on how the request was routed -- see SOLR-8830
@@ -607,7 +614,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     
     // many docs from diff shards, more then 10 from a single shard (two) should fail
 
-    e = expectThrows(SolrException.class, () -> {
+    e = expectThrows(SolrException.class, "did not get a top level exception when more then 10 docs failed",
+        () -> {
       ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(30);
       docs.add(doc(f("id", S_ONE_PRE + "z")));
       docs.add(doc(f("id", S_TWO_PRE + "z")));
@@ -686,7 +694,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     
     // many docs from diff shards, more then 10 don't have any uniqueKey specified
 
-    e = expectThrows(SolrException.class, () -> {
+    e = expectThrows(SolrException.class,
+        "did not get a top level exception when more then 10 docs mising uniqueKey",
+        () -> {
       ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(30);
       docs.add(doc(f("id", S_ONE_PRE + "z")));
       docs.add(doc(f("id", S_TWO_PRE + "z")));
@@ -845,14 +855,16 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     
     // attempt a request containing 4 errors of various types (add, delI, delQ) .. 1 too many
 
-    SolrException e = expectThrows(SolrException.class, () -> update(params("update.chain", "tolerant-chain-max-errors-10",
-        "maxErrors", "3",
-        "commit", "true"),
-        doc(f("id", docId22), f("foo_i", "bogus_val")))
-        .deleteById(docId1, -1L)
-        .deleteByQuery("malformed:[")
-        .deleteById(docId21, -1L)
-        .process(client)
+    SolrException e = expectThrows(SolrException.class,
+        "did not get a top level exception when more then 4 updates failed",
+        () -> update(params("update.chain", "tolerant-chain-max-errors-10",
+            "maxErrors", "3",
+            "commit", "true"),
+            doc(f("id", docId22), f("foo_i", "bogus_val")))
+            .deleteById(docId1, -1L)
+            .deleteByQuery("malformed:[")
+            .deleteById(docId21, -1L)
+            .process(client)
     );
 
     {

@@ -59,12 +59,13 @@ public class OverseerStatusTest extends SolrCloudTestCase {
     SimpleOrderedMap<Object> reload = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.RELOAD.toLower());
     assertEquals("No stats for reload in OverseerCollectionProcessor", 1, reload.get("requests"));
 
-    HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> CollectionAdminRequest
-        .splitShard("non_existent_collection")
-        .setShardName("non_existent_shard")
-        .process(cluster.getSolrClient())
+    HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class,
+        "Split shard for non existent collection should have failed",
+        () -> CollectionAdminRequest
+            .splitShard("non_existent_collection")
+            .setShardName("non_existent_shard")
+            .process(cluster.getSolrClient())
     );
-    assertTrue("expected failure to be caused by non existent collection", e.getMessage().contains("Could not find collection"));
 
     resp = new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient()).getResponse();
     collection_operations = (NamedList<Object>) resp.get("collection_operations");

@@ -84,7 +84,9 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
      1. Test that publishDownState throws exception when zkController.isReplicaInRecoveryHandling == false
       */
 
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = expectThrows(SolrException.class,
+        "publishDownState should not have succeeded because replica url is not marked in leader initiated recovery in ZkController",
+        () -> {
       LeaderInitiatedRecoveryThread thread = new LeaderInitiatedRecoveryThread(zkController1, coreContainer1,
           DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd);
       assertFalse(zkController1.isReplicaInRecoveryHandling(replicaCoreNodeProps.getCoreUrl()));

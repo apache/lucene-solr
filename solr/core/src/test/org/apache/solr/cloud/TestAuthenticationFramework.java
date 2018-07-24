@@ -79,11 +79,14 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     MockAuthenticationPlugin.expectedPassword = "s0lrRocks";
 
     // Should fail with 401
-    HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class,
-        this::collectionCreateSearchDeleteTwice);
-    assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
-    MockAuthenticationPlugin.expectedUsername = null;
-    MockAuthenticationPlugin.expectedPassword = null;
+    try {
+      HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class,
+          this::collectionCreateSearchDeleteTwice);
+      assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
+    } finally {
+      MockAuthenticationPlugin.expectedUsername = null;
+      MockAuthenticationPlugin.expectedPassword = null;
+    }
   }
 
   @Override

@@ -357,6 +357,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // test that malformed numerics cause client error not server error
     for (String field : FIELDS) {
       SolrException e1 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a bad date: " + field,
           () -> h.update(add( doc("id","100", field, BAD_VALUE))));
       String msg1 = e1.getMessage();
       assertTrue("not an (update) client error on field: " + field +" : "+ msg1,
@@ -370,6 +371,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
         continue;
       }
       SolrException e2 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a bad date: " + field,
           () -> h.query(req("q",field + ":" + BAD_VALUE))
       );
       String msg2 = e2.toString();
@@ -379,6 +381,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
           msg2.contains(BAD_VALUE));
 
       SolrException e3 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a bad date: " + field,
           () -> h.query(req("q",field + ":[NOW TO " + BAD_VALUE + "]"))
       );
       String msg3 = e3.toString();
@@ -409,6 +412,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // test that malformed numerics cause client error not server error
     for (String field : FIELDS) {
       SolrException e1 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a non-number: " + field,
           () -> h.update(add( doc("id","100", field, BAD_VALUE))));
       String msg1 = e1.toString();
       assertTrue("not an (update) client error on field: " + field +" : "+ msg1,
@@ -423,6 +427,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
       }
 
       SolrException e2 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a non-number: " + field,
           () -> h.query(req("q",field + ":" + BAD_VALUE))
       );
       String msg2 = e2.toString();
@@ -432,6 +437,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
           msg2.contains(BAD_VALUE));
 
       SolrException e3 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a non-number: " + field,
           () -> h.query(req("q",field + ":[10 TO " + BAD_VALUE + "]"))
       );
       String msg3 = e3.toString();

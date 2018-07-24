@@ -129,8 +129,10 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       Thread.sleep(80);
 
 
-      KeeperException ex = expectThrows(KeeperException.class, () -> zkClientConLoss.makePath("collections/collection2", false));
-      assertEquals("Server should be down", KeeperException.ConnectionLossException.Code.CONNECTIONLOSS, ex.code());
+      expectThrows(KeeperException.class,
+          "Server should be down",
+          () -> zkClientConLoss.makePath("collections/collection2", false)
+      );
 
       // bring server back up
       server = new ZkTestServer(zkDir, zkServerPort);
@@ -327,17 +329,20 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       // should not work
       KeeperException e =expectThrows(KeeperException.NoNodeException.class,
+          "We should not be able to create this path",
           () -> zkClient.makePath("/test/path/here", (byte[]) null, CreateMode.PERSISTENT, (Watcher) null, true, true, 1));
 
       zkClient.clean("/");
 
       ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(30000);
       expectThrows(KeeperException.NoNodeException.class,
+          "We should not be able to create this path",
           () -> zkCmdExecutor.ensureExists("/collection/collection/leader", (byte[]) null, CreateMode.PERSISTENT, zkClient, 2));
 
       zkClient.makePath("/collection", true);
 
       expectThrows(KeeperException.NoNodeException.class,
+          "We should not be able to create this path",
           () -> zkCmdExecutor.ensureExists("/collections/collection/leader", (byte[]) null, CreateMode.PERSISTENT, zkClient, 2));
       zkClient.makePath("/collection/collection", true);
  

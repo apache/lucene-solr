@@ -199,6 +199,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   public void testMalformedDBQ(SolrClient client) throws Exception {
     assertNotNull("client not initialized", client);
     SolrException e = expectThrows(SolrException.class,
+        "Expected DBQ failure",
         () -> update(params()).deleteByQuery("foo_i:not_a_num").process(client));
     assertEquals("not the expected DBQ failure: " + e.getMessage(), 400, e.code());
   }

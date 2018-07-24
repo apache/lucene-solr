@@ -150,7 +150,9 @@ public class BasicZkTest extends AbstractZkTestCase {
     zkController.getZkClient().setData("/configs/conf1/solrconfig.xml", new byte[0], true);
  
     // we set the solrconfig to nothing, so this reload should fail
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = expectThrows(SolrException.class,
+        "The reloaded SolrCore did not pick up configs from zookeeper",
+        () -> {
       ignoreException("solrconfig.xml");
       h.getCoreContainer().reload(h.getCore().getName());
     });

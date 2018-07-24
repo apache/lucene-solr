@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import junit.framework.Assert;
 import org.apache.hadoop.util.Time;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;

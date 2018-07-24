@@ -146,6 +146,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     waitForState("Expected a single shard with a single replica", collectionName, clusterShape(1, 1));
 
     SolrException e = expectThrows(SolrException.class,
+        "Can't delete the last replica by count",
         () -> CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 1).process(cluster.getSolrClient())
     );
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());

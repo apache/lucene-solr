@@ -69,8 +69,9 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
     assertThat(response.getStatus(), is(0));
     assertTrue(response.getResults().getNumFound() > 0);
 
-    SolrServerException e = expectThrows(SolrServerException.class, () ->
-        cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1)
+    SolrServerException e = expectThrows(SolrServerException.class,
+        "Request should have failed because we killed shard1 jetty",
+        () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1)
             .setParam(ShardParams.SHARDS_TOLERANT, false))
     );
     assertNotNull(e.getCause());

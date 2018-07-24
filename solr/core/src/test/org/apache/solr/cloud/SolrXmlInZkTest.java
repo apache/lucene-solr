@@ -139,13 +139,16 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNotInZkOrOnDisk() throws Exception {
-    SolrException e = expectThrows(SolrException.class, () -> {
-      System.setProperty("hostPort", "8787");
-      setUpZkAndDiskXml(false, false); // solr.xml not on disk either
-    });
-    closeZK();
-    assertTrue("Should be failing to create default solr.xml in code",
-        e.getMessage().contains("solr.xml does not exist"));
+    try {
+      SolrException e = expectThrows(SolrException.class, () -> {
+        System.setProperty("hostPort", "8787");
+        setUpZkAndDiskXml(false, false); // solr.xml not on disk either
+      });
+      assertTrue("Should be failing to create default solr.xml in code",
+          e.getMessage().contains("solr.xml does not exist"));
+    } finally {
+      closeZK();
+    }
   }
 
   @Test

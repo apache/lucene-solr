@@ -515,18 +515,21 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         (n, c) -> null == c.get("maxShardsPerNode"));
 
     expectThrows(IllegalArgumentException.class,
+        "An attempt to set unknown collection attribute should have failed",
         () -> CollectionAdminRequest.modifyCollection(collection, null)
             .setAttribute("non_existent_attr", 25)
             .process(cluster.getSolrClient())
     );
 
     expectThrows(IllegalArgumentException.class,
+        "An attempt to set null value should have failed",
         () -> CollectionAdminRequest.modifyCollection(collection, null)
             .setAttribute("non_existent_attr", null)
             .process(cluster.getSolrClient())
     );
 
     expectThrows(IllegalArgumentException.class,
+        "An attempt to unset unknown collection attribute should have failed",
         () -> CollectionAdminRequest.modifyCollection(collection, null)
             .unsetAttribute("non_existent_attr")
             .process(cluster.getSolrClient())

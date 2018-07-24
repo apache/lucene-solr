@@ -266,8 +266,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD1, 0);
 
     // ensure shard is dead
-    expectThrows(SolrServerException.class, () -> index_specific(deadShard.client.solrClient,
-        id, 999, i1, 107, t1, "specific doc!")
+    expectThrows(SolrServerException.class,
+        "This server should be down and this update should have failed",
+        () -> index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1, "specific doc!")
     );
     
     commit();

@@ -106,8 +106,9 @@ public class TestCloudInspectUtil extends SolrTestCaseJ4 {
     final SolrDocumentList aExpectEx = getDocList("2", "3", "4");
     final SolrDocumentList bExpectEx = getDocList("2", "3", "4");
 
-    expectThrows(IllegalArgumentException.class, () -> CloudInspectUtil.checkIfDiffIsLegal(aExpectEx, bExpectEx,
-        "control", "cloud", addFailsExpectEx, deleteFailsExpectEx));
+    expectThrows(IllegalArgumentException.class, "Expected exception because lists have no diff",
+        () -> CloudInspectUtil.checkIfDiffIsLegal(aExpectEx, bExpectEx,
+            "control", "cloud", addFailsExpectEx, deleteFailsExpectEx));
   }
 
   private SolrDocumentList getDocList(String ... ids) {

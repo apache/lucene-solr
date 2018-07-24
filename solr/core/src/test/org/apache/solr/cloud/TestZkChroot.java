@@ -102,7 +102,9 @@ public class TestZkChroot extends SolrTestCaseJ4 {
 
     try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
         AbstractZkTestCase.TIMEOUT)) {
-      expectThrows(ZooKeeperException.class, () -> {
+      expectThrows(ZooKeeperException.class,
+          "did not get a top level exception when more then 4 updates failed",
+          () -> {
         assertFalse("Path '" + chroot + "' should not exist before the test",
             zkClient.exists(chroot, true));
         cores = CoreContainer.createAndLoad(home);
