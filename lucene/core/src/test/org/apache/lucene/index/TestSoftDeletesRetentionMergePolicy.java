@@ -392,7 +392,7 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     // We expect any MP to merge these segments into one segment
     // when calling forceMergeDeletes.
     writer.forceMergeDeletes(true);
-    assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
     assertEquals(1, writer.numDocs());
     assertEquals(1, writer.maxDoc());
     writer.close();
@@ -415,7 +415,7 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
       writer.addDocument(d);
     }
     writer.flush();
-    assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
 
     if (softDelete != null) {
       // the newly created segment should be dropped as it is fully deleted (i.e. only contains deleted docs).
@@ -443,7 +443,7 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     assertEquals(reader.numDocs(), 1);
     reader.close();
-    assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
 
     writer.close();
     dir.close();
@@ -602,8 +602,8 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
       }
     }
     writer.forceMergeDeletes(true);
-    assertEquals(1, writer.segmentInfos.size());
-    SegmentCommitInfo si = writer.segmentInfos.info(0);
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    SegmentCommitInfo si = writer.listOfSegmentCommitInfos().get(0);
     assertEquals(0, si.getSoftDelCount()); // hard-delete should supersede the soft-delete
     assertEquals(0, si.getDelCount());
     assertEquals(1, si.info.maxDoc());
@@ -623,8 +623,8 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     doUpdate(new Term("id", "0"), writer,
         new NumericDocValuesField("soft_delete", 1), new NumericDocValuesField("other-field", 1));
     sm.maybeRefreshBlocking();
-    assertEquals(1, writer.segmentInfos.asList().size());
-    SegmentCommitInfo si = writer.segmentInfos.asList().get(0);
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    SegmentCommitInfo si = writer.listOfSegmentCommitInfos().get(0);
     assertEquals(1, si.getSoftDelCount());
     assertEquals(1, si.info.maxDoc());
     IOUtils.close(sm, writer, dir);
