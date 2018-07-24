@@ -3163,7 +3163,7 @@ public class TestIndexWriter extends LuceneTestCase {
     topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
     assertEquals(0, topDocs.totalHits);
     int numSoftDeleted = 0;
-    for (SegmentCommitInfo info : writer.segmentInfos) {
+    for (SegmentCommitInfo info : writer.cloneSegmentInfos()) {
      numSoftDeleted += info.getSoftDelCount();
     }
     assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
@@ -3306,7 +3306,7 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
     int numSoftDeleted = 0;
-    for (SegmentCommitInfo info : writer.segmentInfos) {
+    for (SegmentCommitInfo info : writer.cloneSegmentInfos()) {
       numSoftDeleted += info.getSoftDelCount() + info.getDelCount();
     }
     assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
@@ -3372,7 +3372,7 @@ public class TestIndexWriter extends LuceneTestCase {
   private static void assertFiles(IndexWriter writer) throws IOException {
     Predicate<String> filter = file -> file.startsWith("segments") == false && file.equals("write.lock") == false;
     // remove segment files we don't know if we have committed and what is kept around
-    Set<String> segFiles = writer.segmentInfos.files(true).stream()
+    Set<String> segFiles = new HashSet<>(writer.cloneSegmentInfos().files(true)).stream()
         .filter(filter).collect(Collectors.toSet());
     Set<String> dirFiles = Arrays.stream(writer.getDirectory().listAll())
         .filter(file -> !ExtrasFS.isExtra(file)) // ExtraFS might add an files, ignore them
@@ -3394,12 +3394,12 @@ public class TestIndexWriter extends LuceneTestCase {
     d.add(new StringField("id", "doc-1", Field.Store.YES));
     writer.addDocument(d);
     writer.deleteDocuments(new Term("id", "doc-1"));
-    assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
     writer.flush();
-    assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
     writer.commit();
     assertFiles(writer);
-    assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
     IOUtils.close(writer, dir);
   }
 
@@ -3460,7 +3460,7 @@ public class TestIndexWriter extends LuceneTestCase {
     tombstone.add(new NumericDocValuesField("my_deletes", 1));
     writer.addDocument(tombstone);
     writer.flush();
-    for (SegmentCommitInfo si : writer.segmentInfos) {
+    for (SegmentCommitInfo si : writer.cloneSegmentInfos()) {
       FieldInfos fieldInfos = IndexWriter.readFieldInfos(si);
       assertEquals("my_deletes", fieldInfos.getSoftDeletesField());
       assertTrue(fieldInfos.fieldInfo("my_deletes").isSoftDeletesField());
@@ -3498,7 +3498,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("soft_deletes_1");
     IndexWriter w3 = new IndexWriter(dir3, config);
     w3.addIndexes(dir1);
-    for (SegmentCommitInfo si : w3.segmentInfos) {
+    for (SegmentCommitInfo si : w3.cloneSegmentInfos()) {
       FieldInfo softDeleteField = IndexWriter.readFieldInfos(si).fieldInfo("soft_deletes_1");
       assertTrue(softDeleteField.isSoftDeletesField());
     }
