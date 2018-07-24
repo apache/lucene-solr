@@ -55,7 +55,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     super.setUp();
     assertU(delQ("*:*"));
     assertU(commit());
-    createIndex();
+
   }
 
   public static void createIndex() {
@@ -146,6 +146,19 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(commit());
 
 
+  }
+
+  @Test
+  public void test() throws Exception {
+    clearIndex();
+    createIndex();
+
+    testSortingOutput();
+    testExportRequiredParams();
+    testDates();
+    testDuplicates();
+
+    clearIndex();
   }
 
   @Test
@@ -331,8 +344,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "        \"id\":\"2\"}]}}");
   }
 
-  @Test
-  public void testSortingOutput() throws Exception {
+  private void testSortingOutput() throws Exception {
 
     //Test single value DocValue output
     String s =  h.query(req("q", "id:1", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
@@ -436,8 +448,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertEquals(Utils.toJSONString(Utils.fromJSONString(expected)), Utils.toJSONString(Utils.fromJSONString(actual)));
   }
 
-  @Test
-  public void testExportRequiredParams() throws Exception {
+  private void testExportRequiredParams() throws Exception {
 
     //Test whether missing required parameters returns expected errors.
 
@@ -451,17 +462,15 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Interesting you don't even need to specify a "q" parameter.
     
   }
-  
-  @Test
-  public void testDates() throws Exception {
+
+  private void testDates() throws Exception {
     String s =  h.query(req("q", "id:1", "qt", "/export", "fl", "datedv", "sort", "datedv asc"));
     assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"datedv\":\"2017-06-16T07:00:00Z\"}]}}");
     s =  h.query(req("q", "id:1", "qt", "/export", "fl", "datedv_m", "sort", "datedv asc"));
     assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"datedv_m\":[\"2017-06-16T01:00:00Z\",\"2017-06-16T02:00:00Z\",\"2017-06-16T03:00:00Z\",\"2017-06-16T04:00:00Z\"]}]}}");
   }
-  
-  @Test
-  public void testDuplicates() throws Exception {
+
+  private void testDuplicates() throws Exception {
     // see SOLR-10924
     String expected = h.getCore().getLatestSchema().getField("int_is_t").getType().isPointField()
       ? "1,1,1,1" : "1";
