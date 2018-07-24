@@ -291,7 +291,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   private Collection<String> filesToCommit;
 
-  final SegmentInfos segmentInfos;       // the segments
+  private final SegmentInfos segmentInfos;
   final FieldNumbers globalFieldNumberMap;
 
   final DocumentsWriter docWriter;
@@ -5228,5 +5228,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (info.info.dir != directoryOrig) {
       throw new IllegalArgumentException("SegmentCommitInfo must be from the same directory");
     }
+  }
+
+  /** Checks if the provided segment exists in the current segmentInfos */
+  final synchronized boolean segmentCommitInfoExist(SegmentCommitInfo sci) {
+    return segmentInfos.contains(sci);
+  }
+
+  /** Returns an unmodifiable view of the list of all segments of the current segmentInfos */
+  final synchronized List<SegmentCommitInfo> listOfSegmentCommitInfos() {
+    return segmentInfos.asList();
+  }
+
+  /** Tests should use this method to snapshot the current segmentInfos to have a consistent view */
+  final synchronized SegmentInfos cloneSegmentInfos() {
+    return segmentInfos.clone();
   }
 }

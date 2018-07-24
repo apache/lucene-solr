@@ -204,6 +204,8 @@ Improvements
 
 * LUCENE-8415: Clean up Directory contracts and JavaDoc comments. (Dawid Weiss)
 
+* LUCENE-8414: Make segmentInfos private in IndexWriter (Simon Willnauer, Nhat Nguyen)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
