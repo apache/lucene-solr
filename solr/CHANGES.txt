@@ -86,6 +86,10 @@ New Features
 
 * SOLR-12522: Support a runtime function `#ALL` for 'replica' in autoscaling policies (noble)
 
+* SOLR-12567: JSON Facet "functions" now support an extended "type:func" syntax, similar to other types
+  of facets.  This also allows additional local params to be specified for if the aggregation function
+  can take advantage of them.  (hossman)
+
 Bug Fixes
 ----------------------
 

@@ -23,6 +23,7 @@ import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
@@ -41,7 +42,7 @@ public class DebugAgg extends AggValueSource {
       final String what = fp.hasMoreArguments() ? fp.parseId() : "debug";
 
       switch (what) {
-        case "debug": return new DebugAgg();
+        case "debug": return new DebugAgg(fp.getLocalParams());
         case "numShards": return new DebugAggNumShards();
         default: /* No-Op */
       }
@@ -53,13 +54,14 @@ public class DebugAgg extends AggValueSource {
     }
   }
 
-
-  public DebugAgg() {
+  /**
+   * This exposes the raw localparams used by the FunctionQParser, it does <b>NOT</b>
+   * wrap them in defaults from the request
+   */
+  public final SolrParams localParams;
+  public DebugAgg(SolrParams localParams) {
     super("debug");
-  }
-
-  public DebugAgg(String name) {
-    super(name);
+    this.localParams = localParams;
   }
 
   @Override

@@ -373,10 +373,35 @@ Unlike all the facets discussed so far, Aggregation functions (also called *face
 |sumsq |`sumsq(rent)` |sum of squares of field or function
 |variance |`variance(rent)` |variance of numeric field or function
 |stddev |`stddev(rent)` |standard deviation of field or function
-|relatedness |`relatedness('popularity:[100 TO \*]','inStock:true')`|A function for computing a relatedness score of the documents in the domain to a Foreground set, relative to a Background set (both defined as queries).  This is primarily for use when building <<Semantic Knowledge Graphs>>.
+|relatedness |`relatedness('popularity:[100 TO *]','inStock:true')`|A function for computing a relatedness score of the documents in the domain to a Foreground set, relative to a Background set (both defined as queries).  This is primarily for use when building <<Semantic Knowledge Graphs>>.
 |===
 
-Numeric aggregation functions such as `avg` can be on any numeric field, or on another function of multiple numeric fields such as `avg(mul(price,popularity))`.
+Numeric aggregation functions such as `avg` can be on any numeric field, or on a <<function-queries.adoc#function-queries,nested function>> of multiple numeric fields such as `avg(div(popularity,price))`.
+
+The most common way of requesting an aggregation function is as a simple containing the expression you wish to compute:
+
+[source,javascript]
+----
+{
+  "average_roi": "avg(div(popularity,price))"
+}
+----
+
+An expanded form allows for <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> to be specified.  These may be used explicitly by some custom aggregations, but can more commonly be used as parameter references to make aggregation expressions more readable, with out needing to use (global) request parameters:
+
+[source,javascript]
+----
+{
+  "average_roi" : {
+    "type": "func",
+    "func": "avg(div($numer,$denom))",
+    "numer": "mul(popularity,rating)",
+    "denom": "mul(price,size)"
+  }
+}
+----
+
+
 
 == Nested Facets
 

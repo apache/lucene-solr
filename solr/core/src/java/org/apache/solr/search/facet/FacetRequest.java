@@ -33,7 +33,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.FunctionQParser;
-import org.apache.solr.search.FunctionQParserPlugin;
 import org.apache.solr.search.JoinQParserPlugin;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryContext;
@@ -224,10 +223,7 @@ public abstract class FacetRequest {
                                     "'graph' domain change requires non-null 'from' and 'to' field names");
           }
 
-          NamedList<String> graphParams = new NamedList<>();
-          graphParams.addAll(graph);
-          SolrParams localParams = SolrParams.toSolrParams(graphParams);
-          domain.graphField = new GraphField(localParams);
+          domain.graphField = new GraphField(FacetParser.jsonToSolrParams(graph));
         }
       }
 
@@ -553,30 +549,46 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
         return new FacetRangeParser(this, key).parse(args);
       case "heatmap":
         return new FacetHeatmap.Parser(this, key).parse(args);
+      case "func":
+        return parseStat(key, args);
     }
 
-    AggValueSource stat = parseStat(key, type, args);
-    if (stat == null) {
-      throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);
-    }
-    return stat;
+    throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);
   }
 
   public Object parseStringFacetOrStat(String key, String s) throws SyntaxError {
     // "avg(myfield)"
-    return parseStringStat(key, s);
+    return parseStat(key, s);
     // TODO - simple string representation of facets
   }
 
-  // parses avg(x)
-  private AggValueSource parseStringStat(String key, String stat) throws SyntaxError {
-    FunctionQParser parser = (FunctionQParser)QParser.getParser(stat, FunctionQParserPlugin.NAME, getSolrRequest());
+  /** Parses simple strings like "avg(x)" in the context of optional local params (may be null) */
+  private AggValueSource parseStatWithParams(String key, SolrParams localparams, String stat) throws SyntaxError {
+    SolrQueryRequest req = getSolrRequest();
+    FunctionQParser parser = new FunctionQParser(stat, localparams, req.getParams(), req);
     AggValueSource agg = parser.parseAgg(FunctionQParser.FLAG_DEFAULT);
     return agg;
   }
+  
+  /** Parses simple strings like "avg(x)" or robust Maps that may contain local params */
+  private AggValueSource parseStat(String key, Object args) throws SyntaxError {
+    assert null != args;
 
-  public AggValueSource parseStat(String key, String type, Object args) throws SyntaxError {
-    return null;
+    if (args instanceof CharSequence) {
+      // Both of these variants are already unpacked for us in this case, and use no local params...
+      // 1) x:{func:'min(foo)'}
+      // 2) x:'min(foo)'
+      return parseStatWithParams(key, null, args.toString());
+    }
+    
+    if (args instanceof Map) {
+      final Map<String,Object> statMap = (Map<String,Object>)args;
+      return parseStatWithParams(key, jsonToSolrParams(statMap), statMap.get("func").toString());
+    }
+      
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                            "Stats must be specified as either a simple string, or a json Map");
+      
   }
 
 
@@ -764,6 +776,16 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
     return parent.getSolrRequest();
   }
 
+  /** 
+   * Helper that handles the possibility of map values being lists 
+   * NOTE: does *NOT* fail on map values that are sub-maps (ie: nested json objects)
+   */
+  public static SolrParams jsonToSolrParams(Map jsonObject) {
+    // HACK, but NamedList already handles the list processing for us...
+    NamedList<String> nl = new NamedList<>();
+    nl.addAll(jsonObject);
+    return SolrParams.toSolrParams(nl);
+  }
 }
 
 
