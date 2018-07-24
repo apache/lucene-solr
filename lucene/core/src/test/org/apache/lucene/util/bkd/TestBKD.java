@@ -29,6 +29,7 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.store.CorruptingIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -414,8 +415,10 @@ public class TestBKD extends LuceneTestCase {
         }
       }
 
-      String[] files = dir.listAll();
-      assertTrue("files=" + Arrays.toString(files), files.length == 0 || Arrays.equals(files, new String[] {"extra0"}));
+      String[] files = Arrays.stream(dir.listAll())
+          .filter(file -> !ExtrasFS.isExtra(file))
+          .toArray(String[]::new);
+      assertTrue("files=" + Arrays.toString(files), files.length == 0);
       dir.close();
     }
   }
