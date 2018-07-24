@@ -64,6 +64,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -2681,6 +2682,38 @@ public abstract class LuceneTestCase extends Assert {
       throw assertion;
     }
     throw new AssertionFailedError(noExceptionMessage);
+  }
+
+  /** Checks a specific exception class is thrown by the given runnable, and returns it. */
+  public static <T extends Throwable> T expectThrowsAnyOf(List<Class<? extends T>> expectedTypes, ThrowingRunnable runnable) {
+    if (expectedTypes.isEmpty()) {
+      throw new AssertionError("At least one expected exception type is required?");
+    }
+
+    Throwable thrown = null;
+    try {
+      runnable.run();
+    } catch (Throwable e) {
+      for (Class<? extends T> expectedType : expectedTypes) {
+        if (expectedType.isInstance(e)) {
+          return expectedType.cast(e);
+        }
+      }
+      thrown = e;
+    }
+
+    List<String> exceptionTypes = expectedTypes.stream().map(c -> c.getSimpleName()).collect(Collectors.toList());
+
+    if (thrown != null) {
+      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected any of " +
+          exceptionTypes +
+          " but got: " + thrown);
+      assertion.initCause(thrown);
+      throw assertion;
+    } else {
+      throw new AssertionFailedError("Expected any of the following exception types: " +
+          exceptionTypes+ " but no exception was thrown.");
+    }
   }
 
   /**

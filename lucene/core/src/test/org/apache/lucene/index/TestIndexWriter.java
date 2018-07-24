@@ -68,6 +68,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -2730,7 +2731,7 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexWriter w = new IndexWriter(dir, iwc);
       w.commit();
       reader = w.getReader();
-      // we pull this commit to open it again later to check that we fail if a futur file delete is pending
+      // we pull this commit to open it again later to check that we fail if a future file delete is pending
       indexCommit = reader.getIndexCommit();
       w.close();
       w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
@@ -2740,7 +2741,7 @@ public class TestIndexWriter extends LuceneTestCase {
       dir.deleteFile("segments_2");
       assertTrue(dir.getPendingDeletions().size() > 0);
 
-      // make sure we get NFSF if we try to delete and already-pending-delete file:
+      // make sure we get NoSuchFileException if we try to delete and already-pending-delete file:
       expectThrows(NoSuchFileException.class, () -> {
         dir.deleteFile("segments_2");
       });
@@ -2777,7 +2778,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       assertTrue(dir.getPendingDeletions().size() > 0);
 
-      // make sure we get NFSF if we try to delete and already-pending-delete file:
+      // make sure we get NoSuchFileException if we try to delete and already-pending-delete file:
       expectThrows(NoSuchFileException.class, () -> {
         dir.deleteFile("segments_1");
       });
@@ -3348,12 +3349,11 @@ public class TestIndexWriter extends LuceneTestCase {
   private static void assertFiles(IndexWriter writer) throws IOException {
     Predicate<String> filter = file -> file.startsWith("segments") == false && file.equals("write.lock") == false;
     // remove segment files we don't know if we have committed and what is kept around
-    Set<String> segFiles = new HashSet<>(writer.segmentInfos.files(true)).stream()
+    Set<String> segFiles = writer.segmentInfos.files(true).stream()
         .filter(filter).collect(Collectors.toSet());
-    Set<String> dirFiles = new HashSet<>(Arrays.asList(writer.getDirectory().listAll()))
-        .stream().filter(filter).collect(Collectors.toSet());
-    // ExtraFS might add an extra0 file, ignore it
-    dirFiles.remove("extra0");
+    Set<String> dirFiles = Arrays.stream(writer.getDirectory().listAll())
+        .filter(file -> !ExtrasFS.isExtra(file)) // ExtraFS might add an files, ignore them
+        .filter(filter).collect(Collectors.toSet());
     assertEquals(segFiles.size(), dirFiles.size());
   }
 
