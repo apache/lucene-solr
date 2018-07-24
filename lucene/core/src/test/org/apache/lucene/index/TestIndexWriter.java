@@ -3167,6 +3167,10 @@ public class TestIndexWriter extends LuceneTestCase {
      numSoftDeleted += info.getSoftDelCount();
     }
     assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
+    for (LeafReaderContext context : reader.leaves()) {
+      LeafReader leaf = context.reader();
+      assertNull(((SegmentReader) leaf).getHardLiveDocs());
+    }
     writer.close();
     reader.close();
     dir.close();
@@ -3284,6 +3288,12 @@ public class TestIndexWriter extends LuceneTestCase {
         assertEquals(Math.abs(topDocs.scoreDocs[0].doc - topDocs.scoreDocs[1].doc), 1);
       } else {
         assertEquals(1, topDocs.totalHits);
+      }
+    }
+    if (mixDeletes == false) {
+      for (LeafReaderContext context : reader.leaves()) {
+        LeafReader leaf = context.reader();
+        assertNull(((SegmentReader) leaf).getHardLiveDocs());
       }
     }
     mergeAwaySoftDeletes.set(true);
@@ -3546,5 +3556,70 @@ public class TestIndexWriter extends LuceneTestCase {
     expectThrows(IndexOutOfBoundsException.class, () -> w.addDocument(doc));
     w.close();
     d.close();
+  }
+
+  public void testSoftAndHardLiveDocs() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    String softDeletesField = "soft_delete";
+    indexWriterConfig.setSoftDeletesField(softDeletesField);
+    IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
+    Set<Integer> uniqueDocs = new HashSet<>();
+    for (int i = 0; i < 100; i++) {
+      int docId = random().nextInt(5);
+      uniqueDocs.add(docId);
+      Document doc = new Document();
+      doc.add(new StringField("id",  String.valueOf(docId), Field.Store.YES));
+      if (docId %  2 == 0) {
+        writer.updateDocument(new Term("id", String.valueOf(docId)), doc);
+      } else {
+        writer.softUpdateDocument(new Term("id", String.valueOf(docId)), doc,
+            new NumericDocValuesField(softDeletesField,  0));
+      }
+      if (random().nextBoolean()) {
+        assertHardLiveDocs(writer, uniqueDocs);
+      }
+    }
+
+    if (random().nextBoolean()) {
+      writer.commit();
+    }
+    assertHardLiveDocs(writer, uniqueDocs);
+
+
+    IOUtils.close(writer, dir);
+  }
+
+  private void assertHardLiveDocs(IndexWriter writer, Set<Integer> uniqueDocs) throws IOException {
+    try (DirectoryReader reader = DirectoryReader.open(writer)) {
+      assertEquals(uniqueDocs.size(), reader.numDocs());
+      List<LeafReaderContext> leaves = reader.leaves();
+      for (LeafReaderContext ctx : leaves) {
+        LeafReader leaf = ctx.reader();
+        assertTrue(leaf instanceof SegmentReader);
+        SegmentReader sr = (SegmentReader) leaf;
+        if (sr.getHardLiveDocs() != null) {
+          Terms id = sr.terms("id");
+          TermsEnum iterator = id.iterator();
+          Bits hardLiveDocs = sr.getHardLiveDocs();
+          Bits liveDocs = sr.getLiveDocs();
+          for (Integer dId : uniqueDocs) {
+            boolean mustBeHardDeleted = dId % 2 == 0;
+            if (iterator.seekExact(new BytesRef(dId.toString()))) {
+              PostingsEnum postings = iterator.postings(null);
+              while (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+                if (liveDocs.get(postings.docID())) {
+                  assertTrue(hardLiveDocs.get(postings.docID()));
+                } else if (mustBeHardDeleted) {
+                  assertFalse(hardLiveDocs.get(postings.docID()));
+                } else {
+                  assertTrue(hardLiveDocs.get(postings.docID()));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
