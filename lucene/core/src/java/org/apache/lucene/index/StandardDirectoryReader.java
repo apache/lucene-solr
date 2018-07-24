@@ -32,6 +32,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
 /** Default implementation of {@link DirectoryReader}. */
@@ -174,16 +175,17 @@ public final class StandardDirectoryReader extends DirectoryReader {
       try {
         SegmentReader newReader;
         if (oldReader == null || commitInfo.info.getUseCompoundFile() != oldReader.getSegmentInfo().info.getUseCompoundFile()) {
-
           // this is a new reader; in case we hit an exception we can decRef it safely
           newReader = new SegmentReader(commitInfo, infos.getIndexCreatedVersionMajor(), IOContext.READ);
           newReaders[i] = newReader;
         } else {
           if (oldReader.isNRT) {
             // We must load liveDocs/DV updates from disk:
-            newReaders[i] = new SegmentReader(commitInfo, oldReader);
+            Bits liveDocs = commitInfo.hasDeletions() ? commitInfo.info.getCodec().liveDocsFormat()
+                .readLiveDocs(commitInfo.info.dir, commitInfo, IOContext.READONCE) : null;
+            newReaders[i] = new SegmentReader(commitInfo, oldReader, liveDocs, liveDocs,
+                commitInfo.info.maxDoc() - commitInfo.getDelCount(), false);
           } else {
-            
             if (oldReader.getSegmentInfo().getDelGen() == commitInfo.getDelGen()
                 && oldReader.getSegmentInfo().getFieldInfosGen() == commitInfo.getFieldInfosGen()) {
               // No change; this reader will be shared between
@@ -197,10 +199,14 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
               if (oldReader.getSegmentInfo().getDelGen() == commitInfo.getDelGen()) {
                 // only DV updates
-                newReaders[i] = new SegmentReader(commitInfo, oldReader, oldReader.getLiveDocs(), oldReader.numDocs(), false); // this is not an NRT reader!
+                newReaders[i] = new SegmentReader(commitInfo, oldReader, oldReader.getLiveDocs(),
+                    oldReader.getHardLiveDocs(), oldReader.numDocs(), false); // this is not an NRT reader!
               } else {
                 // both DV and liveDocs have changed
-                newReaders[i] = new SegmentReader(commitInfo, oldReader);
+                Bits liveDocs = commitInfo.hasDeletions() ? commitInfo.info.getCodec().liveDocsFormat()
+                    .readLiveDocs(commitInfo.info.dir, commitInfo, IOContext.READONCE) : null;
+                newReaders[i] = new SegmentReader(commitInfo, oldReader, liveDocs, liveDocs,
+                    commitInfo.info.maxDoc() - commitInfo.getDelCount(), false);
               }
             }
           }

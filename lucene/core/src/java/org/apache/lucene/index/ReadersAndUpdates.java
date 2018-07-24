@@ -214,7 +214,7 @@ final class ReadersAndUpdates {
     // force new liveDocs
     Bits liveDocs = pendingDeletes.getLiveDocs();
     if (liveDocs != null) {
-      return new SegmentReader(info, reader, liveDocs, pendingDeletes.numDocs());
+      return new SegmentReader(info, reader, liveDocs, pendingDeletes.getHardLiveDocs(), pendingDeletes.numDocs(), true);
     } else {
       // liveDocs == null and reader != null. That can only be if there are no deletes
       assert reader.getLiveDocs() == null;
@@ -645,7 +645,8 @@ final class ReadersAndUpdates {
   private SegmentReader createNewReaderWithLatestLiveDocs(SegmentReader reader) throws IOException {
     assert reader != null;
     assert Thread.holdsLock(this) : Thread.currentThread().getName();
-    SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(), pendingDeletes.numDocs());
+    SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(),
+        pendingDeletes.getHardLiveDocs(), pendingDeletes.numDocs(), true);
     boolean success2 = false;
     try {
       pendingDeletes.onNewReader(newReader, info);
