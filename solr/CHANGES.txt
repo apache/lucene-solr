@@ -134,6 +134,8 @@ Bug Fixes
 * SOLR-12570: OpenNLPExtractNamedEntitiesUpdateProcessor cannot support multi fields because pattern replacement
   doesn't work correctly. (Koji Sekiguchi)
 
+* SOLR-12576: Update ref guide for additional information displayed in cloud view (Erick Erickson)
+
 Optimizations
 ----------------------
 
