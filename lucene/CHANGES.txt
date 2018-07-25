@@ -36,6 +36,8 @@ API Changes:
   new deletesPctAllowed setting to control how aggressively deletes should be
   reclaimed. (Erick Erickson, Adrien Grand)
 
+* LUCENE-7314: Graduate LatLonPoint and query classes to core (Nick Knize)
+
 Bug Fixes:
 
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
