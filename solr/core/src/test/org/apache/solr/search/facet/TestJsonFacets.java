@@ -519,7 +519,61 @@ public class TestJsonFacets extends SolrTestCaseHS {
              + "                       background_size: 6, "
              + "            } }, "
              + "   ] } } ] } } ");
+
     
+    // SKG w/min_pop (NOTE: incredibly contrived and not-useful fore/back for testing min_pop w/shard sorting)
+    //
+    // we'll re-use these params in 2 requests, one will simulate a shard request
+    final SolrParams minPopSKG = params
+      ("q", "cat_s:[* TO *]", "rows", "0", "fore", "num_i:[0 TO 1000]", "back", "cat_s:B", "json.facet"
+       , "{x: { type: terms, field: 'cat_s', sort: 'skg desc', "
+       + "      facet: { skg: { type:func, func:'relatedness($fore,$back)', "
+       + "                      min_popularity: 0.001 }" 
+       + "             } } }");
+
+    // plain old request
+    assertJQ(req(minPopSKG)
+             , "facets=={count:5, x:{ buckets:["
+             + "   { val:'B', count:3, "
+             + "     skg : { relatedness: -1.0, "
+             //+ "             foreground_count: 1, "
+             //+ "             foreground_size: 3, "
+             //+ "             background_count: 3, "
+             //+ "             background_size: 3, "
+             + "             foreground_popularity: 0.33333," 
+             + "             background_popularity: 1.0," 
+             + "   } }, "
+             + "   { val:'A', count:2, "
+             + "     skg : { relatedness:'-Infinity', " // bg_pop is below min_pop (otherwise 1.0)
+             //+ "             foreground_count: 2, "
+             //+ "             foreground_size: 3, "
+             //+ "             background_count: 0, "
+             //+ "             background_size: 3, "
+             + "             foreground_popularity: 0.66667,"
+             + "             background_popularity: 0.0,"
+             + "   } } ] } } ");
+
+    // same request, but with whitebox params testing isShard
+    // to verify the raw counts/sizes and that per-shard sorting doesn't pre-emptively sort "A" to the bottom
+    assertJQ(req(minPopSKG,
+                 // fake an initial shard request
+                 "distrib", "false", "isShard", "true", "_facet_", "{}",
+                 "shards.purpose", ""+FacetModule.PURPOSE_GET_JSON_FACETS)
+             , "facets=={count:5, x:{ buckets:["
+             + "   { val:'A', count:2, "
+             + "     skg : { " 
+             + "             foreground_count: 2, "
+             + "             foreground_size: 3, "
+             + "             background_count: 0, "
+             + "             background_size: 3, "
+             + "   } }, "
+             + "   { val:'B', count:3, "
+             + "     skg : { "
+             + "             foreground_count: 1, "
+             + "             foreground_size: 3, "
+             + "             background_count: 3, "
+             + "             background_size: 3, "
+             + "   } } ] } }");
   }
 
   @Test
