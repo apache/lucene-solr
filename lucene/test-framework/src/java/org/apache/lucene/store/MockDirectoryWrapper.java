@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -649,11 +650,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw new IOException("cannot createOutput after crash");
     }
     init();
-    synchronized(this) {
-      if (createdFiles.contains(name) && !name.equals("segments.gen")) {
-        throw new IOException("file \"" + name + "\" was already written to");
-      }
+
+    if (createdFiles.contains(name)) {
+      throw new FileAlreadyExistsException("File \"" + name + "\" was already written to.");
     }
+
     if (assertNoDeleteOpenFile && openFiles.containsKey(name)) {
       throw new AssertionError("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot overwrite");
     }
@@ -666,19 +667,24 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
     addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
-    
+    return maybeThrottle(name, io);
+
+
+  }
+
+  private IndexOutput maybeThrottle(String name, IndexOutput output) {
     // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
-    if (throttling == Throttling.ALWAYS || 
+    if (throttling == Throttling.ALWAYS ||
         (throttling == Throttling.SOMETIMES && randomState.nextInt(200) == 0)) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockDirectoryWrapper: throttling indexOutput (" + name + ")");
       }
-      return throttledOutput.newFromDelegate(io);
+      return throttledOutput.newFromDelegate(output);
     } else {
-      return io;
+      return output;
     }
   }
-  
+
   @Override
   public synchronized IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
     maybeThrowDeterministicException();
@@ -704,16 +710,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
     
-    // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
-    if (throttling == Throttling.ALWAYS || 
-        (throttling == Throttling.SOMETIMES && randomState.nextInt(200) == 0)) {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: throttling indexOutput (" + name + ")");
-      }
-      return throttledOutput.newFromDelegate(io);
-    } else {
-      return io;
-    }
+    return maybeThrottle(name, io);
   }
 
   private static enum Handle {
@@ -750,9 +747,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw randomState.nextBoolean() ? new FileNotFoundException(name + " in dir=" + in) : new NoSuchFileException(name + " in dir=" + in);
     }
 
-    // cannot open a file for input if it's still open for
-    // output, except for segments.gen and segments_N
-    if (!allowReadingFilesStillOpenForWrite && openFilesForWrite.contains(name) && !name.startsWith("segments")) {
+    // cannot open a file for input if it's still open for output.
+    if (!allowReadingFilesStillOpenForWrite && openFilesForWrite.contains(name)) {
       throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 

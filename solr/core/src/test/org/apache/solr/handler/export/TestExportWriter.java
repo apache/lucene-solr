@@ -22,8 +22,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.TestUtil;
@@ -32,15 +34,12 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.ResultContext;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.noggit.ObjectBuilder;
 
 public class TestExportWriter extends SolrTestCaseJ4 {
   
@@ -56,7 +55,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     super.setUp();
     assertU(delQ("*:*"));
     assertU(commit());
-    createIndex();
+
   }
 
   public static void createIndex() {
@@ -147,6 +146,19 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(commit());
 
 
+  }
+
+  @Test
+  public void test() throws Exception {
+    clearIndex();
+    createIndex();
+
+    testSortingOutput();
+    testExportRequiredParams();
+    testDates();
+    testDuplicates();
+
+    clearIndex();
   }
 
   @Test
@@ -332,8 +344,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "        \"id\":\"2\"}]}}");
   }
 
-  @Test
-  public void testSortingOutput() throws Exception {
+  private void testSortingOutput() throws Exception {
 
     //Test single value DocValue output
     String s =  h.query(req("q", "id:1", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
@@ -437,8 +448,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertEquals(Utils.toJSONString(Utils.fromJSONString(expected)), Utils.toJSONString(Utils.fromJSONString(actual)));
   }
 
-  @Test
-  public void testExportRequiredParams() throws Exception {
+  private void testExportRequiredParams() throws Exception {
 
     //Test whether missing required parameters returns expected errors.
 
@@ -452,17 +462,15 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     // Interesting you don't even need to specify a "q" parameter.
     
   }
-  
-  @Test
-  public void testDates() throws Exception {
+
+  private void testDates() throws Exception {
     String s =  h.query(req("q", "id:1", "qt", "/export", "fl", "datedv", "sort", "datedv asc"));
     assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"datedv\":\"2017-06-16T07:00:00Z\"}]}}");
     s =  h.query(req("q", "id:1", "qt", "/export", "fl", "datedv_m", "sort", "datedv asc"));
     assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"datedv_m\":[\"2017-06-16T01:00:00Z\",\"2017-06-16T02:00:00Z\",\"2017-06-16T03:00:00Z\",\"2017-06-16T04:00:00Z\"]}]}}");
   }
-  
-  @Test
-  public void testDuplicates() throws Exception {
+
+  private void testDuplicates() throws Exception {
     // see SOLR-10924
     String expected = h.getCore().getLatestSchema().getField("int_is_t").getType().isPointField()
       ? "1,1,1,1" : "1";
@@ -594,7 +602,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           "field1_s_dv", String.valueOf(str_vals[number]),
           "field2_i_p", String.valueOf(number),
           "field3_l_p", String.valueOf(number)));
-      if (numDocs % 3000 ==0) {
+      if (numDocs % 300 ==0) {
         assertU(commit());
       }
     }
@@ -624,65 +632,55 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String fieldsStr = String.join(",", fieldStrs); // fl :  field1, field2
 
     String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id," + fieldsStr, "sort", sortStr));
+    ObjectMapper mapper = new ObjectMapper();
+    HashMap respMap = mapper.readValue(resp, HashMap.class);
+    List docs = (ArrayList) ((HashMap) respMap.get("response")).get("docs");
 
-    //We cannot compare /select vs /export as for docs with the same values ( ties ) the ordering is different
-    SolrQueryRequest req = null;
-    try {
-      req = req("q", "*:*", "qt", "/select", "fl", "id," + fieldsStr, "sort", sortStr, "rows", Integer.toString(numDocs));
+    SolrQueryRequest selectReq = req("q", "*:*", "qt", "/select", "fl", "id," + fieldsStr, "sort", sortStr, "rows", Integer.toString(numDocs), "wt", "json");
+    String response = h.query(selectReq);
+    Map rsp = (Map)ObjectBuilder.fromJSON(response);
+    List doclist = (List)(((Map)rsp.get("response")).get("docs"));
 
-      SolrQueryResponse selectRsp = h.queryAndResponse("", req);
-      DocList selectDocList = ((ResultContext)selectRsp.getResponse()).getDocList();
-      assert selectDocList.size() == numDocs;
-      DocIterator selectDocListIter = selectDocList.iterator();
+    assert docs.size() == numDocs;
 
-      ObjectMapper mapper = new ObjectMapper();
-      HashMap respMap = mapper.readValue(resp, HashMap.class);
-      List docs = (ArrayList) ((HashMap) respMap.get("response")).get("docs");
-      assert docs.size() == numDocs;
+    for (int i = 0; i < docs.size() - 1; i++) { // docs..
+      assertEquals("Position:" + i + " has different id value" , ((LinkedHashMap)doclist.get(i)).get("id"), String.valueOf(((HashMap) docs.get(i)).get("id")));
 
-      for (int i = 0; i < docs.size() - 1; i++) { // docs..
-        assertEquals("Position:" + i + " has different id value" , String.valueOf(selectDocListIter.nextDoc()), String.valueOf(((HashMap) docs.get(i)).get("id")));
-
-        for (int j = 0; j < fieldSorts.length; j++) { // fields ..
-          String field = fieldSorts[j].getField();
-          String sort = fieldSorts[j].getSort();
-          String fieldVal1 = String.valueOf(((HashMap) docs.get(i)).get(field)); // 1st doc
-          String fieldVal2 = String.valueOf(((HashMap) docs.get(i + 1)).get(field)); // 2nd obj
-          if (fieldVal1.equals(fieldVal2)) {
-            continue;
-          } else {
-            if (sort.equals("asc")) {
-              if (field.equals("stringdv") || field.equals("field1_s_dv")|| field.equals("datedv") || field.equals("booleandv")) { // use string comparator
-                assertTrue(fieldVal1.compareTo(fieldVal2) < 0);
-              } else if (field.equals("doubledv")){
-                assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) <= 0);
-              } else if(field.equals("floatdv")) {
-                assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) <= 0);
-              } else if(field.equals("intdv") || "field2_i_p".equals(field)) {
-                assertTrue(Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) <= 0);
-              } else if(field.equals("longdv") || field.equals("field3_l_p")) {
-                assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) <= 0);
-              }
-            } else {
-              if (field.equals("stringdv") || field.equals("field1_s_dv")|| field.equals("datedv") || field.equals("booleandv")) { // use string comparator
-                assertTrue(fieldVal1.compareTo(fieldVal2) > 0);
-              } else if (field.equals("doubledv")){
-                assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) >= 0);
-              } else if(field.equals("floatdv")) {
-                assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) >= 0);
-              } else if(field.equals("intdv") || "field2_i_p".equals(field)) {
-                assertTrue(Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) >= 0);
-              } else if(field.equals("longdv") || field.equals("field3_l_p")) {
-                assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) >= 0);
-              }
+      for (int j = 0; j < fieldSorts.length; j++) { // fields ..
+        String field = fieldSorts[j].getField();
+        String sort = fieldSorts[j].getSort();
+        String fieldVal1 = String.valueOf(((HashMap) docs.get(i)).get(field)); // 1st doc
+        String fieldVal2 = String.valueOf(((HashMap) docs.get(i + 1)).get(field)); // 2nd obj
+        if (fieldVal1.equals(fieldVal2)) {
+          continue;
+        } else {
+          if (sort.equals("asc")) {
+            if (field.equals("stringdv") || field.equals("field1_s_dv")|| field.equals("datedv") || field.equals("booleandv")) { // use string comparator
+              assertTrue(fieldVal1.compareTo(fieldVal2) < 0);
+            } else if (field.equals("doubledv")){
+              assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) <= 0);
+            } else if(field.equals("floatdv")) {
+              assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) <= 0);
+            } else if(field.equals("intdv") || "field2_i_p".equals(field)) {
+              assertTrue(Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) <= 0);
+            } else if(field.equals("longdv") || field.equals("field3_l_p")) {
+              assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) <= 0);
             }
-            break;
+          } else {
+            if (field.equals("stringdv") || field.equals("field1_s_dv")|| field.equals("datedv") || field.equals("booleandv")) { // use string comparator
+              assertTrue(fieldVal1.compareTo(fieldVal2) > 0);
+            } else if (field.equals("doubledv")){
+              assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) >= 0);
+            } else if(field.equals("floatdv")) {
+              assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) >= 0);
+            } else if(field.equals("intdv") || "field2_i_p".equals(field)) {
+              assertTrue(Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) >= 0);
+            } else if(field.equals("longdv") || field.equals("field3_l_p")) {
+              assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) >= 0);
+            }
           }
+          break;
         }
-      }
-    } finally {
-      if (req != null) {
-        req.close();
       }
     }
   }

@@ -114,6 +114,10 @@ New Features
 
 * SOLR-12522: Support a runtime function `#ALL` for 'replica' in autoscaling policies (noble)
 
+* SOLR-12567: JSON Facet "functions" now support an extended "type:func" syntax, similar to other types
+  of facets.  This also allows additional local params to be specified for if the aggregation function
+  can take advantage of them.  (hossman)
+
 Bug Fixes
 ----------------------
 
@@ -158,6 +162,11 @@ Bug Fixes
   sort options.  This also adds a new configurable "overrefine" option. (Yonik Seeley, hossman)
 
 * SOLR-12553: Allow SignificantTerms Query Parser to use local parameters (Alexandre Rafalovitch)
+
+* SOLR-12570: OpenNLPExtractNamedEntitiesUpdateProcessor cannot support multi fields because pattern replacement
+  doesn't work correctly. (Koji Sekiguchi)
+
+* SOLR-12576: Update ref guide for additional information displayed in cloud view (Erick Erickson)
 
 Optimizations
 ----------------------

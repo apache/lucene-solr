@@ -27,102 +27,139 @@ import java.util.Set;
 
 import org.apache.lucene.util.IOUtils;
 
-/** A Directory is a flat list of files.  Files may be written once, when they
- * are created.  Once a file is created it may only be opened for read, or
- * deleted.  Random access is permitted both when reading and writing.
+/**
+ * A {@code Directory} provides an abstraction layer for storing a
+ * list of files. A directory contains only files (no sub-folder hierarchy).
  *
- * <p> Java's i/o APIs not used directly, but rather all i/o is
- * through this API.  This permits things such as: <ul>
- * <li> implementation of RAM-based indices;
- * <li> implementation indices stored in a database, via JDBC;
- * <li> implementation of an index as a single file;
+ * Implementing classes must comply with the following:
+ *
+ * <ul>
+ *   <li>A file in a directory can be created ({@link #createOutput}), appended
+ *   to, then closed.</li>
+ *   <li>A file open for writing may not be available
+ *   for read access until the corresponding {@link IndexOutput} is closed.</li>
+ *   <li>Once a file is created it must only be opened for input ({@link #openInput}), or
+ *   deleted ({@link #deleteFile}). Calling {@link #createOutput} on an existing file
+ *   must throw {@link java.nio.file.FileAlreadyExistsException}.</li>
  * </ul>
  *
- * Directory locking is implemented by an instance of {@link
- * LockFactory}.
- *
+ * @see FSDirectory
+ * @see RAMDirectory
+ * @see FilterDirectory
  */
 public abstract class Directory implements Closeable {
-
   /**
-   * Returns an array of strings, one for each entry in the directory, in sorted (UTF16, java's String.compare) order.
+   * Returns names of all files stored in this directory.
+   * The output must be in sorted (UTF-16, java's {@link String#compareTo}) order.
    * 
-   * @throws IOException in case of IO error
+   * @throws IOException in case of I/O error
    */
   public abstract String[] listAll() throws IOException;
 
-  /** Removes an existing file in the directory. */
+  /**
+   * Removes an existing file in the directory.
+   *
+   * This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
+   * if {@code name} points to a non-existing file.
+   *
+   * @param name the name of an existing file.
+   * @throws IOException in case of I/O error
+   */
   public abstract void deleteFile(String name) throws IOException;
 
   /**
-   * Returns the length of a file in the directory. This method follows the
-   * following contract:
-   * <ul>
-   * <li>Throws {@link FileNotFoundException} or {@link NoSuchFileException}
-   * if the file does not exist.
-   * <li>Returns a value &ge;0 if the file exists, which specifies its length.
-   * </ul>
-   * 
-   * @param name the name of the file for which to return the length.
-   * @throws IOException if there was an IO error while retrieving the file's
-   *         length.
+   * Returns the byte length of a file in the directory.
+   *
+   * This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
+   * if {@code name} points to a non-existing file.
+   *
+   * @param name the name of an existing file.
+   * @throws IOException in case of I/O error
    */
   public abstract long fileLength(String name) throws IOException;
 
-  /** Creates a new, empty file in the directory with the given name.
-      Returns a stream writing this file. */
+  /**
+   * Creates a new, empty file in the directory and returns an {@link IndexOutput}
+   * instance for appending data to this file.
+   *
+   * This method must throw {@link java.nio.file.FileAlreadyExistsException} if the file
+   * already exists.
+   *
+   * @param name the name of the file to create.
+   * @throws IOException in case of I/O error
+   */
   public abstract IndexOutput createOutput(String name, IOContext context) throws IOException;
 
-  /** Creates a new, empty file for writing in the directory, with a
-   *  temporary file name including prefix and suffix, ending with the
-   *  reserved extension <code>.tmp</code>.  Use
-   *  {@link IndexOutput#getName} to see what name was used.  */
+  /**
+   * Creates a new, empty, temporary file in the directory and returns an {@link IndexOutput}
+   * instance for appending data to this file.
+   *
+   * The temporary file name (accessible via {@link IndexOutput#getName()}) will start with
+   * {@code prefix}, end with {@code suffix} and have a reserved file extension {@code .tmp}.
+   */
   public abstract IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException;
 
   /**
-   * Ensure that any writes to these files are moved to
-   * stable storage.  Lucene uses this to properly commit
-   * changes to the index, to prevent a machine/OS crash
+   * Ensures that any writes to these files are moved to
+   * stable storage (made durable).
+   *
+   * Lucene uses this to properly commit changes to the index, to prevent a machine/OS crash
    * from corrupting the index.
-   * <br>
-   * NOTE: Clients may call this method for same files over
-   * and over again, so some impls might optimize for that.
-   * For other impls the operation can be a noop, for various
-   * reasons.
+   *
+   * @see #syncMetaData()
    */
   public abstract void sync(Collection<String> names) throws IOException;
-  
+
   /**
-   * Renames {@code source} to {@code dest} as an atomic operation,
-   * where {@code dest} does not yet exist in the directory.
-   * <p>
-   * Notes: This method is used by IndexWriter to publish commits.
-   * It is ok if this operation is not truly atomic, for example
-   * both {@code source} and {@code dest} can be visible temporarily.
-   * It is just important that the contents of {@code dest} appear
-   * atomically, or an exception is thrown.
+   * Ensures that directory metadata, such as recent file renames, are moved to stable
+   * storage.
+   *
+   * @see #sync(Collection)
+   */
+  public abstract void syncMetaData() throws IOException;
+
+  /**
+   * Renames {@code source} file to {@code dest} file where
+   * {@code dest} must not already exist in the directory.
+   *
+   * It is permitted for this operation to not be truly atomic, for example
+   * both {@code source} and {@code dest} can be visible temporarily in {@link #listAll()}.
+   * However, the implementation of this method must ensure the content of
+   * {@code dest} appears as the entire {@code source} atomically. So once
+   * {@code dest} is visible for readers, the entire content of previous {@code source}
+   * is visible.
+   *
+   * This method is used by IndexWriter to publish commits.
    */
   public abstract void rename(String source, String dest) throws IOException;
 
   /**
-   * Ensure that directory metadata, such as recent file renames, are made
-   * durable.
-   */
-  public abstract void syncMetaData() throws IOException;
-  
-  /** Returns a stream reading an existing file.
-   * <p>Throws {@link FileNotFoundException} or {@link NoSuchFileException}
-   * if the file does not exist.
+   * Opens a stream for reading an existing file.
+   *
+   * This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
+   * if {@code name} points to a non-existing file.
+   *
+   * @param name the name of an existing file.
+   * @throws IOException in case of I/O error
    */
   public abstract IndexInput openInput(String name, IOContext context) throws IOException;
   
-  /** Returns a stream reading an existing file, computing checksum as it reads */
+  /**
+   * Opens a checksum-computing stream for reading an existing file.
+   *
+   * This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
+   * if {@code name} points to a non-existing file.
+   *
+   * @param name the name of an existing file.
+   * @throws IOException in case of I/O error
+   */
   public ChecksumIndexInput openChecksumInput(String name, IOContext context) throws IOException {
     return new BufferedChecksumIndexInput(openInput(name, context));
   }
   
   /** 
-   * Returns an obtained {@link Lock}.
+   * Acquires and returns a {@link Lock} for a file with the given name.
+   *
    * @param name the name of the lock file
    * @throws LockObtainFailedException (optional specific exception) if the lock could
    *         not be obtained because it is currently held elsewhere.
@@ -130,31 +167,15 @@ public abstract class Directory implements Closeable {
    */
   public abstract Lock obtainLock(String name) throws IOException;
 
-  /** Closes the store. */
+  /**
+   * Closes the directory.
+   */
   @Override
   public abstract void close() throws IOException;
 
-  @Override
-  public String toString() {
-    return getClass().getSimpleName() + '@' + Integer.toHexString(hashCode());
-  }
-
   /**
-   * Copies the file <i>src</i> in <i>from</i> to this directory under the new
-   * file name <i>dest</i>.
-   * <p>
-   * If you want to copy the entire source directory to the destination one, you
-   * can do so like this:
-   * 
-   * <pre class="prettyprint">
-   * Directory to; // the directory to copy to
-   * for (String file : dir.listAll()) {
-   *   to.copyFrom(dir, file, newFile, IOContext.DEFAULT); // newFile can be either file, or a new name
-   * }
-   * </pre>
-   * <p>
-   * <b>NOTE:</b> this method does not check whether <i>dest</i> exist and will
-   * overwrite it if it does.
+   * Copies an existing {@code src} file from directory {@code from}
+   * to a non-existent file {@code dest} in this directory.
    */
   public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
     boolean success = false;
@@ -169,14 +190,21 @@ public abstract class Directory implements Closeable {
     }
   }
 
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + '@' + Integer.toHexString(hashCode());
+  }
+
   /**
-   * @throws AlreadyClosedException if this Directory is closed
+   * Ensures this directory is still open.
+   *
+   * @throws AlreadyClosedException if this directory is closed.
    */
   protected void ensureOpen() throws AlreadyClosedException {}
 
   /**
-   * Returns the current pending deletions in this directory or an emtpy set
-   * if there are no known pending deletions.
+   * Returns a set of files currently pending deletion in this directory.
+   *
    * @lucene.internal
    */
   public Set<String> getPendingDeletions() throws IOException {

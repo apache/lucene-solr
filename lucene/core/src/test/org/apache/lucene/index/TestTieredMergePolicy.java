@@ -181,7 +181,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
         //
         // 2> We could have 10 segments and a target count of 2. In that case there could be 5 segments resulting.
         //    as long as they're all < 125% max seg size, that's valid.
-        Iterator<SegmentCommitInfo> iterator = w.segmentInfos.iterator();
+        Iterator<SegmentCommitInfo> iterator = w.cloneSegmentInfos().iterator();
         while (iterator.hasNext()) {
           SegmentCommitInfo info = iterator.next();
           assertTrue("No segment should be more than 125% of max segment size ",
@@ -275,7 +275,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
     w.forceMerge(Integer.MAX_VALUE);
     checkSegmentsInExpectations(w, segNamesBefore, true);
-    checkSegmentSizeNotExceeded(w.segmentInfos, maxSegBytes);
+    checkSegmentSizeNotExceeded(w.cloneSegmentInfos(), maxSegBytes);
 
 
     // Delete 12-17% of each segment and expungeDeletes. This should result in:
@@ -285,7 +285,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     int remainingDocs = numDocs - deletePctDocsFromEachSeg(w, random().nextInt(5) + 12, true);
     w.forceMergeDeletes();
     w.commit();
-    checkSegmentSizeNotExceeded(w.segmentInfos, maxSegBytes);
+    checkSegmentSizeNotExceeded(w.cloneSegmentInfos(), maxSegBytes);
     assertFalse("There should be no deleted docs in the index.", w.hasDeletions());
 
     // Check that deleting _fewer_ than 10% doesn't merge inappropriately. Nothing should be merged since no segment
@@ -301,7 +301,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     // This time, forceMerge. By default this should respect max segment size.
     // Will change for LUCENE-8236
     w.forceMerge(Integer.MAX_VALUE);
-    checkSegmentSizeNotExceeded(w.segmentInfos, maxSegBytes);
+    checkSegmentSizeNotExceeded(w.cloneSegmentInfos(), maxSegBytes);
 
     // Now forceMerge down to one segment, there should be exactly remainingDocs in exactly one segment.
     w.forceMerge(1);
@@ -346,9 +346,9 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
     w.commit(); // want to trigger merge no matter what.
 
-    assertEquals("There should be exactly one very large and one small segment", w.segmentInfos.size(), 2);
-    SegmentCommitInfo info0 = w.segmentInfos.info(0);
-    SegmentCommitInfo info1 = w.segmentInfos.info(1);
+    assertEquals("There should be exactly one very large and one small segment", 2, w.listOfSegmentCommitInfos().size());
+    SegmentCommitInfo info0 = w.listOfSegmentCommitInfos().get(0);
+    SegmentCommitInfo info1 = w.listOfSegmentCommitInfos().get(1);
     int largeSegDocCount = Math.max(info0.info.maxDoc(), info1.info.maxDoc());
     int smallSegDocCount = Math.min(info0.info.maxDoc(), info1.info.maxDoc());
     assertEquals("The large segment should have a bunch of docs", largeSegDocCount, remainingDocs);
@@ -413,7 +413,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
   List<String> getSegmentNames(IndexWriter w) {
     List<String> names = new ArrayList<>();
-    for (SegmentCommitInfo info : w.segmentInfos) {
+    for (SegmentCommitInfo info : w.cloneSegmentInfos()) {
       names.add(info.info.name);
     }
     return names;

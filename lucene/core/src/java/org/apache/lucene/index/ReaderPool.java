@@ -89,7 +89,7 @@ final class ReaderPool implements Closeable {
         LeafReaderContext leaf = leaves.get(i);
         SegmentReader segReader = (SegmentReader) leaf.reader();
         SegmentReader newReader = new SegmentReader(segmentInfos.info(i), segReader, segReader.getLiveDocs(),
-            segReader.numDocs());
+            segReader.getHardLiveDocs(), segReader.numDocs(), true);
         readerMap.put(newReader.getOriginalSegmentInfo(), new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(),
             newReader, newPendingDeletes(newReader, newReader.getOriginalSegmentInfo())));
       }
