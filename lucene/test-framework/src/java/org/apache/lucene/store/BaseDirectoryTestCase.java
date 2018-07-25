@@ -440,8 +440,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
                 try (IndexInput input = dir.openInput(file, newIOContext(random()))) {
                   // Just open, nothing else.
                 } catch (AccessDeniedException e) {
-                  // Access denied is allowed for files for which the output is still open.
-                  // Since we don't synchronize with the writer thread, just ignore it.
+                  // Access denied is allowed for files for which the output is still open (MockDirectoryWriter enforces
+                  // this, for example). Since we don't synchronize with the writer thread, just ignore it.
                 } catch (IOException e) {
                   throw new UncheckedIOException("Something went wrong when opening: " + file, e);
                 }
