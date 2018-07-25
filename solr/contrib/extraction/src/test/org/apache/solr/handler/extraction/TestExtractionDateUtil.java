@@ -50,6 +50,7 @@ public class TestExtractionDateUtil extends LuceneTestCase {
     assertEquals("d:" + inputDate.getTime(), expectedStr, resultStr);
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12593")
   public void testParseDate() throws ParseException {
     assertParsedDate(1226583351000L, "Thu Nov 13 04:35:51 AKST 2008");
   }
