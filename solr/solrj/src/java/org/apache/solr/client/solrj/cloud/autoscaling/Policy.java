@@ -539,7 +539,7 @@ public class Policy implements MapWriter {
           .collect(Collectors.toList());
     }
 
-    Policy getPolicy() {
+    public Policy getPolicy() {
       return Policy.this;
 
     }

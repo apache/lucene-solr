@@ -106,7 +106,7 @@ public class Row implements MapWriter {
 
   @Override
   public String toString() {
-    return node;
+    return jsonStr();
   }
 
   /**

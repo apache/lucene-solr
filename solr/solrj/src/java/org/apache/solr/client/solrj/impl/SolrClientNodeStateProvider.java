@@ -72,7 +72,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
   private final CloudSolrClient solrClient;
-  private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
+  protected final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
   private Map<String, Object> snitchSession = new HashMap<>();
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
@@ -140,28 +140,26 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
     Map<String, Map<String, List<ReplicaInfo>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, s -> emptyMap());
     if (!keys.isEmpty()) {
-      Map<String, Pair<String, ReplicaInfo>> keyVsReplica = new HashMap<>();
+      Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica = new HashMap<>();
       Row.forEachReplica(result, r -> {
         for (String key : keys) {
-          if (r.getVariables().containsKey(key)) continue;
-          String perReplicaAttrKeyPrefix = "solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":";
+          if (r.getVariables().containsKey(key)) continue;// it's already collected
+          String perReplicaMetricsKey = "solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":";
           Suggestion.ConditionType tagType = Suggestion.getTagType(key);
           String perReplicaValue = key;
           if (tagType != null) {
             perReplicaValue = tagType.metricsAttribute;
             perReplicaValue = perReplicaValue == null ? key : perReplicaValue;
           }
-          perReplicaAttrKeyPrefix += perReplicaValue;
-          keyVsReplica.put(perReplicaAttrKeyPrefix, new Pair<>(key, r));
+          perReplicaMetricsKey += perReplicaValue;
+          metricsKeyVsTagReplica.put(perReplicaMetricsKey, new Pair<>(key, r));
         }
       });
 
-      if (!keyVsReplica.isEmpty()) {
-        Map<String, Object> tags = fetchReplicaMetrics(node,
-            keyVsReplica.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey)));
-        tags.forEach((k, o) -> {
-          Pair<String, ReplicaInfo> p = keyVsReplica.get(k);
+      if (!metricsKeyVsTagReplica.isEmpty()) {
+        Map<String, Object> tagValues = fetchReplicaMetrics(node, metricsKeyVsTagReplica);
+        tagValues.forEach((k, o) -> {
+          Pair<String, ReplicaInfo> p = metricsKeyVsTagReplica.get(k);
           Suggestion.ConditionType validator = Suggestion.getTagType(p.first());
           if (validator != null) o = validator.convertVal(o);
           if (p.second() != null) p.second().getVariables().put(p.first(), o);
@@ -172,9 +170,11 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return result;
   }
 
-  protected  Map<String,Object> fetchReplicaMetrics(String solrNode, Map<String, Object> metricsKeyVsTag) {
+  protected Map<String, Object> fetchReplicaMetrics(String node, Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica) {
+    Map<String, Object> collect = metricsKeyVsTagReplica.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey));
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient);
-    fetchReplicaMetrics(solrNode, ctx,metricsKeyVsTag);
+    fetchReplicaMetrics(node, ctx, collect);
     return ctx.getTags();
 
   }
