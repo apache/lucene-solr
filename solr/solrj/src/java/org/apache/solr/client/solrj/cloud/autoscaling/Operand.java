@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus;
@@ -74,6 +75,13 @@ public enum Operand {
     @Override
     public double _delta(double expected, double actual) {
       return actual - expected;
+    }
+  },
+  IN("", 0) {
+    @Override
+    public TestStatus match(Object ruleVal, Object testVal) {
+      List l = (List) ruleVal;
+      return (l.contains(testVal)) ?  PASS: FAIL;
     }
   },
   RANGE_NOT_EQUAL("", 2) {
