@@ -63,6 +63,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -109,6 +110,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   @Slow
   @Test
+  @LogLevel("org.apache.solr.update.processor.TimeRoutedAlias=DEBUG;org.apache.solr.cloud=DEBUG")
   public void test() throws Exception {
     String configName = TimeRoutedAliasUpdateProcessorTest.configName + getTestName();
     createConfigSet(configName);
