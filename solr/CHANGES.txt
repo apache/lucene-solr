@@ -121,6 +121,8 @@ New Features
 * SOLR-12581: the JSON Facet 'relatedness()' aggregate function now supports a 'min_popularity' option
   using the extended type:func syntax (hossman)
 
+* SOLR-12536: autoscaling policy support to equally distribute replicas on the basis of arbitrary properties (noble)
+
 Bug Fixes
 ----------------------
 
