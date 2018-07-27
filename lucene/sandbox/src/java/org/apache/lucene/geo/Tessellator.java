@@ -82,7 +82,7 @@ final public class Tessellator {
   public static final List<Triangle> tessellate(final Polygon polygon) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
     // then filter instances of intersections.
-    Node outerNode = createDoublyLinkedList(polygon, WindingOrder.CCW);
+    Node outerNode = createDoublyLinkedList(polygon, 0, WindingOrder.CW);
     // If an outer node hasn't been detected, the shape is malformed. (must comply with OGC SFA specification)
     if(outerNode == null) {
       throw new IllegalArgumentException("Malformed shape detected in Tessellator!");
@@ -118,19 +118,19 @@ final public class Tessellator {
   }
 
   /** Creates a circular doubly linked list using polygon points. The order is governed by the specified winding order */
-  private static final Node createDoublyLinkedList(final Polygon polygon, final WindingOrder windingOrder) {
+  private static final Node createDoublyLinkedList(final Polygon polygon, int startIndex, final WindingOrder windingOrder) {
     Node lastNode = null;
     // Link points into the circular doubly-linked list in the specified winding order
     if (windingOrder == polygon.getWindingOrder()) {
       for (int i = 0; i < polygon.numPoints(); ++i) {
         if (lastNode == null || filter(polygon, i, lastNode) == false) {
-          lastNode = insertNode(polygon, i, lastNode);
+          lastNode = insertNode(polygon, startIndex++, i, lastNode);
         }
       }
     } else {
       for (int i = polygon.numPoints() - 1; i >= 0; --i) {
         if (lastNode == null || filter(polygon, i, lastNode) == false) {
-          lastNode = insertNode(polygon, i, lastNode);
+          lastNode = insertNode(polygon, startIndex++, i, lastNode);
         }
       }
     }
@@ -150,9 +150,11 @@ final public class Tessellator {
     final List<Node> holeList = new ArrayList<>();
     // Iterate through each array of hole vertices.
     Polygon[] holes = polygon.getHoles();
+    int nodeIndex = 0;
     for(int i = 0; i < polygon.numHoles(); ++i) {
+      nodeIndex += holes[i].numPoints();
       // create the doubly-linked hole list
-      Node list = createDoublyLinkedList(holes[i], WindingOrder.CW);
+      Node list = createDoublyLinkedList(holes[i], nodeIndex, WindingOrder.CCW);
       if (list == list.next) {
         list.isSteiner = true;
       }
@@ -666,8 +668,8 @@ final public class Tessellator {
   }
 
   /** Creates a node and optionally links it with a previous node in a circular doubly-linked list */
-  private static final Node insertNode(final Polygon polygon, int index, final Node lastNode) {
-    final Node node = new Node(polygon, index);
+  private static final Node insertNode(final Polygon polygon, int index, int vertexIndex, final Node lastNode) {
+    final Node node = new Node(polygon, index, vertexIndex);
     if(lastNode == null) {
       node.previous = node;
       node.previousZ = node;
@@ -744,8 +746,10 @@ final public class Tessellator {
 
   /** Circular Doubly-linked list used for polygon coordinates */
   protected static class Node {
-    // vertex index in the polygon
+    // node index in the linked list
     private final int idx;
+    // vertex index in the polygon
+    private final int vrtxIdx;
     // reference to the polygon for lat/lon values
     private final Polygon polygon;
     // encoded x value
@@ -766,11 +770,12 @@ final public class Tessellator {
     // triangle center
     private boolean isSteiner = false;
 
-    protected Node(final Polygon polygon, final int index) {
+    protected Node(final Polygon polygon, final int index, final int vertexIndex) {
       this.idx = index;
+      this.vrtxIdx = vertexIndex;
       this.polygon = polygon;
-      this.y = encodeLatitude(polygon.getPolyLat(idx));
-      this.x = encodeLongitude(polygon.getPolyLon(idx));
+      this.y = encodeLatitude(polygon.getPolyLat(vrtxIdx));
+      this.x = encodeLongitude(polygon.getPolyLon(vrtxIdx));
       this.morton = BitUtil.interleave(x ^ 0x80000000, y ^ 0x80000000);
       this.previous = null;
       this.next = null;
@@ -781,6 +786,7 @@ final public class Tessellator {
     /** simple deep copy constructor */
     protected Node(Node other) {
       this.idx = other.idx;
+      this.vrtxIdx = other.vrtxIdx;
       this.polygon = other.polygon;
       this.morton = other.morton;
       this.x = other.x;
@@ -793,22 +799,22 @@ final public class Tessellator {
 
     /** get the x value */
     public final double getX() {
-      return polygon.getPolyLon(idx);
+      return polygon.getPolyLon(vrtxIdx);
     }
 
     /** get the y value */
     public final double getY() {
-      return polygon.getPolyLat(idx);
+      return polygon.getPolyLat(vrtxIdx);
     }
 
     /** get the longitude value */
     public final double getLon() {
-      return polygon.getPolyLon(idx);
+      return polygon.getPolyLon(vrtxIdx);
     }
 
     /** get the latitude value */
     public final double getLat() {
-      return polygon.getPolyLat(idx);
+      return polygon.getPolyLat(vrtxIdx);
     }
 
     /** compare nodes by y then x */
