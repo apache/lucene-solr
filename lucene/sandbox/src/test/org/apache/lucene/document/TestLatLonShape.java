@@ -102,7 +102,6 @@ public class TestLatLonShape extends LuceneTestCase {
     IOUtils.close(reader, dir);
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8418")
   /** test random polygons with a single hole */
   public void testPolygonWithHole() throws Exception {
     int numVertices = TestUtil.nextInt(random(), 50, 100);
