@@ -2674,6 +2674,11 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Checks a specific exception class is thrown by the given runnable, and returns it. */
   public static <T extends Throwable> T expectThrows(Class<T> expectedType, ThrowingRunnable runnable) {
+    return expectThrows(expectedType, "Expected exception "+ expectedType.getSimpleName() + " but no exception was thrown", runnable);
+  }
+
+  /** Checks a specific exception class is thrown by the given runnable, and returns it. */
+  public static <T extends Throwable> T expectThrows(Class<T> expectedType, String noExceptionMessage, ThrowingRunnable runnable) {
     try {
       runnable.run();
     } catch (Throwable e) {
@@ -2684,7 +2689,7 @@ public abstract class LuceneTestCase extends Assert {
       assertion.initCause(e);
       throw assertion;
     }
-    throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName() + " but no exception was thrown");
+    throw new AssertionFailedError(noExceptionMessage);
   }
 
   /** Checks a specific exception class is thrown by the given runnable, and returns it. */
