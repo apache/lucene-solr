@@ -145,6 +145,8 @@ Bug Fixes
 
 * SOLR-12576: Update ref guide for additional information displayed in cloud view (Erick Erickson)
 
+* SOLR-12597: Migrate API should fail requests that do not specify split.key parameter (shalin)
+
 Optimizations
 ----------------------
 
