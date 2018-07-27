@@ -53,6 +53,16 @@ A `zkConnected` header is included in every search response indicating if the no
 
 To prevent stale or incorrect results in the event that the request-serving node can't communicate with ZooKeeper, set the <<shards-tolerant,`shards.tolerant`>> parameter to `requireZkConnected`.  This will cause requests to fail rather than setting a `zkConnected` header to `false`.
 
+=== The shards Parameter
+
+By default, SolrCloud will run searches on all shards and combine the results if the shards parameter is not specified. You can specify one or more shard names as the value of the "shards" parameter to limit the shards that you want to search against.
+
+[source,java]
+----
+http://localhost:8983/solr/collection1/select?q=*:*&shards=shard1
+http://localhost:8983/solr/collection1/select?q=*:*&shards=shard2,shard3
+----
+
 === shards.tolerant
 
 In the event that one or more shards queried are completely unavailable, then Solr's default behavior is to fail the request. However, there are many use-cases where partial results are acceptable and so Solr provides a boolean `shards.tolerant` parameter (default `false`).  In addition to `true` and `false`, `shards.tolerant` may also be set to `requireZkConnected` - see below.
@@ -85,3 +95,50 @@ Example response with `partialResults` flag set to 'true':
   }
 }
 ----
+
+=== The collection Parameter
+This parameter allows you to specify a collection or a number of collections on which the query should be executed. This allows you to query multiple collections at once and all the feature of Solr which work in a distributed manner can work across collections.
+
+[source,java]
+----
+http://localhost:8983/solr/collection1/select?collection=collection1,collection2,collection3
+----
+
+=== The \_route_ Parameter
+
+This parameter can be used to specify a route key which is used to figure out the corresponding shards. For example, if you have a document with a unique key "user1!123", then specifying the route key as "_route_=user1!" (notice the trailing '!' character) will route the request to the shard which hosts that user. You can specify multiple such route keys separated by comma.
+This parameter can be leveraged when we have shard data by users. See '<<shards-and-indexing-data-in-solrcloud.adoc#document-routing,`Document Routing`>>' for more information
+
+[source,java]
+----
+http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!
+http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!,user2!
+----
+
+== Distributed tracing and debugging parameters
+
+There are several distributed tracing parameters which can be used to trace the request as well as find timing information for a distributed request.
+
+[width="100%",cols="50%,50%",options="header",]
+|===
+|Parameter |Description
+|debug=track | Gives debug information for each phase of the distributed query.
+|===
+
+== Optimizations and related parameters
+
+The table below summarizes the general parameters for controlling routing.
+
+[width="100%",cols="50%,50%",options="header",]
+|===
+|Parameter |Description
+|distrib.singlePass |Set to true to fetch stored fields from all shards in a single pass.
+|===
+
+These parameters are described in the sections below.
+
+=== The distrib.singlePass Parameter
+
+If set to "true," this parameter changes the distributed search algorithm to fetch all requested stored fields from each shard in the first phase itself. This eliminates the need for making a second request to fetch the stored fields. This can be faster when requesting a very small number of fields containing small values. However, if large fields are requested or if a lot of fields are requested then the overhead of fetching them over the network from all shards can make the request slower as compared to the normal distributed search path.
+
+Note that this optimization only applies to distributed search. Certain features such as faceting may make additional network requests for refinements etc.
