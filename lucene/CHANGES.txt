@@ -64,6 +64,9 @@ Bug Fixes:
 
 * LUCENE-8398: TieredMergePolicy.getMaxMergedSegmentMB has rounding error (Erick Erickson)
 
+* LUCENE-8429: DaciukMihovAutomatonBuilder is no longer prone to stack
+  overflows by enforcing a maximum term length. (Adrien Grand)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
