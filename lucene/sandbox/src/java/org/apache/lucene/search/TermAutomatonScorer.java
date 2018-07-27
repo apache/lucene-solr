@@ -87,7 +87,7 @@ class TermAutomatonScorer extends Scorer {
    *  the same (lowest) docID. */
   private static class DocIDQueue extends PriorityQueue<EnumAndScorer> {
     public DocIDQueue(int maxSize) {
-      super(maxSize, false);
+      super(maxSize);
     }
 
     @Override
@@ -100,7 +100,7 @@ class TermAutomatonScorer extends Scorer {
    *  position. */
   private static class PositionQueue extends PriorityQueue<EnumAndScorer> {
     public PositionQueue(int maxSize) {
-      super(maxSize, false);
+      super(maxSize);
     }
 
     @Override
