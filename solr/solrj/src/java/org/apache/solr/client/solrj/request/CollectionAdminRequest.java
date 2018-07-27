@@ -1956,8 +1956,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       super(CollectionAction.MIGRATE);
       this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
       this.targetCollection = checkNotNull("targetCollection", targetCollection);
-      // TODO: inconsistent with "split.key"
-      this.splitKey = checkNotNull("splitKey", splitKey);
+      this.splitKey = checkNotNull("split.key", splitKey);
     }
 
     public String getCollectionName() {
