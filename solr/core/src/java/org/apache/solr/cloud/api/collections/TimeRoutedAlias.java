@@ -63,7 +63,7 @@ public class TimeRoutedAlias {
   public static final String ROUTER_START = ROUTER_PREFIX + "start";
   public static final String ROUTER_INTERVAL = ROUTER_PREFIX + "interval";
   public static final String ROUTER_MAX_FUTURE = ROUTER_PREFIX + "maxFutureMs";
-  public static final String ROUTER_PREEMPTIVE_CREATE_WINDOW = ROUTER_PREFIX + "preemptiveCreateWindow";
+  public static final String ROUTER_PREEMPTIVE_CREATE_MATH = ROUTER_PREFIX + "preemptiveCreateMath";
   public static final String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
   public static final String CREATE_COLLECTION_PREFIX = "create-collection.";
   // plus TZ and NAME
@@ -85,7 +85,7 @@ public class TimeRoutedAlias {
   public static final List<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableList(Arrays.asList(
       ROUTER_MAX_FUTURE,
       ROUTER_AUTO_DELETE_AGE,
-      ROUTER_PREEMPTIVE_CREATE_WINDOW,
+      ROUTER_PREEMPTIVE_CREATE_MATH,
       TZ)); // kinda special
 
   static Predicate<String> PARAM_IS_PROP =
@@ -128,7 +128,7 @@ public class TimeRoutedAlias {
   private final String routeField;
   private final String intervalMath; // ex: +1DAY
   private final long maxFutureMs;
-  private final String preemptiveCreateWindow;
+  private final String preemptiveCreateMath;
   private final String autoDeleteAgeMath; // ex: /DAY-30DAYS  *optional*
   private final TimeZone timeZone;
 
@@ -144,7 +144,9 @@ public class TimeRoutedAlias {
 
     //optional:
     maxFutureMs = params.getLong(ROUTER_MAX_FUTURE, TimeUnit.MINUTES.toMillis(10));
-    preemptiveCreateWindow = params.get(ROUTER_PREEMPTIVE_CREATE_WINDOW); // no default
+    // the date math configured is an interval to be subtracted from the most recent collection's time stamp
+    preemptiveCreateMath = params.get(ROUTER_PREEMPTIVE_CREATE_MATH) != null ?
+        "-" + params.get(ROUTER_PREEMPTIVE_CREATE_MATH) : null;
     autoDeleteAgeMath = params.get(ROUTER_AUTO_DELETE_AGE); // no default
     timeZone = TimeZoneUtils.parseTimezone(aliasMetadata.get(CommonParams.TZ));
 
@@ -194,7 +196,7 @@ public class TimeRoutedAlias {
   }
 
   public String getPreemptiveCreateWindow() {
-    return preemptiveCreateWindow;
+    return preemptiveCreateMath;
   }
 
   public String getAutoDeleteAgeMath() {
@@ -212,7 +214,7 @@ public class TimeRoutedAlias {
         .add("routeField", routeField)
         .add("intervalMath", intervalMath)
         .add("maxFutureMs", maxFutureMs)
-        .add("preemptiveCreateWindow", preemptiveCreateWindow)
+        .add("preemptiveCreateMath", preemptiveCreateMath)
         .add("autoDeleteAgeMath", autoDeleteAgeMath)
         .add("timeZone", timeZone)
         .toString();

@@ -50,7 +50,7 @@ public class DistributedUpdateProcessorFactory
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     // note: will sometimes return DURP (no overhead) instead of wrapping
-    return TimeRoutedAliasUpdateProcessor.wrap(req, rsp,
+    return TimeRoutedAliasUpdateProcessor.wrap(req,
         new DistributedUpdateProcessor(req, rsp, next));
   }
   

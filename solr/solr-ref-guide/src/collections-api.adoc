@@ -597,7 +597,7 @@ without error.  If there was no limit, than an erroneous value could trigger man
 +
 The default is 10 minutes.
 
-`router.preemptiveCreateWindow`::
+`router.preemptiveCreateMath`::
 A date math expression that results in early creation of new collections.
 +
 If a document arrives with a timestamp that is after the end time of the most recent collection minus this
@@ -610,7 +610,10 @@ being used, and new documents will tend to be routed through it only to be route
 router.autoDeleteAge is currently evaluated relative to the date of a newly created collection, and so you may
 want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
 soon. Note that it has to be possible to subtract the interval specified from a date, so if prepending a
-minus sign creates invalid date math, this will cause an error.
+minus sign creates invalid date math, this will cause an error. Also note that a document that is itself
+destined for a collection that does not exist will trigger synchronous creation up to that destination collection
+but will not trigger additional async preemptive creation. Only one type of collection creation can happen
+per document.
 Example: `90MINUTES`.
 +
 This is blank by default indicating just-in-time, synchronous creation of new collections.
