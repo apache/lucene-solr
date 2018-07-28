@@ -1412,6 +1412,25 @@ public class CloudSolrClient extends SolrClient {
     }
 
     /**
+     * Provide a ZK connection string which will be used when configuring {@link CloudSolrClient} instances.
+     *
+     * Usage example:
+     *
+     * <pre>
+     *   final SolrClient client = new CloudSolrClient.Builder("zk1:2181,zk2:2181/solr").build();
+     * </pre>
+     *
+     * @param zkHost a String containing zookeeper hosts and possibly chroot (e.g. "zk1:2181,zk2:2181/solr")
+     */
+    public Builder(String zkHost) {
+      this(new ZkClientClusterStateProvider(zkHost));
+    }
+
+    private Builder(ClusterStateProvider stateProvider) {
+      this.stateProvider = stateProvider;
+    }
+
+    /**
      * Provide a ZooKeeper client endpoint to be used when configuring {@link CloudSolrClient} instances.
      * 
      * Method may be called multiple times.  All provided values will be used.
@@ -1566,8 +1585,7 @@ public class CloudSolrClient extends SolrClient {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
           stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
-        }
-        else if (!this.solrUrls.isEmpty()) {
+        } else if (!this.solrUrls.isEmpty()) {
           try {
             stateProvider = new HttpClusterStateProvider(solrUrls, httpClient);
           } catch (Exception e) {

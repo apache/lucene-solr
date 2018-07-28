@@ -31,6 +31,9 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
   private static final String ANY_CHROOT = "/ANY_CHROOT";
   private static final String ANY_ZK_HOST = "ANY_ZK_HOST";
   private static final String ANY_OTHER_ZK_HOST = "ANY_OTHER_ZK_HOST";
+  private static final String ANY_ZK_CONNECTION_STRING =
+      String.format("%s,%s%s", ANY_ZK_HOST, ANY_OTHER_ZK_HOST, ANY_CHROOT);
+
 
   @Test(expected = IllegalArgumentException.class)
   public void testNoZkHostSpecified() {
@@ -52,9 +55,9 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
   @Test
   public void testSeveralZkHostsSpecifiedSingly() throws IOException {
     final List<String> zkHostList = new ArrayList<>();
-    zkHostList.add(ANY_ZK_HOST); zkHostList.add(ANY_OTHER_ZK_HOST);
-    try (CloudSolrClient createdClient = new Builder(zkHostList, Optional.of(ANY_CHROOT))
-        .build()) {
+    zkHostList.add(ANY_ZK_HOST);
+    zkHostList.add(ANY_OTHER_ZK_HOST);
+    try (CloudSolrClient createdClient = new Builder(zkHostList, Optional.of(ANY_CHROOT)).build()) {
       final String clientZkHost = createdClient.getZkHost();
     
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
@@ -63,22 +66,20 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
   }
   
   @Test
-  public void testSeveralZkHostsSpecifiedTogether() throws IOException {
-    final ArrayList<String> zkHosts = new ArrayList<String>();
-    zkHosts.add(ANY_ZK_HOST);
-    zkHosts.add(ANY_OTHER_ZK_HOST);
-    try(CloudSolrClient createdClient = new Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {
+  public void testZkConnectionString() throws IOException {
+    try(CloudSolrClient createdClient = new Builder(ANY_ZK_CONNECTION_STRING).build()) {
       final String clientZkHost = createdClient.getZkHost();
     
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
       assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
+      assertTrue(clientZkHost.contains(ANY_CHROOT));
     }
   }
   
   @Test
   public void testByDefaultConfiguresClientToSendUpdatesOnlyToShardLeaders() throws IOException {
     try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
-      assertTrue(createdClient.isUpdatesToLeaders() == true);
+      assertTrue(createdClient.isUpdatesToLeaders());
     }
   }
 
