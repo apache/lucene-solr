@@ -142,9 +142,9 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
   private void checkPreemptiveCreateWindow(String str) {
     if (StringUtils.isNotBlank(str)) {
       try {
-        new DateMathParser().parseMath( "-" + str);
+        new DateMathParser().parseMath(str);
       } catch (ParseException e) {
-        throw new SolrException(BAD_REQUEST, "Invalid date math for preemptiveCreateWindow:" + str);
+        throw new SolrException(BAD_REQUEST, "Invalid date math for preemptiveCreateMath:" + str);
       }
     }
   }

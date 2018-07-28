@@ -1508,7 +1508,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public static final String ROUTER_START = "router.start";
     public static final String ROUTER_INTERVAL = "router.interval";
     public static final String ROUTER_MAX_FUTURE = "router.maxFutureMs";
-    public static final String ROUTER_PREEMPTIVE_CREATE_WINDOW = "router.preemptiveCreateWindow";
+    public static final String ROUTER_PREEMPTIVE_CREATE_WINDOW = "router.preemptiveCreateMath";
 
     private final String aliasName;
     private final String routerField;
@@ -1517,7 +1517,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     //Optional:
     private TimeZone tz;
     private Integer maxFutureMs;
-    private String preemptiveCreateWindow;
+    private String preemptiveCreateMath;
 
     private final Create createCollTemplate;
 
@@ -1542,8 +1542,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    public CreateTimeRoutedAlias setPreemptiveCreateWindow(String preemptiveCreateWindow) {
-      this.preemptiveCreateWindow = preemptiveCreateWindow;
+    public CreateTimeRoutedAlias setPreemptiveCreateWindow(String preemptiveCreateMath) {
+      this.preemptiveCreateMath = preemptiveCreateMath;
       return this;
     }
 
@@ -1561,8 +1561,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (maxFutureMs != null) {
         params.add(ROUTER_MAX_FUTURE, ""+maxFutureMs);
       }
-      if (preemptiveCreateWindow != null) {
-        params.add(ROUTER_PREEMPTIVE_CREATE_WINDOW, preemptiveCreateWindow);
+      if (preemptiveCreateMath != null) {
+        params.add(ROUTER_PREEMPTIVE_CREATE_WINDOW, preemptiveCreateMath);
       }
 
       // merge the above with collectionParams.  Above takes precedence.
