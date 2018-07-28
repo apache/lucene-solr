@@ -19,7 +19,6 @@ package org.apache.lucene.geo;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -123,7 +122,35 @@ public final class Polygon2D {
     
     return false;
   }
-  
+
+  /** Returns relation to the provided triangle */
+  public Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+    // compute bounding box of triangle
+    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+    if (minLat <= maxY && minLon <= maxX) {
+      Relation relation = componentRelateTriangle(ax, ay, bx, by, cx, cy);
+      if (relation != Relation.CELL_OUTSIDE_QUERY) {
+        return relation;
+      }
+      if (left != null) {
+        relation = left.relateTriangle(ax, ay, bx, by, cx, cy);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
+      }
+      if (right != null && ((splitX == false && maxLat >= this.minLat) || (splitX && maxLon >= this.minLon))) {
+        relation = right.relateTriangle(ax, ay, bx, by, cx, cy);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
+      }
+    }
+    return Relation.CELL_OUTSIDE_QUERY;
+  }
+
   /** Returns relation to the provided rectangle */
   public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
     if (minLat <= maxY && minLon <= maxX) {
@@ -143,6 +170,42 @@ public final class Polygon2D {
           return relation;
         }
       }
+    }
+    return Relation.CELL_OUTSIDE_QUERY;
+  }
+
+  private Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+    // compute bounding box of triangle
+    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+    if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+    // check any holes
+    if (holes != null) {
+      Relation holeRelation = holes.relateTriangle(ax, ay, bx, by, cx, cy);
+      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
+        return Relation.CELL_CROSSES_QUERY;
+      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
+        return Relation.CELL_OUTSIDE_QUERY;
+      }
+    }
+    // check each corner: if < 3 are present, its cheaper than crossesSlowly
+    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
+    if (numCorners == 3) {
+      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_INSIDE_QUERY;
+    } else if (numCorners > 0) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
+
+    // we cross
+    if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_OUTSIDE_QUERY;
   }
@@ -184,7 +247,24 @@ public final class Polygon2D {
     
     return Relation.CELL_OUTSIDE_QUERY;
   }
-  
+
+  private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
+    int containsCount = 0;
+    if (componentContains(ay, ax)) {
+      containsCount++;
+    }
+    if (componentContains(by, bx)) {
+      containsCount++;
+    }
+    if (containsCount == 1) {
+      return containsCount;
+    }
+    if (componentContains(cy, cx)) {
+      containsCount++;
+    }
+    return containsCount;
+  }
+
   // returns 0, 4, or something in between
   private int numberOfCorners(double minLat, double maxLat, double minLon, double maxLon) {
     int containsCount = 0;
@@ -345,7 +425,66 @@ public final class Polygon2D {
       }
       return res;
     }
-    
+
+    /** Returns true if the triangle crosses any edge in this edge subtree */
+    boolean crossesTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+      // compute bounding box of triangle
+      double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+      double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+      double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+      double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+
+      if (minLat <= max) {
+        double dy = lat1;
+        double ey = lat2;
+        double dx = lon1;
+        double ex = lon2;
+
+        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+        // if not, don't waste our time trying more complicated stuff
+        boolean outside = (dy < minLat && ey < minLat) ||
+            (dy > maxLat && ey > maxLat) ||
+            (dx < minLon && ex < minLon) ||
+            (dx > maxLon && ex > maxLon);
+
+        if (outside == false) {
+          // does triangle's first edge intersect polyline?
+          // ax, ay -> bx, by
+          if (orient(dx, dy, ex, ey, ax, ay) * orient(dx, dy, ex, ey, bx, by) <= 0 &&
+              orient(ax, ay, bx, by, dx, dy) * orient(ax, ay, bx, by, ex, ey) <= 0) {
+            return true;
+          }
+
+          // does triangle's second edge intersect polyline?
+          // bx, by -> cx, cy
+          if (orient(dx, dy, ex, ey, bx, by) * orient(dx, dy, ex, ey, cx, cy) <= 0 &&
+              orient(bx, by, cx, cy, dx, dy) * orient(bx, by, cx, cy, ex, ey) <= 0) {
+            return true;
+          }
+
+          // does triangle's third edge intersect polyline?
+          // cx, cy -> ax, ay
+          if (orient(dx, dy, ex, ey, cx, cy) * orient(dx, dy, ex, ey, ax, ay) <= 0 &&
+              orient(cx, cy, ax, ay, dx, dy) * orient(cx, cy, ax, ay, ex, ey) <= 0) {
+            return true;
+          }
+        }
+
+        if (left != null) {
+          if (left.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+            return true;
+          }
+        }
+
+        if (right != null && maxLat >= low) {
+          if (right.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
     /** Returns true if the box crosses any edge in this edge subtree */
     boolean crosses(double minLat, double maxLat, double minLon, double maxLon) {
       // we just have to cross one edge to answer the question, so we descend the tree and return when we do.

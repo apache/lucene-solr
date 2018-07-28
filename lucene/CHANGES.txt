@@ -213,6 +213,8 @@ Changes in Runtime Behavior:
 
 Improvements
 
+* LUCENE-8435: Add new LatLonShapePolygonQuery for querying indexed LatLonShape fields by arbitrary polygons (Nick Knize)
+
 * LUCENE-8367: Make per-dimension drill down optional for each facet dimension (Mike McCandless)
 
 * LUCENE-8396: Add Points Based Shape Indexing and Search that decomposes shapes

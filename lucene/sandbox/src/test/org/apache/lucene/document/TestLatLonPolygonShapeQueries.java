@@ -17,13 +17,16 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -53,7 +56,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 
 /** base Test case for {@link LatLonShape} indexing and search */
-public class TestLatLonShapeQueries extends LuceneTestCase {
+public class TestLatLonPolygonShapeQueries extends LuceneTestCase {
   protected static final String FIELD_NAME = "shape";
 
   private Polygon quantizePolygon(Polygon polygon) {
@@ -91,6 +94,10 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
 
   protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
     return LatLonShape.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
+  }
+
+  protected Query newPolygonQuery(String field, Polygon... polygons) {
+    return LatLonShape.newPolygonQuery(field, polygons);
   }
 
   public void testRandomTiny() throws Exception {
@@ -131,10 +138,20 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
   }
 
   private void verify(Polygon... polygons) throws Exception {
-    verifyRandomBBoxes(polygons);
+    ArrayList<Polygon2D> poly2d = new ArrayList<>();
+    poly2d.ensureCapacity(polygons.length);
+    // index random polygons; poly2d will contain the Polygon2D objects needed for verification
+    IndexWriter w = indexRandomPolygons(poly2d, polygons);
+    Directory dir = w.getDirectory();
+    final IndexReader reader = DirectoryReader.open(w);
+    // test random bbox queries
+    verifyRandomBBoxQueries(reader, poly2d, polygons);
+    // test random polygon queires
+    verifyRandomPolygonQueries(reader, poly2d, polygons);
+    IOUtils.close(w, reader, dir);
   }
 
-  protected void verifyRandomBBoxes(Polygon... polygons) throws Exception {
+  protected IndexWriter indexRandomPolygons(List<Polygon2D> poly2d, Polygon... polygons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergeScheduler(new SerialMergeScheduler());
     int mbd = iwc.getMaxBufferedDocs();
@@ -150,7 +167,6 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
 
     Set<Integer> deleted = new HashSet<>();
     IndexWriter w = new IndexWriter(dir, iwc);
-    Polygon2D[] poly2D = new Polygon2D[polygons.length];
     for (int id = 0; id < polygons.length; ++id) {
       Document doc = new Document();
       doc.add(newStringField("id", "" + id, Field.Store.NO));
@@ -168,9 +184,12 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
           }
           // remove and skip the malformed shape
           polygons[id] = null;
+          poly2d.add(id, null);
           continue;
         }
-        poly2D[id] = Polygon2D.create(quantizePolygon(polygons[id]));
+        poly2d.add(id, Polygon2D.create(quantizePolygon(polygons[id])));
+      } else {
+        poly2d.add(id, null);
       }
       w.addDocument(doc);
       if (id > 0 && random().nextInt(100) == 42) {
@@ -186,10 +205,12 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
     if (random().nextBoolean()) {
       w.forceMerge(1);
     }
-    final IndexReader r = DirectoryReader.open(w);
-    w.close();
 
-    IndexSearcher s = newSearcher(r);
+    return w;
+  }
+
+  protected void verifyRandomBBoxQueries(IndexReader reader, List<Polygon2D> poly2d, Polygon... polygons) throws Exception {
+    IndexSearcher s = newSearcher(reader);
 
     final int iters = atLeast(75);
 
@@ -231,7 +252,7 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
       });
 
       boolean fail = false;
-      NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
       for (int docID = 0; docID < maxDoc; ++docID) {
         assertEquals(docID, docIDToID.nextDoc());
         int id = (int) docIDToID.longValue();
@@ -243,7 +264,7 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
           expected = false;
         } else {
           // check quantized poly against quantized query
-          expected = poly2D[id].relate(quantizeLatCeil(rect.minLat), quantizeLat(rect.maxLat),
+          expected = poly2d.get(id).relate(quantizeLatCeil(rect.minLat), quantizeLat(rect.maxLat),
               quantizeLonCeil(rect.minLon), quantizeLon(rect.maxLon)) != Relation.CELL_OUTSIDE_QUERY;
         }
 
@@ -271,6 +292,102 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
         fail("some hits were wrong");
       }
     }
-    IOUtils.close(r, dir);
+  }
+
+  protected void verifyRandomPolygonQueries(IndexReader reader, List<Polygon2D> poly2d, Polygon... polygons) throws Exception {
+    IndexSearcher s = newSearcher(reader);
+
+    final int iters = atLeast(75);
+
+    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter = 0; iter < iters; ++iter) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + (iter+1) + " of " + iters + " s=" + s);
+      }
+
+      // Polygon
+      Polygon queryPolygon = GeoTestUtil.nextPolygon();
+      Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
+      Query query = newPolygonQuery(FIELD_NAME, queryPolygon);
+
+      if (VERBOSE) {
+        System.out.println("  query=" + query);
+      }
+
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+        private int docBase;
+
+        @Override
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
+        }
+
+        @Override
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
+          docBase = context.docBase;
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          hits.set(docBase+doc);
+        }
+      });
+
+      boolean fail = false;
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
+      for (int docID = 0; docID < maxDoc; ++docID) {
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
+        boolean expected;
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (polygons[id] == null) {
+          expected = false;
+        } else {
+          expected = false;
+          try {
+            // check poly (quantized the same way as indexed) against query polygon
+            List<Tessellator.Triangle> tesselation = Tessellator.tessellate(quantizePolygon(polygons[id]));
+            for (Tessellator.Triangle t : tesselation) {
+              if (queryPoly2D.relateTriangle(t.getLon(0), t.getLat(0),
+                  t.getLon(1), t.getLat(1), t.getLon(2), t.getLat(2)) != Relation.CELL_OUTSIDE_QUERY) {
+                expected = true;
+                break;
+              }
+            }
+          } catch (IllegalArgumentException e) {
+            continue;
+          }
+        }
+
+        if (hits.get(docID) != expected) {
+          StringBuilder b = new StringBuilder();
+
+          if (expected) {
+            b.append("FAIL: id=" + id + " should match but did not\n");
+          } else {
+            b.append("FAIL: id=" + id + " should not match but did\n");
+          }
+          b.append("  query=" + query + " docID=" + docID + "\n");
+          b.append("  polygon=" + quantizePolygon(polygons[id]).toGeoJSON() + "\n");
+          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  queryPolygon=" + queryPolygon.toGeoJSON());
+          if (true) {
+            fail("wrong hit (first of possibly more):\n\n" + b);
+          } else {
+            System.out.println(b.toString());
+            fail = true;
+          }
+        }
+      }
+      if (fail) {
+        fail("some hits were wrong");
+      }
+    }
   }
 }

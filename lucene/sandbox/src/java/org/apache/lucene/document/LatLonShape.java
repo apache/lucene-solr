@@ -80,6 +80,10 @@ public class LatLonShape {
     return new LatLonShapeBoundingBoxQuery(field, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
 
+  public static Query newPolygonQuery(String field, Polygon... polygons) {
+    return new LatLonShapePolygonQuery(field, polygons);
+  }
+
   /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}
    * these triangles are encoded and inserted as separate indexed POINT fields
    */
