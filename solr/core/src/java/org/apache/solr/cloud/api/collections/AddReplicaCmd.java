@@ -23,15 +23,16 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
@@ -43,6 +44,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -52,11 +54,12 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SKIP_CREATE_REPLICA_IN_CLUSTER_STATE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
@@ -79,15 +82,16 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   ZkNodeProps addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
       throws IOException, InterruptedException {
     log.debug("addReplica() : {}", Utils.toJSONString(message));
+
+    String collectionName = message.getStr(COLLECTION_PROP);
+    DocCollection coll = clusterState.getCollection(collectionName);
+
     boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
     final String asyncId = message.getStr(ASYNC);
 
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
     message = assignReplicaDetails(ocmh.cloudManager, clusterState, message, sessionWrapper);
-
-    String collection = message.getStr(COLLECTION_PROP);
-    DocCollection coll = clusterState.getCollection(collection);
 
     String node = message.getStr(CoreAdminParams.NODE);
     String shard = message.getStr(SHARD_ID_PROP);
@@ -97,6 +101,27 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT));
     boolean parallel = message.getBool("parallel", false);
 
+    if (coll.getStr(WITH_COLLECTION) != null) {
+      String withCollectionName = coll.getStr(WITH_COLLECTION);
+      DocCollection withCollection = clusterState.getCollection(withCollectionName);
+      if (withCollection.getActiveSlices().size() > 1)  {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The `withCollection` must have only one shard, found: " + withCollection.getActiveSlices().size());
+      }
+      String withCollectionShard = withCollection.getActiveSlices().iterator().next().getName();
+
+      List<Replica> replicas = withCollection.getReplicas(node);
+      if (replicas == null || replicas.isEmpty()) {
+        // create a replica of withCollection on the identified node before proceeding further
+        ZkNodeProps props = new ZkNodeProps(
+            Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
+            ZkStateReader.COLLECTION_PROP, withCollectionName,
+            ZkStateReader.SHARD_ID_PROP, withCollectionShard,
+            "node", node,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
+        addReplica(clusterState, props, results, null);
+      }
+    }
+
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -104,7 +129,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       if (!skipCreateReplicaInClusterState) {
         ZkNodeProps props = new ZkNodeProps(
             Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(),
-            ZkStateReader.COLLECTION_PROP, collection,
+            ZkStateReader.COLLECTION_PROP, collectionName,
             ZkStateReader.SHARD_ID_PROP, shard,
             ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
@@ -121,10 +146,10 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       }
       params.set(CoreAdminParams.CORE_NODE_NAME,
-          ocmh.waitToSeeReplicasInState(collection, Collections.singletonList(coreName)).get(coreName).getName());
+          ocmh.waitToSeeReplicasInState(collectionName, Collections.singletonList(coreName)).get(coreName).getName());
     }
 
-    String configName = zkStateReader.readConfigName(collection);
+    String configName = zkStateReader.readConfigName(collectionName);
     String routeKey = message.getStr(ShardParams._ROUTE_);
     String dataDir = message.getStr(CoreAdminParams.DATA_DIR);
     String ulogDir = message.getStr(CoreAdminParams.ULOG_DIR);
@@ -133,7 +158,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString());
     params.set(CoreAdminParams.NAME, coreName);
     params.set(COLL_CONF, configName);
-    params.set(CoreAdminParams.COLLECTION, collection);
+    params.set(CoreAdminParams.COLLECTION, collectionName);
     params.set(CoreAdminParams.REPLICA_TYPE, replicaType.name());
     if (shard != null) {
       params.set(CoreAdminParams.SHARD, shard);
@@ -172,7 +197,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     Runnable runnable = () -> {
       ocmh.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica", asyncId, requestMap);
-      ocmh.waitForCoreNodeName(collection, fnode, fcoreName);
+      ocmh.waitForCoreNodeName(collectionName, fnode, fcoreName);
       if (sessionWrapper.get() != null) {
         sessionWrapper.get().release();
       }
@@ -182,15 +207,15 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (!parallel || waitForFinalState) {
       if (waitForFinalState) {
         SolrCloseableLatch latch = new SolrCloseableLatch(1, ocmh);
-        ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collection, null, Collections.singletonList(coreName), latch);
+        ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collectionName, null, Collections.singletonList(coreName), latch);
         try {
-          zkStateReader.registerCollectionStateWatcher(collection, watcher);
+          zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
           runnable.run();
           if (!latch.await(timeout, TimeUnit.SECONDS)) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting " + timeout + " seconds for replica to become active.");
           }
         } finally {
-          zkStateReader.removeCollectionStateWatcher(collection, watcher);
+          zkStateReader.removeCollectionStateWatcher(collectionName, watcher);
         }
       } else {
         runnable.run();
@@ -201,7 +226,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
     return new ZkNodeProps(
-        ZkStateReader.COLLECTION_PROP, collection,
+        ZkStateReader.COLLECTION_PROP, collectionName,
         ZkStateReader.SHARD_ID_PROP, shard,
         ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, node

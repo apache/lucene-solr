@@ -45,6 +45,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -60,6 +61,7 @@ import static java.util.Collections.emptyMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.METRICS_PREFIX;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.TOTALDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.WITH_COLLECTION;
 
 /**
  *
@@ -75,6 +77,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   protected final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
   private Map<String, Object> snitchSession = new HashMap<>();
   private Map<String, Map> nodeVsTags = new HashMap<>();
+  private Map<String, String> withCollectionsMap = new HashMap<>();
 
   public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
     this.solrClient = solrClient;
@@ -100,6 +103,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     all.forEach((collName, ref) -> {
       DocCollection coll = ref.get();
       if (coll == null) return;
+      if (coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION) != null) {
+        withCollectionsMap.put(coll.getName(), (String) coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION));
+      }
       coll.forEachReplica((shard, replica) -> {
         Map<String, Map<String, List<ReplicaInfo>>> nodeData = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(replica.getNodeName(), k -> new HashMap<>());
         Map<String, List<ReplicaInfo>> collData = nodeData.computeIfAbsent(collName, k -> new HashMap<>());
@@ -114,13 +120,15 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 //    ew.put("liveNodes", liveNodes);
     ew.put("replicaInfo", Utils.getDeepCopy(nodeVsCollectionVsShardVsReplicaInfo, 5));
     ew.put("nodeValues", nodeVsTags);
-
   }
 
   @Override
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
     Map<String, Object> tagVals = fetchTagValues(node, tags);
     nodeVsTags.put(node, tagVals);
+    if (tags.contains(WITH_COLLECTION.tagName)) {
+      tagVals.put(WITH_COLLECTION.tagName, withCollectionsMap);
+    }
     return tagVals;
   }
 
