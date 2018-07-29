@@ -59,9 +59,11 @@ import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
  * This class is experimental and subject to change.
@@ -80,7 +82,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       MAX_SHARDS_PER_NODE,
       AUTO_ADD_REPLICAS,
       POLICY,
-      COLL_CONF);
+      COLL_CONF,
+      WITH_COLLECTION,
+      COLOCATED_WITH);
 
   protected final CollectionAction action;
 
@@ -417,10 +421,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Integer pullReplicas;
     protected Integer tlogReplicas;
 
-    private Properties properties;
+    protected Properties properties;
     protected Boolean autoAddReplicas;
     protected Integer stateFormat;
-    private String[] rule , snitch;
+    protected String[] rule , snitch;
+    protected String withCollection;
 
     /** Constructor intended for typical use cases */
     protected Create(String collection, String config, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) { // TODO: maybe add other constructors
@@ -557,11 +562,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (rule != null) params.set(DocCollection.RULE, rule);
       if (snitch != null) params.set(DocCollection.SNITCH, snitch);
       params.setNonNull(POLICY, policy);
+      params.setNonNull(WITH_COLLECTION, withCollection);
       return params;
     }
 
     public Create setPolicy(String policy) {
       this.policy = policy;
+      return this;
+    }
+
+    public String getWithCollection() {
+      return withCollection;
+    }
+
+    public Create setWithCollection(String withCollection) {
+      this.withCollection = withCollection;
       return this;
     }
   }

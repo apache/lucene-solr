@@ -18,10 +18,12 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -33,6 +35,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
@@ -40,6 +44,8 @@ import static org.apache.solr.common.params.CoreAdminParams.NODE;
  * Each instance represents a node in the cluster
  */
 public class Row implements MapWriter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public final String node;
   final Cell[] cells;
   //this holds the details of each replica in the node
@@ -109,6 +115,14 @@ public class Row implements MapWriter {
     return jsonStr();
   }
 
+  public Row addReplica(String coll, String shard, Replica.Type type) {
+    return addReplica(coll, shard, type, 0, true);
+  }
+
+  public Row addReplica(String coll, String shard, Replica.Type type, boolean strictMode) {
+    return addReplica(coll, shard, type, 0, strictMode);
+  }
+
   /**
    * this simulates adding a replica of a certain coll+shard to node. as a result of adding a replica ,
    * values of certain attributes will be modified, in this node as well as other nodes. Please note that
@@ -117,9 +131,18 @@ public class Row implements MapWriter {
    * @param coll  collection name
    * @param shard shard name
    * @param type  replica type
+   * @param recursionCount the number of times we have recursed to add more replicas
+   * @param strictMode whether suggester is operating in strict mode or not
    */
-  public Row addReplica(String coll, String shard, Replica.Type type) {
-    Row row = session.copy().getNode(this.node);
+  Row addReplica(String coll, String shard, Replica.Type type, int recursionCount, boolean strictMode) {
+    if (recursionCount > 3) {
+      log.error("more than 3 levels of recursion ", new RuntimeException());
+      return this;
+    }
+    List<OperationInfo> furtherOps = new LinkedList<>();
+    Consumer<OperationInfo> opCollector = it -> furtherOps.add(it);
+    Row row = null;
+    row = session.copy().getNode(this.node);
     if (row == null) throw new RuntimeException("couldn't get a row");
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
@@ -128,9 +151,34 @@ public class Row implements MapWriter {
         Utils.makeMap(ZkStateReader.REPLICA_TYPE, type != null ? type.toString() : Replica.Type.NRT.toString()));
     replicas.add(ri);
     for (Cell cell : row.cells) {
-      cell.type.projectAddReplica(cell, ri);
+      cell.type.projectAddReplica(cell, ri, opCollector, strictMode);
     }
+    for (OperationInfo op : furtherOps) {
+      if (op.isAdd) {
+        row = row.session.getNode(op.node).addReplica(op.coll, op.shard, op.type, recursionCount + 1, strictMode);
+      } else {
+        row.session.getNode(op.node).removeReplica(op.coll, op.shard, op.type, recursionCount+1);
+      }
+    }
+
     return row;
+  }
+
+
+  static class OperationInfo {
+    final String coll, shard, node, cellName;
+    final boolean isAdd;// true =addReplica, false=removeReplica
+    final Replica.Type type;
+
+
+    OperationInfo(String coll, String shard, String node, String cellName, boolean isAdd, Replica.Type type) {
+      this.coll = coll;
+      this.shard = shard;
+      this.node = node;
+      this.cellName = cellName;
+      this.isAdd = isAdd;
+      this.type = type;
+    }
   }
 
 
@@ -150,9 +198,18 @@ public class Row implements MapWriter {
     if (idx == -1) return null;
     return r.get(idx);
   }
+  public Row removeReplica(String coll, String shard, Replica.Type type) {
+    return removeReplica(coll,shard, type, 0);
 
+  }
   // this simulates removing a replica from a node
-  public Pair<Row, ReplicaInfo> removeReplica(String coll, String shard, Replica.Type type) {
+  public Row removeReplica(String coll, String shard, Replica.Type type, int recursionCount) {
+    if (recursionCount > 3) {
+      log.error("more than 3 levels of recursion ", new RuntimeException());
+      return this;
+    }
+    List<OperationInfo> furtherOps = new LinkedList<>();
+    Consumer<OperationInfo> opCollector = it -> furtherOps.add(it);
     Row row = session.copy().getNode(this.node);
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.get(coll);
     if (c == null) return null;
@@ -169,9 +226,9 @@ public class Row implements MapWriter {
     if (idx == -1) return null;
     ReplicaInfo removed = r.remove(idx);
     for (Cell cell : row.cells) {
-      cell.type.projectRemoveReplica(cell, removed);
+      cell.type.projectRemoveReplica(cell, removed, opCollector);
     }
-    return new Pair(row, removed);
+    return row;
 
   }
 

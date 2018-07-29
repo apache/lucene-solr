@@ -95,6 +95,12 @@ New Features
 
 * SOLR-12536: autoscaling policy support to equally distribute replicas on the basis of arbitrary properties (noble)
 
+* SOLR-11990: Make it possible to co-locate replicas of multiple collections together in a node. A collection may be
+  co-located with another collection during collection creation time by specifying a 'withCollection' parameter. It can
+  also be co-located afterwards by using the modify collection API. The co-location guarantee is enforced regardless of
+  future cluster operations whether they are invoked manually via the Collection API or by the Autoscaling framework.
+  (noble, shalin)
+
 Bug Fixes
 ----------------------
 

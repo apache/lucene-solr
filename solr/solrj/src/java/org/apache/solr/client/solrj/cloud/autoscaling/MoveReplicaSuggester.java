@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Comparator;
 import java.util.List;
 
@@ -24,10 +25,13 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class MoveReplicaSuggester extends Suggester {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   SolrRequest init() {
@@ -56,20 +60,28 @@ public class MoveReplicaSuggester extends Suggester {
         targetRow = session.matrix.get(j);
         if (targetRow.node.equals(fromRow.node)) continue;
         if (!isNodeSuitableForReplicaAddition(targetRow)) continue;
-        targetRow = targetRow.addReplica(ri.getCollection(), ri.getShard(), ri.getType());//add replica to target first
-        Pair<Row, ReplicaInfo> pair = targetRow.session.getNode(fromRow.node).removeReplica(ri.getCollection(), ri.getShard(), ri.getType());//then remove replica from source node
-        if (pair == null) continue;//should not happen
-        Row srcRowModified = pair.first();//this is the final state of the source row and session
+        targetRow = targetRow.addReplica(ri.getCollection(), ri.getShard(), ri.getType(), strict); // add replica to target first
+        Row srcRowModified = targetRow.session.getNode(fromRow.node).removeReplica(ri.getCollection(), ri.getShard(), ri.getType());//then remove replica from source node
         List<Violation> errs = testChangedMatrix(strict, srcRowModified.session);
-        srcRowModified.session.applyRules();// now resort the nodes with the new values
+        srcRowModified.session.applyRules(); // now resort the nodes with the new values
         Policy.Session tmpSession = srcRowModified.session;
+
         if (!containsNewErrors(errs) &&
             isLessSerious(errs, leastSeriousViolation) &&
             (force || (tmpSession.indexOf(srcRowModified.node) < tmpSession.indexOf(targetRow.node)))) {
-          leastSeriousViolation = errs;
-          bestSrcRow = srcRowModified;
-          sourceReplicaInfo = ri;
-          bestTargetRow = targetRow;
+
+          int result = -1;
+          if (!force && srcRowModified.isLive && targetRow.isLive)  {
+            result = tmpSession.getPolicy().clusterPreferences.get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), true);
+            if (result == 0) result = tmpSession.getPolicy().clusterPreferences.get(0).compare(srcRowModified, tmpSession.getNode(targetRow.node), false);
+          }
+
+          if (result <= 0) {
+            leastSeriousViolation = errs;
+            bestSrcRow = srcRowModified;
+            sourceReplicaInfo = ri;
+            bestTargetRow = targetRow;
+          }
         }
       }
     }
