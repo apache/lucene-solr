@@ -221,6 +221,8 @@ Other Changes
 
 * SOLR-12454: Tweak Overseer leadership transition related logging for easier troubleshooting. (Christine Poerschke)
 
+* SOLR-12574: Put under a common "significantTerms" bucket all output by SignificantTerms Query Parser (Alexandre Rafalovitch)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
