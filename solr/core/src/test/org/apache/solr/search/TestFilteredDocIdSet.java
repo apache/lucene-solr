@@ -153,7 +153,7 @@ public class TestFilteredDocIdSet extends LuceneTestCase {
         .add(new MatchAllDocsQuery(), Occur.MUST)
         .add(f, Occur.FILTER)
         .build();
-    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits);
+    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }
@@ -214,7 +214,7 @@ public class TestFilteredDocIdSet extends LuceneTestCase {
         .add(new MatchAllDocsQuery(), Occur.MUST)
         .add(f, Occur.FILTER)
         .build();
-    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits);
+    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }

@@ -117,8 +117,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
         @Override
         public void collect(int doc) throws IOException {
-          float score = Float.NaN;
-
           ++totalHits;
           if (queueFull) {
             if (reverseMul * comparator.compareBottom(doc) <= 0) {
@@ -139,7 +137,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
             // This hit is competitive - replace bottom element in queue & adjustTop
             comparator.copy(bottom.slot, doc);
-            updateBottom(doc, score);
+            updateBottom(doc);
             comparator.setBottom(bottom.slot);
           } else {
             // Startup transient: queue hasn't gathered numHits yet
@@ -147,7 +145,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
             // Copy hit into queue
             comparator.copy(slot, doc);
-            add(slot, doc, score);
+            add(slot, doc);
             if (queueFull) {
               comparator.setBottom(bottom.slot);
             }
@@ -204,8 +202,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
           totalHits++;
 
-          float score = Float.NaN;
-
           if (queueFull) {
             // Fastmatch: return if this hit is no better than
             // the worst hit currently in the queue:
@@ -235,7 +231,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             // This hit is competitive - replace bottom element in queue & adjustTop
             comparator.copy(bottom.slot, doc);
 
-            updateBottom(doc, score);
+            updateBottom(doc);
 
             comparator.setBottom(bottom.slot);
           } else {
@@ -247,7 +243,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             // Copy hit into queue
             comparator.copy(slot, doc);
 
-            bottom = pq.add(new Entry(slot, docBase + doc, score));
+            bottom = pq.add(new Entry(slot, docBase + doc));
             queueFull = collectedHits == numHits;
             if (queueFull) {
               comparator.setBottom(bottom.slot);
@@ -395,20 +391,14 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
   }
 
-  final void add(int slot, int doc, float score) {
-    bottom = pq.add(new Entry(slot, docBase + doc, score));
+  final void add(int slot, int doc) {
+    bottom = pq.add(new Entry(slot, docBase + doc));
     queueFull = totalHits == numHits;
   }
 
   final void updateBottom(int doc) {
     // bottom.score is already set to Float.NaN in add().
     bottom.doc = docBase + doc;
-    bottom = pq.updateTop();
-  }
-
-  final void updateBottom(int doc, float score) {
-    bottom.doc = docBase + doc;
-    bottom.score = score;
     bottom = pq.updateTop();
   }
 
