@@ -129,9 +129,9 @@ public class QueryCommand implements Command<QueryCommandResult> {
   public List<Collector> create() throws IOException {
     Collector subCollector;
     if (sort == null || sort.equals(Sort.RELEVANCE)) {
-      subCollector = topDocsCollector = TopScoreDocCollector.create(docsToCollect);
+      subCollector = topDocsCollector = TopScoreDocCollector.create(docsToCollect, Integer.MAX_VALUE);
     } else {
-      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, true);
+      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, Integer.MAX_VALUE);
       if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         subCollector = MultiCollector.wrap(topDocsCollector, maxScoreCollector);

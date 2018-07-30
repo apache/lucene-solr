@@ -136,8 +136,8 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         } else {
           after = null;
         }
-        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, true);
-        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, false);
+        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, Integer.MAX_VALUE);
+        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, 1);
 
         final Query query;
         if (random().nextBoolean()) {

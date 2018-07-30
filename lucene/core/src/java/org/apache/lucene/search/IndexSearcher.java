@@ -384,7 +384,7 @@ public class IndexSearcher {
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after, true);
+        return TopScoreDocCollector.create(cappedNumHits, after, Integer.MAX_VALUE);
       }
 
       @Override
@@ -513,7 +513,7 @@ public class IndexSearcher {
       @Override
       public TopFieldCollector newCollector() throws IOException {
         // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, true);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, Integer.MAX_VALUE);
       }
 
       @Override

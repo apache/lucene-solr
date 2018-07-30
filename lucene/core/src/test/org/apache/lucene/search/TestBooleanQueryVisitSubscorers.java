@@ -141,7 +141,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     private final Set<Scorer> tqsSet = new HashSet<>();
     
     MyCollector() {
-      super(TopScoreDocCollector.create(10));
+      super(TopScoreDocCollector.create(10, Integer.MAX_VALUE));
     }
 
     public LeafCollector getLeafCollector(LeafReaderContext context)

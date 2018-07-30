@@ -57,7 +57,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
     }
 
     public TopDocs search(Weight weight, int topN) throws IOException {
-      TopScoreDocCollector collector = TopScoreDocCollector.create(topN);
+      TopScoreDocCollector collector = TopScoreDocCollector.create(topN, Integer.MAX_VALUE);
       search(ctx, weight, collector);
       return collector.topDocs();    }
 
@@ -262,7 +262,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       final TopDocs topHits;
       if (sort == null) {
         if (useFrom) {
-          TopScoreDocCollector c = TopScoreDocCollector.create(numHits);
+          TopScoreDocCollector c = TopScoreDocCollector.create(numHits, Integer.MAX_VALUE);
           searcher.search(query, c);
           from = TestUtil.nextInt(random(), 0, numHits - 1);
           size = numHits - from;
@@ -281,7 +281,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
           topHits = searcher.search(query, numHits);
         }
       } else {
-        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true);
+        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, Integer.MAX_VALUE);
         searcher.search(query, c);
         if (useFrom) {
           from = TestUtil.nextInt(random(), 0, numHits - 1);
@@ -330,7 +330,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         if (sort == null) {
           subHits = subSearcher.search(w, numHits);
         } else {
-          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true);
+          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, Integer.MAX_VALUE);
           subSearcher.search(w, c);
           subHits = c.topDocs(0, numHits);
         }

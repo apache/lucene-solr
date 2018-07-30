@@ -239,7 +239,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     assertEquals(2, reader.leaves().size());
     w.close();
 
-    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, false);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
     FakeScorer scorer = new FakeScorer();
 
     LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
@@ -288,7 +288,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     dir.close();
   }
 
-  public void testNotTrackTotalHits() throws Exception {
+  public void testTotalHits() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
@@ -300,31 +300,37 @@ public class TestTopDocsCollector extends LuceneTestCase {
     assertEquals(2, reader.leaves().size());
     w.close();
 
-    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, false);
-    FakeScorer scorer = new FakeScorer();
+    for (int totalHitsThreshold = 1; totalHitsThreshold < 20; ++ totalHitsThreshold) {
+      TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, totalHitsThreshold);
+      FakeScorer scorer = new FakeScorer();
 
-    LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
-    leafCollector.setScorer(scorer);
+      LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
+      leafCollector.setScorer(scorer);
 
-    scorer.doc = 0;
-    scorer.score = 3;
-    leafCollector.collect(0);
+      scorer.doc = 0;
+      scorer.score = 3;
+      leafCollector.collect(0);
 
-    scorer.doc = 1;
-    scorer.score = 3;
-    leafCollector.collect(1);
+      scorer.doc = 1;
+      scorer.score = 3;
+      leafCollector.collect(1);
 
-    leafCollector = collector.getLeafCollector(reader.leaves().get(1));
-    leafCollector.setScorer(scorer);
+      leafCollector = collector.getLeafCollector(reader.leaves().get(1));
+      leafCollector.setScorer(scorer);
 
-    scorer.doc = 1;
-    scorer.score = 3;
-    leafCollector.collect(1);
+      scorer.doc = 1;
+      scorer.score = 3;
+      leafCollector.collect(1);
 
-    TopDocs topDocs = collector.topDocs();
-    // It assumes all docs matched since numHits was 2 and the first 2 collected docs matched
-    assertEquals(3, topDocs.totalHits.value);
-    assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, topDocs.totalHits.relation);
+      scorer.doc = 5;
+      scorer.score = 4;
+      leafCollector.collect(1);
+
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(4, topDocs.totalHits.value);
+      assertEquals(totalHitsThreshold <= 4, scorer.minCompetitiveScore != null);
+      assertEquals(totalHitsThreshold <= 4 ? TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO : TotalHits.Relation.EQUAL_TO, topDocs.totalHits.relation);
+    }
 
     reader.close();
     dir.close();
