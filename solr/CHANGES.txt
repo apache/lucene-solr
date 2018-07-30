@@ -59,7 +59,7 @@ Jetty 9.4.11.v20180605
 Upgrade Notes
 ----------------------
 
-* The data-driven schema no longer returns the *_str field-copy of text fields by default. The *_str field is still 
+* The data-driven schema no longer returns the *_str field-copy of text fields by default. The *_str field is still
   created and can be used for e.g. sorting, but to retrieve it you now need to explicitly list it in "fl" (SOLR-12350)
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
@@ -117,7 +117,7 @@ New Features
 * SOLR-12567: JSON Facet "functions" now support an extended "type:func" syntax, similar to other types
   of facets.  This also allows additional local params to be specified for if the aggregation function
   can take advantage of them.  (hossman)
-  
+
 * SOLR-12581: the JSON Facet 'relatedness()' aggregate function now supports a 'min_popularity' option
   using the extended type:func syntax (hossman)
 
@@ -195,7 +195,7 @@ Optimizations
   which we can export is directly proportional to the number of sort fields specified. This change also allows streaming
   expressions to group by on more than 4 fields. (Aroop Ganguly, Amrit Sarkar, Varun Thacker)
 
-* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery. 
+* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery.
   (Cao Manh Dat)
 
 Other Changes
@@ -222,6 +222,8 @@ Other Changes
 * SOLR-12454: Tweak Overseer leadership transition related logging for easier troubleshooting. (Christine Poerschke)
 
 * SOLR-12574: Put under a common "significantTerms" bucket all output by SignificantTerms Query Parser (Alexandre Rafalovitch)
+
+* SOLR-12164: Improve Ref Guide main landing page. (Cassandra Targett)
 
 ==================  7.4.0 ==================
 
@@ -491,7 +493,7 @@ Bug Fixes
 
 * SOLR-12434: bin/solr {config,healthcheck} ignore ZK_HOST in solr.in.{sh,cmd} (Steve Rowe)
 
-* SOLR-12481: update.autoCreateFields must be set via Config API command 'set-user-property', 
+* SOLR-12481: update.autoCreateFields must be set via Config API command 'set-user-property',
   but 'bin/solr create' tells users to use the default action 'set-property', which fails
   because the property is not editable. (Steve Rowe)
 
