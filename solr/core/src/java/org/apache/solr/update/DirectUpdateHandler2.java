@@ -26,6 +26,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
 
 import com.codahale.metrics.Meter;
+import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CodecReader;
@@ -41,6 +43,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -233,6 +236,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       return addDoc0(cmd);
     } catch (SolrException e) {
       throw e;
+    } catch (AlreadyClosedException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          String.format(Locale.ROOT, "Server error writing document id %s to the index", cmd.getPrintableId()), e);
     } catch (IllegalArgumentException iae) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           String.format(Locale.ROOT, "Exception writing document id %s to the index; possible analysis error: "
@@ -253,7 +259,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    * @param cmd the command.
    * @return the count.
    */
-  private int addDoc0(AddUpdateCommand cmd) throws IOException {
+  @VisibleForTesting
+  int addDoc0(AddUpdateCommand cmd) throws IOException {
     int rc = -1;
 
     addCommands.increment();
