@@ -161,6 +161,12 @@ Each attribute in the policy may specify one of the following operators along wi
 * `!`: Not
 * Range operator `(-)` : a value such as `"3-5"` means a value between 3 to 5 (inclusive). This is only supported in the following attributes
 ** `replica`
+* array operator . e.g: `sysprop.zone = ["east", "west","apac"]`. This is equivalent to having multiple rules with each of these values. This can be used in the following attributes
+** `sysprop.*`
+** `port`
+** `ip_*`
+** `node`
+** `diskType`
 * None means equal
 
 ==== Special functions
@@ -170,7 +176,17 @@ This supports values calculated at the time of execution.
 ** `replica`
 ** `freedisk`
 * `#ALL` : This is applied to the `replica` attribute only. This means all replicas qualifying a certain clause
-* `#EQUAL`:  This is applied to the `replica` attribute only. This means equal no:of replicas in each bucket
+* `#EQUAL`:  This is applied to the `replica` attribute only. This means equal no:of replicas in each bucket.The buckets can be defined using an array operator (`[]`) or `#EACH` .The buckets can be defined on the following properties
+** `node`
+** `sysprop.*`
+** `port`
+** `diskType`
+** `ip_*`
+****
+Some content here
+****
+
+
 
 === Examples of Policy Rules
 
@@ -226,6 +242,18 @@ Distribute  replicas across  datacenters east and west at a `1:2` ratio
 
 For the above rule to work, all nodes must the started with a system property called `"zone"`
 
+== example 3
+
+Distribute replicas equally in each zone
+
+[source,json]
+{"replica": "#EQUAL", "shard": "#EACH", "sysprop.zone": ["east", "west"]}
+
+or simply as follows
+
+[source,json]
+{"replica": "#EQUAL", "shard": "#EACH", "sysprop.zone": "#EACH"}
+
 
 ==== Place Replicas Based on Node Role
 Do not place any replica on a node which has the overseer role. Note that the role is added by the `addRole` collection API. It is *not* automatically the node which is currently the overseer.
@@ -239,7 +267,7 @@ Place all replicas in nodes with freedisk more than 500GB. Here again, we have t
 [source,json]
 {"replica": "#ALL", "freedisk": ">500"}
 
-Do not use more than `50%` of diskspace in any node
+Keep all replicas in nodes with over `50%` freedisk
 [source,json]
 {"replica": "#ALL", "freedisk": ">50%"}
 
@@ -280,5 +308,7 @@ The policy is used by these <<collections-api.adoc#collections-api,Collections A
 * ADDREPLICA
 * RESTORE
 * SPLITSHARD
+* UTILIZENODE
+* MOVEREPLICA
 
 In the future, the policy and preferences will be used by the Autoscaling framework to automatically change the cluster in response to events such as a node being added or lost.

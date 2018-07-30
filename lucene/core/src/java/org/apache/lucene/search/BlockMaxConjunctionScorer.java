@@ -145,6 +145,20 @@ final class BlockMaxConjunctionScorer extends Scorer {
             return NO_MORE_DOCS;
           }
 
+          if (doc > upTo) {
+            // This check is useful when scorers return information about blocks
+            // that do not actually have any matches. Otherwise `doc` will always
+            // be in the current block already since it is always the result of
+            // lead.advance(advanceTarget(some_doc_id))
+            final int nextTarget = advanceTarget(doc);
+            if (nextTarget != doc) {
+              doc = lead.advance(nextTarget);
+              continue;
+            }
+          }
+
+          assert doc <= upTo;
+
           if (minScore > 0) {
             score = leadScorer.score();
             if (score < minScores[0]) {

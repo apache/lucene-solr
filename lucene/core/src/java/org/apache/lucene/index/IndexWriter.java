@@ -291,7 +291,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   private Collection<String> filesToCommit;
 
-  final SegmentInfos segmentInfos;       // the segments
+  private final SegmentInfos segmentInfos;
   final FieldNumbers globalFieldNumberMap;
 
   final DocumentsWriter docWriter;
@@ -728,20 +728,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       mergeScheduler.setInfoStream(infoStream);
       codec = config.getCodec();
       OpenMode mode = config.getOpenMode();
-      boolean create;
+      final boolean indexExists;
+      final boolean create;
       if (mode == OpenMode.CREATE) {
+        indexExists = DirectoryReader.indexExists(directory);
         create = true;
       } else if (mode == OpenMode.APPEND) {
+        indexExists = true;
         create = false;
       } else {
         // CREATE_OR_APPEND - create only if an index does not exist
-        create = !DirectoryReader.indexExists(directory);
+        indexExists = DirectoryReader.indexExists(directory);
+        create = !indexExists;
       }
 
       // If index is too old, reading the segments will throw
       // IndexFormatTooOldException.
-
-      boolean initialIndexExists = true;
 
       String[] files = directory.listAll();
 
@@ -772,14 +774,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         // searching.  In this case we write the next
         // segments_N file with no segments:
         final SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
-        try {
+        if (indexExists) {
           final SegmentInfos previous = SegmentInfos.readLatestCommit(directory);
           sis.updateGenerationVersionAndCounter(previous);
-        } catch (IOException e) {
-          // Likely this means it's a fresh directory
-          initialIndexExists = false;
         }
-        
         segmentInfos = sis;
         rollbackSegments = segmentInfos.createBackupSegmentInfos();
 
@@ -889,7 +887,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         deleter = new IndexFileDeleter(files, directoryOrig, directory,
                                        config.getIndexDeletionPolicy(),
                                        segmentInfos, infoStream, this,
-                                       initialIndexExists, reader != null);
+                                       indexExists, reader != null);
 
         // We incRef all files when we return an NRT reader from IW, so all files must exist even in the NRT case:
         assert create || filesExist(segmentInfos);
@@ -5228,5 +5226,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (info.info.dir != directoryOrig) {
       throw new IllegalArgumentException("SegmentCommitInfo must be from the same directory");
     }
+  }
+
+  /** Checks if the provided segment exists in the current segmentInfos */
+  final synchronized boolean segmentCommitInfoExist(SegmentCommitInfo sci) {
+    return segmentInfos.contains(sci);
+  }
+
+  /** Returns an unmodifiable view of the list of all segments of the current segmentInfos */
+  final synchronized List<SegmentCommitInfo> listOfSegmentCommitInfos() {
+    return segmentInfos.asList();
+  }
+
+  /** Tests should use this method to snapshot the current segmentInfos to have a consistent view */
+  final synchronized SegmentInfos cloneSegmentInfos() {
+    return segmentInfos.clone();
   }
 }

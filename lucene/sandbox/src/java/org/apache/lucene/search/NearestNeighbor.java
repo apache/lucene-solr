@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.document;
+package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -182,7 +182,7 @@ class NearestNeighbor {
     }
   }
 
-  /** Holds one hit from {@link LatLonPoint#nearest} */
+  /** Holds one hit from {@link LatLonPointPrototypeQueries#nearest} */
   static class NearestHit {
     public int docID;
     public double distanceMeters;
@@ -325,4 +325,5 @@ class NearestNeighbor {
     double d4 = SloppyMath.haversinMeters(pointLat, pointLon, maxLat, minLon);
     return Math.min(Math.min(d1, d2), Math.min(d3, d4));
   }
+
 }

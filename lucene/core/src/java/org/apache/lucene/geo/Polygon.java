@@ -116,7 +116,7 @@ public final class Polygon {
     this.maxLat = maxLat;
     this.minLon = minLon;
     this.maxLon = maxLon;
-    this.windingOrder = (windingSum < 0) ? GeoUtils.WindingOrder.CW : GeoUtils.WindingOrder.CCW;
+    this.windingOrder = (windingSum < 0) ? GeoUtils.WindingOrder.CCW : GeoUtils.WindingOrder.CW;
   }
 
   /** returns the number of vertex points */

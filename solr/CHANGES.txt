@@ -114,6 +114,21 @@ New Features
 
 * SOLR-12522: Support a runtime function `#ALL` for 'replica' in autoscaling policies (noble)
 
+* SOLR-12567: JSON Facet "functions" now support an extended "type:func" syntax, similar to other types
+  of facets.  This also allows additional local params to be specified for if the aggregation function
+  can take advantage of them.  (hossman)
+  
+* SOLR-12581: the JSON Facet 'relatedness()' aggregate function now supports a 'min_popularity' option
+  using the extended type:func syntax (hossman)
+
+* SOLR-12536: autoscaling policy support to equally distribute replicas on the basis of arbitrary properties (noble)
+
+* SOLR-11990: Make it possible to co-locate replicas of multiple collections together in a node. A collection may be
+  co-located with another collection during collection creation time by specifying a 'withCollection' parameter. It can
+  also be co-located afterwards by using the modify collection API. The co-location guarantee is enforced regardless of
+  future cluster operations whether they are invoked manually via the Collection API or by the Autoscaling framework.
+  (noble, shalin)
+
 Bug Fixes
 ----------------------
 
@@ -154,6 +169,18 @@ Bug Fixes
 * SOLR-12516: Fix some bugs in 'type:range' Facet refinement when sub-facets are combined with non
   default values for the 'other' and 'include' options. (hossman)
 
+* SOLR-12343: Fixed a bug in JSON Faceting that could cause incorrect counts/stats when using non default
+  sort options.  This also adds a new configurable "overrefine" option. (Yonik Seeley, hossman)
+
+* SOLR-12553: Allow SignificantTerms Query Parser to use local parameters (Alexandre Rafalovitch)
+
+* SOLR-12570: OpenNLPExtractNamedEntitiesUpdateProcessor cannot support multi fields because pattern replacement
+  doesn't work correctly. (Koji Sekiguchi)
+
+* SOLR-12576: Update ref guide for additional information displayed in cloud view (Erick Erickson)
+
+* SOLR-12597: Migrate API should fail requests that do not specify split.key parameter (shalin)
+
 Optimizations
 ----------------------
 
@@ -163,6 +190,13 @@ Optimizations
 
 * SOLR-11654: Time Routed Alias will now route documents to the ideal shard of a collection, thus avoiding a hop.
   Usually documents were already routed well but not always.  (Gus Heck, David Smiley)
+
+* SOLR-11598: The export handler does not limit users to 4 sort fields and is now unlimited. However the speed at
+  which we can export is directly proportional to the number of sort fields specified. This change also allows streaming
+  expressions to group by on more than 4 fields. (Aroop Ganguly, Amrit Sarkar, Varun Thacker)
+
+* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery. 
+  (Cao Manh Dat)
 
 Other Changes
 ----------------------
@@ -186,6 +220,8 @@ Other Changes
 * SOLR-12464: Reduce Overseer.close() logging (for non-Overseer leaders) (Christine Poerschke)
 
 * SOLR-12454: Tweak Overseer leadership transition related logging for easier troubleshooting. (Christine Poerschke)
+
+* SOLR-12574: Put under a common "significantTerms" bucket all output by SignificantTerms Query Parser (Alexandre Rafalovitch)
 
 ==================  7.4.0 ==================
 

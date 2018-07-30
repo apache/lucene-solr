@@ -93,7 +93,7 @@ public class PolicyHelper {
         if (autoScalingConfig != null) {
           return new DelegatingDistribStateManager(null) {
             @Override
-            public AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
+            public AutoScalingConfig getAutoScalingConfig() {
               return autoScalingConfig;
             }
           };
@@ -135,7 +135,7 @@ public class PolicyHelper {
           }
         }
       } catch (IOException e) {
-        /*ignore*/
+        log.warn("Exception while reading disk free metric values for nodes to be used for collection: " + collName, e);
       }
 
 
@@ -178,7 +178,7 @@ public class PolicyHelper {
   }
 
 
-  public static final int SESSION_EXPIRY = 180;//3 seconds
+  public static final int SESSION_EXPIRY = 180; // 3 minutes
 
   public static MapWriter getDiagnostics(Policy policy, SolrCloudManager cloudManager) {
     Policy.Session session = policy.createSession(cloudManager);
@@ -230,7 +230,7 @@ public class PolicyHelper {
   /**Use this to dump the state of a system and to generate a testcase
    */
   public static void logState(SolrCloudManager cloudManager, Suggester suggester) {
-    if(log.isTraceEnabled()) {
+    if (log.isTraceEnabled()) {
       log.trace("LOGSTATE: {}",
           Utils.toJSONString((MapWriter) ew -> {
             ew.put("liveNodes", cloudManager.getClusterStateProvider().getLiveNodes());
@@ -249,9 +249,9 @@ public class PolicyHelper {
 
   public enum Status {
     NULL,
-    //it is just created and not yet used or all operations on it has been competed fully
+    //it is just created and not yet used or all operations on it has been completed fully
     UNUSED,
-    COMPUTING, EXECUTING;
+    COMPUTING, EXECUTING
   }
 
   /**
@@ -265,7 +265,7 @@ public class PolicyHelper {
    */
   static class SessionRef {
     private final Object lockObj = new Object();
-    private SessionWrapper sessionWrapper = SessionWrapper.DEF_INST;
+    private SessionWrapper sessionWrapper = SessionWrapper.DEFAULT_INSTANCE;
 
 
     public SessionRef() {
@@ -286,7 +286,7 @@ public class PolicyHelper {
       synchronized (lockObj) {
         if (sessionWrapper.createTime == this.sessionWrapper.createTime && this.sessionWrapper.refCount.get() <= 0) {
           log.debug("session set to NULL");
-          this.sessionWrapper = SessionWrapper.DEF_INST;
+          this.sessionWrapper = SessionWrapper.DEFAULT_INSTANCE;
         } // else somebody created a new session b/c of expiry . So no need to do anything about it
       }
     }
@@ -311,7 +311,7 @@ public class PolicyHelper {
           //one thread who is waiting for this need to be notified.
           lockObj.notify();
         } else {
-          log.info("create time NOT SAME {} ", SessionWrapper.DEF_INST.createTime);
+          log.info("create time NOT SAME {} ", SessionWrapper.DEFAULT_INSTANCE.createTime);
           //else just ignore it
         }
       }
@@ -343,7 +343,7 @@ public class PolicyHelper {
             }
             log.debug("out of waiting curr-time:{} time-elapsed {}", time(timeSource, MILLISECONDS), timeElapsed(timeSource, waitStart, MILLISECONDS));
             // now this thread has woken up because it got timed out after 10 seconds or it is notified after
-            //the session was returned from another COMPUTING operation
+            // the session was returned from another COMPUTING operation
             if (this.sessionWrapper.status == Status.UNUSED || this.sessionWrapper.status == Status.EXECUTING) {
               log.debug("Wait over. reusing the existing session ");
               this.sessionWrapper.status = Status.COMPUTING;
@@ -401,12 +401,12 @@ public class PolicyHelper {
 
 
   public static class SessionWrapper {
-    public static final SessionWrapper DEF_INST = new SessionWrapper(null, null);
+    public static final SessionWrapper DEFAULT_INSTANCE = new SessionWrapper(null, null);
 
     static {
-      DEF_INST.status = Status.NULL;
-      DEF_INST.createTime = -1l;
-      DEF_INST.lastUpdateTime = -1l;
+      DEFAULT_INSTANCE.status = Status.NULL;
+      DEFAULT_INSTANCE.createTime = -1L;
+      DEFAULT_INSTANCE.lastUpdateTime = -1L;
     }
 
     private long createTime;

@@ -91,6 +91,11 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     if (!(targetCollection.getRouter() instanceof CompositeIdRouter)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target collection must use a compositeId router");
     }
+
+    if (splitKey == null || splitKey.trim().length() == 0)  {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The split.key cannot be null or empty");
+    }
+
     CompositeIdRouter sourceRouter = (CompositeIdRouter) sourceCollection.getRouter();
     CompositeIdRouter targetRouter = (CompositeIdRouter) targetCollection.getRouter();
     Collection<Slice> sourceSlices = sourceRouter.getSearchSlicesSingle(splitKey, null, sourceCollection);

@@ -48,7 +48,7 @@ The number of updates that have occurred since the last commit.
 The number of milliseconds since the oldest uncommitted update.
 
 `maxSize`::
-The maxSize of the transaction log, after which a hard commit is triggered. This is useful when the size of documents is unknown and the intention is to restrict the size of the tlog to reasonable size.
+The maximum size of the transaction log (tlog) on disk, after which a hard commit is triggered. This is useful when the size of documents is unknown and the intention is to restrict the size of the transaction log to reasonable size. Valid values can be bytes (default with no suffix), kilobytes (if defined with a `k` suffix, as in `25k`), megabytes (`m`) or gigabytes (`g`).
 
 `openSearcher`::
 Whether to open a new searcher when performing a commit. If this is `false`, the commit will flush recent index changes to stable storage, but does not cause a new searcher to be opened to make those changes visible. The default is `true`.

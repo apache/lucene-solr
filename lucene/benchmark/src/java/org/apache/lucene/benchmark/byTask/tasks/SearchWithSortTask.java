@@ -29,7 +29,6 @@ import org.apache.lucene.search.SortField;
  */
 public class SearchWithSortTask extends ReadTask {
 
-  private boolean doScore = true;
   private Sort sort;
 
   public SearchWithSortTask(PerfRunData runData) {
@@ -60,9 +59,6 @@ public class SearchWithSortTask extends ReadTask {
         sortField0 = SortField.FIELD_DOC;
       } else if (field.equals("score")) {
         sortField0 = SortField.FIELD_SCORE;
-      } else if (field.equals("noscore")) {
-        doScore = false;
-        continue;
       } else {
         int index = field.lastIndexOf(":");
         String fieldName;
@@ -114,11 +110,6 @@ public class SearchWithSortTask extends ReadTask {
   @Override
   public boolean withWarm() {
     return false;
-  }
-
-  @Override
-  public boolean withScore() {
-    return doScore;
   }
   
   @Override

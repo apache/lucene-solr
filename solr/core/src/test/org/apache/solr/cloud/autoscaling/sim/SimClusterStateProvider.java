@@ -42,6 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
@@ -92,6 +93,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
@@ -680,11 +682,37 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     boolean waitForFinalState = props.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
     List<String> nodeList = new ArrayList<>();
-    List<String> shardNames = new ArrayList<>();
     final String collectionName = props.getStr(NAME);
+
+    String router = props.getStr("router.name", DocRouter.DEFAULT_NAME);
+    String policy = props.getStr(Policy.POLICY);
+    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
+    boolean usePolicyFramework = !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || policy != null;
+
+    // fail fast if parameters are wrong or incomplete
+    List<String> shardNames = CreateCollectionCmd.populateShardNames(props, router);
+    CreateCollectionCmd.checkMaxShardsPerNode(props, usePolicyFramework);
+    CreateCollectionCmd.checkReplicaTypes(props);
+
     // always force getting fresh state
     collectionsStatesRef.set(null);
-    ClusterState clusterState = getClusterState();
+    final ClusterState clusterState = getClusterState();
+
+    String withCollection = props.getStr(CollectionAdminParams.WITH_COLLECTION);
+    String wcShard = null;
+    if (withCollection != null) {
+      if (!clusterState.hasCollection(withCollection)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The 'withCollection' does not exist: " + withCollection);
+      } else  {
+        DocCollection collection = clusterState.getCollection(withCollection);
+        if (collection.getActiveSlices().size() > 1)  {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The `withCollection` must have only one shard, found: " + collection.getActiveSlices().size());
+        }
+        wcShard = collection.getActiveSlices().iterator().next().getName();
+      }
+    }
+    final String withCollectionShard = wcShard;
+
     ZkWriteCommand cmd = new ClusterStateMutator(cloudManager).createCollection(clusterState, props);
     if (cmd.noop) {
       LOG.warn("Collection {} already exists. exit", collectionName);
@@ -710,6 +738,35 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     final CountDownLatch finalStateLatch = new CountDownLatch(replicaPositions.size());
     AtomicInteger replicaNum = new AtomicInteger(1);
     replicaPositions.forEach(pos -> {
+
+      if (withCollection != null) {
+        // check that we have a replica of `withCollection` on this node and if not, create one
+        DocCollection collection = clusterState.getCollection(withCollection);
+        List<Replica> replicas = collection.getReplicas(pos.node);
+        if (replicas == null || replicas.isEmpty()) {
+          Map<String, Object> replicaProps = new HashMap<>();
+          replicaProps.put(ZkStateReader.NODE_NAME_PROP, pos.node);
+          replicaProps.put(ZkStateReader.REPLICA_TYPE, pos.type.toString());
+          String coreName = String.format(Locale.ROOT, "%s_%s_replica_%s%s", withCollection, withCollectionShard, pos.type.name().substring(0,1).toLowerCase(Locale.ROOT),
+              collection.getReplicas().size() + 1);
+          try {
+            replicaProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
+            replicaProps.put("SEARCHER.searcher.deletedDocs", 0);
+            replicaProps.put("SEARCHER.searcher.numDocs", 0);
+            replicaProps.put("SEARCHER.searcher.maxDoc", 0);
+            ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, withCollection, 0),
+                coreName, withCollection, withCollectionShard, pos.type, pos.node, replicaProps);
+            cloudManager.submit(() -> {
+              simAddReplica(pos.node, ri, false);
+              // do not count down the latch here
+              return true;
+            });
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
+
       Map<String, Object> replicaProps = new HashMap<>();
       replicaProps.put(ZkStateReader.NODE_NAME_PROP, pos.node);
       replicaProps.put(ZkStateReader.REPLICA_TYPE, pos.type.toString());
@@ -744,6 +801,16 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         }
       });
     });
+
+    // modify the `withCollection` and store this new collection's name with it
+    if (withCollection != null) {
+      ZkNodeProps message = new ZkNodeProps(
+          Overseer.QUEUE_OPERATION, MODIFYCOLLECTION.toString(),
+          ZkStateReader.COLLECTION_PROP, withCollection,
+          CollectionAdminParams.COLOCATED_WITH, collectionName);
+      cmd = new CollectionMutator(cloudManager).modifyCollection(clusterState,message);
+    }
+
     // force recreation of collection states
     collectionsStatesRef.set(null);
     simRunLeaderElection(Collections.singleton(collectionName), true);

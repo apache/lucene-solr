@@ -105,7 +105,7 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
     builder.add(retentionQuery, BooleanClause.Occur.FILTER);
     Scorer scorer = getScorer(builder.build(), wrappedReader);
     if (scorer != null) {
-      FixedBitSet cloneLiveDocs = cloneLiveDocs(liveDocs);
+      FixedBitSet cloneLiveDocs = FixedBitSet.copyOf(liveDocs);
       DocIdSetIterator iterator = scorer.iterator();
       int numExtraLiveDocs = 0;
       while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -118,23 +118,6 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
       return FilterCodecReader.wrapLiveDocs(reader, cloneLiveDocs, reader.numDocs() + numExtraLiveDocs);
     } else {
       return reader;
-    }
-  }
-
-  /**
-   * Clones the given live docs
-   */
-  static FixedBitSet cloneLiveDocs(Bits liveDocs) {
-    if (liveDocs instanceof FixedBitSet) {
-      return ((FixedBitSet) liveDocs).clone();
-    } else { // mainly if we have asserting codec
-      FixedBitSet mutableBits = new FixedBitSet(liveDocs.length());
-      for (int i = 0; i < liveDocs.length(); i++) {
-        if (liveDocs.get(i)) {
-          mutableBits.set(i);
-        }
-      }
-      return mutableBits;
     }
   }
 

@@ -81,19 +81,10 @@ public class TestLatLonShape extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    // add a random polygon without a hole
+    // add a random polygon
     Polygon p = GeoTestUtil.createRegularPolygon(0, 90, atLeast(1000000), numVertices);
     Document document = new Document();
     addPolygonsToDoc(FIELDNAME, document, p);
-    writer.addDocument(document);
-
-    // add a random polygon with a hole
-    Polygon inner = new Polygon(new double[] {-1d, -1d, 1d, 1d, -1d},
-        new double[] {-91d, -89d, -89d, -91.0, -91.0});
-    Polygon outer = GeoTestUtil.createRegularPolygon(0, -90, atLeast(1000000), numVertices);
-
-    document = new Document();
-    addPolygonsToDoc(FIELDNAME, document, new Polygon(outer.getPolyLats(), outer.getPolyLons(), inner));
     writer.addDocument(document);
 
     ////// search /////
@@ -108,8 +99,31 @@ public class TestLatLonShape extends LuceneTestCase {
     q = newRectQuery(FIELDNAME, p.minLat-1d, p.minLat+1, p.minLon-1d, p.minLon+1d);
     assertEquals(0, searcher.count(q));
 
+    IOUtils.close(reader, dir);
+  }
+
+  /** test random polygons with a single hole */
+  public void testPolygonWithHole() throws Exception {
+    int numVertices = TestUtil.nextInt(random(), 50, 100);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add a random polygon with a hole
+    Polygon inner = new Polygon(new double[] {-1d, -1d, 1d, 1d, -1d},
+        new double[] {-91d, -89d, -89d, -91.0, -91.0});
+    Polygon outer = GeoTestUtil.createRegularPolygon(0, -90, atLeast(1000000), numVertices);
+
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, new Polygon(outer.getPolyLats(), outer.getPolyLons(), inner));
+    writer.addDocument(document);
+
+    ///// search //////
+    IndexReader reader = writer.getReader();
+    writer.close();
+    IndexSearcher searcher = newSearcher(reader);
+
     // search a bbox in the hole
-    q = newRectQuery(FIELDNAME, inner.minLat + 1e-6, inner.maxLat - 1e-6, inner.minLon + 1e-6, inner.maxLon - 1e-6);
+    Query q = newRectQuery(FIELDNAME, inner.minLat + 1e-6, inner.maxLat - 1e-6, inner.minLon + 1e-6, inner.maxLon - 1e-6);
     assertEquals(0, searcher.count(q));
 
     IOUtils.close(reader, dir);

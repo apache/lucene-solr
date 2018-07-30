@@ -123,6 +123,16 @@ abstract class PhraseWeight extends Weight {
         public int endOffset() throws IOException {
           return matcher.endOffset();
         }
+
+        @Override
+        public MatchesIterator getSubMatches() throws IOException {
+          return null;    // phrases are treated as leaves
+        }
+
+        @Override
+        public Query getQuery() {
+          return PhraseWeight.this.getQuery();
+        }
       };
     });
   }

@@ -119,10 +119,15 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
     // TODO: change effective offsets + limits at shards...
 
+    boolean refine = freq.refine != null && freq.refine != FacetRequest.RefineMethod.NONE;
+
     int off = (int)freq.offset;
     int lim = freq.limit >= 0 ? (int)freq.limit : Integer.MAX_VALUE;
     for (FacetBucket bucket : sortedBuckets) {
       if (bucket.getCount() < freq.mincount) {
+        continue;
+      }
+      if (refine && !isBucketComplete(bucket,mcontext)) {
         continue;
       }
 

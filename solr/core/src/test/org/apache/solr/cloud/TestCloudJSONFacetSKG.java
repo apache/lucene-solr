@@ -554,7 +554,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
       // IMPORTANT!!!
       // if this method is modified to produce new sorts, make sure to update
-      // randomLimitParam to account for them if they are impacted by SOLR-12343
+      // randomLimitParam to account for them if they are impacted by SOLR-12556
       final String dir = random().nextBoolean() ? "asc" : "desc";
       switch(r.nextInt(4)) {
         case 0: return null;
@@ -568,7 +568,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      * picks a random value for the "limit" param, biased in favor of interesting test cases
      *
      * <p>
-     * <b>NOTE:</b> Due to SOLR-12343, we have to force an overrequest of "all" possible terms for 
+     * <b>NOTE:</b> Due to SOLR-12556, we have to force an overrequest of "all" possible terms for 
      * some sort values.
      * </p>
      *
@@ -579,7 +579,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     public static Integer randomLimitParam(Random r, final String sort) {
       if (null != sort) {
         if (sort.equals("count asc") || sort.startsWith("skg")) {
-          // of the known types of sorts produced, these are at risk of SOLR-12343
+          // of the known types of sorts produced, these are at risk of SOLR-12556
           // so request (effectively) unlimited num buckets
           return r.nextBoolean() ? UNIQUE_FIELD_VALS : -1;
         }

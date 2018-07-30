@@ -44,6 +44,7 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
@@ -55,6 +56,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.NODE;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.WITH_COLLECTION;
 
 /*The class that reads, parses and applies policies specified in
  * autoscaling.json
@@ -74,7 +77,7 @@ public class Policy implements MapWriter {
   public static final String POLICIES = "policies";
   public static final String CLUSTER_POLICY = "cluster-policy";
   public static final String CLUSTER_PREFERENCES = "cluster-preferences";
-  public static final Set<String> GLOBAL_ONLY_TAGS = Collections.singleton("cores");
+  public static final Set<String> GLOBAL_ONLY_TAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("cores", CollectionAdminParams.WITH_COLLECTION)));
   public static final List<Preference> DEFAULT_PREFERENCES = Collections.unmodifiableList(
       Arrays.asList(
           new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")),
@@ -131,9 +134,12 @@ public class Policy implements MapWriter {
 
     this.policies = Collections.unmodifiableMap(
         policiesFromMap((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
-    this.params = Collections.unmodifiableList(newParams.stream()
+    List<Pair<String, Suggestion.ConditionType>> params = newParams.stream()
         .map(s -> new Pair<>(s, Suggestion.getTagType(s)))
-        .collect(toList()));
+        .collect(toList());
+    //let this be there always, there is no extra cost
+    params.add(new Pair<>(WITH_COLLECTION.tagName, WITH_COLLECTION));
+    this.params = Collections.unmodifiableList(params);
     perReplicaAttributes = readPerReplicaAttrs();
   }
 
@@ -501,6 +507,21 @@ public class Policy implements MapWriter {
           .filter(clause -> !clause.isPerCollectiontag())
           .collect(Collectors.toList());
 
+      if (nodes.size() > 0) {
+        //if any collection has 'withCollection' irrespective of the node, the NodeStateProvider returns a map value
+        Map<String, Object> vals = nodeStateProvider.getNodeValues(nodes.get(0), Collections.singleton("withCollection"));
+        if (!vals.isEmpty() && vals.get("withCollection") != null) {
+          Map<String, String> withCollMap = (Map<String, String>) vals.get("withCollection");
+          if (!withCollMap.isEmpty()) {
+            Clause withCollClause = new Clause((Map<String,Object>)Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}") ,
+                new Clause.Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
+                new Clause.Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true
+            );
+            expandedClauses.add(withCollClause);
+          }
+        }
+      }
+
       ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
       for (String c : collections) {
         addClausesForCollection(stateProvider, c);
@@ -539,7 +560,7 @@ public class Policy implements MapWriter {
           .collect(Collectors.toList());
     }
 
-    Policy getPolicy() {
+    public Policy getPolicy() {
       return Policy.this;
 
     }
@@ -593,5 +614,16 @@ public class Policy implements MapWriter {
       for (int i = 0; i < matrix.size(); i++) if (matrix.get(i).node.equals(node)) return i;
       throw new RuntimeException("NO such node found " + node);
     }
+  }
+  static final Map<String, Suggestion.ConditionType> validatetypes = new HashMap<>();
+  static {
+    for (Suggestion.ConditionType t : Suggestion.ConditionType.values())
+      validatetypes.put(t.tagName, t);
+  }
+  public static ConditionType getTagType(String name) {
+    ConditionType info = validatetypes.get(name);
+    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = ConditionType.STRING;
+    if (info == null && name.startsWith(Clause.METRICS_PREFIX)) info = ConditionType.LAZY;
+    return info;
   }
 }
