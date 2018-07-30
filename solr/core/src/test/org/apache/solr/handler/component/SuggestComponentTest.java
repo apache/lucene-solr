@@ -79,9 +79,9 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='45']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/double[@name='weight'][.='45.0']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='40']"
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/double[@name='weight'][.='40.0']"
         );
     
     assertQ(req("qt", rh, 
@@ -91,9 +91,9 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='Rad fox']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='35']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/double[@name='weight'][.='35.0']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='Red fox']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='30']"
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/double[@name='weight'][.='30.0']"
         );
   }
   
@@ -106,9 +106,9 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='120']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/double[@name='weight'][.='120.0']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='110']"
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/double[@name='weight'][.='110.0']"
         );
   }
   
@@ -121,9 +121,9 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_COUNT, "2"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='1']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[1]/double[@name='weight'][.='1.0']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='1']"
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/double[@name='weight'][.='1.0']"
         );
   }
   @Test
@@ -136,14 +136,14 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         SuggesterParams.SUGGEST_COUNT, "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='45']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/double[@name='weight'][.='45.0']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='40']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/double[@name='weight'][.='40.0']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='120']",
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/double[@name='weight'][.='120.0']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='110']"
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/double[@name='weight'][.='110.0']"
         );
   }
   
