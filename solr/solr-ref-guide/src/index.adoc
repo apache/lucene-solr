@@ -1,5 +1,8 @@
 = Apache Solr Reference Guide
 :page-children: about-this-guide, getting-started, deployment-and-operations, using-the-solr-administration-user-interface, documents-fields-and-schema-design, understanding-analyzers-tokenizers-and-filters, indexing-and-basic-data-operations, searching, solrcloud, legacy-scaling-and-distribution, the-well-configured-solr-instance, monitoring-solr, securing-solr, client-apis, further-assistance, solr-glossary, errata, how-to-contribute
+:page-notitle:
+:page-toc: false
+:page-layout: home
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -17,35 +20,95 @@
 // specific language governing permissions and limitations
 // under the License.
 
-[.lead]
-This reference guide describes Apache Solr, the open source solution for search.
+[.jumbotron]
+--
+[.lead-homepage]
+Welcome to Apache Solr(TM), the open source solution for search and analytics.
 
-Solr builds on Lucene, an open source Java library that provides indexing and search technology, as well as spellchecking, hit highlighting and advanced analysis/tokenization capabilities. Both Solr and Lucene are managed by the Apache Software Foundation (http://www.apache.org/[www.apache.org)]. You can download Apache Solr from the Solr website at http://lucene.apache.org/solr/.
+Solr is the fast open source search platform built on Apache Lucene(TM) that provides scalable indexing and search, as well as faceting, hit highlighting and advanced analysis/tokenization capabilities. Solr and Lucene are managed by the http://www.apache.org/[Apache Software Foundation].
 
-This Guide contains the following main sections:
+This Reference Guide is the official Solr documentation, written and published by Lucene/Solr committers.
 
-*<<getting-started.adoc#getting-started,Getting Started>>*: This section guides you through the installation and setup of Solr.
+ifdef::backend-html5[]
+++++
+<p><a class="btn btn-primary btn-lg noCrossRef" href="https://lucene.apache.org/solr/mirrors-solr-latest-redir.html" role="button">Download Solr</a></p>
+++++
+endif::[]
+--
 
-*<<using-the-solr-administration-user-interface.adoc#using-the-solr-administration-user-interface,Using the Solr Administration User Interface>>*: This section introduces the Solr Web-based user interface. From your browser you can view configuration files, submit queries, view logfile settings and Java environment settings, and monitor and control distributed configurations.
+The Guide includes the following sections:
 
-*<<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>*: This section describes how Solr organizes its data for indexing. It explains how a Solr schema defines the fields and field types which Solr uses to organize data within the document files it indexes.
+[.row.match-my-cols]
+--
+.Getting Started with Solr
+[sidebar.col-sm-6.col-md-4]
+****
 
-*<<understanding-analyzers-tokenizers-and-filters.adoc#understanding-analyzers-tokenizers-and-filters,Understanding Analyzers, Tokenizers, and Filters>>*: This section explains how Solr prepares text for indexing and searching. Analyzers parse text and produce a stream of tokens, lexical units used for indexing and searching. Tokenizers break field data down into tokens. Filters perform other transformational or selective work on token streams.
+The *<<getting-started.adoc#getting-started,Getting Started>>* section guides you through the installation and setup of Solr. A detailed tutorial for first-time users shows many of Solr's features.
 
+*<<using-the-solr-administration-user-interface.adoc#using-the-solr-administration-user-interface,Using the Solr Administration User Interface>>*: This section introduces the Web-based interface for administering Solr. From your browser you can view configuration files, submit queries, view logfile settings and Java environment settings, and monitor and control distributed configurations.
+****
+
+.Deploying Solr
+[sidebar.col-sm-6.col-md-4]
+****
+
+*<<deployment-and-operations.adoc#deployment-and-operations,Deployment and Operations>>*: Once you have Solr configured, you want to deploy it to production and keep it up to date. This section includes information about how to take Solr to production, run it in HDFS or AWS, and information about upgrades and managing Solr from the command line.
+
+*<<monitoring-solr.adoc#monitoring-solr,Monitoring Solr>>*: Solr includes options for keeping an eye on the performance of your Solr cluster with the web-based administration console, through the command line interface, or using REST APIs.
+****
+--
+
+[.row]
+--
+
+'''
+
+--
+
+[.row.match-my-cols]
+--
+.Indexing & Searching Documents
+[sidebar.col-sm-6.col-md-4]
+****
 *<<indexing-and-basic-data-operations.adoc#indexing-and-basic-data-operations,Indexing and Basic Data Operations>>*: This section describes the indexing process and basic index operations, such as commit, optimize, and rollback.
 
 *<<searching.adoc#searching,Searching>>*: This section presents an overview of the search process in Solr. It describes the main components used in searches, including request handlers, query parsers, and response writers. It lists the query parameters that can be passed to Solr, and it describes features such as boosting and faceting, which can be used to fine-tune search results.
 
-*<<the-well-configured-solr-instance.adoc#the-well-configured-solr-instance,The Well-Configured Solr Instance>>*: This section discusses performance tuning for Solr. It begins with an overview of the `solrconfig.xml` file, then tells you how to configure cores with `solr.xml`, how to configure the Lucene index writer, and more.
+*<<client-apis.adoc#client-apis,Client APIs>>*: This section tells you how to access Solr through various client APIs, including JavaScript, JSON, and Ruby.
+****
 
-*<<monitoring-solr.adoc#monitoring-solr,Monitoring Solr>>*: Administration and monitoring can be performed using the web-based administration console, through the command line interface, or using REST APIs.
+.Designing Fields
+[sidebar.col-sm-6.col-md-4]
+****
+*<<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>*: This section describes how Solr organizes data in the index. It explains how a Solr schema defines the fields and field types which Solr uses to organize data within the document files it indexes.
 
-*<<deployment-and-operations.adoc#deployment-and-operations,Deployment and Operations>>*: An important aspect of Solr is that all operations and deployment can be done online, with minimal or no impact to running applications. This includes minor upgrades and provisioning and removing nodes, backing up and restoring indexes and editing configurations
+*<<understanding-analyzers-tokenizers-and-filters.adoc#understanding-analyzers-tokenizers-and-filters,Understanding Analyzers, Tokenizers, and Filters>>*: This section explains how Solr prepares text for indexing and searching. Analyzers parse text and produce a stream of tokens, lexical units used for indexing and searching. Tokenizers break field data down into tokens. Filters perform other transformational or selective work on token streams.
+****
+--
 
-*<<solrcloud.adoc#solrcloud,SolrCloud>>*: This section describes the newest and most exciting of Solr's new features, SolrCloud, which provides comprehensive distributed capabilities.
+[.row]
+--
 
-*<<securing-solr.adoc#securing-solr,Securing Solr>>*: When planning how to secure Solr, you should consider which of the available features or approaches are right for you.
+'''
+
+--
+
+[.row.match-my-cols]
+--
+.Scaling Solr
+[sidebar.col-sm-6.col-md-4]
+****
+*<<solrcloud.adoc#solrcloud,SolrCloud>>*: This section describes SolrCloud, which provides comprehensive distributed capabilities.
 
 *<<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>*: This section tells you how to grow a Solr distribution by dividing a large index into sections called shards, which are then distributed across multiple servers, or by replicating a single index across multiple services.
+****
 
-*<<client-apis.adoc#client-apis,Client APIs>>*: This section tells you how to access Solr through various client APIs, including JavaScript, JSON, and Ruby.
+.Advanced Configuration
+[sidebar.col-sm-6.col-md-4]
+****
+*<<securing-solr.adoc#securing-solr,Securing Solr>>*: When planning how to secure Solr, you should consider which of the available features or approaches are right for you.
+
+*<<the-well-configured-solr-instance.adoc#the-well-configured-solr-instance,The Well-Configured Solr Instance>>*: This section discusses performance tuning for Solr. It begins with an overview of the `solrconfig.xml` file, then tells you how to configure cores with `solr.xml`, how to configure the Lucene index writer, and more.
+****
+--
