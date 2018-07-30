@@ -85,7 +85,7 @@ public class FileDictionaryTest extends LuceneTestCase {
       List<String> entry = entries.get(count);
       assertTrue(entry.size() >= 1); // at least a term
       assertEquals(entry.get(0), term.utf8ToString());
-      assertEquals(new Long(1), inputIter.weight());
+      assertEquals(Long.valueOf(1), inputIter.weight());
       assertNull(inputIter.payload());
       count++;
     }
@@ -107,7 +107,7 @@ public class FileDictionaryTest extends LuceneTestCase {
       List<String> entry = entries.get(count);
       assertTrue(entry.size() >= 1); // at least a term
       assertEquals(entry.get(0), term.utf8ToString());
-      assertEquals((entry.size() == 2) ? (Long) Long.parseLong(entry.get(1)) : new Long(1), inputIter.weight());
+      assertEquals((entry.size() == 2) ? (Long) Long.parseLong(entry.get(1)) : Long.valueOf(1), inputIter.weight());
       assertNull(inputIter.payload());
       count++;
     }

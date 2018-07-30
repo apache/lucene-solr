@@ -31,7 +31,7 @@ import org.apache.lucene.util.*;
 public class FSTCompletionTest extends LuceneTestCase {
 
   public static Input tf(String t, int v) {
-    return new Input(t, new Long(v));
+    return new Input(t, Long.valueOf(v));
   }
 
   private FSTCompletion completion;

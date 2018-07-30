@@ -54,7 +54,7 @@ public final class Input {
   }
   
   public Input(String term, int v, BytesRef payload, Set<BytesRef> contexts) {
-    this(new BytesRef(term), new Long(v), payload, true, contexts, true);
+    this(new BytesRef(term), Long.valueOf(v), payload, true, contexts, true);
   }
 
   public Input(BytesRef term, Long v, BytesRef payload, Set<BytesRef> contexts) {

@@ -79,7 +79,7 @@ public class PersistenceTest extends LuceneTestCase {
     }
     Input[] keys = new Input[this.keys.length];
     for (int i = 0; i < keys.length; i++)
-      keys[i] = new Input(this.keys[i], new Long(i));
+      keys[i] = new Input(this.keys[i], Long.valueOf(i));
     lookup.build(new InputArrayIterator(keys));
 
     // Store the suggester.

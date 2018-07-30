@@ -968,7 +968,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     for(int i=0;i<NUM;i++) {
       final String s = randomSimpleString(8);
       if (!seen.contains(s)) {
-        answers.add(new Input(s, new Long(random().nextInt(1000))));
+        answers.add(new Input(s, Long.valueOf(random().nextInt(1000))));
         seen.add(s);
       }
     }
