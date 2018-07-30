@@ -70,7 +70,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
 
 public class ExportWriter implements SolrCore.RawWriter, Closeable {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private OutputStreamWriter respWriter;
   final SolrQueryRequest req;
   final SolrQueryResponse res;
@@ -105,15 +105,15 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   }
 
-  protected void writeException(Exception e, PushWriter w, boolean log) throws IOException {
+  protected void writeException(Exception e, PushWriter w, boolean logException) throws IOException {
     w.writeMap(mw -> {
       mw.put("responseHeader", singletonMap("status", 400))
           .put("response", makeMap(
               "numFound", 0,
               "docs", singletonList(singletonMap("EXCEPTION", e.getMessage()))));
     });
-    if (log) {
-      SolrException.log(logger, e);
+    if (logException) {
+      SolrException.log(log, e);
     }
   }
 
