@@ -108,7 +108,7 @@ public class SpatialPrefixTreeTest extends SpatialTestCase {
       System.out.println(indexSearcher.doc(scoreDoc.doc));
     }
 
-    assertEquals(1, search.totalHits);
+    assertEquals(1, search.totalHits.value);
   }
 
 }

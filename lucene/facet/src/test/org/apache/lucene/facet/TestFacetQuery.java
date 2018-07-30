@@ -91,13 +91,13 @@ public class TestFacetQuery extends FacetTestCase {
   @Test
   public void testSingleValued() throws Exception {
     TopDocs topDocs = searcher.search(new FacetQuery("Author", "Mark Twain"), 10);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
   }
 
   @Test
   public void testMultiValued() throws Exception {
     TopDocs topDocs = searcher.search(
             new MultiFacetQuery("Author", new String[] { "Mark Twain" }, new String[] { "Kurt Vonnegut" }), 10);
-    assertEquals(2, topDocs.totalHits);
+    assertEquals(2, topDocs.totalHits.value);
   }
 }

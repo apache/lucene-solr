@@ -153,20 +153,20 @@ public class TestJoinUtil extends LuceneTestCase {
         JoinUtil.createJoinQuery(idField, false, toField, new TermQuery(new Term("name", "name2")), indexSearcher, ScoreMode.None);
 
     TopDocs result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
+    assertEquals(2, result.totalHits.value);
     assertEquals(4, result.scoreDocs[0].doc);
     assertEquals(5, result.scoreDocs[1].doc);
 
     joinQuery = JoinUtil.createJoinQuery(idField, false, toField, new TermQuery(new Term("name", "name1")), indexSearcher, ScoreMode.None);
     result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
+    assertEquals(2, result.totalHits.value);
     assertEquals(1, result.scoreDocs[0].doc);
     assertEquals(2, result.scoreDocs[1].doc);
 
     // Search for offer
     joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("id", "5")), indexSearcher, ScoreMode.None);
     result = indexSearcher.search(joinQuery, 10);
-    assertEquals(1, result.totalHits);
+    assertEquals(1, result.totalHits.value);
     assertEquals(3, result.scoreDocs[0].doc);
 
     indexSearcher.getIndexReader().close();
@@ -257,14 +257,14 @@ public class TestJoinUtil extends LuceneTestCase {
     // Search for product and return prices
     Query joinQuery = JoinUtil.createJoinQuery(joinField, fromQuery, toQuery, indexSearcher, ScoreMode.None, ordinalMap);
     TopDocs result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
+    assertEquals(2, result.totalHits.value);
     assertEquals(4, result.scoreDocs[0].doc);
     assertEquals(5, result.scoreDocs[1].doc);
 
     fromQuery = new TermQuery(new Term("name", "name1"));
     joinQuery = JoinUtil.createJoinQuery(joinField, fromQuery, toQuery, indexSearcher, ScoreMode.None, ordinalMap);
     result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
+    assertEquals(2, result.totalHits.value);
     assertEquals(1, result.scoreDocs[0].doc);
     assertEquals(2, result.scoreDocs[1].doc);
 
@@ -273,7 +273,7 @@ public class TestJoinUtil extends LuceneTestCase {
     toQuery = new TermQuery(new Term(typeField, "product"));
     joinQuery = JoinUtil.createJoinQuery(joinField, fromQuery, toQuery, indexSearcher, ScoreMode.None, ordinalMap);
     result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
+    assertEquals(2, result.totalHits.value);
     assertEquals(0, result.scoreDocs[0].doc);
     assertEquals(3, result.scoreDocs[1].doc);
 
@@ -363,7 +363,7 @@ public class TestJoinUtil extends LuceneTestCase {
     for (ScoreMode scoreMode : ScoreMode.values()) {
       Query joinQuery = JoinUtil.createJoinQuery(joinField, fromQuery, toQuery, indexSearcher, scoreMode, ordinalMap);
       TopDocs result = indexSearcher.search(joinQuery, 10);
-      assertEquals(1, result.totalHits);
+      assertEquals(1, result.totalHits.value);
       assertEquals(4, result.scoreDocs[0].doc); // doc with price: 5.0
       Explanation explanation = indexSearcher.explain(joinQuery, 4);
       assertTrue(explanation.isMatch());
@@ -489,7 +489,7 @@ public class TestJoinUtil extends LuceneTestCase {
     Query toQuery = new TermQuery(new Term("type", "to"));
     Query joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery.build(), toQuery, searcher, ScoreMode.Min, ordinalMap);
     TopDocs topDocs = searcher.search(joinQuery, numParents);
-    assertEquals(numParents, topDocs.totalHits);
+    assertEquals(numParents, topDocs.totalHits.value);
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       ScoreDoc scoreDoc = topDocs.scoreDocs[i];
       String id = searcher.doc(scoreDoc.doc).get("id");
@@ -498,7 +498,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
     joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery.build(), toQuery, searcher, ScoreMode.Max, ordinalMap);
     topDocs = searcher.search(joinQuery, numParents);
-    assertEquals(numParents, topDocs.totalHits);
+    assertEquals(numParents, topDocs.totalHits.value);
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       ScoreDoc scoreDoc = topDocs.scoreDocs[i];
       String id = searcher.doc(scoreDoc.doc).get("id");
@@ -711,7 +711,7 @@ public class TestJoinUtil extends LuceneTestCase {
         JoinUtil.createJoinQuery(toField, multipleValues, idField, new TermQuery(new Term("price", "10.0")), indexSearcher, scoreMode);
 
     TopDocs result = indexSearcher.search(joinQuery, 10);
-    assertEquals(1, result.totalHits);
+    assertEquals(1, result.totalHits.value);
     assertEquals(0, result.scoreDocs[0].doc);
 
     indexSearcher.getIndexReader().close();
@@ -885,28 +885,28 @@ public class TestJoinUtil extends LuceneTestCase {
     Query joinQuery =
         JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("subtitle", "random")), indexSearcher, ScoreMode.Max);
     TopDocs result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
+    assertEquals(2, result.totalHits.value);
     assertEquals(0, result.scoreDocs[0].doc);
     assertEquals(3, result.scoreDocs[1].doc);
 
     // Score mode max.
     joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("subtitle", "movie")), indexSearcher, ScoreMode.Max);
     result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
+    assertEquals(2, result.totalHits.value);
     assertEquals(3, result.scoreDocs[0].doc);
     assertEquals(0, result.scoreDocs[1].doc);
 
     // Score mode total
     joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("subtitle", "movie")), indexSearcher, ScoreMode.Total);
     result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
+    assertEquals(2, result.totalHits.value);
     assertEquals(0, result.scoreDocs[0].doc);
     assertEquals(3, result.scoreDocs[1].doc);
 
     //Score mode avg
     joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("subtitle", "movie")), indexSearcher, ScoreMode.Avg);
     result = indexSearcher.search(joinQuery, 10);
-    assertEquals(2, result.totalHits);
+    assertEquals(2, result.totalHits.value);
     assertEquals(3, result.scoreDocs[0].doc);
     assertEquals(0, result.scoreDocs[1].doc);
 
@@ -1275,7 +1275,7 @@ public class TestJoinUtil extends LuceneTestCase {
   }
 
   private void assertTopDocs(TopDocs expectedTopDocs, TopDocs actualTopDocs, ScoreMode scoreMode, IndexSearcher indexSearcher, Query joinQuery) throws IOException {
-    assertEquals(expectedTopDocs.totalHits, actualTopDocs.totalHits);
+    assertEquals(expectedTopDocs.totalHits.value, actualTopDocs.totalHits.value);
     assertEquals(expectedTopDocs.scoreDocs.length, actualTopDocs.scoreDocs.length);
     if (scoreMode == ScoreMode.None) {
       return;
@@ -1646,7 +1646,7 @@ public class TestJoinUtil extends LuceneTestCase {
       Map.Entry<Integer,JoinScore> hit = hits.get(i);
       scoreDocs[i] = new ScoreDoc(hit.getKey(), hit.getValue().score(scoreMode));
     }
-    return new TopDocs(hits.size(), scoreDocs);
+    return new TopDocs(new TotalHits(hits.size(), TotalHits.Relation.EQUAL_TO), scoreDocs);
   }
 
   private BitSet createExpectedResult(String queryValue, boolean from, IndexReader topLevelReader, IndexIterationContext context) throws IOException {

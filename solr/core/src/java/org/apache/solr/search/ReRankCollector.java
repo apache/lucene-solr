@@ -98,7 +98,7 @@ public class ReRankCollector extends TopDocsCollector {
 
       TopDocs mainDocs = mainCollector.topDocs(0,  Math.max(reRankDocs, length));
 
-      if(mainDocs.totalHits == 0 || mainDocs.scoreDocs.length == 0) {
+      if(mainDocs.totalHits.value == 0 || mainDocs.scoreDocs.length == 0) {
         return mainDocs;
       }
 

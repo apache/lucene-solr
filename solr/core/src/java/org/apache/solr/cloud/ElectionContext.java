@@ -437,7 +437,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             SolrIndexSearcher searcher = searchHolder.get();
             try {
               log.debug(core.getCoreContainer().getZkController().getNodeName() + " synched "
-                  + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+                  + searcher.count(new MatchAllDocsQuery()));
             } finally {
               searchHolder.decref();
             }

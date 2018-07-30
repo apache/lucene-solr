@@ -57,16 +57,16 @@ public class TestBooleanSimilarity extends BaseSimilarityTestCase {
     IndexSearcher searcher = newSearcher(reader);
     searcher.setSimilarity(new BooleanSimilarity());
     TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "bar")), 2);
-    assertEquals(2, topDocs.totalHits);
+    assertEquals(2, topDocs.totalHits.value);
     assertEquals(1f, topDocs.scoreDocs[0].score, 0f);
     assertEquals(1f, topDocs.scoreDocs[1].score, 0f);
 
     topDocs = searcher.search(new TermQuery(new Term("foo", "baz")), 1);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(1f, topDocs.scoreDocs[0].score, 0f);
 
     topDocs = searcher.search(new BoostQuery(new TermQuery(new Term("foo", "baz")), 3f), 1);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(3f, topDocs.scoreDocs[0].score, 0f);
 
     reader.close();
@@ -89,11 +89,11 @@ public class TestBooleanSimilarity extends BaseSimilarityTestCase {
     PhraseQuery query = new PhraseQuery(2, "foo", "bar", "quux");
 
     TopDocs topDocs = searcher.search(query, 2);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(1f, topDocs.scoreDocs[0].score, 0f);
 
     topDocs = searcher.search(new BoostQuery(query, 7), 2);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(7f, topDocs.scoreDocs[0].score, 0f);
 
     reader.close();

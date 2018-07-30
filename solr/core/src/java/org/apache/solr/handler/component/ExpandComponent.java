@@ -59,6 +59,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -437,7 +438,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           docs[i] = scoreDoc.doc;
           scores[i] = scoreDoc.score;
         }
-        DocSlice slice = new DocSlice(0, docs.length, docs, scores, topDocs.totalHits, Float.NaN);
+        assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+        DocSlice slice = new DocSlice(0, docs.length, docs, scores, topDocs.totalHits.value, Float.NaN);
 
         if(fieldType instanceof StrField) {
           final BytesRef bytesRef = ordBytes.get((int)groupValue);

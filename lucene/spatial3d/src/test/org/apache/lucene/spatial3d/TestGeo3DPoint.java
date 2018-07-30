@@ -126,7 +126,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     // We can't wrap with "exotic" readers because the query must see the BKD3DDVFormat:
     IndexSearcher s = newSearcher(r, false);
     assertEquals(1, s.search(Geo3DPoint.newShapeQuery("field",
-                                                      GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1).totalHits);
+                                                      GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1).totalHits.value);
     w.close();
     r.close();
     dir.close();

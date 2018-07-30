@@ -46,6 +46,7 @@ import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
@@ -613,7 +614,8 @@ public class Grouping {
     }
 
     protected DocList getDocList(GroupDocs groups) {
-      int max = Math.toIntExact(groups.totalHits);
+      assert groups.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+      int max = Math.toIntExact(groups.totalHits.value);
       int off = groupOffset;
       int len = docsPerGroup;
       if (format == Format.simple) {
@@ -635,7 +637,7 @@ public class Grouping {
 
       float score = groups.maxScore;
       maxScore = maxAvoidNaN(score, maxScore);
-      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, groups.totalHits, score);
+      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, groups.totalHits.value, score);
 
       if (getDocList) {
         DocIterator iter = docs.iterator();

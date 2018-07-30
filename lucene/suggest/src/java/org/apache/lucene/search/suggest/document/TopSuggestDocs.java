@@ -18,6 +18,7 @@ package org.apache.lucene.search.suggest.document;
 
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.suggest.Lookup;
 
 /**
@@ -31,7 +32,7 @@ public class TopSuggestDocs extends TopDocs {
   /**
    * Singleton for empty {@link TopSuggestDocs}
    */
-  public final static TopSuggestDocs EMPTY = new TopSuggestDocs(0, new SuggestScoreDoc[0]);
+  public final static TopSuggestDocs EMPTY = new TopSuggestDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), new SuggestScoreDoc[0]);
 
   /**
    * {@link org.apache.lucene.search.ScoreDoc} with an
@@ -92,7 +93,7 @@ public class TopSuggestDocs extends TopDocs {
    * {@link TopSuggestDocs.SuggestScoreDoc}
    * instead of {@link org.apache.lucene.search.ScoreDoc}
    */
-  public TopSuggestDocs(int totalHits, SuggestScoreDoc[] scoreDocs) {
+  public TopSuggestDocs(TotalHits totalHits, SuggestScoreDoc[] scoreDocs) {
     super(totalHits, scoreDocs);
   }
 
@@ -124,7 +125,7 @@ public class TopSuggestDocs extends TopDocs {
     }
     SuggestScoreDoc[] topNResults = priorityQueue.getResults();
     if (topNResults.length > 0) {
-      return new TopSuggestDocs(topNResults.length, topNResults);
+      return new TopSuggestDocs(new TotalHits(topNResults.length, TotalHits.Relation.EQUAL_TO), topNResults);
     } else {
       return TopSuggestDocs.EMPTY;
     }

@@ -27,6 +27,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.TotalHits;
 
 import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestScoreDoc;
 
@@ -177,7 +178,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
     }
 
     if (suggestScoreDocs.length > 0) {
-      return new TopSuggestDocs(suggestScoreDocs.length, suggestScoreDocs);
+      return new TopSuggestDocs(new TotalHits(suggestScoreDocs.length, TotalHits.Relation.EQUAL_TO), suggestScoreDocs);
     } else {
       return TopSuggestDocs.EMPTY;
     }

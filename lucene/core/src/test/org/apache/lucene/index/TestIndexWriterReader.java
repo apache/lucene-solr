@@ -700,7 +700,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(100, r.numDocs());
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
-    assertEquals(100, searcher.search(q, 10).totalHits);
+    assertEquals(100, searcher.search(q, 10).totalHits.value);
 
     expectThrows(AlreadyClosedException.class, () -> {
       DirectoryReader.openIfChanged(r);
@@ -768,7 +768,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
         r = r2;
         Query q = new TermQuery(new Term("indexname", "test"));
         IndexSearcher searcher = newSearcher(r);
-        final long count = searcher.search(q, 10).totalHits;
+        final long count = searcher.search(q, 10).totalHits.value;
         assertTrue(count >= lastCount);
         lastCount = count;
       }
@@ -785,7 +785,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
-    final long count = searcher.search(q, 10).totalHits;
+    final long count = searcher.search(q, 10).totalHits.value;
     assertTrue(count >= lastCount);
 
     assertEquals(0, excs.size());
@@ -865,7 +865,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
         r = r2;
         Query q = new TermQuery(new Term("indexname", "test"));
         IndexSearcher searcher = newSearcher(r);
-        sum += searcher.search(q, 10).totalHits;
+        sum += searcher.search(q, 10).totalHits.value;
       }
     }
 
@@ -880,7 +880,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
-    sum += searcher.search(q, 10).totalHits;
+    sum += searcher.search(q, 10).totalHits.value;
     assertTrue("no documents found at all", sum > 0);
 
     assertEquals(0, excs.size());
@@ -966,7 +966,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
            .setMergedSegmentWarmer((r) -> {
               IndexSearcher s = newSearcher(r);
               TopDocs hits = s.search(new TermQuery(new Term("foo", "bar")), 10);
-              assertEquals(20, hits.totalHits);
+              assertEquals(20, hits.totalHits.value);
               didWarm.set(true);
            })
            .setMergePolicy(newLogMergePolicy(10))

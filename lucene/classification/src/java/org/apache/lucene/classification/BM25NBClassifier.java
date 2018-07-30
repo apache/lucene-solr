@@ -217,7 +217,7 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
       builder.add(query, BooleanClause.Occur.MUST);
     }
     TopDocs search = indexSearcher.search(builder.build(), 1);
-    return search.totalHits > 0 ? search.scoreDocs[0].score : 1;
+    return search.totalHits.value > 0 ? search.scoreDocs[0].score : 1;
   }
 
   private double calculateLogPrior(Term term) throws IOException {
@@ -228,7 +228,7 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
       bq.add(query, BooleanClause.Occur.MUST);
     }
     TopDocs topDocs = indexSearcher.search(bq.build(), 1);
-    return topDocs.totalHits > 0 ? Math.log(topDocs.scoreDocs[0].score) : 0;
+    return topDocs.totalHits.value > 0 ? Math.log(topDocs.scoreDocs[0].score) : 0;
   }
 
 }

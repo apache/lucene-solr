@@ -38,6 +38,7 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.DocIdSetBuilder;
 
@@ -219,7 +220,7 @@ public class FacetsCollector extends SimpleCollector implements Collector {
     if (n==0) {
       TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
       searcher.search(q, MultiCollector.wrap(totalHitCountCollector, fc));
-      topDocs = new TopDocs(totalHitCountCollector.getTotalHits(), new ScoreDoc[0]);
+      topDocs = new TopDocs(new TotalHits(totalHitCountCollector.getTotalHits(), TotalHits.Relation.EQUAL_TO), new ScoreDoc[0]);
     } else {
       TopDocsCollector<?> hitsCollector;
       if (sort != null) {

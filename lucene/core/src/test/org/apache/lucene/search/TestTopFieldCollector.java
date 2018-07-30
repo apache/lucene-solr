@@ -134,7 +134,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true);
       TopDocs td = tdc.topDocs();
-      assertEquals(0, td.totalHits);
+      assertEquals(0, td.totalHits.value);
     }
   }
 

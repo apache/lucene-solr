@@ -434,7 +434,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     BinaryDocValues binaryIdValues = null;
     for (LeafReaderContext c : reader.leaves()) {
       TopDocs topDocs = new IndexSearcher(c.reader()).search(new TermQuery(new Term("id", "" + doc)), 10);
-      if (topDocs.totalHits == 1) {
+      if (topDocs.totalHits.value == 1) {
         assertNull(idValues);
         assertNull(binaryIdValues);
         idValues = c.reader().getNumericDocValues("id");
@@ -442,7 +442,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
         binaryIdValues = c.reader().getBinaryDocValues("binaryId");
         assertEquals(topDocs.scoreDocs[0].doc, binaryIdValues.advance(topDocs.scoreDocs[0].doc));
       } else {
-        assertEquals(0, topDocs.totalHits);
+        assertEquals(0, topDocs.totalHits.value);
       }
     }
 
@@ -513,7 +513,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
         try {
           Long value = values[i];
           TopDocs topDocs = new IndexSearcher(reader).search(new TermQuery(new Term("id", "" + i)), 10);
-          assertEquals(topDocs.totalHits, 1);
+          assertEquals(topDocs.totalHits.value, 1);
           int docID = topDocs.scoreDocs[0].doc;
           List<LeafReaderContext> leaves = reader.leaves();
           int subIndex = ReaderUtil.subIndex(docID, leaves);
@@ -540,7 +540,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     do { // retry if we just committing a merge
       try (DirectoryReader reader = writer.getReader()) {
         TopDocs topDocs = new IndexSearcher(reader).search(new TermQuery(doc), 10);
-        assertEquals(1, topDocs.totalHits);
+        assertEquals(1, topDocs.totalHits.value);
         int theDoc = topDocs.scoreDocs[0].doc;
         seqId = writer.tryUpdateDocValue(reader, theDoc, fields);
       }
@@ -625,7 +625,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       IndexSearcher searcher = new IndexSearcher(reader);
 
       TopDocs is_live = searcher.search(new DocValuesFieldExistsQuery("is_live"), 5);
-      assertEquals(numHits, is_live.totalHits);
+      assertEquals(numHits, is_live.totalHits.value);
       for (ScoreDoc doc : is_live.scoreDocs) {
         int id = Integer.parseInt(reader.document(doc.doc).get("id"));
         int i = ReaderUtil.subIndex(doc.doc, reader.leaves());

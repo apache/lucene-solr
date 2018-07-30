@@ -58,6 +58,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
@@ -513,7 +514,7 @@ public class TestGrouping extends LuceneTestCase {
 
       result[idx-groupOffset] = new GroupDocs<>(Float.NaN,
                                                         0.0f,
-                                                        docs.size(),
+                                                        new TotalHits(docs.size(), TotalHits.Relation.EQUAL_TO),
                                                         hits,
                                                         group,
                                                         sortedGroupFields.get(idx));
@@ -979,7 +980,7 @@ public class TestGrouping extends LuceneTestCase {
           } else {
             System.out.println("TEST: expected groups totalGroupedHitCount=" + expectedGroups.totalGroupedHitCount);
             for(GroupDocs<BytesRef> gd : expectedGroups.groups) {
-              System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits + " scoreDocs.len=" + gd.scoreDocs.length);
+              System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits.value + " scoreDocs.len=" + gd.scoreDocs.length);
               for(ScoreDoc sd : gd.scoreDocs) {
                 System.out.println("    id=" + sd.doc + " score=" + sd.score);
               }
@@ -991,7 +992,7 @@ public class TestGrouping extends LuceneTestCase {
           } else {
             System.out.println("TEST: matched groups totalGroupedHitCount=" + groupsResult.totalGroupedHitCount);
             for(GroupDocs<BytesRef> gd : groupsResult.groups) {
-              System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits);
+              System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits.value);
               for(ScoreDoc sd : gd.scoreDocs) {
                 System.out.println("    id=" + docIDToID[sd.doc] + " score=" + sd.score);
               }
@@ -1009,7 +1010,7 @@ public class TestGrouping extends LuceneTestCase {
           } else {
             System.out.println("TEST: matched-merged groups totalGroupedHitCount=" + topGroupsShards.totalGroupedHitCount);
             for(GroupDocs<BytesRef> gd : topGroupsShards.groups) {
-              System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits);
+              System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits.value);
               for(ScoreDoc sd : gd.scoreDocs) {
                 System.out.println("    id=" + docIDToID[sd.doc] + " score=" + sd.score);
               }
@@ -1058,7 +1059,7 @@ public class TestGrouping extends LuceneTestCase {
             System.out.println("TEST: block groups totalGroupedHitCount=" + groupsResultBlocks.totalGroupedHitCount);
             boolean first = true;
             for(GroupDocs<BytesRef> gd : groupsResultBlocks.groups) {
-              System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue.utf8ToString()) + " totalHits=" + gd.totalHits);
+              System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue.utf8ToString()) + " totalHits=" + gd.totalHits.value);
               for(ScoreDoc sd : gd.scoreDocs) {
                 System.out.println("    id=" + docIDToIDBlocks[sd.doc] + " score=" + sd.score);
                 if (first) {
@@ -1261,7 +1262,7 @@ public class TestGrouping extends LuceneTestCase {
 
       // TODO
       // assertEquals(expectedGroup.maxScore, actualGroup.maxScore);
-      assertEquals(expectedGroup.totalHits, actualGroup.totalHits);
+      assertEquals(expectedGroup.totalHits.value, actualGroup.totalHits.value);
 
       final ScoreDoc[] expectedFDs = expectedGroup.scoreDocs;
       final ScoreDoc[] actualFDs = actualGroup.scoreDocs;

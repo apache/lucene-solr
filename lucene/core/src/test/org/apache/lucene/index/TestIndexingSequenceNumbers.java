@@ -126,7 +126,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
       DirectoryReader r = w.getReader();
       IndexSearcher s = newSearcher(r);
       TopDocs hits = s.search(new TermQuery(id), 1);
-      assertEquals("maxDoc: " + r.maxDoc(), 1, hits.totalHits);
+      assertEquals("maxDoc: " + r.maxDoc(), 1, hits.totalHits.value);
       Document doc = r.document(hits.scoreDocs[0].doc);
       assertEquals(maxThread, doc.getField("thread").numericValue().intValue());
       r.close();
@@ -270,7 +270,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
         TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
                                   
         if (expectedThreadIDs[id] != -1) {
-          assertEquals(1, hits.totalHits);
+          assertEquals(1, hits.totalHits.value);
           Document doc = r.document(hits.scoreDocs[0].doc);
           int actualThreadID = doc.getField("thread").numericValue().intValue();
           if (expectedThreadIDs[id] != actualThreadID) {
@@ -284,8 +284,8 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
             }
             assertEquals("id=" + id, expectedThreadIDs[id], actualThreadID);
           }
-        } else if (hits.totalHits != 0) {
-          System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs totalHits=" + hits.totalHits + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads);
+        } else if (hits.totalHits.value != 0) {
+          System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs totalHits=" + hits.totalHits.value + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads);
           for(int threadID=0;threadID<threadOps.size();threadID++) {
             for(Operation op : threadOps.get(threadID)) {
               if (id == op.id) {
@@ -293,7 +293,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
               }
             }
           }
-          assertEquals(0, hits.totalHits);
+          assertEquals(0, hits.totalHits.value);
         }
       }
       w.close();
@@ -439,7 +439,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
 
         // We pre-add all ids up front:
         assert expectedThreadIDs[id] != -1;
-        assertEquals(1, hits.totalHits);
+        assertEquals(1, hits.totalHits.value);
         int hitDoc = hits.scoreDocs[0].doc;
         assertEquals(hitDoc, docValues.advance(hitDoc));
         int actualThreadID = (int) docValues.longValue();

@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.TotalHits.Relation;
 
 /**
  * A {@link Collector} implementation that collects the top-scoring hits,
@@ -49,22 +50,20 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   private static class SimpleTopScoreDocCollector extends TopScoreDocCollector {
 
-    private final int numHits;
     private final boolean trackTotalHits;
-    private int sumMaxDoc;
-    private int maxCollectedExactly = -1;
 
     SimpleTopScoreDocCollector(int numHits, boolean trackTotalHits) {
       super(numHits);
-      this.numHits = numHits;
       this.trackTotalHits = trackTotalHits;
+      if (trackTotalHits == false) {
+        totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+      }
     }
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context)
         throws IOException {
       final int docBase = context.docBase;
-      sumMaxDoc += context.reader().maxDoc();
       return new ScorerLeafCollector() {
 
         @Override
@@ -100,28 +99,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
             // since we tie-break on doc id and collect in doc id order, we can require
             // the next float
             scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));
-            if (maxCollectedExactly < 0) {
-              assert totalHits == numHits;
-              maxCollectedExactly = doc + docBase;
-            }
           }
         }
 
       };
-    }
-
-    @Override
-    public TopDocs topDocs() {
-      TopDocs topDocs = super.topDocs();
-      if (trackTotalHits == false && maxCollectedExactly >= 0) {
-        // assume matches are evenly spread in the doc id space
-        // this may be completely off
-        long totalHitsEstimate = (long) numHits * sumMaxDoc / (maxCollectedExactly + 1);
-        // we take the max since the current topDocs.totalHits is a lower bound
-        // of the total hit count
-        topDocs.totalHits = Math.max(topDocs.totalHits, totalHitsEstimate);
-      }
-      return topDocs;
     }
 
     @Override
@@ -148,7 +129,9 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
     @Override
     protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
-      return results == null ? new TopDocs(totalHits, new ScoreDoc[0]) : new TopDocs(totalHits, results);
+      return results == null
+          ? new TopDocs(new TotalHits(totalHits, totalHitsRelation), new ScoreDoc[0])
+          : new TopDocs(new TotalHits(totalHits, totalHitsRelation), results);
     }
 
     @Override
@@ -240,7 +223,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       return EMPTY_TOPDOCS;
     }
 
-    return new TopDocs(totalHits, results);
+    return new TopDocs(new TotalHits(totalHits, totalHitsRelation), results);
   }
 
   @Override

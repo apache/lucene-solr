@@ -29,6 +29,7 @@ import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -100,7 +101,7 @@ public class LTRRescorer extends Rescorer {
   @Override
   public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs,
       int topN) throws IOException {
-    if ((topN == 0) || (firstPassTopDocs.totalHits == 0)) {
+    if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
       return firstPassTopDocs;
     }
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
@@ -111,7 +112,8 @@ public class LTRRescorer extends Rescorer {
       }
     });
 
-    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits));
+    assert firstPassTopDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
     final ScoreDoc[] reranked = new ScoreDoc[topN];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher

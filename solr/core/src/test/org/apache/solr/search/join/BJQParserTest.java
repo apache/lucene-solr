@@ -459,7 +459,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
       QParser parser = QParser.getParser(req.getParams().get("q"), null, req);
       query = parser.getQuery();
       final TopDocs topDocs = req.getSearcher().search(query, 10);
-      assertEquals(1, topDocs.totalHits);
+      assertEquals(1, topDocs.totalHits.value);
     }
     assertU(adoc("id", "12275", 
         "child_s", "l", "childparent_s", "e"));

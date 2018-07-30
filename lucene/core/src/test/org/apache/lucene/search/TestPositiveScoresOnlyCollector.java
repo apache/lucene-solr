@@ -108,7 +108,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     }
     TopDocs td = tdc.topDocs();
     ScoreDoc[] sd = td.scoreDocs;
-    assertEquals(numPositiveScores, td.totalHits);
+    assertEquals(numPositiveScores, td.totalHits.value);
     for (int i = 0; i < sd.length; i++) {
       assertTrue("only positive scores should return: " + sd[i].score, sd[i].score > 0);
     }

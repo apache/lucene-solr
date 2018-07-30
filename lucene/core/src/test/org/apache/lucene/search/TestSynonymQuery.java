@@ -92,7 +92,7 @@ public class TestSynonymQuery extends LuceneTestCase {
     searcher.search(query, collector);
     TopDocs topDocs = collector.topDocs();
     if (trackTotalHits) {
-      assertEquals(11, topDocs.totalHits);
+      assertEquals(11, topDocs.totalHits.value);
     }
     // All docs must have the same score
     for (int i = 0; i < topDocs.scoreDocs.length; ++i) {

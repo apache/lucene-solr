@@ -130,7 +130,7 @@ public class TestSuggestField extends LuceneTestCase {
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab"));
     TopSuggestDocs lookupDocs = suggestIndexSearcher.suggest(query, 3, false);
-    assertThat(lookupDocs.totalHits, equalTo(0L));
+    assertThat(lookupDocs.totalHits.value, equalTo(0L));
     reader.close();
     iw.close();
   }
@@ -474,7 +474,7 @@ public class TestSuggestField extends LuceneTestCase {
     // calling suggest with filter that does not match any documents should early terminate
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "abc_"), filter);
     TopSuggestDocs suggest = indexSearcher.suggest(query, num, false);
-    assertThat(suggest.totalHits, equalTo(0L));
+    assertThat(suggest.totalHits.value, equalTo(0L));
     reader.close();
     iw.close();
   }
@@ -502,7 +502,7 @@ public class TestSuggestField extends LuceneTestCase {
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "abc_"));
     TopSuggestDocs suggest = indexSearcher.suggest(query, num, false);
-    assertThat(suggest.totalHits, equalTo(0L));
+    assertThat(suggest.totalHits.value, equalTo(0L));
 
     reader.close();
     iw.close();
@@ -656,7 +656,7 @@ public class TestSuggestField extends LuceneTestCase {
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "abc_"));
     TopSuggestDocs suggest = indexSearcher.suggest(query, num, false);
-    assertEquals(num, suggest.totalHits);
+    assertEquals(num, suggest.totalHits.value);
     for (SuggestScoreDoc suggestScoreDoc : suggest.scoreLookupDocs()) {
       String key = suggestScoreDoc.key.toString();
       assertTrue(key.startsWith("abc_"));
@@ -696,7 +696,7 @@ public class TestSuggestField extends LuceneTestCase {
     for (String prefix : prefixes) {
       PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", prefix));
       TopSuggestDocs suggest = indexSearcher.suggest(query, num, false);
-      assertTrue(suggest.totalHits > 0);
+      assertTrue(suggest.totalHits.value > 0);
       float topScore = -1;
       for (SuggestScoreDoc scoreDoc : suggest.scoreLookupDocs()) {
         if (topScore != -1) {
@@ -747,7 +747,7 @@ public class TestSuggestField extends LuceneTestCase {
 
       PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", title));
       TopSuggestDocs suggest = indexSearcher.suggest(query, mappings.size(), false);
-      assertTrue(suggest.totalHits > 0);
+      assertTrue(suggest.totalHits.value > 0);
       boolean matched = false;
       for (ScoreDoc scoreDoc : suggest.scoreDocs) {
         matched = Float.compare(scoreDoc.score, (float) entry.getValue()) == 0;

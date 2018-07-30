@@ -33,6 +33,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
@@ -334,7 +335,7 @@ public class BlockGroupingCollector extends SimpleCollector {
       // by Sum/Avg instead of passing NaN:
       groups[downTo] = new GroupDocs<>(Float.NaN,
                                              groupMaxScore,
-                                             og.count,
+                                             new TotalHits(og.count, TotalHits.Relation.EQUAL_TO),
                                              topDocs.scoreDocs,
                                              null,
                                              groupSortValues);

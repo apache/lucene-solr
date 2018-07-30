@@ -1778,7 +1778,7 @@ public class TestIndexWriter extends LuceneTestCase {
     builder.add(new Term("body", "test"), 2);
     PhraseQuery pq = builder.build();
     // body:"just ? test"
-    assertEquals(1, is.search(pq, 5).totalHits);
+    assertEquals(1, is.search(pq, 5).totalHits.value);
     ir.close();
     dir.close();
   }
@@ -1810,7 +1810,7 @@ public class TestIndexWriter extends LuceneTestCase {
     builder.add(new Term("body", "test"), 3);
     PhraseQuery pq = builder.build();
     // body:"just ? ? test"
-    assertEquals(1, is.search(pq, 5).totalHits);
+    assertEquals(1, is.search(pq, 5).totalHits.value);
     ir.close();
     dir.close();
   }
@@ -3109,7 +3109,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(2, reader.docFreq(new Term("id", "1")));
     IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     Document document = reader.document(topDocs.scoreDocs[0].doc);
     assertEquals("2", document.get("version"));
 
@@ -3125,7 +3125,7 @@ public class TestIndexWriter extends LuceneTestCase {
     oldReader.close();
     searcher = new IndexSearcher(reader);
     topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     document = reader.document(topDocs.scoreDocs[0].doc);
     assertEquals("3", document.get("version"));
 
@@ -3138,7 +3138,7 @@ public class TestIndexWriter extends LuceneTestCase {
     oldReader.close();
     searcher = new IndexSearcher(reader);
     topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
-    assertEquals(0, topDocs.totalHits);
+    assertEquals(0, topDocs.totalHits.value);
     int numSoftDeleted = 0;
     for (SegmentCommitInfo info : writer.cloneSegmentInfos()) {
      numSoftDeleted += info.getSoftDelCount();
@@ -3261,10 +3261,10 @@ public class TestIndexWriter extends LuceneTestCase {
     for (String id : ids) {
       TopDocs topDocs = searcher.search(new TermQuery(new Term("id", id)), 10);
       if (updateSeveralDocs) {
-        assertEquals(2, topDocs.totalHits);
+        assertEquals(2, topDocs.totalHits.value);
         assertEquals(Math.abs(topDocs.scoreDocs[0].doc - topDocs.scoreDocs[1].doc), 1);
       } else {
-        assertEquals(1, topDocs.totalHits);
+        assertEquals(1, topDocs.totalHits.value);
       }
     }
     if (mixDeletes == false) {

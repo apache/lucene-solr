@@ -92,7 +92,7 @@ public abstract class DiversifiedTopDocsCollector extends
       return EMPTY_TOPDOCS;
     }
 
-    return new TopDocs(totalHits, results);
+    return new TopDocs(new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO), results);
   }
 
   protected ScoreDocKey insert(ScoreDocKey addition, int docBase,

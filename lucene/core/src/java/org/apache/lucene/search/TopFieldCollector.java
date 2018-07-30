@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
+import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -77,13 +78,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     return Arrays.asList(fields1).equals(Arrays.asList(fields2).subList(0, fields1.length));
   }
 
-  static int estimateRemainingHits(int hitCount, int doc, int maxDoc) {
-    double hitRatio = (double) hitCount / (doc + 1);
-    int remainingDocs = maxDoc - doc - 1;
-    int remainingHits = (int) (remainingDocs * hitRatio);
-    return remainingHits;
-  }
-
   /*
    * Implements a TopFieldCollector over one SortField criteria, with tracking
    * document scores and maxScore.
@@ -111,7 +105,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       final boolean canEarlyTerminate = trackTotalHits == false &&
           indexSort != null &&
           canEarlyTerminate(sort, indexSort);
-      final int initialTotalHits = totalHits;
 
       return new MultiComparatorLeafCollector(comparators, reverseMul) {
 
@@ -124,10 +117,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
               if (canEarlyTerminate) {
-                // scale totalHits linearly based on the number of docs
-                // and terminate collection
-                totalHits += estimateRemainingHits(totalHits - initialTotalHits, doc, context.reader().maxDoc());
-                earlyTerminated = true;
+                totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
                 throw new CollectionTerminatedException();
               } else {
                 // just move to the next doc
@@ -193,7 +183,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       final boolean canEarlyTerminate = trackTotalHits == false &&
           indexSort != null &&
           canEarlyTerminate(sort, indexSort);
-      final int initialTotalHits = totalHits;
       return new MultiComparatorLeafCollector(queue.getComparators(context), queue.getReverseMul()) {
 
         @Override
@@ -209,10 +198,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             if (cmp <= 0) {
               // not competitive since documents are visited in doc id order
               if (canEarlyTerminate) {
-                // scale totalHits linearly based on the number of docs
-                // and terminate collection
-                totalHits += estimateRemainingHits(totalHits - initialTotalHits, doc, context.reader().maxDoc());
-                earlyTerminated = true;
+                totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
                 throw new CollectionTerminatedException();
               } else {
                 // just move to the next doc
@@ -261,7 +247,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   FieldValueHitQueue.Entry bottom = null;
   boolean queueFull;
   int docBase;
-  boolean earlyTerminated = false;
   final boolean needsScores;
 
   // Declaring the constructor private prevents extending this class by anyone
@@ -423,7 +408,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     // If this is a maxScoring tracking collector and there were no results,
-    return new TopFieldDocs(totalHits, results, ((FieldValueHitQueue<Entry>) pq).getFields());
+    return new TopFieldDocs(new TotalHits(totalHits, totalHitsRelation), results, ((FieldValueHitQueue<Entry>) pq).getFields());
   }
 
   @Override
@@ -433,6 +418,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   /** Return whether collection terminated early. */
   public boolean isEarlyTerminated() {
-    return earlyTerminated;
+    return totalHitsRelation == Relation.GREATER_THAN_OR_EQUAL_TO;
   }
 }
