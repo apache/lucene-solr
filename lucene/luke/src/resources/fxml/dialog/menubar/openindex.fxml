@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.apache.lucene.luke.app.controllers.dialog.menubar.OpenIndexController">
+  <children>
+    <VBox prefHeight="300.0" prefWidth="500.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <children>
+        <AnchorPane prefHeight="90.0" prefWidth="600.0" VBox.vgrow="SOMETIMES">
+          <children>
+            <FlowPane prefHeight="40.0" prefWidth="600.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                      AnchorPane.topAnchor="0.0">
+              <children>
+                <Label text="%openindex.label.index_path">
+                  <FlowPane.margin>
+                    <Insets left="10.0" right="10.0" top="10.0"/>
+                  </FlowPane.margin>
+                </Label>
+                <ChoiceBox fx:id="indexPath" prefWidth="320.0">
+                  <FlowPane.margin>
+                    <Insets right="10.0" top="10.0"/>
+                  </FlowPane.margin>
+                </ChoiceBox>
+                <Button fx:id="browse" mnemonicParsing="false" text="Browse">
+                  <FlowPane.margin>
+                    <Insets right="10.0" top="10.0"/>
+                  </FlowPane.margin>
+                  <graphic>
+                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                      <image>
+                        <Image url="@/img/icon_folder-open_alt.png"/>
+                      </image>
+                    </ImageView>
+                  </graphic>
+                </Button>
+              </children>
+            </FlowPane>
+            <FlowPane layoutX="5.0" layoutY="50.0" prefHeight="40.0" prefWidth="600.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="40.0">
+              <children>
+                <CheckBox fx:id="readOnly" mnemonicParsing="false" text="%openindex.checkbox.readonly">
+                  <FlowPane.margin>
+                    <Insets left="10.0" right="10.0" top="10.0"/>
+                  </FlowPane.margin>
+                </CheckBox>
+                <ImageView fitHeight="12.0" fitWidth="12.0" pickOnBounds="true" preserveRatio="true">
+                  <FlowPane.margin>
+                    <Insets top="10.0"/>
+                  </FlowPane.margin>
+                  <image>
+                    <Image url="@/img/icon_lock.png"/>
+                  </image>
+                </ImageView>
+              </children>
+            </FlowPane>
+            <Separator prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                       AnchorPane.rightAnchor="0.0"/>
+          </children>
+        </AnchorPane>
+        <AnchorPane prefHeight="150.0" prefWidth="200.0" VBox.vgrow="SOMETIMES">
+          <children>
+            <Label text="%openindex.label.expert" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="10.0"/>
+            <FlowPane prefHeight="40.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                      AnchorPane.topAnchor="40.0">
+              <children>
+                <Label text="Directory implementation:">
+                  <FlowPane.margin>
+                    <Insets left="10.0" right="10.0"/>
+                  </FlowPane.margin>
+                </Label>
+                <ChoiceBox fx:id="dirImpl" prefWidth="350.0">
+                  <FlowPane.margin>
+                    <Insets right="10.0"/>
+                  </FlowPane.margin>
+                </ChoiceBox>
+              </children>
+            </FlowPane>
+            <FlowPane layoutX="10.0" layoutY="90.0" prefHeight="28.0" prefWidth="600.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="80.0">
+              <children>
+                <CheckBox fx:id="noReader" layoutX="20.0" layoutY="10.0" mnemonicParsing="false"
+                          text="%openindex.checkbox.no_reader">
+                  <FlowPane.margin>
+                    <Insets left="10.0"/>
+                  </FlowPane.margin>
+                </CheckBox>
+                <ImageView fitHeight="12.0" fitWidth="12.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_cone.png"/>
+                  </image>
+                  <FlowPane.margin>
+                    <Insets left="10.0"/>
+                  </FlowPane.margin>
+                </ImageView>
+              </children>
+            </FlowPane>
+            <FlowPane layoutY="108.0" prefHeight="28.0" prefWidth="600.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="140.0">
+              <children>
+                <Label text="IndexWriter config:">
+                  <FlowPane.margin>
+                    <Insets left="10.0"/>
+                  </FlowPane.margin>
+                </Label>
+              </children>
+            </FlowPane>
+            <FlowPane layoutX="-4.0" layoutY="124.0" prefHeight="28.0" prefWidth="600.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="170.0">
+              <children>
+                <CheckBox fx:id="useCompound" mnemonicParsing="false" text="%openindex.checkbox.use_compound">
+                  <FlowPane.margin>
+                    <Insets left="30.0" right="10.0"/>
+                  </FlowPane.margin>
+                </CheckBox>
+              </children>
+            </FlowPane>
+            <FlowPane layoutX="6.0" layoutY="150.0" prefHeight="28.0" prefWidth="600.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
+              <children>
+                <RadioButton fx:id="keepLastCommit" mnemonicParsing="false"
+                             text="%openindex.radio.keep_only_last_commit" userData="last">
+                  <FlowPane.margin>
+                    <Insets left="30.0"/>
+                  </FlowPane.margin>
+                  <toggleGroup>
+                    <ToggleGroup fx:id="keepCommitsGroup"/>
+                  </toggleGroup>
+                </RadioButton>
+                <RadioButton fx:id="keepAllCommits" layoutX="40.0" layoutY="10.0" mnemonicParsing="false"
+                             text="%openindex.radio.keep_all_commits" toggleGroup="$keepCommitsGroup" userData="all">
+                  <FlowPane.margin>
+                    <Insets left="10.0"/>
+                  </FlowPane.margin>
+                </RadioButton>
+              </children>
+            </FlowPane>
+            <Separator prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                       AnchorPane.rightAnchor="0.0"/>
+          </children>
+        </AnchorPane>
+        <AnchorPane prefHeight="60.0" prefWidth="600.0" VBox.vgrow="NEVER">
+          <children>
+            <FlowPane prefHeight="200.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="400.0"
+                      AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="10.0">
+              <children>
+                <Button fx:id="ok" mnemonicParsing="false" prefWidth="50.0" text="%button.ok">
+                  <FlowPane.margin>
+                    <Insets right="20.0"/>
+                  </FlowPane.margin>
+                </Button>
+                <Button fx:id="cancel" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" prefWidth="80.0"
+                        text="%button.cancel">
+                </Button>
+              </children>
+            </FlowPane>
+          </children>
+        </AnchorPane>
+      </children>
+    </VBox>
+  </children>
+</AnchorPane>

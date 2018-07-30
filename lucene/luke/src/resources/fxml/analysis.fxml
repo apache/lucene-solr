@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.image.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0"
+            prefWidth="830.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.apache.lucene.luke.app.controllers.AnalysisController">
+  <children>
+    <SplitPane dividerPositions="0.55" orientation="VERTICAL" prefHeight="600.0" prefWidth="830.0"
+               AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+               AnchorPane.topAnchor="0.0">
+      <items>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+          <children>
+            <HBox prefHeight="40.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                  AnchorPane.topAnchor="0.0">
+              <children>
+                <FlowPane alignment="CENTER_LEFT" prefHeight="40.0" prefWidth="200.0">
+                  <children>
+                    <RadioButton mnemonicParsing="false" selected="true" text="%analysis.radio.preset"
+                                 userData="preset">
+                      <FlowPane.margin>
+                        <Insets left="30.0"/>
+                      </FlowPane.margin>
+                      <toggleGroup>
+                        <ToggleGroup fx:id="analyzerGroup"/>
+                      </toggleGroup>
+                    </RadioButton>
+                    <RadioButton layoutX="30.0" layoutY="30.0" mnemonicParsing="false" text="%analysis.radio.custom"
+                                 toggleGroup="$analyzerGroup" userData="custom">
+                      <FlowPane.margin>
+                        <Insets left="30.0"/>
+                      </FlowPane.margin>
+                    </RadioButton>
+                  </children>
+                </FlowPane>
+                <FlowPane fx:id="customSettings" maxHeight="-Infinity" minHeight="-Infinity" prefHeight="30.0"
+                          HBox.hgrow="ALWAYS">
+                  <children>
+                    <Label text="%analysis.label.config_dir">
+                      <FlowPane.margin>
+                        <Insets bottom="5.0" left="20.0" top="5.0"/>
+                      </FlowPane.margin>
+                    </Label>
+                    <TextField fx:id="config" editable="false" prefWidth="100.0" promptText="Not selected">
+                      <FlowPane.margin>
+                        <Insets bottom="5.0" left="5.0" top="5.0"/>
+                      </FlowPane.margin>
+                    </TextField>
+                    <Button fx:id="browse" mnemonicParsing="false" text="%analysis.button.browse">
+                      <FlowPane.margin>
+                        <Insets bottom="5.0" left="5.0" top="5.0"/>
+                      </FlowPane.margin>
+                      <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                          <image>
+                            <Image url="@/img/icon_folder-open_alt.png"/>
+                          </image>
+                        </ImageView>
+                      </graphic>
+                    </Button>
+                    <Button fx:id="build" mnemonicParsing="false" text="%analysis.button.build_analyzser">
+                      <FlowPane.margin>
+                        <Insets bottom="5.0" left="20.0" top="5.0"/>
+                      </FlowPane.margin>
+                      <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                          <image>
+                            <Image url="@/img/icon_puzzle.png"/>
+                          </image>
+                        </ImageView>
+                      </graphic>
+                    </Button>
+                    <Hyperlink fx:id="loadJars" text="%analysis.hyperlink.load_jars">
+                      <FlowPane.margin>
+                        <Insets left="20.0"/>
+                      </FlowPane.margin>
+                    </Hyperlink>
+                  </children>
+                </FlowPane>
+              </children>
+            </HBox>
+            <AnchorPane fx:id="analyzerPane" layoutY="39.0" prefHeight="256.0" prefWidth="828.0"
+                        AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                        AnchorPane.topAnchor="40.0"/>
+          </children>
+        </AnchorPane>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+          <children>
+            <FlowPane minHeight="-Infinity" prefHeight="40.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+              <children>
+                <Label text="%analysis.label.selected_analyzer">
+                  <FlowPane.margin>
+                    <Insets left="10.0" top="10.0"/>
+                  </FlowPane.margin>
+                </Label>
+                <Label fx:id="selectedAnalyzer" prefWidth="400.0">
+                  <FlowPane.margin>
+                    <Insets left="10.0" top="10.0"/>
+                  </FlowPane.margin>
+                </Label>
+              </children>
+            </FlowPane>
+            <FlowPane minHeight="-Infinity" prefHeight="65.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="40.0">
+              <children>
+                <TextArea fx:id="inputText" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                          minWidth="-Infinity" prefHeight="60.0" prefWidth="700.0"
+                          promptText="%analysis.textarea.prompt" wrapText="true">
+                  <FlowPane.margin>
+                    <Insets left="10.0"/>
+                  </FlowPane.margin>
+                </TextArea>
+                <Button fx:id="test" mnemonicParsing="false" text="%analysis.button.test">
+                  <FlowPane.margin>
+                    <Insets left="10.0"/>
+                  </FlowPane.margin>
+                  <graphic>
+                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                      <image>
+                        <Image url="@/img/icon_lightbulb_alt.png"/>
+                      </image>
+                    </ImageView>
+                  </graphic>
+                </Button>
+              </children>
+            </FlowPane>
+            <Label layoutX="10.0" layoutY="123.0" text="%analysis.hint.show_attributes" AnchorPane.leftAnchor="10.0"
+                   AnchorPane.topAnchor="110.0"/>
+            <TableView fx:id="tokenTable" layoutX="6.0" layoutY="140.0" prefHeight="200.0" prefWidth="200.0"
+                       AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0"
+                       AnchorPane.topAnchor="130.0">
+              <columns>
+                <TableColumn fx:id="termColumn" minWidth="100.0" prefWidth="100.0" text="Term"/>
+                <TableColumn fx:id="attColumn" maxWidth="1.7976931348623157E308" prefWidth="75.0" text="Attributes"/>
+              </columns>
+              <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+              </columnResizePolicy>
+            </TableView>
+          </children>
+        </AnchorPane>
+      </items>
+    </SplitPane>
+  </children>
+</AnchorPane>

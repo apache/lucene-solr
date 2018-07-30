@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0"
+            prefWidth="900.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.apache.lucene.luke.app.controllers.fragments.analysis.CustomAnalyzerController">
+  <children>
+    <SplitPane dividerPositions="0.15" prefHeight="80.0" prefWidth="780.0" AnchorPane.leftAnchor="10.0"
+               AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="0.0">
+      <items>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="120.0">
+          <children>
+            <Label layoutX="14.0" layoutY="20.0" text="%analysis_custom.label.charfilters" AnchorPane.leftAnchor="20.0"
+                   AnchorPane.topAnchor="10.0"/>
+          </children>
+        </AnchorPane>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="100.0">
+          <children>
+            <Label text="%analysis_custom.label.selected" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="5.0"/>
+            <ChoiceBox fx:id="charFilter" layoutX="68.0" layoutY="30.0" prefHeight="28.0" prefWidth="450.0"
+                       AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="100.0" AnchorPane.rightAnchor="120.0"/>
+            <Button fx:id="editCF" layoutX="675.0" layoutY="9.0" mnemonicParsing="false"
+                    text="%analysis_custom.label.edit" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="5.0">
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_pencil.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Button>
+            <ListView fx:id="selectedCFs" layoutX="62.0" layoutY="-95.0" prefHeight="30.0" prefWidth="636.0"
+                      AnchorPane.leftAnchor="100.0" AnchorPane.rightAnchor="120.0" AnchorPane.topAnchor="5.0"/>
+            <Label layoutX="10.0" layoutY="50.0" text="%analysis_custom.label.add" AnchorPane.bottomAnchor="10.0"
+                   AnchorPane.leftAnchor="10.0">
+              <graphic>
+                <ImageView fitHeight="12.0" fitWidth="12.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_plus.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Label>
+
+          </children>
+        </AnchorPane>
+      </items>
+    </SplitPane>
+    <SplitPane dividerPositions="0.15" layoutY="80.0" prefHeight="80.0" prefWidth="780.0" AnchorPane.leftAnchor="10.0"
+               AnchorPane.rightAnchor="10.0">
+      <items>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="120.0">
+          <children>
+            <Label layoutX="14.0" layoutY="20.0" text="%analysis_custom.label.tokenizer" AnchorPane.leftAnchor="20.0"
+                   AnchorPane.topAnchor="10.0"/>
+          </children>
+        </AnchorPane>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="58.0" prefWidth="634.0">
+          <children>
+            <Label text="%analysis_custom.label.selected" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="5.0"/>
+            <ChoiceBox fx:id="tokenizer" layoutX="68.0" layoutY="30.0" prefWidth="450.0" AnchorPane.bottomAnchor="5.0"
+                       AnchorPane.leftAnchor="100.0" AnchorPane.rightAnchor="120.0"/>
+            <Button fx:id="editTkn" layoutX="675.0" layoutY="9.0" mnemonicParsing="false"
+                    text="%analysis_custom.label.edit" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="5.0">
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_pencil.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Button>
+            <TextField fx:id="selectedTkn" editable="false" layoutX="62.0" layoutY="-95.0" prefHeight="30.0"
+                       prefWidth="200.0" AnchorPane.leftAnchor="100.0" AnchorPane.rightAnchor="120.0"
+                       AnchorPane.topAnchor="5.0"/>
+            <Label layoutX="10.0" layoutY="50.0" text="%analysis_custom.label.set" AnchorPane.bottomAnchor="10.0"
+                   AnchorPane.leftAnchor="10.0">
+              <graphic>
+                <ImageView fitHeight="12.0" fitWidth="12.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_pushpin_alt.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Label>
+          </children>
+        </AnchorPane>
+      </items>
+    </SplitPane>
+    <SplitPane dividerPositions="0.15" layoutY="160.0" prefHeight="80.0" prefWidth="780.0" AnchorPane.leftAnchor="10.0"
+               AnchorPane.rightAnchor="10.0">
+      <items>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="120.0">
+          <children>
+            <Label layoutX="14.0" layoutY="20.0" text="%analysis_custom.label.tokenfilters" AnchorPane.leftAnchor="20.0"
+                   AnchorPane.topAnchor="10.0"/>
+          </children>
+        </AnchorPane>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="0.0" prefWidth="100.0">
+          <children>
+            <Label text="%analysis_custom.label.selected" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="5.0"/>
+            <ChoiceBox fx:id="tokenFilter" layoutX="68.0" layoutY="30.0" prefWidth="150.0" AnchorPane.bottomAnchor="5.0"
+                       AnchorPane.leftAnchor="100.0" AnchorPane.rightAnchor="120.0"/>
+            <Button fx:id="editTF" layoutX="662.0" layoutY="9.0" mnemonicParsing="false"
+                    text="%analysis_custom.label.edit" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="5.0">
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_pencil.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Button>
+            <ListView fx:id="selectedTFs" layoutX="62.0" layoutY="-95.0" prefHeight="30.0" prefWidth="200.0"
+                      AnchorPane.leftAnchor="100.0" AnchorPane.rightAnchor="120.0" AnchorPane.topAnchor="5.0"/>
+            <Label layoutX="12.0" layoutY="50.0" text="%analysis_custom.label.add" AnchorPane.bottomAnchor="10.0"
+                   AnchorPane.leftAnchor="10.0">
+              <graphic>
+                <ImageView fitHeight="12.0" fitWidth="12.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_plus.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Label>
+          </children>
+        </AnchorPane>
+      </items>
+    </SplitPane>
+  </children>
+</AnchorPane>

@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0"
+            prefWidth="830.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.apache.lucene.luke.app.controllers.DocumentsController">
+  <children>
+    <SplitPane dividerPositions="0.4" orientation="VERTICAL" prefHeight="600.0" prefWidth="830.0"
+               AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+               AnchorPane.topAnchor="0.0">
+      <items>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+          <children>
+            <HBox prefHeight="235.0" prefWidth="828.0" AnchorPane.bottomAnchor="0.0"
+                  AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+              <children>
+                <AnchorPane prefHeight="235.0" prefWidth="200.0">
+                  <children>
+                    <Label layoutX="10.0" layoutY="5.0" text="%documents.label.browse_doc_by_idx"
+                           AnchorPane.leftAnchor="5.0" AnchorPane.topAnchor="5.0"/>
+                    <FlowPane prefHeight="50.0" prefWidth="200.0" AnchorPane.leftAnchor="5.0"
+                              AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="30.0">
+                      <children>
+                        <Spinner fx:id="docNum" editable="true" layoutX="5.0" layoutY="142.0"
+                                 prefHeight="28.0" prefWidth="130.0"
+                                 styleClass="split-arrows-horizontal"
+                                 AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="30.0">
+                        </Spinner>
+                        <Label fx:id="maxDocs" text="in ? docs">
+                          <FlowPane.margin>
+                            <Insets left="10.0"/>
+                          </FlowPane.margin>
+                        </Label>
+                      </children>
+                    </FlowPane>
+
+                    <Hyperlink fx:id="mltSearch" layoutX="85.0" layoutY="75.0"
+                               text="%documents.hyperlink.mlt" AnchorPane.rightAnchor="10.0"/>
+                    <Button fx:id="addDoc" mnemonicParsing="false" text="%documents.button.add"
+                            AnchorPane.bottomAnchor="50" AnchorPane.rightAnchor="10.0">
+                      <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true"
+                                   preserveRatio="true">
+                          <image>
+                            <Image url="@/img/icon_plus-box.png"/>
+                          </image>
+                        </ImageView>
+                      </graphic>
+                    </Button>
+                    <Separator layoutX="181.0" layoutY="3.0" orientation="VERTICAL"
+                               prefHeight="229.0" prefWidth="9.0" AnchorPane.rightAnchor="0.0"/>
+                  </children>
+                </AnchorPane>
+                <AnchorPane prefHeight="235.0" prefWidth="320.0">
+                  <children>
+                    <Label layoutX="10.0" layoutY="5.0" text="%documents.label.browse_terms"
+                           AnchorPane.leftAnchor="5.0" AnchorPane.topAnchor="5.0"/>
+                    <ChoiceBox fx:id="field" layoutX="10.0" layoutY="29.0" prefHeight="28.0"
+                               prefWidth="120.0" AnchorPane.leftAnchor="5.0"
+                               AnchorPane.topAnchor="30.0"/>
+                    <Separator layoutX="316.0" orientation="VERTICAL" prefHeight="235.0"
+                               prefWidth="9.0" AnchorPane.rightAnchor="0.0"/>
+                    <FlowPane layoutX="13.0" layoutY="59.0" prefHeight="150.0" prefWidth="200.0"
+                              AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0"
+                              AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="70.0">
+                      <children>
+                        <Button fx:id="firstTerm" mnemonicParsing="false" prefHeight="28.0"
+                                prefWidth="110.0" text="%documents.button.first_term">
+                          <FlowPane.margin>
+                            <Insets right="10.0"/>
+                          </FlowPane.margin>
+                          <graphic>
+                            <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true"
+                                       preserveRatio="true">
+                              <image>
+                                <Image url="@/img/arrow_carrot-2left.png"/>
+                              </image>
+                            </ImageView>
+                          </graphic>
+                        </Button>
+                        <TextField fx:id="term" prefHeight="28.0" prefWidth="120.0">
+                          <FlowPane.margin>
+                            <Insets right="10.0"/>
+                          </FlowPane.margin>
+                        </TextField>
+                        <Button fx:id="nextTerm" mnemonicParsing="false"
+                                text="%documents.button.next"/>
+                      </children>
+                    </FlowPane>
+                  </children>
+                </AnchorPane>
+                <AnchorPane maxWidth="1.7976931348623157E308" prefHeight="235.0" prefWidth="310.0">
+                  <children>
+                    <Label layoutX="10.0" layoutY="5.0" text="%documents.label.browse_doc_by_term"
+                           AnchorPane.leftAnchor="5.0" AnchorPane.topAnchor="5.0"/>
+                    <TextField fx:id="showedTerm" editable="false" layoutY="31.0" prefHeight="28.0"
+                               prefWidth="120.0" AnchorPane.leftAnchor="5.0"
+                               AnchorPane.topAnchor="30.0"/>
+                    <FlowPane prefHeight="50.0" prefWidth="200.0" AnchorPane.leftAnchor="5.0"
+                              AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="70.0">
+                      <children>
+                        <Button fx:id="firstTermDoc" mnemonicParsing="false" prefHeight="28.0"
+                                prefWidth="110.0" text="%documents.button.first_termdoc">
+                          <FlowPane.margin>
+                            <Insets right="10.0"/>
+                          </FlowPane.margin>
+                          <graphic>
+                            <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true"
+                                       preserveRatio="true">
+                              <image>
+                                <Image url="@/img/arrow_carrot-2left.png"/>
+                              </image>
+                            </ImageView>
+                          </graphic>
+                        </Button>
+                        <TextField fx:id="termDocIdx" editable="false" prefHeight="28.0"
+                                   prefWidth="50.0">
+                          <FlowPane.margin>
+                            <Insets right="10.0"/>
+                          </FlowPane.margin>
+                        </TextField>
+                        <Button fx:id="nextTermDoc" mnemonicParsing="false"
+                                text="%documents.button.next">
+                          <FlowPane.margin>
+                            <Insets right="10.0"/>
+                          </FlowPane.margin>
+                        </Button>
+                        <Label fx:id="termDocsNum" prefHeight="18.0" prefWidth="120.0"
+                               text="in ? docs">
+                          <FlowPane.margin>
+                            <Insets right="10.0"/>
+                          </FlowPane.margin>
+                        </Label>
+                      </children>
+                    </FlowPane>
+                    <TableView fx:id="posTable" layoutX="10.0" layoutY="106.0"
+                               maxHeight="1.7976931348623157E308" maxWidth="-Infinity"
+                               minWidth="-Infinity" prefHeight="235.0" prefWidth="380.0"
+                               AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0"
+                               AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="110.0">
+                      <columns>
+                        <TableColumn fx:id="posColumn" maxWidth="-Infinity" minWidth="80.0"
+                                     prefWidth="60.0" resizable="false" sortable="false"
+                                     text="Position"/>
+                        <TableColumn fx:id="offsetColumn" maxWidth="100.0" minWidth="120.0"
+                                     prefWidth="100.0" resizable="false" sortable="false"
+                                     text="Offsets"/>
+                        <TableColumn fx:id="payloadColumn" maxWidth="1.7976931348623157E308"
+                                     minWidth="170.0" prefWidth="160.0" sortable="false"
+                                     text="Payload"/>
+                      </columns>
+                    </TableView>
+                  </children>
+                  <HBox.margin>
+                    <Insets/>
+                  </HBox.margin>
+                </AnchorPane>
+              </children>
+            </HBox>
+          </children>
+        </AnchorPane>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+          <children>
+            <Label text="%documents.label.doc_num">
+              <padding>
+                <Insets left="10.0" top="10.0"/>
+              </padding>
+              <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@/img/icon_document_alt.png"/>
+                  </image>
+                </ImageView>
+              </graphic>
+            </Label>
+            <Label fx:id="showedDocNum" layoutX="130.0" layoutY="6.0" prefHeight="28.0" prefWidth="55.0"/>
+            <TableView fx:id="documentTable" layoutX="12.0" layoutY="49.0"
+                       maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+                       prefHeight="309.0" prefWidth="810.0" AnchorPane.bottomAnchor="5.0"
+                       AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0"
+                       AnchorPane.topAnchor="40.0">
+              <columns>
+                <TableColumn fx:id="fieldColumn" editable="false" minWidth="120.0" prefWidth="120.0"
+                             text="Field"/>
+                <TableColumn fx:id="flagColumn" editable="false" maxWidth="180.0" minWidth="180.0"
+                             prefWidth="180.0" sortable="false"/>
+                <TableColumn fx:id="normColumn" editable="false" minWidth="50.0" prefWidth="50.0"
+                             sortable="false" text="Norm"/>
+                <TableColumn fx:id="valueColumn" editable="false" maxWidth="1.7976931348623157E308"
+                             minWidth="520.0" prefWidth="520.0" sortable="false" text="Value"/>
+              </columns>
+              <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+              </columnResizePolicy>
+            </TableView>
+          </children>
+        </AnchorPane>
+      </items>
+    </SplitPane>
+  </children>
+</AnchorPane>

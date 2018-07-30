@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ScrollPane hbarPolicy="NEVER" prefHeight="600.0" prefWidth="470.0" vbarPolicy="ALWAYS" AnchorPane.bottomAnchor="0.0"
+            AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+            xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.apache.lucene.luke.app.controllers.fragments.search.QueryParserController">
+  <content>
+    <VBox fillWidth="false">
+      <children>
+        <FlowPane layoutX="10.0" layoutY="48.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <RadioButton mnemonicParsing="false" selected="true" text="StandardQueryParser" userData="standard">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+              <toggleGroup>
+                <ToggleGroup fx:id="parserGroup"/>
+              </toggleGroup>
+            </RadioButton>
+            <RadioButton mnemonicParsing="false" text="Classic QueryParser" toggleGroup="$parserGroup"
+                         userData="classic">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </RadioButton>
+          </children>
+        </FlowPane>
+
+        <Separator prefWidth="470.0">
+          <padding>
+            <Insets top="5.0"/>
+          </padding>
+        </Separator>
+
+        <FlowPane prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.df">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </Label>
+            <ChoiceBox fx:id="defField" prefWidth="120.0">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </ChoiceBox>
+            <Label text="%search_parser.label.dop">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </Label>
+            <ChoiceBox fx:id="defOp" prefWidth="60.0">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </ChoiceBox>
+          </children>
+          <VBox.margin>
+            <Insets/>
+          </VBox.margin>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="10.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <CheckBox fx:id="posIncr" mnemonicParsing="false" text="%search_parser.checkbox.pos_incr">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </CheckBox>
+            <CheckBox fx:id="leadWildcard" layoutX="10.0" layoutY="20.0" mnemonicParsing="false"
+                      text="%search_parser.checkbox.lead_wildcard">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </CheckBox>
+          </children>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="48.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <CheckBox fx:id="splitWs" mnemonicParsing="false" text="%search_parser.checkbox.split_ws">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </CheckBox>
+          </children>
+        </FlowPane>
+
+        <Separator prefWidth="470.0">
+          <padding>
+            <Insets top="5.0"/>
+          </padding>
+        </Separator>
+
+        <FlowPane layoutX="10.0" layoutY="108.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.phrase_query">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </Label>
+          </children>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="108.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <CheckBox fx:id="genPq" mnemonicParsing="false" text="%search_parser.checkbox.gen_pq">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </CheckBox>
+          </children>
+          <VBox.margin>
+            <Insets/>
+          </VBox.margin>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="108.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <CheckBox fx:id="genMTS" mnemonicParsing="false" text="%search_parser.checkbox.gen_mts">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </CheckBox>
+          </children>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="108.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.phrase_slop">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </Label>
+            <TextField fx:id="slop" prefWidth="60">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </TextField>
+            <Label text="%search_parser.label.int_required">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </Label>
+          </children>
+        </FlowPane>
+
+        <Separator prefWidth="470.0">
+          <padding>
+            <Insets top="5.0"/>
+          </padding>
+        </Separator>
+
+        <FlowPane layoutX="10.0" layoutY="108.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.fuzzy_query">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </Label>
+          </children>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="108.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.fuzzy_minsim">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </Label>
+            <TextField fx:id="fuzzyMinSim" prefWidth="60">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </TextField>
+            <Label text="%search_parser.label.float_required">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </Label>
+          </children>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="108.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.fuzzy_preflen">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </Label>
+            <TextField fx:id="fuzzyPrefLen" prefWidth="60">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </TextField>
+            <Label text="%search_parser.label.int_required">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </Label>
+          </children>
+        </FlowPane>
+        <Separator prefWidth="470.0">
+          <padding>
+            <Insets top="5.0"/>
+          </padding>
+        </Separator>
+
+
+        <FlowPane layoutX="10.0" layoutY="108.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.daterange_query">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </Label>
+          </children>
+        </FlowPane>
+        <FlowPane prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.date_res">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </Label>
+            <ChoiceBox fx:id="dateRes" prefWidth="120.0">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </ChoiceBox>
+          </children>
+        </FlowPane>
+        <FlowPane layoutX="30.0" layoutY="108.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.locale">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </Label>
+            <TextField fx:id="locale" prefWidth="120">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </TextField>
+            <Label text="%search_parser.label.timezone">
+              <FlowPane.margin>
+                <Insets left="30.0"/>
+              </FlowPane.margin>
+            </Label>
+            <TextField fx:id="timeZone" prefWidth="120">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </TextField>
+          </children>
+        </FlowPane>
+
+        <Separator prefWidth="470.0">
+          <padding>
+            <Insets top="5.0"/>
+          </padding>
+        </Separator>
+        <FlowPane layoutX="10.0" layoutY="382.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.pointrange_query">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </Label>
+          </children>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="382.0" prefHeight="30.0" prefWidth="450.0">
+          <children>
+            <Label text="%search_parser.label.pointrange_hint">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </Label>
+          </children>
+        </FlowPane>
+
+        <TableView fx:id="pvFieldsTable" editable="true" minHeight="80" minWidth="320" prefHeight="80.0"
+                   prefWidth="320.0">
+          <columns>
+            <TableColumn fx:id="fieldColumn" editable="false" maxWidth="150.0" minWidth="150.0" prefWidth="150.0"
+                         sortable="false" text="Field"/>
+            <TableColumn fx:id="typeColumn" minWidth="150.0" prefWidth="150.0" sortable="false" text="Numeric Type"/>
+          </columns>
+          <VBox.margin>
+            <Insets left="30.0"/>
+          </VBox.margin>
+        </TableView>
+
+      </children>
+      <padding>
+        <Insets bottom="10.0" top="10.0"/>
+      </padding>
+    </VBox>
+  </content>
+</ScrollPane>

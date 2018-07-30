@@ -30,6 +30,7 @@
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/grouping/grouping.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/highlighter/highlighter.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/join/join.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/luke/luke.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/memory/memory.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/misc/misc.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/queries/queries.iml" />

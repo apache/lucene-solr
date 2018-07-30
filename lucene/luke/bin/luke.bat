@@ -1,0 +1,1 @@
+start javaw -classpath .lib\* org.apache.lucene.luke.app.desktop.LukeMain

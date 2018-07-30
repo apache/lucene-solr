@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<AnchorPane prefHeight="500.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.apache.lucene.luke.app.controllers.dialog.documents.IndexOptionsController">
+  <children>
+    <VBox layoutX="7.0" layoutY="138.0" prefHeight="600.0" prefWidth="600.0" AnchorPane.bottomAnchor="100.0"
+          AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <children>
+        <FlowPane prefHeight="40.0" prefWidth="200.0">
+          <children>
+            <CheckBox fx:id="stored" mnemonicParsing="false" text="%idx_options.checkbox.stored">
+              <FlowPane.margin>
+                <Insets/>
+              </FlowPane.margin>
+            </CheckBox>
+            <CheckBox fx:id="tokenized" layoutX="30.0" layoutY="20.0" mnemonicParsing="false"
+                      text="%idx_options.checkbox.tokenized">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </CheckBox>
+            <CheckBox fx:id="omitNorms" layoutX="246.0" layoutY="20.0" mnemonicParsing="false"
+                      text="%idx_options.checkbox.omit_norm">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </CheckBox>
+          </children>
+          <padding>
+            <Insets left="20.0" top="10.0"/>
+          </padding>
+          <VBox.margin>
+            <Insets/>
+          </VBox.margin>
+        </FlowPane>
+        <Separator prefWidth="200.0">
+          <VBox.margin>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+          </VBox.margin>
+        </Separator>
+        <FlowPane prefHeight="40.0" prefWidth="200.0">
+          <padding>
+            <Insets left="20.0" top="10.0"/>
+          </padding>
+          <children>
+            <Label text="%idx_options.label.index_options"/>
+            <ChoiceBox fx:id="idxOptions" prefWidth="250.0">
+              <opaqueInsets>
+                <Insets/>
+              </opaqueInsets>
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </ChoiceBox>
+          </children>
+        </FlowPane>
+        <Separator layoutX="20.0" layoutY="56.0" prefWidth="200.0">
+          <VBox.margin>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+          </VBox.margin>
+        </Separator>
+        <FlowPane prefHeight="40.0" prefWidth="200.0">
+          <VBox.margin>
+            <Insets/>
+          </VBox.margin>
+          <padding>
+            <Insets left="20.0" top="10.0"/>
+          </padding>
+          <children>
+            <CheckBox fx:id="storeTv" mnemonicParsing="false" text="%idx_options.checkbox.store_tv"/>
+          </children>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="102.0" prefHeight="40.0" prefWidth="200.0">
+          <children>
+            <CheckBox fx:id="storeTvPos" mnemonicParsing="false" text="%idx_options.checkbox.store_tv_pos"/>
+            <CheckBox fx:id="storeTvOff" layoutX="50.0" layoutY="20.0" mnemonicParsing="false"
+                      text="%idx_options.checkbox.store_tv_off">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </CheckBox>
+            <CheckBox fx:id="storeTvPay" layoutX="295.0" layoutY="20.0" mnemonicParsing="false"
+                      text="%idx_options.checkbox.store_tv_pay">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </CheckBox>
+          </children>
+          <padding>
+            <Insets left="40.0" top="10.0"/>
+          </padding>
+        </FlowPane>
+        <Separator layoutX="20.0" layoutY="99.0" prefWidth="200.0">
+          <VBox.margin>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+          </VBox.margin>
+        </Separator>
+        <FlowPane layoutX="10.0" layoutY="59.0" prefHeight="40.0" prefWidth="200.0">
+          <children>
+            <Label text="%idx_options.label.dv_type"/>
+            <ChoiceBox fx:id="dvType" prefWidth="250.0">
+              <opaqueInsets>
+                <Insets/>
+              </opaqueInsets>
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </ChoiceBox>
+          </children>
+          <padding>
+            <Insets left="20.0" top="10.0"/>
+          </padding>
+        </FlowPane>
+        <Separator layoutX="20.0" layoutY="188.0" prefWidth="200.0">
+          <VBox.margin>
+            <Insets left="10.0" right="10.0"/>
+          </VBox.margin>
+          <padding>
+            <Insets bottom="10.0" top="10.0"/>
+          </padding>
+        </Separator>
+        <FlowPane layoutX="10.0" layoutY="191.0" prefHeight="40.0" prefWidth="200.0">
+          <children>
+            <Label text="%idx_options.label.point_dims"/>
+          </children>
+          <padding>
+            <Insets left="20.0" top="10.0"/>
+          </padding>
+        </FlowPane>
+        <FlowPane layoutX="10.0" layoutY="234.0" prefHeight="40.0" prefWidth="200.0">
+          <children>
+            <Label text="%idx_options.label.point_dc"/>
+            <TextField fx:id="pvDimCount" prefWidth="60">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </TextField>
+            <Label text="%idx_options.label.point_nb">
+              <FlowPane.margin>
+                <Insets left="20.0"/>
+              </FlowPane.margin>
+            </Label>
+            <TextField fx:id="pvDimNumB" prefWidth="60">
+              <FlowPane.margin>
+                <Insets left="10.0"/>
+              </FlowPane.margin>
+            </TextField>
+          </children>
+          <padding>
+            <Insets left="40.0" top="10.0"/>
+          </padding>
+        </FlowPane>
+      </children>
+    </VBox>
+    <FlowPane layoutX="-21.0" layoutY="486.0" prefHeight="50.0" prefWidth="150.0" AnchorPane.bottomAnchor="20.0"
+              AnchorPane.rightAnchor="20.0">
+      <children>
+        <Button fx:id="ok" mnemonicParsing="false" text="%button.ok"/>
+        <Button fx:id="cancel" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="%button.cancel">
+          <FlowPane.margin>
+            <Insets left="20.0"/>
+          </FlowPane.margin>
+        </Button>
+      </children>
+    </FlowPane>
+  </children>
+</AnchorPane>
