@@ -181,6 +181,9 @@ Bug Fixes
 
 * SOLR-12597: Migrate API should fail requests that do not specify split.key parameter (shalin)
 
+* SOLR-12477: An update would return a client error(400) if it hit a AlreadyClosedException.
+  We now return the error as a server error(500) instead (Jeffery via Varun Thacker)
+
 Optimizations
 ----------------------
 
