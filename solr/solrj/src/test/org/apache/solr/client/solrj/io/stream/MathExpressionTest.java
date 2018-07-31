@@ -3006,8 +3006,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(sample.size(), 2);
     Number sample1 = sample.get(0);
     Number sample2 = sample.get(1);
-    assertTrue(sample1.doubleValue() > -30 && sample1.doubleValue() < 30);
-    assertTrue(sample2.doubleValue() > 50 && sample2.doubleValue() < 250);
+    assertTrue(sample.toString(), sample1.doubleValue() > -30 && sample1.doubleValue() < 30);
+    assertTrue(sample.toString(), sample2.doubleValue() > 50 && sample2.doubleValue() < 250);
 
     Number density = (Number)tuples.get(0).get("j");
     assertEquals(density.doubleValue(), 0.007852638121596995, .00001);
