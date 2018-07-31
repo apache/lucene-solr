@@ -116,10 +116,10 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
                    int maxDocsPerGroup, boolean getMaxScores) {
       this.needsScores = getMaxScores || withinGroupSort.needsScores();
       if (withinGroupSort == Sort.RELEVANCE) {
-        supplier = () -> new TopDocsAndMaxScoreCollector(true, TopScoreDocCollector.create(maxDocsPerGroup), null);
+        supplier = () -> new TopDocsAndMaxScoreCollector(true, TopScoreDocCollector.create(maxDocsPerGroup, Integer.MAX_VALUE), null);
       } else {
         supplier = () -> {
-          TopFieldCollector topDocsCollector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, true); // TODO: disable exact counts?
+          TopFieldCollector topDocsCollector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, Integer.MAX_VALUE); // TODO: disable exact counts?
           MaxScoreCollector maxScoreCollector = getMaxScores ? new MaxScoreCollector() : null;
           return new TopDocsAndMaxScoreCollector(false, topDocsCollector, maxScoreCollector);
         };

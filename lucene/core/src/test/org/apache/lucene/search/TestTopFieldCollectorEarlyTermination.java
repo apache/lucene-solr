@@ -136,8 +136,8 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         } else {
           after = null;
         }
-        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, true);
-        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, false);
+        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, Integer.MAX_VALUE);
+        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, 1);
 
         final Query query;
         if (random().nextBoolean()) {
@@ -156,10 +156,10 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
           assertTrue(collector2.isEarlyTerminated());
         }
         if (collector2.isEarlyTerminated()) {
-          assertTrue(td2.totalHits >= td1.scoreDocs.length);
-          assertTrue(td2.totalHits <= reader.maxDoc());
+          assertTrue(td2.totalHits.value >= td1.scoreDocs.length);
+          assertTrue(td2.totalHits.value <= reader.maxDoc());
         } else {
-          assertEquals(td2.totalHits, td1.totalHits);
+          assertEquals(td2.totalHits.value, td1.totalHits.value);
         }
         assertTopDocsEquals(td1.scoreDocs, td2.scoreDocs);
       }

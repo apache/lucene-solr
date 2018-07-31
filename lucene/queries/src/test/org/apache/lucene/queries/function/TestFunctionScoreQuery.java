@@ -109,7 +109,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
 
     int expectedDocs[] = new int[]{ 4, 7, 9 };
     TopDocs docs = searcher.search(q, 4);
-    assertEquals(expectedDocs.length, docs.totalHits);
+    assertEquals(expectedDocs.length, docs.totalHits.value);
     for (int i = 0; i < expectedDocs.length; i++) {
       assertEquals(docs.scoreDocs[i].doc, expectedDocs[i]);
     }
@@ -131,7 +131,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
 
     int[] expectedDocs = new int[]{ 4, 7, 9, 8, 12 };
     TopDocs docs = searcher.search(fq, 5);
-    assertEquals(plain.totalHits, docs.totalHits);
+    assertEquals(plain.totalHits.value, docs.totalHits.value);
     for (int i = 0; i < expectedDocs.length; i++) {
       assertEquals(expectedDocs[i], docs.scoreDocs[i].doc);
     }
@@ -155,7 +155,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
 
     int[] expectedDocs = new int[]{ 6, 1, 0, 2, 8 };
     TopDocs docs = searcher.search(fq, 20);
-    assertEquals(plain.totalHits, docs.totalHits);
+    assertEquals(plain.totalHits.value, docs.totalHits.value);
     for (int i = 0; i < expectedDocs.length; i++) {
       assertEquals(expectedDocs[i], docs.scoreDocs[i].doc);
     }
@@ -177,7 +177,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
 
     Query boosted = new BoostQuery(q1, 2);
     TopDocs afterboost = searcher.search(boosted, 5);
-    assertEquals(plain.totalHits, afterboost.totalHits);
+    assertEquals(plain.totalHits.value, afterboost.totalHits.value);
     for (int i = 0; i < 5; i++) {
       assertEquals(plain.scoreDocs[i].doc, afterboost.scoreDocs[i].doc);
       assertEquals(plain.scoreDocs[i].score, afterboost.scoreDocs[i].score / 2, 0.0001);

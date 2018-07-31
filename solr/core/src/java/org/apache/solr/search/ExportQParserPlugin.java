@@ -30,6 +30,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.params.SolrParams;
@@ -180,7 +181,7 @@ public class ExportQParserPlugin extends QParserPlugin {
 
       ScoreDoc[] scoreDocs = getScoreDocs(howMany);
       assert scoreDocs.length <= totalHits;
-      return new TopDocs(totalHits, scoreDocs);
+      return new TopDocs(new TotalHits(totalHits, totalHitsRelation), scoreDocs);
     }
 
     @Override

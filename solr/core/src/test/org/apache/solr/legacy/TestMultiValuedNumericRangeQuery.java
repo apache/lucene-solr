@@ -75,7 +75,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       LegacyNumericRangeQuery<Integer> tq= LegacyNumericRangeQuery.newIntRange("trie", lower, upper, true, true);
       TopDocs trTopDocs = searcher.search(cq, 1);
       TopDocs nrTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits, nrTopDocs.totalHits );
+      assertEquals("Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits.value, nrTopDocs.totalHits.value );
     }
     reader.close();
     directory.close();

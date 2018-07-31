@@ -59,7 +59,7 @@ Jetty 9.4.11.v20180605
 Upgrade Notes
 ----------------------
 
-* The data-driven schema no longer returns the *_str field-copy of text fields by default. The *_str field is still 
+* The data-driven schema no longer returns the *_str field-copy of text fields by default. The *_str field is still
   created and can be used for e.g. sorting, but to retrieve it you now need to explicitly list it in "fl" (SOLR-12350)
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
@@ -118,6 +118,17 @@ New Features
   of facets.  This also allows additional local params to be specified for if the aggregation function
   can take advantage of them.  (hossman)
 
+* SOLR-12581: the JSON Facet 'relatedness()' aggregate function now supports a 'min_popularity' option
+  using the extended type:func syntax (hossman)
+
+* SOLR-12536: autoscaling policy support to equally distribute replicas on the basis of arbitrary properties (noble)
+
+* SOLR-11990: Make it possible to co-locate replicas of multiple collections together in a node. A collection may be
+  co-located with another collection during collection creation time by specifying a 'withCollection' parameter. It can
+  also be co-located afterwards by using the modify collection API. The co-location guarantee is enforced regardless of
+  future cluster operations whether they are invoked manually via the Collection API or by the Autoscaling framework.
+  (noble, shalin)
+
 Bug Fixes
 ----------------------
 
@@ -168,6 +179,11 @@ Bug Fixes
 
 * SOLR-12576: Update ref guide for additional information displayed in cloud view (Erick Erickson)
 
+* SOLR-12597: Migrate API should fail requests that do not specify split.key parameter (shalin)
+
+* SOLR-12477: An update would return a client error(400) if it hit a AlreadyClosedException.
+  We now return the error as a server error(500) instead (Jeffery via Varun Thacker)
+
 Optimizations
 ----------------------
 
@@ -182,7 +198,7 @@ Optimizations
   which we can export is directly proportional to the number of sort fields specified. This change also allows streaming
   expressions to group by on more than 4 fields. (Aroop Ganguly, Amrit Sarkar, Varun Thacker)
 
-* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery. 
+* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery.
   (Cao Manh Dat)
 
 Other Changes
@@ -207,6 +223,10 @@ Other Changes
 * SOLR-12464: Reduce Overseer.close() logging (for non-Overseer leaders) (Christine Poerschke)
 
 * SOLR-12454: Tweak Overseer leadership transition related logging for easier troubleshooting. (Christine Poerschke)
+
+* SOLR-12574: Put under a common "significantTerms" bucket all output by SignificantTerms Query Parser (Alexandre Rafalovitch)
+
+* SOLR-12164: Improve Ref Guide main landing page. (Cassandra Targett)
 
 ==================  7.4.0 ==================
 
@@ -476,7 +496,7 @@ Bug Fixes
 
 * SOLR-12434: bin/solr {config,healthcheck} ignore ZK_HOST in solr.in.{sh,cmd} (Steve Rowe)
 
-* SOLR-12481: update.autoCreateFields must be set via Config API command 'set-user-property', 
+* SOLR-12481: update.autoCreateFields must be set via Config API command 'set-user-property',
   but 'bin/solr create' tells users to use the default action 'set-property', which fails
   because the property is not editable. (Steve Rowe)
 

@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
@@ -218,11 +219,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     
     if (openFiles.containsKey(source) && assertNoDeleteOpenFile) {
-      throw (AssertionError) fillOpenTrace(new AssertionError("MockDirectoryWrapper: source file \"" + source + "\" is still open: cannot rename"), source, true);
+      throw fillOpenTrace(new AssertionError("MockDirectoryWrapper: source file \"" + source + "\" is still open: cannot rename"), source, true);
     }
 
     if (openFiles.containsKey(dest) && assertNoDeleteOpenFile) {
-      throw (AssertionError) fillOpenTrace(new AssertionError("MockDirectoryWrapper: dest file \"" + dest + "\" is still open: cannot rename"), dest, true);
+      throw fillOpenTrace(new AssertionError("MockDirectoryWrapper: dest file \"" + dest + "\" is still open: cannot rename"), dest, true);
     }
 
     boolean success = false;
@@ -596,7 +597,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (openFiles.containsKey(name)) {
       openFilesDeleted.add(name);
       if (assertNoDeleteOpenFile) {
-        throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot delete"), name, true);
+        throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot delete"), name, true);
       }
     } else {
       openFilesDeleted.remove(name);
@@ -609,7 +610,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   // sets the cause of the incoming ioe to be the stack
   // trace when the offending file name was opened
-  private synchronized Throwable fillOpenTrace(Throwable t, String name, boolean input) {
+  private synchronized <T extends Throwable> T fillOpenTrace(T t, String name, boolean input) {
     for(Map.Entry<Closeable,Exception> ent : openFileHandles.entrySet()) {
       if (input && ent.getKey() instanceof MockIndexInputWrapper && ((MockIndexInputWrapper) ent.getKey()).name.equals(name)) {
         t.initCause(ent.getValue());
@@ -749,7 +750,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
     // cannot open a file for input if it's still open for output.
     if (!allowReadingFilesStillOpenForWrite && openFilesForWrite.contains(name)) {
-      throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
+      throw fillOpenTrace(new AccessDeniedException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 
     IndexInput delegateInput = in.openInput(name, LuceneTestCase.newIOContext(randomState, context));

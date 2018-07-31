@@ -174,7 +174,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
       }
 
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " hits; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
+        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " ; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
       }
 
       // Compute expected results:

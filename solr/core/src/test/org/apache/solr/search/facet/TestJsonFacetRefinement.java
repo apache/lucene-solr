@@ -879,10 +879,10 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     initServers();
     Client client = servers.getClient(random().nextInt());
     client.queryDefaults().set("shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()));
-
+    
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3);
-
+    
     client.deleteByQuery("*:*", null);
 
     String cat_s = p.get("cat_s");
@@ -926,7 +926,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       } else {
         p.set("terms", "method:" + method+", ");
       }
-
+      
 
       client.testJQ(params(p, "q", "*:*",
           "json.facet", "{" +
@@ -1044,14 +1044,38 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       );
 
       // test that SKG stat reflects merged refinement
+      // results shouldn't care if we use the short or long syntax, or if we have a low min_pop
+      for (String s : Arrays.asList("'relatedness($fore,$back)'",
+                                    "{ type:func, func:'relatedness($fore,$back)' }",
+                                    "{ type:func, func:'relatedness($fore,$back)', min_popularity:0.2 }")) {
+        client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
+                             "json.facet", "{"
+                             + "   cat0:{ ${terms} type:terms, field: ${cat_s}, "
+                             + "          sort:'count desc', limit:1, overrequest:0, refine:true, "
+                             + "          facet:{ s:"+s+"} } }")
+                      , "facets=={ count:8, cat0:{ buckets:[ "
+                      + "   { val:A, count:4, "
+                      + "     s : { relatedness: 0.00496, "
+                      //+ "           foreground_count: 3, "
+                      //+ "           foreground_size: 5, "
+                      //+ "           background_count: 2, "
+                      //+ "           background_size: 4, "
+                      + "           foreground_popularity: 0.75, "
+                      + "           background_popularity: 0.5, "
+                      + "         } } ] }" +
+                      "}"
+                      );
+      }
+      // same query with a high min_pop should result in a -Infinity relatedness score
       client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
                            "json.facet", "{"
                            + "   cat0:{ ${terms} type:terms, field: ${cat_s}, "
                            + "          sort:'count desc', limit:1, overrequest:0, refine:true, "
-                           + "          facet:{ s:'relatedness($fore,$back)'} } }")
+                           + "          facet:{ s:{ type:func, func:'relatedness($fore,$back)', "
+                           + "                      min_popularity:0.6 } } } }")
                     , "facets=={ count:8, cat0:{ buckets:[ "
                     + "   { val:A, count:4, "
-                    + "     s : { relatedness: 0.00496, "
+                    + "     s : { relatedness: '-Infinity', "
                     //+ "           foreground_count: 3, "
                     //+ "           foreground_size: 5, "
                     //+ "           background_count: 2, "
@@ -1061,7 +1085,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                     + "         } } ] }" +
                     "}"
                     );
-      
+
       // SKG under nested facet where some terms only exist on one shard
       { 
         // sub-bucket order should change as sort direction changes

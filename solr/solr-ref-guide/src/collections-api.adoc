@@ -112,6 +112,11 @@ Details of the snitch provider. See the section <<rule-based-replica-placement.a
 `waitForFinalState`::
 If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
 
+`withCollection`::
+The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
+See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
+
+
 === CREATE Response
 
 The response will include the status of the request and the new core names. If the status is anything other than "success", an error message will explain why the request failed.
@@ -181,6 +186,7 @@ The attributes that can be modified are:
 * rule
 * snitch
 * policy
+* withCollection
 
 See the <<create,CREATE action>> section above for details on these attributes.
 

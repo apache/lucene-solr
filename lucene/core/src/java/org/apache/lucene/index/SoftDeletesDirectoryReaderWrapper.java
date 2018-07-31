@@ -109,7 +109,7 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
       Bits liveDocs = reader.getLiveDocs();
       final FixedBitSet bits;
       if (liveDocs != null) {
-        bits = SoftDeletesRetentionMergePolicy.cloneLiveDocs(liveDocs);
+        bits = FixedBitSet.copyOf(liveDocs);
       } else {
         bits = new FixedBitSet(reader.maxDoc());
         bits.set(0, reader.maxDoc());

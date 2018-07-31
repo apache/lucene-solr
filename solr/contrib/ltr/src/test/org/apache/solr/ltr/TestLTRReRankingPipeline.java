@@ -137,7 +137,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     final IndexSearcher searcher = getSearcher(r);
     // first run the standard query
     TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
@@ -209,7 +209,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
 
     // first run the standard query
     TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(5, hits.totalHits);
+    assertEquals(5, hits.totalHits.value);
 
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));

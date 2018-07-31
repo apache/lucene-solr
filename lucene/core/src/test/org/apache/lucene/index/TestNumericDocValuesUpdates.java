@@ -165,7 +165,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       String id = "doc-" + expect.getKey();
       TopFieldDocs td = searcher.search(new TermQuery(new Term("id", id)), 1, 
                                         new Sort(new SortField("val", SortField.Type.LONG)));
-      assertEquals(id + " missing?", 1, td.totalHits);
+      assertEquals(id + " missing?", 1, td.totalHits.value);
       assertEquals(id + " value", expect.getValue(), ((FieldDoc)td.scoreDocs[0]).fields[0]);
     }
     

@@ -30,9 +30,12 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.search.Query;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QParser;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +65,7 @@ public class RelatednessAgg extends AggValueSource {
   
   final protected Query fgQ;
   final protected Query bgQ;
+  protected double min_pop = 0.0D;
   
   public static final String NAME = RELATEDNESS;
   public RelatednessAgg(Query fgQ, Query bgQ) {
@@ -80,10 +84,20 @@ public class RelatednessAgg extends AggValueSource {
     }
   }
 
+  public void setOpts(QParser parser) {
+    final boolean isShard = parser.getReq().getParams().getBool(ShardParams.IS_SHARD, false);
+    SolrParams opts = parser.getLocalParams();
+    if (null != opts) {
+      if (!isShard) { // ignore min_pop if this is a shard request
+        this.min_pop = opts.getDouble("min_popularity", 0.0D);
+      }
+    }
+  }
+  
   @Override
   public String description() {
     // TODO: need better output processing when we start supporting null fgQ/bgQ in constructor
-    return name +"(" + fgQ + "," + bgQ + ")";
+    return name +"(fgQ=" + fgQ + ",bgQ=" + bgQ + ",min_pop="+min_pop+")";
   }
   
   @Override
@@ -92,12 +106,14 @@ public class RelatednessAgg extends AggValueSource {
       return false;
     }
     RelatednessAgg that = (RelatednessAgg) o;
-    return Objects.equals(fgQ, that.fgQ) && Objects.equals(bgQ, that.bgQ);
+    return Objects.equals(fgQ, that.fgQ)
+      && Objects.equals(bgQ, that.bgQ)
+      && Objects.equals(min_pop, that.min_pop);
   }
   
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), fgQ, bgQ);
+    return Objects.hash(getClass(), fgQ, bgQ, min_pop);
   }
 
   @Override
@@ -139,23 +155,25 @@ public class RelatednessAgg extends AggValueSource {
     
     DocSet fgSet = fcontext.searcher.getDocSet(fgFilters);
     DocSet bgSet = fcontext.searcher.getDocSet(bgQ);
-    return new SKGSlotAcc(fcontext, numSlots, fgSet, bgSet);
+    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
   }
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new Merger();
+    return new Merger(this);
   }
   
   private static final class SKGSlotAcc extends SlotAcc {
+    private final RelatednessAgg agg;
     private BucketData[] slotvalues;
     private final DocSet fgSet;
     private final DocSet bgSet;
     private final long fgSize;
     private final long bgSize;
-    public SKGSlotAcc(final FacetContext fcontext, final int numSlots,
+    public SKGSlotAcc(final RelatednessAgg agg, final FacetContext fcontext, final int numSlots,
                       final DocSet fgSet, final DocSet bgSet) throws IOException {
       super(fcontext);
+      this.agg = agg;
       this.fgSet = fgSet;
       this.bgSet = bgSet;
       // cache the set sizes for frequent re-use on every slot
@@ -164,7 +182,6 @@ public class RelatednessAgg extends AggValueSource {
       this.slotvalues = new BucketData[numSlots];
       reset();
     }
-
     private void processSlot(int slot, IntFunction<SlotContext> slotContext) throws IOException {
       
       assert null != slotContext;
@@ -181,7 +198,7 @@ public class RelatednessAgg extends AggValueSource {
       // ...and in which case we should just use the current base
       final DocSet slotSet = null == slotQ ? fcontext.base : fcontext.searcher.getDocSet(slotQ);
 
-      final BucketData slotVal = new BucketData();
+      final BucketData slotVal = new BucketData(agg);
       slotVal.incSizes(fgSize, bgSize);
       slotVal.incCounts(fgSet.intersectionSize(slotSet),
                         bgSet.intersectionSize(slotSet));
@@ -232,7 +249,7 @@ public class RelatednessAgg extends AggValueSource {
       if (null == slotVal) {
         // since we haven't been told about any docs for this slot, use a slot w/no counts,
         // just the known fg/bg sizes. (this is most likely a refinement request for a bucket we dont have)
-        slotVal = new BucketData();
+        slotVal = new BucketData(agg);
         slotVal.incSizes(fgSize, bgSize);
       }
 
@@ -263,15 +280,31 @@ public class RelatednessAgg extends AggValueSource {
    * @see Merger
    */
   private static final class BucketData implements Comparable<BucketData> {
-    
+    private RelatednessAgg agg;
     private long fg_size = 0;
     private long bg_size = 0;
     private long fg_count = 0;
     private long bg_count = 0;
-    private double relatedness = Double.NaN;
     
-    public BucketData() {
-      /* No-Op */
+    /** 
+     * NaN indicates that <b>all</a> derived values need (re)-computed
+     * @see #computeDerivedValues
+     * @see #getRelatedness
+     */
+    private double relatedness = Double.NaN;
+    /** 
+     * @see #computeDerivedValues 
+     * @see #getForegroundPopularity
+     */
+    private double fg_pop;
+    /** 
+     * @see #computeDerivedValues
+     * @see #getBackgroundPopularity
+     */
+    private double bg_pop;
+    
+    public BucketData(final RelatednessAgg agg) {
+      this.agg = agg;
     }
 
     /** 
@@ -295,7 +328,7 @@ public class RelatednessAgg extends AggValueSource {
     
     @Override
     public int hashCode() {
-      return Objects.hash(this.getClass(), fg_count, bg_count, fg_size, bg_size);
+      return Objects.hash(this.getClass(), fg_count, bg_count, fg_size, bg_size, agg);
     }
     
     @Override
@@ -308,23 +341,44 @@ public class RelatednessAgg extends AggValueSource {
       return Objects.equals(this.fg_count, that.fg_count)
         && Objects.equals(this.bg_count, that.bg_count)
         && Objects.equals(this.fg_size, that.fg_size)
-        && Objects.equals(this.bg_size, that.bg_size);
+        && Objects.equals(this.bg_size, that.bg_size)
+        && Objects.equals(this.agg, that.agg);
     }
 
     /**
-     * Computes (and caches) the derived relatedness score for this bucket
+     * Computes (and caches) the derived relatedness &amp; popularity scores for this bucket if needed
      */
-    private double getRelatedness() {
-      if (Double.isNaN(this.relatedness)) {
-        this.relatedness = computeRelatedness(this.fg_count, this.fg_size,
-                                              this.bg_count, this.bg_size);
-        // TODO: add support for a "min_pop" option...
-        //
-        // if min_pop is configured, and either (fg|bg) popularity is lower then that value
-        // then "this.relatedness=-Infinity" so it sorts at the bottom
-        // this logic be ignored on isShard requests -- similar to how shards ignore 'mincount'
+    private void computeDerivedValues() {
+      if (! Double.isNaN(this.relatedness)) {
+        return; // values already computed;
       }
+
+      this.fg_pop = roundTo5Digits((double) fg_count / bg_size); // yes, BACKGROUND size is intentional
+      this.bg_pop = roundTo5Digits((double) bg_count / bg_size);
+      
+      if (0.0D < agg.min_pop) {
+        // if min_pop is configured, and either (fg|bg) popularity is lower then that value
+        // then "this.relatedness=-Infinity" so it sorts below any "valid" relatedness scores
+        if (fg_pop < agg.min_pop || bg_pop < agg.min_pop) {
+          this.relatedness = Double.NEGATIVE_INFINITY;
+          return;
+        }
+      }
+      
+      this.relatedness = computeRelatedness(this.fg_count, this.fg_size,
+                                            this.bg_count, this.bg_size);
+    }
+    private double getRelatedness() {
+      computeDerivedValues();
       return this.relatedness;
+    }
+    private double getForegroundPopularity() {
+      computeDerivedValues();
+      return this.fg_pop;
+    }
+    private double getBackgroundPopularity() {
+      computeDerivedValues();
+      return this.bg_pop;
     }
     
     @Override
@@ -364,8 +418,8 @@ public class RelatednessAgg extends AggValueSource {
         // there's no need to bother computing these when returning results *to* a shard coordinator
         // only useful to external clients 
         result.add(RELATEDNESS, this.getRelatedness());
-        result.add(FG_POP, roundTo5Digits((double) fg_count / bg_size)); // yes, BACKGROUND size is intentional
-        result.add(BG_POP, roundTo5Digits((double) bg_count / bg_size));
+        result.add(FG_POP, this.getForegroundPopularity());
+        result.add(BG_POP, this.getBackgroundPopularity());
       }
       
       return result;
@@ -376,7 +430,10 @@ public class RelatednessAgg extends AggValueSource {
    * Merges in the per shard {@link BucketData} output into a unified {@link BucketData}
    */
   private static final class Merger extends FacetSortableMerger {
-    private final BucketData mergedData = new BucketData();
+    private final BucketData mergedData;
+    public Merger(final RelatednessAgg agg) {
+      this.mergedData = new BucketData(agg);
+    }
     
     @Override
     public void merge(Object facetResult, Context mcontext) {

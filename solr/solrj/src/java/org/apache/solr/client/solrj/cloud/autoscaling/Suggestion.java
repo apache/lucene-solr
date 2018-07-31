@@ -23,13 +23,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,13 +43,14 @@ import org.apache.solr.common.util.StrUtils;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableSet;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.parseString;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class Suggestion {
   public static final String coreidxsize = "INDEX.sizeInGB";
 
-  static final Map<String, ConditionType> validatetypes = new HashMap<>();
+
   private static final String NULL = "";
 
   @Target(ElementType.FIELD)
@@ -77,16 +78,17 @@ public class Suggestion {
 
     double max() default -1d;
 
+    boolean supportArrayVals() default false;
+
     String metricsKey() default NULL;
+
+    Class implementation() default void.class;
 
     ComputedType[] computedValues() default ComputedType.NULL;
   }
 
   public static ConditionType getTagType(String name) {
-    ConditionType info = validatetypes.get(name);
-    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = ConditionType.STRING;
-    if (info == null && name.startsWith(Clause.METRICS_PREFIX)) info = ConditionType.LAZY;
-    return info;
+    return Policy.getTagType(name);
   }
 
   private static Object getOperandAdjustedValue(Object val, Object original) {
@@ -157,7 +159,9 @@ public class Suggestion {
   /**
    * Type details of each variable in policies
    */
-  public enum ConditionType {
+  public enum ConditionType implements VarType {
+    @Meta(name = "withCollection", type = String.class, isNodeSpecificVal = true, implementation = WithCollectionVarType.class)
+    WITH_COLLECTION(),
 
     @Meta(name = "collection",
         type = String.class)
@@ -207,11 +211,18 @@ public class Suggestion {
       public String postValidate(Clause.Condition condition) {
         if (condition.computedType == ComputedType.EQUAL) {
           if (condition.getClause().tag != null &&
-              condition.getClause().tag.varType == NODE &&
-              condition.getClause().tag.op == Operand.WILDCARD) {
+//              condition.getClause().tag.varType == NODE &&
+              (condition.getClause().tag.op == Operand.WILDCARD || condition.getClause().tag.op == Operand.IN)) {
             return null;
           } else {
             return "'replica': '#EQUAL` must be used with 'node':'#ANY'";
+          }
+        }
+        if (condition.computedType == ComputedType.ALL) {
+          if (condition.getClause().tag != null && (condition.getClause().getTag().op == Operand.IN ||
+              condition.getClause().getTag().op == Operand.WILDCARD)) {
+            return StrUtils.formatString("array value or wild card cannot be used for tag {0} with replica : '#ALL'",
+                condition.getClause().tag.getName());
           }
         }
         return null;
@@ -223,8 +234,9 @@ public class Suggestion {
           return Double.valueOf(getRelevantReplicasCount(session, cv, collection, shard));
         if (cv.computedType == ComputedType.EQUAL) {
           int relevantReplicasCount = getRelevantReplicasCount(session, cv, collection, shard);
-          if (relevantReplicasCount == 0) return 0;
-          return (double) session.matrix.size() / (double) relevantReplicasCount;
+          double bucketsCount = getNumBuckets(session, cv.getClause());
+          if (relevantReplicasCount == 0 || bucketsCount == 0) return 0;
+          return (double) relevantReplicasCount / bucketsCount;
         } else if (cv.computedType == ComputedType.PERCENT) {
           return ComputedType.PERCENT.compute(getRelevantReplicasCount(session, cv, collection, shard), cv);
         } else {
@@ -232,33 +244,60 @@ public class Suggestion {
 
         }
       }
+
+      private int getNumBuckets(Policy.Session session, Clause clause) {
+        if (clause.getTag().getOperand() == Operand.IN) {
+          return ((Collection) clause.getTag().val).size();
+        } else if (clause.getTag().getOperand() == Operand.WILDCARD) {
+          if (clause.getTag().varType == NODE) return session.matrix.size();
+          Set uniqueVals = new HashSet();
+          for (Row matrix : session.matrix) {
+            Object val = matrix.getVal(clause.getTag().name);
+            if (val != null) uniqueVals.add(val);
+          }
+          return uniqueVals.size();
+        } else {
+          throw new IllegalArgumentException("Invalid operand for the tag in  " + clause);
+        }
+
+      }
     },
     @Meta(name = ImplicitSnitch.PORT,
         type = Long.class,
         min = 1,
-        max = 65535)
+        max = 65535,
+        supportArrayVals = true,
+        wildCards = Policy.EACH
+    )
     PORT(),
     @Meta(name = "ip_1",
         type = Long.class,
         min = 0,
-        max = 255)
+        max = 255,
+        supportArrayVals = true,
+        wildCards = Policy.EACH)
     IP_1(),
     @Meta(name = "ip_2",
         type = Long.class,
         min = 0,
-        max = 255)
+        max = 255,
+        supportArrayVals = true,
+        wildCards = Policy.EACH)
     IP_2(),
     @Meta(name = "ip_3",
         type = Long.class,
         min = 0,
-        max = 255)
+        max = 255,
+        supportArrayVals = true,
+        wildCards = Policy.EACH)
     IP_3(),
     @Meta(name = "ip_4",
         type = Long.class,
         min = 0,
-        max = 255)
+        max = 255,
+        supportArrayVals = true,
+        wildCards = Policy.EACH)
     IP_4(),
-
     @Meta(name = ImplicitSnitch.DISK,
         type = Double.class,
         min = 0,
@@ -337,7 +376,7 @@ public class Suggestion {
 
       //When a replica is added, freedisk should be incremented
       @Override
-      public void projectAddReplica(Cell cell, ReplicaInfo ri) {
+      public void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> ops, boolean strictMode) {
         //go through other replicas of this shard and copy the index size value into this
         for (Row row : cell.getRow().session.matrix) {
           row.forEachReplica(replicaInfo -> {
@@ -357,7 +396,7 @@ public class Suggestion {
       }
 
       @Override
-      public void projectRemoveReplica(Cell cell, ReplicaInfo ri) {
+      public void projectRemoveReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector) {
         Double idxSize = (Double) validate(CORE_IDX.tagName, ri.getVariable(CORE_IDX.tagName), false);
         if (idxSize == null) return;
         Double currFreeDisk = cell.val == null ? 0.0d : (Double) cell.val;
@@ -426,12 +465,12 @@ public class Suggestion {
       }
 
       @Override
-      public void projectAddReplica(Cell cell, ReplicaInfo ri) {
+      public void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> ops, boolean strictMode) {
         cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() + 1;
       }
 
       @Override
-      public void projectRemoveReplica(Cell cell, ReplicaInfo ri) {
+      public void projectRemoveReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector) {
         cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() - 1;
       }
     },
@@ -452,15 +491,18 @@ public class Suggestion {
         type = Long.class,
         min = 0)
     NUMBER(),
+
     @Meta(name = "STRING",
         type = String.class,
-        wildCards = Policy.EACH)
+        wildCards = Policy.EACH,
+        supportArrayVals = true)
     STRING(),
 
     @Meta(name = "node",
         type = String.class,
         isNodeSpecificVal = true,
-        wildCards = {Policy.ANY, Policy.EACH})
+        wildCards = {Policy.ANY, Policy.EACH},
+        supportArrayVals = true)
     NODE() {
       @Override
       public void getSuggestions(SuggestionCtx ctx) {
@@ -484,7 +526,12 @@ public class Suggestion {
     LAZY() {
       @Override
       public Object validate(String name, Object val, boolean isRuleVal) {
-        return Clause.parseString(val);
+        return parseString(val);
+      }
+
+      @Override
+      public boolean match(Object inputVal, Operand op, Object val, String name, Row row) {
+        return op.match(parseString(val), parseString(inputVal)) == Clause.TestStatus.PASS;
       }
 
       @Override
@@ -495,12 +542,15 @@ public class Suggestion {
 
     @Meta(name = ImplicitSnitch.DISKTYPE,
         type = String.class,
-        enumVals = {"ssd", "rotational"})
+        enumVals = {"ssd", "rotational"},
+        supportArrayVals = true)
     DISKTYPE() {
       @Override
       public void getSuggestions(SuggestionCtx ctx) {
         perNodeSuggestions(ctx);
       }
+
+
     };
 
     public final String tagName;
@@ -511,13 +561,12 @@ public class Suggestion {
     public final Number min;
     public final Number max;
     public final Boolean additive;
-    public final boolean isHidden;
     public final Set<String> wildCards;
     public final String perReplicaValue;
     public final Set<String> associatedPerNodeValues;
     public final String metricsAttribute;
-    public final boolean isPerNodeValue;
     public final Set<ComputedType> supportedComputedTypes;
+    private final VarType impl;
 
 
     ConditionType() {
@@ -529,6 +578,15 @@ public class Suggestion {
       } catch (NoSuchFieldException e) {
         //cannot happen
       }
+      if (meta.implementation() != void.class) {
+        try {
+          impl = (VarType) meta.implementation().newInstance();
+        } catch (Exception e) {
+          throw new RuntimeException("Unable to instantiate: " + meta.implementation().getName());
+        }
+      } else {
+        impl = null;
+      }
       this.tagName = meta.name();
       this.type = meta.type();
 
@@ -539,12 +597,15 @@ public class Suggestion {
       this.associatedPerNodeValues = readSet(meta.associatedPerNodeValue());
       this.additive = meta.isAdditive();
       this.metricsAttribute = readStr(meta.metricsKey());
-      this.isPerNodeValue = meta.isNodeSpecificVal();
       this.supportedComputedTypes = meta.computedValues()[0] == ComputedType.NULL ?
           emptySet() :
           unmodifiableSet(new HashSet(Arrays.asList(meta.computedValues())));
-      this.isHidden = meta.isHidden();
       this.wildCards = readSet(meta.wildCards());
+
+    }
+
+    public String getTagName() {
+      return meta.name();
     }
 
     private String readStr(String s) {
@@ -561,13 +622,23 @@ public class Suggestion {
       return unmodifiableSet(new HashSet<>(Arrays.asList(vals)));
     }
 
+    @Override
     public void getSuggestions(SuggestionCtx ctx) {
+      if (impl != null) {
+        impl.getSuggestions(ctx);
+        return;
+      }
       perNodeSuggestions(ctx);
     }
 
+    @Override
     public void addViolatingReplicas(ViolationCtx ctx) {
+      if (impl != null) {
+        impl.addViolatingReplicas(ctx);
+        return;
+      }
       for (Row row : ctx.allRows) {
-        if (ctx.clause.tag.varType.isPerNodeValue && !row.node.equals(ctx.tagKey)) continue;
+        if (ctx.clause.tag.varType.meta.isNodeSpecificVal() && !row.node.equals(ctx.tagKey)) continue;
         collectViolatingReplicas(ctx, row);
       }
     }
@@ -627,25 +698,39 @@ public class Suggestion {
     /**
      * Simulate a replica addition to a node in the cluster
      */
-    public void projectAddReplica(Cell cell, ReplicaInfo ri) {
+    public void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector, boolean strictMode) {
+      if (impl != null) impl.projectAddReplica(cell, ri, opCollector, strictMode);
     }
 
-    public void projectRemoveReplica(Cell cell, ReplicaInfo ri) {
+    public void projectRemoveReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector) {
+      if (impl != null) {
+        impl.projectRemoveReplica(cell, ri, opCollector);
+      }
     }
 
+    @Override
     public int compareViolation(Violation v1, Violation v2) {
+      if (impl != null) return impl.compareViolation(v1, v2);
       if (v2.replicaCountDelta == null || v1.replicaCountDelta == null) return 0;
       if (Math.abs(v1.replicaCountDelta) == Math.abs(v2.replicaCountDelta)) return 0;
       return Math.abs(v1.replicaCountDelta) < Math.abs(v2.replicaCountDelta) ? -1 : 1;
     }
 
+    @Override
     public Object computeValue(Policy.Session session, Clause.Condition condition, String collection, String shard, String node) {
+      if (impl != null) return impl.computeValue(session, condition, collection, shard, node);
       return condition.val;
+    }
+
+    @Override
+    public boolean match(Object inputVal, Operand op, Object val, String name, Row row) {
+      if (impl != null) return impl.match(inputVal, op, val, name, row);
+      return op.match(val, validate(name, inputVal, false)) == Clause.TestStatus.PASS;
     }
   }
 
   private static void collectViolatingReplicas(ViolationCtx ctx, Row row) {
-    if (ctx.clause.tag.varType.isPerNodeValue) {
+    if (ctx.clause.tag.varType.meta.isNodeSpecificVal()) {
       row.forEachReplica(replica -> {
         if (ctx.clause.collection.isPass(replica.getCollection()) && ctx.clause.getShard().isPass(replica.getShard())) {
           ctx.currentViolation.addReplica(new ReplicaInfoAndErr(replica)
@@ -656,7 +741,7 @@ public class Suggestion {
       row.forEachReplica(replica -> {
         if (ctx.clause.replica.isPass(0) && !ctx.clause.tag.isPass(row)) return;
         if (!ctx.clause.replica.isPass(0) && ctx.clause.tag.isPass(row)) return;
-        if (!ctx.currentViolation.matchShard(replica.getShard())) return;
+        if(!ctx.currentViolation.getClause().matchShard(replica.getShard(), ctx.currentViolation.shard)) return;
         if (!ctx.clause.collection.isPass(ctx.currentViolation.coll) || !ctx.clause.shard.isPass(ctx.currentViolation.shard))
           return;
         ctx.currentViolation.addReplica(new ReplicaInfoAndErr(replica).withDelta(ctx.clause.tag.delta(row.getVal(ctx.clause.tag.name))));
@@ -672,12 +757,8 @@ public class Suggestion {
     Clause clause = cv.getClause();
     for (Row row : session.matrix) {
       row.forEachReplica(replicaInfo -> {
-        if (replicaInfo.getCollection().equals(collection)) {
-          if (clause.getShard() ==null || clause.getShard().op == Operand.WILDCARD || replicaInfo.getShard().equals(shard)) {
-            if (cv.getClause().type == null || replicaInfo.getType() == cv.getClause().type)
-              totalReplicasOfInterest.incrementAndGet();
-          }
-        }
+        if (clause.isMatch(replicaInfo, collection, shard))
+          totalReplicasOfInterest.incrementAndGet();
       });
     }
     return totalReplicasOfInterest.get();
@@ -718,13 +799,5 @@ public class Suggestion {
       if (ctx.addSuggestion(suggester) == null) break;
     }
   }
-
-  /*public static final Map<String, String> tagVsPerReplicaVal = Stream.of(ConditionType.values())
-      .filter(tag -> tag.perReplicaValue != null)
-      .collect(Collectors.toMap(tag -> tag.tagName, tag -> tag.perReplicaValue));*/
-  static {
-    for (Suggestion.ConditionType t : Suggestion.ConditionType.values()) Suggestion.validatetypes.put(t.tagName, t);
-  }
-
 
 }

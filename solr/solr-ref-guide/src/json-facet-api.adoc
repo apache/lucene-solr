@@ -387,7 +387,7 @@ The most common way of requesting an aggregation function is as a simple contain
 }
 ----
 
-An expanded form allows for <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> to be specified.  These may be used explicitly by some custom aggregations, but can more commonly be used as parameter references to make aggregation expressions more readable, with out needing to use (global) request parameters:
+An expanded form allows for <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> to be specified.  These may be used explicitly by some specialized aggregations such as `<<json-facet-api.adoc#relatedness-options,relatedness()>>`, but can also be used as parameter references to make aggregation expressions more readable, with out needing to use (global) request parameters:
 
 [source,javascript]
 ----
@@ -739,6 +739,23 @@ The `relatedness(...)` function is used to "score" these relationships, relative
 
 Unlike most aggregation functions, the `relatedness(...)` function is aware of whether and how it's used in <<nested-facets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from it's parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
 
+NOTE: While it's very common to define the Background Set as `\*:*`, or some other super-set of the Foreground Query, it is not strictly required.  The `relatedness(...)` function can be used to compare the statistical relatedness of sets of documents to orthogonal foreground/background queries.
+
+[[relatedness-options]]
+=== `relatedness()` Options
+
+When using the extended `type:func` syntax for specifying a `relatedness()` aggregation, an opional `min_popularity` (float) option can be used to specify a lower bound on the `foreground_popularity` and `background_popularity` values, that must be met in order for the `relatedness` score to be valid -- If this `min_popularity` is not met, then the `relatedness` score will be `-Infinity`.
+
+[source,javascript]
+----
+{ "type": "func",
+  "func": "relatedness($fore,$back)",
+  "min_popularity": 0.001,
+}
+----
+
+This can be particularly useful when using a descending sorting on `relatedness()` with foreground and background queries that are disjoint, to ensure the "top buckets" are all relevant to both sets.
+
 === Semantic Knowledge Graph Example
 
 .Sample Documents
@@ -843,7 +860,6 @@ curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:
 <6> The number documents matching `age:[35 TO *]` _and_ `hobbies:golf` _and_ `state:AZ` is 18.75% of the total number of documents in the Background Set
 <7> 50% of the documents in the Background Set match `state:AZ`
 
-NOTE: While it's very common to define the Background Set as `\*:*`, or some other super-set of the Foreground Query, it is not strictly required.  The `relatedness(...)` function can be used to compare the statistical relatedness of sets of documents to orthogonal foreground/background queries.
 
 [[References]]
 == References

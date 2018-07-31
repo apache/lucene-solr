@@ -23,13 +23,13 @@ import org.apache.lucene.util.PriorityQueue;
 public class TopDocs {
 
   /** The total number of hits for the query. */
-  public long totalHits;
+  public TotalHits totalHits;
 
   /** The top hits for the query. */
   public ScoreDoc[] scoreDocs;
 
   /** Constructs a TopDocs. */
-  public TopDocs(long totalHits, ScoreDoc[] scoreDocs) {
+  public TopDocs(TotalHits totalHits, ScoreDoc[] scoreDocs) {
     this.totalHits = totalHits;
     this.scoreDocs = scoreDocs;
   }
@@ -246,12 +246,18 @@ public class TopDocs {
     }
 
     long totalHitCount = 0;
+    TotalHits.Relation totalHitsRelation = TotalHits.Relation.EQUAL_TO;
     int availHitCount = 0;
     for(int shardIDX=0;shardIDX<shardHits.length;shardIDX++) {
       final TopDocs shard = shardHits[shardIDX];
       // totalHits can be non-zero even if no hits were
       // collected, when searchAfter was used:
-      totalHitCount += shard.totalHits;
+      totalHitCount += shard.totalHits.value;
+      // If any hit count is a lower bound then the merged
+      // total hit count is a lower bound as well
+      if (shard.totalHits.relation == TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO) {
+        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+      }
       if (shard.scoreDocs != null && shard.scoreDocs.length > 0) {
         availHitCount += shard.scoreDocs.length;
         queue.add(new ShardRef(shardIDX, setShardIndex == false));
@@ -292,10 +298,11 @@ public class TopDocs {
       }
     }
 
+    TotalHits totalHits = new TotalHits(totalHitCount, totalHitsRelation);
     if (sort == null) {
-      return new TopDocs(totalHitCount, hits);
+      return new TopDocs(totalHits, hits);
     } else {
-      return new TopFieldDocs(totalHitCount, hits, sort.getSort());
+      return new TopFieldDocs(totalHits, hits, sort.getSort());
     }
   }
 }

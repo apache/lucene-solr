@@ -20,6 +20,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -141,12 +142,15 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
       NamedList<Integer> allFreq = new NamedList();
       NamedList<Integer> allQueryFreq = new NamedList();
 
-      rb.rsp.add("numDocs", numDocs);
-      rb.rsp.add("resultCount", count);
-      rb.rsp.add("sterms", outTerms);
-      rb.rsp.add("scores", scores);
-      rb.rsp.add("docFreq", outFreq);
-      rb.rsp.add("queryDocFreq", outQueryFreq);
+      LinkedHashMap<String, Object> response = new LinkedHashMap<>();
+
+      rb.rsp.add("significantTerms", response);
+
+      response.put("numDocs", numDocs);
+      response.put("sterms", outTerms);
+      response.put("scores", scores);
+      response.put("docFreq", outFreq);
+      response.put("queryDocFreq", outQueryFreq);
 
       //TODO: Use a priority queue
       TreeSet<TermWithScore> topTerms = new TreeSet<>();

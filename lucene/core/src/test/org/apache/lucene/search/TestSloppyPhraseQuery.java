@@ -261,13 +261,13 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     builder.add(new Term("lyrics", "drug"), 4);
     PhraseQuery pq = builder.build();
     // "drug the drug"~1
-    assertEquals(1, is.search(pq, 4).totalHits);
+    assertEquals(1, is.search(pq, 4).totalHits.value);
     builder.setSlop(1);
     pq = builder.build();
-    assertEquals(3, is.search(pq, 4).totalHits);
+    assertEquals(3, is.search(pq, 4).totalHits.value);
     builder.setSlop(2);
     pq = builder.build();
-    assertEquals(4, is.search(pq, 4).totalHits);
+    assertEquals(4, is.search(pq, 4).totalHits.value);
     ir.close();
     dir.close();
   }

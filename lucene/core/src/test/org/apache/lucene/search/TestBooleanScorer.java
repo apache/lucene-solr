@@ -149,7 +149,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     q2.add(q1.build(), BooleanClause.Occur.SHOULD);
     q2.add(new CrazyMustUseBulkScorerQuery(), BooleanClause.Occur.SHOULD);
 
-    assertEquals(1, s.search(q2.build(), 10).totalHits);
+    assertEquals(1, s.search(q2.build(), 10).totalHits.value);
     r.close();
     dir.close();
   }

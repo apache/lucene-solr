@@ -89,3 +89,11 @@ Computing scores at collection time is less efficient than running a second
 request in order to only compute scores for documents that made it to the top
 hits. As a consequence, the trackDocScores option has been removed and can be
 replaced with the new TopFieldCollector#populateScores helper method.
+
+## TopDocs.totalHits is no longer a long ##
+
+Lucene 8 received optimizations for collection of top-k matches by not visiting
+all matches. However these optimizations won't help if all matches still need
+to be visited in order to compute the total number of hits. As a consequence,
+TopDocs.totalHits is now an TotalHits object that is either an exact hit count
+or a lower bound of the hit count.

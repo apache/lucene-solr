@@ -49,33 +49,33 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   private static class SimpleTopScoreDocCollector extends TopScoreDocCollector {
 
-    private final int numHits;
-    private final boolean trackTotalHits;
-    private int sumMaxDoc;
-    private int maxCollectedExactly = -1;
+    private final int totalHitsThreshold;
 
-    SimpleTopScoreDocCollector(int numHits, boolean trackTotalHits) {
+    SimpleTopScoreDocCollector(int numHits, int totalHitsThreshold) {
       super(numHits);
-      this.numHits = numHits;
-      this.trackTotalHits = trackTotalHits;
+      this.totalHitsThreshold = totalHitsThreshold;
     }
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context)
         throws IOException {
       final int docBase = context.docBase;
-      sumMaxDoc += context.reader().maxDoc();
       return new ScorerLeafCollector() {
+
+        private void updateMinCompetitiveScore() {
+          // since we tie-break on doc id and collect in doc id order, we can require
+          // the next float
+          scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));
+          totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+        }
 
         @Override
         public void setScorer(Scorer scorer) throws IOException {
           super.setScorer(scorer);
-          if (trackTotalHits == false
+          if (totalHits >= totalHitsThreshold
               && pqTop != null
               && pqTop.score != Float.NEGATIVE_INFINITY) {
-            // since we tie-break on doc id and collect in doc id order, we can require
-            // the next float
-            scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));
+            updateMinCompetitiveScore();
           }
         }
 
@@ -88,6 +88,11 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
           totalHits++;
           if (score <= pqTop.score) {
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && totalHits >= totalHitsThreshold) {
+              // we just reached totalHitsThreshold, we can start setting the min
+              // competitive score now
+              updateMinCompetitiveScore();
+            }
             // Since docs are returned in-order (i.e., increasing doc Id), a document
             // with equal score to pqTop.score cannot compete since HitQueue favors
             // documents with lower doc Ids. Therefore reject those docs too.
@@ -96,14 +101,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           pqTop.doc = doc + docBase;
           pqTop.score = score;
           pqTop = pq.updateTop();
-          if (trackTotalHits == false && pqTop.score != Float.NEGATIVE_INFINITY) { // -Infinity is the score of sentinels
-            // since we tie-break on doc id and collect in doc id order, we can require
-            // the next float
-            scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));
-            if (maxCollectedExactly < 0) {
-              assert totalHits == numHits;
-              maxCollectedExactly = doc + docBase;
-            }
+          if (totalHits >= totalHitsThreshold && pqTop.score != Float.NEGATIVE_INFINITY) { // -Infinity is the score of sentinels
+            updateMinCompetitiveScore();
           }
         }
 
@@ -111,22 +110,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     }
 
     @Override
-    public TopDocs topDocs() {
-      TopDocs topDocs = super.topDocs();
-      if (trackTotalHits == false && maxCollectedExactly >= 0) {
-        // assume matches are evenly spread in the doc id space
-        // this may be completely off
-        long totalHitsEstimate = (long) numHits * sumMaxDoc / (maxCollectedExactly + 1);
-        // we take the max since the current topDocs.totalHits is a lower bound
-        // of the total hit count
-        topDocs.totalHits = Math.max(topDocs.totalHits, totalHitsEstimate);
-      }
-      return topDocs;
-    }
-
-    @Override
     public ScoreMode scoreMode() {
-      return trackTotalHits ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
+      return totalHitsThreshold == Integer.MAX_VALUE ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
     }
   }
 
@@ -148,7 +133,9 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
     @Override
     protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
-      return results == null ? new TopDocs(totalHits, new ScoreDoc[0]) : new TopDocs(totalHits, results);
+      return results == null
+          ? new TopDocs(new TotalHits(totalHits, totalHitsRelation), new ScoreDoc[0])
+          : new TopDocs(new TotalHits(totalHits, totalHitsRelation), results);
     }
 
     @Override
@@ -187,38 +174,51 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   /**
    * Creates a new {@link TopScoreDocCollector} given the number of hits to
-   * collect.
+   * collect and the number of hits to count accurately.
    *
+   * <p><b>NOTE</b>: If the total hit count of the top docs is less than
+   * {@code totalHitsThreshold} then this value is accurate. On the other hand,
+   * if the {@link TopDocs#totalHits} value is greater than or equal to
+   * {@code totalHitsThreshold} then its value is a lower bound of the hit
+   * count. A value of {@link Integer#MAX_VALUE} will make the hit count
+   * accurate but will also likely make query processing slower.
    * <p><b>NOTE</b>: The instances returned by this method
    * pre-allocate a full array of length
    * <code>numHits</code>, and fill the array with sentinel
    * objects.
    */
-  public static TopScoreDocCollector create(int numHits) {
-    return create(numHits, null, true);
+  public static TopScoreDocCollector create(int numHits, int totalHitsThreshold) {
+    return create(numHits, null, totalHitsThreshold);
   }
 
   /**
    * Creates a new {@link TopScoreDocCollector} given the number of hits to
-   * collect, the bottom of the previous page, and whether the total hit count
-   * is needed.
+   * collect, the bottom of the previous page, and the number of hits to count
+   * accurately.
    *
-   * <p><b>NOTE</b>: If {@code trackTotalHits} is {@code false} then the
-   * {@link TopDocs#totalHits} of the returned {@link TopDocs} will be an
-   * approximation and may be completely off.
+   * <p><b>NOTE</b>: If the total hit count of the top docs is less than
+   * {@code totalHitsThreshold} then this value is accurate. On the other hand,
+   * if the {@link TopDocs#totalHits} value is greater than or equal to
+   * {@code totalHitsThreshold} then its value is a lower bound of the hit
+   * count. A value of {@link Integer#MAX_VALUE} will make the hit count
+   * accurate but will also likely make query processing slower.
    * <p><b>NOTE</b>: The instances returned by this method
    * pre-allocate a full array of length
    * <code>numHits</code>, and fill the array with sentinel
    * objects.
    */
-  public static TopScoreDocCollector create(int numHits, ScoreDoc after, boolean trackTotalHits) {
+  public static TopScoreDocCollector create(int numHits, ScoreDoc after, int totalHitsThreshold) {
 
     if (numHits <= 0) {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
     }
 
+    if (totalHitsThreshold <= 0) {
+      throw new IllegalArgumentException("totalHitsThreshold must be > 0, got " + totalHitsThreshold);
+    }
+
     if (after == null) {
-      return new SimpleTopScoreDocCollector(numHits, trackTotalHits);
+      return new SimpleTopScoreDocCollector(numHits, totalHitsThreshold);
     } else {
       return new PagingTopScoreDocCollector(numHits, after);
     }
@@ -240,7 +240,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       return EMPTY_TOPDOCS;
     }
 
-    return new TopDocs(totalHits, results);
+    return new TopDocs(new TotalHits(totalHits, totalHitsRelation), results);
   }
 
   @Override

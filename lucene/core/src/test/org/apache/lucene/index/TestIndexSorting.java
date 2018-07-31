@@ -1534,9 +1534,9 @@ public class TestIndexSorting extends LuceneTestCase {
       TermQuery termQuery = new TermQuery(new Term("id", Integer.toString(i)));
       final TopDocs topDocs = searcher.search(termQuery, 1);
       if (deleted.get(i)) {
-        assertEquals(0, topDocs.totalHits);
+        assertEquals(0, topDocs.totalHits.value);
       } else {
-        assertEquals(1, topDocs.totalHits);
+        assertEquals(1, topDocs.totalHits.value);
         NumericDocValues values = MultiDocValues.getNumericValues(reader, "id");
         assertEquals(topDocs.scoreDocs[0].doc, values.advance(topDocs.scoreDocs[0].doc));
         assertEquals(i, values.longValue());
@@ -1586,9 +1586,9 @@ public class TestIndexSorting extends LuceneTestCase {
       TermQuery termQuery = new TermQuery(new Term("id", Integer.toString(i)));
       final TopDocs topDocs = searcher.search(termQuery, 1);
       if (deleted.get(i)) {
-        assertEquals(0, topDocs.totalHits);
+        assertEquals(0, topDocs.totalHits.value);
       } else {
-        assertEquals(1, topDocs.totalHits);
+        assertEquals(1, topDocs.totalHits.value);
         NumericDocValues values = MultiDocValues.getNumericValues(reader, "id");
         assertEquals(topDocs.scoreDocs[0].doc, values.advance(topDocs.scoreDocs[0].doc));
         assertEquals(i, values.longValue());
@@ -1685,9 +1685,9 @@ public class TestIndexSorting extends LuceneTestCase {
     for (int i = 0; i < numDocs; ++i) {
       final TopDocs topDocs = searcher.search(new TermQuery(new Term("id", Integer.toString(i))), 1);
       if (values.containsKey(i) == false) {
-        assertEquals(0, topDocs.totalHits);
+        assertEquals(0, topDocs.totalHits.value);
       } else {
-        assertEquals(1, topDocs.totalHits);
+        assertEquals(1, topDocs.totalHits.value);
         NumericDocValues dvs = MultiDocValues.getNumericValues(reader, "foo");
         int docID = topDocs.scoreDocs[0].doc;
         assertEquals(docID, dvs.advance(docID));
@@ -1807,7 +1807,7 @@ public class TestIndexSorting extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     for (int i = 0; i < numDocs; ++i) {
       final TopDocs topDocs = searcher.search(new TermQuery(new Term("id", Integer.toString(i))), 1);
-      assertEquals(1, topDocs.totalHits);
+      assertEquals(1, topDocs.totalHits.value);
       NumericDocValues dvs = MultiDocValues.getNumericValues(reader, "bar");
       int hitDoc = topDocs.scoreDocs[0].doc;
       assertEquals(hitDoc, dvs.advance(hitDoc));
@@ -1865,8 +1865,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Query query = new TermQuery(new Term("id", Integer.toString(i)));
       final TopDocs topDocs = searcher.search(query, 1);
       final TopDocs topDocs2 = searcher2.search(query, 1);
-      assertEquals(topDocs.totalHits, topDocs2.totalHits);
-      if (topDocs.totalHits == 1) {
+      assertEquals(topDocs.totalHits.value, topDocs2.totalHits.value);
+      if (topDocs.totalHits.value == 1) {
         NumericDocValues dvs1 = MultiDocValues.getNumericValues(reader, "foo");
         int hitDoc1 = topDocs.scoreDocs[0].doc;
         assertEquals(hitDoc1, dvs1.advance(hitDoc1));
@@ -2324,21 +2324,21 @@ public class TestIndexSorting extends LuceneTestCase {
         System.out.println("TEST: iter=" + iter + " numHits=" + numHits);
       }
 
-      TopFieldCollector c1 = TopFieldCollector.create(sort, numHits, true);
+      TopFieldCollector c1 = TopFieldCollector.create(sort, numHits, Integer.MAX_VALUE);
       s1.search(new MatchAllDocsQuery(), c1);
       TopDocs hits1 = c1.topDocs();
 
-      TopFieldCollector c2 = TopFieldCollector.create(sort, numHits, false);
+      TopFieldCollector c2 = TopFieldCollector.create(sort, numHits, 1);
       s2.search(new MatchAllDocsQuery(), c2);
 
       TopDocs hits2 = c2.topDocs();
 
       if (VERBOSE) {
-        System.out.println("  topDocs query-time sort: totalHits=" + hits1.totalHits);
+        System.out.println("  topDocs query-time sort: totalHits=" + hits1.totalHits.value);
         for(ScoreDoc scoreDoc : hits1.scoreDocs) {
           System.out.println("    " + scoreDoc.doc);
         }
-        System.out.println("  topDocs index-time sort: totalHits=" + hits2.totalHits);
+        System.out.println("  topDocs index-time sort: totalHits=" + hits2.totalHits.value);
         for(ScoreDoc scoreDoc : hits2.scoreDocs) {
           System.out.println("    " + scoreDoc.doc);
         }

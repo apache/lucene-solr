@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.TotalHits.Relation;
 
 /**
  * A {@link Rescorer} that re-sorts according to a provided
@@ -49,7 +50,7 @@ public class SortRescorer extends Rescorer {
 
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
-    TopFieldCollector collector = TopFieldCollector.create(sort, topN, true);
+    TopFieldCollector collector = TopFieldCollector.create(sort, topN, Integer.MAX_VALUE);
 
     // Now merge sort docIDs from hits, with reader's leaves:
     int hitUpto = 0;
@@ -98,9 +99,9 @@ public class SortRescorer extends Rescorer {
 
   @Override
   public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID) throws IOException {
-    TopDocs oneHit = new TopDocs(1, new ScoreDoc[] {new ScoreDoc(docID, firstPassExplanation.getValue().floatValue())});
+    TopDocs oneHit = new TopDocs(new TotalHits(1, Relation.EQUAL_TO), new ScoreDoc[] {new ScoreDoc(docID, firstPassExplanation.getValue().floatValue())});
     TopDocs hits = rescore(searcher, oneHit, 1);
-    assert hits.totalHits == 1;
+    assert hits.totalHits.value == 1;
 
     List<Explanation> subs = new ArrayList<>();
 
