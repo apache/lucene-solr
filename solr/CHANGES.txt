@@ -183,6 +183,8 @@ Bug Fixes
 
 * SOLR-12477: An update would return a client error(400) if it hit a AlreadyClosedException.
   We now return the error as a server error(500) instead (Jeffery via Varun Thacker)
+  
+* SOLR-12606: Fix InfixSuggestersTest.testShutdownDuringBuild() failures. (Steve Rowe) 
 
 Optimizations
 ----------------------
