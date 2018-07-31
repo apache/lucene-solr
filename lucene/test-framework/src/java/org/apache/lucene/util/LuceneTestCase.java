@@ -52,6 +52,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -2739,17 +2740,64 @@ public abstract class LuceneTestCase extends Assert {
           return expectedWrappedType.cast(cause);
         } else {
           AssertionFailedError assertion = new AssertionFailedError
-              ("Unexpected wrapped exception type, expected " + expectedWrappedType.getSimpleName());
+              ("Unexpected wrapped exception type, expected " + expectedWrappedType.getSimpleName() 
+                  + " but got: " + cause);
           assertion.initCause(e);
           throw assertion;
         }
       }
       AssertionFailedError assertion = new AssertionFailedError
-          ("Unexpected outer exception type, expected " + expectedOuterType.getSimpleName());
+          ("Unexpected outer exception type, expected " + expectedOuterType.getSimpleName()
+           + " but got: " + e);
       assertion.initCause(e);
       throw assertion;
     }
-    throw new AssertionFailedError("Expected outer exception " + expectedOuterType.getSimpleName());
+    throw new AssertionFailedError("Expected outer exception " + expectedOuterType.getSimpleName()
+        + " but no exception was thrown.");
+  }
+
+  /**
+   * Checks that one of the specified wrapped and outer exception classes are thrown
+   * by the given runnable, and returns the outer exception.
+   * 
+   * This method accepts outer exceptions with no wrapped exception;
+   * an empty list of expected wrapped exception types indicates no wrapped exception.
+   */
+  public static <TO extends Throwable, TW extends Throwable> TO expectThrowsAnyOf
+  (LinkedHashMap<Class<? extends TO>,List<Class<? extends TW>>> expectedOuterToWrappedTypes, ThrowingRunnable runnable) {
+    try {
+      runnable.run();
+    } catch (Throwable e) {
+      for (Map.Entry<Class<? extends TO>, List<Class<? extends TW>>> entry : expectedOuterToWrappedTypes.entrySet()) {
+        Class<? extends TO> expectedOuterType = entry.getKey();
+        List<Class<? extends TW>> expectedWrappedTypes = entry.getValue();
+        Throwable cause = e.getCause();
+        if (expectedOuterType.isInstance(e)) {
+          if (expectedWrappedTypes.isEmpty()) {
+            return null; // no wrapped exception
+          } else {
+            for (Class<? extends TW> expectedWrappedType : expectedWrappedTypes) {
+              if (expectedWrappedType.isInstance(cause)) {
+                return expectedOuterType.cast(e);
+              }
+            }
+            List<String> wrappedTypes = expectedWrappedTypes.stream().map(Class::getSimpleName).collect(Collectors.toList());
+            AssertionFailedError assertion = new AssertionFailedError
+                ("Unexpected wrapped exception type, expected one of " + wrappedTypes + " but got: " + cause);
+            assertion.initCause(e);
+            throw assertion;
+          }
+        }
+      }
+      List<String> outerTypes = expectedOuterToWrappedTypes.keySet().stream().map(Class::getSimpleName).collect(Collectors.toList());
+      AssertionFailedError assertion = new AssertionFailedError
+          ("Unexpected outer exception type, expected one of " + outerTypes + " but got: " + e);
+      assertion.initCause(e);
+      throw assertion;
+    }
+    List<String> outerTypes = expectedOuterToWrappedTypes.keySet().stream().map(Class::getSimpleName).collect(Collectors.toList());
+    throw new AssertionFailedError("Expected any of the following outer exception types: " + outerTypes
+        + " but no exception was thrown.");
   }
 
   /** Returns true if the file exists (can be opened), false
