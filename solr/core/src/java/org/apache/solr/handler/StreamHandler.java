@@ -66,7 +66,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   static SolrClientCache clientCache = new SolrClientCache();
   static ModelCache modelCache = null;
   private StreamFactory streamFactory = new DefaultStreamFactory();
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private Map<String,DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
 
@@ -157,7 +157,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     } catch (Exception e) {
       // Catch exceptions that occur while the stream is being created. This will include streaming expression parse
       // rules.
-      SolrException.log(logger, e);
+      SolrException.log(log, e);
       rsp.add("result-set", new DummyErrorStream(e));
 
       return;

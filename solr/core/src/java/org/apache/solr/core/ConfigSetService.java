@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class ConfigSetService {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static ConfigSetService createConfigSetService(NodeConfig nodeConfig, SolrResourceLoader loader, ZkController zkController) {
     if (zkController != null)
       return new CloudConfigSetService(loader, zkController);
@@ -228,15 +228,15 @@ public abstract class ConfigSetService {
         try {
           String cachedName = cacheName(schemaFile);
           return schemaCache.get(cachedName, () -> {
-            logger.info("Creating new index schema for core {}", cd.getName());
+            log.info("Creating new index schema for core {}", cd.getName());
             return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
           });
         } catch (ExecutionException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Error creating index schema for core " + cd.getName(), e);
         } catch (IOException e) {
-          logger.warn("Couldn't get last modified time for schema file {}: {}", schemaFile, e.getMessage());
-          logger.warn("Will not use schema cache");
+          log.warn("Couldn't get last modified time for schema file {}: {}", schemaFile, e.getMessage());
+          log.warn("Will not use schema cache");
         }
       }
       return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
