@@ -129,6 +129,8 @@ New Features
   future cluster operations whether they are invoked manually via the Collection API or by the Autoscaling framework.
   (noble, shalin)
 
+* SOLR-12402: Factor out SolrDefaultStreamFactory class. (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
