@@ -43,7 +43,6 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.Clause.RangeVal;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
@@ -72,9 +71,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.CORES;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.REPLICA;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
@@ -3413,18 +3412,18 @@ public void testUtilizeNodeFailure2() throws Exception {
         "        {'node':'solr-27:8983_solr'}]}]}";
 
     List l = (List) ((Map) Utils.fromJSONString(rowsData)).get("sortedNodes");
-    List<Suggestion.ConditionType> params = new ArrayList<>();
+    List<Variable.Type> params = new ArrayList<>();
     params.add(CORES);
-    params.add(Suggestion.ConditionType.FREEDISK);
-    params.add(Suggestion.ConditionType.SYSLOADAVG);
-    params.add(Suggestion.ConditionType.NODE);
+    params.add(Variable.Type.FREEDISK);
+    params.add(Variable.Type.SYSLOADAVG);
+    params.add(Variable.Type.NODE);
     List<Row> rows = new ArrayList<>();
     for (Object o : l) {
       Map m = (Map) o;
       Cell[] c = new Cell[params.size()];
       List attrs = (List) m.get("attributes");
       for (int i = 0; i < params.size(); i++) {
-        Suggestion.ConditionType param = params.get(i);
+        Variable.Type param = params.get(i);
         for (Object attr : attrs) {
           Object o1 = ((Map) attr).get(param.tagName);
           if (o1 != null) {

@@ -40,12 +40,12 @@ public enum Operand {
   RANGE_EQUAL("", 0) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
-      return ((Clause.RangeVal) ruleVal).match((Number) testVal) ? PASS : FAIL;
+      return ((RangeVal) ruleVal).match((Number) testVal) ? PASS : FAIL;
     }
 
     @Override
     public Double delta(Object expected, Object actual) {
-      return ((Clause.RangeVal) expected).delta(((Number) actual).doubleValue());
+      return ((RangeVal) expected).delta(((Number) actual).doubleValue());
     }
 
     @Override
@@ -56,7 +56,7 @@ public enum Operand {
         if (hyphenIdx > 0) {
           String minS = strVal.substring(0, hyphenIdx).trim();
           String maxS = strVal.substring(hyphenIdx + 1, strVal.length()).trim();
-          return new Clause.RangeVal(
+          return new RangeVal(
               (Number) condition.varType.validate(condition.name, minS, true),
               (Number) condition.varType.validate(condition.name, maxS, true),
               null
@@ -68,7 +68,7 @@ public enum Operand {
 
 
       Number num = (Number) condition.varType.validate(condition.name, condition.val, true);
-      return new Clause.RangeVal(Math.floor(num.doubleValue()), Math.ceil(num.doubleValue()), num);
+      return new RangeVal(Math.floor(num.doubleValue()), Math.ceil(num.doubleValue()), num);
     }
   },
   EQUAL("", 0) {
@@ -87,7 +87,7 @@ public enum Operand {
   RANGE_NOT_EQUAL("", 2) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
-      return ((Clause.RangeVal) ruleVal).match((Number) testVal) ? FAIL : PASS;
+      return ((RangeVal) ruleVal).match((Number) testVal) ? FAIL : PASS;
     }
 
     @Override
