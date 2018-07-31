@@ -36,7 +36,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
+import org.apache.solr.client.solrj.cloud.autoscaling.VariableBase;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.MapWriter;
@@ -59,9 +60,9 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.METRICS_PREFIX;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.TOTALDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.WITH_COLLECTION;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.TOTALDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_COLLECTION;
 
 /**
  *
@@ -153,7 +154,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         for (String key : keys) {
           if (r.getVariables().containsKey(key)) continue;// it's already collected
           String perReplicaMetricsKey = "solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":";
-          Suggestion.ConditionType tagType = Suggestion.getTagType(key);
+          Type tagType = VariableBase.getTagType(key);
           String perReplicaValue = key;
           if (tagType != null) {
             perReplicaValue = tagType.metricsAttribute;
@@ -168,7 +169,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         Map<String, Object> tagValues = fetchReplicaMetrics(node, metricsKeyVsTagReplica);
         tagValues.forEach((k, o) -> {
           Pair<String, ReplicaInfo> p = metricsKeyVsTagReplica.get(k);
-          Suggestion.ConditionType validator = Suggestion.getTagType(p.first());
+          Type validator = VariableBase.getTagType(p.first());
           if (validator != null) o = validator.convertVal(o);
           if (p.second() != null) p.second().getVariables().put(p.first(), o);
         });

@@ -40,13 +40,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -473,10 +474,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       // mark replica as active
       replicaInfo.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       // add a property expected in Policy calculations, if missing
-      if (replicaInfo.getVariable(Suggestion.ConditionType.CORE_IDX.metricsAttribute) == null) {
-        replicaInfo.getVariables().put(Suggestion.ConditionType.CORE_IDX.metricsAttribute, SimCloudManager.DEFAULT_IDX_SIZE_BYTES);
-        replicaInfo.getVariables().put(Suggestion.coreidxsize,
-            Suggestion.ConditionType.CORE_IDX.convertVal(SimCloudManager.DEFAULT_IDX_SIZE_BYTES));
+      if (replicaInfo.getVariable(Type.CORE_IDX.metricsAttribute) == null) {
+        replicaInfo.getVariables().put(Type.CORE_IDX.metricsAttribute, SimCloudManager.DEFAULT_IDX_SIZE_BYTES);
+        replicaInfo.getVariables().put(Variable.coreidxsize,
+            Type.CORE_IDX.convertVal(SimCloudManager.DEFAULT_IDX_SIZE_BYTES));
       }
 
       replicas.add(replicaInfo);
@@ -502,7 +503,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       cloudManager.getMetricManager().registry(registry).counter("UPDATE./update.requests");
       cloudManager.getMetricManager().registry(registry).counter("QUERY./select.requests");
       cloudManager.getMetricManager().registerGauge(null, registry,
-          () -> replicaInfo.getVariable(Suggestion.ConditionType.CORE_IDX.metricsAttribute),
+          () -> replicaInfo.getVariable(Type.CORE_IDX.metricsAttribute),
           "", true, "INDEX.sizeInBytes");
       if (runLeaderElection) {
         simRunLeaderElection(Collections.singleton(replicaInfo.getCollection()), true);
@@ -1085,8 +1086,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       replicaProps.put("SEARCHER.searcher.numDocs", replicasNumDocs);
       replicaProps.put("SEARCHER.searcher.maxDoc", replicasNumDocs);
       replicaProps.put("SEARCHER.searcher.deletedDocs", 0);
-      replicaProps.put(Suggestion.ConditionType.CORE_IDX.metricsAttribute, replicasIndexSize);
-      replicaProps.put(Suggestion.coreidxsize, Suggestion.ConditionType.CORE_IDX.convertVal(replicasIndexSize));
+      replicaProps.put(Type.CORE_IDX.metricsAttribute, replicasIndexSize);
+      replicaProps.put(Variable.coreidxsize, Type.CORE_IDX.convertVal(replicasIndexSize));
 
       ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
           solrCoreName, collectionName, replicaPosition.shard, replicaPosition.type, subShardNodeName, replicaProps);
@@ -1246,13 +1247,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           try {
             simSetShardValue(collection, s.getName(), "SEARCHER.searcher.deletedDocs", 1, true, false);
             simSetShardValue(collection, s.getName(), "SEARCHER.searcher.numDocs", -1, true, false);
-            Number indexSize = (Number)ri.getVariable(Suggestion.ConditionType.CORE_IDX.metricsAttribute);
+            Number indexSize = (Number)ri.getVariable(Type.CORE_IDX.metricsAttribute);
             if (indexSize != null && indexSize.longValue() > SimCloudManager.DEFAULT_IDX_SIZE_BYTES) {
               indexSize = indexSize.longValue() - DEFAULT_DOC_SIZE_BYTES;
-              simSetShardValue(collection, s.getName(), Suggestion.ConditionType.CORE_IDX.metricsAttribute,
+              simSetShardValue(collection, s.getName(), Type.CORE_IDX.metricsAttribute,
                   indexSize.intValue(), false, false);
-              simSetShardValue(collection, s.getName(), Suggestion.coreidxsize,
-                  Suggestion.ConditionType.CORE_IDX.convertVal(indexSize), false, false);
+              simSetShardValue(collection, s.getName(), Variable.coreidxsize,
+                  Type.CORE_IDX.convertVal(indexSize), false, false);
             } else {
               throw new Exception("unexpected indexSize ri=" + ri);
             }
@@ -1284,10 +1285,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             try {
               simSetShardValue(collection, s.getName(), "SEARCHER.searcher.deletedDocs", numDocs, false, false);
               simSetShardValue(collection, s.getName(), "SEARCHER.searcher.numDocs", 0, false, false);
-              simSetShardValue(collection, s.getName(), Suggestion.ConditionType.CORE_IDX.metricsAttribute,
+              simSetShardValue(collection, s.getName(), Type.CORE_IDX.metricsAttribute,
                   SimCloudManager.DEFAULT_IDX_SIZE_BYTES, false, false);
-              simSetShardValue(collection, s.getName(), Suggestion.coreidxsize,
-                  Suggestion.ConditionType.CORE_IDX.convertVal(SimCloudManager.DEFAULT_IDX_SIZE_BYTES), false, false);
+              simSetShardValue(collection, s.getName(), Variable.coreidxsize,
+                  Type.CORE_IDX.convertVal(SimCloudManager.DEFAULT_IDX_SIZE_BYTES), false, false);
             } catch (Exception e) {
               throw new IOException(e);
             }
@@ -1314,13 +1315,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             simSetShardValue(collection, s.getName(), "SEARCHER.searcher.maxDoc", 1, true, false);
 
             ReplicaInfo ri = getReplicaInfo(leader);
-            Number indexSize = (Number)ri.getVariable(Suggestion.ConditionType.CORE_IDX.metricsAttribute);
+            Number indexSize = (Number)ri.getVariable(Type.CORE_IDX.metricsAttribute);
             // for each new document increase the size by DEFAULT_DOC_SIZE_BYTES
             indexSize = indexSize.longValue() + DEFAULT_DOC_SIZE_BYTES;
-            simSetShardValue(collection, s.getName(), Suggestion.ConditionType.CORE_IDX.metricsAttribute,
+            simSetShardValue(collection, s.getName(), Type.CORE_IDX.metricsAttribute,
                 indexSize.longValue(), false, false);
-            simSetShardValue(collection, s.getName(), Suggestion.coreidxsize,
-                Suggestion.ConditionType.CORE_IDX.convertVal(indexSize), false, false);
+            simSetShardValue(collection, s.getName(), Variable.coreidxsize,
+                Type.CORE_IDX.convertVal(indexSize), false, false);
           } catch (Exception e) {
             throw new IOException(e);
           }

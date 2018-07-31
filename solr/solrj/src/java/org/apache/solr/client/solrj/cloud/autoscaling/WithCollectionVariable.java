@@ -34,7 +34,12 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 /**
  * Implements the 'withCollection' variable type
  */
-public class WithCollectionVarType implements VarType {
+public class WithCollectionVariable extends VariableBase {
+
+  public WithCollectionVariable(Type type) {
+    super(type);
+  }
+
   @Override
   public boolean match(Object inputVal, Operand op, Object val, String name, Row row) {
     Map<String, String> withCollectionMap = (Map<String, String>) inputVal;
@@ -77,7 +82,7 @@ public class WithCollectionVarType implements VarType {
     return Integer.compare(v1.getViolatingReplicas().size(), v2.getViolatingReplicas().size());
   }
 
-  public void addViolatingReplicas(Suggestion.ViolationCtx ctx) {
+  public void addViolatingReplicas(Violation.Ctx ctx) {
     String node = ctx.currentViolation.node;
     for (Row row : ctx.allRows) {
       if (node.equals(row.node)) {
@@ -101,7 +106,7 @@ public class WithCollectionVarType implements VarType {
   }
 
   @Override
-  public void getSuggestions(Suggestion.SuggestionCtx ctx) {
+  public void getSuggestions(Suggestion.Ctx ctx) {
     if (ctx.violation.getViolatingReplicas().isEmpty()) return;
 
     Map<String, Object> nodeValues = ctx.session.nodeStateProvider.getNodeValues(ctx.violation.node, Collections.singleton("withCollection"));

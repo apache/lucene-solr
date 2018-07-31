@@ -31,10 +31,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -475,7 +475,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     Map<String, Object> nodeValues = nodeStateProvider.getNodeValues(parentShardLeader.getNodeName(),
         Collections.singletonList(ImplicitSnitch.DISK));
     Map<String, Map<String, List<ReplicaInfo>>> infos = nodeStateProvider.getReplicaInfo(parentShardLeader.getNodeName(),
-        Collections.singletonList(Suggestion.ConditionType.CORE_IDX.metricsAttribute));
+        Collections.singletonList(Type.CORE_IDX.metricsAttribute));
     if (infos.get(collection) == null || infos.get(collection).get(shard) == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing replica information for parent shard leader");
     }
@@ -484,11 +484,11 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     Double indexSize = null;
     for (ReplicaInfo info : lst) {
       if (info.getCore().equals(parentShardLeader.getCoreName())) {
-        Number size = (Number)info.getVariable(Suggestion.ConditionType.CORE_IDX.metricsAttribute);
+        Number size = (Number)info.getVariable(Type.CORE_IDX.metricsAttribute);
         if (size == null) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing index size information for parent shard leader");
         }
-        indexSize = (Double)Suggestion.ConditionType.CORE_IDX.convertVal(size);
+        indexSize = (Double) Type.CORE_IDX.convertVal(size);
         break;
       }
     }

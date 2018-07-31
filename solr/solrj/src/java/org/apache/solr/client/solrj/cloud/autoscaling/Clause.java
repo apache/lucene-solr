@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.StrUtils;
@@ -254,7 +254,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     Object expectedVal = null;
     ComputedType computedType = null;
     Object val = m.get(s);
-    ConditionType varType = Suggestion.getTagType(s);
+    Type varType = VariableBase.getTagType(s);
     if (varType.meta.isHidden()) {
       throw new IllegalArgumentException(formatString("''{0}'' is not allowed in a policy rule :  ''{1}''  ", varType.tagName, toJSONString(m)));
     }
@@ -309,7 +309,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
   }
 
-  private List readListVal(Map m, List val, ConditionType varType, String conditionName) {
+  private List readListVal(Map m, List val, Type varType, String conditionName) {
     List list = val;
     list = (List) list.stream()
         .map(it -> varType.validate(conditionName, it, true))
@@ -354,7 +354,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   public List<Violation> test(Policy.Session session) {
     ComputedValueEvaluator computedValueEvaluator = new ComputedValueEvaluator(session);
-    Suggestion.ViolationCtx ctx = new Suggestion.ViolationCtx(this, session.matrix, computedValueEvaluator);
+    Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, computedValueEvaluator);
     if (isPerCollectiontag()) {
       Map<String, Map<String, Map<String, ReplicaCount>>> replicaCounts = computeReplicaCounts(session.matrix, computedValueEvaluator);
       for (Map.Entry<String, Map<String, Map<String, ReplicaCount>>> e : replicaCounts.entrySet()) {
@@ -448,7 +448,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return false;
   }
 
-  enum ComputedType {
+  public enum ComputedType {
     NULL(),
     EQUAL() {
       @Override
@@ -532,7 +532,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public static class Condition implements MapWriter {
     final String name;
     final Object val;
-    final ConditionType varType;
+    final Type varType;
     final ComputedType computedType;
     final Operand op;
     private Clause clause;
@@ -541,7 +541,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       this.name = name;
       this.val = val;
       this.op = op;
-      varType = Suggestion.getTagType(name);
+      varType = VariableBase.getTagType(name);
       this.computedType = computedType;
       this.clause = parent;
     }
@@ -668,7 +668,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
    */
   public static Object  validate(String name, Object val, boolean isRuleVal) {
     if (val == null) return null;
-    ConditionType info = Suggestion.getTagType(name);
+    Type info = VariableBase.getTagType(name);
     if (info == null) throw new RuntimeException("Unknown type :" + name);
     return info.validate(name, val, isRuleVal);
   }
@@ -722,37 +722,5 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   public static final String METRICS_PREFIX = "metrics:";
-
-  static class RangeVal implements MapWriter {
-    final Number min, max, actual;
-
-    RangeVal(Number min, Number max, Number actual) {
-      this.min = min;
-      this.max = max;
-      this.actual = actual;
-    }
-
-    public boolean match(Number testVal) {
-      return Double.compare(testVal.doubleValue(), min.doubleValue()) >= 0 &&
-          Double.compare(testVal.doubleValue(), max.doubleValue()) <= 0;
-    }
-
-    public Double delta(double v) {
-//      if (actual != null) return v - actual.doubleValue();
-      if (v >= max.doubleValue()) return v - max.doubleValue();
-      if (v <= min.doubleValue()) return v - min.doubleValue();
-      return 0d;
-    }
-
-    @Override
-    public String toString() {
-      return jsonStr();
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.put("min", min).put("max", max).putIfNotNull("actual", actual);
-    }
-  }
 
 }
