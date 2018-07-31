@@ -16,377 +16,68 @@
  */
 package org.apache.lucene.document;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
-import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
+/** random bounding box and polygon query tests for random generated {@link Polygon} types */
+public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
-/** base Test case for {@link LatLonShape} indexing and search */
-public class TestLatLonPolygonShapeQueries extends LuceneTestCase {
-  protected static final String FIELD_NAME = "shape";
+  protected final PolygonValidator VALIDATOR = new PolygonValidator();
 
-  private Polygon quantizePolygon(Polygon polygon) {
-    double[] lats = new double[polygon.numPoints()];
-    double[] lons = new double[polygon.numPoints()];
-    for (int i = 0; i < lats.length; ++i) {
-      lats[i] = quantizeLat(polygon.getPolyLat(i));
-      lons[i] = quantizeLon(polygon.getPolyLon(i));
-    }
-    return new Polygon(lats, lons);
+  @Override
+  protected ShapeType getShapeType() {
+    return ShapeType.POLYGON;
   }
 
-  protected double quantizeLat(double rawLat) {
-    return decodeLatitude(encodeLatitude(rawLat));
-  }
-
-  protected double quantizeLatCeil(double rawLat) {
-    return decodeLatitude(encodeLatitudeCeil(rawLat));
-  }
-
-  protected double quantizeLon(double rawLon) {
-    return decodeLongitude(encodeLongitude(rawLon));
-  }
-
-  protected double quantizeLonCeil(double rawLon) {
-    return decodeLongitude(encodeLongitudeCeil(rawLon));
-  }
-
-  protected void addPolygonsToDoc(String field, Document doc, Polygon polygon) {
-    Field[] fields = LatLonShape.createIndexableFields(field, polygon);
-    for (Field f : fields) {
-      doc.add(f);
-    }
-  }
-
-  protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
-    return LatLonShape.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
-  }
-
-  protected Query newPolygonQuery(String field, Polygon... polygons) {
-    return LatLonShape.newPolygonQuery(field, polygons);
-  }
-
-  public void testRandomTiny() throws Exception {
-    // Make sure single-leaf-node case is OK:
-    doTestRandom(10);
-  }
-
-  public void testRandomMedium() throws Exception {
-    doTestRandom(10000);
-  }
-
-  @Nightly
-  public void testRandomBig() throws Exception {
-    doTestRandom(50000);
-  }
-
-  private void doTestRandom(int count) throws Exception {
-    int numPolygons = atLeast(count);
-
-    if (VERBOSE) {
-      System.out.println("TEST: numPolygons=" + numPolygons);
-    }
-
-    Polygon[] polygons = new Polygon[numPolygons];
-    for (int id = 0; id < numPolygons; ++id) {
-      int x = random().nextInt(20);
-      if (x == 17) {
-        polygons[id] = null;
-        if (VERBOSE) {
-          System.out.println("  id=" + id + " is missing");
-        }
-      } else {
-        // create a polygon that does not cross the dateline
-        polygons[id] = GeoTestUtil.nextPolygon();
-      }
-    }
-    verify(polygons);
-  }
-
-  private void verify(Polygon... polygons) throws Exception {
-    ArrayList<Polygon2D> poly2d = new ArrayList<>();
-    poly2d.ensureCapacity(polygons.length);
-    // index random polygons; poly2d will contain the Polygon2D objects needed for verification
-    IndexWriter w = indexRandomPolygons(poly2d, polygons);
-    Directory dir = w.getDirectory();
-    final IndexReader reader = DirectoryReader.open(w);
-    // test random bbox queries
-    verifyRandomBBoxQueries(reader, poly2d, polygons);
-    // test random polygon queires
-    verifyRandomPolygonQueries(reader, poly2d, polygons);
-    IOUtils.close(w, reader, dir);
-  }
-
-  protected IndexWriter indexRandomPolygons(List<Polygon2D> poly2d, Polygon... polygons) throws Exception {
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setMergeScheduler(new SerialMergeScheduler());
-    int mbd = iwc.getMaxBufferedDocs();
-    if (mbd != -1 && mbd < polygons.length / 100) {
-      iwc.setMaxBufferedDocs(polygons.length / 100);
-    }
-    Directory dir;
-    if (polygons.length > 1000) {
-      dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
-    } else {
-      dir = newDirectory();
-    }
-
-    Set<Integer> deleted = new HashSet<>();
-    IndexWriter w = new IndexWriter(dir, iwc);
-    for (int id = 0; id < polygons.length; ++id) {
-      Document doc = new Document();
-      doc.add(newStringField("id", "" + id, Field.Store.NO));
-      doc.add(new NumericDocValuesField("id", id));
-      if (polygons[id] != null) {
-        try {
-          addPolygonsToDoc(FIELD_NAME, doc, polygons[id]);
-        } catch (IllegalArgumentException e) {
-          // GeoTestUtil will occassionally create invalid polygons
-          // invalid polygons will not tessellate
-          // we skip those polygons that will not tessellate, relying on the TestTessellator class
-          // to ensure the Tessellator correctly identified a malformed shape and its not a bug
-          if (VERBOSE) {
-            System.out.println("  id=" + id + " could not tessellate. Malformed shape " + polygons[id] + " detected");
-          }
-          // remove and skip the malformed shape
-          polygons[id] = null;
-          poly2d.add(id, null);
-          continue;
-        }
-        poly2d.add(id, Polygon2D.create(quantizePolygon(polygons[id])));
-      } else {
-        poly2d.add(id, null);
-      }
-      w.addDocument(doc);
-      if (id > 0 && random().nextInt(100) == 42) {
-        int idToDelete = random().nextInt(id);
-        w.deleteDocuments(new Term("id", ""+idToDelete));
-        deleted.add(idToDelete);
-        if (VERBOSE) {
-          System.out.println("   delete id=" + idToDelete);
-        }
-      }
-    }
-
-    if (random().nextBoolean()) {
-      w.forceMerge(1);
-    }
-
-    return w;
-  }
-
-  protected void verifyRandomBBoxQueries(IndexReader reader, List<Polygon2D> poly2d, Polygon... polygons) throws Exception {
-    IndexSearcher s = newSearcher(reader);
-
-    final int iters = atLeast(75);
-
-    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
-    int maxDoc = s.getIndexReader().maxDoc();
-
-    for (int iter = 0; iter < iters; ++iter) {
-      if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + (iter+1) + " of " + iters + " s=" + s);
-      }
-
-      // BBox
-      Rectangle rect = GeoTestUtil.nextBoxNotCrossingDateline();
-      Query query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
-
-      if (VERBOSE) {
-        System.out.println("  query=" + query);
-      }
-
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public boolean needsScores() {
-          return false;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
-
-      boolean fail = false;
-      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
-      for (int docID = 0; docID < maxDoc; ++docID) {
-        assertEquals(docID, docIDToID.nextDoc());
-        int id = (int) docIDToID.longValue();
-        boolean expected;
-        if (liveDocs != null && liveDocs.get(docID) == false) {
-          // document is deleted
-          expected = false;
-        } else if (polygons[id] == null) {
-          expected = false;
-        } else {
-          // check quantized poly against quantized query
-          expected = poly2d.get(id).relate(quantizeLatCeil(rect.minLat), quantizeLat(rect.maxLat),
-              quantizeLonCeil(rect.minLon), quantizeLon(rect.maxLon)) != Relation.CELL_OUTSIDE_QUERY;
-        }
-
-        if (hits.get(docID) != expected) {
-          StringBuilder b = new StringBuilder();
-
-          if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
-          } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
-          }
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  polygon=" + quantizePolygon(polygons[id]) + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  rect=Rectangle(" + quantizeLatCeil(rect.minLat) + " TO " + quantizeLat(rect.maxLat) + " lon=" + quantizeLonCeil(rect.minLon) + " TO " + quantizeLon(rect.maxLon) + ")");
-          if (true) {
-            fail("wrong hit (first of possibly more):\n\n" + b);
-          } else {
-            System.out.println(b.toString());
-            fail = true;
-          }
-        }
-      }
-      if (fail) {
-        fail("some hits were wrong");
+  @Override
+  protected Polygon nextShape() {
+    Polygon p;
+    while (true) {
+      // if we can't tessellate; then random polygon generator created a malformed shape
+      p = (Polygon)getShapeType().nextShape();
+      try {
+        Tessellator.tessellate(p);
+        return p;
+      } catch (IllegalArgumentException e) {
+        continue;
       }
     }
   }
 
-  protected void verifyRandomPolygonQueries(IndexReader reader, List<Polygon2D> poly2d, Polygon... polygons) throws Exception {
-    IndexSearcher s = newSearcher(reader);
+  @Override
+  protected Field[] createIndexableFields(String field, Object polygon) {
+    return LatLonShape.createIndexableFields(field, (Polygon)polygon);
+  }
 
-    final int iters = atLeast(75);
+  @Override
+  protected Validator getValidator() {
+    return VALIDATOR;
+  }
 
-    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
-    int maxDoc = s.getIndexReader().maxDoc();
+  protected class PolygonValidator implements Validator {
+    @Override
+    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
+      Polygon2D poly = Polygon2D.create(quantizePolygon((Polygon)shape));
+      return poly.relate(minLat, maxLat, minLon, maxLon) != Relation.CELL_OUTSIDE_QUERY;
+    }
 
-    for (int iter = 0; iter < iters; ++iter) {
-      if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + (iter+1) + " of " + iters + " s=" + s);
-      }
+    @Override
+    public boolean testPolygonQuery(Polygon2D query, Object shape) {
 
-      // Polygon
-      Polygon queryPolygon = GeoTestUtil.nextPolygon();
-      Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
-      Query query = newPolygonQuery(FIELD_NAME, queryPolygon);
-
-      if (VERBOSE) {
-        System.out.println("  query=" + query);
-      }
-
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public boolean needsScores() {
-          return false;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
-
-      boolean fail = false;
-      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
-      for (int docID = 0; docID < maxDoc; ++docID) {
-        assertEquals(docID, docIDToID.nextDoc());
-        int id = (int) docIDToID.longValue();
-        boolean expected;
-        if (liveDocs != null && liveDocs.get(docID) == false) {
-          // document is deleted
-          expected = false;
-        } else if (polygons[id] == null) {
-          expected = false;
-        } else {
-          expected = false;
-          try {
-            // check poly (quantized the same way as indexed) against query polygon
-            List<Tessellator.Triangle> tesselation = Tessellator.tessellate(quantizePolygon(polygons[id]));
-            for (Tessellator.Triangle t : tesselation) {
-              if (queryPoly2D.relateTriangle(t.getLon(0), t.getLat(0),
-                  t.getLon(1), t.getLat(1), t.getLon(2), t.getLat(2)) != Relation.CELL_OUTSIDE_QUERY) {
-                expected = true;
-                break;
-              }
-            }
-          } catch (IllegalArgumentException e) {
-            continue;
-          }
-        }
-
-        if (hits.get(docID) != expected) {
-          StringBuilder b = new StringBuilder();
-
-          if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
-          } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
-          }
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  polygon=" + quantizePolygon(polygons[id]).toGeoJSON() + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  queryPolygon=" + queryPolygon.toGeoJSON());
-          if (true) {
-            fail("wrong hit (first of possibly more):\n\n" + b);
-          } else {
-            System.out.println(b.toString());
-            fail = true;
-          }
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate((Polygon) shape);
+      for (Tessellator.Triangle t : tessellation) {
+        // we quantize the triangle for consistency with the index
+        if (query.relateTriangle(quantizeLon(t.getLon(0)), quantizeLat(t.getLat(0)),
+            quantizeLon(t.getLon(1)), quantizeLat(t.getLat(1)),
+            quantizeLon(t.getLon(2)), quantizeLat(t.getLat(2))) != Relation.CELL_OUTSIDE_QUERY) {
+          return true;
         }
       }
-      if (fail) {
-        fail("some hits were wrong");
-      }
+      return false;
     }
   }
 }

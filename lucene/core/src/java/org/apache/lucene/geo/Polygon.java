@@ -202,7 +202,7 @@ public final class Polygon {
     return sb.toString();
   }
 
-  private String verticesToGeoJSON(final double[] lats, final double[] lons) {
+  public static String verticesToGeoJSON(final double[] lats, final double[] lons) {
     StringBuilder sb = new StringBuilder();
     sb.append('[');
     for (int i = 0; i < lats.length; i++) {
