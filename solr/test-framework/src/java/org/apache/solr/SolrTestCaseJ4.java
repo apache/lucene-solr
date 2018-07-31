@@ -287,7 +287,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     sslConfig = buildSSLConfig();
     // based on randomized SSL config, set SchemaRegistryProvider appropriately
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
-    Http2SolrClient.setSslContextFactory(SSLConfig.createContextFactory(sslConfig));
+    Http2SolrClient.setSslContextFactory(sslConfig.buildSslContextFactory());
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
       System.setProperty("urlScheme", "https");

@@ -28,10 +28,12 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -64,7 +66,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   
   private ExecutorService recoveryExecutor;
   
-  private final CloseableHttpClient updateOnlyClient;
+  private final Http2SolrClient updateOnlyClient;
   
   private final CloseableHttpClient defaultClient;
 
@@ -109,7 +111,12 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
 
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(metricNameStrategy);
-    updateOnlyClient = HttpClientUtil.createClient(clientParams, updateOnlyConnectionManager, false, httpRequestExecutor);
+    Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder("");
+    if (cfg != null) {
+      updateOnlyClientBuilder.connectionTimeout(cfg.getDistributedConnectionTimeout())
+          .idleTimeout(cfg.getDistributedSocketTimeout());
+    }
+    updateOnlyClient = updateOnlyClientBuilder.build();
     defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
     // following is done only for logging complete configuration.
@@ -174,7 +181,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   }
   
   // don't introduce a bug, this client is for sending updates only!
-  public HttpClient getUpdateOnlyHttpClient() {
+  public Http2SolrClient getUpdateOnlyHttpClient() {
     return updateOnlyClient;
   }
   
@@ -208,7 +215,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     } catch (Exception e) {
       SolrException.log(log, e);
     } finally {
-      HttpClientUtil.close(updateOnlyClient);
+      IOUtils.closeQuietly(updateOnlyClient);
       HttpClientUtil.close(defaultClient);
       updateOnlyConnectionManager.close();
       defaultConnectionManager.close();

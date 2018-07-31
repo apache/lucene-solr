@@ -27,13 +27,13 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.http.ParseException;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -100,7 +100,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       headers = new HashMap<>();
       while (headerNames.hasMoreElements()) {
         final String name = headerNames.nextElement();
-        headers.put(name.toLowerCase(), req.getHeader(name));
+        headers.put(name.toLowerCase(Locale.getDefault()), req.getHeader(name));
       }
     }
 

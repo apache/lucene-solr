@@ -147,6 +147,21 @@ public class SSLTestConfig extends SSLConfig {
       return HTTP_ONLY_SCHEMA_PROVIDER;
     }
   }
+
+  public SslContextFactory buildSslContextFactory() {
+    if (!isSSLMode()) {
+      return null;
+    }
+    SslContextFactory sslContextFactory = new SslContextFactory(false);
+    try {
+      SSLContext sslContext = buildClientSSLContext();
+      sslContextFactory.setSslContext(sslContext);
+      sslContextFactory.setNeedClientAuth(checkPeerName);
+    } catch (KeyManagementException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
+      throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", e);
+    }
+    return sslContextFactory;
+  }
   
   /**
    * Builds a new SSLContext for HTTP <b>clients</b> to use when communicating with servers which have 

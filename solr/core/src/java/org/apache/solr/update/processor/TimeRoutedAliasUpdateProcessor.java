@@ -336,7 +336,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     final List<SolrCmdDistributor.Node> nodes = lookupShardLeadersOfCollections();
     cmdDistrib.distribCommit(cmd, nodes, new ModifiableSolrParams(outParamsToLeader));
-    cmdDistrib.blockAndDoRetries(); //TODO shouldn't distribCommit do this implicitly?  It doesn't.
+    cmdDistrib.blockUntilFinished(); //TODO shouldn't distribCommit do this implicitly?  It doesn't.
   }
 
 // Not supported by SolrCmdDistributor and is sketchy any way
@@ -359,11 +359,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   protected void doClose() {
-    try {
-      cmdDistrib.close();
-    } finally {
-      super.doClose();
-    }
+    super.doClose();
   }
 
   private SolrCmdDistributor.Node routeDocToSlice(String collection, SolrInputDocument doc) {

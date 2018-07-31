@@ -38,7 +38,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -676,19 +675,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         params.set(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
       }
 
-      if (cmd.isInPlaceUpdate()) {
-        params.set(DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
-
-        // Use synchronous=true so that a new connection is used, instead
-        // of the update being streamed through an existing streaming client.
-        // When using a streaming client, the previous update
-        // and the current in-place update (that depends on the previous update), if reordered
-        // in the stream, can result in the current update being bottled up behind the previous
-        // update in the stream and can lead to degraded performance.
-        cmdDistrib.distribAdd(cmd, nodes, params, true, rollupReplicationTracker, leaderReplicationTracker);
-      } else {
-        cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
-      }
+      cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
     }
 
     // TODO: what to do when no idField?
@@ -753,9 +740,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   protected void doClose() {
-    if (cmdDistrib != null) {
-      cmdDistrib.close();
-    }
   }
  
   // TODO: optionally fail if n replicas are not reached...
@@ -792,7 +776,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // for now we don't error - we assume if it was added locally, we
       // succeeded 
       if (log.isWarnEnabled()) {
-        log.warn("Error sending update to " + error.req.node.getBaseUrl(), error.e);
+        log.warn("Error sending update to " + error.req.node.getBaseUrl(), error.t);
       }
       
       // Since it is not a forward request, for each fail, try to tell them to
@@ -811,11 +795,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       final String replicaUrl = error.req.node.getUrl();
 
       // if the remote replica failed the request because of leader change (SOLR-6511), then fail the request
-      String cause = (error.e instanceof SolrException) ? ((SolrException)error.e).getMetadata("cause") : null;
+      String cause = (error.t instanceof SolrException) ? ((SolrException)error.t).getMetadata("cause") : null;
       if ("LeaderChanged".equals(cause)) {
         // let's just fail this request and let the client retry? or just call processAdd again?
         log.error("On "+cloudDesc.getCoreNodeName()+", replica "+replicaUrl+
-            " now thinks it is the leader! Failing the request to let the client retry! "+error.e);
+            " now thinks it is the leader! Failing the request to let the client retry! "+error.t);
         errorsForClient.add(error);
         continue;
       }
@@ -871,7 +855,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             String coreNodeName = ((Replica) stdNode.getNodeProps().getNodeProps()).getName();
             // if false, then the node is probably not "live" anymore
             // and we do not need to send a recovery message
-            Throwable rootCause = SolrException.getRootCause(error.e);
+            Throwable rootCause = SolrException.getRootCause(error.t);
             if (!isOldLIRMode && zkController.getShardTerms(collection, shardId).registered(coreNodeName)) {
               log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
               replicasShouldBeInLowerTerms.add(coreNodeName);
@@ -1300,9 +1284,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     NamedList<Object> rsp = null;
-    try (HttpSolrClient hsc = new HttpSolrClient.Builder(leaderUrl).
-        withHttpClient(updateShardHandler.getUpdateOnlyHttpClient()).build()) {
-      rsp = hsc.request(ur);
+    try {
+      ur.setBasePath(leaderUrl);
+      rsp = updateShardHandler.getUpdateOnlyHttpClient().request(ur);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error during fetching [" + id +
           "] from leader (" + leaderUrl + "): ", e);
@@ -1641,7 +1625,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
 
       if (someReplicas)  {
-        cmdDistrib.blockAndDoRetries();
+        cmdDistrib.blockUntilFinished();
       }
     }
 
@@ -1924,7 +1908,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             zkController.getBaseUrl(), req.getCore().getName()));
         if (nodes != null) {
           cmdDistrib.distribCommit(cmd, nodes, params);
-          cmdDistrib.blockAndDoRetries();
+          cmdDistrib.blockUntilFinished();
         }
       }
     }
@@ -2012,8 +1996,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // create a merged copy of the metadata from all wrapped exceptions
       NamedList<String> metadata = new NamedList<String>();
       for (Error error : errors) {
-        if (error.e instanceof SolrException) {
-          SolrException e = (SolrException) error.e;
+        if (error.t instanceof SolrException) {
+          SolrException e = (SolrException) error.t;
           NamedList<String> eMeta = e.getMetadata();
           if (null != eMeta) {
             metadata.addAll(eMeta);
@@ -2054,12 +2038,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       assert 0 < errors.size();
       
       if (1 == errors.size()) {
-        return "Async exception during distributed update: " + errors.get(0).e.getMessage();
+        return "Async exception during distributed update: " + errors.get(0).t.getMessage();
       } else {
         StringBuilder buf = new StringBuilder(errors.size() + " Async exceptions during distributed update: ");
         for (Error error : errors) {
           buf.append("\n");
-          buf.append(error.e.getMessage());
+          buf.append(error.t.getMessage());
         }
         return buf.toString();
       }
@@ -2146,6 +2130,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // we have a replication factor of one by default.
     private int achievedRf = 1;
     private final int requestedRf;
+    private Set<String> nodes = new HashSet<>();
 
     private final String myShardId;
 
@@ -2170,7 +2155,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
 
       if (success) {
-        ++achievedRf;
+        synchronized (this) {
+          if (nodes.add(node.getUrl())) ++achievedRf;
+        }
       }
     }
 

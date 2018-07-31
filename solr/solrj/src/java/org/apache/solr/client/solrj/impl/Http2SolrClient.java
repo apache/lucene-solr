@@ -94,6 +94,39 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 public class Http2SolrClient extends SolrClient {
   private static volatile SslContextFactory defaultSslContextFactory;
 
+  static {
+    defaultSslContextFactory = new SslContextFactory(false);
+
+    if (null != System.getProperty("javax.net.ssl.keyStore")) {
+      defaultSslContextFactory.setKeyStorePath
+          (System.getProperty("javax.net.ssl.keyStore"));
+    }
+    if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
+      defaultSslContextFactory.setKeyStorePassword
+          (System.getProperty("javax.net.ssl.keyStorePassword"));
+    }
+    if (null != System.getProperty("javax.net.ssl.trustStore")) {
+      defaultSslContextFactory.setTrustStorePath
+          (System.getProperty("javax.net.ssl.trustStore"));
+    }
+    if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
+      defaultSslContextFactory.setTrustStorePassword
+          (System.getProperty("javax.net.ssl.trustStorePassword"));
+    }
+
+    String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+    boolean sslCheckPeerName = true;
+    if (checkPeerNameStr == null && "false".equalsIgnoreCase(checkPeerNameStr)) {
+      sslCheckPeerName = false;
+    }
+
+    if (System.getProperty("tests.jettySsl.clientAuth") != null) {
+      sslCheckPeerName = sslCheckPeerName || Boolean.getBoolean("tests.jettySsl.clientAuth");
+    }
+    defaultSslContextFactory.setNeedClientAuth(sslCheckPeerName);
+
+  }
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int MAX_OUTSTANDING_REQUESTS = 1000;
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
@@ -147,7 +180,7 @@ public class Http2SolrClient extends SolrClient {
 
   private boolean closeClient;
 
-  private Http2SolrClient(String serverBaseUrl, Builder builder) {
+  protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     // TODO: what about shared instances?
     available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
 
@@ -237,7 +270,7 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  private Http2ClientResponse request(SolrRequest solrRequest, String collection, OnComplete onComplete)
+  public Http2ClientResponse request(SolrRequest solrRequest, String collection, OnComplete onComplete)
       throws SolrServerException, IOException {
     return request(solrRequest, collection, onComplete, false);
   }
@@ -296,14 +329,14 @@ public class Http2SolrClient extends SolrClient {
         }
         return arsp;
       }
-    } catch(InterruptedException e) {
+    } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
-    } catch(TimeoutException e) {
+    } catch (TimeoutException e) {
       throw new SolrServerException(
           "Timeout occured while waiting response from server at: "
               + getBaseURL(), e);
-    } catch(ExecutionException e) {
+    } catch (ExecutionException e) {
       Throwable cause = e.getCause();
       if (cause instanceof ConnectException) {
         throw new SolrServerException("Server refused connection at: "
@@ -348,7 +381,7 @@ public class Http2SolrClient extends SolrClient {
 
     //TODO add invariantParams support
 
-    String basePath = serverBaseUrl;
+    String basePath = solrRequest.getBasePath() == null ? serverBaseUrl : solrRequest.getBasePath();
     if (collection != null)
       basePath += "/" + collection;
 
@@ -525,12 +558,13 @@ public class Http2SolrClient extends SolrClient {
         NamedList err = (NamedList) rsp.get("error");
         if (err != null) {
           reason = (String) err.get("msg");
-          if(reason == null) {
+          if (reason == null) {
             reason = (String) err.get("trace");
           }
-          metadata = (NamedList<String>)err.get("metadata");
+          metadata = (NamedList<String>) err.get("metadata");
         }
-      } catch (Exception ex) {}
+      } catch (Exception ex) {
+      }
       if (reason == null) {
         StringBuilder msg = new StringBuilder();
         msg.append(response.getReason())
@@ -539,7 +573,8 @@ public class Http2SolrClient extends SolrClient {
             .append(response.getRequest().getMethod());
         try {
           reason = java.net.URLDecoder.decode(msg.toString(), UTF_8);
-        } catch (UnsupportedEncodingException e) {}
+        } catch (UnsupportedEncodingException e) {
+        }
       }
       RemoteSolrException rss = new RemoteSolrException(serverBaseUrl, httpStatus, reason, null);
       if (metadata != null) rss.setMetadata(metadata);
@@ -622,7 +657,7 @@ public class Http2SolrClient extends SolrClient {
     private Integer idleTimeout;
     private Integer connectionTimeout;
     private boolean useHttp1_1 = false;
-    private String baseSolrUrl;
+    protected String baseSolrUrl;
 
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
@@ -665,14 +700,10 @@ public class Http2SolrClient extends SolrClient {
    */
   public static class RemoteSolrException extends SolrException {
     /**
-     * @param remoteHost
-     *          the host the error was received from
-     * @param code
-     *          Arbitrary HTTP status code
-     * @param msg
-     *          Exception Message
-     * @param th
-     *          Throwable to wrap with this Exception
+     * @param remoteHost the host the error was received from
+     * @param code       Arbitrary HTTP status code
+     * @param msg        Exception Message
+     * @param th         Throwable to wrap with this Exception
      */
     public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
       super(code, "Error from server at " + remoteHost + ": " + msg, th);
@@ -709,7 +740,7 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  private static class Http2ClientResponse {
+  protected static class Http2ClientResponse {
     NamedList response;
     InputStream stream;
   }
@@ -720,9 +751,10 @@ public class Http2SolrClient extends SolrClient {
 
   /**
    * Expert Method
+   *
    * @param queryParams set of param keys to only send via the query string
-   * Note that the param will be sent as a query string if the key is part
-   * of this Set or the SolrRequest's query params.
+   *                    Note that the param will be sent as a query string if the key is part
+   *                    of this Set or the SolrRequest's query params.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
    */
   public void setQueryParams(Set<String> queryParams) {
@@ -734,7 +766,7 @@ public class Http2SolrClient extends SolrClient {
     ModifiableSolrParams queryModParams = new ModifiableSolrParams();
     if (queryParamNames != null) {
       for (String param : queryParamNames) {
-        String[] value = wparams.getParams(param) ;
+        String[] value = wparams.getParams(param);
         if (value != null) {
           for (String v : value) {
             queryModParams.add(param, v);

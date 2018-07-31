@@ -77,6 +77,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   private String basicAuthUser, basicAuthPwd;
 
+  private String basePath;
+
   public SolrRequest setBasicAuthCredentials(String user, String password) {
     this.basicAuthUser = user;
     this.basicAuthPwd = password;
@@ -215,4 +217,13 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     return getParams() == null ? null : getParams().get("collection");
   }
 
+  public void setBasePath(String path) {
+    if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
+
+    this.basePath = path;
+  }
+
+  public String getBasePath() {
+    return basePath;
+  }
 }
