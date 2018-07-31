@@ -52,7 +52,9 @@ The number of shards to be created as part of the collection. This is a required
 A comma separated list of shard names, e.g., `shard-x,shard-y,shard-z`. This is a required parameter when the `router.name` is `implicit`.
 
 `replicationFactor`::
-The number of replicas to be created for each shard. The default is `1`. This will create a NRT type of replica. If you want another type of replica, see the `tlogReplicas` and `pullReplica` parameters. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+The number of replicas to be created for each shard. The default is `1`.
++
+This will create a NRT type of replica. If you want another type of replica, see the `tlogReplicas` and `pullReplica` parameters below. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
 `nrtReplicas`::
 The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. If you want all of your replicas to be of this type, you can simply use `replicationFactor` instead.
@@ -96,7 +98,9 @@ Please note that <<realtime-get.adoc#realtime-get,RealTime Get>> or retrieval by
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
 `autoAddReplicas`::
-When set to `true`, enables automatic addition of replicas on shared file systems (such as HDFS) only. See the section <<running-solr-on-hdfs.adoc#automatically-add-replicas-in-solrcloud,autoAddReplicas Settings>> for more details on settings and overrides. The default is `false`.
+When set to `true`, enables automatic addition of replicas when the number of active replicas falls below the value set for `replicationFactor`. This may occur if a replica goes down, for example. The default is `false`, which means new replicas will not be added.
++
+While this parameter is provided as part of Solr's set of features to provide autoscaling of clusters, it is available even when you have not implemented any other part of autoscaling (such as a policy). See the section <<solrcloud-autoscaling-auto-add-replicas.adoc#the-autoaddreplicas-parameter,SolrCloud Autoscaling Automatically Adding Replicas>> for more details about this option and how it can be used.
 
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
