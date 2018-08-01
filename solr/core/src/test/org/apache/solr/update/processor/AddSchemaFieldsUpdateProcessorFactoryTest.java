@@ -17,6 +17,10 @@
 package org.apache.solr.update.processor;
 
 import java.io.File;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
 
@@ -24,10 +28,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.IndexSchema;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import org.junit.After;
 import org.junit.Before;
 
@@ -63,8 +63,8 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     final String fieldName = "newfield1";
     assertNull(schema.getFieldOrNull(fieldName));
     String dateString = "2010-11-12T13:14:15.168Z";
-    DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateTime();
-    Date date = dateTimeFormatter.parseDateTime(dateString).toDate();
+    LocalDateTime localDateTime = LocalDateTime.parse(dateString, DateTimeFormatter.ISO_DATE_TIME);
+    Date date = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
     SolrInputDocument d = processAdd("add-fields-no-run-processor", doc(f("id", "1"), f(fieldName, date)));
     assertNotNull(d);
     schema = h.getCore().getLatestSchema();
@@ -202,11 +202,11 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     String field3String2 = "-5.28E-3";
     Double field3Value2 = -5.28E-3;
     String field4String1 = "1999-04-17 17:42";
-    DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm").withZoneUTC();
-    DateTime dateTime =  dateTimeFormatter.parseDateTime(field4String1);
-    Date field4Value1 = dateTime.toDate();
-    DateTimeFormatter dateTimeFormatter2 = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss").withZoneUTC();
-    String field4Value1String = dateTimeFormatter2.print(dateTime) + "Z";
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneOffset.UTC);
+    LocalDateTime dateTime = LocalDateTime.parse(field4String1, dateTimeFormatter);
+    Date field4Value1 = Date.from(dateTime.atZone(ZoneOffset.UTC).toInstant());
+    DateTimeFormatter dateTimeFormatter2 = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneOffset.UTC);
+    String field4Value1String = dateTime.format(dateTimeFormatter2) + "Z";
     
     SolrInputDocument d = processAdd
         ("parse-and-add-fields", doc(f("id", "6"), f(fieldName1, field1String1, field1String2, field1String3),
