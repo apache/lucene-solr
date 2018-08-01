@@ -96,6 +96,10 @@ Changes in Runtime Behavior
 * LUCENE-7444: StandardAnalyzer no longer defaults to removing English stopwords
   (Alan Woodward)
 
+* LUCENE-8060: IndexSearcher's search and searchAfter methods now only compute
+  total hit counts accurately up to 1,000 in order to enable top-hits
+  optimizations such as block-max WAND (LUCENE-8135). (Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
