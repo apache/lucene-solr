@@ -103,6 +103,10 @@ var styleForPct = function (pct) {
   return "pct-critical"
 };
 
+function isNumeric(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+}
+
 var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
@@ -113,8 +117,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.showDetails = {};
   $scope.from = 0;
   $scope.to = $scope.pageSize - 1;
+  $scope.filterType = "node"; // Pre-initialize dropdown
 
-  $scope.showPaging = function() {
+  $scope.showNodesPaging = function() {
     return Object.keys($scope.hosts).length > $scope.pageSize;
   };
 
@@ -141,7 +146,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   };
 
   $scope.nextPage = function() {
-      $scope.pos += $scope.rows;
+      $scope.pos += $scope.pageSize;
       $scope.reload();
   }
   
@@ -207,30 +212,90 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       $scope.live_nodes = live_nodes;
 
       $scope.Math = window.Math;
-      // console.log("***Initialized cluster state. nodes=" + JSON.stringify(nodes, undefined, 2) + ", hosts=" + JSON.stringify(hosts, undefined, 2));
       $scope.reload();
     });
   };
 
+  $scope.filterInput = function() {
+    $scope.from = 0;
+    $scope.pos = $scope.from;
+    $scope.to = $scope.pageSize - 1;
+    $scope.reload();
+  }
+  
   $scope.reload = function() {
     var nodes = $scope.nodes;
+    var node_keys = Object.keys(nodes);
     var hosts = $scope.hosts;
     var live_nodes = $scope.live_nodes;
     var hostNames = Object.keys(hosts);
+    var filteredHosts;
     hostNames.sort();
+    var pageSize = isNumeric($scope.pageSize) ? $scope.pageSize : 10;
 
     // Calculate what nodes that will show on this page
     var nodesToShow = [];
     var nodesParam = '';
     var hostsToShow = [];
-    if ($scope.showPaging()) {
-      for (var id = $scope.from ; id < $scope.from + $scope.pageSize && hostNames[id] ; id++) {
-        var hostName = hostNames[id];
-        hostsToShow.push(hostName);
-        nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
-        nodesParam = nodesToShow.join(',');
+    var filteredNodes;
+    var filteredHosts;
+    var isFiltered = false;
+    if ($scope.showNodesPaging()) {
+      switch ($scope.filterType) {
+        case "node":
+          if ($scope.nodeFilter) {
+            filteredNodes = node_keys.filter(nod => nod.indexOf($scope.nodeFilter) !== -1);
+          }
+          break;
+          
+        case "collection":
+          if ($scope.collectionFilter) {
+            candidateNodes = {};
+            nodesCollections = [];
+            for (var i = 0 ; i < node_keys.length ; i++) {
+              var node_name = node_keys[i];
+              var node = nodes[node_name];
+              nodeColl = {};
+              nodeColl['node'] = node_name;
+              collections = {};
+              node.cores.forEach(function(core) {
+                 collections[core.collection] = true;
+              });
+              nodeColl['collections'] = Object.keys(collections); 
+              nodesCollections.push(nodeColl);
+            }
+            nodesCollections.forEach(function(nc) {
+              matchingColls = nc['collections'].filter(co => co.indexOf($scope.collectionFilter) != -1);
+              if (matchingColls.length > 0) {
+                candidateNodes[nc.node] = true;
+              }
+            });
+            filteredNodes = Object.keys(candidateNodes);
+          }
+          break;
+          
+        case "health":
+          
       }
-      $scope.nextEnabled = $scope.from + $scope.pageSize < hostNames.length;
+      if (filteredNodes) {
+        isFiltered = true;
+        filteredHosts = filteredNodes.map(nod => nod.split(":")[0]).filter((item,index,self) => self.indexOf(item)==index);
+        filteredHosts.sort();
+      } else {
+        filteredNodes = node_keys;
+        filteredHosts = hostNames;
+      }
+      for (var id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
+        var hostName = filteredHosts[id];
+        hostsToShow.push(hostName);
+        if (isFiltered) { // Only show the nodes per host matching active filter
+          nodesToShow = nodesToShow.concat(filteredNodes.filter(nod => nod.startsWith(hostName)));
+        } else {
+          nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
+        }
+      }
+      nodesParam = nodesToShow.join(',');
+      $scope.nextEnabled = $scope.from + pageSize < hostNames.length;
     } else {
       nodesToShow = Object.keys(nodes);
       hostsToShow = Object.keys(hosts);
@@ -239,6 +304,11 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     nodesToShow.sort();
     hostsToShow.sort();
 
+/* NOCOMMIT: Remove debug */
+    console.log("***Initialized paging. filterType=" + $scope.filterType + ", statusFilter=" + JSON.stringify($scope.pagingStatusFilter, undefined, 2)  + ", nodeFilter=" + JSON.stringify($scope.nodeFilter, undefined, 2) + 
+        ", collectionFilter=" + JSON.stringify($scope.collectionFilter, undefined, 2) + ", pageSize=" + pageSize + ", from=" + $scope.from + ", nodesParam=" + nodesParam +
+        ", all nodes=" + node_keys);
+    
     System.get({"nodes": nodesParam}, function (systemResponse) {
       for (var node in systemResponse) {
         if (node in nodes) {
@@ -385,8 +455,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     $scope.live_nodes = live_nodes;
     $scope.nodesToShow = nodesToShow;
     $scope.hostsToShow = hostsToShow;
-    $scope.hostNames = hostNames;
-    // console.log("***Reloaded data. nodes=" + JSON.stringify($scope.nodes, undefined, 2));
+    $scope.filteredHosts = filteredHosts;
   };
   $scope.initClusterState();
 };

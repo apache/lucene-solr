@@ -55,30 +55,24 @@ limitations under the License.
           <span>Show all details</span>
         </a>
       </div>
-      <div ng-show="showPaging">
+      <div ng-show="showNodesPaging()">
         <div id="nodesPaging">
          <button ng-show="prevEnabled" ng-click="previous()" id="nodesPagingPrev">&lt; Previous</button>
-         <span ng-show="total==0">No hosts found.</span>
-         <span ng-hide="total==0">Hosts {{from+1}} - {{from + hostsToShow.length}} of {{hostNames.length}}.</span>&nbsp;
+         <span ng-show="filteredHosts.length==0">No hosts found.</span>
+         <span ng-hide="filteredHosts.length==0">Hosts {{from+1}} - {{from + hostsToShow.length}} of {{filteredHosts.length}}.</span>&nbsp;
 
-         Filter by:&nbsp;<select ng-model="filterType" ng-change="reload()" id="nodesPagingFilterType">
-           <option value="node">Node name</option>
+         Filter by:&nbsp;<select ng-model="filterType" ng-change="filterInput()" id="nodesPagingFilterType">
+           <option value="node">Host/node name</option>
            <option value="collection">Collection name</option>
-           <option value="health">Health</option>
-         </select>&nbsp;:{{filterType}}
+         </select>&nbsp;
 
-         <span ng-show="filterType=='health'">
-           <select ng-model="pagingStatusFilter" id="nodesPagingStatusFilter" ng-change="reload()">
-             <option value=""> - Any - </option>
-             <option value="healthy">Healthy</option>
-             <option value="low_resources">Low on resources</option>
-             <option value="high_load">High load</option>
-           </select>
-         </span>
          <span ng-show="filterType=='node'">
-           <input ng-model="pagingFilter" type="text" size="10" name="filter" ng-change="reload()"/>&nbsp;
+           <input ng-model="nodeFilter" type="text" size="10" name="nodefilter" ng-change="filterInput()"/>&nbsp;
          </span>
-         Show <input ng-model="rows" ng-change="reload()" type="text" size="2" name="rows" /> per page.
+          <span ng-show="filterType=='collection'">
+            <input ng-model="collectionFilter" type="text" size="10" name="collectionfilter" ng-change="filterInput()"/>&nbsp;
+          </span>
+         Show <input ng-model="pageSize" ng-change="filterInput()" type="text" size="2" name="rows" /> hosts per page.
          <button ng-show="nextEnabled" ng-click="nextPage()">Next &gt;</button>
         </div>
       </div>
