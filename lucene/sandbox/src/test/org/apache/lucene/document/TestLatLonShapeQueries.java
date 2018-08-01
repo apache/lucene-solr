@@ -44,8 +44,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
@@ -105,7 +103,7 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
 
   @Nightly
   public void testRandomBig() throws Exception {
-    doTestRandom(50000);
+    doTestRandom(200000);
   }
 
   private void doTestRandom(int count) throws Exception {
@@ -117,7 +115,7 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
 
     Polygon[] polygons = new Polygon[numPolygons];
     for (int id = 0; id < numPolygons; ++id) {
-      int x = randomInt(20);
+      int x = random().nextInt(20);
       if (x == 17) {
         polygons[id] = null;
         if (VERBOSE) {
@@ -128,7 +126,6 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
         polygons[id] = GeoTestUtil.nextPolygon();
       }
     }
-
     verify(polygons);
   }
 
@@ -175,8 +172,8 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
         poly2D[id] = Polygon2D.create(quantizePolygon(polygons[id]));
       }
       w.addDocument(doc);
-      if (id > 0 && randomInt(100) == 42) {
-        int idToDelete = randomInt(id);
+      if (id > 0 && random().nextInt(100) == 42) {
+        int idToDelete = random().nextInt(id);
         w.deleteDocuments(new Term("id", ""+idToDelete));
         deleted.add(idToDelete);
         if (VERBOSE) {
@@ -185,7 +182,7 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
       }
     }
 
-    if (randomBoolean()) {
+    if (random().nextBoolean()) {
       w.forceMerge(1);
     }
     final IndexReader r = DirectoryReader.open(w);
@@ -200,7 +197,7 @@ public class TestLatLonShapeQueries extends LuceneTestCase {
 
     for (int iter = 0; iter < iters; ++iter) {
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + (iter + 1) + " of " + iters + " s=" + s);
+        System.out.println("\nTEST: iter=" + (iter+1) + " of " + iters + " s=" + s);
       }
 
       // BBox
