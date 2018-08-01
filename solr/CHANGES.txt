@@ -178,6 +178,10 @@ Optimizations
   expressions to group by on more than 4 fields. (Aroop Ganguly, Amrit Sarkar, Varun Thacker)
 
 
+* SOLR-12509: Improve SplitShardCmd performance and reliability. A new method of splitting has been
+  introduced (splitMethod=link) which uses hard-linking of index files when possible, resulting in
+  significant speedups and reduced CPU / IO load on shard leader. (ab)
+
 Other Changes
 ----------------------
 
