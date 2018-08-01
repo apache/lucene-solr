@@ -199,6 +199,9 @@ Bug Fixes:
 * LUCENE-8429: DaciukMihovAutomatonBuilder is no longer prone to stack
   overflows by enforcing a maximum term length. (Adrien Grand)
 
+* LUCENE-8441: IndexWriter now checks doc value type for index sort fields
+  and fails the document if they are not compatible. (Jim Ferenczi, Mike McCandless)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
