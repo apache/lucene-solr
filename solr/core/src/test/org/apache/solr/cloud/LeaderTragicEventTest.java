@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.MockDirectoryFactory;
@@ -181,15 +182,13 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
       Replica oldLeader = corruptLeader(collection, new ArrayList<>());
 
-      //TODO better way to test this
-      Thread.sleep(5000);
-      Replica leader = getCollectionState(collection).getSlice("shard1").getLeader();
-      assertEquals(leader.getName(), oldLeader.getName());
-
       if (otherReplicaJetty != null) {
-        // won't be able to do anything here, since this replica can't recovery from the leader
         otherReplicaJetty.start();
       }
+      //TODO better way to test this
+      Thread.sleep(2000);
+      Replica leader = getCollectionState(collection).getSlice("shard1").getLeader();
+      assertEquals(leader.getName(), oldLeader.getName());
     } finally {
       CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
     }
