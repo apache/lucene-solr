@@ -48,6 +48,7 @@ import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -290,7 +291,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   private Collection<String> filesToCommit;
 
-  final SegmentInfos segmentInfos;       // the segments
+  private final SegmentInfos segmentInfos;
   final FieldNumbers globalFieldNumberMap;
 
   final DocumentsWriter docWriter;
@@ -727,20 +728,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       mergeScheduler.setInfoStream(infoStream);
       codec = config.getCodec();
       OpenMode mode = config.getOpenMode();
-      boolean create;
+      final boolean indexExists;
+      final boolean create;
       if (mode == OpenMode.CREATE) {
+        indexExists = DirectoryReader.indexExists(directory);
         create = true;
       } else if (mode == OpenMode.APPEND) {
+        indexExists = true;
         create = false;
       } else {
         // CREATE_OR_APPEND - create only if an index does not exist
-        create = !DirectoryReader.indexExists(directory);
+        indexExists = DirectoryReader.indexExists(directory);
+        create = !indexExists;
       }
 
       // If index is too old, reading the segments will throw
       // IndexFormatTooOldException.
-
-      boolean initialIndexExists = true;
 
       String[] files = directory.listAll();
 
@@ -771,14 +774,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         // searching.  In this case we write the next
         // segments_N file with no segments:
         final SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
-        try {
+        if (indexExists) {
           final SegmentInfos previous = SegmentInfos.readLatestCommit(directory);
           sis.updateGenerationVersionAndCounter(previous);
-        } catch (IOException e) {
-          // Likely this means it's a fresh directory
-          initialIndexExists = false;
         }
-        
         segmentInfos = sis;
         rollbackSegments = segmentInfos.createBackupSegmentInfos();
 
@@ -888,7 +887,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         deleter = new IndexFileDeleter(files, directoryOrig, directory,
                                        config.getIndexDeletionPolicy(),
                                        segmentInfos, infoStream, this,
-                                       initialIndexExists, reader != null);
+                                       indexExists, reader != null);
 
         // We incRef all files when we return an NRT reader from IW, so all files must exist even in the NRT case:
         assert create || filesExist(segmentInfos);
@@ -4382,25 +4381,52 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
-      int numSoftDeleted = 0;
-      for (SegmentReader reader : merge.readers) {
+      int softDeleteCount = 0;
+      for (int r = 0; r < merge.readers.size(); r++) {
+        SegmentReader reader = merge.readers.get(r);
         CodecReader wrappedReader = merge.wrapForMerge(reader);
         validateMergeReader(wrappedReader);
-        mergeReaders.add(wrappedReader);
         if (softDeletesEnabled) {
           if (reader != wrappedReader) { // if we don't have a wrapped reader we won't preserve any soft-deletes
-            Bits liveDocs = wrappedReader.getLiveDocs();
-            numSoftDeleted += PendingSoftDeletes.countSoftDeletes(
-                DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader),
-                liveDocs);
+            Bits hardLiveDocs = merge.hardLiveDocs.get(r);
+            Bits wrappedLiveDocs = wrappedReader.getLiveDocs();
+            int hardDeleteCount = 0;
+            DocIdSetIterator softDeletedDocs = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader);
+            if (softDeletedDocs != null) {
+              int docId;
+              while ((docId = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                if (wrappedLiveDocs == null || wrappedLiveDocs.get(docId)) {
+                  if (hardLiveDocs == null || hardLiveDocs.get(docId)) {
+                    softDeleteCount++;
+                  } else {
+                    hardDeleteCount++;
+                  }
+                }
+              }
+            }
+            // Wrap the wrapped reader again if we have excluded some hard-deleted docs
+            if (hardLiveDocs != null && hardDeleteCount > 0) {
+              Bits liveDocs = wrappedLiveDocs == null ? hardLiveDocs : new Bits() {
+                @Override
+                public boolean get(int index) {
+                  return hardLiveDocs.get(index) && wrappedLiveDocs.get(index);
+                }
+                @Override
+                public int length() {
+                  return hardLiveDocs.length();
+                }
+              };
+              wrappedReader = FilterCodecReader.wrapLiveDocs(wrappedReader, liveDocs, wrappedReader.numDocs() - hardDeleteCount);
+            }
           }
         }
+        mergeReaders.add(wrappedReader);
       }
       final SegmentMerger merger = new SegmentMerger(mergeReaders,
                                                      merge.info.info, infoStream, dirWrapper,
                                                      globalFieldNumberMap, 
                                                      context);
-      merge.info.setSoftDelCount(numSoftDeleted);
+      merge.info.setSoftDelCount(softDeleteCount);
       merge.checkAborted();
 
       merge.mergeStartNS = System.nanoTime();
@@ -5200,5 +5226,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     if (info.info.dir != directoryOrig) {
       throw new IllegalArgumentException("SegmentCommitInfo must be from the same directory");
     }
+  }
+
+  /** Checks if the provided segment exists in the current segmentInfos */
+  final synchronized boolean segmentCommitInfoExist(SegmentCommitInfo sci) {
+    return segmentInfos.contains(sci);
+  }
+
+  /** Returns an unmodifiable view of the list of all segments of the current segmentInfos */
+  final synchronized List<SegmentCommitInfo> listOfSegmentCommitInfos() {
+    return segmentInfos.asList();
+  }
+
+  /** Tests should use this method to snapshot the current segmentInfos to have a consistent view */
+  final synchronized SegmentInfos cloneSegmentInfos() {
+    return segmentInfos.clone();
   }
 }

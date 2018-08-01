@@ -146,12 +146,12 @@ final class PendingSoftDeletes extends PendingDeletes {
     if (this.field.equals(info.name)) {
       pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
       assert assertPendingDeletes();
-      assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
-      assert dvGeneration != -2 : "docValues generation is still uninitialized";
-      dvGeneration = info.getDocValuesGen();
       this.info.setSoftDelCount(this.info.getSoftDelCount() + pendingDeleteCount);
       super.dropChanges();
     }
+    assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
+    assert dvGeneration != -2 : "docValues generation is still uninitialized";
+    dvGeneration = info.getDocValuesGen();
   }
 
   private boolean assertPendingDeletes() {

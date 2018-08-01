@@ -90,7 +90,7 @@ public class IndexSearcher {
   protected final IndexReaderContext readerContext;
   protected final List<LeafReaderContext> leafContexts;
   /** used with executor - each slice holds a set of leafs executed within one thread */
-  protected final LeafSlice[] leafSlices;
+  private final LeafSlice[] leafSlices;
 
   // These are only used for multi-threaded search
   private final ExecutorService executor;
@@ -352,6 +352,14 @@ public class IndexSearcher {
     return search(query, collectorManager);
   }
 
+  /** Returns the leaf slices used for concurrent searching, or null if no {@code ExecutorService} was
+   *  passed to the constructor.
+   *
+   * @lucene.experimental */
+  public LeafSlice[] getSlices() {
+      return leafSlices;
+  }
+  
   /** Finds the top <code>n</code>
    * hits for <code>query</code> where all results are after a previous 
    * result (<code>after</code>).
@@ -376,7 +384,7 @@ public class IndexSearcher {
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after, true);
+        return TopScoreDocCollector.create(cappedNumHits, after, Integer.MAX_VALUE);
       }
 
       @Override
@@ -433,8 +441,8 @@ public class IndexSearcher {
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopFieldDocs search(Query query, int n,
-      Sort sort, boolean doDocScores, boolean doMaxScore) throws IOException {
-    return searchAfter(null, query, n, sort, doDocScores, doMaxScore);
+      Sort sort, boolean doDocScores) throws IOException {
+    return searchAfter(null, query, n, sort, doDocScores);
   }
 
   /**
@@ -446,7 +454,7 @@ public class IndexSearcher {
    * @throws IOException if there is a low-level I/O error
    */
   public TopFieldDocs search(Query query, int n, Sort sort) throws IOException {
-    return searchAfter(null, query, n, sort, false, false);
+    return searchAfter(null, query, n, sort, false);
   }
 
   /** Finds the top <code>n</code>
@@ -461,7 +469,7 @@ public class IndexSearcher {
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, int n, Sort sort) throws IOException {
-    return searchAfter(after, query, n, sort, false, false);
+    return searchAfter(after, query, n, sort, false);
   }
 
   /** Finds the top <code>n</code>
@@ -481,17 +489,17 @@ public class IndexSearcher {
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopFieldDocs searchAfter(ScoreDoc after, Query query, int numHits, Sort sort,
-      boolean doDocScores, boolean doMaxScore) throws IOException {
+      boolean doDocScores) throws IOException {
     if (after != null && !(after instanceof FieldDoc)) {
       // TODO: if we fix type safety of TopFieldDocs we can
       // remove this
       throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
     }
-    return searchAfter((FieldDoc) after, query, numHits, sort, doDocScores, doMaxScore);
+    return searchAfter((FieldDoc) after, query, numHits, sort, doDocScores);
   }
 
   private TopFieldDocs searchAfter(FieldDoc after, Query query, int numHits, Sort sort,
-      boolean doDocScores, boolean doMaxScore) throws IOException {
+      boolean doDocScores) throws IOException {
     final int limit = Math.max(1, reader.maxDoc());
     if (after != null && after.doc >= limit) {
       throw new IllegalArgumentException("after.doc exceeds the number of documents in the reader: after.doc="
@@ -504,9 +512,8 @@ public class IndexSearcher {
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
-        final boolean fillFields = true;
         // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, fillFields, doDocScores, doMaxScore, true);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, Integer.MAX_VALUE);
       }
 
       @Override
@@ -521,7 +528,11 @@ public class IndexSearcher {
 
     };
 
-    return search(query, manager);
+    TopFieldDocs topDocs = search(query, manager);
+    if (doDocScores) {
+      TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+    }
+    return topDocs;
   }
 
  /**
@@ -709,7 +720,11 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public static class LeafSlice {
-    final LeafReaderContext[] leaves;
+
+    /** The leaves that make up this slice.
+     *
+     *  @lucene.experimental */
+    public final LeafReaderContext[] leaves;
     
     public LeafSlice(LeafReaderContext... leaves) {
       this.leaves = leaves;

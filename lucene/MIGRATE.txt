@@ -57,3 +57,43 @@ ALWAYS_CACHE can be replaced by a UsageTrackingQueryCachingPolicy with an approp
 
 To retain the old behaviour, pass StandardAnalyzer.ENGLISH_STOP_WORDS_SET as an argument
 to the constructor
+
+## StandardAnalyzer.ENGLISH_STOP_WORD_SET has been moved ##
+
+English stop words are now defined in EnglishAnalyzer#ENGLISH_STOP_WORD_SET in the
+analysis-common module
+
+## TopDocs.maxScore removed ##
+
+TopDocs.maxScore is removed. IndexSearcher and TopFieldCollector no longer have
+an option to compute the maximum score when sorting by field. If you need to
+know the maximum score for a query, the recommended approach is to run a
+separate query:
+
+  TopDocs topHits = searcher.search(query, 1);
+  float maxScore = topHits.scoreDocs.length == 0 ? Float.NaN : topHits.scoreDocs[0].score;
+
+Thanks to other optimizations that were added to Lucene 8, this query will be
+able to efficiently select the top-scoring document without having to visit
+all matches.
+
+## TopFieldCollector always assumes fillFields=true ##
+
+Because filling sort values doesn't have a significant overhead, the fillFields
+option has been removed from TopFieldCollector factory methods. Everything
+behaves as if it was set to true.
+
+## TopFieldCollector no longer takes a trackDocScores option ##
+
+Computing scores at collection time is less efficient than running a second
+request in order to only compute scores for documents that made it to the top
+hits. As a consequence, the trackDocScores option has been removed and can be
+replaced with the new TopFieldCollector#populateScores helper method.
+
+## TopDocs.totalHits is no longer a long ##
+
+Lucene 8 received optimizations for collection of top-k matches by not visiting
+all matches. However these optimizations won't help if all matches still need
+to be visited in order to compute the total number of hits. As a consequence,
+TopDocs.totalHits is now an TotalHits object that is either an exact hit count
+or a lower bound of the hit count.

@@ -23,6 +23,7 @@ import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
@@ -32,11 +33,20 @@ import org.apache.solr.search.ValueSourceParser;
 
 
 public class DebugAgg extends AggValueSource {
+  public static AtomicLong parses = new AtomicLong(0);
 
   public static class Parser extends ValueSourceParser {
     @Override
     public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-      return new DebugAgg();
+      parses.incrementAndGet();
+      final String what = fp.hasMoreArguments() ? fp.parseId() : "debug";
+
+      switch (what) {
+        case "debug": return new DebugAgg(fp.getLocalParams());
+        case "numShards": return new DebugAggNumShards();
+        default: /* No-Op */
+      }
+      throw new RuntimeException("No idea what to do with " + what);
     }
 
     @Override
@@ -44,13 +54,14 @@ public class DebugAgg extends AggValueSource {
     }
   }
 
-
-  public DebugAgg() {
+  /**
+   * This exposes the raw localparams used by the FunctionQParser, it does <b>NOT</b>
+   * wrap them in defaults from the request
+   */
+  public final SolrParams localParams;
+  public DebugAgg(SolrParams localParams) {
     super("debug");
-  }
-
-  public DebugAgg(String name) {
-    super(name);
+    this.localParams = localParams;
   }
 
   @Override
@@ -148,4 +159,63 @@ public class DebugAgg extends AggValueSource {
     return new FacetLongMerger();
   }
 
+  /** A simple agg that just returns the number of shards contributing to a bucket */
+  public static class DebugAggNumShards extends AggValueSource {
+    public DebugAggNumShards() {
+      super("debugNumShards");
+    }
+    
+    @Override
+    public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) {
+      return new NumShardsAcc(fcontext, numDocs, numSlots);
+    }
+    
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+    
+    @Override
+    public String description() {
+      return "debug(numShards)";
+    }
+    
+    public static class NumShardsAcc extends SlotAcc {
+      public NumShardsAcc(FacetContext fcontext, int numDocs, int numSlots) {
+        super(fcontext);
+      }
+      
+      @Override
+      public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+        // No-Op
+      }
+      
+      @Override
+      public int compare(int slotA, int slotB) {
+        return 0;
+      }
+      
+      @Override
+      public Object getValue(int slotNum) throws IOException {
+        return 1L;
+      }
+      
+      @Override
+      public void reset() throws IOException {
+        // No-Op
+      }
+      
+      @Override
+      public void resize(Resizer resizer) {
+        // No-op
+      }
+      
+    }
+    
+    @Override
+    public FacetMerger createFacetMerger(Object prototype) {
+      return new FacetLongMerger();
+    }
+    
+  }
 }

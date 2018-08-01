@@ -148,7 +148,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
         nextPage();
       }
     } else {
-      Boolean cursor = new Boolean(context
+      boolean cursor = Boolean.parseBoolean(context
           .getResolvedEntityAttribute(CursorMarkParams.CURSOR_MARK_PARAM));
       rowIterator = !cursor ? new SolrDocumentListIterator(new SolrDocumentList())
           : new SolrDocumentListCursor(new SolrDocumentList(), CursorMarkParams.CURSOR_MARK_START);

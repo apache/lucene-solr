@@ -67,7 +67,7 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
       int dt = j%DATE;
       int s = j%STRING;
       assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
-          "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59.999Z", "string_sd", "abc" + new Integer(s).toString().charAt(0)));
+          "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59.999Z", "string_sd", "abc" + Integer.toString(s).charAt(0)));
 
       if (f<=50) {
         int1TestStart.get(0).add(i);
@@ -75,10 +75,10 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
       if (f<=30) {
         int2TestStart.get(0).add(i);
       }
-      if (new Integer(s).toString().charAt(0)=='1') {
+      if (Integer.toString(s).charAt(0)=='1') {
         longTestStart.get(0).add(l);
       }
-      if (new Integer(s).toString().charAt(0)=='2') {
+      if (Integer.toString(s).charAt(0)=='2') {
         longTestStart.get(1).add(l);
       }
       if (l>=30) {

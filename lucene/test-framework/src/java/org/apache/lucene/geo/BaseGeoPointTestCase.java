@@ -1431,23 +1431,23 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   
   public void testSmallSetRect() throws Exception {
     TopDocs td = searchSmallSet(newRectQuery("point", 32.778, 32.779, -96.778, -96.777), 5);
-    assertEquals(4, td.totalHits);
+    assertEquals(4, td.totalHits.value);
   }
 
   public void testSmallSetDateline() throws Exception {
     TopDocs td = searchSmallSet(newRectQuery("point", -45.0, -44.0, 179.0, -179.0), 20);
-    assertEquals(2, td.totalHits);
+    assertEquals(2, td.totalHits.value);
   }
 
   public void testSmallSetMultiValued() throws Exception {
     TopDocs td = searchSmallSet(newRectQuery("point", 32.755, 32.776, -96.454, -96.770), 20);
     // 3 single valued docs + 2 multi-valued docs
-    assertEquals(5, td.totalHits);
+    assertEquals(5, td.totalHits.value);
   }
   
   public void testSmallSetWholeMap() throws Exception {
     TopDocs td = searchSmallSet(newRectQuery("point", GeoUtils.MIN_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MIN_LON_INCL, GeoUtils.MAX_LON_INCL), 20);
-    assertEquals(24, td.totalHits);
+    assertEquals(24, td.totalHits.value);
   }
   
   public void testSmallSetPoly() throws Exception {
@@ -1459,7 +1459,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         new double[]{-96.7682647, -96.8280029, -96.6288757, -96.4929199,
                      -96.6041564, -96.7449188, -96.76826477, -96.7682647})),
         5);
-    assertEquals(2, td.totalHits);
+    assertEquals(2, td.totalHits.value);
   }
 
   public void testSmallSetPolyWholeMap() throws Exception {
@@ -1469,23 +1469,23 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
                       new double[] {GeoUtils.MIN_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MIN_LAT_INCL, GeoUtils.MIN_LAT_INCL},
                       new double[] {GeoUtils.MIN_LON_INCL, GeoUtils.MIN_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MIN_LON_INCL})),
                       20);    
-    assertEquals("testWholeMap failed", 24, td.totalHits);
+    assertEquals("testWholeMap failed", 24, td.totalHits.value);
   }
 
   public void testSmallSetDistance() throws Exception {
     TopDocs td = searchSmallSet(newDistanceQuery("point", 32.94823588839368, -96.4538113027811, 6000), 20);
-    assertEquals(2, td.totalHits);
+    assertEquals(2, td.totalHits.value);
   }
   
   public void testSmallSetTinyDistance() throws Exception {
     TopDocs td = searchSmallSet(newDistanceQuery("point", 40.720611, -73.998776, 1), 20);
-    assertEquals(2, td.totalHits);
+    assertEquals(2, td.totalHits.value);
   }
 
   /** see https://issues.apache.org/jira/browse/LUCENE-6905 */
   public void testSmallSetDistanceNotEmpty() throws Exception {
     TopDocs td = searchSmallSet(newDistanceQuery("point", -88.56029371730983, -177.23537676036358, 7757.999232959935), 20);
-    assertEquals(2, td.totalHits);
+    assertEquals(2, td.totalHits.value);
   }
 
   /**
@@ -1493,11 +1493,11 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
    */
   public void testSmallSetHugeDistance() throws Exception {
     TopDocs td = searchSmallSet(newDistanceQuery("point", 32.94823588839368, -96.4538113027811, 6000000), 20);
-    assertEquals(16, td.totalHits);
+    assertEquals(16, td.totalHits.value);
   }
 
   public void testSmallSetDistanceDateline() throws Exception {
     TopDocs td = searchSmallSet(newDistanceQuery("point", 32.94823588839368, -179.9538113027811, 120000), 20);
-    assertEquals(3, td.totalHits);
+    assertEquals(3, td.totalHits.value);
   }
 }

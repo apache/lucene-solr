@@ -85,6 +85,24 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testMissingSplitKey() throws Exception  {
+    String sourceCollection = "testMissingSplitKey-source";
+    CollectionAdminRequest.createCollection(sourceCollection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    String targetCollection = "testMissingSplitKey-target";
+    CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+
+    HttpSolrClient.RemoteSolrException remoteSolrException = expectThrows(HttpSolrClient.RemoteSolrException.class,
+        "Expected an exception in case split.key is not specified", () -> {
+          CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "")
+              .setForwardTimeout(45)
+              .process(cluster.getSolrClient());
+        });
+    assertTrue(remoteSolrException.getMessage().contains("split.key cannot be null or empty"));
+  }
+
+  @Test
   public void multipleShardMigrateTest() throws Exception  {
 
     CollectionAdminRequest.createCollection("sourceCollection", "conf", 2, 1).process(cluster.getSolrClient());

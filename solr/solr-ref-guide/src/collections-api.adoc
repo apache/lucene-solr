@@ -112,6 +112,11 @@ Details of the snitch provider. See the section <<rule-based-replica-placement.a
 `waitForFinalState`::
 If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
 
+`withCollection`::
+The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
+See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
+
+
 === CREATE Response
 
 The response will include the status of the request and the new core names. If the status is anything other than "success", an error message will explain why the request failed.
@@ -156,9 +161,11 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
 [[modifycollection]]
 == MODIFYCOLLECTION: Modify Attributes of a Collection
 
-`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>_&property.unset=<yet_another_attribute_name>`
+`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>_&__<attribute-name>__=__<attribute-value>__&__<another-attribute-name>__=__<another-value>__&__<yet_another_attribute_name>__=`
 
 It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+
+An attribute can be deleted by passing an empty value. For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
 
 === MODIFYCOLLECTION Parameters
 
@@ -167,11 +174,8 @@ The name of the collection to be modified. This parameter is required.
 
 `_attribute_=_value_`::
 Key-value pairs of attribute names and attribute values.
-+
-`property.unset=_attribute_`::
-Unsets (or deletes) the given attribute from the collection.
 
-At least one of either `_attribute_` or `property.unset` parameters is required.
+At least one `_attribute_` parameter is required.
 
 The attributes that can be modified are:
 
@@ -182,7 +186,8 @@ The attributes that can be modified are:
 * rule
 * snitch
 * policy
-+
+* withCollection
+
 See the <<create,CREATE action>> section above for details on these attributes.
 
 [[reload]]

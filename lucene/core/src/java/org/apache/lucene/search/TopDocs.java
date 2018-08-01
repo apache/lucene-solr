@@ -23,36 +23,15 @@ import org.apache.lucene.util.PriorityQueue;
 public class TopDocs {
 
   /** The total number of hits for the query. */
-  public long totalHits;
+  public TotalHits totalHits;
 
   /** The top hits for the query. */
   public ScoreDoc[] scoreDocs;
 
-  /** Stores the maximum score value encountered, needed for normalizing. */
-  private float maxScore;
-  
-  /**
-   * Returns the maximum score value encountered. Note that in case
-   * scores are not tracked, this returns {@link Float#NaN}.
-   */
-  public float getMaxScore() {
-    return maxScore;
-  }
-  
-  /** Sets the maximum score value encountered. */
-  public void setMaxScore(float maxScore) {
-    this.maxScore = maxScore;
-  }
-
-  /** Constructs a TopDocs with a default maxScore=Float.NaN. */
-  TopDocs(long totalHits, ScoreDoc[] scoreDocs) {
-    this(totalHits, scoreDocs, Float.NaN);
-  }
-
-  public TopDocs(long totalHits, ScoreDoc[] scoreDocs, float maxScore) {
+  /** Constructs a TopDocs. */
+  public TopDocs(TotalHits totalHits, ScoreDoc[] scoreDocs) {
     this.totalHits = totalHits;
     this.scoreDocs = scoreDocs;
-    this.maxScore = maxScore;
   }
 
   // Refers to one hit:
@@ -161,7 +140,7 @@ public class TopDocs {
             }
             final FieldDoc fd = (FieldDoc) sd;
             if (fd.fields == null) {
-              throw new IllegalArgumentException("shard " + shardIDX + " did not set sort field values (FieldDoc.fields is null); you must pass fillFields=true to IndexSearcher.search on each shard");
+              throw new IllegalArgumentException("shard " + shardIDX + " did not set sort field values (FieldDoc.fields is null)");
             }
           }
         }
@@ -267,22 +246,22 @@ public class TopDocs {
     }
 
     long totalHitCount = 0;
+    TotalHits.Relation totalHitsRelation = TotalHits.Relation.EQUAL_TO;
     int availHitCount = 0;
-    float maxScore = Float.MIN_VALUE;
     for(int shardIDX=0;shardIDX<shardHits.length;shardIDX++) {
       final TopDocs shard = shardHits[shardIDX];
       // totalHits can be non-zero even if no hits were
       // collected, when searchAfter was used:
-      totalHitCount += shard.totalHits;
+      totalHitCount += shard.totalHits.value;
+      // If any hit count is a lower bound then the merged
+      // total hit count is a lower bound as well
+      if (shard.totalHits.relation == TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO) {
+        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+      }
       if (shard.scoreDocs != null && shard.scoreDocs.length > 0) {
         availHitCount += shard.scoreDocs.length;
         queue.add(new ShardRef(shardIDX, setShardIndex == false));
-        maxScore = Math.max(maxScore, shard.getMaxScore());
       }
-    }
-
-    if (availHitCount == 0) {
-      maxScore = Float.NaN;
     }
 
     final ScoreDoc[] hits;
@@ -319,10 +298,11 @@ public class TopDocs {
       }
     }
 
+    TotalHits totalHits = new TotalHits(totalHitCount, totalHitsRelation);
     if (sort == null) {
-      return new TopDocs(totalHitCount, hits, maxScore);
+      return new TopDocs(totalHits, hits);
     } else {
-      return new TopFieldDocs(totalHitCount, hits, sort.getSort(), maxScore);
+      return new TopFieldDocs(totalHits, hits, sort.getSort());
     }
   }
 }

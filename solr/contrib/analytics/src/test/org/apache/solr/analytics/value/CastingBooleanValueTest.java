@@ -51,11 +51,11 @@ public class CastingBooleanValueTest extends SolrTestCaseJ4 {
     AnalyticsValue casted = (AnalyticsValue)val;
 
     val.setValue(false).setExists(true);
-    assertEquals(new Boolean(false), casted.getObject());
+    assertEquals(Boolean.FALSE, casted.getObject());
     assertTrue(casted.exists());
 
     val.setValue(true).setExists(true);
-    assertEquals(new Boolean(true), casted.getObject());
+    assertEquals(Boolean.TRUE, casted.getObject());
     assertTrue(casted.exists());
   }
 
@@ -120,7 +120,7 @@ public class CastingBooleanValueTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValue(false).setExists(true);
-    Iterator<Object> values = Arrays.<Object>asList(new Boolean(false)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(Boolean.FALSE).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

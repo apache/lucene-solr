@@ -86,7 +86,7 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValues(20F, -3.32F, 42.5F);
-    Iterator<Object> values = Arrays.<Object>asList(new Float(20F), new Float(-3.32F), new Float(42.5F)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(20F, -3.32F, 42.5F).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

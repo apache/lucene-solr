@@ -94,7 +94,7 @@ public class TermQuery extends Query {
         if (pe.advance(doc) != doc) {
           return null;
         }
-        return new TermMatchesIterator(pe);
+        return new TermMatchesIterator(getQuery(), pe);
       });
     }
 
@@ -215,6 +215,13 @@ public class TermQuery extends Query {
     }
     buffer.append(term.text());
     return buffer.toString();
+  }
+
+  /** Returns the {@link TermStates} passed to the constructor, or null if it was not passed.
+   *
+   * @lucene.experimental */
+  public TermStates getTermStates() {
+    return perReaderTermState;
   }
 
   /** Returns true iff <code>o</code> is equal to this. */

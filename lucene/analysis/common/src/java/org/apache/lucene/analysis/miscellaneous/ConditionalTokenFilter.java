@@ -159,6 +159,7 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
 
   @Override
   public final boolean incrementToken() throws IOException {
+    lastTokenFiltered = false;
     while (true) {
       if (state == TokenState.READING) {
         if (bufferedState != null) {
@@ -192,16 +193,15 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
             adjustPosition = false;
           }
           else {
-            lastTokenFiltered = false;
             state = TokenState.READING;
             return endDelegating();
           }
           return true;
         }
-        lastTokenFiltered = false;
         return true;
       }
       if (state == TokenState.DELEGATING) {
+        lastTokenFiltered = true;
         if (delegate.incrementToken()) {
           return true;
         }

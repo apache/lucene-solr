@@ -196,18 +196,18 @@ final class FrozenBufferedUpdates {
    *  if the private segment was already merged away. */
   private List<SegmentCommitInfo> getInfosToApply(IndexWriter writer) {
     assert Thread.holdsLock(writer);
-    List<SegmentCommitInfo> infos;
+    final List<SegmentCommitInfo> infos;
     if (privateSegment != null) {
-      if (writer.segmentInfos.indexOf(privateSegment) == -1) {
+      if (writer.segmentCommitInfoExist(privateSegment)) {
+        infos = Collections.singletonList(privateSegment);
+      }else {
         if (infoStream.isEnabled("BD")) {
           infoStream.message("BD", "private segment already gone; skip processing updates");
         }
-        return null;
-      } else {
-        infos = Collections.singletonList(privateSegment);
+        infos = null;
       }
     } else {
-      infos = writer.segmentInfos.asList();
+      infos = writer.listOfSegmentCommitInfos();
     }
     return infos;
   }

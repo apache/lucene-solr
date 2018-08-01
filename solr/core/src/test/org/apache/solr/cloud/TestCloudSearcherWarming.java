@@ -22,22 +22,16 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -51,8 +45,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 
 /**
  * Tests related to SOLR-6086
@@ -108,7 +100,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         "'add-listener' : {'name':'firstSearcherListener','event':'firstSearcher', 'class':'" + SleepingSolrEventListener.class.getName() + "'}" +
         "}";
 
-    ConfigRequest request = new ConfigRequest(SolrRequest.METHOD.POST, "/config", addListenerCommand);
+    ConfigRequest request = new ConfigRequest(addListenerCommand);
     solrClient.request(request);
 
     solrClient.add(new SolrInputDocument("id", "1"));
@@ -147,7 +139,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         "'add-listener' : {'name':'firstSearcherListener','event':'firstSearcher', 'class':'" + SleepingSolrEventListener.class.getName() + "'}" +
         "}";
 
-    ConfigRequest request = new ConfigRequest(SolrRequest.METHOD.POST, "/config", addListenerCommand);
+    ConfigRequest request = new ConfigRequest(addListenerCommand);
     solrClient.request(request);
 
     solrClient.add(new SolrInputDocument("id", "1"));
@@ -326,35 +318,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         }
         log.info("Finished sleeping for {} on newSearcher: {}, currentSearcher: {} belonging to (newest) core: {}, id: {}", sleepTime.get(), newSearcher, currentSearcher, newSearcher.getCore().getName(), newSearcher.getCore());
       }
-    }
-  }
-
-  public static class ConfigRequest extends SolrRequest {
-    protected final String message;
-
-    public ConfigRequest(METHOD m, String path, String message) {
-      super(m, path);
-      this.message = message;
-    }
-
-    @Override
-    public SolrParams getParams() {
-      return null;
-    }
-
-   /* @Override
-    public Collection<ContentStream> getContentStreams() throws IOException {
-      return message != null ? Collections.singletonList(new ContentStreamBase.StringStream(message)) : null;
-    }*/
-
-    @Override
-    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-      return message == null? null: new RequestWriter.StringPayloadContentWriter(message, JSON_MIME);
-    }
-
-    @Override
-    protected SolrResponse createResponse(SolrClient client) {
-      return new SolrResponseBase();
     }
   }
 }

@@ -119,7 +119,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   @Test
   @ShardsFixed(num = 3)
   @SuppressWarnings("unchecked")
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void test() throws Exception {
     waitForRecoveriesToFinish(true);
     mapReplicasToClients();

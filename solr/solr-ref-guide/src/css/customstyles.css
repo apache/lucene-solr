@@ -4,6 +4,35 @@
 .gi-4x{font-size: 4em;}
 .gi-5x{font-size: 5em;}
 
+/* Special rules for index.html so rows are all the same height */
+.row.match-my-cols {
+    display: table;
+}
+
+.row.match-my-cols [class*="col-"] {
+    float: none;
+    display: table-cell;
+    vertical-align: top;
+}
+
+/* Changes styling for Bootstrap "jumbotron" component used on index.html
+   Will be inherited by all jumbotron segments used anywhere */
+.jumbotron {
+  background-color: #FAFAFA;
+  border: solid 2px;
+  border-color: #D9411E;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+/* Adds a custom "lead" style for use in index.html jumbotron box */
+.paragraph.lead-homepage > p {
+  font-size: 1.21875em;
+  line-height: 1.3;
+  text-align: center;
+  font-weight: bold;
+}
+
 .breadcrumb > .active {color: #777 !important;}
 
 .post-content img {

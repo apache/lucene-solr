@@ -76,14 +76,6 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
-    <configuration default="false" name="Module analyzers-uima" type="JUnit" factoryName="JUnit">
-      <module name="analysis-uima" />
-      <option name="TEST_OBJECT" value="pattern" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/lucene/analysis/uima" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
-    </configuration>
     <configuration default="false" name="Module backward-codecs" type="JUnit" factoryName="JUnit">
       <module name="backward-codecs" />
       <option name="TEST_OBJECT" value="pattern" />
@@ -332,14 +324,6 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
-    <configuration default="false" name="Solr uima contrib" type="JUnit" factoryName="JUnit">
-      <module name="uima" />
-      <option name="TEST_OBJECT" value="pattern" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/solr-uima" />
-      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=@version.base@ -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
-    </configuration>
     <configuration default="false" name="Solr velocity contrib" type="JUnit" factoryName="JUnit">
       <module name="velocity" />
       <option name="TEST_OBJECT" value="pattern" />
@@ -359,7 +343,6 @@
       <item index="6" class="java.lang.String" itemvalue="JUnit.Module analyzers-phonetic" />
       <item index="7" class="java.lang.String" itemvalue="JUnit.Module analyzers-smartcn" />
       <item index="8" class="java.lang.String" itemvalue="JUnit.Module analyzers-stempel" />
-      <item index="9" class="java.lang.String" itemvalue="JUnit.Module analyzers-uima" />
       <item index="10" class="java.lang.String" itemvalue="JUnit.Module backward-codecs" />
       <item index="11" class="java.lang.String" itemvalue="JUnit.Module benchmark" />
       <item index="12" class="java.lang.String" itemvalue="JUnit.Module classification" />
@@ -391,7 +374,6 @@
       <item index="38" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
       <item index="39" class="java.lang.String" itemvalue="JUnit.Solr ltr contrib" />
       <item index="40" class="java.lang.String" itemvalue="JUnit.Solr prometheus-exporter contrib" />
-      <item index="41" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
       <item index="42" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
     </list>
   </component>

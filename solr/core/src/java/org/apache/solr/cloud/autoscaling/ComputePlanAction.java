@@ -28,11 +28,11 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.UnsupportedSuggester;
 import org.apache.solr.common.SolrException;
@@ -89,8 +89,8 @@ public class ComputePlanAction extends TriggerActionBase {
         log.trace("-- state: {}", clusterState);
       }
       try {
-        Suggester intialSuggester = getSuggester(session, event, context, cloudManager);
-        Suggester suggester = intialSuggester;
+        Suggester initialSuggester = getSuggester(session, event, context, cloudManager);
+        Suggester suggester = initialSuggester;
         int maxOperations = getMaxNumOps(event, autoScalingConf, clusterState);
         int requestedOperations = getRequestedNumOps(event);
         if (requestedOperations > maxOperations) {
@@ -119,13 +119,13 @@ public class ComputePlanAction extends TriggerActionBase {
           // unless a specific number of ops was requested
           // uncomment the following to log too many operations
           /*if (opCount > 10) {
-            PolicyHelper.logState(cloudManager, intialSuggester);
+            PolicyHelper.logState(cloudManager, initialSuggester);
           }*/
 
           if (operation == null) {
             if (requestedOperations < 0) {
               //uncomment the following to log zero operations
-//              PolicyHelper.logState(cloudManager, intialSuggester);
+//              PolicyHelper.logState(cloudManager, initialSuggester);
               break;
             } else {
               log.info("Computed plan empty, remained " + (opCount - opLimit) + " requested ops to try.");
@@ -225,6 +225,7 @@ public class ComputePlanAction extends TriggerActionBase {
         for (Map.Entry<Suggester.Hint, Object> e : op.getHints().entrySet()) {
           suggester = suggester.hint(e.getKey(), e.getValue());
         }
+        suggester = suggester.forceOperation(true);
         start++;
         event.getProperties().put(START, start);
         break;

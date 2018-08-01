@@ -70,7 +70,7 @@ public class TestForceMergeForever extends LuceneTestCase {
       w.addDocument(docs.nextDoc());
     }
     MergePolicy mp = w.getConfig().getMergePolicy();
-    final int mergeAtOnce = 1+w.segmentInfos.size();
+    final int mergeAtOnce = 1+w.listOfSegmentCommitInfos().size();
     if (mp instanceof TieredMergePolicy) {
       ((TieredMergePolicy) mp).setMaxMergeAtOnce(mergeAtOnce);
     } else if (mp instanceof LogMergePolicy) {

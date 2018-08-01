@@ -173,17 +173,6 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testEndPropagation() throws IOException {
-    CannedTokenStream cts1 = new CannedTokenStream(0, 20,
-        new Token("alice", 0, 5), new Token("bob", 6, 8)
-    );
-    TokenStream ts1 = new ConditionalTokenFilter(cts1, EndTrimmingFilter::new) {
-      @Override
-      protected boolean shouldFilter() throws IOException {
-        return false;
-      }
-    };
-    assertTokenStreamContents(ts1, new String[]{ "alice", "bob" },
-        null, null, null, null, null, 20);
 
     CannedTokenStream cts2 = new CannedTokenStream(0, 20,
         new Token("alice", 0, 5), new Token("bob", 6, 8)
@@ -196,6 +185,19 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     };
     assertTokenStreamContents(ts2, new String[]{ "alice", "bob" },
         null, null, null, null, null, 18);
+
+    CannedTokenStream cts1 = new CannedTokenStream(0, 20,
+        new Token("alice", 0, 5), new Token("bob", 6, 8)
+    );
+    TokenStream ts1 = new ConditionalTokenFilter(cts1, EndTrimmingFilter::new) {
+      @Override
+      protected boolean shouldFilter() throws IOException {
+        return false;
+      }
+    };
+    assertTokenStreamContents(ts1, new String[]{ "alice", "bob" },
+        null, null, null, null, null, 20);
+
   }
 
   public void testWrapGraphs() throws Exception {

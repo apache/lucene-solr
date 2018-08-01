@@ -698,7 +698,7 @@ function jetty_port() {
 function run_tool() {
 
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS $SOLR_ZK_CREDS_AND_ACLS -Dsolr.install.dir="$SOLR_TIP" \
-    -Dlog4j.configurationFile="file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j2.xml" \
+    -Dlog4j.configurationFile="file:$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*" \
     org.apache.solr.util.SolrCLI "$@"
 
@@ -1845,7 +1845,7 @@ if [ -z "$SOLR_LOGS_DIR" ]; then
 fi
 EXAMPLE_DIR="$SOLR_TIP/example"
 if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
-  LOG4J_PROPS="$EXAMPLE_DIR/resources/log4j2.xml"
+  LOG4J_PROPS="$DEFAULT_SERVER_DIR/resources/log4j2.xml"
   SOLR_LOGS_DIR="$SOLR_HOME/../logs"
 fi
 
@@ -1995,7 +1995,7 @@ if [ -z "$SOLR_TIMEZONE" ]; then
 fi
 
 # Launches Solr in foreground/background depending on parameters
-function launch_solr() {
+function start_solr() {
 
   run_in_foreground="$1"
   stop_port="$STOP_PORT"
@@ -2165,6 +2165,6 @@ function launch_solr() {
   fi
 }
 
-launch_solr "$FG" "$ADDITIONAL_CMD_OPTS" "$ADDITIONAL_JETTY_CONFIG"
+start_solr "$FG" "$ADDITIONAL_CMD_OPTS" "$ADDITIONAL_JETTY_CONFIG"
 
 exit $?

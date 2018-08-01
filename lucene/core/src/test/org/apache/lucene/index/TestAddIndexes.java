@@ -1442,7 +1442,7 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(wrappedReader.numDocs(), writer.numDocs());
     assertEquals(maxDoc, writer.maxDoc());
     writer.commit();
-    SegmentCommitInfo commitInfo = writer.segmentInfos.asList().get(0);
+    SegmentCommitInfo commitInfo = writer.listOfSegmentCommitInfos().get(0);
     assertEquals(maxDoc-wrappedReader.numDocs(), commitInfo.getSoftDelCount());
     writer.close();
     Directory dir3 = newDirectory();
