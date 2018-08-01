@@ -84,6 +84,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+import static org.junit.internal.matchers.StringContains.containsString;
 
 public class TestIndexSorting extends LuceneTestCase {
   static class AssertingNeedsIndexSortCodec extends FilterCodec {
@@ -2478,4 +2479,43 @@ public class TestIndexSorting extends LuceneTestCase {
     IOUtils.close(r, w, dir);
   }
 
+  public void testWrongSortFieldType() throws Exception {
+    Directory dir = newDirectory();
+    List<Field> dvs = new ArrayList<>();
+    dvs.add(new SortedDocValuesField("field", new BytesRef("")));
+    dvs.add(new SortedSetDocValuesField("field", new BytesRef("")));
+    dvs.add(new NumericDocValuesField("field", 42));
+    dvs.add(new SortedNumericDocValuesField("field", 42));
+
+    List<SortField> sortFields = new ArrayList<>();
+    sortFields.add(new SortField("field", SortField.Type.STRING));
+    sortFields.add(new SortedSetSortField("field", false));
+    sortFields.add(new SortField("field", SortField.Type.INT));
+    sortFields.add(new SortedNumericSortField("field", SortField.Type.INT));
+
+    for (int i = 0; i < sortFields.size(); i++) {
+      for (int j = 0; j < dvs.size(); j++) {
+        if (i == j) {
+          continue;
+        }
+        Sort indexSort = new Sort(sortFields.get(i));
+        IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+        iwc.setIndexSort(indexSort);
+        IndexWriter w = new IndexWriter(dir, iwc);
+        Document doc = new Document();
+        doc.add(dvs.get(j));
+        IllegalArgumentException exc = expectThrows(IllegalArgumentException.class, () -> w.addDocument(doc));
+        assertThat(exc.getMessage(), containsString("invalid doc value type"));
+        doc.clear();
+        doc.add(dvs.get(i));
+        w.addDocument(doc);
+        doc.add(dvs.get(j));
+        exc = expectThrows(IllegalArgumentException.class, () -> w.addDocument(doc));
+        assertThat(exc.getMessage(), containsString("cannot change DocValues type"));
+        w.rollback();
+        IOUtils.close(w);
+      }
+    }
+    IOUtils.close(dir);
+  }
 }
