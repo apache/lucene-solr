@@ -55,9 +55,9 @@ limitations under the License.
           <span>Show all details</span>
         </a>
       </div>
-      <div ng-show="showNodesPaging()">
+      <div>
         <div id="nodesPaging">
-         <button ng-show="prevEnabled" ng-click="previous()" id="nodesPagingPrev">&lt; Previous</button>
+         <button ng-show="prevEnabled" ng-click="previousPage()" id="nodesPagingPrev">&lt; Previous</button>
          <span ng-show="filteredHosts.length==0">No hosts found.</span>
          <span ng-hide="filteredHosts.length==0">Hosts {{from+1}} - {{from + hostsToShow.length}} of {{filteredHosts.length}}.</span>&nbsp;
 
@@ -91,7 +91,7 @@ limitations under the License.
         </thead>
         <tbody>
           <tr ng-repeat="key in nodesToShow | orderBy:'key.order'" ng-init="n = nodes[key]">
-              <td rowspan="{{hosts[n.host].nodes.length}}" ng-show="key == hosts[n.host].nodes[0]">
+              <td rowspan="{{hosts[n.host].nodes.length}}" ng-show="isFirstNodeForHost(key)">
                 <div class="host-name">{{n.host}}</div>
                 <span class="host-spec" ng-show="!showDetails[n.host]">
                   <span title="{{n.system.system.uptime}}">{{n.system.system.name}}</span> 

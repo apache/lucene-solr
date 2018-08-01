@@ -119,10 +119,6 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.to = $scope.pageSize - 1;
   $scope.filterType = "node"; // Pre-initialize dropdown
 
-  $scope.showNodesPaging = function() {
-    return Object.keys($scope.hosts).length > $scope.pageSize;
-  };
-
   $scope.toggleAllDetails = function() {
     $scope.showAllDetails = !$scope.showAllDetails;
     for (var node in $scope.nodes) {
@@ -146,9 +142,20 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   };
 
   $scope.nextPage = function() {
-      $scope.pos += $scope.pageSize;
-      $scope.reload();
-  }
+    $scope.from += parseInt($scope.pageSize);
+    $scope.reload();
+  };
+
+  $scope.previousPage = function() {
+    $scope.from = Math.max(0, $scope.from - parseInt($scope.pageSize));
+    $scope.reload();
+  };
+  
+  $scope.isFirstNodeForHost = function(node) {
+    var hostName = node.split(":")[0]; 
+    var nodesInHost = $scope.filteredNodes.filter(no => no.startsWith(hostName));
+    return nodesInHost[0] === node;
+  };
   
   // Initializes the cluster state, list of nodes, collections etc
   $scope.initClusterState = function() {
@@ -218,7 +225,6 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
   $scope.filterInput = function() {
     $scope.from = 0;
-    $scope.pos = $scope.from;
     $scope.to = $scope.pageSize - 1;
     $scope.reload();
   }
@@ -280,11 +286,12 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       if (filteredNodes) {
         isFiltered = true;
         filteredHosts = filteredNodes.map(nod => nod.split(":")[0]).filter((item,index,self) => self.indexOf(item)==index);
-        filteredHosts.sort();
       } else {
         filteredNodes = node_keys;
         filteredHosts = hostNames;
       }
+      filteredNodes.sort();
+      filteredHosts.sort();
       for (var id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
         var hostName = filteredHosts[id];
         hostsToShow.push(hostName);
@@ -295,7 +302,8 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
         }
       }
       nodesParam = nodesToShow.join(',');
-      $scope.nextEnabled = $scope.from + pageSize < hostNames.length;
+      $scope.nextEnabled = $scope.from + pageSize < filteredHosts.length;
+      $scope.prevEnabled = $scope.from - pageSize >= 0;
     } else {
       nodesToShow = Object.keys(nodes);
       hostsToShow = Object.keys(hosts);
@@ -455,6 +463,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     $scope.live_nodes = live_nodes;
     $scope.nodesToShow = nodesToShow;
     $scope.hostsToShow = hostsToShow;
+    $scope.filteredNodes = filteredNodes;
     $scope.filteredHosts = filteredHosts;
   };
   $scope.initClusterState();
