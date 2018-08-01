@@ -17,11 +17,23 @@
 package org.apache.solr.update.processor;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.commons.lang.LocaleUtils;
 import org.apache.solr.common.util.NamedList;
@@ -31,10 +43,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.DateValueFieldType;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,8 +65,8 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <p>
  * One or more date "format" specifiers must be specified.  See 
- * <a href="http://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html"
- * >Joda-time's DateTimeFormat javadocs</a> for a description of format strings.
+ * <a href="https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html"
+ * >Java 8's DateTimeFormatter javadocs</a> for a description of format strings.
  * </p>
  * <p>
  * A default time zone name or offset may optionally be specified for those dates
@@ -115,9 +123,10 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
           for (Map.Entry<String,DateTimeFormatter> format : formats.entrySet()) {
             DateTimeFormatter parser = format.getValue();
             try {
-              DateTime dateTime = parser.parseDateTime(srcStringVal);
-              return dateTime.withZone(DateTimeZone.UTC).toDate();
-            } catch (IllegalArgumentException e) {
+              TemporalAccessor parsedTemporalDate = parser.parseBest(srcStringVal, OffsetDateTime::from,
+                  ZonedDateTime::from, LocalDateTime::from, LocalDate::from, Instant::from);
+              return temporalToDate(parsedTemporalDate, parser.getZone());
+            } catch (DateTimeParseException e) {
               log.debug("value '{}' is not parseable with format '{}'",
                         new Object[] { srcStringVal, format.getKey() });
             }
@@ -144,15 +153,19 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
     }
 
     Object defaultTimeZoneParam = args.remove(DEFAULT_TIME_ZONE_PARAM);
-    DateTimeZone defaultTimeZone = DateTimeZone.UTC;
+    ZoneId defaultTimeZone = ZoneOffset.UTC;
     if (null != defaultTimeZoneParam) {
-      defaultTimeZone = DateTimeZone.forID(defaultTimeZoneParam.toString());
+      TimeZone.getTimeZone(defaultTimeZoneParam.toString());
+      defaultTimeZone = ZoneId.of(defaultTimeZoneParam.toString());
     }
 
     Collection<String> formatsParam = args.removeConfigArgs(FORMATS_PARAM);
     if (null != formatsParam) {
       for (String value : formatsParam) {
-        formats.put(value, DateTimeFormat.forPattern(value).withZone(defaultTimeZone).withLocale(locale));
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
+            .appendPattern(value).toFormatter(locale).withZone(defaultTimeZone);
+        formats.put(value, formatter);
+        // formats.put(value, DateTimeFormat.forPattern(value).withZone(defaultTimeZone).withLocale(locale));
       }
     }
     super.init(args);
@@ -171,5 +184,19 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
       FieldType type = schema.getFieldTypeNoEx(fieldName);
       return (null == type) || type instanceof DateValueFieldType;
     };
+  }
+
+  private Date temporalToDate(TemporalAccessor in, ZoneId timeZoneId) {
+    if(in instanceof OffsetDateTime) {
+      return Date.from(((OffsetDateTime) in).toInstant());
+    } else if(in instanceof ZonedDateTime) {
+      return Date.from(((ZonedDateTime) in).withZoneSameInstant(timeZoneId).toInstant());
+    } else if(in instanceof LocalDateTime) {
+      return Date.from(((LocalDateTime) in).atZone(timeZoneId).toInstant());
+    } else if(in instanceof Instant) {
+      return Date.from((Instant) in);
+    } else {
+      return Date.from(((LocalDate) in).atStartOfDay(timeZoneId).toInstant());
+    }
   }
 }
