@@ -171,6 +171,9 @@ API Changes:
   been changed from a protected method to a java.util.function.Supplier as a
   constructor argument. (Adrien Grand)
 
+* LUCENE-8437: CheckIndex.Status.cantOpenSegments and missingSegmentVersion
+  have been removed as they were not computed correctly. (Adrien Grand)
+
 Bug Fixes:
 
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
