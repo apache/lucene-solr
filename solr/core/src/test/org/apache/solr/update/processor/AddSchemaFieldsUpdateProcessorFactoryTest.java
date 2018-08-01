@@ -18,7 +18,6 @@ package org.apache.solr.update.processor;
 
 import java.io.File;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -64,7 +63,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNull(schema.getFieldOrNull(fieldName));
     String dateString = "2010-11-12T13:14:15.168Z";
     LocalDateTime localDateTime = LocalDateTime.parse(dateString, DateTimeFormatter.ISO_DATE_TIME);
-    Date date = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+    Date date = Date.from(localDateTime.atZone(ZoneOffset.UTC).toInstant());
     SolrInputDocument d = processAdd("add-fields-no-run-processor", doc(f("id", "1"), f(fieldName, date)));
     assertNotNull(d);
     schema = h.getCore().getLatestSchema();

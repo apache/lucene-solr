@@ -22,7 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
@@ -218,7 +218,7 @@ public abstract class ConfigSetService {
     public static String cacheName(Path schemaFile) throws IOException {
       long lastModified = Files.getLastModifiedTime(schemaFile).toMillis();
       return String.format(Locale.ROOT, "%s:%s",
-                            schemaFile.toString(), Instant.ofEpochMilli(lastModified).atZone(ZoneId.systemDefault()).format(cacheKeyFormatter));
+                            schemaFile.toString(), Instant.ofEpochMilli(lastModified).atZone(ZoneOffset.UTC).format(cacheKeyFormatter));
     }
 
     @Override
