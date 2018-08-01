@@ -84,7 +84,7 @@ public abstract class CoreAdminParams
 
   /** The hash ranges to be used to split a shard or an index */
   public final static String RANGES = "ranges";
-  
+
   public static final String ROLES = "roles";
 
   public static final String REQUESTID = "requestid";

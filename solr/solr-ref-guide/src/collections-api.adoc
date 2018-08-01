@@ -259,9 +259,11 @@ This command allows for seamless splitting and requires no downtime. A shard bei
 
 The split is performed by dividing the original shard's hash range into two equal partitions and dividing up the documents in the original shard according to the new sub-ranges. Two parameters discussed below, `ranges` and `split.key` provide further control over how the split occurs.
 
-The newly created shards will have as many replicas as the parent shard.
+The newly created shards will have as many replicas as the parent shard, of the same replica types.
 
-You must ensure that the node running the leader of the parent shard has enough free disk space i.e., more than twice the index size, for the split to succeed. The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+When using `splitMethod=rewrite` (default) you must ensure that the node running the leader of the parent shard has enough free disk space i.e., more than twice the index size, for the split to succeed. The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+
+Also, the first replicas of resulting sub-shards will always be placed on the shard leader node, which may cause Autoscaling policy violations that need to be resolved either automatically (when appropriate triggers are in use) or manually.
 
 Shard splitting can be a long running process. In order to avoid timeouts, you should run this as an <<Asynchronous Calls,asynchronous call>>.
 
@@ -285,11 +287,25 @@ This parameter can be used to split a shard using a route key such that all docu
 +
 For example, suppose `split.key=A!` hashes to the range `12-15` and belongs to shard 'shard1' with range `0-20`. Splitting by this route key would yield three sub-shards with ranges `0-11`, `12-15` and `16-20`. Note that the sub-shard with the hash range of the route key may also contain documents for other route keys whose hash ranges overlap.
 
+`splitMethod`::
+Currently two methods of shard splitting are supported:
+* `splitMethod=rewrite` (default) after selecting documents to retain in each partition this method creates sub-indexes from
+scratch, which is a lengthy CPU- and I/O-intensive process but results in optimally-sized sub-indexes that don't contain
+any data from documents not belonging to each partition.
+* `splitMethod=link` uses file system-level hard links for creating copies of the original index files and then only modifies the
+file that contains the list of deleted documents in each partition. This method is many times quicker and lighter on resources than the
+`rewrite` method but the resulting sub-indexes are still as large as the original index because they still contain data from documents not
+belonging to the partition. This slows down the replication process and consumes more disk space on replica nodes (the multiple hard-linked
+copies don't occupy additional disk space on the leader node, unless hard-linking is not supported).
+
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
 `waitForFinalState`::
 If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
+`timing`::
+If `true` then each stage of processing will be timed and a `timing` section will be included in response.
 
 `async`::
 Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>
