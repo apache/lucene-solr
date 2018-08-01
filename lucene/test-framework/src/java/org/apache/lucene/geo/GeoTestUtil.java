@@ -19,13 +19,16 @@ package org.apache.lucene.geo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomDouble;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
+import static org.apache.lucene.util.LuceneTestCase.random;
 
 /** static methods for testing geo */
 public class GeoTestUtil {
@@ -63,7 +66,7 @@ public class GeoTestUtil {
 
     // first pick a base value.
     final double baseValue;
-    int surpriseMe = random().nextInt(17);
+    int surpriseMe = randomInt(17);
     if (surpriseMe == 0) {
       // random bits
       long lowBits = NumericUtils.doubleToSortableLong(low);
@@ -81,18 +84,18 @@ public class GeoTestUtil {
     } else if (surpriseMe == 4) {
       // divide up space into block of 360
       double delta = (high - low) / 360;
-      int block = random().nextInt(360);
+      int block = randomInt(360);
       baseValue = low + delta * block;
     } else {
       // distributed ~ evenly
-      baseValue = low + (high - low) * random().nextDouble();
+      baseValue = low + (high - low) * randomDouble();
     }
 
     assert baseValue >= low;
     assert baseValue <= high;
 
     // either return the base value or adjust it by 1 ulp in a random direction (if possible)
-    int adjustMe = random().nextInt(17);
+    int adjustMe = randomInt(17);
     if (adjustMe == 0) {
       return Math.nextAfter(adjustMe, high);
     } else if (adjustMe == 1) {
@@ -106,7 +109,7 @@ public class GeoTestUtil {
   private static double nextLatitudeNear(double otherLatitude, double delta) {
     delta = Math.abs(delta);
     GeoUtils.checkLatitude(otherLatitude);
-    int surpriseMe = random().nextInt(97);
+    int surpriseMe = randomInt(97);
     if (surpriseMe == 0) {
       // purely random
       return nextLatitude();
@@ -123,7 +126,7 @@ public class GeoTestUtil {
   private static double nextLongitudeNear(double otherLongitude, double delta) {
     delta = Math.abs(delta);
     GeoUtils.checkLongitude(otherLongitude);
-    int surpriseMe = random().nextInt(97);
+    int surpriseMe = randomInt(97);
     if (surpriseMe == 0) {
       // purely random
       return nextLongitude();
@@ -145,7 +148,7 @@ public class GeoTestUtil {
     assert maxLatitude >= minLatitude;
     GeoUtils.checkLatitude(minLatitude);
     GeoUtils.checkLatitude(maxLatitude);
-    if (random().nextInt(47) == 0) {
+    if (randomInt(47) == 0) {
       // purely random
       return nextLatitude();
     } else {
@@ -166,7 +169,7 @@ public class GeoTestUtil {
     assert maxLongitude >= minLongitude;
     GeoUtils.checkLongitude(minLongitude);
     GeoUtils.checkLongitude(maxLongitude);
-    if (random().nextInt(47) == 0) {
+    if (randomInt(47) == 0) {
       // purely random
       return nextLongitude();
     } else {
@@ -211,7 +214,7 @@ public class GeoTestUtil {
   public static double[] nextPointNear(Rectangle rectangle) {
     if (rectangle.crossesDateline()) {
       // pick a "side" of the two boxes we really are
-      if (random().nextBoolean()) {
+      if (randomBoolean()) {
         return nextPointNear(new Rectangle(rectangle.minLat, rectangle.maxLat, -180, rectangle.maxLon));
       } else {
         return nextPointNear(new Rectangle(rectangle.minLat, rectangle.maxLat, rectangle.minLon, 180));
@@ -229,11 +232,11 @@ public class GeoTestUtil {
     Polygon holes[] = polygon.getHoles();
 
     // if there are any holes, target them aggressively
-    if (holes.length > 0 && random().nextInt(3) == 0) {
-      return nextPointNear(holes[random().nextInt(holes.length)]);
+    if (holes.length > 0 && randomInt(3) == 0) {
+      return nextPointNear(holes[randomInt(holes.length)]);
     }
 
-    int surpriseMe = random().nextInt(97);
+    int surpriseMe = randomInt(97);
     if (surpriseMe == 0) {
       // purely random
       return new double[] { nextLatitude(), nextLongitude() };
@@ -242,7 +245,7 @@ public class GeoTestUtil {
       return new double[] { nextLatitudeBetween(polygon.minLat, polygon.maxLat), nextLongitudeBetween(polygon.minLon, polygon.maxLon) };
     } else if (surpriseMe < 20) {
       // target a vertex
-      int vertex = random().nextInt(polyLats.length - 1);
+      int vertex = randomInt(polyLats.length - 1);
       return new double[] { nextLatitudeNear(polyLats[vertex], polyLats[vertex+1] - polyLats[vertex]), 
                             nextLongitudeNear(polyLons[vertex], polyLons[vertex+1] - polyLons[vertex]) };
     } else if (surpriseMe < 30) {
@@ -250,14 +253,14 @@ public class GeoTestUtil {
       Polygon container = boxPolygon(new Rectangle(polygon.minLat, polygon.maxLat, polygon.minLon, polygon.maxLon));
       double containerLats[] = container.getPolyLats();
       double containerLons[] = container.getPolyLons();
-      int startVertex = random().nextInt(containerLats.length - 1);
+      int startVertex = randomInt(containerLats.length - 1);
       return nextPointAroundLine(containerLats[startVertex], containerLons[startVertex], 
                                  containerLats[startVertex+1], containerLons[startVertex+1]);
     } else {
       // target points around diagonals between vertices
-      int startVertex = random().nextInt(polyLats.length - 1);
+      int startVertex = randomInt(polyLats.length - 1);
       // but favor edges heavily
-      int endVertex = random().nextBoolean() ? startVertex + 1 : random().nextInt(polyLats.length - 1);
+      int endVertex = randomBoolean() ? startVertex + 1 : randomInt(polyLats.length - 1);
       return nextPointAroundLine(polyLats[startVertex], polyLons[startVertex], 
                                  polyLats[endVertex],   polyLons[endVertex]);
     }
@@ -270,11 +273,11 @@ public class GeoTestUtil {
     
     // if there are any holes, target them aggressively
     Polygon holes[] = polygon.getHoles();
-    if (holes.length > 0 && random().nextInt(3) == 0) {
-      return nextBoxNear(holes[random().nextInt(holes.length)]);
+    if (holes.length > 0 && randomInt(3) == 0) {
+      return nextBoxNear(holes[randomInt(holes.length)]);
     }
     
-    int surpriseMe = random().nextInt(97);
+    int surpriseMe = randomInt(97);
     if (surpriseMe == 0) {
       // formed from two interesting points
       point1 = nextPointNear(polygon);
@@ -286,7 +289,7 @@ public class GeoTestUtil {
       // now figure out a good delta: we use a rough heuristic, up to the length of an edge
       double polyLats[] = polygon.getPolyLats();
       double polyLons[] = polygon.getPolyLons();
-      int vertex = random().nextInt(polyLats.length - 1);
+      int vertex = randomInt(polyLats.length - 1);
       double deltaX = polyLons[vertex+1] - polyLons[vertex];
       double deltaY = polyLats[vertex+1] - polyLats[vertex];
       double edgeLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -386,14 +389,14 @@ public class GeoTestUtil {
 
   /** returns next pseudorandom polygon */
   public static Polygon nextPolygon() {
-    if (random().nextBoolean()) {
+    if (randomBoolean()) {
       return surpriseMePolygon();
-    } else if (random().nextInt(10) == 1) {
+    } else if (randomInt(10) == 1) {
       // this poly is slow to create ... only do it 10% of the time:
       while (true) {
-        int gons = TestUtil.nextInt(random(), 4, 500);
+        int gons = randomIntBetween(4, 500);
         // So the poly can cover at most 50% of the earth's surface:
-        double radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
+        double radiusMeters = randomDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
         try {
           return createRegularPolygon(nextLatitude(), nextLongitude(), radiusMeters, gons);
         } catch (IllegalArgumentException iae) {
@@ -403,7 +406,7 @@ public class GeoTestUtil {
     }
 
     Rectangle box = nextBoxInternal(false);
-    if (random().nextBoolean()) {
+    if (randomBoolean()) {
       // box
       return boxPolygon(box);
     } else {
@@ -480,19 +483,19 @@ public class GeoTestUtil {
       //System.out.println("\nPOLY ITER");
       double centerLat = nextLatitude();
       double centerLon = nextLongitude();
-      double radius = 0.1 + 20 * random().nextDouble();
-      double radiusDelta = random().nextDouble();
+      double radius = 0.1 + 20 * randomDouble();
+      double radiusDelta = randomDouble();
 
       ArrayList<Double> lats = new ArrayList<>();
       ArrayList<Double> lons = new ArrayList<>();
       double angle = 0.0;
       while (true) {
-        angle += random().nextDouble()*40.0;
+        angle += randomDouble() * 40.0;
         //System.out.println("  angle " + angle);
         if (angle > 360) {
           break;
         }
-        double len = radius * (1.0 - radiusDelta + radiusDelta * random().nextDouble());
+        double len = radius * (1.0 - radiusDelta + radiusDelta * randomDouble());
         //System.out.println("    len=" + len);
         double lat = centerLat + len * Math.cos(SloppyMath.toRadians(angle));
         double lon = centerLon + len * Math.sin(SloppyMath.toRadians(angle));
@@ -519,11 +522,6 @@ public class GeoTestUtil {
       }
       return new Polygon(latsArray, lonsArray);
     }
-  }
-
-  /** Keep it simple, we don't need to take arbitrary Random for geo tests */
-  private static Random random() {
-   return RandomizedContext.current().getRandom();
   }
 
   /** 
