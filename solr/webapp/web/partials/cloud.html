@@ -67,12 +67,12 @@ limitations under the License.
          </select>&nbsp;
 
          <span ng-show="filterType=='node'">
-           <input ng-model="nodeFilter" type="text" size="10" name="nodefilter" ng-change="filterInput()"/>&nbsp;
+           <input ng-model="nodeFilter" type="text" size="10" name="nodefilter" ng-change="filterInput()" ng-model-options='{ debounce: 500 }' />&nbsp;
          </span>
           <span ng-show="filterType=='collection'">
-            <input ng-model="collectionFilter" type="text" size="10" name="collectionfilter" ng-change="filterInput()"/>&nbsp;
+            <input ng-model="collectionFilter" type="text" size="10" name="collectionfilter" ng-change="filterInput()" ng-model-options='{ debounce: 500 }'/>&nbsp;
           </span>
-         Show <input ng-model="pageSize" ng-change="filterInput()" type="text" size="2" name="rows" /> hosts per page.
+         Show <input ng-model="pageSize" ng-change="filterInput()" type="text" size="2" name="rows" ng-model-options='{ debounce: 500 }'/> hosts per page.
          <button ng-show="nextEnabled" ng-click="nextPage()">Next &gt;</button>
         </div>
       </div>
