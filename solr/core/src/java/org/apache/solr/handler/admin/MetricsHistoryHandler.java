@@ -62,6 +62,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -332,12 +333,14 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     if (oid == null) {
       return null;
     }
-    String[] ids = oid.split("-");
-    if (ids.length != 3) { // unknown format
-      log.warn("Unknown format of leader id, skipping: " + oid);
+    String nodeName = null;
+    try {
+      nodeName = LeaderElector.getNodeName(oid);
+    } catch (Exception e) {
+      log.warn("Unknown format of leader id, skipping: " + oid, e);
       return null;
     }
-    return ids[1];
+    return nodeName;
   }
 
   private boolean amIOverseerLeader() {
