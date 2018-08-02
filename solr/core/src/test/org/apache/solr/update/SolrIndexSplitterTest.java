@@ -269,22 +269,26 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       DirectoryReader reader = DirectoryReader.open(directory);
-      assertEquals("split index1 has wrong number of documents", max / 3, reader.numDocs());
+      int numDocs1 = reader.numDocs();
       reader.close();
       h.getCore().getDirectoryFactory().release(directory);
       directory = h.getCore().getDirectoryFactory().get(indexDir2.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
-      assertEquals("split index2 has wrong number of documents", max / 3, reader.numDocs());
+      int numDocs2 = reader.numDocs();
       reader.close();
       h.getCore().getDirectoryFactory().release(directory);
       directory = h.getCore().getDirectoryFactory().get(indexDir3.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
-      assertEquals("split index3 has wrong number of documents", max / 3, reader.numDocs());
+      int numDocs3 = reader.numDocs();
       reader.close();
       h.getCore().getDirectoryFactory().release(directory);
       directory = null;
+      assertEquals("split indexes lost some documents!", max, numDocs1 + numDocs2 + numDocs3);
+      assertEquals("split index1 has wrong number of documents", max / 3, numDocs1);
+      assertEquals("split index2 has wrong number of documents", max / 3, numDocs2);
+      assertEquals("split index3 has wrong number of documents", max / 3, numDocs3);
     } finally {
       if (request != null) request.close(); // decrefs the searcher
       if (directory != null)  {
