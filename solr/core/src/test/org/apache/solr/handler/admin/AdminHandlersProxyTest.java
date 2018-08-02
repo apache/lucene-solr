@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
@@ -52,6 +53,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     solrClient = getCloudSolrClient(cluster);
+    solrClient.connect(1000, TimeUnit.MILLISECONDS);
     httpClient = (CloseableHttpClient) solrClient.getHttpClient();
   }
 
@@ -96,7 +98,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   
   @Test
   public void proxySystemInfoHandlerOneNode() {
-    solrClient.getZkStateReader().getClusterState().getLiveNodes().forEach(node -> {
+    solrClient.getClusterStateProvider().getLiveNodes().forEach(node -> {
       MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", node));
       GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);
       SimpleSolrResponse rsp = null;
