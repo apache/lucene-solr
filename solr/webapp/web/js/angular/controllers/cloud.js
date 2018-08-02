@@ -246,69 +246,63 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     var filteredNodes;
     var filteredHosts;
     var isFiltered = false;
-    if ($scope.showNodesPaging()) {
-      switch ($scope.filterType) {
-        case "node":
-          if ($scope.nodeFilter) {
-            filteredNodes = node_keys.filter(nod => nod.indexOf($scope.nodeFilter) !== -1);
-          }
-          break;
-          
-        case "collection":
-          if ($scope.collectionFilter) {
-            candidateNodes = {};
-            nodesCollections = [];
-            for (var i = 0 ; i < node_keys.length ; i++) {
-              var node_name = node_keys[i];
-              var node = nodes[node_name];
-              nodeColl = {};
-              nodeColl['node'] = node_name;
-              collections = {};
-              node.cores.forEach(function(core) {
-                 collections[core.collection] = true;
-              });
-              nodeColl['collections'] = Object.keys(collections); 
-              nodesCollections.push(nodeColl);
-            }
-            nodesCollections.forEach(function(nc) {
-              matchingColls = nc['collections'].filter(co => co.indexOf($scope.collectionFilter) != -1);
-              if (matchingColls.length > 0) {
-                candidateNodes[nc.node] = true;
-              }
-            });
-            filteredNodes = Object.keys(candidateNodes);
-          }
-          break;
-          
-        case "health":
-          
-      }
-      if (filteredNodes) {
-        isFiltered = true;
-        filteredHosts = filteredNodes.map(nod => nod.split(":")[0]).filter((item,index,self) => self.indexOf(item)==index);
-      } else {
-        filteredNodes = node_keys;
-        filteredHosts = hostNames;
-      }
-      filteredNodes.sort();
-      filteredHosts.sort();
-      for (var id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
-        var hostName = filteredHosts[id];
-        hostsToShow.push(hostName);
-        if (isFiltered) { // Only show the nodes per host matching active filter
-          nodesToShow = nodesToShow.concat(filteredNodes.filter(nod => nod.startsWith(hostName)));
-        } else {
-          nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
+    switch ($scope.filterType) {
+      case "node":
+        if ($scope.nodeFilter) {
+          filteredNodes = node_keys.filter(nod => nod.indexOf($scope.nodeFilter) !== -1);
         }
-      }
-      nodesParam = nodesToShow.join(',');
-      $scope.nextEnabled = $scope.from + pageSize < filteredHosts.length;
-      $scope.prevEnabled = $scope.from - pageSize >= 0;
-    } else {
-      nodesToShow = Object.keys(nodes);
-      hostsToShow = Object.keys(hosts);
-      nodesParam = 'all'; // Show all nodes
+        break;
+        
+      case "collection":
+        if ($scope.collectionFilter) {
+          candidateNodes = {};
+          nodesCollections = [];
+          for (var i = 0 ; i < node_keys.length ; i++) {
+            var node_name = node_keys[i];
+            var node = nodes[node_name];
+            nodeColl = {};
+            nodeColl['node'] = node_name;
+            collections = {};
+            node.cores.forEach(function(core) {
+               collections[core.collection] = true;
+            });
+            nodeColl['collections'] = Object.keys(collections); 
+            nodesCollections.push(nodeColl);
+          }
+          nodesCollections.forEach(function(nc) {
+            matchingColls = nc['collections'].filter(co => co.indexOf($scope.collectionFilter) != -1);
+            if (matchingColls.length > 0) {
+              candidateNodes[nc.node] = true;
+            }
+          });
+          filteredNodes = Object.keys(candidateNodes);
+        }
+        break;
+        
+      case "health":
+        
     }
+    if (filteredNodes) {
+      isFiltered = true;
+      filteredHosts = filteredNodes.map(nod => nod.split(":")[0]).filter((item,index,self) => self.indexOf(item)==index);
+    } else {
+      filteredNodes = node_keys;
+      filteredHosts = hostNames;
+    }
+    filteredNodes.sort();
+    filteredHosts.sort();
+    for (var id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
+      var hostName = filteredHosts[id];
+      hostsToShow.push(hostName);
+      if (isFiltered) { // Only show the nodes per host matching active filter
+        nodesToShow = nodesToShow.concat(filteredNodes.filter(nod => nod.startsWith(hostName)));
+      } else {
+        nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
+      }
+    }
+    nodesParam = nodesToShow.join(',');
+    $scope.nextEnabled = $scope.from + pageSize < filteredHosts.length;
+    $scope.prevEnabled = $scope.from - pageSize >= 0;
     nodesToShow.sort();
     hostsToShow.sort();
 
