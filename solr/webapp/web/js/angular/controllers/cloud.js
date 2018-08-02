@@ -28,13 +28,10 @@ solrAdminApp.controller('CloudController',
             $scope.showDebug = false;
         };
 
-        var view = $location.search().view ? $location.search().view : "nodes";
+        var view = $location.search().view ? $location.search().view : "graph";
         if (view == "tree") {
             $scope.resetMenu("cloud-tree", Constants.IS_ROOT_PAGE);
             treeSubController($scope, Zookeeper);
-        } else if (view == "rgraph") {
-            $scope.resetMenu("cloud-rgraph", Constants.IS_ROOT_PAGE);
-            graphSubController($scope, Zookeeper, true);
         } else if (view == "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
             graphSubController($scope, Zookeeper, false);
@@ -516,7 +513,7 @@ function secondsForHumans ( seconds ) {
     return returntext.trim() === '' ? '0m' : returntext.trim();
 }
 
-var graphSubController = function ($scope, Zookeeper, isRadial) {
+var graphSubController = function ($scope, Zookeeper) {
     $scope.showTree = false;
     $scope.showGraph = true;
 
@@ -671,7 +668,7 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                     $scope.helperData.state = $.unique($scope.helperData.state);
                     $scope.helperData.core_node = $.unique($scope.helperData.core_node);
 
-                    if (!isRadial && data.znode && data.znode.paging) {
+                    if (data.znode && data.znode.paging) {
                         $scope.showPaging = true;
 
                         var parr = data.znode.paging.split('|');
@@ -705,7 +702,6 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                     }
                     $scope.graphData = graph_data;
                     $scope.leafCount = leaf_count;
-                    $scope.isRadial = isRadial;
                 });
         });
     };
@@ -721,7 +717,6 @@ solrAdminApp.directive('graph', function(Constants) {
             data: "=",
             leafCount: "=",
             helperData: "=",
-            isRadial: "="
         },
         link: function (scope, element, attrs) {
             var helper_path_class = function (p) {
@@ -804,11 +799,7 @@ solrAdminApp.directive('graph', function(Constants) {
 
             scope.$watch("data", function(newValue, oldValue) {
                 if (newValue) {
-                    if (scope.isRadial) {
-                        radialGraph(element, scope.data, scope.leafCount);
-                    } else {
-                        flatGraph(element, scope.data, scope.leafCount);
-                    }
+                    flatGraph(element, scope.data, scope.leafCount);
                 }
 
                 $('text').tooltip({
@@ -895,61 +886,6 @@ solrAdminApp.directive('graph', function(Constants) {
 
                 setNodeNavigationBehavior(node);
             };
-
-            var radialGraph = function(element, graphData, leafCount) {
-                var max_val = Math.min(element.width(), $('body').height())
-                var r = max_val / 2;
-
-                var cluster = d3.layout.cluster()
-                    .size([360, r - 160]);
-
-                var diagonal = d3.svg.diagonal.radial()
-                    .projection(function (d) {
-                        return [d.y, d.x / 180 * Math.PI];
-                    });
-
-                d3.select('#canvas', element).html('');
-                var vis = d3.select('#canvas').append('svg')
-                    .attr('width', r * 2)
-                    .attr('height', r * 2)
-                    .append('g')
-                    .attr('transform', 'translate(' + r + ',' + r + ')');
-
-                var nodes = cluster.nodes(graphData);
-
-                var link = vis.selectAll('path.link')
-                    .data(cluster.links(nodes))
-                    .enter().append('path')
-                    .attr('class', helper_path_class)
-                    .attr('d', diagonal);
-
-                var node = vis.selectAll('g.node')
-                    .data(nodes)
-                    .enter().append('g')
-                    .attr('class', helper_node_class)
-                    .attr('transform', function (d) {
-                        return 'rotate(' + (d.x - 90) + ')translate(' + d.y + ')';
-                    })
-
-                node.append('circle')
-                    .attr('r', 4.5);
-
-                node.append('text')
-                    .attr('dx', function (d) {
-                        return d.x < 180 ? 8 : -8;
-                    })
-                    .attr('dy', '.31em')
-                    .attr('text-anchor', function (d) {
-                        return d.x < 180 ? 'start' : 'end';
-                    })
-                    .attr('transform', function (d) {
-                        return d.x < 180 ? null : 'rotate(180)';
-                    })
-                    .attr("title", helper_tooltip_text)
-                    .text(helper_node_text);
-
-                setNodeNavigationBehavior(node, "rgraph");
-            }
         }
     };
-})
+});

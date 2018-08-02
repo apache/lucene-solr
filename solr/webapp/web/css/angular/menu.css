@@ -262,7 +262,6 @@ limitations under the License.
 #menu #cloud.global .tree a { background-image: url( ../../img/ico/folder-tree.png ); }
 #menu #cloud.global .nodes a { background-image: url( ../../img/solr-ico.png ); }
 #menu #cloud.global .graph a { background-image: url( ../../img/ico/molecule.png ); }
-#menu #cloud.global .rgraph a { background-image: url( ../../img/ico/asterisk.png ); }
 
 .sub-menu .ping.error a
 {
