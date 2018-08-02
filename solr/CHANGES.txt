@@ -198,6 +198,8 @@ Bug Fixes
 
 * SOLR-12344: SolrSlf4jReporter doesn't set MDC context. (ab)
 
+* SOLR-12594: MetricsHistoryHandler.getOverseerLeader fails when hostname contains hyphen. (ab)
+
 Optimizations
 ----------------------
 
