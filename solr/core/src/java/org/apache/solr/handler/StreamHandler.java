@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.*;
-import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -65,8 +64,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   static SolrClientCache clientCache = new SolrClientCache();
   static ModelCache modelCache = null;
-  private StreamFactory streamFactory = new DefaultStreamFactory();
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private Map<String,DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
 
@@ -105,13 +104,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           defaultZkhost,
           clientCache);
     }
-
-    /*
-    * Add the core functions. These are functions that rely directly on either Lucene or Solr
-    * capabilities that are not part of Lang.
-    */
-    streamFactory.withFunctionName("analyze",  AnalyzeEvaluator.class);
-    streamFactory.withFunctionName("classify", ClassifyStream.class);
+    streamFactory.withSolrResourceLoader(core.getResourceLoader());
 
     // This pulls all the overrides and additions from the config
     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
@@ -157,7 +150,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     } catch (Exception e) {
       // Catch exceptions that occur while the stream is being created. This will include streaming expression parse
       // rules.
-      SolrException.log(logger, e);
+      SolrException.log(log, e);
       rsp.add("result-set", new DummyErrorStream(e));
 
       return;

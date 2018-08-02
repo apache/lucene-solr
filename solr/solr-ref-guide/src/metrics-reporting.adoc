@@ -244,7 +244,7 @@ The SLF4J Reporter uses the `org.apache.solr.metrics.reporters.SolrSlf4jReporter
 It takes the following arguments, in addition to the common arguments <<Reporter Arguments,above>>.
 
 `logger`::
-The name of the logger to use. Default is empty, in which case the group or registry name will be used if specified in the plugin configuration.
+The name of the logger to use. Default is empty, in which case the group (or the initial part of the registry name that identifies a metrics group) will be used if specified in the plugin configuration.
 
 Users can specify logger name (and the corresponding logger configuration in e.g., Log4j configuration) to output metrics-related logging to separate file(s), which can then be processed by external applications.
 
@@ -263,7 +263,32 @@ type=METER, name={}, count={}, mean_rate={}, m1={}, m5={}, m15={}, rate_unit={}
 type=HISTOGRAM, name={}, count={}, min={}, max={}, mean={}, stddev={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}
 ----
 
-(curly braces added only as placeholders for actual values).
+(curly braces added here only as placeholders for actual values).
+
+Additionally, the following MDC context properties are passed to the logger and can be used in log formats:
+
+`node_name`::
+Solr node name (for SolrCloud deployments, otherwise null), prefixed with `n:`.
+
+`registry`::
+Metric registry name, prefixed with `m:`.
+
+For reporters that are specific to a SolrCore also the following properties are available:
+
+`collection`::
+Collection name, prefixed with `c:`.
+
+`shard`::
+Shard name, prefixed with `s:`.
+
+`replica`::
+Replica name (core node name), prefixed with `r:`.
+
+`core`::
+SolrCore name, prefixed with `x:`.
+
+`tag`::
+Reporter instance tag, prefixed with `t:`.
 
 === Graphite Reporter
 

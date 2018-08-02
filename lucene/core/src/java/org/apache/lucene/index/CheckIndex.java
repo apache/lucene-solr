@@ -54,7 +54,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
@@ -106,12 +105,6 @@ public final class CheckIndex implements Closeable {
 
     /** True if we were unable to locate and load the segments_N file. */
     public boolean missingSegments;
-
-    /** True if we were unable to open the segments_N file. */
-    public boolean cantOpenSegments;
-
-    /** True if we were unable to read the version number from segments_N file. */
-    public boolean missingSegmentVersion;
 
     /** Name of latest segments_N file in the index. */
     public String segmentsFileName;
@@ -573,38 +566,6 @@ public final class CheckIndex implements Closeable {
 
     final int numSegments = sis.size();
     final String segmentsFileName = sis.getSegmentsFileName();
-    // note: we only read the format byte (required preamble) here!
-    IndexInput input = null;
-    try {
-      input = dir.openInput(segmentsFileName, IOContext.READONCE);
-    } catch (Throwable t) {
-      if (failFast) {
-        throw IOUtils.rethrowAlways(t);
-      }
-      msg(infoStream, "ERROR: could not open segments file in directory");
-      if (infoStream != null) {
-        t.printStackTrace(infoStream);
-      }
-      result.cantOpenSegments = true;
-      return result;
-    }
-    try {
-      /*int format =*/ input.readInt();
-    } catch (Throwable t) {
-      if (failFast) {
-        throw IOUtils.rethrowAlways(t);
-      }
-      msg(infoStream, "ERROR: could not read segment file version in directory");
-      if (infoStream != null) {
-        t.printStackTrace(infoStream);
-      }
-      result.missingSegmentVersion = true;
-      return result;
-    } finally {
-      if (input != null)
-        input.close();
-    }
-
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
     result.userData = sis.getUserData();

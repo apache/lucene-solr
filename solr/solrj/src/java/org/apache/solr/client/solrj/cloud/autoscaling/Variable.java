@@ -86,7 +86,7 @@ public interface Variable {
 
     @Meta(name = "collection",
         type = String.class)
-    COLL(),
+    COLL,
     @Meta(
         name = "shard",
         type = String.class,
@@ -98,7 +98,7 @@ public interface Variable {
         min = 0, max = -1,
         implementation = ReplicaVariable.class,
         computedValues = {Clause.ComputedType.EQUAL, Clause.ComputedType.PERCENT, Clause.ComputedType.ALL})
-    REPLICA(),
+    REPLICA,
     @Meta(name = ImplicitSnitch.PORT,
         type = Long.class,
         min = 1,
@@ -106,35 +106,35 @@ public interface Variable {
         supportArrayVals = true,
         wildCards = Policy.EACH
     )
-    PORT(),
+    PORT,
     @Meta(name = "ip_1",
         type = Long.class,
         min = 0,
         max = 255,
         supportArrayVals = true,
         wildCards = Policy.EACH)
-    IP_1(),
+    IP_1,
     @Meta(name = "ip_2",
         type = Long.class,
         min = 0,
         max = 255,
         supportArrayVals = true,
         wildCards = Policy.EACH)
-    IP_2(),
+    IP_2,
     @Meta(name = "ip_3",
         type = Long.class,
         min = 0,
         max = 255,
         supportArrayVals = true,
         wildCards = Policy.EACH)
-    IP_3(),
+    IP_3,
     @Meta(name = "ip_4",
         type = Long.class,
         min = 0,
         max = 255,
         supportArrayVals = true,
         wildCards = Policy.EACH)
-    IP_4(),
+    IP_4,
     @Meta(name = ImplicitSnitch.DISK,
         type = Double.class,
         min = 0,
@@ -143,12 +143,12 @@ public interface Variable {
         associatedPerNodeValue = "totaldisk",
         implementation = FreeDiskVariable.class,
         computedValues = Clause.ComputedType.PERCENT)
-    FREEDISK(),
+    FREEDISK,
 
     @Meta(name = "totaldisk",
         type = Double.class,
         isHidden = true, implementation = VariableBase.TotalDiskVariable.class)
-    TOTALDISK(),
+    TOTALDISK,
 
     @Meta(name = Variable.coreidxsize,
         type = Double.class,
@@ -157,40 +157,41 @@ public interface Variable {
         min = 0,
         implementation = VariableBase.CoreIndexSizeVariable.class,
         metricsKey = "INDEX.sizeInBytes")
-    CORE_IDX(),
+    CORE_IDX,
     @Meta(name = ImplicitSnitch.NODEROLE,
         type = String.class,
         enumVals = "overseer")
-    NODE_ROLE(),
+    NODE_ROLE,
 
     @Meta(name = ImplicitSnitch.CORES,
-        type = Long.class,
-        min = 0,
+        type = Double.class,
+        min = 0, max = -1,
+        computedValues = Clause.ComputedType.EQUAL,
         implementation = CoresVariable.class)
-    CORES(),
+    CORES,
 
     @Meta(name = ImplicitSnitch.SYSLOADAVG,
         type = Double.class,
         min = 0,
         max = 100,
         isNodeSpecificVal = true)
-    SYSLOADAVG(),
+    SYSLOADAVG,
 
     @Meta(name = ImplicitSnitch.HEAPUSAGE,
         type = Double.class,
         min = 0,
         isNodeSpecificVal = true)
-    HEAPUSAGE(),
+    HEAPUSAGE,
     @Meta(name = "NUMBER",
         type = Long.class,
         min = 0)
-    NUMBER(),
+    NUMBER,
 
     @Meta(name = "STRING",
         type = String.class,
         wildCards = Policy.EACH,
         supportArrayVals = true)
-    STRING(),
+    STRING,
 
     @Meta(name = "node",
         type = String.class,
@@ -198,19 +199,19 @@ public interface Variable {
         wildCards = {Policy.ANY, Policy.EACH},
         implementation = NodeVariable.class,
         supportArrayVals = true)
-    NODE(),
+    NODE,
 
     @Meta(name = "LAZY",
         type = void.class,
         implementation = VariableBase.LazyVariable.class)
-    LAZY(),
+    LAZY,
 
     @Meta(name = ImplicitSnitch.DISKTYPE,
         type = String.class,
         enumVals = {"ssd", "rotational"},
         implementation = VariableBase.DiskTypeVariable.class,
         supportArrayVals = true)
-    DISKTYPE();
+    DISKTYPE;
 
     public final String tagName;
     public final Class type;
