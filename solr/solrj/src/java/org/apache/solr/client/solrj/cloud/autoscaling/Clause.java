@@ -382,10 +382,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
       }
     } else {
       for (Row r : session.matrix) {
+        computedValueEvaluator.node = r.node;
         SealedClause sealedClause = getSealedClause(computedValueEvaluator);
         if (!sealedClause.getGlobalTag().isPass(r)) {
           sealedClause.getGlobalTag().varType.addViolatingReplicas(ctx.reset(null, null,
-              new Violation(sealedClause, null, null, r.node, r.getVal(sealedClause.globalTag.name), sealedClause.globalTag.delta(r.getVal(globalTag.name)), null)));
+              new Violation(sealedClause, null, null, r.node, r.getVal(sealedClause.globalTag.name),
+                  sealedClause.globalTag.delta(r.getVal(globalTag.name)), null)));
         }
       }
     }
@@ -427,6 +429,17 @@ public class Clause implements MapWriter, Comparable<Clause> {
           }
         }
       }
+    }
+
+    if (this.getTag().op != LESS_THAN && this.getTag().varType == Type.NODE) {
+      collVsShardVsTagVsCount.forEach((coll, shardVsNodeVsCount) ->
+          shardVsNodeVsCount.forEach((shard, nodeVsCount) -> {
+            for (Row row : allRows) {
+              if (!nodeVsCount.containsKey(row.node)) {
+                nodeVsCount.put(row.node, new ReplicaCount());
+              }
+            }
+          }));
     }
     return collVsShardVsTagVsCount;
   }
