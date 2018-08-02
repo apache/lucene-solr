@@ -502,6 +502,73 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testXMLLabeledChildren() throws IOException, XMLStreamException {
+    UpdateRequest req = new UpdateRequest();
+
+    List<SolrInputDocument> docs = new ArrayList<>();
+
+    String xml_doc1 =
+        "<doc >" +
+            "  <field name=\"id\">1</field>" +
+            "  <field name=\"parent_s\">X</field>" +
+            "<doc name=\"test\">  " +
+            "  <field name=\"id\" >2</field>" +
+            "  <field name=\"child_s\">y</field>" +
+            "</doc>"+
+            "<doc name=\"test\">  " +
+            "  <field name=\"id\" >3</field>" +
+            "  <field name=\"child_s\">z</field>" +
+            "</doc>"+
+            "</doc>";
+
+    String xml_doc2 =
+        "<doc >" +
+            "  <field name=\"id\">4</field>" +
+            "  <field name=\"parent_s\">A</field>" +
+            "<doc name=\"test\">  " +
+            "  <field name=\"id\" >5</field>" +
+            "  <field name=\"child_s\">b</field>" +
+            "</doc>"+
+            "<doc name=\"test\">  " +
+            "  <field name=\"id\" >6</field>" +
+            "  <field name=\"child_s\">c</field>" +
+            "</doc>"+
+            "</doc>";
+
+    XMLStreamReader parser =
+        inputFactory.createXMLStreamReader( new StringReader( xml_doc1 ) );
+    parser.next(); // read the START document...
+    //null for the processor is all right here
+    XMLLoader loader = new XMLLoader();
+    SolrInputDocument document1 = loader.readDoc( parser );
+
+    XMLStreamReader parser2 =
+        inputFactory.createXMLStreamReader( new StringReader( xml_doc2 ) );
+    parser2.next(); // read the START document...
+    //null for the processor is all right here
+    //XMLLoader loader = new XMLLoader();
+    SolrInputDocument document2 = loader.readDoc( parser2 );
+
+
+    docs.add(document1);
+    docs.add(document2);
+
+    Collections.shuffle(docs, random());
+    req.add(docs);
+
+    RequestWriter requestWriter = new RequestWriter();
+    OutputStream os = new ByteArrayOutputStream();
+    requestWriter.write(req, os);
+    assertBlockU(os.toString());
+    assertU(commit());
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertSingleParentOf(searcher, one("yz"), "X");
+    assertSingleParentOf(searcher, one("bc"), "A");
+
+  }
+
+  @Test
   public void testJavaBinCodecNestedRelation() throws IOException {
     SolrInputDocument topDocument = new SolrInputDocument();
     topDocument.addField("parent_f1", "v1");

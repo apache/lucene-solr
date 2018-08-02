@@ -463,6 +463,20 @@ public class XMLLoader extends ContentStreamLoader {
           text.setLength(0);
           String localName = parser.getLocalName();
           if ("doc".equals(localName)) {
+            String docKey = null;
+            for(int i = 0; i < parser.getAttributeCount(); ++i) {
+              attrName = parser.getAttributeLocalName(i);
+              if("name".equals(attrName)) {
+                docKey = parser.getAttributeValue(i);
+              }
+            }
+            if(docKey != null) {
+              if(!doc.containsKey(docKey)) {
+                doc.setField(docKey, Lists.newArrayList());
+              }
+              doc.addField(docKey, readDoc(parser));
+              break;
+            }
             if (subDocs == null)
               subDocs = Lists.newArrayList();
             subDocs.add(readDoc(parser));
