@@ -43,29 +43,29 @@ solrAdminApp.controller('CloudController',
 );
 
 function getOrCreateObj(name, object) {
-    if (name in object) {
-        entry = object[name];
-    } else {
-        entry = {};
-        object[name] = entry;
-    }
-    return entry;
+  if (name in object) {
+    entry = object[name];
+  } else {
+    entry = {};
+    object[name] = entry;
+  }
+  return entry;
 }
 
 function getOrCreateList(name, object) {
-    if (name in object) {
-        entry = object[name];
-    } else {
-        entry = [];
-        object[name] = entry;
-    }
-    return entry;
+  if (name in object) {
+    entry = object[name];
+  } else {
+    entry = [];
+    object[name] = entry;
+  }
+  return entry;
 }
 
 function ensureInList(string, list) {
-    if (list.indexOf(string) === -1) {
-        list.push(string);
-    }
+  if (list.indexOf(string) === -1) {
+    list.push(string);
+  }
 }
 
 /* Puts a node name into the hosts structure */
@@ -442,7 +442,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   });
             }
           }
-    });
+        });
     $scope.nodes = nodes;
     $scope.hosts = hosts;
     $scope.live_nodes = live_nodes;
