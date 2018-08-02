@@ -1776,7 +1776,7 @@ public class CoreContainer {
    * @return true if we were able to successfuly perisist the repaired coreDescriptor, false otherwise.
    *
    * See SOLR-11503, This can be removed when there's no chance we'll need to upgrade a
-   * Solr isntallation createged with legacyCloud=true from 6.6.1 through 7.1
+   * Solr installation created with legacyCloud=true from 6.6.1 through 7.1
    */
   public boolean repairCoreProperty(CoreDescriptor cd, String prop) {
     // So far, coreNodeName is the only property that we need to repair, this may get more complex as other properties
