@@ -267,7 +267,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
             nodesCollections.push(nodeColl);
           }
           nodesCollections.forEach(function(nc) {
-            matchingColls = nc['collections'].filter(co => co.indexOf($scope.collectionFilter) != -1);
+            matchingColls = nc['collections'].filter(co => co.indexOf($scope.collectionFilter) !== -1);
             if (matchingColls.length > 0) {
               candidateNodes[nc.node] = true;
             }
