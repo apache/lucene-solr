@@ -168,6 +168,8 @@ Bug Fixes
   even though they remain the transaction log. The second case is when synchronously forwarding updates to sub-shard
   leader fails and the underlying errors are not propagated to the client. (Cao Manh Dat, shalin)
 
+* SOLR-12344: SolrSlf4jReporter doesn't set MDC context. (ab)
+
 Optimizations
 ----------------------
 

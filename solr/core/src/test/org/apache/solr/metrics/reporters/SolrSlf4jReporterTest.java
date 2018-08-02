@@ -82,7 +82,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     if (!active) {
       fail("One or more reporters didn't become active in 20 seconds");
     }
-    Thread.sleep(5000);
+    Thread.sleep(10000);
 
     SolrDocumentList history = watcher.getHistory(-1, null);
     // dot-separated names are treated like class names and collapsed
@@ -92,6 +92,9 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     }
     if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
       fail("No 'foobar' logs in: " + history.toString());
+    }
+    if (history.stream().filter(d -> "x:collection1".equals(d.getFirstValue("core"))).count() == 0) {
+      fail("No 'solr.core' or MDC context in logs: " + history.toString());
     }
   }
 
