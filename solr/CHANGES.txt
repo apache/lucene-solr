@@ -158,7 +158,13 @@ Bug Fixes
 * SOLR-12477: An update would return a client error(400) if it hit a AlreadyClosedException.
   We now return the error as a server error(500) instead (Jeffery via Varun Thacker)
   
-* SOLR-12606: Fix InfixSuggestersTest.testShutdownDuringBuild() failures. (Steve Rowe) 
+* SOLR-12606: Fix InfixSuggestersTest.testShutdownDuringBuild() failures. (Steve Rowe)
+
+* SOLR-12607: Fixed two separate bugs in shard splits which can cause data loss. The first case is when using TLOG
+  replicas only, the updates forwarded from parent shard leader to the sub-shard leader are written only in tlog and
+  not the index. If this happens after the buffered updates have been replayed then the updates can never be executed
+  even though they remain the transaction log. The second case is when synchronously forwarding updates to sub-shard
+  leader fails and the underlying errors are not propagated to the client. (Cao Manh Dat, shalin)
 
 Optimizations
 ----------------------
