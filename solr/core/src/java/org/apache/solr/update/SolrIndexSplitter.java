@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.FilterCodecReader;
@@ -211,11 +212,14 @@ public class SolrIndexSplitter {
     log.info("SolrIndexSplitter: partitions=" + numPieces + " segments=" + leaves.size());
     RTimerTree t;
 
+    // this tracks round-robin assignment of docs to partitions
+    AtomicInteger currentPartition = new AtomicInteger();
+
     if (splitMethod != SplitMethod.LINK) {
       t = timings.sub("findDocSetsPerLeaf");
       for (LeafReaderContext readerContext : leaves) {
         assert readerContext.ordInParent == segmentDocSets.size();  // make sure we're going in order
-        FixedBitSet[] docSets = split(readerContext, numPieces, field, rangesArr, splitKey, hashRouter, false);
+        FixedBitSet[] docSets = split(readerContext, numPieces, field, rangesArr, splitKey, hashRouter, currentPartition, false);
         segmentDocSets.add(docSets);
       }
       t.stop();
@@ -294,7 +298,7 @@ public class SolrIndexSplitter {
           t.resume();
           // apply deletions specific to this partition. As a side-effect on the first call this also populates
           // a cache of docsets to delete per leaf reader per partition, which is reused for subsequent partitions.
-          iw.deleteDocuments(new SplittingQuery(partitionNumber, field, rangesArr, hashRouter, splitKey, docsToDeleteCache));
+          iw.deleteDocuments(new SplittingQuery(partitionNumber, field, rangesArr, hashRouter, splitKey, docsToDeleteCache, currentPartition));
           t.pause();
         } else {
           // This removes deletions but optimize might still be needed because sub-shards will have the same number of segments as the parent shard.
@@ -432,15 +436,17 @@ public class SolrIndexSplitter {
     private final HashBasedRouter hashRouter;
     private final String splitKey;
     private final Map<IndexReader.CacheKey, FixedBitSet[]> docsToDelete;
+    private final AtomicInteger currentPartition;
 
     SplittingQuery(int partition, SchemaField field, DocRouter.Range[] rangesArr, HashBasedRouter hashRouter, String splitKey,
-                   Map<IndexReader.CacheKey, FixedBitSet[]> docsToDelete) {
+                   Map<IndexReader.CacheKey, FixedBitSet[]> docsToDelete, AtomicInteger currentPartition) {
       this.partition = partition;
       this.field = field;
       this.rangesArr = rangesArr;
       this.hashRouter = hashRouter;
       this.splitKey = splitKey;
       this.docsToDelete = docsToDelete;
+      this.currentPartition = currentPartition;
     }
 
     @Override
@@ -492,7 +498,7 @@ public class SolrIndexSplitter {
           return perPartition[partition];
         }
 
-        perPartition = split(readerContext, numPieces, field, rangesArr, splitKey, hashRouter, true);
+        perPartition = split(readerContext, numPieces, field, rangesArr, splitKey, hashRouter, currentPartition, true);
         docsToDelete.put(readerContext.reader().getCoreCacheHelper().getKey(), perPartition);
         return perPartition[partition];
       }
@@ -525,7 +531,7 @@ public class SolrIndexSplitter {
   }
 
   static FixedBitSet[] split(LeafReaderContext readerContext, int numPieces, SchemaField field, DocRouter.Range[] rangesArr,
-                             String splitKey, HashBasedRouter hashRouter, boolean delete) throws IOException {
+                             String splitKey, HashBasedRouter hashRouter, AtomicInteger currentPartition, boolean delete) throws IOException {
     LeafReader reader = readerContext.reader();
     FixedBitSet[] docSets = new FixedBitSet[numPieces];
     for (int i=0; i<docSets.length; i++) {
@@ -555,7 +561,6 @@ public class SolrIndexSplitter {
       docsMatchingRanges = new int[rangesArr.length+1];
     }
 
-    int partition = 0;
     CharsRefBuilder idRef = new CharsRefBuilder();
     for (;;) {
       term = termsEnum.next();
@@ -579,7 +584,7 @@ public class SolrIndexSplitter {
       }
 
       int hash = 0;
-      if (hashRouter != null) {
+      if (hashRouter != null && rangesArr != null) {
         hash = hashRouter.sliceHash(idString, null, null, null);
       }
 
@@ -590,14 +595,14 @@ public class SolrIndexSplitter {
         if (doc == DocIdSetIterator.NO_MORE_DOCS) break;
         if (rangesArr == null) {
           if (delete) {
-            docSets[partition].clear(doc);
+            docSets[currentPartition.get()].clear(doc);
           } else {
-            docSets[partition].set(doc);
+            docSets[currentPartition.get()].set(doc);
           }
-          partition = (partition + 1) % numPieces;
+          currentPartition.set((currentPartition.get() + 1) % numPieces);
         } else  {
           int matchingRangesCount = 0;
-          for (int i=0; i<rangesArr.length; i++) {      // inner-loop: use array here for extra speed.
+          for (int i=0; i < rangesArr.length; i++) {      // inner-loop: use array here for extra speed.
             if (rangesArr[i].includes(hash)) {
               if (delete) {
                 docSets[i].clear(doc);
