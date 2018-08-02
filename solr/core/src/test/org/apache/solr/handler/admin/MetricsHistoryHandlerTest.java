@@ -58,7 +58,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    simulated = random().nextBoolean() || true;
+    simulated = random().nextBoolean();
     Map<String, Object> args = new HashMap<>();
     args.put(MetricsHistoryHandler.SYNC_PERIOD_PROP, 1);
     args.put(MetricsHistoryHandler.COLLECT_PERIOD_PROP, 1);

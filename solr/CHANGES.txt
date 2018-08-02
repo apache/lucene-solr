@@ -35,6 +35,7 @@ Bug Fixes
 * SOLR-12570: OpenNLPExtractNamedEntitiesUpdateProcessor cannot support multi fields because pattern replacement
   doesn't work correctly. (Koji Sekiguchi)
 
+* SOLR-12594: MetricsHistoryHandler.getOverseerLeader fails when hostname contains hyphen. (ab)
 
 ==================  7.4.0 ==================
 
