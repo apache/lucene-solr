@@ -869,6 +869,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{replica: '#EQUAL' , shard: '#EACH' , sysprop.zone:[east]}"));
 
+    clause = Clause.create("{cores: '#EQUAL' , node:'#ANY'}");
+    assertEquals(Clause.ComputedType.EQUAL, clause.globalTag.computedType);
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{cores: '#EQUAL' , node:'node1'}"));
+
   }
 
 
@@ -997,20 +1002,30 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     });
     List<Violation> violations = session.getViolations();
-    assertEquals(1, violations.size());
-    Violation violation = violations.get(0);
-    assertEquals("node1", violation.node);
-    RangeVal val = (RangeVal) violation.getClause().replica.val;
-    assertEquals(1.0d, val.min.doubleValue(), 0.01);
-    assertEquals(2.0, val.max.doubleValue(), 0.01);
-    assertEquals(1.2d, val.actual.doubleValue(), 0.01d);
-    assertEquals(1, violation.replicaCountDelta.doubleValue(), 0.01);
-    assertEquals(3, violation.getViolatingReplicas().size());
-    Set<String> expected = ImmutableSet.of("r1", "r3", "r5");
-    for (Violation.ReplicaInfoAndErr replicaInfoAndErr : violation.getViolatingReplicas()) {
-      assertTrue(expected.contains(replicaInfoAndErr.replicaInfo.getCore()));
+    assertEquals(2, violations.size());
+    for (Violation violation : violations) {
+      if (violation.node.equals("node1")) {
+        RangeVal val = (RangeVal) violation.getClause().replica.val;
+        assertEquals(1.0d, val.min.doubleValue(), 0.01);
+        assertEquals(2.0, val.max.doubleValue(), 0.01);
+        assertEquals(1.2d, val.actual.doubleValue(), 0.01d);
+        assertEquals(1, violation.replicaCountDelta.doubleValue(), 0.01);
+        assertEquals(3, violation.getViolatingReplicas().size());
+        Set<String> expected = ImmutableSet.of("r1", "r3", "r5");
+        for (Violation.ReplicaInfoAndErr replicaInfoAndErr : violation.getViolatingReplicas()) {
+          assertTrue(expected.contains(replicaInfoAndErr.replicaInfo.getCore()));
+        }
+      } else if (violation.node.equals("node5")) {
+        assertEquals(-1, violation.replicaCountDelta.doubleValue(), 0.01);
+
+      } else{
+        fail();
+      }
     }
-    System.out.println();
+//    Violation violation = violations.get(0);
+//    assertEquals("node1", violation.node);
+
+
 
   }
 
@@ -2341,9 +2356,16 @@ public class TestPolicy extends SolrTestCaseJ4 {
     AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = autoScalingConfig.getPolicy().createSession(cloudManagerWithData(dataproviderdata));
     List<Violation> violations = session.getViolations();
-    assertEquals(1, violations.size());
-    assertEquals(1.0d, violations.get(0).replicaCountDelta, 0.01);
-    assertEquals(1.53d, ((RangeVal) violations.get(0).getClause().getReplica().val).actual);
+    assertEquals(2, violations.size());
+    for (Violation violation : violations) {
+      if(violation.node.equals("10.0.0.6:8983_solr")){
+        assertEquals(1.0d, violation.replicaCountDelta, 0.01);
+        assertEquals(1.53d, ((RangeVal) violation.getClause().getReplica().val).actual);
+      } else if(violation.node.equals("10.0.0.6:7574_solr")){
+        assertEquals(-1.0d, violation.replicaCountDelta, 0.01);
+      }
+
+    }
 
 
     dataproviderdata = "{" +
@@ -2493,6 +2515,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       assertEquals(500d, r.delta, 0.1);
 
     }
+
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
     assertEquals(3, l.size());
     Map m = l.get(0).toMap(new LinkedHashMap<>());

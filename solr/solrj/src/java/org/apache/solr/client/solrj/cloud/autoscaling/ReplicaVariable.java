@@ -52,6 +52,10 @@ class ReplicaVariable extends VariableBase {
   @Override
   public Operand getOperand(Operand expected, Object strVal, Clause.ComputedType computedType) {
     if (computedType == Clause.ComputedType.ALL) return expected;
+    return checkForRangeOperand(expected, strVal, computedType);
+  }
+
+  static Operand checkForRangeOperand(Operand expected, Object strVal, Clause.ComputedType computedType) {
     if (strVal instanceof String) {
       String s = ((String) strVal).trim();
       int hyphenIdx = s.indexOf('-');
