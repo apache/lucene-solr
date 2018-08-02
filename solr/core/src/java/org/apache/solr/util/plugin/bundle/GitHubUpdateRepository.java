@@ -23,7 +23,7 @@ import java.net.URL;
 import org.apache.solr.common.SolrException;
 
 /**
- * Loads plugins from a GitHub repo given its URL or simpply "user/repo"
+ * Loads plugins from a GitHub repo given its URL or simply "user/repo"
  */
 public class GitHubUpdateRepository extends PluginUpdateRepository {
   private static final String GITHUB_RAW_ROOT = "https://raw.githubusercontent.com/{user}/{repo}/master/";

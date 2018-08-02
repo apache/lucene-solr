@@ -17,23 +17,22 @@
 
 package org.apache.solr.util.plugin.bundle;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.common.SolrException;
+import org.pf4j.update.FileVerifier;
+import org.pf4j.update.VerifyException;
+import org.pf4j.update.verifier.BasicVerifier;
+import org.pf4j.update.verifier.CompoundVerifier;
+import org.pf4j.update.verifier.Sha512SumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.pf4j.PluginException;
-import org.pf4j.update.FileDownloader;
-import org.pf4j.update.SimpleFileDownloader;
 
 /**
  * Update Repository that resolves Apache Mirros
@@ -45,7 +44,6 @@ public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
   private static final String APACHE_ARCHIVE_URL = "https://archive.apache.org/dist/";
   private static final String CLOSER_URL = "https://www.apache.org/dyn/closer.lua?action=download&filename=";
   private String path;
-  private FileDownloader downloader;
   private URL mirrorUrl;
 
   public ApacheMirrorsUpdateRepository(String id, String path) {
@@ -87,11 +85,11 @@ public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
   }
 
   @Override
-  public FileDownloader getFileDownloader() {
-    if (downloader == null) {
-      downloader = new ApacheChecksumVerifyingDownloader();
-    }
-    return downloader;
+  public FileVerifier getFileVerfier() {
+    return new CompoundVerifier(Arrays.asList(
+        new BasicVerifier(),
+        new ApacheChecksumVerifier())
+    );
   }
 
   /**
@@ -117,49 +115,15 @@ public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
   public URL getMirrorUrl() {
     return mirrorUrl;
   }
-  
+
   /**
-   * FileDownloader that fails if the MD5 sum of the downloaded file does not match the one downloaded
-   * from Apache archives
+   * FileVerifier that checks the SHA512 sum of Apache released downloads
    */
-  private class ApacheChecksumVerifyingDownloader extends SimpleFileDownloader {
-    /**
-     * Succeeds if downloaded file exists and has same checksum as md5 file downloaded from Apache archive
-     *
-     * @param originalUrl    the source from which the file was downloaded
-     * @param downloadedFile the path to the downloaded file
-     * @throws PluginException if the validation failed
-     */
+  private class ApacheChecksumVerifier extends Sha512SumVerifier {
     @Override
-    protected void validateDownload(URL originalUrl, Path downloadedFile) throws PluginException {
-      super.validateDownload(originalUrl, downloadedFile);
-      try {
-        String md5FileUrl = getMD5FileUrl(originalUrl.toString());
-        String md5 = getAndParseMd5File(md5FileUrl);
-        if (md5 == null) {
-          throw new PluginException("Failed to fetch md5 of " + originalUrl + ", aborting");
-        }
-        if (!DigestUtils.md5Hex(Files.newInputStream(downloadedFile)).equalsIgnoreCase(md5)) {
-          throw new PluginException("MD5 checksum of file " + originalUrl + " does not match the one from " + md5FileUrl + ", aborting");
-        }
-      } catch (IOException e) {
-        throw new PluginException("Validation failed, could not read downloaded file " + downloadedFile, e);
-      }
-    }
-
-    private String getMD5FileUrl(String url) {
-      return APACHE_ARCHIVE_URL + url.substring(url.indexOf(path)) + ".md5";
-    }
-
-    private String getAndParseMd5File(String url) {
-      try {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(
-            new URL(url).openStream()));
-        return reader.readLine().split(" ")[0];
-      } catch (IOException e) {
-        log.warn("Failed to find md5 sun file " + url);
-        return null;
-      }
+    public void verify(Context context, Path filePath) throws IOException, VerifyException {
+      context.sha512sum = APACHE_ARCHIVE_URL + context.url.substring(context.url.indexOf(path)) + ".sha512";
+      super.verify(context, filePath);
     }
   }
 }

@@ -20,9 +20,9 @@ package org.apache.solr.util.plugin.bundle;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 
+import org.pf4j.update.DefaultUpdateRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.pf4j.update.DefaultUpdateRepository;
 
 /**
  * An update repo that defers URL location resolving to runtime
