@@ -28,14 +28,14 @@ solrAdminApp.controller('CloudController',
             $scope.showDebug = false;
         };
 
-        var view = $location.search().view ? $location.search().view : "graph";
-        if (view == "tree") {
+        let view = $location.search().view ? $location.search().view : "graph";
+        if (view === "tree") {
             $scope.resetMenu("cloud-tree", Constants.IS_ROOT_PAGE);
             treeSubController($scope, Zookeeper);
-        } else if (view == "graph") {
+        } else if (view === "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
             graphSubController($scope, Zookeeper, false);
-        } else if (view == "nodes") {
+        } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
             nodesSubController($scope, Collections, System, Metrics);
         }
@@ -69,28 +69,28 @@ function ensureInList(string, list) {
 }
 
 /* Puts a node name into the hosts structure */
-var ensureNodeInHosts = function (node_name, hosts) {
-  var hostName = node_name.split(":")[0];
-  var host = getOrCreateObj(hostName, hosts);
-  var hostNodes = getOrCreateList("nodes", host);
+function ensureNodeInHosts(node_name, hosts) {
+  let hostName = node_name.split(":")[0];
+  let host = getOrCreateObj(hostName, hosts);
+  let hostNodes = getOrCreateList("nodes", host);
   ensureInList(node_name, hostNodes);
-};
+}
 
 // from http://scratch99.com/web-development/javascript/convert-bytes-to-mb-kb/
 function bytesToSize(bytes) {
-    var sizes = ['b', 'Kb', 'Mb', 'Gb', 'Tb'];
-    if (bytes === 0) return '0b';
-    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-    if (bytes === 0) return bytes + '' + sizes[i];
-    return (bytes / Math.pow(1024, i)).toFixed(1) + '' + sizes[i];
+  const sizes = ['b', 'Kb', 'Mb', 'Gb', 'Tb'];
+  if (bytes === 0) return '0b';
+  let i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+  if (bytes === 0) return bytes + '' + sizes[i];
+  return (bytes / Math.pow(1024, i)).toFixed(1) + '' + sizes[i];
 }
 
 function numDocsHuman(docs) {
-    var sizes = ['', 'k', 'mn', 'bn', 'tn'];
-    if (docs === 0) return '0';
-    var i = parseInt(Math.floor(Math.log(docs) / Math.log(1000)));
-    if (i === 0) return docs + '' + sizes[i];
-    return (docs / Math.pow(1000, i)).toFixed(1) + '' + sizes[i];
+  const sizes = ['', 'k', 'mn', 'bn', 'tn'];
+  if (docs === 0) return '0';
+  let i = parseInt(Math.floor(Math.log(docs) / Math.log(1000)));
+  if (i === 0) return docs + '' + sizes[i];
+  return (docs / Math.pow(1000, i)).toFixed(1) + '' + sizes[i];
 }
 
 /* Returns a style class depending on percentage */
@@ -118,10 +118,10 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
   $scope.toggleAllDetails = function() {
     $scope.showAllDetails = !$scope.showAllDetails;
-    for (var node in $scope.nodes) {
+    for (let node in $scope.nodes) {
       $scope.showDetails[node] = $scope.showAllDetails;
     }
-    for (var host in $scope.hosts) {
+    for (let host in $scope.hosts) {
       $scope.showDetails[host] = $scope.showAllDetails;
     }
   };
@@ -132,8 +132,8 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
   $scope.toggleHostDetails = function(key) {
     $scope.showDetails[key] = !$scope.showDetails[key] === true;
-    for (var nodeId in $scope.hosts[key].nodes) {
-      var node = $scope.hosts[key].nodes[nodeId];
+    for (let nodeId in $scope.hosts[key].nodes) {
+      let node = $scope.hosts[key].nodes[nodeId];
       $scope.showDetails[node] = $scope.showDetails[key];
     }
   };
@@ -149,46 +149,46 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   };
   
   $scope.isFirstNodeForHost = function(node) {
-    var hostName = node.split(":")[0]; 
-    var nodesInHost = $scope.filteredNodes.filter(no => no.startsWith(hostName));
+    let hostName = node.split(":")[0]; 
+    let nodesInHost = $scope.filteredNodes.filter(no => no.startsWith(hostName));
     return nodesInHost[0] === node;
   };
   
   // Initializes the cluster state, list of nodes, collections etc
   $scope.initClusterState = function() {
-    var nodes = {};
-    var hosts = {};
-    var live_nodes = [];
+    let nodes = {};
+    let hosts = {};
+    let live_nodes = [];
     
     Collections.status(function (data) {
-      // Fetch cluster state from collections API and invert to a nodes structure
-      for (var name in data.cluster.collections) {
-        var collection = data.cluster.collections[name];
+      let node;
+// Fetch cluster state from collections API and invert to a nodes structure
+      for (let name in data.cluster.collections) {
+        let collection = data.cluster.collections[name];
         collection.name = name;
-        var shards = collection.shards;
+        let shards = collection.shards;
         collection.shards = [];
-        for (var shardName in shards) {
-          var shard = shards[shardName];
+        for (let shardName in shards) {
+          let shard = shards[shardName];
           shard.name = shardName;
           shard.collection = collection.name;
-          var replicas = shard.replicas;
+          let replicas = shard.replicas;
           shard.replicas = [];
-          for (var replicaName in replicas) {
-            var core = replicas[replicaName];
+          for (let replicaName in replicas) {
+            let core = replicas[replicaName];
             core.name = replicaName;
             core.collection = collection.name;
             core.shard = shard.name;
             core.shard_state = shard.state;
 
-            var node_name = core['node_name'];
-            var node = getOrCreateObj(node_name, nodes);
-            var cores = getOrCreateList("cores", node);
+            let node_name = core['node_name'];
+            node = getOrCreateObj(node_name, nodes);
+            let cores = getOrCreateList("cores", node);
             cores.push(core);
             node['base_url'] = core.base_url;
             node['id'] = core.base_url.replace(/[^\w\d]/g, '');
-            var hostName = node_name.split(":")[0];
-            node['host'] = hostName;
-            var collections = getOrCreateList("collections", node);
+            node['host'] = node_name.split(":")[0];
+            let collections = getOrCreateList("collections", node);
             ensureInList(core.collection, collections);
             ensureNodeInHosts(node_name, hosts);
           }
@@ -197,9 +197,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
       live_nodes = data.cluster.live_nodes;
       for (n in data.cluster.live_nodes) {
-        var node = data.cluster.live_nodes[n];
+        node = data.cluster.live_nodes[n];
         if (!(node in nodes)) {
-          var hostName = node.split(":")[0];
+          let hostName = node.split(":")[0];
           nodes[node] = {};
           nodes[node]['host'] = hostName;
         }
@@ -207,7 +207,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       }
 
       // Make sure nodes are sorted alphabetically to align with rowspan in table 
-      for (var host in hosts) {
+      for (let host in hosts) {
         hosts[host].nodes.sort();
       }
       
@@ -224,25 +224,24 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     $scope.from = 0;
     $scope.to = $scope.pageSize - 1;
     $scope.reload();
-  }
+  };
   
   $scope.reload = function() {
-    var nodes = $scope.nodes;
-    var node_keys = Object.keys(nodes);
-    var hosts = $scope.hosts;
-    var live_nodes = $scope.live_nodes;
-    var hostNames = Object.keys(hosts);
-    var filteredHosts;
+    let nodes = $scope.nodes;
+    let node_keys = Object.keys(nodes);
+    let hosts = $scope.hosts;
+    let live_nodes = $scope.live_nodes;
+    let hostNames = Object.keys(hosts);
     hostNames.sort();
-    var pageSize = isNumeric($scope.pageSize) ? $scope.pageSize : 10;
+    let pageSize = isNumeric($scope.pageSize) ? $scope.pageSize : 10;
 
     // Calculate what nodes that will show on this page
-    var nodesToShow = [];
-    var nodesParam = '';
-    var hostsToShow = [];
-    var filteredNodes;
-    var filteredHosts;
-    var isFiltered = false;
+    let nodesToShow = [];
+    let nodesParam = '';
+    let hostsToShow = [];
+    let filteredNodes;
+    let filteredHosts;
+    let isFiltered = false;
     switch ($scope.filterType) {
       case "node":
         if ($scope.nodeFilter) {
@@ -254,9 +253,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
         if ($scope.collectionFilter) {
           candidateNodes = {};
           nodesCollections = [];
-          for (var i = 0 ; i < node_keys.length ; i++) {
-            var node_name = node_keys[i];
-            var node = nodes[node_name];
+          for (let i = 0 ; i < node_keys.length ; i++) {
+            let node_name = node_keys[i];
+            let node = nodes[node_name];
             nodeColl = {};
             nodeColl['node'] = node_name;
             collections = {};
@@ -281,15 +280,15 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     }
     if (filteredNodes) {
       isFiltered = true;
-      filteredHosts = filteredNodes.map(nod => nod.split(":")[0]).filter((item,index,self) => self.indexOf(item)==index);
+      filteredHosts = filteredNodes.map(nod => nod.split(":")[0]).filter((item,index,self) => self.indexOf(item)===index);
     } else {
       filteredNodes = node_keys;
       filteredHosts = hostNames;
     }
     filteredNodes.sort();
     filteredHosts.sort();
-    for (var id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
-      var hostName = filteredHosts[id];
+    for (let id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
+      let hostName = filteredHosts[id];
       hostsToShow.push(hostName);
       if (isFiltered) { // Only show the nodes per host matching active filter
         nodesToShow = nodesToShow.concat(filteredNodes.filter(nod => nod.startsWith(hostName)));
@@ -304,29 +303,29 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     hostsToShow.sort();
 
     System.get({"nodes": nodesParam}, function (systemResponse) {
-      for (var node in systemResponse) {
+      for (let node in systemResponse) {
         if (node in nodes) {
-          var s = systemResponse[node];
+          const s = systemResponse[node];
           nodes[node]['system'] = s;
-          var memTotal = s.system.totalPhysicalMemorySize;
-          var memFree = s.system.freePhysicalMemorySize;
-          var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
+          const memTotal = s.system.totalPhysicalMemorySize;
+          const memFree = s.system.freePhysicalMemorySize;
+          const memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
           nodes[node]['memUsedPct'] = memPercentage;
           nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
           nodes[node]['memTotal'] = bytesToSize(memTotal);
           nodes[node]['memFree'] = bytesToSize(memFree);
           nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
 
-          var heapTotal = s.jvm.memory.raw.total;
-          var heapFree = s.jvm.memory.raw.free;
-          var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100);
+          const heapTotal = s.jvm.memory.raw.total;
+          const heapFree = s.jvm.memory.raw.free;
+          const heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100);
           nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
           nodes[node]['heapUsedPct'] = heapPercentage;
           nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
           nodes[node]['heapTotal'] = bytesToSize(heapTotal);
           nodes[node]['heapFree'] = bytesToSize(heapFree);
 
-          var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
+          const jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
           nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
           nodes[node]['jvmUptimeSec'] = jvmUptime;
 
@@ -345,19 +344,19 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           "prefix": "CONTAINER.fs,org.eclipse.jetty.server.handler.DefaultHandler.get-requests,INDEX.sizeInBytes,SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs,SEARCHER.searcher.warmupTime"
         },
         function (metricsResponse) {
-          for (var node in metricsResponse) {
+          for (let node in metricsResponse) {
             if (node in nodes) {
-              var m = metricsResponse[node];
+              let m = metricsResponse[node];
               nodes[node]['metrics'] = m;
-              var diskTotal = m.metrics['solr.node']['CONTAINER.fs.totalSpace'];
-              var diskFree = m.metrics['solr.node']['CONTAINER.fs.usableSpace'];
-              var diskPercentage = Math.floor((diskTotal - diskFree) / diskTotal * 100);
+              let diskTotal = m.metrics['solr.node']['CONTAINER.fs.totalSpace'];
+              let diskFree = m.metrics['solr.node']['CONTAINER.fs.usableSpace'];
+              let diskPercentage = Math.floor((diskTotal - diskFree) / diskTotal * 100);
               nodes[node]['diskUsedPct'] = diskPercentage;
               nodes[node]['diskUsedPctStyle'] = styleForPct(diskPercentage);
               nodes[node]['diskTotal'] = bytesToSize(diskTotal);
               nodes[node]['diskFree'] = bytesToSize(diskFree);
 
-              var r = m.metrics['solr.jetty']['org.eclipse.jetty.server.handler.DefaultHandler.get-requests'];
+              let r = m.metrics['solr.jetty']['org.eclipse.jetty.server.handler.DefaultHandler.get-requests'];
               nodes[node]['req'] = r.count;
               nodes[node]['req1minRate'] = Math.floor(r['1minRate'] * 100) / 100;
               nodes[node]['req5minRate'] = Math.floor(r['5minRate'] * 100) / 100;
@@ -366,38 +365,38 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
               nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
 
-              var cores = nodes[node]['cores'];
-              var indexSizeTotal = 0;
-              var docsTotal = 0;
-              var graphData = [];
+              let cores = nodes[node]['cores'];
+              let indexSizeTotal = 0;
+              let docsTotal = 0;
+              let graphData = [];
               if (cores) {
                 for (coreId in cores) {
-                  var core = cores[coreId];
-                  var keyName = "solr.core." + core['core'].replace('_', '.').replace('_', '.');
-                  var nodeMetric = m.metrics[keyName];
-                  var size = nodeMetric['INDEX.sizeInBytes'];
-                  size = (typeof size != 'undefined') ? size : 0;
+                  let core = cores[coreId];
+                  let keyName = "solr.core." + core['core'].replace('_', '.').replace('_', '.');
+                  let nodeMetric = m.metrics[keyName];
+                  let size = nodeMetric['INDEX.sizeInBytes'];
+                  size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
                   core['label'] = core['core'].replace('_shard', '_s').replace(/_replica_./, 'r');
                   indexSizeTotal += size;
-                  var numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
-                  numDocs = (typeof numDocs != 'undefined') ? numDocs : 0;
+                  let numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
+                  numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
                   core['numDocs'] = numDocs;
                   core['numDocsHuman'] = numDocsHuman(numDocs);
-                  core['avgSizePerDoc'] = bytesToSize(numDocs == 0 ? 0 : size / numDocs);
-                  var deletedDocs = nodeMetric['SEARCHER.searcher.deletedDocs'];
-                  deletedDocs = (typeof deletedDocs != 'undefined') ? deletedDocs : 0;
+                  core['avgSizePerDoc'] = bytesToSize(numDocs === 0 ? 0 : size / numDocs);
+                  let deletedDocs = nodeMetric['SEARCHER.searcher.deletedDocs'];
+                  deletedDocs = (typeof deletedDocs !== 'undefined') ? deletedDocs : 0;
                   core['deletedDocs'] = deletedDocs;
                   core['deletedDocsHuman'] = numDocsHuman(deletedDocs);
-                  var warmupTime = nodeMetric['SEARCHER.searcher.warmupTime'];
-                  warmupTime = (typeof warmupTime != 'undefined') ? warmupTime : 0;
+                  let warmupTime = nodeMetric['SEARCHER.searcher.warmupTime'];
+                  warmupTime = (typeof warmupTime !== 'undefined') ? warmupTime : 0;
                   core['warmupTime'] = warmupTime;
                   docsTotal += core['numDocs'];
                 }
                 for (coreId in cores) {
-                  var core = cores[coreId];
-                  var graphObj = {};
+                  let core = cores[coreId];
+                  let graphObj = {};
                   graphObj['label'] = core['label'];
                   graphObj['size'] = core['sizeInBytes'];
                   graphObj['sizeHuman'] = core['size'];
@@ -421,15 +420,15 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
               // Add the div containing the whole chart
               $('#chart' + nodes[node]['id']).empty();
-              var chart = d3.select('#chart' + nodes[node]['id']).append('div').attr('class', 'chart');
+              let chart = d3.select('#chart' + nodes[node]['id']).append('div').attr('class', 'chart');
 
               // Add one div per bar which will group together both labels and bars
-              var g = chart.selectAll('div')
+              let g = chart.selectAll('div')
                   .data(nodes[node]['graphData']).enter()
                   .append('div');
 
               // Add the bars
-              var bars = g.append("div")
+              let bars = g.append("div")
                   .attr("class", "rect")
                   .text(function (d) {
                     return d.label + ':\u00A0\u00A0' + d.sizeHuman;
@@ -498,15 +497,15 @@ var treeSubController = function($scope, Zookeeper) {
  * @return {string}         The phrase describing the the amount of time
  */
 function secondsForHumans ( seconds ) {
-    var levels = [
+  let levels = [
         [Math.floor(seconds / 31536000), 'y'],
         [Math.floor((seconds % 31536000) / 86400), 'd'],
         [Math.floor(((seconds % 31536000) % 86400) / 3600), 'h'],
         [Math.floor((((seconds % 31536000) % 86400) % 3600) / 60), 'm']
     ];
-    var returntext = '';
+  let returntext = '';
 
-    for (var i = 0, max = levels.length; i < max; i++) {
+    for (let i = 0, max = levels.length; i < max; i++) {
         if ( levels[i][0] === 0 ) continue;
         returntext += ' ' + levels[i][0] + levels[i][1];
     }
@@ -536,17 +535,17 @@ var graphSubController = function ($scope, Zookeeper) {
     $scope.next = function() {
         $scope.pos += $scope.rows;
         $scope.initGraph();
-    }
+    };
 
     $scope.previous = function() {
         $scope.pos = Math.max(0, $scope.pos - $scope.rows);
         $scope.initGraph();
-    }
+    };
 
     $scope.resetGraph = function() {
         $scope.pos = 0;
         $scope.initGraph();
-    }
+    };
 
     $scope.initGraph = function() {
         Zookeeper.liveNodes(function (data) {
