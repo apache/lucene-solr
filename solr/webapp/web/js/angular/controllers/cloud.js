@@ -306,11 +306,6 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     nodesToShow.sort();
     hostsToShow.sort();
 
-/* NOCOMMIT: Remove debug */
-    console.log("***Initialized paging. filterType=" + $scope.filterType + ", statusFilter=" + JSON.stringify($scope.pagingStatusFilter, undefined, 2)  + ", nodeFilter=" + JSON.stringify($scope.nodeFilter, undefined, 2) + 
-        ", collectionFilter=" + JSON.stringify($scope.collectionFilter, undefined, 2) + ", pageSize=" + pageSize + ", from=" + $scope.from + ", nodesParam=" + nodesParam +
-        ", all nodes=" + node_keys);
-    
     System.get({"nodes": nodesParam}, function (systemResponse) {
       for (var node in systemResponse) {
         if (node in nodes) {
