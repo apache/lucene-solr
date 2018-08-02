@@ -30,7 +30,7 @@ Click on the Cloud option in the left-hand navigation, and a small sub-menu appe
 
 The example below shows the default "cloud" example with some documents added to the "gettingstarted" collection. Details are expanded for node on port 7574, showing more metadata and more metrics details. The screen provides links to navigate to nodes, collections and replicas. The table supports paging and filtering on host/node names and collection names.
  
-image::images/cloud-screens/cloud-nodes.png[image,width=512,height=236]
+image::images/cloud-screens/cloud-nodes.png[image,width=900,height=415]
 
 The ("Graph") view shows a graph of each collection, the shards that make up those collections, and the addresses and type ("NRT", "TLOG" or "PULL") of each replica for each shard.
 
