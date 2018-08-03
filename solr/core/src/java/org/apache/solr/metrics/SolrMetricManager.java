@@ -55,8 +55,10 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * This class maintains a repository of named {@link MetricRegistry} instances, and provides several
@@ -423,14 +425,14 @@ public class SolrMetricManager {
     } else {
       swapLock.lock();
       try {
-        return getOrCreate(registries, registry);
+        return getOrCreateRegistry(registries, registry);
       } finally {
         swapLock.unlock();
       }
     }
   }
 
-  private static MetricRegistry getOrCreate(ConcurrentMap<String, MetricRegistry> map, String registry) {
+  private static MetricRegistry getOrCreateRegistry(ConcurrentMap<String, MetricRegistry> map, String registry) {
     final MetricRegistry existing = map.get(registry);
     if (existing == null) {
       final MetricRegistry created = new MetricRegistry();
@@ -921,6 +923,15 @@ public class SolrMetricManager {
         new Class[]{SolrMetricManager.class, String.class},
         new Object[]{this, registry}
     );
+    // prepare MDC for plugins that want to use its properties
+    MDCLoggingContext.setNode(coreContainer);
+    if (solrCore != null) {
+      MDCLoggingContext.setCore(solrCore);
+    }
+    if (tag != null) {
+      // add instance tag to MDC
+      MDC.put("tag", "t:" + tag);
+    }
     try {
       if (reporter instanceof SolrCoreReporter) {
         ((SolrCoreReporter)reporter).init(pluginInfo, solrCore);
@@ -931,6 +942,9 @@ public class SolrMetricManager {
       }
     } catch (IllegalStateException e) {
       throw new IllegalArgumentException("reporter init failed: " + pluginInfo, e);
+    } finally {
+      MDCLoggingContext.clear();
+      MDC.remove("tag");
     }
     registerReporter(registry, pluginInfo.name, tag, reporter);
   }

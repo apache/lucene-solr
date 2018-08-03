@@ -212,7 +212,7 @@ public class TestCodecs extends LuceneTestCase {
       terms[i] = new TermData(text, docs, null);
     }
 
-    final FieldInfos.Builder builder = new FieldInfos.Builder();
+    final FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
 
     final FieldData field = new FieldData("field", builder, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
@@ -259,7 +259,7 @@ public class TestCodecs extends LuceneTestCase {
   }
 
   public void testRandomPostings() throws Throwable {
-    final FieldInfos.Builder builder = new FieldInfos.Builder();
+    final FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
 
     final FieldData[] fields = new FieldData[NUM_FIELDS];
     for(int i=0;i<NUM_FIELDS;i++) {

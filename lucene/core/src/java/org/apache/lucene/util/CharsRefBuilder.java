@@ -17,8 +17,6 @@
 package org.apache.lucene.util;
 
 
-import java.util.Arrays;
-
 /**
  * A builder for {@link CharsRef} instances.
  * @lucene.internal
@@ -153,7 +151,7 @@ public class CharsRefBuilder implements Appendable {
 
   /** Build a new {@link CharsRef} that has the same content as this builder. */
   public CharsRef toCharsRef() {
-    return new CharsRef(Arrays.copyOf(ref.chars, ref.length), 0, ref.length);
+    return new CharsRef(ArrayUtil.copyOfSubArray(ref.chars, 0, ref.length), 0, ref.length);
   }
 
   @Override

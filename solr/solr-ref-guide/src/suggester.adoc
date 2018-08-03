@@ -85,7 +85,6 @@ To be used as the basis for a suggestion, the field must be stored. You may want
 <fieldType class="solr.TextField" name="textSuggest" positionIncrementGap="100">
   <analyzer>
     <tokenizer class="solr.StandardTokenizerFactory"/>
-    <filter class="solr.StandardFilterFactory"/>
     <filter class="solr.LowerCaseFilterFactory"/>
   </analyzer>
 </fieldType>

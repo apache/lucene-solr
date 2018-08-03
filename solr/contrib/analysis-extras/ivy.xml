@@ -25,7 +25,6 @@
   <dependencies>
     <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" conf="compile"/>
     <dependency org="org.apache.opennlp" name="opennlp-tools" rev="${/org.apache.opennlp/opennlp-tools}" conf="compile" />
-    <dependency org="org.apache.opennlp" name="opennlp-maxent" rev="${/org.apache.opennlp/opennlp-maxent}" conf="compile" />
 
     <!--
       Although the 3rd party morfologik jars are not dependencies of code in

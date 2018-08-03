@@ -190,7 +190,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testSignificantTermsQuery() throws Exception {
     SolrQueryRequest req = req("q", "*:*");
     try {
-      assertQueryEquals("sigificantTerms", req, "{!sigificantTerms}");
+      assertQueryEquals(SignificantTermsQParserPlugin.NAME,
+          req, "{!"+SignificantTermsQParserPlugin.NAME+"}");
     } finally {
       req.close();
     }
@@ -1014,6 +1015,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                      "currency(amount)",
                      "currency(amount,USD)",
                      "currency('amount',USD)");
+  }
+  public void testFuncRelatedness() throws Exception {
+    SolrQueryRequest req = req("fore","foo_s:front", "back","foo_s:back");
+    try {
+      assertFuncEquals(req,
+                       "agg_relatedness({!query v='foo_s:front'}, {!query v='foo_s:back'})", 
+                       "agg_relatedness($fore, $back)");
+    } finally {
+      req.close();
+    }
   }
 
   public void testTestFuncs() throws Exception {

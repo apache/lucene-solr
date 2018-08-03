@@ -216,17 +216,16 @@ public class TestSearchAfter extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " sort=" + sort + " pageSize=" + pageSize);
     }
-    final boolean doMaxScore = random().nextBoolean();
     final boolean doScores = random().nextBoolean();
     if (sort == null) {
       all = searcher.search(query, maxDoc);
     } else if (sort == Sort.RELEVANCE) {
-      all = searcher.search(query, maxDoc, sort, true, doMaxScore);
+      all = searcher.search(query, maxDoc, sort, true);
     } else {
-      all = searcher.search(query, maxDoc, sort, doScores, doMaxScore);
+      all = searcher.search(query, maxDoc, sort, doScores);
     }
     if (VERBOSE) {
-      System.out.println("  all.totalHits=" + all.totalHits);
+      System.out.println("  all.totalHits.value=" + all.totalHits.value);
       int upto = 0;
       for(ScoreDoc scoreDoc : all.scoreDocs) {
         System.out.println("    hit " + (upto++) + ": id=" + searcher.doc(scoreDoc.doc).get("id") + " " + scoreDoc);
@@ -234,7 +233,7 @@ public class TestSearchAfter extends LuceneTestCase {
     }
     int pageStart = 0;
     ScoreDoc lastBottom = null;
-    while (pageStart < all.totalHits) {
+    while (pageStart < all.totalHits.value) {
       TopDocs paged;
       if (sort == null) {
         if (VERBOSE) {
@@ -246,9 +245,9 @@ public class TestSearchAfter extends LuceneTestCase {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
         if (sort == Sort.RELEVANCE) {
-          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, true, doMaxScore);
+          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, true);
         } else {
-          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, doScores, doMaxScore);
+          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, doScores);
         }
       }
       if (VERBOSE) {
@@ -266,7 +265,7 @@ public class TestSearchAfter extends LuceneTestCase {
   }
 
   void assertPage(int pageStart, TopDocs all, TopDocs paged) throws IOException {
-    assertEquals(all.totalHits, paged.totalHits);
+    assertEquals(all.totalHits.value, paged.totalHits.value);
     for (int i = 0; i < paged.scoreDocs.length; i++) {
       ScoreDoc sd1 = all.scoreDocs[pageStart + i];
       ScoreDoc sd2 = paged.scoreDocs[i];

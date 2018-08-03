@@ -18,9 +18,11 @@ package org.apache.lucene.spatial.spatial4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import org.apache.lucene.spatial.SpatialTestData;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -96,7 +98,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     points.add(new GeoPoint(planetModel, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
     points.add(new GeoPoint(planetModel, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
 
-    final Shape triangle = new Geo3dShape(GeoPolygonFactory.makeGeoPolygon(planetModel, points),ctx);
+    final Shape triangle = new Geo3dShape<>(GeoPolygonFactory.makeGeoPolygon(planetModel, points),ctx);
     final Rectangle rect = ctx.makeRectangle(-49, -45, 73, 86);
     testOperation(rect,SpatialOperation.Intersects,triangle, false);
   }
@@ -116,7 +118,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
         new GeoPoint(planetModel, 54.0 * DEGREES_TO_RADIANS, 165.0 * DEGREES_TO_RADIANS),
         new GeoPoint(planetModel, -90.0 * DEGREES_TO_RADIANS, 0.0)};
     final GeoPath path = GeoPathFactory.makeGeoPath(planetModel, 29 * DEGREES_TO_RADIANS, pathPoints);
-    final Shape shape = new Geo3dShape(path,ctx);
+    final Shape shape = new Geo3dShape<>(path,ctx);
     final Rectangle rect = ctx.makeRectangle(131, 143, 39, 54);
     testOperation(rect,SpatialOperation.Intersects,shape,true);
   }
@@ -144,6 +146,23 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     int type = shapeGenerator.randomShapeType();
     GeoAreaShape areaShape = shapeGenerator.randomGeoAreaShape(type, planetModel);
     return new Geo3dShape<>(areaShape, ctx);
+  }
+
+  @Test
+  public void testOperationsFromFile() throws IOException {
+    setupStrategy();
+    final Iterator<SpatialTestData> indexedSpatialData = getSampleData( "states-poly.txt");
+    final List<Shape> indexedShapes = new ArrayList<>();
+    while(indexedSpatialData.hasNext()) {
+      indexedShapes.add(indexedSpatialData.next().shape);
+    }
+    final Iterator<SpatialTestData> querySpatialData = getSampleData( "states-bbox.txt");
+    final List<Shape> queryShapes = new ArrayList<>();
+    while(querySpatialData.hasNext()) {
+      queryShapes.add(querySpatialData.next().shape);
+      queryShapes.add(randomQueryShape());
+    }
+    testOperation(SpatialOperation.Intersects, indexedShapes, queryShapes, random().nextBoolean());
   }
 
   //TODO move to a new test class?

@@ -45,6 +45,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -584,21 +585,21 @@ public class TestPhraseQuery extends LuceneTestCase {
     PhraseQuery.Builder pqBuilder = new PhraseQuery.Builder();
     pqBuilder.add(new Term("field", "a"), 0);
     pqBuilder.add(new Term("field", "b"), 1);
-    assertEquals(1, searcher.search(pqBuilder.build(), 1).totalHits);
+    assertEquals(1, searcher.count(pqBuilder.build()));
 
     // Now with "a|aa b"
     pqBuilder = new PhraseQuery.Builder();
     pqBuilder.add(new Term("field", "a"), 0);
     pqBuilder.add(new Term("field", "aa"), 0);
     pqBuilder.add(new Term("field", "b"), 1);
-    assertEquals(1, searcher.search(pqBuilder.build(), 1).totalHits);
+    assertEquals(1, searcher.count(pqBuilder.build()));
 
     // Now with "a|z b" which should not match; this isn't a MultiPhraseQuery
     pqBuilder = new PhraseQuery.Builder();
     pqBuilder.add(new Term("field", "a"), 0);
     pqBuilder.add(new Term("field", "z"), 0);
     pqBuilder.add(new Term("field", "b"), 1);
-    assertEquals(0, searcher.search(pqBuilder.build(), 1).totalHits);
+    assertEquals(0, searcher.count(pqBuilder.build()));
 
     r.close();
     dir.close();
@@ -731,7 +732,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   public void testTopPhrases() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    String[] docs = Arrays.copyOf(DOCS, DOCS.length);
+    String[] docs = ArrayUtil.copyOfSubArray(DOCS, 0, DOCS.length);
     Collections.shuffle(Arrays.asList(docs), random());
     for (String value : DOCS) {
       Document doc = new Document();
@@ -747,10 +748,10 @@ public class TestPhraseQuery extends LuceneTestCase {
         new PhraseQuery("f", "d", "d")  // repeated term
         )) {
       for (int topN = 1; topN <= 2; ++topN) {
-        TopScoreDocCollector collector1 = TopScoreDocCollector.create(topN, null, true);
+        TopScoreDocCollector collector1 = TopScoreDocCollector.create(topN, null, Integer.MAX_VALUE);
         searcher.search(query, collector1);
         ScoreDoc[] hits1 = collector1.topDocs().scoreDocs;
-        TopScoreDocCollector collector2 = TopScoreDocCollector.create(topN, null, false);
+        TopScoreDocCollector collector2 = TopScoreDocCollector.create(topN, null, 1);
         searcher.search(query, collector2);
         ScoreDoc[] hits2 = collector2.topDocs().scoreDocs;
         assertTrue("" + query, hits1.length > 0);

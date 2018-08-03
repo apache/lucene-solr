@@ -80,8 +80,10 @@ public class TimeRoutedAlias {
   /**
    * Optional parameters for creating a routed alias excluding parameters for collection creation.
    */
+  //TODO lets find a way to remove this as it's harder to maintain than required list
   public static final List<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableList(Arrays.asList(
       ROUTER_MAX_FUTURE,
+      ROUTER_AUTO_DELETE_AGE,
       TZ)); // kinda special
 
   static Predicate<String> PARAM_IS_PROP =

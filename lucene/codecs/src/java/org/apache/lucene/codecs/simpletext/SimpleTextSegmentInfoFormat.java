@@ -42,6 +42,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.StringHelper;
@@ -158,7 +159,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch.get(), SI_ID);
-      final byte[] id = Arrays.copyOfRange(scratch.bytes(), SI_ID.length, scratch.length());
+      final byte[] id = ArrayUtil.copyOfSubArray(scratch.bytes(), SI_ID.length, scratch.length());
       
       if (!Arrays.equals(segmentID, id)) {
         throw new CorruptIndexException("file mismatch, expected: " + StringHelper.idToString(segmentID)

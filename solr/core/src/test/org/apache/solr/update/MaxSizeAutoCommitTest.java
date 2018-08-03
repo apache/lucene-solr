@@ -43,6 +43,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+//commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
 public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
   // Given an ID, returns an XML string for an "add document" request
@@ -167,6 +168,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  //commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void deleteTest() throws Exception {
     int maxFileSizeBound = 1000;
     int maxFileSizeBoundWithBuffer = (int) (maxFileSizeBound * 1.25);
@@ -203,6 +205,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   
   @Test
   @Repeat(iterations = 5)
+  //commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void endToEndTest() throws Exception {
     int maxFileSizeBound = 5000;
     // Set max size bound

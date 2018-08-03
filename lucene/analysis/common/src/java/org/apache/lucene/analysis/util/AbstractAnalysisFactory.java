@@ -290,12 +290,24 @@ public abstract class AbstractAnalysisFactory {
    * @return a list of file names with the escaping backslashed removed
    */
   protected final List<String> splitFileNames(String fileNames) {
-    if (fileNames == null)
-      return Collections.<String>emptyList();
+    return splitAt(',', fileNames);
+  }
+
+  /**
+   * Splits a list separated by zero or more given separator characters.
+   * List items can contain comma characters escaped by backslash '\'.
+   * Whitespace is NOT trimmed from the returned list items.
+   *
+   * @param list the string containing the split list items
+   * @return a list of items with the escaping backslashes removed
+   */
+  protected final List<String> splitAt(char separator, String list) {
+    if (list == null)
+      return Collections.emptyList();
 
     List<String> result = new ArrayList<>();
-    for (String file : fileNames.split("(?<!\\\\),")) {
-      result.add(file.replaceAll("\\\\(?=,)", ""));
+    for (String item : list.split("(?<!\\\\)[" + separator + "]")) {
+      result.add(item.replaceAll("\\\\(?=[" + separator + "])", ""));
     }
 
     return result;

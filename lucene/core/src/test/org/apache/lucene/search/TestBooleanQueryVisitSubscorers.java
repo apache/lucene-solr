@@ -141,7 +141,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     private final Set<Scorer> tqsSet = new HashSet<>();
     
     MyCollector() {
-      super(TopScoreDocCollector.create(10));
+      super(TopScoreDocCollector.create(10, Integer.MAX_VALUE));
     }
 
     public LeafCollector getLeafCollector(LeafReaderContext context)
@@ -329,7 +329,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
 
     @Override
     public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimScorer(collectionStats.field()) {
+      return new SimScorer() {
         @Override
         public float score(float freq, long norm) {
           return freq;

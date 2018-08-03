@@ -157,7 +157,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
   private DocSet createDocSet(SolrIndexSearcher searcher, long cost) throws IOException {
     int maxDoc = searcher.maxDoc();
-    BitDocSet liveDocs = searcher.getLiveDocs();
+    BitDocSet liveDocs = searcher.getLiveDocSet();
     FixedBitSet liveBits = liveDocs.size() == maxDoc ? null : liveDocs.getBits();
 
     DocSetBuilder builder = new DocSetBuilder(maxDoc, cost);

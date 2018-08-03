@@ -55,8 +55,8 @@ public class TestIntervals extends LuceneTestCase {
       "Where Alph the sacred river ran through caverns measureless to man",
       "Down to a sunless sea",
       "So thrice five miles of fertile ground",
-      "With walls and towers were girdled round",
-      "Which was nice"
+      "Pease hot porridge porridge",
+      "Pease porridge porridge hot"
   };
 
   private static Directory directory;
@@ -102,12 +102,12 @@ public class TestIntervals extends LuceneTestCase {
           assertEquals(-1, intervals.end());
           while ((pos = intervals.nextInterval()) != IntervalIterator.NO_MORE_INTERVALS) {
             //System.out.println(doc + ": " + intervals);
-            assertEquals(expected[id][i], pos);
-            assertEquals(expected[id][i], intervals.start());
-            assertEquals(expected[id][i + 1], intervals.end());
+            assertEquals("Wrong start value", expected[id][i], pos);
+            assertEquals("start() != pos returned from nextInterval()", expected[id][i], intervals.start());
+            assertEquals("Wrong end value", expected[id][i + 1], intervals.end());
             i += 2;
           }
-          assertEquals(expected[id].length, i);
+          assertEquals("Wrong number of endpoints", expected[id].length, i);
           if (i > 0)
             matchedDocs++;
         }
@@ -211,6 +211,40 @@ public class TestIntervals extends LuceneTestCase {
             {6, 17},
             {},
             {},
+            {}
+        });
+  }
+
+  public void testUnorderedDistinct() throws IOException {
+    checkIntervals(Intervals.unordered(false, Intervals.term("pease"), Intervals.term("pease")),
+        "field1", 3, new int[][]{
+            {},
+            { 0, 3, 3, 6 },
+            { 0, 3, 3, 6 },
+            {},
+            { 0, 3, 3, 6 },
+            {}
+        });
+    checkIntervals(Intervals.unordered(false,
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"), Intervals.term("hot")),
+        Intervals.term("porridge")),
+        "field1", 3, new int[][]{
+            {},
+            { 1, 4, 4, 17 },
+            { 1, 5, 4, 7 },
+            {},
+            { 1, 4, 4, 17 },
+            {}
+        });
+    checkIntervals(Intervals.unordered(false,
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"), Intervals.term("hot")),
+        Intervals.term("porridge")),
+        "field2", 1, new int[][]{
+            {},
+            {},
+            {},
+            {},
+            { 0, 3 },
             {}
         });
   }

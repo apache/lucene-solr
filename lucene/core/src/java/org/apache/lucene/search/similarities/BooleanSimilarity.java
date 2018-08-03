@@ -45,14 +45,13 @@ public class BooleanSimilarity extends Similarity {
 
   @Override
   public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-    return new BooleanWeight(collectionStats.field(), boost);
+    return new BooleanWeight(boost);
   }
 
   private static class BooleanWeight extends SimScorer {
     final float boost;
 
-    BooleanWeight(String field, float boost) {
-      super(field);
+    BooleanWeight(float boost) {
       this.boost = boost;
     }
 

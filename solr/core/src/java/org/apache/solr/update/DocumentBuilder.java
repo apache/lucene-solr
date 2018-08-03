@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -94,11 +95,11 @@ public class DocumentBuilder {
   }
 
   /**
-   * @see DocumentBuilder#toDocument(SolrInputDocument, IndexSchema, boolean)
+   * @see DocumentBuilder#toDocument(SolrInputDocument, IndexSchema, boolean, boolean)
    */
   public static Document toDocument( SolrInputDocument doc, IndexSchema schema )
   {
-    return toDocument(doc, schema, false);
+    return toDocument(doc, schema, false, true);
   }
   
   /**
@@ -119,11 +120,14 @@ public class DocumentBuilder {
    * @param schema Schema instance
    * @param forInPlaceUpdate Whether the output document would be used for an in-place update or not. When this is true,
    *        default fields values and copy fields targets are not populated.
+   * @param ignoreNestedDocs if nested child documents should be ignored.  If false then an exception will be thrown.
    * @return Built Lucene document
-
    */
-  public static Document toDocument( SolrInputDocument doc, IndexSchema schema, boolean forInPlaceUpdate )
-  {
+  public static Document toDocument(SolrInputDocument doc, IndexSchema schema, boolean forInPlaceUpdate, boolean ignoreNestedDocs) {
+    if (!ignoreNestedDocs && doc.hasChildDocuments()) {
+      throw unexpectedNestedDocException(schema, forInPlaceUpdate);
+    }
+
     final SchemaField uniqueKeyField = schema.getUniqueKeyField();
     final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
     
@@ -132,6 +136,14 @@ public class DocumentBuilder {
     
     // Load fields from SolrDocument to Document
     for( SolrInputField field : doc ) {
+
+      if (field.getFirstValue() instanceof SolrDocumentBase) {
+        if (ignoreNestedDocs) {
+          continue;
+        }
+        throw unexpectedNestedDocException(schema, forInPlaceUpdate);
+      }
+
       String name = field.getName();
       SchemaField sfield = schema.getFieldOrNull(name);
       boolean used = false;
@@ -241,6 +253,21 @@ public class DocumentBuilder {
     }
     
     return out;
+  }
+
+  private static SolrException unexpectedNestedDocException(IndexSchema schema, boolean forInPlaceUpdate) {
+    if (! schema.isUsableForChildDocs()) {
+      return new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Unable to index docs with children: the schema must " +
+              "include definitions for both a uniqueKey field and the '" + IndexSchema.ROOT_FIELD_NAME +
+              "' field, using the exact same fieldType");
+    } else if (forInPlaceUpdate) {
+      return new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Unable to index docs with children: for an in-place update, just provide the doc by itself");
+    } else {
+      return new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "A document unexpectedly contained nested child documents");
+    }
   }
 
   /** Move the largest stored field last, because Lucene can avoid loading that one if it's not needed. */

@@ -201,7 +201,6 @@ def get_solr_init_changes():
     Apache Tika %(org.apache.tika.version)s
     Carrot2 %(/org.carrot2/carrot2-mini)s
     Velocity %(/org.apache.velocity/velocity)s and Velocity Tools %(/org.apache.velocity/velocity-tools)s
-    Apache UIMA %(org.apache.uima.version)s
     Apache ZooKeeper %(/org.apache.zookeeper/zookeeper)s
     Jetty %(org.eclipse.jetty.version)s
 

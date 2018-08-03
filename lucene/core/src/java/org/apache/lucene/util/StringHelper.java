@@ -307,7 +307,7 @@ public abstract class StringHelper {
     if (bits.length > ID_LENGTH) {
       assert bits.length == ID_LENGTH + 1;
       assert bits[0] == 0;
-      return Arrays.copyOfRange(bits, 1, bits.length);
+      return ArrayUtil.copyOfSubArray(bits, 1, bits.length);
     } else {
       byte[] result = new byte[ID_LENGTH];
       System.arraycopy(bits, 0, result, result.length - bits.length, bits.length);

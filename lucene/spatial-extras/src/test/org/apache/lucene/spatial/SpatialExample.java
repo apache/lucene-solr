@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -190,7 +191,8 @@ public class SpatialExample extends LuceneTestCase {
   }
 
   private void assertDocMatchedIds(IndexSearcher indexSearcher, TopDocs docs, int... ids) throws IOException {
-    int[] gotIds = new int[Math.toIntExact(docs.totalHits)];
+    assert docs.totalHits.relation == Relation.EQUAL_TO;
+    int[] gotIds = new int[Math.toIntExact(docs.totalHits.value)];
     for (int i = 0; i < gotIds.length; i++) {
       gotIds[i] = indexSearcher.doc(docs.scoreDocs[i].doc).getField("id").numericValue().intValue();
     }

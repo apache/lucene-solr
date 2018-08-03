@@ -99,9 +99,7 @@ final class ReadersAndUpdates {
    *
    * <p>NOTE: steals incoming ref from reader. */
   ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes) throws IOException {
-    this(indexCreatedVersionMajor, reader.getSegmentInfo(), pendingDeletes);
-    assert pendingDeletes.numPendingDeletes() >= 0
-        : "got " + pendingDeletes.numPendingDeletes() + " reader.numDeletedDocs()=" + reader.numDeletedDocs() + " info.getDelCount()=" + info.getDelCount() + " maxDoc=" + reader.maxDoc() + " numDocs=" + reader.numDocs();
+    this(indexCreatedVersionMajor, reader.getOriginalSegmentInfo(), pendingDeletes);
     this.reader = reader;
     pendingDeletes.onNewReader(reader, info);
   }
@@ -122,10 +120,9 @@ final class ReadersAndUpdates {
     return rc;
   }
 
-  public synchronized int getPendingDeleteCount() {
-    return pendingDeletes.numPendingDeletes();
+  public synchronized int getDelCount() {
+    return pendingDeletes.getDelCount();
   }
-
   private synchronized boolean assertNoDupGen(List<DocValuesFieldUpdates> fieldUpdates, DocValuesFieldUpdates update) {
     for (int i=0;i<fieldUpdates.size();i++) {
       DocValuesFieldUpdates oldUpdate = fieldUpdates.get(i);
@@ -167,24 +164,6 @@ final class ReadersAndUpdates {
     return count;
   }
   
-  // Call only from assert!
-  public synchronized boolean verifyDocCounts() {
-    int count;
-    Bits liveDocs = pendingDeletes.getLiveDocs();
-    if (liveDocs != null) {
-      count = 0;
-      for(int docID=0;docID<info.info.maxDoc();docID++) {
-        if (liveDocs.get(docID)) {
-          count++;
-        }
-      }
-    } else {
-      count = info.info.maxDoc();
-    }
-
-    assert info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes() == count: "info.maxDoc=" + info.info.maxDoc() + " info.getDelCount()=" + info.getDelCount() + " pendingDeletes=" + pendingDeletes.numPendingDeletes() + " count=" + count;
-    return true;
-  }
 
   /** Returns a {@link SegmentReader}. */
   public synchronized SegmentReader getReader(IOContext context) throws IOException {
@@ -200,7 +179,7 @@ final class ReadersAndUpdates {
   }
 
   public synchronized void release(SegmentReader sr) throws IOException {
-    assert info == sr.getSegmentInfo();
+    assert info == sr.getOriginalSegmentInfo();
     sr.decRef();
   }
 
@@ -234,10 +213,8 @@ final class ReadersAndUpdates {
     }
     // force new liveDocs
     Bits liveDocs = pendingDeletes.getLiveDocs();
-    markAsShared();
     if (liveDocs != null) {
-      return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs,
-          info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
+      return new SegmentReader(info, reader, liveDocs, pendingDeletes.getHardLiveDocs(), pendingDeletes.numDocs(), true);
     } else {
       // liveDocs == null and reader != null. That can only be if there are no deletes
       assert reader.getLiveDocs() == null;
@@ -250,19 +227,21 @@ final class ReadersAndUpdates {
     return pendingDeletes.numDeletesToMerge(policy, this::getLatestReader);
   }
 
-  private CodecReader getLatestReader() throws IOException {
+  private synchronized CodecReader getLatestReader() throws IOException {
     if (this.reader == null) {
       // get a reader and dec the ref right away we just make sure we have a reader
       getReader(IOContext.READ).decRef();
     }
-    if (reader.getLiveDocs() != pendingDeletes.getLiveDocs()
-        || reader.numDeletedDocs() != info.getDelCount() - pendingDeletes.numPendingDeletes()) {
+    if (pendingDeletes.needsRefresh(reader)) {
       // we have a reader but its live-docs are out of sync. let's create a temporary one that we never share
       swapNewReaderWithLatestLiveDocs();
     }
     return reader;
   }
 
+  /**
+   * Returns a snapshot of the live docs.
+   */
   public synchronized Bits getLiveDocs() {
     return pendingDeletes.getLiveDocs();
   }
@@ -348,9 +327,10 @@ final class ReadersAndUpdates {
           fieldsConsumer.addBinaryField(fieldInfo, new EmptyDocValuesProducer() {
             @Override
             public BinaryDocValues getBinary(FieldInfo fieldInfoIn) throws IOException {
+              DocValuesFieldUpdates.Iterator iterator = updateSupplier.apply(fieldInfo);
               final MergedDocValues<BinaryDocValues> mergedDocValues = new MergedDocValues<>(
                   reader.getBinaryDocValues(field),
-                  DocValuesFieldUpdates.Iterator.asBinaryDocValues(updateSupplier.apply(fieldInfo)));
+                  DocValuesFieldUpdates.Iterator.asBinaryDocValues(iterator), iterator);
               // Merge sort of the original doc values with updated doc values:
               return new BinaryDocValues() {
                 @Override
@@ -385,9 +365,10 @@ final class ReadersAndUpdates {
           fieldsConsumer.addNumericField(fieldInfo, new EmptyDocValuesProducer() {
             @Override
             public NumericDocValues getNumeric(FieldInfo fieldInfoIn) throws IOException {
+              DocValuesFieldUpdates.Iterator iterator = updateSupplier.apply(fieldInfo);
               final MergedDocValues<NumericDocValues> mergedDocValues = new MergedDocValues<>(
                   reader.getNumericDocValues(field),
-                  DocValuesFieldUpdates.Iterator.asNumericDocValues(updateSupplier.apply(fieldInfo)));
+                  DocValuesFieldUpdates.Iterator.asNumericDocValues(iterator), iterator);
               // Merge sort of the original doc values with updated doc values:
               return new NumericDocValues() {
                 @Override
@@ -431,6 +412,7 @@ final class ReadersAndUpdates {
    * wins over the on-disk version.
    */
   static final class MergedDocValues<DocValuesInstance extends DocValuesIterator> extends DocValuesIterator {
+    private final DocValuesFieldUpdates.Iterator updateIterator;
     // merged docID
     private int docIDOut = -1;
     // docID from our original doc values
@@ -442,9 +424,10 @@ final class ReadersAndUpdates {
     private final DocValuesInstance updateDocValues;
     DocValuesInstance currentValuesSupplier;
 
-    protected MergedDocValues(DocValuesInstance onDiskDocValues, DocValuesInstance updateDocValues) {
+    protected MergedDocValues(DocValuesInstance onDiskDocValues, DocValuesInstance updateDocValues, DocValuesFieldUpdates.Iterator updateIterator) {
       this.onDiskDocValues = onDiskDocValues;
       this.updateDocValues = updateDocValues;
+      this.updateIterator = updateIterator;
     }
 
     @Override
@@ -469,26 +452,33 @@ final class ReadersAndUpdates {
 
     @Override
     public int nextDoc() throws IOException {
-      if (docIDOnDisk == docIDOut) {
-        if (onDiskDocValues == null) {
-          docIDOnDisk = NO_MORE_DOCS;
+      boolean hasValue = false;
+      do {
+        if (docIDOnDisk == docIDOut) {
+          if (onDiskDocValues == null) {
+            docIDOnDisk = NO_MORE_DOCS;
+          } else {
+            docIDOnDisk = onDiskDocValues.nextDoc();
+          }
+        }
+        if (updateDocID == docIDOut) {
+          updateDocID = updateDocValues.nextDoc();
+        }
+        if (docIDOnDisk < updateDocID) {
+          // no update to this doc - we use the on-disk values
+          docIDOut = docIDOnDisk;
+          currentValuesSupplier = onDiskDocValues;
+          hasValue = true;
         } else {
-          docIDOnDisk = onDiskDocValues.nextDoc();
+          docIDOut = updateDocID;
+          if (docIDOut != NO_MORE_DOCS) {
+            currentValuesSupplier = updateDocValues;
+            hasValue = updateIterator.hasValue();
+          } else {
+            hasValue = true;
+          }
         }
-      }
-      if (updateDocID == docIDOut) {
-        updateDocID = updateDocValues.nextDoc();
-      }
-      if (docIDOnDisk < updateDocID) {
-        // no update to this doc - we use the on-disk values
-        docIDOut = docIDOnDisk;
-        currentValuesSupplier = onDiskDocValues;
-      } else {
-        docIDOut = updateDocID;
-        if (docIDOut != NO_MORE_DOCS) {
-          currentValuesSupplier = updateDocValues;
-        }
-      }
+      } while (hasValue == false);
       return docIDOut;
     }
   };
@@ -654,8 +644,9 @@ final class ReadersAndUpdates {
 
   private SegmentReader createNewReaderWithLatestLiveDocs(SegmentReader reader) throws IOException {
     assert reader != null;
+    assert Thread.holdsLock(this) : Thread.currentThread().getName();
     SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(),
-        info.info.maxDoc() - info.getDelCount() - pendingDeletes.numPendingDeletes());
+        pendingDeletes.getHardLiveDocs(), pendingDeletes.numDocs(), true);
     boolean success2 = false;
     try {
       pendingDeletes.onNewReader(newReader, info);
@@ -713,17 +704,12 @@ final class ReadersAndUpdates {
     }
     
     SegmentReader reader = getReader(context);
-    int delCount = pendingDeletes.numPendingDeletes() + info.getDelCount();
-    if (delCount != reader.numDeletedDocs()) {
+    if (pendingDeletes.needsRefresh(reader)) {
       // beware of zombies:
-      assert delCount > reader.numDeletedDocs(): "delCount=" + delCount + " reader.numDeletedDocs()=" + reader.numDeletedDocs();
       assert pendingDeletes.getLiveDocs() != null;
       reader = createNewReaderWithLatestLiveDocs(reader);
     }
-
-    markAsShared();
-    assert verifyDocCounts();
-
+    assert pendingDeletes.verifyDocCounts(reader);
     return new MergeReader(reader, pendingDeletes.getHardLiveDocs());
   }
   
@@ -752,11 +738,6 @@ final class ReadersAndUpdates {
 
   public synchronized boolean isFullyDeleted() throws IOException {
     return pendingDeletes.isFullyDeleted(this::getLatestReader);
-  }
-
-  private final void markAsShared() {
-    assert Thread.holdsLock(this);
-    pendingDeletes.liveDocsShared(); // this is not costly we can just call it even if it's already marked as shared
   }
 
   boolean keepFullyDeletedSegment(MergePolicy mergePolicy) throws IOException {

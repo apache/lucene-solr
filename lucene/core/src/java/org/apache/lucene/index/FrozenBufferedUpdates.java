@@ -157,7 +157,7 @@ final class FrozenBufferedUpdates {
       for (LinkedHashMap<Term, T> updates : dvUpdates.values()) {
         updateSizeConsumer.accept(updates.size());
         for (T update : updates.values()) {
-          int code = update.term.bytes().length << 2;
+          int code = update.term.bytes().length << 3;
 
           String termField = update.term.field();
           if (termField.equals(lastTermField) == false) {
@@ -166,6 +166,9 @@ final class FrozenBufferedUpdates {
           String updateField = update.field;
           if (updateField.equals(lastUpdateField) == false) {
             code |= 2;
+          }
+          if (update.hasValue()) {
+            code |= 4;
           }
           out.writeVInt(code);
           out.writeVInt(update.docIDUpto);
@@ -178,7 +181,9 @@ final class FrozenBufferedUpdates {
             lastUpdateField = updateField;
           }
           out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
-          update.writeTo(out);
+          if (update.hasValue()) {
+            update.writeTo(out);
+          }
         }
       }
       byte[] bytes = new byte[(int) out.getFilePointer()];
@@ -191,18 +196,18 @@ final class FrozenBufferedUpdates {
    *  if the private segment was already merged away. */
   private List<SegmentCommitInfo> getInfosToApply(IndexWriter writer) {
     assert Thread.holdsLock(writer);
-    List<SegmentCommitInfo> infos;
+    final List<SegmentCommitInfo> infos;
     if (privateSegment != null) {
-      if (writer.segmentInfos.indexOf(privateSegment) == -1) {
+      if (writer.segmentCommitInfoExist(privateSegment)) {
+        infos = Collections.singletonList(privateSegment);
+      }else {
         if (infoStream.isEnabled("BD")) {
           infoStream.message("BD", "private segment already gone; skip processing updates");
         }
-        return null;
-      } else {
-        infos = Collections.singletonList(privateSegment);
+        infos = null;
       }
     } else {
-      infos = writer.segmentInfos.asList();
+      infos = writer.listOfSegmentCommitInfos();
     }
     return infos;
   }
@@ -385,14 +390,14 @@ final class FrozenBufferedUpdates {
     final List<BufferedUpdatesStream.SegmentState> segmentStates = Arrays.asList(segStates);
     for (BufferedUpdatesStream.SegmentState segState : segmentStates) {
       if (success) {
-        totDelCount += segState.rld.getPendingDeleteCount() - segState.startDelCount;
-        int fullDelCount = segState.rld.info.getDelCount() + segState.rld.getPendingDeleteCount();
+        totDelCount += segState.rld.getDelCount() - segState.startDelCount;
+        int fullDelCount = segState.rld.getDelCount();
         assert fullDelCount <= segState.rld.info.info.maxDoc() : fullDelCount + " > " + segState.rld.info.info.maxDoc();
         if (segState.rld.isFullyDeleted() && writer.getConfig().getMergePolicy().keepFullyDeletedSegment(() -> segState.reader) == false) {
           if (allDeleted == null) {
             allDeleted = new ArrayList<>();
           }
-          allDeleted.add(segState.reader.getSegmentInfo());
+          allDeleted.add(segState.reader.getOriginalSegmentInfo());
         }
       }
     }
@@ -447,7 +452,7 @@ final class FrozenBufferedUpdates {
 
     if (privateSegment != null) {
       assert segStates.length == 1;
-      assert privateSegment == segStates[0].reader.getSegmentInfo();
+      assert privateSegment == segStates[0].reader.getOriginalSegmentInfo();
     }
 
     totalDelCount += applyTermDeletes(segStates);
@@ -538,7 +543,7 @@ final class FrozenBufferedUpdates {
     while (in.getPosition() != updates.length) {
       int code = in.readVInt();
       int docIDUpto = in.readVInt();
-      term.length = code >> 2;
+      term.length = code >> 3;
       
       if ((code & 1) != 0) {
         termField = in.readString();
@@ -546,6 +551,7 @@ final class FrozenBufferedUpdates {
       if ((code & 2) != 0) {
         updateField = in.readString();
       }
+      boolean hasValue = (code & 4) != 0;
 
       if (term.bytes.length < term.length) {
         term.bytes = ArrayUtil.grow(term.bytes, term.length);
@@ -584,7 +590,10 @@ final class FrozenBufferedUpdates {
 
       final BytesRef binaryValue;
       final long longValue;
-      if (isNumeric) {
+      if (hasValue == false) {
+        longValue = -1;
+        binaryValue = null;
+      } else if (isNumeric) {
         longValue = NumericDocValuesUpdate.readFrom(in);
         binaryValue = null;
       } else {
@@ -611,7 +620,9 @@ final class FrozenBufferedUpdates {
         }
         final IntConsumer docIdConsumer;
         final DocValuesFieldUpdates update = dvUpdates;
-        if (isNumeric) {
+        if (hasValue == false) {
+          docIdConsumer = doc -> update.reset(doc);
+        } else if (isNumeric) {
           docIdConsumer = doc -> update.add(doc, longValue);
         } else {
           docIdConsumer = doc -> update.add(doc, binaryValue);

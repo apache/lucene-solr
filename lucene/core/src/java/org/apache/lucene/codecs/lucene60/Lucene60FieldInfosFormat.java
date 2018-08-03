@@ -136,6 +136,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
           boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
           boolean omitNorms = (bits & OMIT_NORMS) != 0;
           boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
+          boolean isSoftDeletesField = (bits & SOFT_DELETES_FIELD) != 0;
 
           final IndexOptions indexOptions = getIndexOptions(input, input.readByte());
           
@@ -159,7 +160,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
           try {
             infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
                                      indexOptions, docValuesType, dvGen, attributes,
-                                     pointDimensionCount, pointNumBytes);
+                                     pointDimensionCount, pointNumBytes, isSoftDeletesField);
             infos[i].checkConsistency();
           } catch (IllegalStateException e) {
             throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
@@ -277,6 +278,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
         if (fi.hasVectors()) bits |= STORE_TERMVECTOR;
         if (fi.omitsNorms()) bits |= OMIT_NORMS;
         if (fi.hasPayloads()) bits |= STORE_PAYLOADS;
+        if (fi.isSoftDeletesField()) bits |= SOFT_DELETES_FIELD;
         output.writeByte(bits);
 
         output.writeByte(indexOptionsByte(fi.getIndexOptions()));
@@ -301,10 +303,12 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
   // Codec header
   static final String CODEC_NAME = "Lucene60FieldInfos";
   static final int FORMAT_START = 0;
-  static final int FORMAT_CURRENT = FORMAT_START;
+  static final int FORMAT_SOFT_DELETES = 1;
+  static final int FORMAT_CURRENT = FORMAT_SOFT_DELETES;
   
   // Field flags
   static final byte STORE_TERMVECTOR = 0x1;
   static final byte OMIT_NORMS = 0x2;
   static final byte STORE_PAYLOADS = 0x4;
+  static final byte SOFT_DELETES_FIELD = 0x8;
 }

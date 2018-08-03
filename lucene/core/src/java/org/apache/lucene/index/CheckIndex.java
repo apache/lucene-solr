@@ -46,6 +46,7 @@ import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -53,7 +54,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
@@ -105,12 +105,6 @@ public final class CheckIndex implements Closeable {
 
     /** True if we were unable to locate and load the segments_N file. */
     public boolean missingSegments;
-
-    /** True if we were unable to open the segments_N file. */
-    public boolean cantOpenSegments;
-
-    /** True if we were unable to read the version number from segments_N file. */
-    public boolean missingSegmentVersion;
 
     /** Name of latest segments_N file in the index. */
     public String segmentsFileName;
@@ -411,7 +405,7 @@ public final class CheckIndex implements Closeable {
    * that would otherwise be more complicated to debug if they had to close the writer
    * for each check.
    */
-  public CheckIndex(Directory dir, Lock writeLock) throws IOException {
+  public CheckIndex(Directory dir, Lock writeLock) {
     this.dir = dir;
     this.writeLock = writeLock;
     this.infoStream = null;
@@ -538,6 +532,19 @@ public final class CheckIndex implements Closeable {
       return result;
     }
 
+    if (infoStream != null) {
+      int maxDoc = 0;
+      int delCount = 0;
+      for (SegmentCommitInfo info : sis) {
+        maxDoc += info.info.maxDoc();
+        delCount += info.getDelCount();
+      }
+      infoStream.println(String.format(Locale.ROOT, "%.2f%% total deletions; %d documents; %d deleteions",
+                                       100.*delCount/maxDoc,
+                                       maxDoc,
+                                       delCount));
+    }
+    
     // find the oldest and newest segment versions
     Version oldest = null;
     Version newest = null;
@@ -559,38 +566,6 @@ public final class CheckIndex implements Closeable {
 
     final int numSegments = sis.size();
     final String segmentsFileName = sis.getSegmentsFileName();
-    // note: we only read the format byte (required preamble) here!
-    IndexInput input = null;
-    try {
-      input = dir.openInput(segmentsFileName, IOContext.READONCE);
-    } catch (Throwable t) {
-      if (failFast) {
-        throw IOUtils.rethrowAlways(t);
-      }
-      msg(infoStream, "ERROR: could not open segments file in directory");
-      if (infoStream != null) {
-        t.printStackTrace(infoStream);
-      }
-      result.cantOpenSegments = true;
-      return result;
-    }
-    try {
-      /*int format =*/ input.readInt();
-    } catch (Throwable t) {
-      if (failFast) {
-        throw IOUtils.rethrowAlways(t);
-      }
-      msg(infoStream, "ERROR: could not read segment file version in directory");
-      if (infoStream != null) {
-        t.printStackTrace(infoStream);
-      }
-      result.missingSegmentVersion = true;
-      return result;
-    } finally {
-      if (input != null)
-        input.close();
-    }
-
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
     result.userData = sis.getUserData();
@@ -781,7 +756,10 @@ public final class CheckIndex implements Closeable {
             throw new RuntimeException("Points test failed");
           }
         }
-
+        final String softDeletesField = reader.getFieldInfos().getSoftDeletesField();
+        if (softDeletesField != null) {
+          checkSoftDeletes(softDeletesField, info, reader, infoStream, failFast);
+        }
         msg(infoStream, "");
         
         if (verbose) {
@@ -3046,6 +3024,25 @@ public final class CheckIndex implements Closeable {
       return 0;
     } else {
       return 1;
+    }
+  }
+
+  private static void checkSoftDeletes(String softDeletesField, SegmentCommitInfo info, SegmentReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    if (infoStream != null)
+      infoStream.print("    test: check soft deletes.....");
+    try {
+      int softDeletes = PendingSoftDeletes.countSoftDeletes(DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(softDeletesField, reader), reader.getLiveDocs());
+      if (softDeletes != info.getSoftDelCount()) {
+        throw new RuntimeException("actual soft deletes: " + softDeletes + " but expected: " +info.getSoftDelCount());
+      }
+    } catch (Exception e) {
+      if (failFast) {
+        throw IOUtils.rethrowAlways(e);
+      }
+      msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
     }
   }
 

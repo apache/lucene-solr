@@ -249,7 +249,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
 
         // Make sure the transformer works for streaming
         Float score = (Float) doc.get("score");
-        assertEquals("should have score", new Float(1.0), score);
+        assertEquals("should have score", Float.valueOf(1.0f), score);
       }
 
     });

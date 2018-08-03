@@ -86,6 +86,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SuppressSSL     // Currently unknown why SSL does not work with this test
+// commented 20-July-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -1305,7 +1306,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void doTestIndexAndConfigAliasReplication() throws Exception {
     clearIndexWithReplication();
 

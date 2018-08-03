@@ -34,7 +34,7 @@ public class CommitUpdateCommand extends UpdateCommand {
    *
    * @see org.apache.lucene.index.IndexWriter#forceMerge(int)
    */
-  public int maxOptimizeSegments = 1;
+  public int maxOptimizeSegments = Integer.MAX_VALUE; // So we respect MaxMergeSegmentsMB by default
 
   public CommitUpdateCommand(SolrQueryRequest req, boolean optimize) {
     super(req);

@@ -271,6 +271,9 @@ public class SolrXmlConfig {
         case "coreLoadThreads":
           builder.setCoreLoadThreads(parseInt(name, value));
           break;
+        case "replayUpdatesThreads":
+          builder.setReplayUpdatesThreads(parseInt(name, value));
+          break;
         case "transientCacheSize":
           builder.setTransientCacheSize(parseInt(name, value));
           break;
@@ -482,6 +485,10 @@ public class SolrXmlConfig {
     node = config.getNode("solr/metrics/suppliers/histogram", false);
     if (node != null) {
       builder = builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
+    }
+    node = config.getNode("solr/metrics/history", false);
+    if (node != null) {
+      builder = builder.setHistoryHandler(new PluginInfo(node, "history", false, false));
     }
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(config);
     Set<String> hiddenSysProps = getHiddenSysProps(config);

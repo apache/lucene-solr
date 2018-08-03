@@ -437,7 +437,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             SolrIndexSearcher searcher = searchHolder.get();
             try {
               log.debug(core.getCoreContainer().getZkController().getNodeName() + " synched "
-                  + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+                  + searcher.count(new MatchAllDocsQuery()));
             } finally {
               searchHolder.decref();
             }
@@ -847,7 +847,7 @@ final class OverseerElectionContext extends ElectionContext {
         log.warn("Wait interrupted ", e);
       }
     }
-    if (overseer.getZkController() == null || overseer.getZkController().getCoreContainer() == null || !overseer.getZkController().getCoreContainer().isShutDown()) {
+    if (!overseer.getZkController().isClosed() && !overseer.getZkController().getCoreContainer().isShutDown()) {
       overseer.start(id);
     }
   }

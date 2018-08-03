@@ -45,7 +45,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
   public static final String LOCALITY_BLOCKS_LOCAL = "locality.blocks.local";
   public static final String LOCALITY_BLOCKS_RATIO = "locality.blocks.ratio";
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String hostname;
   private final ConcurrentMap<HdfsDirectory,ConcurrentMap<FileStatus,BlockLocation[]>> cache;
@@ -129,7 +129,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
               }
             }
           } catch (IOException e) {
-            logger.warn("Could not retrieve locality information for {} due to exception: {}",
+            log.warn("Could not retrieve locality information for {} due to exception: {}",
                 hdfsDirectory.getHdfsDirPath(), e);
           }
         }
@@ -160,7 +160,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
    *          The directory to keep metrics on.
    */
   public void registerDirectory(HdfsDirectory dir) {
-    logger.info("Registering direcotry {} for locality metrics.", dir.getHdfsDirPath().toString());
+    log.info("Registering direcotry {} for locality metrics.", dir.getHdfsDirPath().toString());
     cache.put(dir, new ConcurrentHashMap<FileStatus, BlockLocation[]>());
   }
 
@@ -181,7 +181,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
     FileStatus[] statuses = fs.listStatus(dir.getHdfsDirPath());
     List<FileStatus> statusList = Arrays.asList(statuses);
 
-    logger.debug("Updating locality information for: {}", statusList);
+    log.debug("Updating locality information for: {}", statusList);
 
     // Keep only the files that still exist
     cachedStatuses.retainAll(statusList);

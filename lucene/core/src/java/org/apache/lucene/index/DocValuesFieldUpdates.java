@@ -35,6 +35,9 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 abstract class DocValuesFieldUpdates implements Accountable {
   
   protected static final int PAGE_SIZE = 1024;
+  private static final long HAS_VALUE_MASK = 1;
+  private static final long HAS_NO_VALUE_MASK = 0;
+  private static final int SHIFT = 1; // we use the first bit of each value to mark if the doc has a value or not
 
   /**
    * An iterator over documents and their updated values. Only documents with
@@ -72,6 +75,11 @@ abstract class DocValuesFieldUpdates implements Accountable {
 
     /** Returns delGen for this packet. */
     abstract long delGen();
+
+    /**
+     * Returns true if this doc has a value
+     */
+    abstract boolean hasValue();
 
     /**
      * Wraps the given iterator as a BinaryDocValues instance.
@@ -217,6 +225,11 @@ abstract class DocValuesFieldUpdates implements Accountable {
       public long delGen() {
         throw new UnsupportedOperationException();
       }
+
+      @Override
+      boolean hasValue() {
+        return queue.top().hasValue();
+      }
     };
   }
 
@@ -237,7 +250,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
       throw new NullPointerException("DocValuesType must not be null");
     }
     this.type = type;
-    bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
+    bitsPerValue = PackedInts.bitsRequired(maxDoc - 1) + SHIFT;
     docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
   }
 
@@ -299,7 +312,18 @@ abstract class DocValuesFieldUpdates implements Accountable {
     return size;
   }
 
+  /**
+   * Adds an update that resets the documents value.
+   * @param doc the doc to update
+   */
+  final synchronized void reset(int doc) {
+    addInternal(doc, HAS_NO_VALUE_MASK);
+  }
   final synchronized int add(int doc) {
+    return addInternal(doc, HAS_VALUE_MASK);
+  }
+
+  private synchronized int addInternal(int doc, long hasValueMask) {
     if (finished) {
       throw new IllegalStateException("already finished");
     }
@@ -313,8 +337,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     if (docs.size() == size) {
       grow(size+1);
     }
-
-    docs.set(size, doc);
+    docs.set(size, (((long)doc) << SHIFT) | hasValueMask);
     ++size;
     return size-1;
   }
@@ -354,6 +377,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     private long idx = 0; // long so we don't overflow if size == Integer.MAX_VALUE
     private int doc = -1;
     private final long delGen;
+    private boolean hasValue;
 
     AbstractIterator(int size, PagedMutable docs, long delGen) {
       this.size = size;
@@ -366,13 +390,17 @@ abstract class DocValuesFieldUpdates implements Accountable {
       if (idx >= size) {
         return doc = DocIdSetIterator.NO_MORE_DOCS;
       }
-      doc = (int) docs.get(idx);
+      long longDoc = docs.get(idx);
       ++idx;
-      while (idx < size && docs.get(idx) == doc) {
+      while (idx < size && docs.get(idx) == longDoc) {
         // scan forward to last update to this doc
         ++idx;
       }
-      set(idx-1);
+      hasValue = (longDoc & HAS_VALUE_MASK) >  0;
+      if (hasValue) {
+        set(idx - 1);
+      }
+      doc = (int)(longDoc >> SHIFT);
       return doc;
     }
 
@@ -390,6 +418,11 @@ abstract class DocValuesFieldUpdates implements Accountable {
     @Override
     final long delGen() {
       return delGen;
+    }
+
+    @Override
+    final boolean hasValue() {
+      return hasValue;
     }
   }
 }

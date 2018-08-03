@@ -62,6 +62,9 @@ public final class ValidatingTokenFilter extends TokenFilter {
 
   @Override
   public boolean incrementToken() throws IOException {
+
+    // System.out.println(name + ": incrementToken()");
+
     if (!input.incrementToken()) {
       return false;
     }
@@ -69,15 +72,15 @@ public final class ValidatingTokenFilter extends TokenFilter {
     int startOffset = 0;
     int endOffset = 0;
     int posLen = 0;
+
+    // System.out.println(name + ": " + this);
     
     if (posIncAtt != null) {
       pos += posIncAtt.getPositionIncrement();
       if (pos == -1) {
-        throw new IllegalStateException("first posInc must be > 0");
+        throw new IllegalStateException(name + ": first posInc must be > 0");
       }
     }
-
-    // System.out.println("  got token=" + termAtt + " pos=" + pos);
     
     if (offsetAtt != null) {
       startOffset = offsetAtt.startOffset();
@@ -96,11 +99,11 @@ public final class ValidatingTokenFilter extends TokenFilter {
       if (!posToStartOffset.containsKey(pos)) {
         // First time we've seen a token leaving from this position:
         posToStartOffset.put(pos, startOffset);
-        //System.out.println("  + s " + pos + " -> " + startOffset);
+        // System.out.println(name + "  + s " + pos + " -> " + startOffset);
       } else {
         // We've seen a token leaving from this position
         // before; verify the startOffset is the same:
-        //System.out.println("  + vs " + pos + " -> " + startOffset);
+        // System.out.println(name + "  + vs " + pos + " -> " + startOffset);
         final int oldStartOffset = posToStartOffset.get(pos);
         if (oldStartOffset != startOffset) {
           throw new IllegalStateException(name + ": inconsistent startOffset at pos=" + pos + ": " + oldStartOffset + " vs " + startOffset + "; token=" + termAtt);
@@ -112,11 +115,11 @@ public final class ValidatingTokenFilter extends TokenFilter {
       if (!posToEndOffset.containsKey(endPos)) {
         // First time we've seen a token arriving to this position:
         posToEndOffset.put(endPos, endOffset);
-        //System.out.println("  + e " + endPos + " -> " + endOffset);
+        //System.out.println(name + "  + e " + endPos + " -> " + endOffset);
       } else {
         // We've seen a token arriving to this position
         // before; verify the endOffset is the same:
-        //System.out.println("  + ve " + endPos + " -> " + endOffset);
+        //System.out.println(name + "  + ve " + endPos + " -> " + endOffset);
         final int oldEndOffset = posToEndOffset.get(endPos);
         if (oldEndOffset != endOffset) {
           throw new IllegalStateException(name + ": inconsistent endOffset at pos=" + endPos + ": " + oldEndOffset + " vs " + endOffset + "; token=" + termAtt);

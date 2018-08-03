@@ -16,6 +16,7 @@
  */
 package org.apache.solr.request;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -23,6 +24,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -39,9 +41,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -155,13 +155,12 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   private int getNumberOfReaders() {
-    RefCounted<SolrIndexSearcher> searcherRef = h.getCore().getSearcher();
     try {
-      SolrIndexSearcher searcher = searcherRef.get();
-      return searcher.getTopReaderContext().leaves().size();
-    } finally {
-      searcherRef.decref();
+      return h.getCore().withSearcher(searcher -> searcher.getTopReaderContext().leaves().size());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+
   }
 
   @Test

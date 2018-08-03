@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -40,6 +41,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -102,7 +104,6 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND
 import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
@@ -122,6 +123,7 @@ import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_DEF;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -134,19 +136,24 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_METRICS_HISTORY;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
@@ -201,6 +208,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    */
   public CoreContainer getCoreContainer() {
     return this.coreContainer;
+  }
+
+  protected void copyFromClusterProp(Map<String, Object> props, String prop) throws IOException {
+    if (props.get(prop) != null) return;//if it's already specified , return
+    Object defVal = new ClusterProperties(coreContainer.getZkController().getZkStateReader().getZkClient())
+        .getClusterProperty(ImmutableList.of(COLLECTION_DEF, prop), null);
+    if (defVal != null) props.put(prop, String.valueOf(defVal));
   }
 
   @Override
@@ -469,11 +483,26 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           TLOG_REPLICAS,
           NRT_REPLICAS,
           POLICY,
-          WAIT_FOR_FINAL_STATE);
+          WAIT_FOR_FINAL_STATE,
+          WITH_COLLECTION);
 
-      if (props.get(STATE_FORMAT) == null) {
-        props.put(STATE_FORMAT, "2");
+      props.putIfAbsent(STATE_FORMAT, "2");
+
+      if (props.get(REPLICATION_FACTOR) != null && props.get(NRT_REPLICAS) != null) {
+        //TODO: Remove this in 8.0 . Keep this for SolrJ client back-compat. See SOLR-11676 for more details
+        int replicationFactor = Integer.parseInt((String) props.get(REPLICATION_FACTOR));
+        int nrtReplicas = Integer.parseInt((String) props.get(NRT_REPLICAS));
+        if (replicationFactor != nrtReplicas) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
+        }
       }
+      if (props.get(REPLICATION_FACTOR) != null) {
+        props.put(NRT_REPLICAS, props.get(REPLICATION_FACTOR));
+      } else if (props.get(NRT_REPLICAS) != null) {
+        props.put(REPLICATION_FACTOR, props.get(NRT_REPLICAS));
+      }
+
       addMapObject(props, RULE);
       addMapObject(props, SNITCH);
       verifyRuleParams(h.coreContainer, props);
@@ -489,6 +518,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         createSysConfigSet(h.coreContainer);
 
       }
+      if (shardsParam == null) h.copyFromClusterProp(props, NUM_SLICES);
+      for (String prop : ImmutableSet.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
+        h.copyFromClusterProp(props, prop);
       copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
       return copyPropertiesWithPrefix(req.getParams(), props, "router.");
 
@@ -590,6 +622,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      */
     LISTALIASES_OP(LISTALIASES, (req, rsp, h) -> {
       ZkStateReader zkStateReader = h.coreContainer.getZkController().getZkStateReader();
+      // if someone calls listAliases, lets ensure we return an up to date response
+      zkStateReader.aliasesManager.update();
       Aliases aliases = zkStateReader.getAliases();
       if (aliases != null) {
         // the aliases themselves...
@@ -630,7 +664,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           SHARD_ID_PROP,
           "split.key",
           CoreAdminParams.RANGES,
-          WAIT_FOR_FINAL_STATE);
+          WAIT_FOR_FINAL_STATE,
+          TIMING,
+          SPLIT_METHOD);
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
     }),
     DELETESHARD_OP(DELETESHARD, (req, rsp, h) -> {
@@ -640,7 +676,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copy(req.getParams(), map,
           DELETE_INDEX,
           DELETE_DATA_DIR,
-          DELETE_INSTANCE_DIR);
+          DELETE_INSTANCE_DIR,
+          DELETE_METRICS_HISTORY);
       return map;
     }),
     FORCELEADER_OP(FORCELEADER, (req, rsp, h) -> {
@@ -669,6 +706,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
+          DELETE_METRICS_HISTORY,
               COUNT_PROP, REPLICA_PROP,
               SHARD_ID_PROP,
           ONLY_IF_DOWN);
@@ -882,14 +920,25 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     MODIFYCOLLECTION_OP(MODIFYCOLLECTION, (req, rsp, h) -> {
-      Map<String, Object> m = copy(req.getParams(), null, MODIFIABLE_COLL_PROPS);
-      if (m.isEmpty()) throw new SolrException(ErrorCode.BAD_REQUEST,
-          formatString("no supported values provided rule, snitch, maxShardsPerNode, replicationFactor, collection.configName"));
+      Map<String, Object> m = copy(req.getParams(), null, CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES);
+      if (m.isEmpty())  {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            formatString("no supported values provided {0}", CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES.toString()));
+      }
       copy(req.getParams().required(), m, COLLECTION_PROP);
       addMapObject(m, RULE);
       addMapObject(m, SNITCH);
-      for (String prop : MODIFIABLE_COLL_PROPS) DocCollection.verifyProp(m, prop);
+      for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
+        if ("".equals(m.get(prop)))  {
+          // set to an empty string is equivalent to removing the property, see SOLR-12507
+          m.put(prop, null);
+        }
+        DocCollection.verifyProp(m, prop);
+      }
       verifyRuleParams(h.coreContainer, m);
+      if (m.get(REPLICATION_FACTOR) != null) {
+        m.put(NRT_REPLICAS, m.get(REPLICATION_FACTOR));
+      }
       return m;
     }),
     MIGRATESTATEFORMAT_OP(MIGRATESTATEFORMAT, (req, rsp, h) -> copy(req.getParams().required(), null, COLLECTION_PROP)),
@@ -980,12 +1029,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             "Cannot restore with a CREATE_NODE_SET of CREATE_NODE_SET_EMPTY."
         );
       }
+      if (req.getParams().get(NRT_REPLICAS) != null && req.getParams().get(REPLICATION_FACTOR) != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");
+      }
 
       Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       // from CREATE_OP:
-      copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, MAX_SHARDS_PER_NODE, STATE_FORMAT,
-          AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
+      copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, NRT_REPLICAS, TLOG_REPLICAS,
+          PULL_REPLICAS, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
     }),
@@ -1302,15 +1355,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     Map<String, Object> execute(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception;
 
   }
-
-  public static final List<String> MODIFIABLE_COLL_PROPS = Arrays.asList(
-      RULE,
-      SNITCH,
-      REPLICATION_FACTOR,
-      MAX_SHARDS_PER_NODE,
-      AUTO_ADD_REPLICAS,
-      POLICY,
-      COLL_CONF);
 
   @Override
   public Collection<Api> getApis() {

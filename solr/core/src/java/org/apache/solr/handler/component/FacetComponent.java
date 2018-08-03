@@ -713,7 +713,7 @@ public class FacetComponent extends SearchComponent {
       try {
         facet_counts = (NamedList) srsp.getSolrResponse().getResponse().get("facet_counts");
       } catch (Exception ex) {
-        if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+        if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
           continue; // looks like a shard did not return anything
         }
         throw new SolrException(ErrorCode.SERVER_ERROR,

@@ -17,6 +17,7 @@
 package org.apache.solr.velocity;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrParamResourceLoader;
@@ -187,6 +188,11 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
         VelocityResponseWriter.TEMPLATE, "numFound",
         VelocityResponseWriter.JSON,"foo",
         VelocityResponseWriter.LAYOUT,"layout")));
+
+    assertQEx("Bad function name should throw exception", req("q", "*:*", "wt", "velocity",
+        VelocityResponseWriter.TEMPLATE, "numFound",
+        VelocityResponseWriter.JSON,"<foo>"), SolrException.ErrorCode.BAD_REQUEST
+    );
   }
 
   @Test

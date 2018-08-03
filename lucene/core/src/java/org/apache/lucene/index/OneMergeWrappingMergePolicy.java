@@ -42,21 +42,21 @@ public class OneMergeWrappingMergePolicy extends FilterMergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer)
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
       throws IOException {
-    return wrapSpec(in.findMerges(mergeTrigger, segmentInfos, writer));
+    return wrapSpec(in.findMerges(mergeTrigger, segmentInfos, mergeContext));
   }
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount,
-      Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) throws IOException {
-    return wrapSpec(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer));
+                                             Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
+    return wrapSpec(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, mergeContext));
   }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext)
     throws IOException {
-    return wrapSpec(in.findForcedDeletesMerges(segmentInfos, writer));
+    return wrapSpec(in.findForcedDeletesMerges(segmentInfos, mergeContext));
   }
 
   private MergeSpecification wrapSpec(MergeSpecification spec) {

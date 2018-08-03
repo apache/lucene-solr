@@ -17,8 +17,6 @@
 package org.apache.lucene.util;
 
 
-import java.util.Arrays;
-
 /**
  * A builder for {@link BytesRef} instances.
  * @lucene.internal
@@ -170,7 +168,7 @@ public class BytesRefBuilder {
    * Build a new {@link BytesRef} that has the same content as this buffer.
    */
   public BytesRef toBytesRef() {
-    return new BytesRef(Arrays.copyOf(ref.bytes, ref.length));
+    return new BytesRef(ArrayUtil.copyOfSubArray(ref.bytes, 0, ref.length));
   }
 
   @Override

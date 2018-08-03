@@ -33,7 +33,9 @@ import org.apache.lucene.util.LuceneTestCase;
 public class MockDirectoryFactory extends EphemeralDirectoryFactory {
   
   public static final String SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE = "solr.tests.allow_reading_files_still_open_for_write";
+  public static final String SOLR_TESTS_USING_MOCK_DIRECTORY_WRAPPER = "solr.tests.using_mock_directory_wrapper";
   private boolean allowReadingFilesStillOpenForWrite = Boolean.getBoolean(SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
+  private boolean useMockDirectoryWrapper = Boolean.getBoolean(SOLR_TESTS_USING_MOCK_DIRECTORY_WRAPPER);
 
   @Override
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
@@ -42,7 +44,9 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
 
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    Directory dir = LuceneTestCase.newDirectory(); // we ignore the given lock factory
+    Directory dir;
+    if (useMockDirectoryWrapper) dir = LuceneTestCase.newMockDirectory();
+    else dir = LuceneTestCase.newDirectory(); // we ignore the given lock factory
     
     Directory cdir = reduce(dir);
     cdir = reduce(cdir);

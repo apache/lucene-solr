@@ -58,8 +58,7 @@ grant {
   permission java.lang.RuntimePermission "fileSystemProvider";
   // needed for test of IOUtils.spins (maybe it can be avoided)
   permission java.lang.RuntimePermission "getFileStoreAttributes";
-  // analyzers/uima: needed by UIMA message localization... (?)
-  permission java.lang.RuntimePermission "createSecurityManager";
+  // analyzers/uima: needed by lucene expressions' JavascriptCompiler
   permission java.lang.RuntimePermission "createClassLoader";
   // needed to test unmap hack on platforms that support it
   permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";

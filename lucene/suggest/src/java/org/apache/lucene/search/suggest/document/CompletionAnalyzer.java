@@ -19,7 +19,7 @@ package org.apache.lucene.search.suggest.document;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
-import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 
 /**
  * Wraps an {@link org.apache.lucene.analysis.Analyzer}
@@ -38,22 +38,9 @@ import org.apache.lucene.util.automaton.Operations;
 public final class CompletionAnalyzer extends AnalyzerWrapper {
 
   /**
-   * Represents the separation between tokens, if
-   * <code>preserveSep</code> is <code>true</code>
-   * <p>
-   * Same label is used as a delimiter in the {@link org.apache.lucene.search.suggest.document.CompletionTokenStream}
-   * payload
-   */
-  final static int SEP_LABEL = NRTSuggesterBuilder.PAYLOAD_SEP;
-
-  /**
    * Represent a hole character, inserted by {@link org.apache.lucene.analysis.TokenStreamToAutomaton}
    */
   final static int HOLE_CHARACTER = TokenStreamToAutomaton.HOLE;
-
-  final static int DEFAULT_MAX_GRAPH_EXPANSIONS = Operations.DEFAULT_MAX_DETERMINIZED_STATES;
-  final static boolean DEFAULT_PRESERVE_SEP = true;
-  final static boolean DEFAULT_PRESERVE_POSITION_INCREMENTS = true;
 
   private final Analyzer analyzer;
 
@@ -101,7 +88,7 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
    * preserving token separation, position increments and no limit on graph expansions
    */
   public CompletionAnalyzer(Analyzer analyzer) {
-    this(analyzer, DEFAULT_PRESERVE_SEP, DEFAULT_PRESERVE_POSITION_INCREMENTS, DEFAULT_MAX_GRAPH_EXPANSIONS);
+    this(analyzer, ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP, ConcatenateGraphFilter.DEFAULT_PRESERVE_POSITION_INCREMENTS, ConcatenateGraphFilter.DEFAULT_MAX_GRAPH_EXPANSIONS);
   }
 
   /**
@@ -109,7 +96,7 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
    * with no limit on graph expansions
    */
   public CompletionAnalyzer(Analyzer analyzer, boolean preserveSep, boolean preservePositionIncrements) {
-    this(analyzer, preserveSep, preservePositionIncrements, DEFAULT_MAX_GRAPH_EXPANSIONS);
+    this(analyzer, preserveSep, preservePositionIncrements, ConcatenateGraphFilter.DEFAULT_MAX_GRAPH_EXPANSIONS);
   }
 
   /**
@@ -117,7 +104,7 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
    * preserving token separation and position increments
    */
   public CompletionAnalyzer(Analyzer analyzer, int maxGraphExpansions) {
-    this(analyzer, DEFAULT_PRESERVE_SEP, DEFAULT_PRESERVE_POSITION_INCREMENTS, maxGraphExpansions);
+    this(analyzer, ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP, ConcatenateGraphFilter.DEFAULT_PRESERVE_POSITION_INCREMENTS, maxGraphExpansions);
   }
 
   /**

@@ -44,14 +44,11 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 
-@SuppressFileSystems("WindowsFS") // testRecreateAndRefresh doesn't like pending files
 public class TestDirectoryTaxonomyWriter extends FacetTestCase {
 
   // A No-Op TaxonomyWriterCache which always discards all given categories, and
@@ -95,6 +92,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // Verifies taxonomy commit data
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
+    assertTrue(taxoWriter.getCache() == NO_OP_CACHE);
     taxoWriter.addCategory(new FacetLabel("a"));
     taxoWriter.addCategory(new FacetLabel("b"));
     Map<String, String> userCommitData = new HashMap<>();
@@ -145,6 +143,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // Verifies that if rollback is called, DTW is closed.
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter dtw = new DirectoryTaxonomyWriter(dir);
+    assertTrue(dtw.getCache() instanceof UTF8TaxonomyWriterCache);
     dtw.addCategory(new FacetLabel("a"));
     dtw.rollback();
     // should not have succeeded to add a category following rollback.
@@ -211,14 +210,10 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
       // now recreate the taxonomy, and check that the epoch is preserved after opening DirTW again.
       taxoWriter.close();
 
-      assumeFalse("if we are on windows and we have pending deletions we can't execute this test",
-          Constants.WINDOWS && dir.checkPendingDeletions());
       taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, NO_OP_CACHE);
       touchTaxo(taxoWriter, new FacetLabel("c"));
       taxoWriter.close();
 
-      assumeFalse("if we are on windows and we have pending deletions we can't execute this test",
-          Constants.WINDOWS && dir.checkPendingDeletions());
       taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
       touchTaxo(taxoWriter, new FacetLabel("d"));
       taxoWriter.close();
@@ -486,7 +481,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     IndexSearcher searcher = new IndexSearcher(indexReader);
     DrillDownQuery ddq = new DrillDownQuery(new FacetsConfig());
     ddq.add("dim", bigs);
-    assertEquals(1, searcher.search(ddq, 10).totalHits);
+    assertEquals(1, searcher.search(ddq, 10).totalHits.value);
     
     IOUtils.close(indexReader, taxoReader, indexDir, taxoDir);
   }

@@ -111,6 +111,7 @@
       </classpath>
       <arg value="${tld.zones}"/>
       <arg value="${tld.output}"/>
+      <redirector alwayslog="true"/> <!-- stupid trick to get java class's stdout to ant's log -->
     </java>
   </target>
 

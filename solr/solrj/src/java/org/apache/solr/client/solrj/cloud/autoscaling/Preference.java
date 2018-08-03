@@ -63,9 +63,6 @@ public class Preference implements MapWriter {
   // recursive, it uses the precision to tie & when there is a tie use the next preference to compare
   // in non-recursive mode, precision is not taken into consideration and sort is done on actual value
   int compare(Row r1, Row r2, boolean useApprox) {
-    if (!r1.isLive && !r2.isLive) return 0;
-    if (!r1.isLive) return -1;
-    if (!r2.isLive) return 1;
     Object o1 = useApprox ? r1.cells[idx].approxVal : r1.cells[idx].val;
     Object o2 = useApprox ? r2.cells[idx].approxVal : r2.cells[idx].val;
     int result = 0;
@@ -80,7 +77,7 @@ public class Preference implements MapWriter {
             next.compare(r1, r2, useApprox)) : sort.sortval * result;
   }
 
-  private int compareWithTolerance(Double o1, Double o2, int percentage) {
+  static int compareWithTolerance(Double o1, Double o2, int percentage) {
     if (percentage == 0) return o1.compareTo(o2);
     if (o1.equals(o2)) return 0;
     double delta = Math.abs(o1 - o2);

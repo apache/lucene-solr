@@ -47,7 +47,7 @@ public class DocumentAnalysisResponseTest extends LuceneTestCase {
     DocumentAnalysisResponse response = new DocumentAnalysisResponse() {
 
       @Override
-      protected List<AnalysisPhase> buildPhases(NamedList<List<NamedList<Object>>> phaseNL) {
+      protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
         return phases;
       }
     };

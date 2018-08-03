@@ -97,7 +97,7 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationResponse;
-import org.apache.solr.security.PKIAuthenticationPlugin;
+import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
@@ -440,9 +440,9 @@ public class HttpSolrCall {
       action = REMOTEQUERY;
     } else {
       if (!retry) {
-        // we couldn't find a core to work with, try reloading aliases
-        // TODO: it would be nice if admin ui elements skipped this...
+        // we couldn't find a core to work with, try reloading aliases & this collection
         cores.getZkController().getZkStateReader().aliasesManager.update();
+        cores.getZkController().zkStateReader.forceUpdateCollection(collectionName);
         action = RETRY;
       }
     }
@@ -547,7 +547,7 @@ public class HttpSolrCall {
   }
 
   private boolean shouldAuthorize() {
-    if(PKIAuthenticationPlugin.PATH.equals(path)) return false;
+    if(PublicKeyHandler.PATH.equals(path)) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
     if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {
       boolean b = cores.getPkiAuthenticationPlugin().needsAuthorization(req);
