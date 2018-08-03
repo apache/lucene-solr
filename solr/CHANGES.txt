@@ -123,7 +123,7 @@ New Features
 
 * SOLR-12536: autoscaling policy support to equally distribute replicas on the basis of arbitrary properties (noble)
 
-* SOLR-8207: Add "Nodes" view to the Admin UI "Cloud" view, listing nodes with key metrics. Remove "Radial" view. (janhoy)
+* SOLR-8207: Add "Nodes" view to the Admin UI "Cloud" view, listing nodes with key metrics (janhoy)
 
 * SOLR-11990: Make it possible to co-locate replicas of multiple collections together in a node. A collection may be
   co-located with another collection during collection creation time by specifying a 'withCollection' parameter. It can
