@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -32,19 +31,14 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * So far this test does not test fetching info from Zookeeper at all.
- * It is only used to test the four-letter-word socket-based monitoring features exposed through 
- * /admin/zookeeper?mntr=true
- */
-public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
+public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
@@ -64,15 +58,12 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  // Test the monitoring endpoint, enabled when ?mntr=true, used in the Cloud => Zookeeper Admin UI screen
+  // Test the monitoring endpoint, used in the Cloud => Zookeeper Admin UI screen
   @Test
   public void monitorZookeeper() throws IOException, SolrServerException, InterruptedException, ExecutionException, TimeoutException {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
-    Map<String, String> paramsMap = new HashMap<>();
-    paramsMap.put("mntr", "true");
-    MapSolrParams params = new MapSolrParams(paramsMap);
-    GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper", params);
+    GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
     mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
     NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(1000, TimeUnit.MILLISECONDS);
 

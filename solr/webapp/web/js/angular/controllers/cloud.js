@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics) {
+    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics, ZookeeperStatus) {
 
         $scope.showDebug = false;
 
@@ -43,7 +43,7 @@ solrAdminApp.controller('CloudController',
             nodesSubController($scope, Collections, System, Metrics);
         } else if (view === "zookeeper") {
             $scope.resetMenu("cloud-zookeeper", Constants.IS_ROOT_PAGE);
-            zookeeperSubController($scope, Zookeeper, false);
+            zookeeperSubController($scope, ZookeeperStatus, false);
         }
     }
 );
@@ -489,7 +489,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.initClusterState();
 };
 
-var zookeeperSubController = function($scope, Zookeeper) {
+var zookeeperSubController = function($scope, ZookeeperStatus) {
     $scope.showZookeeper = true;
     $scope.showNodes = false;
     $scope.showTree = false;
@@ -498,7 +498,7 @@ var zookeeperSubController = function($scope, Zookeeper) {
     $scope.showData = false;
     
     $scope.initZookeeper = function() {
-      Zookeeper.mntr({}, function(data) {
+      ZookeeperStatus.monitor({}, function(data) {
         $scope.zkState = data.zkStatus;
         $scope.zkKeys = ["ok", "zk_server_state", "zk_version", "zk_approximate_data_size",
           "zk_avg_latency", "zk_max_file_descriptor_count", "zk_num_alive_connections",

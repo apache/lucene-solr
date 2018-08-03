@@ -67,7 +67,6 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
       "simple": {},
-      "mntr": {params: {mntr: "true"}},
       "liveNodes": {params: {path: '/live_nodes'}},
       "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
       "detail": {params: {detail: "true", path: "@path"}},
@@ -80,6 +79,12 @@ solrAdminServices.factory('System',
           return {aliases: {}};
         }
       }}
+    });
+  }])
+.factory('ZookeeperStatus',
+  ['$resource', function($resource) {
+    return $resource('admin/zookeeper/status', {wt:'json', _:Date.now()}, {
+      "monitor": {}
     });
   }])
 .factory('Properties',

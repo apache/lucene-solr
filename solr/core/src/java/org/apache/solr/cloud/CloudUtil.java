@@ -52,7 +52,6 @@ import org.slf4j.LoggerFactory;
 
 public class CloudUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final int ZOOKEEPER_DEFAULT_PORT = 2181;
 
 
   /**
@@ -156,36 +155,6 @@ public class CloudUtil {
       throws IOException, InterruptedException {
     AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
     return !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || collection.getPolicyName() != null;
-  }
-
-  /**
-   * Sends a four-letter-word command to Zookeeper and returns the response as list of strings
-   * @param zk the zkHost connection string, e.g. my.host:2181,other.host:2181/solr
-   * @param fourLetterWordCommand the custom 4-letter command to send to Zookeeper
-   * @return a list of lines returned from Zookeeper
-   */
-  public static List<String> getZkRawResponse(String zk, String fourLetterWordCommand) {
-    String[] hostPort = zk.split(":");
-    String host = hostPort[0];
-    int port = ZOOKEEPER_DEFAULT_PORT;
-    if (hostPort.length > 1) {
-      port = Integer.parseInt(hostPort[1]);
-    }
-    try (
-        Socket socket = new Socket(host, port);
-        Writer writer = new OutputStreamWriter(socket.getOutputStream(), "utf-8");
-        PrintWriter out = new PrintWriter(writer, true);
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "utf-8"));) {
-      out.println(fourLetterWordCommand);
-      List<String> response = in.lines().collect(Collectors.toList());
-      log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
-      if (response == null || response.isEmpty()) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Empty response from Zookeeper " + zk);
-      }
-      return response;
-    } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed talking to Zookeeper " + zk, e);
-    }
   }
   
 }
