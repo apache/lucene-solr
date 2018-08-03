@@ -284,15 +284,13 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       if (tupleIterator == null) {
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
-        long resultCount = 0;
         for (Future<NamedList> getTopTermsCall : callShards(getShards(zkHost, collection, streamContext))) {
-          NamedList resp = getTopTermsCall.get();
+          Map<String, Object> termsRespProps = (Map<String, Object>)getTopTermsCall.get().get("significantTerms");
 
-          List<String> terms = (List<String>)resp.get("sterms");
-          List<Integer> docFreqs = (List<Integer>)resp.get("docFreq");
-          List<Integer> queryDocFreqs = (List<Integer>)resp.get("queryDocFreq");
-          numDocs += (Integer)resp.get("numDocs");
-          resultCount += (Integer)resp.get("resultCount");
+          List<String> terms = (List<String>)termsRespProps.get("sterms");
+          List<Integer> docFreqs = (List<Integer>)termsRespProps.get("docFreq");
+          List<Integer> queryDocFreqs = (List<Integer>)termsRespProps.get("queryDocFreq");
+          numDocs += (Integer)termsRespProps.get("numDocs");
 
           for (int i = 0; i < terms.size(); i++) {
             String term = terms.get(i);
