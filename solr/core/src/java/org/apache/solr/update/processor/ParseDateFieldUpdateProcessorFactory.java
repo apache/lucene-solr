@@ -19,21 +19,19 @@ package org.apache.solr.update.processor;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 
 import org.apache.commons.lang.LocaleUtils;
 import org.apache.solr.common.util.NamedList;
@@ -123,9 +121,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
           for (Map.Entry<String,DateTimeFormatter> format : formats.entrySet()) {
             DateTimeFormatter parser = format.getValue();
             try {
-              TemporalAccessor parsedTemporalDate = parser.parseBest(srcStringVal, OffsetDateTime::from,
-                  ZonedDateTime::from, LocalDateTime::from, LocalDate::from, Instant::from);
-              return temporalToDate(parsedTemporalDate, parser.getZone());
+              return Date.from(parseInstant(parser, srcStringVal, parser.getZone()));
             } catch (DateTimeParseException e) {
               log.debug("value '{}' is not parseable with format '{}'",
                         new Object[] { srcStringVal, format.getKey() });
@@ -155,7 +151,6 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
     Object defaultTimeZoneParam = args.remove(DEFAULT_TIME_ZONE_PARAM);
     ZoneId defaultTimeZone = ZoneOffset.UTC;
     if (null != defaultTimeZoneParam) {
-      TimeZone.getTimeZone(defaultTimeZoneParam.toString());
       defaultTimeZone = ZoneId.of(defaultTimeZoneParam.toString());
     }
 
@@ -165,7 +160,6 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
         DateTimeFormatter formatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
             .appendPattern(value).toFormatter(locale).withZone(defaultTimeZone);
         formats.put(value, formatter);
-        // formats.put(value, DateTimeFormat.forPattern(value).withZone(defaultTimeZone).withLocale(locale));
       }
     }
     super.init(args);
@@ -186,17 +180,19 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
     };
   }
 
-  private Date temporalToDate(TemporalAccessor in, ZoneId timeZoneId) {
-    if(in instanceof OffsetDateTime) {
-      return Date.from(((OffsetDateTime) in).toInstant());
-    } else if(in instanceof ZonedDateTime) {
-      return Date.from(((ZonedDateTime) in).withZoneSameInstant(timeZoneId).toInstant());
-    } else if(in instanceof LocalDateTime) {
-      return Date.from(((LocalDateTime) in).atZone(timeZoneId).toInstant());
-    } else if(in instanceof Instant) {
-      return Date.from((Instant) in);
-    } else {
-      return Date.from(((LocalDate) in).atStartOfDay(timeZoneId).toInstant());
+  private static Instant parseInstant(DateTimeFormatter formatter, String dateStr, ZoneId timeZoneId) {
+    final TemporalAccessor temporalAccessor = formatter.parse(dateStr);
+    // parsed successfully.  But is it a full instant or just to the day?
+    if(temporalAccessor.isSupported(ChronoField.OFFSET_SECONDS)) {
+      return temporalAccessor.query(OffsetDateTime::from).toInstant();
+    } else if (temporalAccessor.isSupported(ChronoField.INSTANT_SECONDS)) { // has time
+      return temporalAccessor.query(Instant::from);
+    } else { // no time, just date
+      if (temporalAccessor.isSupported(ChronoField.HOUR_OF_DAY) || temporalAccessor.isSupported(ChronoField.HOUR_OF_AMPM)) {
+        // TODO should we check for others?
+        throw new IllegalArgumentException("Pattern only has partial time?: " + formatter);
+      }
+      return temporalAccessor.query(LocalDate::from).atStartOfDay(timeZoneId).toInstant();
     }
   }
 }
