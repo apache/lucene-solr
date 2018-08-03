@@ -48,7 +48,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void test() throws Exception {
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer().getMetricManager());
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json"), resp);
@@ -179,7 +179,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCompact() throws Exception {
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer().getMetricManager());
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true"), resp);
@@ -197,7 +197,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   public void testPropertyFilter() throws Exception {
     assertQ(req("*:*"), "//result[@numFound='0']");
 
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer().getMetricManager());
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
@@ -234,7 +234,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testKeyMetrics() throws Exception {
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer().getMetricManager());
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     String key1 = "solr.core.collection1:CACHE.core.fieldCache";
     SolrQueryResponse resp = new SolrQueryResponse();

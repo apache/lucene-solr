@@ -64,7 +64,6 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8443")
   @Override
   public void testRandomTiny() throws Exception {
   }

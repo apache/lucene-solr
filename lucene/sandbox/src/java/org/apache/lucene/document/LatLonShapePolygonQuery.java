@@ -39,7 +39,9 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
 
@@ -179,6 +181,39 @@ public class LatLonShapePolygonQuery extends Query {
         };
       }
 
+      /**
+       * Create a visitor that clears documents that do NOT match the polygon query.
+       */
+      private IntersectVisitor getInverseIntersectVisitor(FixedBitSet result, int[] cost) {
+        return new IntersectVisitor() {
+
+          @Override
+          public void visit(int docID) {
+            result.clear(docID);
+            cost[0]--;
+          }
+
+          @Override
+          public void visit(int docID, byte[] packedTriangle) {
+            if (queryCrossesTriangle(packedTriangle) == false) {
+              result.clear(docID);
+              cost[0]--;
+            }
+          }
+
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            Relation r = relateRangeToQuery(minPackedValue, maxPackedValue);
+            if (r == Relation.CELL_OUTSIDE_QUERY) {
+              return Relation.CELL_INSIDE_QUERY;
+            } else if (r == Relation.CELL_INSIDE_QUERY) {
+              return Relation.CELL_OUTSIDE_QUERY;
+            }
+            return r;
+          }
+        };
+      }
+
       @Override
       public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
@@ -193,29 +228,64 @@ public class LatLonShapePolygonQuery extends Query {
           return null;
         }
 
+        boolean allDocsMatch = true;
+        if (values.getDocCount() != reader.maxDoc() ||
+            relateRangeToQuery(values.getMinPackedValue(), values.getMaxPackedValue()) != Relation.CELL_INSIDE_QUERY) {
+          allDocsMatch = false;
+        }
+
         final Weight weight = this;
-        return new ScorerSupplier() {
-          final DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
-          final PointValues.IntersectVisitor visitor = getIntersectVisitor(result);
-          long cost = -1;
-
-          @Override
-          public Scorer get(long leadCost) throws IOException {
-            values.intersect(visitor);
-            DocIdSetIterator iterator = result.build().iterator();
-            return new ConstantScoreScorer(weight, score(), iterator);
-          }
-
-          @Override
-          public long cost() {
-            if (cost == -1) {
-              // Computing the cost may be expensive, so only do it if necessary
-              cost = values.estimatePointCount(visitor);
-              assert cost >= 0;
+        if (allDocsMatch) {
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              return new ConstantScoreScorer(weight, score(),
+                  DocIdSetIterator.all(reader.maxDoc()));
             }
-            return cost;
-          }
-        };
+
+            @Override
+            public long cost() {
+              return reader.maxDoc();
+            }
+          };
+        } else {
+          return new ScorerSupplier() {
+            final DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
+            final IntersectVisitor visitor = getIntersectVisitor(result);
+            long cost = -1;
+
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              if (values.getDocCount() == reader.maxDoc()
+                  && values.getDocCount() == values.size()
+                  && cost() > reader.maxDoc() / 2) {
+                // If all docs have exactly one value and the cost is greater
+                // than half the leaf size then maybe we can make things faster
+                // by computing the set of documents that do NOT match the query
+                final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+                result.set(0, reader.maxDoc());
+                int[] cost = new int[]{reader.maxDoc()};
+                values.intersect(getInverseIntersectVisitor(result, cost));
+                final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+                return new ConstantScoreScorer(weight, score(), iterator);
+              }
+
+              values.intersect(visitor);
+              DocIdSetIterator iterator = result.build().iterator();
+              return new ConstantScoreScorer(weight, score(), iterator);
+            }
+
+            @Override
+            public long cost() {
+              if (cost == -1) {
+                // Computing the cost may be expensive, so only do it if necessary
+                cost = values.estimatePointCount(visitor);
+                assert cost >= 0;
+              }
+              return cost;
+            }
+          };
+        }
       }
 
       @Override

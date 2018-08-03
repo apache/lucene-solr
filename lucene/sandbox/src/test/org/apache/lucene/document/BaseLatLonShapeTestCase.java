@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -108,6 +109,19 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
   protected Query newPolygonQuery(String field, Polygon... polygons) {
     return LatLonShape.newPolygonQuery(field, polygons);
+  }
+
+  // A particularly tricky adversary for BKD tree:
+  public void testSameShapeManyTimes() throws Exception {
+    int numShapes = atLeast(1000);
+
+    // Every doc has 2 points:
+    Object theShape = nextShape();
+
+    Object[] shapes = new Object[numShapes];
+    Arrays.fill(shapes, theShape);
+
+    verify(shapes);
   }
 
   public void testRandomTiny() throws Exception {
@@ -398,6 +412,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
       sb.append(lon);
       sb.append(',');
       sb.append(lat);
+      sb.append(')');
       return sb.toString();
     }
   }
