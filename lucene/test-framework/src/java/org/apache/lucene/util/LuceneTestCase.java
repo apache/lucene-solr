@@ -88,6 +88,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryCache;
 import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FSLockFactory;
@@ -489,6 +490,7 @@ public abstract class LuceneTestCase extends Assert {
   static {
     CORE_DIRECTORIES = new ArrayList<>(FS_DIRECTORIES);
     CORE_DIRECTORIES.add("RAMDirectory");
+    CORE_DIRECTORIES.add(ByteBuffersDirectory.class.getSimpleName());
   }
   
   /** A {@link org.apache.lucene.search.QueryCachingPolicy} that randomly caches. */

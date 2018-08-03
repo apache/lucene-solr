@@ -89,13 +89,17 @@ public final class ByteBuffersDirectory extends BaseDirectory {
    */
   private final BiFunction<String, ByteBuffersDataOutput, IndexInput> outputToInput;
 
+  public ByteBuffersDirectory() {
+    this(new SingleInstanceLockFactory());
+  }
+  
+  public ByteBuffersDirectory(LockFactory lockFactory) {
+    this(lockFactory, OUTPUT_AS_MANY_BUFFERS);
+  }
+
   public ByteBuffersDirectory(LockFactory factory, BiFunction<String, ByteBuffersDataOutput, IndexInput> outputToInput) {
     super(factory);
     this.outputToInput = Objects.requireNonNull(outputToInput);
-  }
-
-  public ByteBuffersDirectory() {
-    this(new SingleInstanceLockFactory(), OUTPUT_AS_MANY_BUFFERS);
   }
 
   @Override
