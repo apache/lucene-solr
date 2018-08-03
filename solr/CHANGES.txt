@@ -133,6 +133,8 @@ New Features
 
 * SOLR-12402: Factor out SolrDefaultStreamFactory class. (Christine Poerschke)
 
+* SOLR-7767: Zookeeper Ensemble Admin UI (janhoy) 
+
 * SOLR-12592: support #EQUAL function in cores in autoscaling policies (noble)
 
 Bug Fixes
