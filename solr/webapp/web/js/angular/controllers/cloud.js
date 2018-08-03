@@ -28,7 +28,7 @@ solrAdminApp.controller('CloudController',
             $scope.showDebug = false;
         };
 
-        var view = $location.search().view ? $location.search().view : "graph";
+        var view = $location.search().view ? $location.search().view : "nodes";
         if (view === "tree") {
             $scope.resetMenu("cloud-tree", Constants.IS_ROOT_PAGE);
             treeSubController($scope, Zookeeper);

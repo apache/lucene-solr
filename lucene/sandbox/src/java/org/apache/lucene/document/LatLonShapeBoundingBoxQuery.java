@@ -273,7 +273,7 @@ class LatLonShapeBoundingBoxQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedTriangle) {
-            if (queryCrossesTriangle(packedTriangle)) {
+            if (queryCrossesTriangle(packedTriangle) == false) {
               result.clear(docID);
               cost[0]--;
             }
@@ -284,7 +284,7 @@ class LatLonShapeBoundingBoxQuery extends Query {
             Relation r = relateRangeToQuery(minPackedValue, maxPackedValue);
             if (r == Relation.CELL_OUTSIDE_QUERY) {
               return Relation.CELL_INSIDE_QUERY;
-            } else if (r == Relation.CELL_INSIDE_QUERY || r == Relation.CELL_CROSSES_QUERY) {
+            } else if (r == Relation.CELL_INSIDE_QUERY) {
               return Relation.CELL_OUTSIDE_QUERY;
             }
             return r;

@@ -44,6 +44,11 @@ Upgrade Notes
   MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
   switch to "Direct" instead. (Dawid Weiss)
 
+Other Changes
+----------------------
+
+* SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -251,6 +256,8 @@ Other Changes
 * SOLR-12574: Put under a common "significantTerms" bucket all output by SignificantTerms Query Parser (Alexandre Rafalovitch)
 
 * SOLR-12164: Improve Ref Guide main landing page. (Cassandra Targett)
+
+* SOLR-12617: Remove Commons BeanUtils as a dependency (Varun Thacker)
 
 ==================  7.4.0 ==================
 
