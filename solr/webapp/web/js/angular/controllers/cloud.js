@@ -150,7 +150,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   
   $scope.isFirstNodeForHost = function(node) {
     var hostName = node.split(":")[0]; 
-    var nodesInHost = $scope.filteredNodes.filter(no => no.startsWith(hostName));
+    var nodesInHost = $scope.filteredNodes.filter(function (node) {
+      return node.startsWith(hostName);
+    });
     return nodesInHost[0] === node;
   };
   
@@ -161,7 +163,6 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     var live_nodes = [];
 
     Collections.status(function (data) {
-      var node;
       // Fetch cluster state from collections API and invert to a nodes structure
       for (var name in data.cluster.collections) {
         var collection = data.cluster.collections[name];
@@ -197,7 +198,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
       live_nodes = data.cluster.live_nodes;
       for (n in data.cluster.live_nodes) {
-        var node = data.cluster.live_nodes[n];
+        node = data.cluster.live_nodes[n];
         if (!(node in nodes)) {
           var hostName = node.split(":")[0];
           nodes[node] = {};
@@ -237,7 +238,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
     // Calculate what nodes that will show on this page
     var nodesToShow = [];
-    var nodesParam = '';
+    var nodesParam;
     var hostsToShow = [];
     var filteredNodes;
     var filteredHosts;
@@ -245,7 +246,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     switch ($scope.filterType) {
       case "node":
         if ($scope.nodeFilter) {
-          filteredNodes = node_keys.filter(nod => nod.indexOf($scope.nodeFilter) !== -1);
+          filteredNodes = node_keys.filter(function (node) {
+            return node.indexOf($scope.nodeFilter) !== -1;
+          });
         }
         break;
 
@@ -266,7 +269,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
             nodesCollections.push(nodeColl);
           }
           nodesCollections.forEach(function(nc) {
-            matchingColls = nc['collections'].filter(co => co.indexOf($scope.collectionFilter) !== -1);
+            matchingColls = nc['collections'].filter(function (collection) {
+              return collection.indexOf($scope.collectionFilter) !== -1;
+            });
             if (matchingColls.length > 0) {
               candidateNodes[nc.node] = true;
             }
@@ -280,7 +285,11 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     }
     if (filteredNodes) {
       isFiltered = true;
-      filteredHosts = filteredNodes.map(nod => nod.split(":")[0]).filter((item,index,self) => self.indexOf(item)===index);
+      filteredHosts = filteredNodes.map(function (node) {
+        return node.split(":")[0];
+      }).filter(function (item, index, self) {
+        return self.indexOf(item) === index;
+      });
     } else {
       filteredNodes = node_keys;
       filteredHosts = hostNames;
@@ -291,7 +300,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       var hostName = filteredHosts[id];
       hostsToShow.push(hostName);
       if (isFiltered) { // Only show the nodes per host matching active filter
-        nodesToShow = nodesToShow.concat(filteredNodes.filter(nod => nod.startsWith(hostName)));
+        nodesToShow = nodesToShow.concat(filteredNodes.filter(function (node) {
+          return node.startsWith(hostName);
+        }));
       } else {
         nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
       }
@@ -375,27 +386,27 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   var keyName = "solr.core." + core['core'].replace('_', '.').replace('_', '.');
                   var nodeMetric = m.metrics[keyName];
                   var size = nodeMetric['INDEX.sizeInBytes'];
-                  size = (typeof size != 'undefined') ? size : 0;
+                  size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
                   core['label'] = core['core'].replace('_shard', '_s').replace(/_replica_./, 'r');
                   indexSizeTotal += size;
                   var numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
-                  numDocs = (typeof numDocs != 'undefined') ? numDocs : 0;
+                  numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
                   core['numDocs'] = numDocs;
                   core['numDocsHuman'] = numDocsHuman(numDocs);
-                  core['avgSizePerDoc'] = bytesToSize(numDocs == 0 ? 0 : size / numDocs);
+                  core['avgSizePerDoc'] = bytesToSize(numDocs === 0 ? 0 : size / numDocs);
                   var deletedDocs = nodeMetric['SEARCHER.searcher.deletedDocs'];
-                  deletedDocs = (typeof deletedDocs != 'undefined') ? deletedDocs : 0;
+                  deletedDocs = (typeof deletedDocs !== 'undefined') ? deletedDocs : 0;
                   core['deletedDocs'] = deletedDocs;
                   core['deletedDocsHuman'] = numDocsHuman(deletedDocs);
                   var warmupTime = nodeMetric['SEARCHER.searcher.warmupTime'];
-                  warmupTime = (typeof warmupTime != 'undefined') ? warmupTime : 0;
+                  warmupTime = (typeof warmupTime !== 'undefined') ? warmupTime : 0;
                   core['warmupTime'] = warmupTime;
                   docsTotal += core['numDocs'];
                 }
                 for (coreId in cores) {
-                  var core = cores[coreId];
+                  core = cores[coreId];
                   var graphObj = {};
                   graphObj['label'] = core['label'];
                   graphObj['size'] = core['sizeInBytes'];
