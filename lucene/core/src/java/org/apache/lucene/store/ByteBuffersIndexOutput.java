@@ -9,6 +9,10 @@ public final class ByteBuffersIndexOutput extends IndexOutput {
   private BufferedChecksum crc;
   private Consumer<ByteBuffersDataOutput> onClose;
 
+  public ByteBuffersIndexOutput(ByteBuffersDataOutput delegate, String resourceDescription, String name) {
+    this(delegate, resourceDescription, name, null);
+  }
+
   public ByteBuffersIndexOutput(ByteBuffersDataOutput delegate, String resourceDescription, String name, Consumer<ByteBuffersDataOutput> onClose) {
     super(resourceDescription, name);
     this.delegate = delegate;
@@ -21,7 +25,7 @@ public final class ByteBuffersIndexOutput extends IndexOutput {
     // No special effort to be thread-safe here since IndexOutputs are not required to be thread-safe.
     ByteBuffersDataOutput local = delegate;
     delegate = null;
-    if (local != null) {
+    if (local != null && onClose != null) {
       onClose.accept(local);
     }
   }
