@@ -11,6 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 
@@ -28,6 +29,33 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   private final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = (size) -> {
     return ByteBuffer.allocate(size);
   };
+  
+  public final static class BufferReuser implements IntFunction<ByteBuffer> {
+    private final ArrayDeque<ByteBuffer> reuse = new ArrayDeque<>();
+    private final IntFunction<ByteBuffer> delegate;
+
+    public BufferReuser(IntFunction<ByteBuffer> delegate) {
+      this.delegate = Objects.requireNonNull(delegate);
+    }
+
+    @Override
+    public ByteBuffer apply(int size) {
+      while (!reuse.isEmpty()) {
+        ByteBuffer bb = reuse.removeFirst();
+        // If we don't have a buffer of exactly the requested size, discard it.
+        if (bb.remaining() == size) {
+          return bb;
+        }
+      }
+
+      return delegate.apply(size);        
+    }
+    
+    public void reuse(ByteBuffer buffer) {
+      buffer.rewind();
+      reuse.addLast(buffer);
+    }
+  }
 
   final static int DEFAULT_MIN_BITS_PER_BLOCK = 10; // 1024 B
   final static int DEFAULT_MAX_BITS_PER_BLOCK = 25; //   32 MB
@@ -82,9 +110,9 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
           minBitsPerBlock,
           maxBitsPerBlock));
     }
-    this.blockAllocate = Objects.requireNonNull(blockAllocate, "Block allocator must not be null.");
     this.maxBitsPerBlock = maxBitsPerBlock;
     this.blockBits = minBitsPerBlock;
+    this.blockAllocate = Objects.requireNonNull(blockAllocate, "Block allocator must not be null.");
   }
 
   @Override
@@ -294,6 +322,22 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     // any special distinction for direct memory buffers.
     return RamUsageEstimator.NUM_BYTES_OBJECT_REF * blocks.size() + 
            blocks.stream().mapToLong(buf -> buf.capacity()).sum();
+  }
+
+  /**
+   * This method resets this object to a clean (zero-size) state and
+   * publishes any currently allocated buffers for reuse. 
+   * 
+   * The argument passed to this method may collect those existing buffers,
+   * rewind them and reuse them in the block allocator passed to the constructor.
+   * 
+   * Sharing byte buffers for reads and writes is dangerous and will very likely
+   * lead to hard-to-debug issues, use with great care.
+   */
+  public void reset(Consumer<? super ByteBuffer> reuseBuffers) {
+    blocks.stream().forEach(reuseBuffers);
+    blocks.clear();
+    currentBlock = EMPTY;
   }
 
   private int blockSize() {

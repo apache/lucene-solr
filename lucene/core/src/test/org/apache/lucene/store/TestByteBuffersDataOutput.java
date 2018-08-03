@@ -18,8 +18,11 @@ package org.apache.lucene.store;
 
 import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -34,7 +37,36 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   protected byte[] toBytes(ByteBuffersDataOutput instance) {
     return instance.toArray();
   }
-  
+
+  @Test
+  public void testReuse() throws IOException {
+    AtomicInteger allocations = new AtomicInteger(0);
+    ByteBuffersDataOutput.BufferReuser reuser = new ByteBuffersDataOutput.BufferReuser(
+        (size) -> {
+          allocations.incrementAndGet();
+          return ByteBuffer.allocate(size);
+        });
+    
+    ByteBuffersDataOutput o = new ByteBuffersDataOutput(
+        ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
+        ByteBuffersDataOutput.DEFAULT_MAX_BITS_PER_BLOCK, 
+        reuser);
+
+    // Add some random data first.
+    long genSeed = randomLong();
+    int addCount = randomIntBetween(1000, 5000);
+    addRandomData(o, new Random(genSeed), addCount);
+    byte[] data = o.toArray();
+
+    // Use the same sequence over reused instance.
+    final int expectedAllocationCount = allocations.get();
+    o.reset(reuser::reuse);
+    addRandomData(o, new Random(genSeed), addCount);
+
+    assertEquals(expectedAllocationCount, allocations.get());
+    assertArrayEquals(data, o.toArray());
+  }
+
   @Test
   public void testConstructorWithExpectedSize() {
     {

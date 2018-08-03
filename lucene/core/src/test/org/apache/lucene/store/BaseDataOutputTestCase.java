@@ -58,6 +58,18 @@ public abstract class BaseDataOutputTestCase<T extends DataOutput> extends Rando
     assertArrayEquals(baos.toByteArray(), toBytes(dst));
   }
   
+  protected static List<IOConsumer<DataInput>> addRandomData(DataOutput dst, Random rnd, int maxAddCalls) throws IOException {
+    try {
+      List<IOConsumer<DataInput>> reply = new ArrayList<>();
+      for (int i = 0; i < maxAddCalls; i++) {
+        reply.add(RandomPicks.randomFrom(rnd, GENERATORS).apply(dst, rnd));
+      }
+      return reply;
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
+  }  
+
   private static List<ThrowingBiFunction<DataOutput, Random, IOConsumer<DataInput>>> GENERATORS;
   static {
     GENERATORS = new ArrayList<>();
@@ -166,16 +178,4 @@ public abstract class BaseDataOutputTestCase<T extends DataOutput> extends Rando
       return (src) -> assertEquals("readString()", v, src.readString());
     });
   }
-
-  protected static List<IOConsumer<DataInput>> addRandomData(DataOutput dst, Random rnd, int max) throws IOException {
-    try {
-      List<IOConsumer<DataInput>> reply = new ArrayList<>();
-      for (int i = 0; i < max; i++) {
-        reply.add(RandomPicks.randomFrom(rnd, GENERATORS).apply(dst, rnd));
-      }
-      return reply;
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
-  }  
 }
