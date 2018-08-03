@@ -121,7 +121,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
           for (Map.Entry<String,DateTimeFormatter> format : formats.entrySet()) {
             DateTimeFormatter parser = format.getValue();
             try {
-              return Date.from(parseInstant(parser, srcStringVal, parser.getZone()));
+              return Date.from(parseInstant(parser, srcStringVal));
             } catch (DateTimeParseException e) {
               log.debug("value '{}' is not parseable with format '{}'",
                         new Object[] { srcStringVal, format.getKey() });
@@ -180,7 +180,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
     };
   }
 
-  private static Instant parseInstant(DateTimeFormatter formatter, String dateStr, ZoneId timeZoneId) {
+  private static Instant parseInstant(DateTimeFormatter formatter, String dateStr) {
     final TemporalAccessor temporalAccessor = formatter.parse(dateStr);
     // parsed successfully.  But is it a full instant or just to the day?
     if(temporalAccessor.isSupported(ChronoField.OFFSET_SECONDS)) {
@@ -192,7 +192,8 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
         // TODO should we check for others?
         throw new IllegalArgumentException("Pattern only has partial time?: " + formatter);
       }
-      return temporalAccessor.query(LocalDate::from).atStartOfDay(timeZoneId).toInstant();
+      ZoneId formatterZone = formatter.getZone();
+      return temporalAccessor.query(LocalDate::from).atStartOfDay(formatterZone==null? ZoneOffset.UTC: formatterZone).toInstant();
     }
   }
 }
