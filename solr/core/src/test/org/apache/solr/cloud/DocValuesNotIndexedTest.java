@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -313,6 +314,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   // make sure all the values for each field are unique. We need to have docs that have values that are _not_
   // unique.
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testGroupingDVOnly() throws IOException, SolrServerException {
     List<SolrInputDocument> docs = new ArrayList<>(50);
     for (int idx = 0; idx < 49; ++idx) {
