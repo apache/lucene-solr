@@ -2258,7 +2258,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12574")
   public void testSignificantTermsStream() throws Exception {
 
     UpdateRequest updateRequest = new UpdateRequest();
