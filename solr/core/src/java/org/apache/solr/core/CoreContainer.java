@@ -567,7 +567,7 @@ public class CoreContainer {
     configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
 
     // metricsHistoryHandler uses metricsHandler, so create it first
-    metricsHandler = new MetricsHandler(metricManager);
+    metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
     metricsHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_PATH);
 

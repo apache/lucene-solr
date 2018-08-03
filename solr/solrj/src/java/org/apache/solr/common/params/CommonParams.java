@@ -181,6 +181,7 @@ public interface CommonParams {
   String AUTHZ_PATH = "/admin/authorization";
   String AUTHC_PATH = "/admin/authentication";
   String ZK_PATH = "/admin/zookeeper";
+  String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
   String METRICS_HISTORY_PATH = "/admin/metrics/history";
   String AUTOSCALING_PATH = "/admin/autoscaling";
@@ -192,6 +193,7 @@ public interface CommonParams {
       CORES_HANDLER_PATH,
       COLLECTIONS_HANDLER_PATH,
       CONFIGSETS_HANDLER_PATH,
+      SYSTEM_INFO_PATH,
       AUTHC_PATH,
       AUTHZ_PATH,
       METRICS_PATH,
