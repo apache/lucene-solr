@@ -73,6 +73,8 @@ Upgrade Notes
   WINDOWS USERS: This JIRA corrects a bug in the start scripts that put example logs under ...\server, solr.log is
   now under ...\example. (Erick Erickson)
 
+* The "Graph (radial)" view in the Admin UI "Cloud" menu is now removed, see SOLR-8207
+
 New Features
 ----------------------
 
@@ -123,7 +125,7 @@ New Features
 
 * SOLR-12536: autoscaling policy support to equally distribute replicas on the basis of arbitrary properties (noble)
 
-* SOLR-8207: Add "Nodes" tab to the Admin UI "Cloud" view, listing all nodes with info and metrics (janhoy)
+* SOLR-8207: Add "Nodes" view to the Admin UI "Cloud" view, listing nodes with key metrics. Remove "Radial" view. (janhoy)
 
 * SOLR-11990: Make it possible to co-locate replicas of multiple collections together in a node. A collection may be
   co-located with another collection during collection creation time by specifying a 'withCollection' parameter. It can
