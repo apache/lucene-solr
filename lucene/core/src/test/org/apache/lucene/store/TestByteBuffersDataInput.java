@@ -34,7 +34,7 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.Xoroshiro128PlusRandom;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
-public final class ByteBuffersDataInputTest extends RandomizedTest {
+public final class TestByteBuffersDataInput extends RandomizedTest {
   @Test
   public void testSanity() throws IOException {
     ByteBuffersDataOutput out = new ByteBuffersDataOutput();
@@ -70,7 +70,7 @@ public final class ByteBuffersDataInputTest extends RandomizedTest {
     long seed = randomLong();
     int max = 1_000_000;
     List<IOConsumer<DataInput>> reply = 
-        ByteBuffersDataOutputTest.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
+        TestByteBuffersDataOutput.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
 
     ByteBuffersDataInput src = dst.toDataInput();
     for (IOConsumer<DataInput> c : reply) {
@@ -93,7 +93,7 @@ public final class ByteBuffersDataInputTest extends RandomizedTest {
     long seed = randomLong();
     int max = 10_000;
     List<IOConsumer<DataInput>> reply = 
-        ByteBuffersDataOutputTest.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
+        TestByteBuffersDataOutput.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
 
     byte [] suffix = new byte [randomIntBetween(0, 1024 * 8)];
     dst.writeBytes(suffix);
@@ -141,7 +141,7 @@ public final class ByteBuffersDataInputTest extends RandomizedTest {
     long seed = randomLong();
     int max = 1000;
     List<IOConsumer<DataInput>> reply = 
-        ByteBuffersDataOutputTest.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
+        TestByteBuffersDataOutput.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
 
     ByteBuffersDataInput in = dst.toDataInput().slice(prefix.length, dst.size() - prefix.length);
 

@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.util.IOUtils.IOConsumer;
-import org.junit.Assert;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
@@ -37,73 +36,18 @@ import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 
-public final class ByteBuffersDataOutputTest extends RandomizedTest {
-  @Test
-  public void testConstructorWithExpectedSize() {
-    {
-      ByteBuffersDataOutput o = new ByteBuffersDataOutput(0);
-      o.writeByte((byte) 0);
-      assertEquals(1 << ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK, o.toBufferList().get(0).capacity());
-    }
-
-    {
-      long MB = 1024 * 1024;
-      long expectedSize = randomLongBetween(MB, MB * 1024);
-      ByteBuffersDataOutput o = new ByteBuffersDataOutput(expectedSize);
-      o.writeByte((byte) 0);
-      int cap = o.toBufferList().get(0).capacity();
-      assertTrue((cap >> 1) * ByteBuffersDataOutput.MAX_BLOCKS_BEFORE_BLOCK_EXPANSION < expectedSize);
-      assertTrue("cap=" + cap + ", exp=" + expectedSize,
-          (cap) * ByteBuffersDataOutput.MAX_BLOCKS_BEFORE_BLOCK_EXPANSION >= expectedSize);
-    }
-  }
-
-  @Test
-  public void testSanity() {
-    ByteBuffersDataOutput o = new ByteBuffersDataOutput();
-    assertEquals(0, o.size());
-    assertEquals(0, o.toArray().length);
-    assertEquals(0, o.ramBytesUsed());
-
-    o.writeByte((byte) 1);
-    assertEquals(1, o.size());
-    assertTrue(o.ramBytesUsed() > 0);
-    assertArrayEquals(new byte [] { 1 }, o.toArray());
-
-    o.writeBytes(new byte [] {2, 3, 4}, 3);
-    assertEquals(4, o.size());
-    assertArrayEquals(new byte [] { 1, 2, 3, 4 }, o.toArray());    
-  }
-
-  @Test
-  public void testWriteByteBuffer() {
-    ByteBuffersDataOutput o = new ByteBuffersDataOutput();
-    byte[] bytes = randomBytesOfLength(1024 * 8 + 10);
-    ByteBuffer src = ByteBuffer.wrap(bytes);
-    int offset = randomIntBetween(0, 100);
-    int len = bytes.length - offset;
-    src.position(offset);
-    src.limit(offset + len);
-    o.writeBytes(src);
-    assertEquals(len, o.size());
-    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArray());
-  }
-
-  @Test
-  public void testLargeArrayAdd() {
-    ByteBuffersDataOutput o = new ByteBuffersDataOutput();
-    int MB = 1024 * 1024;
-    byte [] bytes = randomBytesOfLength(5 * MB, 15 * MB);
-    int offset = randomIntBetween(0, 100);
-    int len = bytes.length - offset;
-    o.writeBytes(bytes, offset, len);
-    assertEquals(len, o.size());
-    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArray());
+public abstract class BaseDataOutputTestCase<T extends DataOutput> extends RandomizedTest {
+  protected abstract T newInstance();
+  protected abstract byte[] toBytes(T instance);
+  
+  @FunctionalInterface
+  private interface ThrowingBiFunction<T, U, R> {
+    R apply(T t, U u) throws Exception;
   }
 
   @Test
   public void testRandomizedWrites() throws IOException {
-    ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
+    T dst = newInstance();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     DataOutput ref = new OutputStreamDataOutput(baos);
 
@@ -111,17 +55,7 @@ public final class ByteBuffersDataOutputTest extends RandomizedTest {
     int max = 50_000;
     addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
     addRandomData(ref, new Xoroshiro128PlusRandom(seed), max);
-    assertArrayEquals(baos.toByteArray(), dst.toArray());
-
-    ByteBuffersDataInput dataInput = dst.toDataInput();
-    byte [] reference = new byte [(int) dataInput.size()];
-    dataInput.readBytes(reference, 0, reference.length);
-    assertArrayEquals(baos.toByteArray(), reference);
-  }
-
-  @FunctionalInterface
-  interface ThrowingBiFunction<T, U, R> {
-    R apply(T t, U u) throws Exception;
+    assertArrayEquals(baos.toByteArray(), toBytes(dst));
   }
   
   private static List<ThrowingBiFunction<DataOutput, Random, IOConsumer<DataInput>>> GENERATORS;
@@ -233,7 +167,7 @@ public final class ByteBuffersDataOutputTest extends RandomizedTest {
     });
   }
 
-  static List<IOConsumer<DataInput>> addRandomData(DataOutput dst, Random rnd, int max) throws IOException {
+  protected static List<IOConsumer<DataInput>> addRandomData(DataOutput dst, Random rnd, int max) throws IOException {
     try {
       List<IOConsumer<DataInput>> reply = new ArrayList<>();
       for (int i = 0; i < max; i++) {
