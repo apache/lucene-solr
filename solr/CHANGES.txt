@@ -250,6 +250,8 @@ Other Changes
 
 * SOLR-12164: Improve Ref Guide main landing page. (Cassandra Targett)
 
+* SOLR-12617: Remove Commons BeanUtils as a dependency (Varun Thacker)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
