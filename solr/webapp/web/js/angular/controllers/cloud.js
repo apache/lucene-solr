@@ -491,6 +491,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
 var zookeeperSubController = function($scope, Zookeeper) {
     $scope.showZookeeper = true;
+    $scope.showNodes = false;
     $scope.showTree = false;
     $scope.showGraph = false;
     $scope.tree = {};
