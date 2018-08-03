@@ -210,7 +210,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       for (let host in hosts) {
         hosts[host].nodes.sort();
       }
-      
+
       $scope.nodes = nodes;
       $scope.hosts = hosts;
       $scope.live_nodes = live_nodes;
@@ -225,7 +225,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     $scope.to = $scope.pageSize - 1;
     $scope.reload();
   };
-  
+
   $scope.reload = function() {
     let nodes = $scope.nodes;
     let node_keys = Object.keys(nodes);
@@ -248,7 +248,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           filteredNodes = node_keys.filter(nod => nod.indexOf($scope.nodeFilter) !== -1);
         }
         break;
-        
+
       case "collection":
         if ($scope.collectionFilter) {
           candidateNodes = {};
@@ -260,9 +260,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
             nodeColl['node'] = node_name;
             collections = {};
             node.cores.forEach(function(core) {
-               collections[core.collection] = true;
+              collections[core.collection] = true;
             });
-            nodeColl['collections'] = Object.keys(collections); 
+            nodeColl['collections'] = Object.keys(collections);
             nodesCollections.push(nodeColl);
           }
           nodesCollections.forEach(function(nc) {
@@ -274,9 +274,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           filteredNodes = Object.keys(candidateNodes);
         }
         break;
-        
+
       case "health":
-        
+
     }
     if (filteredNodes) {
       isFiltered = true;
