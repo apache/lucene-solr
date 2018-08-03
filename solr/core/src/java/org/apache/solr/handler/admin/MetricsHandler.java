@@ -41,6 +41,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
@@ -67,9 +68,15 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String ALL = "all";
 
   private static final Pattern KEY_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
+  private CoreContainer cc;
 
   public MetricsHandler() {
     this.metricManager = null;
+  }
+
+  public MetricsHandler(CoreContainer coreContainer) {
+    this.metricManager = coreContainer.getMetricManager();
+    this.cc = coreContainer;
   }
 
   public MetricsHandler(SolrMetricManager metricManager) {
@@ -87,9 +94,13 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "SolrMetricManager instance not initialized");
     }
 
+    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
+      return; // Request was proxied to other node
+    }
+
     handleRequest(req.getParams(), (k, v) -> rsp.add(k, v));
   }
-
+  
   public void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) throws Exception {
     boolean compact = params.getBool(COMPACT_PARAM, true);
     String[] keys = params.getParams(KEY_PARAM);
