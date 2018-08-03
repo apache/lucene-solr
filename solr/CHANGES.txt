@@ -73,8 +73,6 @@ Upgrade Notes
   WINDOWS USERS: This JIRA corrects a bug in the start scripts that put example logs under ...\server, solr.log is
   now under ...\example. (Erick Erickson)
 
-* The "Graph (radial)" view in the Admin UI "Cloud" menu is now removed, see SOLR-8207
-
 New Features
 ----------------------
 
