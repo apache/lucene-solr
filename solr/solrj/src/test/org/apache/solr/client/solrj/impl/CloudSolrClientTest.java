@@ -36,6 +36,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -394,6 +395,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
    * limits the distributed query to locally hosted shards only
    */
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void preferLocalShardsTest() throws Exception {
 
     String collectionName = "localShardsTestColl";
@@ -849,10 +851,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   /**
-   * Tests if the specification of 'preferReplicaTypes' in the query-params
+   * Tests if the specification of 'preferReplicaTypes` in the query-params
    * limits the distributed query to locally hosted shards only
    */
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void preferReplicaTypesTest() throws Exception {
 
     String collectionName = "replicaTypesTestColl";
