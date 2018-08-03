@@ -148,6 +148,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     $scope.reload();
   };
   
+  // Checks if this node is the first (alphabetically) for a given host. Used to decide rowspan in table
   $scope.isFirstNodeForHost = function(node) {
     var hostName = node.split(":")[0]; 
     var nodesInHost = $scope.filteredNodes.filter(function (node) {
@@ -162,6 +163,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     var hosts = {};
     var live_nodes = [];
 
+    // We build a node-centric view of the cluster state which we can easily consume to render the table
     Collections.status(function (data) {
       // Fetch cluster state from collections API and invert to a nodes structure
       for (var name in data.cluster.collections) {
@@ -227,6 +229,10 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     $scope.reload();
   };
 
+  /*
+    Reload will fetch data for the current page of the table and thus refresh numbers.
+    It is also called whenever a filter or paging action is executed 
+   */
   $scope.reload = function() {
     var nodes = $scope.nodes;
     var node_keys = Object.keys(nodes);
@@ -244,7 +250,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     var filteredHosts;
     var isFiltered = false;
     switch ($scope.filterType) {
-      case "node":
+      case "node":  // Find what nodes match the node filter
         if ($scope.nodeFilter) {
           filteredNodes = node_keys.filter(function (node) {
             return node.indexOf($scope.nodeFilter) !== -1;
@@ -252,7 +258,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
         }
         break;
 
-      case "collection":
+      case "collection": // Find what collections match the collection filter and what nodes that have these collections
         if ($scope.collectionFilter) {
           candidateNodes = {};
           nodesCollections = [];
@@ -283,7 +289,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       case "health":
 
     }
+    
     if (filteredNodes) {
+      // If filtering is active, calculate what hosts contain the nodes that match the filters
       isFiltered = true;
       filteredHosts = filteredNodes.map(function (node) {
         return node.split(":")[0];
@@ -296,6 +304,8 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     }
     filteredNodes.sort();
     filteredHosts.sort();
+    
+    // Find what hosts & nodes (from the filtered set) that should be displayed on current page
     for (var id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
       var hostName = filteredHosts[id];
       hostsToShow.push(hostName);
@@ -313,6 +323,10 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     nodesToShow.sort();
     hostsToShow.sort();
 
+    /*
+     Fetch system info for all selected nodes
+     Pick the data we want to display and add it to the node-centric data structure
+      */
     System.get({"nodes": nodesParam}, function (systemResponse) {
       for (var node in systemResponse) {
         if (node in nodes) {
@@ -350,6 +364,10 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       }
     });
 
+    /*
+     Fetch metrics for all selected nodes. Only pull the metrics that we'll show to save bandwidth
+     Pick the data we want to display and add it to the node-centric data structure
+      */
     Metrics.get({
           "nodes": nodesParam,
           "prefix": "CONTAINER.fs,org.eclipse.jetty.server.handler.DefaultHandler.get-requests,INDEX.sizeInBytes,SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs,SEARCHER.searcher.warmupTime"
@@ -429,7 +447,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               nodes[node]['size'] = bytesToSize(indexSizeTotal);
               nodes[node]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeTotal / docsTotal);
 
-              // Add the div containing the whole chart
+              // Build the d3 powered bar chart
               $('#chart' + nodes[node]['id']).empty();
               var chart = d3.select('#chart' + nodes[node]['id']).append('div').attr('class', 'chart');
 
