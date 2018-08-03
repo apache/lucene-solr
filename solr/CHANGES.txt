@@ -44,6 +44,11 @@ Upgrade Notes
   MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
   switch to "Direct" instead. (Dawid Weiss)
 
+Other Changes
+----------------------
+
+* SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
