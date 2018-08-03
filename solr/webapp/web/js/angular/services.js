@@ -19,8 +19,12 @@ var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 
 solrAdminServices.factory('System',
   ['$resource', function($resource) {
-    return $resource('admin/info/system', {"wt":"json", "_":Date.now()});
+    return $resource('admin/info/system', {"wt":"json", "nodes": "@nodes", "_":Date.now()});
   }])
+.factory('Metrics',
+    ['$resource', function($resource) {
+      return $resource('admin/metrics', {"wt":"json", "nodes": "@nodes", "prefix":"@prefix", "_":Date.now()});
+    }])
 .factory('Collections',
   ['$resource', function($resource) {
     return $resource('admin/collections',
@@ -63,7 +67,6 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
       "simple": {},
-      "dump": {params: {dump: "true"}},
       "liveNodes": {params: {path: '/live_nodes'}},
       "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
       "detail": {params: {detail: "true", path: "@path"}},
