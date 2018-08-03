@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrInputDocument;
@@ -201,10 +202,10 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     String field3String2 = "-5.28E-3";
     Double field3Value2 = -5.28E-3;
     String field4String1 = "1999-04-17 17:42";
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneOffset.UTC);
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT).withZone(ZoneOffset.UTC);
     LocalDateTime dateTime = LocalDateTime.parse(field4String1, dateTimeFormatter);
     Date field4Value1 = Date.from(dateTime.atZone(ZoneOffset.UTC).toInstant());
-    DateTimeFormatter dateTimeFormatter2 = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneOffset.UTC);
+    DateTimeFormatter dateTimeFormatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT).withZone(ZoneOffset.UTC);
     String field4Value1String = dateTime.format(dateTimeFormatter2) + "Z";
     
     SolrInputDocument d = processAdd

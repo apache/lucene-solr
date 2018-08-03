@@ -33,6 +33,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -118,7 +119,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
                                                    f("dateNoTimeZone_dt", dateStringNoTimeZone)));
     assertNotNull(d);
     String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ";
-    DateTimeFormatter UTCForamatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneId.of("America/New_York"));
+    DateTimeFormatter UTCForamatter = DateTimeFormatter.ofPattern(pattern, Locale.ROOT).withZone(ZoneId.of("America/New_York"));
     OffsetDateTime dateTimeOffsetUTC = OffsetDateTime.parse(dateStringUTC, UTCForamatter);
     assertTrue(d.getFieldValue("dateUTC_dt") instanceof Date);
     assertTrue(d.getFieldValue("dateNoTimeZone_dt") instanceof Date);
@@ -171,7 +172,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
     assertEquals(dateStringUTC,
-        (ZonedDateTime.ofInstant(((Date)d.getFieldValue("not_in_schema")).toInstant(), ZoneOffset.UTC)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ")));
+        (ZonedDateTime.ofInstant(((Date)d.getFieldValue("not_in_schema")).toInstant(), ZoneOffset.UTC)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ", Locale.ROOT)));
   }
   
   public void testParseDateFormats() throws Exception {
@@ -209,7 +210,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(schema.getFieldOrNull("dateUTC_dt")); // should match "*_dt" dynamic field
 
     String dateTimePattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ";
-    DateTimeFormatter UTCDateTimeFormatter = DateTimeFormatter.ofPattern(dateTimePattern);
+    DateTimeFormatter UTCDateTimeFormatter = DateTimeFormatter.ofPattern(dateTimePattern, Locale.ROOT);
     ZonedDateTime UTCDateTIme = ZonedDateTime.parse(formatExamples[1], UTCDateTimeFormatter);
 
     for (int i = 0 ; i < formatExamples.length ; i += 2) {
@@ -242,7 +243,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   public void testFailedParseMixedDate() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSZZZZZ]").withZone(ZoneOffset.UTC);
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSZZZZZ]", Locale.ROOT).withZone(ZoneOffset.UTC);
     Map<Object,Object> mixed = new HashMap<>();
     String[] dateStrings = { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
@@ -804,7 +805,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       longs.remove(o);
     }
 
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSZZZZZ]").withZone(ZoneOffset.UTC);
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSZZZZZ]", Locale.ROOT).withZone(ZoneOffset.UTC);
     Map<Date,String> dates = new HashMap<>();
     String[] dateStrings = { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
@@ -896,7 +897,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(mixedBooleans.isEmpty());
 
-    dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSZZZZZ]").withZone(ZoneOffset.UTC);
+    dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSZZZZZ]", Locale.ROOT).withZone(ZoneOffset.UTC);
     Map<Date,Object> mixedDates = new HashMap<>();
     dateStrings = new String[] { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {

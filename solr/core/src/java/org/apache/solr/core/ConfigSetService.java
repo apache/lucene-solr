@@ -213,7 +213,7 @@ public abstract class ConfigSetService {
       super(loader, configSetBase);
     }
 
-    public static final DateTimeFormatter cacheKeyFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    public static final DateTimeFormatter cacheKeyFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss", Locale.ROOT);
 
     public static String cacheName(Path schemaFile) throws IOException {
       long lastModified = Files.getLastModifiedTime(schemaFile).toMillis();
