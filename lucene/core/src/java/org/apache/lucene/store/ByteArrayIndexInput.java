@@ -18,9 +18,8 @@ package org.apache.lucene.store;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Locale;
-
-import org.jsoup.UncheckedIOException;
 
 /**
  * A {@link IndexInput} backed by a byte array.

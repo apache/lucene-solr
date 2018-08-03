@@ -1,12 +1,12 @@
 package org.apache.lucene.store;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
-import org.jsoup.UncheckedIOException;
 
 public final class ByteBuffersIndexInput extends IndexInput implements RandomAccessInput {
   private ByteBuffersDataInput in;

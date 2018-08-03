@@ -338,7 +338,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
       return DEFAULT_MIN_BITS_PER_BLOCK;
     }
     
-    int blockBits = (int) Long.numberOfTrailingZeros(powerOfTwo);
+    int blockBits = Long.numberOfTrailingZeros(powerOfTwo);
     blockBits = Math.min(blockBits, DEFAULT_MAX_BITS_PER_BLOCK);
     blockBits = Math.max(blockBits, DEFAULT_MIN_BITS_PER_BLOCK);
     return blockBits;
