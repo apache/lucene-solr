@@ -26,7 +26,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   private final static List<ByteBuffer> EMPTY_LIST = Arrays.asList(EMPTY);
   private final static byte [] EMPTY_BYTE_ARRAY = {};
 
-  private final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = (size) -> {
+  public final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = (size) -> {
     return ByteBuffer.allocate(size);
   };
   
@@ -57,8 +57,8 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     }
   }
 
-  final static int DEFAULT_MIN_BITS_PER_BLOCK = 10; // 1024 B
-  final static int DEFAULT_MAX_BITS_PER_BLOCK = 25; //   32 MB
+  public final static int DEFAULT_MIN_BITS_PER_BLOCK = 10; // 1024 B
+  public final static int DEFAULT_MAX_BITS_PER_BLOCK = 25; //   32 MB
 
   /**
    * Maximum number of blocks at the current {@link #blockBits} block size
