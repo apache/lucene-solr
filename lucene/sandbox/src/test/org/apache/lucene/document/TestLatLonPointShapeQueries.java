@@ -63,4 +63,9 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
       return poly2d.relateTriangle(lon, lat, lon, lat, lon, lat) != Relation.CELL_OUTSIDE_QUERY;
     }
   }
+
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8443")
+  @Override
+  public void testRandomTiny() throws Exception {
+  }
 }
