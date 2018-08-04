@@ -117,7 +117,6 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     assertTrue(d.getFieldValue("dateUTC_dt") instanceof Date);
     assertTrue(d.getFieldValue("dateNoTimeZone_dt") instanceof Date);
-    assertEquals(Instant.parse(dateStringUTC), ((Date) d.getFieldValue("dateUTC_dt")).toInstant());
     assertU(commit());
     assertQ(req("id:99") 
         ,"//date[@name='dateUTC_dt'][.='" + dateStringUTC + "']"
