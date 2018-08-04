@@ -115,6 +115,7 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
       }       
     }
     zkStatus.put("ensembleSize", zookeepers.size());
+    zkStatus.put("zkHost", zkHost);
     zkStatus.put("details", details);
     if (followers+leaders > 0 && standalone > 0) {
       status = "red";

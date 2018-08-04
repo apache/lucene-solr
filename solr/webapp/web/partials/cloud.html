@@ -19,6 +19,10 @@ limitations under the License.
   <div id="frame">
 
     <div id="zookeeper-content" class="content clearfix" ng-show="showZookeeper">
+      <div id="zk-controls">
+        <a class="reload" ng-click="initZookeeper()"><span>Refresh</span></a>
+      </div>
+
       <div class="zookeeper-status">Status: <span class="zkstatus-{{zkState.status}}">{{zkState.status}}</span></div>
       <div class="zookeeper-errors" ng-show="zkState.errors">
         Errors:
@@ -26,6 +30,7 @@ limitations under the License.
           <li ng-repeat="error in zkState.errors">{{error}}</li>
         </ul>
       </div>
+      <div>ZK connection string: {{zkState.zkHost}}</div>
       <div>Ensemble size: {{zkState.ensembleSize}}</div>
       <div>Ensemble mode: {{zkState.mode}}</div>
       

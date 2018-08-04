@@ -536,7 +536,8 @@ limitations under the License.
 }
 
 /* Styling of reload and details buttons */
-#content #cloud #controls
+#content #cloud #controls,
+#content #cloud #frame #zookeeper-content #zk-controls
 {
   display: block;
   height: 30px;
