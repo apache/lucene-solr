@@ -33,7 +33,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -61,13 +60,12 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.ByteBuffersDataInput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMFile;
-import org.apache.lucene.store.RAMInputStream;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.TestUtil;
@@ -447,8 +445,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
       final Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
-      RAMFile buffer = new RAMFile();
-      RAMOutputStream out = new RAMOutputStream(buffer, false);
+      ByteBuffersDataOutput buffer = new ByteBuffersDataOutput();
       Document doc = new Document();
       SortedSetDocValuesField field1 = new SortedSetDocValuesField("sset", new BytesRef());
       doc.add(field1);
@@ -461,13 +458,12 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
         field2.setBytesValue(s2);
         w.addDocument(doc);
         Set<BytesRef> set = new TreeSet<>(Arrays.asList(s1, s2));
-        out.writeVInt(set.size());
+        buffer.writeVInt(set.size());
         for (BytesRef ref : set) {
-          out.writeVInt(ref.length);
-          out.writeBytes(ref.bytes, ref.offset, ref.length);
+          buffer.writeVInt(ref.length);
+          buffer.writeBytes(ref.bytes, ref.offset, ref.length);
         }
       }
-      out.close();
       w.forceMerge(1);
       DirectoryReader r = DirectoryReader.open(w);
       w.close();
@@ -475,7 +471,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
       assertEquals(maxDoc, sr.maxDoc());
       SortedSetDocValues values = sr.getSortedSetDocValues("sset");
       assertNotNull(values);
-      RAMInputStream in = new RAMInputStream("", buffer);
+      ByteBuffersDataInput in = buffer.toDataInput();
       BytesRefBuilder b = new BytesRefBuilder();
       for (int i = 0; i < maxDoc; ++i) {
         assertEquals(i, values.nextDoc());
@@ -501,8 +497,8 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
       final Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
-      RAMFile buffer = new RAMFile();
-      RAMOutputStream out = new RAMOutputStream(buffer, false);
+      ByteBuffersDataOutput buffer = new ByteBuffersDataOutput();
+
       Document doc = new Document();
       SortedNumericDocValuesField field1 = new SortedNumericDocValuesField("snum", 0L);
       doc.add(field1);
@@ -514,10 +510,10 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
         field1.setLongValue(s1);
         field2.setLongValue(s2);
         w.addDocument(doc);
-        out.writeVLong(Math.min(s1, s2));
-        out.writeVLong(Math.max(s1, s2));
+        buffer.writeVLong(Math.min(s1, s2));
+        buffer.writeVLong(Math.max(s1, s2));
       }
-      out.close();
+
       w.forceMerge(1);
       DirectoryReader r = DirectoryReader.open(w);
       w.close();
@@ -525,12 +521,12 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
       assertEquals(maxDoc, sr.maxDoc());
       SortedNumericDocValues values = sr.getSortedNumericDocValues("snum");
       assertNotNull(values);
-      RAMInputStream in = new RAMInputStream("", buffer);
+      ByteBuffersDataInput dataInput = buffer.toDataInput();
       for (int i = 0; i < maxDoc; ++i) {
         assertEquals(i, values.nextDoc());
         assertEquals(2, values.docValueCount());
-        assertEquals(in.readVLong(), values.nextValue());
-        assertEquals(in.readVLong(), values.nextValue());
+        assertEquals(dataInput.readVLong(), values.nextValue());
+        assertEquals(dataInput.readVLong(), values.nextValue());
       }
       r.close();
       dir.close();
