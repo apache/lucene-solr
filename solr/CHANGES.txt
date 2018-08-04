@@ -105,7 +105,7 @@ New Features
 
 * SOLR-12402: Factor out SolrDefaultStreamFactory class. (Christine Poerschke)
 
-* SOLR-12592: support #EQUAL function in cores in autoscaling policies (noble)
+* SOLR-12592: support #EQUAL function, range operator, decimal and percentage in cores in autoscaling policies (noble)
 
 Bug Fixes
 ----------------------

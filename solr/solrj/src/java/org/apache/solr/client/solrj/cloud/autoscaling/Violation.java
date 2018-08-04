@@ -170,7 +170,7 @@ public class Violation implements MapWriter {
   }
 
   static class Ctx {
-    final Function<Clause.Condition, Object> evaluator;
+    final Function<Condition, Object> evaluator;
     String tagKey;
     Clause clause;
     ReplicaCount count;
@@ -178,7 +178,7 @@ public class Violation implements MapWriter {
     List<Row> allRows;
     List<Violation> allViolations = new ArrayList<>();
 
-    public Ctx(Clause clause, List<Row> allRows, Function<Clause.Condition, Object> evaluator) {
+    public Ctx(Clause clause, List<Row> allRows, Function<Condition, Object> evaluator) {
       this.allRows = allRows;
       this.clause = clause;
       this.evaluator = evaluator;
