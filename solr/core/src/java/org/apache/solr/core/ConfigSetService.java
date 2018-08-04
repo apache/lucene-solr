@@ -213,12 +213,10 @@ public abstract class ConfigSetService {
       super(loader, configSetBase);
     }
 
-    public static final DateTimeFormatter cacheKeyFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss", Locale.ROOT);
-
     public static String cacheName(Path schemaFile) throws IOException {
       long lastModified = Files.getLastModifiedTime(schemaFile).toMillis();
       return String.format(Locale.ROOT, "%s:%s",
-                            schemaFile.toString(), Instant.ofEpochMilli(lastModified).atZone(ZoneOffset.UTC).format(cacheKeyFormatter));
+                            schemaFile.toString(), Instant.ofEpochMilli(lastModified).toString());
     }
 
     @Override

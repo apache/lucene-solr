@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang.LocaleUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -159,6 +160,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
       for (String value : formatsParam) {
         DateTimeFormatter formatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
             .appendPattern(value).toFormatter(locale).withZone(defaultTimeZone);
+        validateFormatter(formatter);
         formats.put(value, formatter);
       }
     }
@@ -180,12 +182,24 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
     };
   }
 
+  public static void validateFormatter(DateTimeFormatter formatter) {
+    // check it's valid via round-trip
+    try {
+      parseInstant(formatter, formatter.format(Instant.now()));
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Bad or unsupported pattern: " + formatter.toFormat().toString(), e);
+    }
+  }
+
   private static Instant parseInstant(DateTimeFormatter formatter, String dateStr) {
     final TemporalAccessor temporalAccessor = formatter.parse(dateStr);
     // parsed successfully.  But is it a full instant or just to the day?
-    if(temporalAccessor.isSupported(ChronoField.OFFSET_SECONDS)) {
-      return temporalAccessor.query(OffsetDateTime::from).toInstant();
-    } else if (temporalAccessor.isSupported(ChronoField.INSTANT_SECONDS)) { // has time
+    if (temporalAccessor.isSupported(ChronoField.INSTANT_SECONDS)) { // has time
+      // has offset time
+      if(temporalAccessor.isSupported(ChronoField.OFFSET_SECONDS)) {
+        return temporalAccessor.query(OffsetDateTime::from).toInstant();
+      }
       return temporalAccessor.query(Instant::from);
     } else { // no time, just date
       if (temporalAccessor.isSupported(ChronoField.HOUR_OF_DAY) || temporalAccessor.isSupported(ChronoField.HOUR_OF_AMPM)) {
@@ -193,6 +207,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
         throw new IllegalArgumentException("Pattern only has partial time?: " + formatter);
       }
       ZoneId formatterZone = formatter.getZone();
+      // use default time zone if none was specified
       return temporalAccessor.query(LocalDate::from).atStartOfDay(formatterZone==null? ZoneOffset.UTC: formatterZone).toInstant();
     }
   }
