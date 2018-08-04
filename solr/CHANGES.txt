@@ -207,6 +207,11 @@ Bug Fixes
 
 * SOLR-12594: MetricsHistoryHandler.getOverseerLeader fails when hostname contains hyphen. (ab)
 
+* SOLR-12615: HashQParserPlugin will no longer throw an NPE if the hash key field is a string when there are documents
+  with empty values. All documents with empty values ( string , numeric ) will be processed by worker=0
+  This would fix the NPE when using the search stream with partitionKeys. (Varun Thacker)
+
+
 Optimizations
 ----------------------
 
