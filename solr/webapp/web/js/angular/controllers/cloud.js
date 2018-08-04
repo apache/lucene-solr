@@ -496,17 +496,24 @@ var zookeeperSubController = function($scope, ZookeeperStatus) {
     $scope.showGraph = false;
     $scope.tree = {};
     $scope.showData = false;
+    $scope.showDetails = false;
     
+    $scope.toggleDetails = function() {
+      $scope.showDetails = !$scope.showDetails === true;
+    };
+
     $scope.initZookeeper = function() {
       ZookeeperStatus.monitor({}, function(data) {
         $scope.zkState = data.zkStatus;
-        $scope.zkKeys = ["ok", "zk_server_state", "zk_version", "zk_approximate_data_size",
-          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_num_alive_connections",
-          "zk_watch_count", "zk_znode_count", "zk_packets_sent", "zk_packets_received",
-          "zk_followers", "zk_synced_followers", "zk_pending_syncs",
-          "clientPort", "dataDir", "dataLogDir", "tickTime", "maxClientCnxns", "minSessionTimeout", 
-          "maxSessionTimeout", "serverId", "initLimit", "syncLimit", "electionAlg", "electionPort", 
+        $scope.mainKeys = ["ok", "zk_server_state", "zk_version", "clientPort",
+          "zk_approximate_data_size", "zk_znode_count", "serverId", "electionPort", 
           "quorumPort", "peerType"];
+        $scope.otherKeys = ["dataDir", "dataLogDir", 
+          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_num_alive_connections",
+          "zk_watch_count", "zk_packets_sent", "zk_packets_received",
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs",
+          "tickTime", "maxClientCnxns", "minSessionTimeout", 
+          "maxSessionTimeout", "initLimit", "syncLimit", "electionAlg"];
       });
     };
 

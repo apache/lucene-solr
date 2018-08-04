@@ -21,6 +21,9 @@ limitations under the License.
     <div id="zookeeper-content" class="content clearfix" ng-show="showZookeeper">
       <div id="zk-controls">
         <a class="reload" ng-click="initZookeeper()"><span>Refresh</span></a>
+        <a class="details-button" ng-click="toggleDetails()" ng-class="{on:showDetails}">
+          <span>Toggle details</span>
+        </a>
       </div>
 
       <div class="zookeeper-status">Status: <span class="zkstatus-{{zkState.status}}">{{zkState.status}}</span></div>
@@ -42,10 +45,20 @@ limitations under the License.
           </tr>
         </thead>
         <tbody>
-          <tr ng-repeat="key in zkKeys">
+          <tr ng-repeat="key in mainKeys">
             <td>{{key}}</td>
             <td ng-repeat="host in zkState.details">
               {{key === 'zk_version' ? host[key].split("-")[0] : host[key]}}
+            </td>
+          </tr>
+          <tr id="detail-divider" ng-show="showDetails" >
+            <td ng-class="details"></td>
+            <td ng-class="details"></td>
+          </tr>
+          <tr ng-repeat="key in otherKeys" ng-show="showDetails">
+            <td>{{key}}</td>
+            <td ng-repeat="host in zkState.details">
+              {{host[key]}}
             </td>
           </tr>
         </tbody>
