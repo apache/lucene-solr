@@ -46,11 +46,11 @@ public class FreeDiskVariable extends VariableBase {
   }
 
   @Override
-  public Object computeValue(Policy.Session session, Clause.Condition condition, String collection, String shard, String node) {
-    if (condition.computedType == Clause.ComputedType.PERCENT) {
+  public Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
+    if (condition.computedType == ComputedType.PERCENT) {
       Row r = session.getNode(node);
       if (r == null) return 0d;
-      return Clause.ComputedType.PERCENT.compute(r.getVal(TOTALDISK.tagName), condition);
+      return ComputedType.PERCENT.compute(r.getVal(TOTALDISK.tagName), condition);
     }
     throw new IllegalArgumentException("Unsupported type " + condition.computedType);
   }
