@@ -55,9 +55,8 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     String dateString = "2010-11-12T13:14:15.168Z";
     SolrInputDocument d = processAdd("parse-date", doc(f("id", "9"), f("date_dt", dateString)));
     assertNotNull(d);
-    ZonedDateTime localDateTime = ZonedDateTime.parse(dateString, DateTimeFormatter.ISO_DATE_TIME);
     assertTrue(d.getFieldValue("date_dt") instanceof Date);
-    assertEquals(localDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli(), ((Date) d.getFieldValue("date_dt")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("date_dt")).toInstant());
     assertU(commit());
     assertQ(req("id:9"), "//date[@name='date_dt'][.='" + dateString + "']");
   }
@@ -68,9 +67,8 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     String dateString = "2010-11-12T13:14:15.168Z";
     SolrInputDocument d = processAdd("parse-date", doc(f("id", "39"), f("date_tdt", dateString)));
     assertNotNull(d);
-    ZonedDateTime localDateTime = ZonedDateTime.parse(dateString, DateTimeFormatter.ISO_DATE_TIME);
     assertTrue(d.getFieldValue("date_tdt") instanceof Date);
-    assertEquals(localDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli(), ((Date) d.getFieldValue("date_tdt")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("date_tdt")).toInstant());
     assertU(commit());
     assertQ(req("id:39"), "//date[@name='date_tdt'][.='" + dateString + "']");
   }
@@ -80,13 +78,12 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     String dateString = "2010-11-12T13:14:15.168Z";
-    ZonedDateTime localDateTime = ZonedDateTime.parse(dateString, DateTimeFormatter.ISO_DATE_TIME);
 
     SolrInputDocument d = processAdd("parse-date-no-run-processor",
                                      doc(f("id", "18"), f("not_in_schema", dateString)));
     assertNotNull(d);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
-    assertEquals(localDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli(), ((Date)d.getFieldValue("not_in_schema")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date)d.getFieldValue("not_in_schema")).toInstant());
     
     d = processAdd("parse-date-no-run-processor", 
                    doc(f("id", "36"), f("not_in_schema", "not a date", dateString)));
@@ -118,12 +115,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         ("parse-date-non-UTC-defaultTimeZone", doc(f("id", "99"), f("dateUTC_dt", dateStringUTC), 
                                                    f("dateNoTimeZone_dt", dateStringNoTimeZone)));
     assertNotNull(d);
-    String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ";
-    DateTimeFormatter UTCForamatter = DateTimeFormatter.ofPattern(pattern, Locale.ROOT).withZone(ZoneId.of("America/New_York"));
-    OffsetDateTime dateTimeOffsetUTC = OffsetDateTime.parse(dateStringUTC, UTCForamatter);
     assertTrue(d.getFieldValue("dateUTC_dt") instanceof Date);
     assertTrue(d.getFieldValue("dateNoTimeZone_dt") instanceof Date);
-    assertEquals(dateTimeOffsetUTC.toInstant().toEpochMilli(), ((Date) d.getFieldValue("dateUTC_dt")).getTime());
+    assertEquals(Instant.parse(dateStringUTC), ((Date) d.getFieldValue("dateUTC_dt")).toInstant());
     assertU(commit());
     assertQ(req("id:99") 
         ,"//date[@name='dateUTC_dt'][.='" + dateStringUTC + "']"
@@ -134,20 +128,18 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     String dateString = "2010-11-12T13:14:15.168Z";
-    ZonedDateTime localDateTime = ZonedDateTime.parse(dateString, DateTimeFormatter.ISO_DATE_TIME);
 
     SolrInputDocument d = processAdd("parse-date-explicit-not-in-schema-selector-no-run-processor",
                                      doc(f("id", "88"), f("not_in_schema", dateString)));
     assertNotNull(d);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
-    assertEquals(localDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli(), ((Date)d.getFieldValue("not_in_schema")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date)d.getFieldValue("not_in_schema")).toInstant());
   }
 
   public void testParseDateExplicitTypeClassSelector() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("date_dt"));
     String dateString = "2010-11-12T13:14:15.168Z";
-    ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateString, DateTimeFormatter.ISO_DATE_TIME);
     SolrInputDocument d;
     if (schema.getField("date_dt").getType().isPointField()) {
       d = processAdd("parse-date-explicit-typeclass-point-selector-no-run-processor",
@@ -159,7 +151,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
     assertTrue(d.getFieldValue("date_dt") instanceof Date);
-    assertEquals(zonedDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli(), ((Date)d.getFieldValue("date_dt")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date)d.getFieldValue("date_dt")).toInstant());
   }
 
   public void testParseUSPacificDate() throws Exception {
@@ -210,8 +202,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(schema.getFieldOrNull("dateUTC_dt")); // should match "*_dt" dynamic field
 
     String dateTimePattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ";
-    DateTimeFormatter UTCDateTimeFormatter = DateTimeFormatter.ofPattern(dateTimePattern, Locale.ROOT);
-    ZonedDateTime UTCDateTIme = ZonedDateTime.parse(formatExamples[1], UTCDateTimeFormatter);
+    Instant UTCInstant = Instant.parse(formatExamples[1]);
 
     for (int i = 0 ; i < formatExamples.length ; i += 2) {
       String format = formatExamples[i];
@@ -223,7 +214,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       assertTrue("index: " + i + " date '" + dateString + "' with format '" + format +
               "' is not mutated to a Date", d.getFieldValue("dateUTC_dt") instanceof Date);
       assertEquals("date '" + dateString + "' with format '" + format + "' mismatched milliseconds",
-          UTCDateTIme.toInstant().toEpochMilli(), ((Date)d.getFieldValue("dateUTC_dt")).getTime());
+          UTCInstant, ((Date)d.getFieldValue("dateUTC_dt")).toInstant());
     }
   }
   
@@ -232,12 +223,11 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNull(schema.getFieldOrNull("not_in_schema"));
     String frenchDateString = "le vendredi 15 janvier 2010";
     String dateString = "2010-01-15T00:00:00.000Z";
-    LocalDateTime localDateTime = LocalDateTime.parse(dateString, DateTimeFormatter.ISO_DATE_TIME);
     SolrInputDocument d = processAdd("parse-french-date-UTC-defaultTimeZone-no-run-processor",
                                      doc(f("id", "88"), f("not_in_schema", frenchDateString)));
     assertNotNull(d);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
-    assertEquals(localDateTime.atZone(ZoneOffset.UTC).toInstant().toEpochMilli(), ((Date)d.getFieldValue("not_in_schema")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date)d.getFieldValue("not_in_schema")).toInstant());
   }
   
   public void testFailedParseMixedDate() throws Exception {
