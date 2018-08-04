@@ -200,8 +200,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("dateUTC_dt")); // should match "*_dt" dynamic field
 
-    String dateTimePattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ";
-    Instant UTCInstant = Instant.parse(formatExamples[1]);
+    Instant expectedInstant = Instant.parse(formatExamples[1]);
 
     for (int i = 0 ; i < formatExamples.length ; i += 2) {
       String format = formatExamples[i];
@@ -213,7 +212,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       assertTrue("index: " + i + " date '" + dateString + "' with format '" + format +
               "' is not mutated to a Date", d.getFieldValue("dateUTC_dt") instanceof Date);
       assertEquals("date '" + dateString + "' with format '" + format + "' mismatched milliseconds",
-          UTCInstant, ((Date)d.getFieldValue("dateUTC_dt")).toInstant());
+          expectedInstant, ((Date)d.getFieldValue("dateUTC_dt")).toInstant());
     }
   }
   
@@ -909,7 +908,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     if(in instanceof OffsetDateTime) {
       return Date.from(((OffsetDateTime) in).toInstant());
     } else if(in instanceof ZonedDateTime) {
-      return Date.from(((ZonedDateTime) in).withZoneSameInstant(timeZoneId).toInstant());
+      return Date.from(((ZonedDateTime) in).toInstant());
     } else if(in instanceof LocalDateTime) {
       return Date.from(((LocalDateTime) in).atZone(timeZoneId).toInstant());
     } else if(in instanceof Instant) {
