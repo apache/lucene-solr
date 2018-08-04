@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
@@ -67,33 +69,47 @@ public class CoresVariable extends VariableBase {
   }
 
   @Override
-  public Object computeValue(Policy.Session session, Clause.Condition condition, String collection, String shard, String node) {
-    if (condition.computedType == Clause.ComputedType.EQUAL) {
-      int[] coresCount = new int[1];
-      int[] liveNodes = new int[1];
-      for (Row row : session.matrix) {
-        if (!row.isLive) continue;
-        liveNodes[0]++;
-        row.forEachReplica(replicaInfo -> coresCount[0]++);
-      }
-      return liveNodes[0] == 0 || coresCount[0] == 0 ? 0d : (double) coresCount[0] / (double) liveNodes[0];
+  public Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
+    if (condition.computedType == ComputedType.EQUAL) {
+      AtomicInteger liveNodes = new AtomicInteger(0);
+      int coresCount = getTotalCores(session, liveNodes);
+      int numBuckets = condition.clause.tag.op == Operand.IN ?
+          ((Collection) condition.clause.tag.val).size() :
+          liveNodes.get();
+      return numBuckets == 0 || coresCount == 0 ? 0d : (double) coresCount / (double) numBuckets;
+    } else if (condition.computedType == ComputedType.PERCENT) {
+      return ComputedType.PERCENT.compute(getTotalCores(session, new AtomicInteger()), condition);
     } else {
       throw new IllegalArgumentException("Invalid computed type in " + condition);
     }
   }
 
-  @Override
-  public String postValidate(Clause.Condition condition) {
-    Clause.Condition nodeTag = condition.getClause().getTag();
-    if (nodeTag.name.equals("node") && nodeTag.op == Operand.WILDCARD) {
-      return null;
-    } else {
-      throw new IllegalArgumentException("cores: '#EQUAL' can be used only with node: '#ANY'");
+  private int getTotalCores(Policy.Session session, AtomicInteger liveNodes) {
+    int[] coresCount = new int[1];
+    for (Row row : session.matrix) {
+      if (!row.isLive) continue;
+      liveNodes.incrementAndGet();
+      row.forEachReplica(replicaInfo -> coresCount[0]++);
     }
+    return coresCount[0];
   }
 
   @Override
-  public Operand getOperand(Operand expected, Object strVal, Clause.ComputedType computedType) {
+  public String postValidate(Condition condition) {
+    Condition nodeTag = condition.getClause().getTag();
+    if (nodeTag.varType != Type.NODE) return "'cores' attribute can only be used with 'node' attribute";
+    if (condition.computedType == ComputedType.EQUAL) {
+      if (nodeTag.name.equals("node") && (nodeTag.op == Operand.WILDCARD || nodeTag.op == Operand.IN)) {
+        return null;
+      } else {
+        return "cores: '#EQUAL' can be used only with node: '#ANY', node :[....]";
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public Operand getOperand(Operand expected, Object strVal, ComputedType computedType) {
     return ReplicaVariable.checkForRangeOperand(expected, strVal, computedType);
   }
 }
