@@ -404,6 +404,7 @@ public class XMLLoader extends ContentStreamLoader {
     StringBuilder text = new StringBuilder();
     String name = null;
     boolean isNull = false;
+    boolean isLabeledChildDoc = false;
     String update = null;
     Collection<SolrInputDocument> subDocs = null;
     Map<String, Map<String, Object>> updateMap = null;
@@ -453,11 +454,12 @@ public class XMLLoader extends ContentStreamLoader {
               }
               break;
             }
-            if(name == null) {
+            if(!isLabeledChildDoc){
               // do not add empty data if a labeled child document was added
-              break;
+              doc.addField(name, v);
+            } else {
+              isLabeledChildDoc = false;
             }
-            doc.addField(name, v);
             // field is over
             name = null;
           }
@@ -468,12 +470,12 @@ public class XMLLoader extends ContentStreamLoader {
           String localName = parser.getLocalName();
           if ("doc".equals(localName)) {
             if(name != null) {
+              // flag to prevent spaces after doc from being added
+              isLabeledChildDoc = true;
               if(!doc.containsKey(name)) {
                 doc.setField(name, Lists.newArrayList());
               }
               doc.addField(name, readDoc(parser));
-              // signal to prevent spaces after doc from being added
-              name = null;
               break;
             }
             if (subDocs == null)

@@ -510,6 +510,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     String xml_doc1 =
         "<doc >" +
             "  <field name=\"id\">1</field>" +
+            "  <field name=\"empty_s\"></field>" +
             "  <field name=\"parent_s\">X</field>" +
             "  <field name=\"test\">" +
             "    <doc>  " +
@@ -520,7 +521,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
             "      <field name=\"id\" >3</field>" +
             "      <field name=\"child_s\">z</field>" +
             "    </doc>" +
-            "  </field>" +
+            "  </field> " +
             "</doc>";
 
     String xml_doc2 =
@@ -555,6 +556,13 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     //XMLLoader loader = new XMLLoader();
     SolrInputDocument document2 = loader.readDoc( parser2 );
 
+    assertFalse(document1.hasChildDocuments());
+    assertEquals(document1.toString(), sdoc("id", "1", "empty_s", "", "parent_s", "X", "test",
+        sdocs(sdoc("id", "2", "child_s", "y"), sdoc("id", "3", "child_s", "z"))).toString());
+
+    assertFalse(document2.hasChildDocuments());
+    assertEquals(document2.toString(), sdoc("id", "4", "parent_s", "A", "test",
+        sdocs(sdoc("id", "5", "child_s", "b"), sdoc("id", "6", "child_s", "c"))).toString());
 
     docs.add(document1);
     docs.add(document2);
