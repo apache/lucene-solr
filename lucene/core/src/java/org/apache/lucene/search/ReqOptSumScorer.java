@@ -212,7 +212,9 @@ class ReqOptSumScorer extends Scorer {
 
   @Override
   public int advanceShallow(int target) throws IOException {
-    optScorer.advanceShallow(target);
+    if (optScorer.docID() < target) {
+      optScorer.advanceShallow(target);
+    }
     return reqScorer.advanceShallow(target);
   }
 
