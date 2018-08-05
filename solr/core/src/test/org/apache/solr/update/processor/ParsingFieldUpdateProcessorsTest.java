@@ -163,35 +163,36 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
     assertEquals(dateStringUTC,
-        (ZonedDateTime.ofInstant(((Date)d.getFieldValue("not_in_schema")).toInstant(), ZoneOffset.UTC)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ", Locale.ROOT)));
+        (ZonedDateTime.ofInstant(((Date)d.getFieldValue("not_in_schema")).toInstant(), ZoneOffset.UTC)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSz", Locale.ROOT)));
   }
   
   public void testParseDateFormats() throws Exception {
+    // format examples are duplicated from config in solrconfig-parsing-update-processor-chains.xml
     String[] formatExamples = { 
-        "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ",  "2010-01-15T00:00:00.000Z",
-        "yyyy-MM-dd'T'HH:mm:ss,SSSZZZZZ",  "2010-01-15T00:00:00,000Z",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSz",  "2010-01-15T00:00:00.000Z",
+        "yyyy-MM-dd'T'HH:mm:ss,SSSz",  "2010-01-15T00:00:00,000Z",
         "yyyy-MM-dd'T'HH:mm:ss.SSS",   "2010-01-15T00:00:00.000",
         "yyyy-MM-dd'T'HH:mm:ss,SSS",   "2010-01-15T00:00:00,000",
-        "yyyy-MM-dd'T'HH:mm:ssZZZZZ",      "2010-01-15T00:00:00Z",
+        "yyyy-MM-dd'T'HH:mm:ssz",      "2010-01-15T00:00:00Z",
         "yyyy-MM-dd'T'HH:mm:ss",       "2010-01-15T00:00:00",
-        "yyyy-MM-dd'T'HH:mmZZZZZ",         "2010-01-15T00:00Z",
+        "yyyy-MM-dd'T'HH:mmz",         "2010-01-15T00:00Z",
         "yyyy-MM-dd'T'HH:mm",          "2010-01-15T00:00",
-        "yyyy-MM-dd HH:mm:ss.SSSZZZZZ",    "2010-01-15 00:00:00.000Z",
-        "yyyy-MM-dd HH:mm:ss,SSSZZZZZ",    "2010-01-15 00:00:00,000Z",
+        "yyyy-MM-dd HH:mm:ss.SSSz",    "2010-01-15 00:00:00.000Z",
+        "yyyy-MM-dd HH:mm:ss,SSSz",    "2010-01-15 00:00:00,000Z",
         "yyyy-MM-dd HH:mm:ss.SSS",     "2010-01-15 00:00:00.000",
         "yyyy-MM-dd HH:mm:ss,SSS",     "2010-01-15 00:00:00,000",
-        "yyyy-MM-dd HH:mm:ssZZZZZ",        "2010-01-15 00:00:00Z",
+        "yyyy-MM-dd HH:mm:ssz",        "2010-01-15 00:00:00Z",
         "yyyy-MM-dd HH:mm:ss",         "2010-01-15 00:00:00",
-        "yyyy-MM-dd HH:mmZZZZZ",           "2010-01-15 00:00Z",
+        "yyyy-MM-dd HH:mmz",           "2010-01-15 00:00Z",
         "yyyy-MM-dd HH:mm",            "2010-01-15 00:00",
         "yyyy-MM-dd hh:mm a",          "2010-01-15 12:00 AM",
         "yyyy-MM-dd hh:mma",           "2010-01-15 12:00AM",
         "yyyy-MM-dd",                  "2010-01-15",
         "EEE MMM dd HH:mm:ss ZZZ yyyy",  "Fri Jan 15 00:00:00 +0000 2010",
-        "EEE MMM dd HH:mm:ss yyyy ZZZZZ",  "Fri Jan 15 00:00:00 2010 +00:00",
+        "EEE MMM dd HH:mm:ss yyyy z",  "Fri Jan 15 00:00:00 2010 +00:00",
         "EEE MMM dd HH:mm:ss yyyy",    "Fri Jan 15 00:00:00 2010",
-        "EEE, dd MMM yyyy HH:mm:ss ZZZZZ", "Fri, 15 Jan 2010 00:00:00 +00:00",
-        "EEEE, dd-MMM-yy HH:mm:ss ZZZZZ",  "Friday, 15-Jan-10 00:00:00 +00:00",
+        "EEE, dd MMM yyyy HH:mm:ss z", "Fri, 15 Jan 2010 00:00:00 +00:00",
+        "EEEE, dd-MMM-yy HH:mm:ss z",  "Friday, 15-Jan-10 00:00:00 +00:00",
         "EEEE, MMMM dd, yyyy",         "Friday, January 15, 2010",
         "MMMM dd, yyyy",               "January 15, 2010",
         "MMM. dd, yyyy",               "Jan. 15, 2010"
@@ -231,7 +232,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   public void testFailedParseMixedDate() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSZZZZZ]", Locale.ROOT).withZone(ZoneOffset.UTC);
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSz]", Locale.ROOT).withZone(ZoneOffset.UTC);
     Map<Object,Object> mixed = new HashMap<>();
     String[] dateStrings = { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
@@ -793,7 +794,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       longs.remove(o);
     }
 
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSZZZZZ]", Locale.ROOT).withZone(ZoneOffset.UTC);
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSz]", Locale.ROOT).withZone(ZoneOffset.UTC);
     Map<Date,String> dates = new HashMap<>();
     String[] dateStrings = { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
@@ -885,7 +886,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(mixedBooleans.isEmpty());
 
-    dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSZZZZZ]", Locale.ROOT).withZone(ZoneOffset.UTC);
+    dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm][:ss.SSSz]", Locale.ROOT).withZone(ZoneOffset.UTC);
     Map<Date,Object> mixedDates = new HashMap<>();
     dateStrings = new String[] { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {

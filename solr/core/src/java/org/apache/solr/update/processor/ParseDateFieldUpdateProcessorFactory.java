@@ -19,6 +19,8 @@ package org.apache.solr.update.processor;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -27,6 +29,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalQueries;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -193,22 +196,35 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   }
 
   private static Instant parseInstant(DateTimeFormatter formatter, String dateStr) {
-    final TemporalAccessor temporalAccessor = formatter.parse(dateStr);
-    // parsed successfully.  But is it a full instant or just to the day?
-    if (temporalAccessor.isSupported(ChronoField.INSTANT_SECONDS)) { // has time
-      // has offset time
-      if(temporalAccessor.isSupported(ChronoField.OFFSET_SECONDS)) {
-        return temporalAccessor.query(OffsetDateTime::from).toInstant();
+    final TemporalAccessor temporal = formatter.parse(dateStr);
+    // Get Date; mandatory
+    LocalDate date = temporal.query(TemporalQueries.localDate());//mandatory
+    if (date == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Date (year, month, day) is mandatory: " + formatter.toFormat().toString());
+    }
+    // Get Time; optional
+    LocalTime time = temporal.query(TemporalQueries.localTime());
+    if (time == null) {
+      time = LocalTime.MIN;
+    }
+
+    final LocalDateTime localDateTime = LocalDateTime.of(date, time);
+
+    // Get Zone Offset; optional
+    ZoneOffset offset = temporal.query(TemporalQueries.offset());
+    if (offset == null) {
+      // no Zone offset; get Zone ID
+      ZoneId zoneId = temporal.query(TemporalQueries.zone());
+      if (zoneId == null) {
+        zoneId = formatter.getZone();
+        if (zoneId == null) {
+          zoneId = ZoneOffset.UTC;
+        }
       }
-      return temporalAccessor.query(Instant::from);
-    } else { // no time, just date
-      if (temporalAccessor.isSupported(ChronoField.HOUR_OF_DAY) || temporalAccessor.isSupported(ChronoField.HOUR_OF_AMPM)) {
-        // TODO should we check for others?
-        throw new IllegalArgumentException("Pattern only has partial time?: " + formatter);
-      }
-      ZoneId formatterZone = formatter.getZone();
-      // use default time zone if none was specified
-      return temporalAccessor.query(LocalDate::from).atStartOfDay(formatterZone==null? ZoneOffset.UTC: formatterZone).toInstant();
+      return localDateTime.atZone(zoneId).toInstant();
+    } else {
+      return localDateTime.toInstant(offset);
     }
   }
 }
