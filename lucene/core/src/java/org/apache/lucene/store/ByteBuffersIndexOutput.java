@@ -9,6 +9,10 @@ public final class ByteBuffersIndexOutput extends IndexOutput {
   private BufferedChecksum crc;
   private Consumer<ByteBuffersDataOutput> onClose;
 
+  public ByteBuffersIndexOutput(String resourceDescription, String name) {
+    this(new ByteBuffersDataOutput(), resourceDescription, name, null);
+  }
+
   public ByteBuffersIndexOutput(ByteBuffersDataOutput delegate, String resourceDescription, String name) {
     this(delegate, resourceDescription, name, null);
   }
@@ -39,6 +43,8 @@ public final class ByteBuffersIndexOutput extends IndexOutput {
   @Override
   public long getChecksum() throws IOException {
     ensureOpen();
+    // TODO: compute checksum on the current content of the delegate instead of computing it on the fly?
+    // then we can override more methods and pass them directly to the delegate for efficiency.
     return crc.getValue();
   }
 

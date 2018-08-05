@@ -44,6 +44,8 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
@@ -442,10 +444,11 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeVLong(size);
     meta.writeInt(Lucene70DocValuesFormat.TERMS_DICT_BLOCK_SHIFT);
 
-    RAMOutputStream addressBuffer = new RAMOutputStream();
+    ByteBuffersDataOutput addressBuffer = new ByteBuffersDataOutput();
+    ByteBuffersIndexOutput addressOutput = new ByteBuffersIndexOutput(addressBuffer, "temp", "temp");
     meta.writeInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
     long numBlocks = (size + Lucene70DocValuesFormat.TERMS_DICT_BLOCK_MASK) >>> Lucene70DocValuesFormat.TERMS_DICT_BLOCK_SHIFT;
-    DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(meta, addressBuffer, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
+    DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(meta, addressOutput, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
 
     BytesRefBuilder previous = new BytesRefBuilder();
     long ord = 0;
@@ -480,7 +483,7 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeLong(start);
     meta.writeLong(data.getFilePointer() - start);
     start = data.getFilePointer();
-    addressBuffer.writeTo(data);
+    addressBuffer.copyTo(data);
     meta.writeLong(start);
     meta.writeLong(data.getFilePointer() - start);
 

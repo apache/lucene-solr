@@ -210,6 +210,19 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   }
 
   /**
+   * Copy the current content of this object into another {@link DataOutput}.
+   */
+  public void copyTo(DataOutput output) throws IOException {
+    for (ByteBuffer bb : toBufferList()) {
+      if (bb.hasArray()) {
+        output.writeBytes(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining());
+      } else {
+        output.copyBytes(new ByteBuffersDataInput(Arrays.asList(bb)), bb.remaining());
+      }
+    }
+  }
+
+  /**
    * @return The number of bytes written to this output so far.
    */
   public long size() {
