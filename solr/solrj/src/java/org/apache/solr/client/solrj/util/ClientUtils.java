@@ -16,16 +16,21 @@
  */
 package org.apache.solr.client.solrj.util;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -73,7 +78,7 @@ public class ClientUtils
         String update = null;
 
         if(v instanceof SolrInputDocument) {
-          writeXML((SolrInputDocument) v ,writer);
+          writeVal(writer, name, v , null);
         } else if (v instanceof Map) {
           // currently only supports a single value
           for (Entry<Object,Object> entry : ((Map<Object,Object>)v).entrySet()) {
@@ -116,15 +121,32 @@ public class ClientUtils
 
     if (update == null) {
       if (v != null) {
-        XML.writeXML(writer, "field", v.toString(), "name", name );
+        if(v instanceof SolrInputDocument) {
+          OutputStream os = SolrInputDocumentXmlOutput((SolrInputDocument) v);
+          XML.writeXML(writer, "field", false, os.toString(), "name", name);
+        } else {
+          XML.writeXML(writer, "field", v.toString(), "name", name );
+        }
       }
     } else {
       if (v == null)  {
         XML.writeXML(writer, "field", null, "name", name, "update", update, "null", true);
       } else  {
+        if(v instanceof SolrInputDocument) {
+          OutputStream os = SolrInputDocumentXmlOutput((SolrInputDocument) v);
+          XML.writeXML(writer, "field", false, os.toString(), "name", name, "update", update);
+        }
         XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
       }
     }
+  }
+
+  private static OutputStream SolrInputDocumentXmlOutput(SolrInputDocument v) throws IOException {
+    OutputStream os = new ByteArrayOutputStream();
+    BufferedWriter childDocWriter = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
+    writeXML(v, childDocWriter);
+    childDocWriter.flush();
+    return os;
   }
 
 

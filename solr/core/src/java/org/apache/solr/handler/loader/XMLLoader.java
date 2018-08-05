@@ -453,6 +453,10 @@ public class XMLLoader extends ContentStreamLoader {
               }
               break;
             }
+            if(name == null) {
+              // do not add empty data if a labeled child document was added
+              break;
+            }
             doc.addField(name, v);
             // field is over
             name = null;
@@ -463,18 +467,13 @@ public class XMLLoader extends ContentStreamLoader {
           text.setLength(0);
           String localName = parser.getLocalName();
           if ("doc".equals(localName)) {
-            String docKey = null;
-            for(int i = 0; i < parser.getAttributeCount(); ++i) {
-              attrName = parser.getAttributeLocalName(i);
-              if("name".equals(attrName)) {
-                docKey = parser.getAttributeValue(i);
+            if(name != null) {
+              if(!doc.containsKey(name)) {
+                doc.setField(name, Lists.newArrayList());
               }
-            }
-            if(docKey != null) {
-              if(!doc.containsKey(docKey)) {
-                doc.setField(docKey, Lists.newArrayList());
-              }
-              doc.addField(docKey, readDoc(parser));
+              doc.addField(name, readDoc(parser));
+              // signal to prevent spaces after doc from being added
+              name = null;
               break;
             }
             if (subDocs == null)

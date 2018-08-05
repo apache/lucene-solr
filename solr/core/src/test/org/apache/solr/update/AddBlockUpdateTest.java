@@ -511,28 +511,34 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
         "<doc >" +
             "  <field name=\"id\">1</field>" +
             "  <field name=\"parent_s\">X</field>" +
-            "<doc name=\"test\">  " +
-            "  <field name=\"id\" >2</field>" +
-            "  <field name=\"child_s\">y</field>" +
-            "</doc>"+
-            "<doc name=\"test\">  " +
-            "  <field name=\"id\" >3</field>" +
-            "  <field name=\"child_s\">z</field>" +
-            "</doc>"+
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >2</field>" +
+            "      <field name=\"child_s\">y</field>" +
+            "    </doc>"+
+            "    <doc>  " +
+            "      <field name=\"id\" >3</field>" +
+            "      <field name=\"child_s\">z</field>" +
+            "    </doc>" +
+            "  </field>" +
             "</doc>";
 
     String xml_doc2 =
         "<doc >" +
             "  <field name=\"id\">4</field>" +
             "  <field name=\"parent_s\">A</field>" +
-            "<doc name=\"test\">  " +
-            "  <field name=\"id\" >5</field>" +
-            "  <field name=\"child_s\">b</field>" +
-            "</doc>"+
-            "<doc name=\"test\">  " +
-            "  <field name=\"id\" >6</field>" +
-            "  <field name=\"child_s\">c</field>" +
-            "</doc>"+
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >5</field>" +
+            "      <field name=\"child_s\">b</field>" +
+            "    </doc>"+
+            "  </field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >6</field>" +
+            "      <field name=\"child_s\">c</field>" +
+            "    </doc>" +
+            "  </field> " +
             "</doc>";
 
     XMLStreamReader parser =
