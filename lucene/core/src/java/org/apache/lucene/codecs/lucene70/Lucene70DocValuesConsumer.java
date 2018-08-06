@@ -498,37 +498,36 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     DirectMonotonicWriter writer;
     try (ByteBuffersIndexOutput addressOutput = new ByteBuffersIndexOutput(addressBuffer, "temp", "temp")) {
       writer = DirectMonotonicWriter.getInstance(meta, addressOutput, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
-    }
-
-    TermsEnum iterator = values.termsEnum();
-    BytesRefBuilder previous = new BytesRefBuilder();
-    long offset = 0;
-    long ord = 0;
-    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-      if ((ord & Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == 0) {
-        writer.add(offset);
-        final int sortKeyLength;
-        if (ord == 0) {
-          // no previous term: no bytes to write
-          sortKeyLength = 0;
-        } else {
-          sortKeyLength = StringHelper.sortKeyLength(previous.get(), term);
+      TermsEnum iterator = values.termsEnum();
+      BytesRefBuilder previous = new BytesRefBuilder();
+      long offset = 0;
+      long ord = 0;
+      for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+        if ((ord & Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == 0) {
+          writer.add(offset);
+          final int sortKeyLength;
+          if (ord == 0) {
+            // no previous term: no bytes to write
+            sortKeyLength = 0;
+          } else {
+            sortKeyLength = StringHelper.sortKeyLength(previous.get(), term);
+          }
+          offset += sortKeyLength;
+          data.writeBytes(term.bytes, term.offset, sortKeyLength);
+        } else if ((ord & Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) {
+          previous.copyBytes(term);
         }
-        offset += sortKeyLength;
-        data.writeBytes(term.bytes, term.offset, sortKeyLength);
-      } else if ((ord & Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) {
-        previous.copyBytes(term);
+        ++ord;
       }
-      ++ord;
+      writer.add(offset);
+      writer.finish();
+      meta.writeLong(start);
+      meta.writeLong(data.getFilePointer() - start);
+      start = data.getFilePointer();
+      addressBuffer.copyTo(data);
+      meta.writeLong(start);
+      meta.writeLong(data.getFilePointer() - start);
     }
-    writer.add(offset);
-    writer.finish();
-    meta.writeLong(start);
-    meta.writeLong(data.getFilePointer() - start);
-    start = data.getFilePointer();
-    addressBuffer.copyTo(data);
-    meta.writeLong(start);
-    meta.writeLong(data.getFilePointer() - start);
   }
 
   @Override
