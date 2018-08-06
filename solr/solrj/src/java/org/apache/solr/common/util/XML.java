@@ -126,8 +126,8 @@ public class XML {
     }
   }
 
-  /** escapes character data in val if shouldEscape is true*/
-  public final static void writeXML(Writer out, String tag, boolean shouldEscape, String val, Object... attrs) throws IOException {
+  /** escapes character data in val */
+  public final static void writeXML(Writer out, String tag, String val, Object... attrs) throws IOException {
     out.write('<');
     out.write(tag);
     for (int i=0; i<attrs.length; i++) {
@@ -143,20 +143,12 @@ public class XML {
       out.write('>');
     } else {
       out.write('>');
-      if(shouldEscape) {
-        escapeCharData(val,out);
-      } else {
-        out.write(val);
-      }
+      escapeCharData(val,out);
       out.write('<');
       out.write('/');
       out.write(tag);
       out.write('>');
     }
-  }
-
-  public final static void writeXML(Writer out, String tag, String val, Object... attrs) throws IOException {
-    writeXML(out, tag, true, val, attrs);
   }
 
   /** escapes character data in val */
