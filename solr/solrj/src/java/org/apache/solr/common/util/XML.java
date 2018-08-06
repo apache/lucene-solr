@@ -104,11 +104,11 @@ public class XML {
 
   /** does NOT escape character data in val or attributes, must already be valid XML */
   public final static void writeUnescapedXML(Writer out, String tag, String val, Object... attrs) throws IOException {
-    writeUnescapedAttrXML(out, tag, (writer1) -> writer1.write(val), attrs);
+    writeElementXML(out, tag, (writer1) -> writer1.write(val), attrs);
   }
 
   /** does NOT escape character data in attributes, must already be valid XML */
-  public final static void writeUnescapedAttrXML(Writer out, String tag, Writable valWritable, Object... attrs) throws IOException {
+  public final static void writeElementXML(Writer out, String tag, Writable valWritable, Object... attrs) throws IOException {
     writeXML(out, tag, valWritable, null, attrs);
   }
 
