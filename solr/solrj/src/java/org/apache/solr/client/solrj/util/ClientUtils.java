@@ -122,8 +122,8 @@ public class ClientUtils
     if (update == null) {
       if (v != null) {
         if(v instanceof SolrInputDocument) {
-          OutputStream os = solrInputDocumentXmlOutput((SolrInputDocument) v);
-          XML.writeUnescapedXML(writer, "field", os.toString(), "name", name);
+          final SolrInputDocument currChildDoc = (SolrInputDocument) v;
+          XML.writeUnescapedXML(writer, "field", (writer1) -> solrInputDocumentXmlOutput(currChildDoc, writer1), "name", name);
         } else {
           XML.writeXML(writer, "field", v.toString(), "name", name );
         }
@@ -133,8 +133,8 @@ public class ClientUtils
         XML.writeXML(writer, "field", null, "name", name, "update", update, "null", true);
       } else  {
         if(v instanceof SolrInputDocument) {
-          OutputStream os = solrInputDocumentXmlOutput((SolrInputDocument) v);
-          XML.writeUnescapedXML(writer, "field", os.toString(), "name", name, "update", update);
+          final SolrInputDocument currChildDoc = (SolrInputDocument) v;
+          XML.writeUnescapedXML(writer, "field", (writer1) -> solrInputDocumentXmlOutput(currChildDoc, writer1), "name", name);
         } else {
           XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
         }
@@ -142,12 +142,8 @@ public class ClientUtils
     }
   }
 
-  private static OutputStream solrInputDocumentXmlOutput(SolrInputDocument v) throws IOException {
-    OutputStream os = new ByteArrayOutputStream();
-    BufferedWriter childDocWriter = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
-    writeXML(v, childDocWriter);
-    childDocWriter.flush();
-    return os;
+  private static void solrInputDocumentXmlOutput(SolrInputDocument v, Writer writer) throws IOException {
+    writeXML(v, writer);
   }
 
 

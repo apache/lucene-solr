@@ -101,8 +101,12 @@ public class XML {
     }
   }
 
-  /** does NOT escape character data in val, must already be valid XML */
   public final static void writeUnescapedXML(Writer out, String tag, String val, Object... attrs) throws IOException {
+    writeUnescapedXML(out, tag, (writer1) -> writer1.write(val), attrs);
+  }
+
+  /** does NOT escape character data in val, must already be valid XML */
+  public final static void writeUnescapedXML(Writer out, String tag, Writable val, Object... attrs) throws IOException {
     out.write('<');
     out.write(tag);
     for (int i=0; i<attrs.length; i++) {
@@ -118,7 +122,7 @@ public class XML {
       out.write('>');
     } else {
       out.write('>');
-      out.write(val);
+      val.write(out);
       out.write('<');
       out.write('/');
       out.write(tag);
@@ -202,5 +206,9 @@ public class XML {
       }
       out.write(ch);
     }
+  }
+
+  public interface Writable {
+    void write(Writer w) throws IOException ;
   }
 }
