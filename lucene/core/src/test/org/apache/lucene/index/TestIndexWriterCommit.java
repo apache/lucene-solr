@@ -177,7 +177,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     final String idFormat = TestUtil.getPostingsFormat("id");
     final String contentFormat = TestUtil.getPostingsFormat("content");
-    assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
     MockDirectoryWrapper dir = newMockDirectory();
     Analyzer analyzer;
     if (random().nextBoolean()) {

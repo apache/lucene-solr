@@ -37,7 +37,7 @@ Currently the following event types (and corresponding trigger implementations) 
 * `indexSize`: generated when a shard size (defined as index size in bytes or number of documents)
 exceeds upper or lower threshold values
 * `searchRate`: generated when the search rate exceeds configured upper or lower thresholds
-* `scheduled`: generated according to a scheduled time period such as every 24 hours etc
+* `scheduled`: generated according to a scheduled time period such as every 24 hours, etc
 
 Events are not necessarily generated immediately after the corresponding state change occurred - the
 maximum rate of events is controlled by the `waitFor` configuration parameter (see below).
@@ -54,7 +54,7 @@ The following properties are common to all event types:
 `nodeAdded` event this will be the time when the node was added and not when the event was actually
 generated, which may significantly differ due to the rate limits set by `waitFor`.
 
-`properties`:: (map, optional) Any additional properties. Currently includes eg. `nodeNames` property that
+`properties`:: (map, optional) Any additional properties. Currently includes e.g., `nodeNames` property that
 indicates the nodes that were lost or added.
 
 == Auto Add Replicas Trigger
@@ -78,7 +78,7 @@ The metric trigger can be used to monitor any metric exposed by the <<metrics-re
 
 This trigger supports the following configuration:
 
-`metric`:: (string, required) The metric property name to be watched in the format metrics:group:prefix, e.g., `metric:solr.node:CONTAINER.fs.coreRoot.usableSpace`.
+`metric`:: (string, required) The metric property name to be watched in the format metric:__group__:__prefix__, e.g., `metric:solr.node:CONTAINER.fs.coreRoot.usableSpace`.
 
 `below`:: (double, optional) The lower threshold for the metric value. The trigger produces a metric breached event if the metric's value falls below this value.
 
@@ -117,10 +117,10 @@ this is a SPLITSHARD operation.
 
 Similarly, when either of the lower thresholds is exceeded the trigger will generate an
 event with a (configurable) requested operation to perform on two of the smallest
-shards - by default this is a MERGESHARDS operation (which is currently ignored because
-it's not yet implemented - SOLR-9407)
+shards. By default this is a MERGESHARDS operation, and is currently ignored because
+that operation is not yet implemented (see https://issues.apache.org/jira/browse/SOLR-9407[SOLR-9407]).
 
-Additionally, monitoring can be restricted to a list of collections - by default
+Additionally, monitoring can be restricted to a list of collections; by default
 all collections are monitored.
 
 This trigger supports the following configuration parameters (all thresholds are exclusive):
@@ -131,7 +131,8 @@ This trigger supports the following configuration parameters (all thresholds are
 `aboveBytes`
 
 `aboveDocs`:: upper threshold expressed as the number of documents. This value is compared with `SEARCHER.searcher.numDocs` metric.
-Note: due to the way Lucene indexes work a shard may exceed the `aboveBytes` threshold
++
+NOTE: Due to the way Lucene indexes work, a shard may exceed the `aboveBytes` threshold
 even if the number of documents is relatively small, because replaced and deleted documents keep
 occupying disk space until they are actually removed during Lucene index merging.
 
@@ -151,7 +152,7 @@ that exceeded thresholds and the types of violations (upper / lower bounds, byte
 
 .Example:
 This configuration specifies an index size trigger that monitors collections "test1" and "test2",
-with both bytes (1GB) and number of docs (1 mln) upper limits, and a custom `belowOp`
+with both bytes (1GB) and number of docs (1 million) upper limits, and a custom `belowOp`
 operation `NONE` (which still can be monitored and acted upon by an appropriate trigger listener):
 
 [source,json]
@@ -216,7 +217,7 @@ metric value, and it may use the colon syntax for selecting one property of a co
 requested in a single autoscaling event. The default value is 3 and it helps to smooth out
 the changes to the number of replicas during periods of large search rate fluctuations.
 
-`minReplicas`:: (integer, optional) minimum acceptable number of searchable replicas (ie. replicas other
+`minReplicas`:: (integer, optional) minimum acceptable number of searchable replicas (i.e., replicas other
 than `PULL` type). The trigger will not generate any DELETEREPLICA requests when the number of
 searchable replicas in a shard reaches this threshold. When this value is not set (the default)
 the `replicationFactor` property of the collection is used, and if that property is not set then
@@ -247,7 +248,7 @@ to effectively disable the action but still report it to the listeners.
 `belowNodeOp`:: action to request when the lower threshold for a node is exceeded.
 Default action is null (not set) and the condition is ignored, because in many cases the
 trigger will monitor only some selected resources (replicas from selected
-collections / shards) so setting this by default to eg. `DELETENODE` could interfere with
+collections / shards) so setting this by default to e.g., `DELETENODE` could interfere with
 these non-monitored resources. The trigger will request 1 operation per cold node per event.
 If both `belowOp` and `belowNodeOp` operations are requested then `belowOp` operations are
 always requested first.

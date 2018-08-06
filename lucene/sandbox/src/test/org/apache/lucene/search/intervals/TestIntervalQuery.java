@@ -166,4 +166,16 @@ public class TestIntervalQuery extends LuceneTestCase {
     checkHits(q, new int[]{ 6, 7 });
   }
 
+  public void testUnordered() throws IOException {
+    Query q = new IntervalQuery(field,
+        Intervals.unordered(
+            Intervals.term("w1"),
+            Intervals.ordered(
+                Intervals.term("w3"),
+                Intervals.term("yy")
+            )
+        )
+    );
+    checkHits(q, new int[]{3});
+  }
 }

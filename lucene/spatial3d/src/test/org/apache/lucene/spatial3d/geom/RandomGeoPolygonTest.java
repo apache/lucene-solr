@@ -77,120 +77,155 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
   public void testCoplanarityTilePolygon() {
     //POLYGON((-90.55764 -0.34907,-90.55751 -0.34868,-90.55777 -0.34842,-90.55815 -0.34766,-90.55943 -0.34842, -90.55918 -0.34842,-90.55764 -0.34907))
     List<GeoPoint> points = new ArrayList<>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34907), fromDegrees(-90.55764)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34868), fromDegrees(-90.55751)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34842), fromDegrees(-90.55777)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34766), fromDegrees(-90.55815)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34842), fromDegrees(-90.55943)));
-    points.add(new GeoPoint(PlanetModel.SPHERE, fromDegrees(-0.34842), fromDegrees(-90.55918)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34907), Geo3DUtil.fromDegrees(-90.55764)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34868), Geo3DUtil.fromDegrees(-90.55751)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34842), Geo3DUtil.fromDegrees(-90.55777)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34766), Geo3DUtil.fromDegrees(-90.55815)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34842), Geo3DUtil.fromDegrees(-90.55943)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-0.34842), Geo3DUtil.fromDegrees(-90.55918)));
     GeoCompositePolygon polygon = (GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
     assertTrue(polygon.size() == 3);
   }
 
   /**
-   * Test comparing different polygon technologies using random
+   * Test comparing different polygon (Big) technologies using random
    * biased doubles.
    */
   @Test
   @Repeat(iterations = 10)
-  public void testComparePolygons() {
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8281")
+  public void testCompareBigPolygons() {
+    testComparePolygons(Math.PI);
+  }
+
+  /**
+   * Test comparing different polygon (Small) technologies using random
+   * biased doubles.
+   */
+  @Test
+  @Repeat(iterations = 10)
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8281")
+  public void testCompareSmallPolygons() {
+    testComparePolygons(1e-4 * Math.PI);
+  }
+
+
+  private void testComparePolygons(double limitDistance) {
     final PlanetModel planetModel = randomPlanetModel();
     //Create polygon points using a reference point and a maximum distance to the point
-    final GeoPoint referencePoint = getBiasedPoint(planetModel);
+    final GeoPoint referencePoint;
+    if (random().nextBoolean()) {
+     referencePoint = getBiasedPoint(planetModel);
+    } else {
+      referencePoint = randomGeoPoint(planetModel);
+    }
     final int n = random().nextInt(4) + 4;
-    final List<GeoPoint> points = new ArrayList<>(n);
-    final double maxDistance = random().nextDouble() *  Math.PI;
-    for (int i = 0; i < n; i++) {
-      while(true) {
-        final double distance = BiasedNumbers.randomDoubleBetween(random(), 0, maxDistance);// random().nextDouble() * maxDistance;
-        final double bearing = random().nextDouble() * 2 * Math.PI;
-        GeoPoint p = planetModel.surfacePointOnBearing(referencePoint, distance, bearing);
-        if (!contains(p, points)) {
-          if (points.size() > 1 && Plane.arePointsCoplanar(points.get(points.size() -1), points.get(points.size() - 2), p)) {
-            continue;
-          }
-          points.add(p);
-          break;
-        }
-      }
-    }
-    //order points so we don't get crossing edges
-    final List<GeoPoint> orderedPoints = orderPoints(points);
-    //Comment out below to get clock-wise polygons
-    if (random().nextBoolean() && random().nextBoolean()) {
-      Collections.reverse(orderedPoints);
-    }
-    GeoPolygonFactory.PolygonDescription polygonDescription = new GeoPolygonFactory.PolygonDescription(orderedPoints);
-    GeoPolygon polygon = null;
-    try {
-      polygon = GeoPolygonFactory.makeGeoPolygon(planetModel, polygonDescription);
-    } catch(Exception e) {
-      StringBuilder buffer = new StringBuilder("Polygon failed to build with an exception:\n");
-      buffer.append(points.toString()+ "\n");
-      buffer.append("WKT:" + getWKT(orderedPoints));
-      buffer.append(e.toString());
-      fail(buffer.toString());
-    }
-    if (polygon == null) {
-      StringBuilder buffer = new StringBuilder("Polygon failed to build:\n");
-      buffer.append(points.toString()+ "\n");
-      buffer.append("WKT:" + getWKT(orderedPoints));
-      fail(buffer.toString());
-    }
-    GeoPolygon largePolygon = null;
-    try {
-      largePolygon = GeoPolygonFactory.makeLargeGeoPolygon(planetModel, Collections.singletonList(polygonDescription));
-    } catch(Exception e) {
-      StringBuilder buffer = new StringBuilder("Large polygon failed to build with an exception:\n");
-      buffer.append(points.toString()+ "\n");
-      buffer.append("WKT:" + getWKT(orderedPoints));
-      buffer.append(e.toString());
-      fail(buffer.toString());
-    }
-    if (largePolygon == null) {
-      StringBuilder buffer = new StringBuilder("Large polygon failed to build:\n");
-      buffer.append(points.toString()+ "\n");
-      buffer.append("WKT:" + getWKT(orderedPoints));
-      fail(buffer.toString());
-    }
 
-    for(int i=0;i<100000;i++) {
-      GeoPoint point = getBiasedPoint(planetModel);
-      boolean withIn1 = polygon.isWithin(point);
-      boolean withIn2 = largePolygon.isWithin(point);
-      StringBuilder buffer = new StringBuilder();
-      if (withIn1 != withIn2) {
-        //NOTE: Sometimes we get errors when check point is near a polygon point.
-        // For the time being, we filter this errors.
-        double d1 = polygon.computeOutsideDistance(DistanceStyle.ARC, point);
-        double d2  = largePolygon.computeOutsideDistance(DistanceStyle.ARC, point);
-        if (d1 == 0 && d2 == 0) {
-          continue;
-        }
-        buffer = buffer.append("\nStandard polygon: " + polygon.toString() +"\n");
-        buffer = buffer.append("\nLarge polygon: " + largePolygon.toString() +"\n");
-        buffer = buffer.append("\nPoint: " + point.toString() +"\n");
-        buffer.append("\nWKT: " + getWKT(orderedPoints));
-        buffer.append("\nWKT: POINT(" + toDegrees(point.getLongitude()) + " " + toDegrees(point.getLatitude()) + ")\n");
-        buffer.append("normal polygon: " +withIn1 + "\n");
-        buffer.append("large polygon: " + withIn2 + "\n");
+    List<GeoPoint> orderedPoints = null;
+    GeoPolygon polygon = null;
+    GeoPolygon largePolygon = null;
+    do {
+      final List<GeoPoint> points = new ArrayList<>(n);
+      double maxDistance = random().nextDouble() * limitDistance;
+      //if distance is too small we can fail
+      //building the polygon.
+      while (maxDistance < 1e-7) {
+        maxDistance = random().nextDouble() * limitDistance;
       }
-      assertTrue(buffer.toString(), withIn1 == withIn2);
+      for (int i = 0; i < n; i++) {
+        while (true) {
+          final double distance = BiasedNumbers.randomDoubleBetween(random(), 0, maxDistance);// random().nextDouble() * maxDistance;
+          final double bearing = random().nextDouble() * 2 * Math.PI;
+          final GeoPoint p = planetModel.surfacePointOnBearing(referencePoint, distance, bearing);
+          if (!contains(p, points)) {
+            if (points.size() > 1 && Plane.arePointsCoplanar(points.get(points.size() - 1), points.get(points.size() - 2), p)) {
+              continue;
+            }
+            points.add(p);
+            break;
+          }
+        }
+      }
+      //order points so we don't get crossing edges
+      orderedPoints = orderPoints(points);
+      if (random().nextBoolean() && random().nextBoolean()) {
+        Collections.reverse(orderedPoints);
+      }
+      final GeoPolygonFactory.PolygonDescription polygonDescription = new GeoPolygonFactory.PolygonDescription(orderedPoints);
+
+      try {
+        polygon = GeoPolygonFactory.makeGeoPolygon(planetModel, polygonDescription);
+      } catch (Exception e) {
+        final StringBuilder buffer = new StringBuilder("Polygon failed to build with an exception:\n");
+        buffer.append(points.toString() + "\n");
+        buffer.append("WKT:" + getWKT(orderedPoints));
+        buffer.append(e.toString());
+        fail(buffer.toString());
+      }
+      if (polygon == null) {
+        final StringBuilder buffer = new StringBuilder("Polygon failed to build:\n");
+        buffer.append(points.toString() + "\n");
+        buffer.append("WKT:" + getWKT(orderedPoints));
+        fail(buffer.toString());
+      }
+      try {
+        largePolygon = GeoPolygonFactory.makeLargeGeoPolygon(planetModel, Collections.singletonList(polygonDescription));
+      } catch (Exception e) {
+        final StringBuilder buffer = new StringBuilder("Large polygon failed to build with an exception:\n");
+        buffer.append(points.toString() + "\n");
+        buffer.append("WKT:" + getWKT(orderedPoints));
+        buffer.append(e.toString());
+        fail(buffer.toString());
+      }
+      if (largePolygon == null) {
+        StringBuilder buffer = new StringBuilder("Large polygon failed to build:\n");
+        buffer.append(points.toString() + "\n");
+        buffer.append("WKT:" + getWKT(orderedPoints));
+        fail(buffer.toString());
+      }
+    } while(polygon.getClass().equals(largePolygon.getClass()));
+    //Some of these do not work but it seems it s from the way the point is created
+    //GeoPoint centerOfMass = getCenterOfMass(planetModel, orderedPoints);
+    //checkPoint(polygon, largePolygon, centerOfMass, orderedPoints);
+    //checkPoint(polygon, largePolygon, new GeoPoint(-centerOfMass.x, -centerOfMass.y, -centerOfMass.z), orderedPoints);
+    //checkPoint(polygon, largePolygon, new GeoPoint(centerOfMass.x, -centerOfMass.y, -centerOfMass.z), orderedPoints);
+    //checkPoint(polygon, largePolygon, new GeoPoint(centerOfMass.x, centerOfMass.y, -centerOfMass.z), orderedPoints);
+    //checkPoint(polygon, largePolygon, new GeoPoint(-centerOfMass.x, -centerOfMass.y, centerOfMass.z), orderedPoints);
+    //checkPoint(polygon, largePolygon, new GeoPoint(-centerOfMass.x, centerOfMass.y, -centerOfMass.z), orderedPoints);
+    //checkPoint(polygon, largePolygon, new GeoPoint(centerOfMass.x, -centerOfMass.y, centerOfMass.z), orderedPoints);
+    for(int i = 0; i < 100000; i++) {
+      final GeoPoint point;
+      if (random().nextBoolean()) {
+        point = getBiasedPoint(planetModel);
+      } else {
+        point = randomGeoPoint(planetModel);
+      }
+      checkPoint(polygon, largePolygon, point, orderedPoints);
     }
-    //Not yet tested
-//    for(int i=0;i<100;i++) {
-//      GeoShape shape = randomGeoShape(randomShapeType(), planetModel);
-//      int rel1 = polygon.getRelationship(shape);
-//      int rel2 = largePolygon.getRelationship(shape);
-//      StringBuilder buffer = new StringBuilder();
-//      if (rel1 != rel2) {
-//        buffer = buffer.append(polygon.toString() +"\n" + shape.toString() + "\n");
-//        buffer.append("WKT: " + getWKT(orderedPoints) + "\n");
-//        buffer.append("normal polygon: " + rel1 + "\n");
-//        buffer.append("large polygon: " + rel2 + "\n");
-//      }
-//      assertTrue(buffer.toString(), rel1 == rel2);
-//    }
+  }
+
+  private void checkPoint(final GeoPolygon polygon, final GeoPolygon largePolygon, final GeoPoint point, final List<GeoPoint> orderedPoints) {
+    final boolean withIn1 = polygon.isWithin(point);
+    final boolean withIn2 = largePolygon.isWithin(point);
+    StringBuilder buffer = new StringBuilder();
+    if (withIn1 != withIn2) {
+      //NOTE: Standard and large polygon are mathematically slightly different
+      //close to the edges (due to bounding planes). Nothing we can do about that
+      //so we filter the differences.
+      final double d1 = polygon.computeOutsideDistance(DistanceStyle.ARC, point);
+      final double d2  = largePolygon.computeOutsideDistance(DistanceStyle.ARC, point);
+      if (d1 == 0 && d2 == 0) {
+        return;
+      }
+      buffer = buffer.append("\nStandard polygon: " + polygon.toString() +"\n");
+      buffer = buffer.append("\nLarge polygon: " + largePolygon.toString() +"\n");
+      buffer = buffer.append("\nPoint: " + point.toString() +"\n");
+      buffer.append("\nWKT: " + getWKT(orderedPoints));
+      buffer.append("\nWKT: POINT(" + Geo3DUtil.toDegrees(point.getLongitude()) + " " + Geo3DUtil.toDegrees(point.getLatitude()) + ")\n");
+      buffer.append("normal polygon: " +withIn1 + "\n");
+      buffer.append("large polygon: " + withIn2 + "\n");
+    }
+    assertTrue(buffer.toString(), withIn1 == withIn2);
   }
 
   private GeoPoint getBiasedPoint(PlanetModel planetModel) {
@@ -208,9 +243,9 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
   private String getWKT(List<GeoPoint> points) {
     StringBuffer buffer = new StringBuffer("POLYGON((");
     for (GeoPoint point : points) {
-      buffer.append(toDegrees(point.getLongitude()) + " " + toDegrees(point.getLatitude()) + ",");
+      buffer.append(Geo3DUtil.toDegrees(point.getLongitude()) + " " + Geo3DUtil.toDegrees(point.getLatitude()) + ",");
     }
-    buffer.append(toDegrees(points.get(0).getLongitude()) + " " + toDegrees(points.get(0).getLatitude()) + "))\n");
+    buffer.append(Geo3DUtil.toDegrees(points.get(0).getLongitude()) + " " + Geo3DUtil.toDegrees(points.get(0).getLatitude()) + "))\n");
     return buffer.toString();
   }
 
@@ -222,18 +257,19 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
     }
     return false;
   }
-  
-  final private static double DEGREES_PER_RADIAN = 180.0 / Math.PI;
-  final private static double RADIANS_PER_DEGREE = Math.PI / 180.0;
 
-  /** Converts radians to degrees */
-  private static double toDegrees(final double radians) {
-    return radians * DEGREES_PER_RADIAN;
-  }
-
-  /** Converts radians to degrees */
-  private static double fromDegrees(final double degrees) {
-    return degrees * RADIANS_PER_DEGREE;
+  private GeoPoint getCenterOfMass(final PlanetModel planetModel, final List<GeoPoint> points) {
+    double x = 0;
+    double y = 0;
+    double z = 0;
+    //get center of mass
+    for (final GeoPoint point : points) {
+      x += point.x;
+      y += point.y;
+      z += point.z;
+    }
+    // Normalization is not needed because createSurfacePoint does the scaling anyway.
+    return planetModel.createSurfacePoint(x, y, z);
   }
 
 }

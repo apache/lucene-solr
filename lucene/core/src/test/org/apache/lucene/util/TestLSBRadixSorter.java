@@ -37,7 +37,7 @@ public class TestLSBRadixSorter extends LuceneTestCase {
   }
 
   public void test(LSBRadixSorter sorter, int[] arr, int len) {
-    final int[] expected = Arrays.copyOf(arr, len);
+    final int[] expected = ArrayUtil.copyOfSubArray(arr, 0, len);
     Arrays.sort(expected);
 
     int numBits = 0;
@@ -50,7 +50,7 @@ public class TestLSBRadixSorter extends LuceneTestCase {
     }
 
     sorter.sort(numBits, arr, len);
-    final int[] actual = Arrays.copyOf(arr, len);
+    final int[] actual = ArrayUtil.copyOfSubArray(arr, 0, len);
     assertArrayEquals(expected, actual);
   }
 

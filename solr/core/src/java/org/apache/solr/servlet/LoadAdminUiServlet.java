@@ -41,10 +41,12 @@ import java.nio.charset.StandardCharsets;
 public final class LoadAdminUiServlet extends BaseSolrServlet {
 
   @Override
-  public void doGet(HttpServletRequest request,
-                    HttpServletResponse response)
+  public void doGet(HttpServletRequest _request,
+                    HttpServletResponse _response)
       throws IOException {
-
+    HttpServletRequest request = SolrDispatchFilter.closeShield(_request, false);
+    HttpServletResponse response = SolrDispatchFilter.closeShield(_response, false);
+    
     response.addHeader("X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
 
     // This attribute is set by the SolrDispatchFilter
@@ -57,7 +59,7 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("text/html");
 
-        // Protect container owned streams from being closed by us, see SOLR-8933
+        // We have to close this to flush OutputStreamWriter buffer
         out = new OutputStreamWriter(new CloseShieldOutputStream(response.getOutputStream()), StandardCharsets.UTF_8);
 
         String html = IOUtils.toString(in, "UTF-8");

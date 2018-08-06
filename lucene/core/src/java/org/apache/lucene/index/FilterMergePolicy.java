@@ -41,31 +41,31 @@ public class FilterMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer)
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
       throws IOException {
-    return in.findMerges(mergeTrigger, segmentInfos, writer);
+    return in.findMerges(mergeTrigger, segmentInfos, mergeContext);
   }
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount,
-      Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) throws IOException {
-    return in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer);
+                                             Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
+    return in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, mergeContext);
   }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-    return in.findForcedDeletesMerges(segmentInfos, writer);
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return in.findForcedDeletesMerges(segmentInfos, mergeContext);
   }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, IndexWriter writer)
+  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, MergeContext mergeContext)
       throws IOException {
-    return in.useCompoundFile(infos, mergedInfo, writer);
+    return in.useCompoundFile(infos, mergedInfo, mergeContext);
   }
 
   @Override
-  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
-    return in.size(info, writer);
+  protected long size(SegmentCommitInfo info, MergeContext context) throws IOException {
+    return in.size(info, context);
   }
 
   @Override
@@ -99,8 +99,8 @@ public class FilterMergePolicy extends MergePolicy {
   }
 
   @Override
-  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount,
+  public int numDeletesToMerge(SegmentCommitInfo info, int delCount,
                                IOSupplier<CodecReader> readerSupplier) throws IOException {
-    return in.numDeletesToMerge(info, pendingDeleteCount, readerSupplier);
+    return in.numDeletesToMerge(info, delCount, readerSupplier);
   }
 }

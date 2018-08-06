@@ -161,8 +161,8 @@ public abstract class Scorer {
    * Advance to the block of documents that contains {@code target} in order to
    * get scoring information about this block. This method is implicitly called
    * by {@link DocIdSetIterator#advance(int)} and
-   * {@link DocIdSetIterator#nextDoc()}. Calling this method doesn't modify the
-   * current {@link DocIdSetIterator#docID()}.
+   * {@link DocIdSetIterator#nextDoc()} on the returned doc ID. Calling this
+   * method doesn't modify the current {@link DocIdSetIterator#docID()}.
    * It returns a number that is greater than or equal to all documents
    * contained in the current block, but less than any doc IDS of the next block.
    * {@code target} must be &gt;= {@link #docID()} as well as all targets that

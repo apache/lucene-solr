@@ -167,7 +167,6 @@
     <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
     <!-- analyzers-smartcn: problems -->
     <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
-    <!-- analyzers-uima: problems -->
     <!-- benchmark: problems -->
     <check-missing-javadocs dir="build/docs/classification" level="method"/>
     <!-- codecs: problems -->

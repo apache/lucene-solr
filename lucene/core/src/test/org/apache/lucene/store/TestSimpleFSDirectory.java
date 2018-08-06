@@ -18,7 +18,14 @@ package org.apache.lucene.store;
 
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
+
+import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.mockfile.WindowsFS;
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Tests SimpleFSDirectory
@@ -28,5 +35,51 @@ public class TestSimpleFSDirectory extends BaseDirectoryTestCase {
   @Override
   protected Directory getDirectory(Path path) throws IOException {
     return new SimpleFSDirectory(path);
+  }
+
+  public void testRenameWithPendingDeletes() throws IOException {
+    Path path = createTempDir();
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+    Directory directory = getDirectory(root);
+    IndexOutput output = directory.createOutput("target.txt", IOContext.DEFAULT);
+    output.writeInt(1);
+    output.close();
+    IndexOutput output1 = directory.createOutput("source.txt", IOContext.DEFAULT);
+    output1.writeInt(2);
+    output1.close();
+
+    IndexInput input = directory.openInput("target.txt", IOContext.DEFAULT);
+    directory.deleteFile("target.txt");
+    directory.rename("source.txt", "target.txt");
+    IndexInput input1 = directory.openInput("target.txt", IOContext.DEFAULT);
+    assertTrue(directory.getPendingDeletions().isEmpty());
+    assertEquals(1, input.readInt());
+    assertEquals(2, input1.readInt());
+    IOUtils.close(input1, input, directory);
+  }
+
+  public void testCreateOutputWithPendingDeletes() throws IOException {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+    Path path = createTempDir();
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+    Directory directory = getDirectory(root);
+    IndexOutput output = directory.createOutput("file.txt", IOContext.DEFAULT);
+    output.writeInt(1);
+    output.close();
+    IndexInput input = directory.openInput("file.txt", IOContext.DEFAULT);
+    directory.deleteFile("file.txt");
+    expectThrows(IOException.class, () -> {
+      directory.createOutput("file.txt", IOContext.DEFAULT);
+    });
+    assertTrue(directory.getPendingDeletions().isEmpty());
+    assertEquals(1, input.readInt());
+    IOUtils.close(input, directory);
   }
 }

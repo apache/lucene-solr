@@ -25,6 +25,7 @@ import com.github.benmanes.caffeine.cache.*;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class BlockCacheTest extends LuceneTestCase {
   @Test
   public void testBlockCache() {

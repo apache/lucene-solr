@@ -133,8 +133,8 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
       
       assertEquals(chain + " didn't add Double field", 
                    42.3d, d.getFieldValue("script_added_d"));
-      assertEquals(chain + " didn't add integer field", 
-                   new Integer(42), d.getFieldValue("script_added_i"));
+      assertEquals(chain + " didn't add integer field",
+          42, d.getFieldValue("script_added_i"));
       
       processCommit("run-no-scripts");
 
@@ -211,8 +211,8 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
                    "i went for it", d.getFieldValue("script_added_s"));
       assertEquals(chain +" didn't add Double field", 
                    42.3d, d.getFieldValue("script_added_d"));
-      assertEquals(chain + " didn't add integer field", 
-                   new Integer(42), d.getFieldValue("script_added_i"));
+      assertEquals(chain + " didn't add integer field",
+          42, d.getFieldValue("script_added_i"));
     }
   }
 
@@ -227,8 +227,8 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
       
     assertEquals(chain +" didn't add Double field", 
                  42.3d, d.getFieldValue("script_added_d"));
-    assertEquals(chain + " didn't add integer field", 
-                 new Integer(42), d.getFieldValue("script_added_i"));
+    assertEquals(chain + " didn't add integer field",
+        42, d.getFieldValue("script_added_i"));
   }
 
   public void testPropogatedException() throws Exception  {

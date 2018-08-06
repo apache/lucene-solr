@@ -37,4 +37,12 @@ public class TestIntsRef extends LuceneTestCase {
     
     assertFalse(i.equals(i2));
   }
+  
+  public void testInvalidDeepCopy() {
+    IntsRef from = new IntsRef(new int[] { 1, 2 }, 0, 2);
+    from.offset += 1; // now invalid
+    expectThrows(IndexOutOfBoundsException.class, () -> {
+      IntsRef.deepCopyOf(from);
+    });
+  }
 }

@@ -194,4 +194,13 @@ public abstract class SolrCoreState {
 
   public abstract void setCdcrBootstrapCallable(Callable cdcrBootstrapCallable);
 
+  public Throwable getTragicException() throws IOException {
+    RefCounted<IndexWriter> ref = getIndexWriter(null);
+    if (ref == null) return null;
+    try {
+      return ref.get().getTragicException();
+    } finally {
+      ref.decref();
+    }
+  }
 }

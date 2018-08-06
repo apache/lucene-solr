@@ -33,7 +33,14 @@ import org.apache.lucene.util.UnicodeUtil;
  * @see Automata#makeStringUnion(Collection)
  */
 public final class DaciukMihovAutomatonBuilder {
-  
+
+  /**
+   * This builder rejects terms that are more than 1k chars long since it then
+   * uses recursion based on the length of the string, which might cause stack
+   * overflows.
+   */
+  static final int MAX_TERM_LENGTH = 1_000;
+
   /**
    * The default constructor is private.  Use static methods directly.
    */
@@ -137,8 +144,8 @@ public final class DaciukMihovAutomatonBuilder {
       assert Arrays.binarySearch(labels, label) < 0 : "State already has transition labeled: "
           + label;
       
-      labels = Arrays.copyOf(labels, labels.length + 1);
-      states = Arrays.copyOf(states, states.length + 1);
+      labels = ArrayUtil.growExact(labels, labels.length + 1);
+      states = ArrayUtil.growExact(states, states.length + 1);
 
       labels[labels.length - 1] = label;
       return states[states.length - 1] = new State();
@@ -220,6 +227,9 @@ public final class DaciukMihovAutomatonBuilder {
    * to this automaton (the input must be sorted).
    */
   public void add(CharsRef current) {
+    if (current.length > MAX_TERM_LENGTH) {
+      throw new IllegalArgumentException("This builder doesn't allow terms that are larger than 1,000 characters, got " + current);
+    }
     assert stateRegistry != null : "Automaton already built.";
     assert previous == null
         || comparator.compare(previous, current) <= 0 : "Input must be in sorted UTF-8 order: "

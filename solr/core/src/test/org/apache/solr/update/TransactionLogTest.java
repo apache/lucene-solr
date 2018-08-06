@@ -17,30 +17,27 @@
 
 package org.apache.solr.update;
 
-import java.io.IOException;
-import java.nio.file.Files;
+import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
-
-import static org.mockito.Mockito.*;
 
 public class TransactionLogTest extends LuceneTestCase {
 
   @Test
-  public void testBigLastAddSize() throws IOException {
-    SolrTestCaseJ4.assumeWorkingMockito();
-    String tlogFileName = String.format(Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, 0);
-    try (TransactionLog transactionLog = new TransactionLog(Files.createTempFile(tlogFileName, "").toFile(), new ArrayList<>())) {
+  public void testBigLastAddSize() {
+    String tlogFileName = String.format(Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, Long.MAX_VALUE);
+    Path path = createTempDir();
+    File logFile = new File(path.toFile(), tlogFileName);
+    try (TransactionLog transactionLog = new TransactionLog(logFile, new ArrayList<>())) {
       transactionLog.lastAddSize = 2000000000;
-      AddUpdateCommand updateCommand = mock(AddUpdateCommand.class);
-      when(updateCommand.isInPlaceUpdate()).thenReturn(false);
-      when(updateCommand.getSolrInputDocument()).thenReturn(new SolrInputDocument());
-      transactionLog.write(updateCommand, 0);
+      AddUpdateCommand updateCommand = new AddUpdateCommand(null);
+      updateCommand.solrDoc = new SolrInputDocument();
+      transactionLog.write(updateCommand);
     }
   }
 

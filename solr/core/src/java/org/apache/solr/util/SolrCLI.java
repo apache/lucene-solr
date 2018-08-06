@@ -72,6 +72,7 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -2531,6 +2532,13 @@ public class SolrCLI {
               .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
               .create("solrUrl"),
           OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Address of the Zookeeper ensemble")
+              .withLongOpt("zkHost")
+              .create('z'),
+          OptionBuilder
               .withArgName("PORT")
               .hasArg()
               .isRequired(false)
@@ -3331,7 +3339,7 @@ public class SolrCLI {
         int attempts = 3;
         while (value != null && --attempts > 0) {
           try {
-            inputAsInt = new Integer(value);
+            inputAsInt = Integer.valueOf(value);
 
             if (min != null) {
               if (inputAsInt < min) {
@@ -3781,6 +3789,17 @@ public class SolrCLI {
       };
     }
 
+    private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
+      if (cli.hasOption(argName)) {
+        final String value = cli.getOptionValue(argName);
+        final Boolean parsedBoolean = BooleanUtils.toBooleanObject(value);
+        if (parsedBoolean == null) {
+          echo("Argument [" + argName + "] must be either true or false, but was [" + value + "]");
+          exit(1);
+        }
+      }
+    }
+
     @Override
     public int runTool(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
@@ -3788,6 +3807,9 @@ public class SolrCLI {
         new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getToolOptions(this));
         return 1;
       }
+
+      ensureArgumentIsValidBooleanIfPresent(cli, "blockUnknown");
+      ensureArgumentIsValidBooleanIfPresent(cli, "updateIncludeFileOnly");
 
       String type = cli.getOptionValue("type", "basicAuth");
       switch (type) {
@@ -4327,8 +4349,8 @@ public class SolrCLI {
         out("Rotating solr logs, keeping a max of "+generations+" generations");
         try (Stream<Path> files = Files.find(logsPath, 1, 
             (f, a) -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr.log."))
-            .sorted((b,a) -> new Integer(a.getFileName().toString().substring(9))
-                  .compareTo(new Integer(b.getFileName().toString().substring(9))))) {
+            .sorted((b,a) -> Integer.valueOf(a.getFileName().toString().substring(9))
+                  .compareTo(Integer.valueOf(b.getFileName().toString().substring(9))))) {
           files.forEach(p -> {
             try {
               int number = Integer.parseInt(p.getFileName().toString().substring(9));

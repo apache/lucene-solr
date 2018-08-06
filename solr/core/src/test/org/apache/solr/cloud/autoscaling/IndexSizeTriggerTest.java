@@ -67,6 +67,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
  *
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+//05-Jul-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12392")
 public class IndexSizeTriggerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -92,7 +93,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean()) {
+    if (random().nextBoolean() && false) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -136,6 +137,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testTrigger() throws Exception {
     String collectionName = "testTrigger_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -146,7 +148,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     long waitForSeconds = 3 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
-    try (IndexSizeTrigger trigger = new IndexSizeTrigger("index_size_trigger")) {
+    try (IndexSizeTrigger trigger = new IndexSizeTrigger("index_size_trigger1")) {
       trigger.configure(loader, cloudManager, props);
       trigger.init();
       trigger.setProcessor(noFirstRunProcessor);
@@ -233,6 +235,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testSplitIntegration() throws Exception {
     String collectionName = "testSplitIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -242,14 +245,15 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         CloudTestUtils.clusterShape(2, 2));
 
     long waitForSeconds = 3 + random().nextInt(5);
+    // add disabled trigger
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
-        "'name' : 'index_size_trigger'," +
+        "'name' : 'index_size_trigger2'," +
         "'event' : 'indexSize'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'aboveDocs' : 10," +
         "'belowDocs' : 4," +
-        "'enabled' : true," +
+        "'enabled' : false," +
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
@@ -261,7 +265,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'capturing'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'trigger' : 'index_size_trigger2'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
         "'afterAction' : ['compute_plan','execute_plan']," +
@@ -276,7 +280,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'finished'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'trigger' : 'index_size_trigger2'," +
         "'stage' : ['SUCCEEDED']," +
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
@@ -286,17 +290,27 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
 
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < 50; i++) {
       SolrInputDocument doc = new SolrInputDocument("id", "id-" + i);
       solrClient.add(collectionName, doc);
     }
     solrClient.commit(collectionName);
 
+    // enable the trigger
+    String resumeTriggerCommand = "{" +
+        "'resume-trigger' : {" +
+        "'name' : 'index_size_trigger2'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
     timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
 
     boolean await = finished.await(60000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
-    CloudTestUtils.waitForState(cloudManager, collectionName, 10, TimeUnit.SECONDS, CloudTestUtils.clusterShape(4, 2));
+    CloudTestUtils.waitForState(cloudManager, collectionName, 20, TimeUnit.SECONDS, CloudTestUtils.clusterShape(6, 2, true));
     assertEquals(1, listenerEvents.size());
     List<CapturedEvent> events = listenerEvents.get("capturing");
     assertNotNull("'capturing' events not found", events);
@@ -334,6 +348,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testMergeIntegration() throws Exception {
     String collectionName = "testMergeIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -351,12 +366,12 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     long waitForSeconds = 3 + random().nextInt(5);
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
-        "'name' : 'index_size_trigger'," +
+        "'name' : 'index_size_trigger3'," +
         "'event' : 'indexSize'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'aboveDocs' : 40," +
         "'belowDocs' : 4," +
-        "'enabled' : true," +
+        "'enabled' : false," +
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
@@ -368,7 +383,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'capturing'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'trigger' : 'index_size_trigger3'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
         "'afterAction' : ['compute_plan','execute_plan']," +
@@ -383,7 +398,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'finished'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'trigger' : 'index_size_trigger3'," +
         "'stage' : ['SUCCEEDED']," +
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
@@ -398,9 +413,19 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     }
     solrClient.commit(collectionName);
 
+    // enable the trigger
+    String resumeTriggerCommand = "{" +
+        "'resume-trigger' : {" +
+        "'name' : 'index_size_trigger3'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
     timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
 
-    boolean await = finished.await(60000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
     List<CapturedEvent> events = listenerEvents.get("capturing");
@@ -433,11 +458,12 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testMixedBounds() throws Exception {
-    if (cloudManager instanceof SimCloudManager) {
-      log.warn("Requires SOLR-12208");
-      return;
-    }
+//    if (cloudManager instanceof SimCloudManager) {
+//      log.warn("Requires SOLR-12208");
+//      return;
+//    }
 
     String collectionName = "testMixedBounds_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -483,7 +509,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     // and have them capture all events once the trigger is enabled
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
-        "'name' : 'index_size_trigger'," +
+        "'name' : 'index_size_trigger4'," +
         "'event' : 'indexSize'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         // don't hit this limit when indexing
@@ -506,7 +532,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'capturing'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'trigger' : 'index_size_trigger4'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
         "'afterAction' : ['compute_plan','execute_plan']," +
@@ -521,7 +547,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'finished'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'trigger' : 'index_size_trigger4'," +
         "'stage' : ['SUCCEEDED']," +
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
@@ -533,7 +559,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     // now enable the trigger
     String resumeTriggerCommand = "{" +
         "'resume-trigger' : {" +
-        "'name' : 'index_size_trigger'" +
+        "'name' : 'index_size_trigger4'" +
         "}" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
@@ -590,7 +616,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     // suspend the trigger first so that we can safely delete all docs
     String suspendTriggerCommand = "{" +
         "'suspend-trigger' : {" +
-        "'name' : 'index_size_trigger'" +
+        "'name' : 'index_size_trigger4'" +
         "}" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);

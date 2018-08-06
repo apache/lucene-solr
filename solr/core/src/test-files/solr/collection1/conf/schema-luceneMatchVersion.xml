@@ -21,7 +21,6 @@
   <fieldType name="text40" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory" luceneMatchVersion="LUCENE_40"/>
-      <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory" luceneMatchVersion="5.0"/>
       <filter class="solr.PorterStemFilterFactory"/>
@@ -30,7 +29,6 @@
   <fieldType name="textDefault" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>

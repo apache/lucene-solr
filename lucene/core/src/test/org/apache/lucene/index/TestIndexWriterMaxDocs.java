@@ -39,7 +39,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 @TimeoutSuite(millis = 8 * TimeUnits.HOUR)
 public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
@@ -68,11 +68,11 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       assertEquals(IndexWriter.MAX_DOCS, ir.numDocs());
       IndexSearcher searcher = new IndexSearcher(ir);
       TopDocs hits = searcher.search(new TermQuery(new Term("field", "text")), 10);
-      assertEquals(IndexWriter.MAX_DOCS, hits.totalHits);
+      assertEquals(IndexWriter.MAX_DOCS, hits.totalHits.value);
 
       // Sort by docID reversed:
       hits = searcher.search(new TermQuery(new Term("field", "text")), 10, new Sort(new SortField(null, SortField.Type.DOC, true)));
-      assertEquals(IndexWriter.MAX_DOCS, hits.totalHits);
+      assertEquals(IndexWriter.MAX_DOCS, hits.totalHits.value);
       assertEquals(10, hits.scoreDocs.length);
       assertEquals(IndexWriter.MAX_DOCS-1, hits.scoreDocs[0].doc);
       ir.close();

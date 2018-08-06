@@ -680,7 +680,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     });
     
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(new TermQuery(new Term("id", "id")), 1).totalHits);
+    assertEquals(1, s.count(new TermQuery(new Term("id", "id"))));
 
     r.close();
     w.close();
@@ -690,7 +690,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   public void testNPEAfterInvalidReindex1() throws Exception {
     Directory dir = new RAMDirectory();
 
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
     doc.add(newStringField("id", "id", Field.Store.NO));
     w.addDocument(doc);
@@ -737,7 +737,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   public void testNPEAfterInvalidReindex2() throws Exception {
     Directory dir = new RAMDirectory();
 
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
     doc.add(newStringField("id", "id", Field.Store.NO));
     w.addDocument(doc);
@@ -991,7 +991,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     }
  
     w = new IndexWriter(dir,
-                        new IndexWriterConfig(new MockAnalyzer(random())));
+                        new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     doc = new Document();
     doc.add(newStringField("field", "value", Field.Store.NO));
     w.addDocument(doc);

@@ -51,11 +51,11 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
     AnalyticsValue casted = (AnalyticsValue)val;
 
     val.setValue(20.0).setExists(true);
-    assertEquals(new Double(20.0), casted.getObject());
+    assertEquals(20.0d, casted.getObject());
     assertTrue(casted.exists());
 
     val.setValue(1234.0).setExists(true);
-    assertEquals(new Double(1234.0), casted.getObject());
+    assertEquals(1234.0d, casted.getObject());
     assertTrue(casted.exists());
   }
 
@@ -120,7 +120,7 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValue(20.0).setExists(true);
-    Iterator<Object> values = Arrays.<Object>asList(new Double(20.0)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(20.0d).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

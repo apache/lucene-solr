@@ -274,6 +274,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testBelowSearchRate() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "belowRate_collection";
@@ -512,6 +513,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testDeleteNode() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "deleteNode_collection";

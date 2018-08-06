@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -50,6 +51,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
   private final SimClusterStateProvider clusterStateProvider;
   private final SimDistribStateManager stateManager;
   private final LiveNodesSet liveNodesSet;
+  private final ReentrantLock lock = new ReentrantLock();
 
   public SimNodeStateProvider(LiveNodesSet liveNodesSet, SimDistribStateManager stateManager,
                               SimClusterStateProvider clusterStateProvider,
@@ -84,14 +86,19 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @param node node id
    * @param values values.
    */
-  public void simSetNodeValues(String node, Map<String, Object> values) {
-    Map<String, Object> existing = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
-    existing.clear();
-    if (values != null) {
-      existing.putAll(values);
-    }
-    if (values == null || values.isEmpty() || values.containsKey("nodeRole")) {
-      saveRoles();
+  public void simSetNodeValues(String node, Map<String, Object> values) throws InterruptedException {
+    lock.lockInterruptibly();
+    try {
+      Map<String, Object> existing = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
+      existing.clear();
+      if (values != null) {
+        existing.putAll(values);
+      }
+      if (values == null || values.isEmpty() || values.containsKey("nodeRole")) {
+        saveRoles();
+      }
+    } finally {
+      lock.unlock();
     }
   }
 
@@ -102,15 +109,20 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @param key property name
    * @param value property value
    */
-  public void simSetNodeValue(String node, String key, Object value) {
-    Map<String, Object> existing = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
-    if (value == null) {
-      existing.remove(key);
-    } else {
-      existing.put(key, value);
-    }
-    if (key.equals("nodeRole")) {
-      saveRoles();
+  public void simSetNodeValue(String node, String key, Object value) throws InterruptedException {
+    lock.lockInterruptibly();
+    try {
+      Map<String, Object> existing = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
+      if (value == null) {
+        existing.remove(key);
+      } else {
+        existing.put(key, value);
+      }
+      if (key.equals("nodeRole")) {
+        saveRoles();
+      }
+    } finally {
+      lock.unlock();
     }
   }
 
@@ -121,21 +133,26 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @param key property name
    * @param value property value.
    */
-  public void simAddNodeValue(String node, String key, Object value) {
-    Map<String, Object> values = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
-    Object existing = values.get(key);
-    if (existing == null) {
-      values.put(key, value);
-    } else if (existing instanceof Set) {
-      ((Set)existing).add(value);
-    } else {
-      Set<Object> vals = new HashSet<>();
-      vals.add(existing);
-      vals.add(value);
-      values.put(key, vals);
-    }
-    if (key.equals("nodeRole")) {
-      saveRoles();
+  public void simAddNodeValue(String node, String key, Object value) throws InterruptedException {
+    lock.lockInterruptibly();
+    try {
+      Map<String, Object> values = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
+      Object existing = values.get(key);
+      if (existing == null) {
+        values.put(key, value);
+      } else if (existing instanceof Set) {
+        ((Set)existing).add(value);
+      } else {
+        Set<Object> vals = new HashSet<>();
+        vals.add(existing);
+        vals.add(value);
+        values.put(key, vals);
+      }
+      if (key.equals("nodeRole")) {
+        saveRoles();
+      }
+    } finally {
+      lock.unlock();
     }
   }
 
@@ -144,10 +161,16 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * /roles.json is updated.
    * @param node node id
    */
-  public void simRemoveNodeValues(String node) {
-    Map<String, Object> values = nodeValues.remove(node);
-    if (values != null && values.containsKey("nodeRole")) {
-      saveRoles();
+  public void simRemoveNodeValues(String node) throws InterruptedException {
+    LOG.debug("--removing value for " + node);
+    lock.lockInterruptibly();
+    try {
+      Map<String, Object> values = nodeValues.remove(node);
+      if (values != null && values.containsKey("nodeRole")) {
+        saveRoles();
+      }
+    } finally {
+      lock.unlock();
     }
   }
 
@@ -155,19 +178,24 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * Remove values that correspond to dead nodes. If values contained a 'nodeRole'
    * key then /roles.json is updated.
    */
-  public void simRemoveDeadNodes() {
+  public void simRemoveDeadNodes() throws InterruptedException {
     Set<String> myNodes = new HashSet<>(nodeValues.keySet());
     myNodes.removeAll(liveNodesSet.get());
-    AtomicBoolean updateRoles = new AtomicBoolean(false);
-    myNodes.forEach(n -> {
-      LOG.debug("- removing dead node values: " + n);
-      Map<String, Object> vals = nodeValues.remove(n);
-      if (vals.containsKey("nodeRole")) {
-        updateRoles.set(true);
+    lock.lockInterruptibly();
+    try {
+      AtomicBoolean updateRoles = new AtomicBoolean(false);
+      myNodes.forEach(n -> {
+        LOG.debug("- removing dead node values: " + n);
+        Map<String, Object> vals = nodeValues.remove(n);
+        if (vals.containsKey("nodeRole")) {
+          updateRoles.set(true);
+        }
+      });
+      if (updateRoles.get()) {
+        saveRoles();
       }
-    });
-    if (updateRoles.get()) {
-      saveRoles();
+    } finally {
+      lock.unlock();
     }
   }
 
@@ -187,7 +215,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     return nodeValues;
   }
 
-  private synchronized void saveRoles() {
+  private void saveRoles() {
     final Map<String, Set<String>> roles = new HashMap<>();
     nodeValues.forEach((n, values) -> {
       String nodeRole = (String)values.get("nodeRole");
@@ -211,6 +239,9 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @return map of metrics names / values
    */
   public Map<String, Object> getReplicaMetricsValues(String node, Collection<String> tags) {
+    if (!liveNodesSet.contains(node)) {
+      throw new RuntimeException("non-live node " + node);
+    }
     List<ReplicaInfo> replicas = clusterStateProvider.simGetReplicaInfos(node);
     if (replicas == null || replicas.isEmpty()) {
       return Collections.emptyMap();
@@ -258,8 +289,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
     LOG.trace("-- requested values for " + node + ": " + tags);
     if (!liveNodesSet.contains(node)) {
-      nodeValues.remove(node);
-      return Collections.emptyMap();
+      throw new RuntimeException("non-live node " + node);
     }
     if (tags.isEmpty()) {
       return Collections.emptyMap();
