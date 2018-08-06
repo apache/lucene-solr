@@ -16,21 +16,16 @@
  */
 package org.apache.solr.client.solrj.util;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -119,25 +114,24 @@ public class ClientUtils
       v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
     }
 
+    XML.Writable valWriter = null;
+    if(v instanceof SolrInputDocument) {
+      final SolrInputDocument solrDoc = (SolrInputDocument) v;
+      valWriter = (writer1) -> solrInputDocumentXmlOutput(solrDoc, writer1);
+    } else if(v != null) {
+      final Object val = v;
+      valWriter = (writer1) -> XML.escapeCharData(val.toString(), writer1);
+    }
+
     if (update == null) {
       if (v != null) {
-        if(v instanceof SolrInputDocument) {
-          final SolrInputDocument currChildDoc = (SolrInputDocument) v;
-          XML.writeUnescapedXML(writer, "field", (writer1) -> solrInputDocumentXmlOutput(currChildDoc, writer1), "name", name);
-        } else {
-          XML.writeXML(writer, "field", v.toString(), "name", name );
-        }
+        XML.writeUnescapedXML(writer, "field", valWriter, "name", name);
       }
     } else {
       if (v == null)  {
         XML.writeXML(writer, "field", null, "name", name, "update", update, "null", true);
       } else  {
-        if(v instanceof SolrInputDocument) {
-          final SolrInputDocument currChildDoc = (SolrInputDocument) v;
-          XML.writeUnescapedXML(writer, "field", (writer1) -> solrInputDocumentXmlOutput(currChildDoc, writer1), "name", name);
-        } else {
-          XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
-        }
+        XML.writeUnescapedXML(writer, "field", valWriter, "name", name, "update", update);
       }
     }
   }

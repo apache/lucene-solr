@@ -180,7 +180,7 @@ public class XML {
     }
   }
 
-  private static void escape(char [] chars, int offset, int length, Writer out, String [] escapes) throws IOException{
+  public static void escape(char [] chars, int offset, int length, Writer out, String [] escapes) throws IOException{
      for (int i=offset; i<length; i++) {
       char ch = chars[i];
       if (ch<escapes.length) {
@@ -194,7 +194,7 @@ public class XML {
     }
   }
 
-  private static void escape(String str, Writer out, String[] escapes) throws IOException {
+  public static void escape(String str, Writer out, String[] escapes) throws IOException {
     for (int i=0; i<str.length(); i++) {
       char ch = str.charAt(i);
       if (ch<escapes.length) {
