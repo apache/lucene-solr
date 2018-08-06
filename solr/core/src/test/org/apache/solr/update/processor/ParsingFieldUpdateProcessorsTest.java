@@ -167,52 +167,50 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
   
   public void testParseDateFormats() throws Exception {
-    // format examples are duplicated from config in solrconfig-parsing-update-processor-chains.xml
     String[] formatExamples = { 
-        "yyyy-MM-dd'T'HH:mm:ss.SSSz",  "2010-01-15T00:00:00.000Z",
-        "yyyy-MM-dd'T'HH:mm:ss,SSSz",  "2010-01-15T00:00:00,000Z",
-        "yyyy-MM-dd'T'HH:mm:ss.SSS",   "2010-01-15T00:00:00.000",
-        "yyyy-MM-dd'T'HH:mm:ss,SSS",   "2010-01-15T00:00:00,000",
-        "yyyy-MM-dd'T'HH:mm:ssz",      "2010-01-15T00:00:00Z",
-        "yyyy-MM-dd'T'HH:mm:ss",       "2010-01-15T00:00:00",
-        "yyyy-MM-dd'T'HH:mmz",         "2010-01-15T00:00Z",
-        "yyyy-MM-dd'T'HH:mm",          "2010-01-15T00:00",
-        "yyyy-MM-dd HH:mm:ss.SSSz",    "2010-01-15 00:00:00.000Z",
-        "yyyy-MM-dd HH:mm:ss,SSSz",    "2010-01-15 00:00:00,000Z",
-        "yyyy-MM-dd HH:mm:ss.SSS",     "2010-01-15 00:00:00.000",
-        "yyyy-MM-dd HH:mm:ss,SSS",     "2010-01-15 00:00:00,000",
-        "yyyy-MM-dd HH:mm:ssz",        "2010-01-15 00:00:00Z",
-        "yyyy-MM-dd HH:mm:ss",         "2010-01-15 00:00:00",
-        "yyyy-MM-dd HH:mmz",           "2010-01-15 00:00Z",
-        "yyyy-MM-dd HH:mm",            "2010-01-15 00:00",
-        "yyyy-MM-dd hh:mm a",          "2010-01-15 12:00 AM",
-        "yyyy-MM-dd hh:mma",           "2010-01-15 12:00AM",
-        "yyyy-MM-dd",                  "2010-01-15",
-        "EEE MMM dd HH:mm:ss ZZZ yyyy",  "Fri Jan 15 00:00:00 +0000 2010",
-        "EEE MMM dd HH:mm:ss yyyy z",  "Fri Jan 15 00:00:00 2010 +00:00",
-        "EEE MMM dd HH:mm:ss yyyy",    "Fri Jan 15 00:00:00 2010",
-        "EEE, dd MMM yyyy HH:mm:ss z", "Fri, 15 Jan 2010 00:00:00 +00:00",
-        "EEEE, dd-MMM-yy HH:mm:ss z",  "Friday, 15-Jan-10 00:00:00 +00:00",
-        "EEEE, MMMM dd, yyyy",         "Friday, January 15, 2010",
-        "MMMM dd, yyyy",               "January 15, 2010",
-        "MMM. dd, yyyy",               "Jan. 15, 2010"
+        "2010-01-15T00:00:00.000Z",
+        "2010-01-15T00:00:00,000Z",
+        "2010-01-15T00:00:00.000",
+        "2010-01-15T00:00:00,000",
+        "2010-01-15T00:00:00Z",
+        "2010-01-15T00:00:00",
+        "2010-01-15T00:00Z",
+        "2010-01-15T00:00",
+        "2010-01-15 00:00:00.000Z",
+        "2010-01-15 00:00:00,000Z",
+        "2010-01-15 00:00:00.000",
+        "2010-01-15 00:00:00,000",
+        "2010-01-15 00:00:00Z",
+        "2010-01-15 00:00:00",
+        "2010-01-15 00:00Z",
+        "2010-01-15 00:00",
+        "2010-01-15 12:00 AM",
+        "2010-01-15 12:00AM",
+        "2010-01-15",
+        "Fri Jan 15 00:00:00 +0000 2010",
+        "Fri Jan 15 00:00:00 2010 +00:00",
+        "Fri Jan 15 00:00:00 2010",
+        "Fri, 15 Jan 2010 00:00:00 +00:00",
+        "Friday, 15-Jan-10 00:00:00 +00:00",
+        "Friday, January 15, 2010",
+        "January 15, 2010",
+        "Jan. 15, 2010"
     };
 
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("dateUTC_dt")); // should match "*_dt" dynamic field
 
-    Instant expectedInstant = Instant.parse(formatExamples[1]);
+    Instant expectedInstant = Instant.parse(formatExamples[0]);
 
-    for (int i = 0 ; i < formatExamples.length ; i += 2) {
-      String format = formatExamples[i];
-      String dateString = formatExamples[i + 1];
+    for (int i = 0 ; i < formatExamples.length ; ++i) {
+      String dateString = formatExamples[i];
       String id = "95" + i;
       SolrInputDocument d = processAdd("parse-date-UTC-defaultTimeZone-no-run-processor", 
                                        doc(f("id", id), f("dateUTC_dt", dateString)));
       assertNotNull(d);
-      assertTrue("index: " + i + " date '" + dateString + "' with format '" + format +
-              "' is not mutated to a Date", d.getFieldValue("dateUTC_dt") instanceof Date);
-      assertEquals("date '" + dateString + "' with format '" + format + "' mismatched milliseconds",
+      assertTrue("index: " + i + " date '" + dateString + "' is not mutated to a Date",
+          d.getFieldValue("dateUTC_dt") instanceof Date);
+      assertEquals("date '" + dateString + "' mismatched milliseconds",
           expectedInstant, ((Date)d.getFieldValue("dateUTC_dt")).toInstant());
     }
   }
