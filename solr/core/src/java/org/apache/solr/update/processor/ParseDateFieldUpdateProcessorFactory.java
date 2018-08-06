@@ -193,6 +193,11 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
     }
   }
 
+  // see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8177021 which is fixed in Java 9.
+  //  The upshot is that trying to use parse(Instant::from) is unreliable in the event that
+  //  the input string contains a timezone/offset that differs from the "override zone"
+  //  (which we configure in DEFAULT_TIME_ZONE).  Besides, we need the code below which handles
+  //  the optionality of time.  Were it not for that, we truly could do formatter.parse(Instant::from).
   private static Instant parseInstant(DateTimeFormatter formatter, String dateStr) {
     final TemporalAccessor temporal = formatter.parse(dateStr);
     // Get Date; mandatory
