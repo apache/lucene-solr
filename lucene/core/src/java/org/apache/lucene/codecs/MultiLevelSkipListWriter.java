@@ -96,13 +96,7 @@ public abstract class MultiLevelSkipListWriter {
   protected void init() {
     skipBuffer = new ByteBuffersDataOutput [numberOfSkipLevels];
     for (int i = 0; i < numberOfSkipLevels; i++) {
-      ByteBuffersDataOutput.BufferBufferRecycler reuser = new ByteBuffersDataOutput.BufferBufferRecycler(
-          ByteBuffersDataOutput.ALLOCATE_BB_ON_HEAP); 
-      skipBuffer[i] = new ByteBuffersDataOutput(
-          ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
-          ByteBuffersDataOutput.DEFAULT_MAX_BITS_PER_BLOCK,
-          reuser::allocate,
-          reuser::reuse);
+      skipBuffer[i] = ByteBuffersDataOutput.newResettableBuffer();
     }
   }
 

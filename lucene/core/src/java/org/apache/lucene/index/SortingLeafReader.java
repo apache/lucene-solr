@@ -859,7 +859,6 @@ class SortingLeafReader extends FilterLeafReader {
     private final BytesRef payload;
     private int currFreq;
 
-    private final ByteBuffersDataOutput.BufferBufferRecycler bufferRecycler;
     private final ByteBuffersDataOutput buffer;
 
     SortingPostingsEnum(int maxDoc, SortingPostingsEnum reuse, final PostingsEnum in, Sorter.DocMap docMap, boolean storeOffsets) throws IOException {
@@ -870,7 +869,6 @@ class SortingLeafReader extends FilterLeafReader {
         docs = reuse.docs;
         offsets = reuse.offsets;
         payload = reuse.payload;
-        bufferRecycler = reuse.bufferRecycler;
         buffer = reuse.buffer;
         buffer.reset();
         if (reuse.maxDoc == maxDoc) {
@@ -882,12 +880,7 @@ class SortingLeafReader extends FilterLeafReader {
         docs = new int[32];
         offsets = new long[32];
         payload = new BytesRef(32);
-        bufferRecycler = new ByteBuffersDataOutput.BufferBufferRecycler(ByteBuffersDataOutput.ALLOCATE_BB_ON_HEAP);
-        buffer = new ByteBuffersDataOutput(
-            ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK, 
-            ByteBuffersDataOutput.DEFAULT_MAX_BITS_PER_BLOCK, 
-            bufferRecycler::allocate,
-            bufferRecycler::reuse);
+        buffer = ByteBuffersDataOutput.newResettableBuffer();
         sorter = new DocOffsetSorter(maxDoc);
       }
 

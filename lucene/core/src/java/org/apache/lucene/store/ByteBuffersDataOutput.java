@@ -361,6 +361,20 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     currentBlock = EMPTY;
   }
 
+  /**
+   * @return Returns a new {@link ByteBuffersDataOutput} with the {@link #reset()} capability. 
+   */
+  // TODO: perhaps we can move it out to an utility class (as a supplier of preconfigured instances?) 
+  public static ByteBuffersDataOutput newResettableBuffer() {
+    ByteBuffersDataOutput.BufferBufferRecycler reuser = new ByteBuffersDataOutput.BufferBufferRecycler(
+        ByteBuffersDataOutput.ALLOCATE_BB_ON_HEAP); 
+    return new ByteBuffersDataOutput(
+        ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
+        ByteBuffersDataOutput.DEFAULT_MAX_BITS_PER_BLOCK,
+        reuser::allocate,
+        reuser::reuse);
+  }
+
   private int blockSize() {
     return 1 << blockBits;
   }
