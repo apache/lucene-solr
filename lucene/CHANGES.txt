@@ -43,6 +43,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
+  bogus tiles when building GeoPolygons. (Ignacio Vera)
+
 * LUCENE-8266: Detect bogus tiles when creating a standard polygon
   and throw a TileException. (Ignacio Vera)
   
