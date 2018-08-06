@@ -1849,5 +1849,26 @@ shape:
     assertTrue(largePolygon.isWithin(thePoint) == smallPolygon.isWithin(thePoint));
     
   }
-  
+
+  @Test
+  public void testLUCENE8445() {
+    //POLYGON((32.18017946378854 -17.397683785381247,49.51018758330871 -9.870219317504647,58.77903721991479 33.90553510354402,2.640604559432277 9.363173880050821,3.1673235739886286E-10 8.853669066894417E-11,0.0 -5.7E-322,4.820339742500488E-5 5.99784517213369E-7,32.18017946378854 -17.397683785381247))
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-17.397683785381247), Geo3DUtil.fromDegrees(32.18017946378854)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-9.870219317504647), Geo3DUtil.fromDegrees(49.51018758330871)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(33.90553510354402), Geo3DUtil.fromDegrees(58.77903721991479)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(9.363173880050821), Geo3DUtil.fromDegrees(2.640604559432277)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(8.853669066894417E-11), Geo3DUtil.fromDegrees(3.1673235739886286E-10)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.7E-322), Geo3DUtil.fromDegrees(0.0)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(5.99784517213369E-7), Geo3DUtil.fromDegrees(4.820339742500488E-5)));
+
+    final GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points);
+    final GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, description);
+    final GeoPolygon largePolygon = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, Collections.singletonList(description));
+
+    //POINT(179.99999999999983 -5.021400461974724E-11)
+    final GeoPoint point = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.021400461974724E-11), Geo3DUtil.fromDegrees(179.99999999999983));
+    assertTrue(polygon.isWithin(point) == largePolygon.isWithin(point));
+  }
+
 }
