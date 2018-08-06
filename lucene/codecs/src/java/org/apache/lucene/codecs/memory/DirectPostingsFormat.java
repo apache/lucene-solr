@@ -333,7 +333,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       final IntArrayWriter scratch = new IntArrayWriter();
 
       // Used for payloads, if any:
-      final ByteBuffersDataOutput ros = new ByteBuffersDataOutput();
+      final ByteBuffersDataOutput ros = ByteBuffersDataOutput.newResettableBuffer();
 
       // if (DEBUG) {
       //   System.out.println("\nLOAD terms seg=" + state.segmentInfo.name + " field=" + field + " hasOffsets=" + hasOffsets + " hasFreq=" + hasFreq + " hasPos=" + hasPos + " hasPayloads=" + hasPayloads);
@@ -374,7 +374,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
         int docID;
 
         if (docFreq <= lowFreqCutoff) {
-
           ros.reset();
 
           // Pack postings for low-freq terms into a single int[]:
