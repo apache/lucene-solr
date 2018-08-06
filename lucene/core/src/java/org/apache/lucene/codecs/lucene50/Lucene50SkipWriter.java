@@ -25,6 +25,7 @@ import java.util.SortedSet;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 import org.apache.lucene.index.Impact;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 
@@ -165,7 +166,7 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
   private final RAMOutputStream freqNormOut = new RAMOutputStream();
 
   @Override
-  protected void writeSkipData(int level, IndexOutput skipBuffer) throws IOException {
+  protected void writeSkipData(int level, DataOutput skipBuffer) throws IOException {
 
     int delta = curDoc - lastSkipDoc[level];
 
