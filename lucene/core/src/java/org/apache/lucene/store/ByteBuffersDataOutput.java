@@ -174,28 +174,6 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   }
 
   /**
-   * Return a contiguous array with the current content written to the output.
-   */
-  public byte[] toArray() {
-    if (blocks.size() == 0) {
-      return EMPTY_BYTE_ARRAY;
-    }
-
-    // We could try to detect single-block, array-based ByteBuffer here
-    // and use Arrays.copyOfRange, but I don't think it's worth the extra
-    // instance checks.
-
-    byte [] arr = new byte[Math.toIntExact(size())];
-    int offset = 0;
-    for (ByteBuffer bb : toBufferList()) {
-      int len = bb.remaining();
-      bb.get(arr, offset, len);
-      offset += len;
-    }
-    return arr;
-  }  
-
-  /**
    * Return a list of read-only {@link ByteBuffer} blocks over the 
    * current content written to the output.
    */
@@ -218,6 +196,29 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   public ByteBuffersDataInput toDataInput() {
     return new ByteBuffersDataInput(toBufferList());
   }
+
+  /**
+   * Return a contiguous array with the current content written to the output. The returned
+   * array is always a copy. 
+   */
+  public byte[] copyToArray() {
+    if (blocks.size() == 0) {
+      return EMPTY_BYTE_ARRAY;
+    }
+
+    // We could try to detect single-block, array-based ByteBuffer here
+    // and use Arrays.copyOfRange, but I don't think it's worth the extra
+    // instance checks.
+
+    byte [] arr = new byte[Math.toIntExact(size())];
+    int offset = 0;
+    for (ByteBuffer bb : toBufferList()) {
+      int len = bb.remaining();
+      bb.get(arr, offset, len);
+      offset += len;
+    }
+    return arr;
+  }  
 
   /**
    * Copy the current content of this object into another {@link DataOutput}.
@@ -349,8 +350,8 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
 
   /**
    * This method resets this object to a clean (zero-size) state and
-   * publishes any currently allocated buffers for reuse, if reuse strategy
-   * has been provided in the constructor.
+   * publishes any currently allocated buffers for reuse to the reuse strategy
+   * provided in the constructor.
    * 
    * Sharing byte buffers for reads and writes is dangerous and will very likely
    * lead to hard-to-debug issues, use with great care.

@@ -155,7 +155,7 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
       c.accept(in);
     }
 
-    byte [] array = dst.toArray();
+    byte [] array = dst.copyToArray();
     array = Arrays.copyOfRange(array, prefix.length, array.length);
     for (int i = 0; i < 1000; i++) {
       int offs = randomIntBetween(0, array.length - 1);

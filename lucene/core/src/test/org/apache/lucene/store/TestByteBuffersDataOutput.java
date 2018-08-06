@@ -35,7 +35,7 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   
   @Override
   protected byte[] toBytes(ByteBuffersDataOutput instance) {
-    return instance.toArray();
+    return instance.copyToArray();
   }
 
   @Test
@@ -57,7 +57,7 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     long genSeed = randomLong();
     int addCount = randomIntBetween(1000, 5000);
     addRandomData(o, new Random(genSeed), addCount);
-    byte[] data = o.toArray();
+    byte[] data = o.copyToArray();
 
     // Use the same sequence over reused instance.
     final int expectedAllocationCount = allocations.get();
@@ -65,7 +65,7 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     addRandomData(o, new Random(genSeed), addCount);
 
     assertEquals(expectedAllocationCount, allocations.get());
-    assertArrayEquals(data, o.toArray());
+    assertArrayEquals(data, o.copyToArray());
   }
 
   @Test
@@ -92,17 +92,17 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   public void testSanity() {
     ByteBuffersDataOutput o = newInstance();
     assertEquals(0, o.size());
-    assertEquals(0, o.toArray().length);
+    assertEquals(0, o.copyToArray().length);
     assertEquals(0, o.ramBytesUsed());
 
     o.writeByte((byte) 1);
     assertEquals(1, o.size());
     assertTrue(o.ramBytesUsed() > 0);
-    assertArrayEquals(new byte [] { 1 }, o.toArray());
+    assertArrayEquals(new byte [] { 1 }, o.copyToArray());
 
     o.writeBytes(new byte [] {2, 3, 4}, 3);
     assertEquals(4, o.size());
-    assertArrayEquals(new byte [] { 1, 2, 3, 4 }, o.toArray());    
+    assertArrayEquals(new byte [] { 1, 2, 3, 4 }, o.copyToArray());    
   }
 
   @Test
@@ -116,7 +116,7 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     src.limit(offset + len);
     o.writeBytes(src);
     assertEquals(len, o.size());
-    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArray());
+    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.copyToArray());
   }
 
   @Test
@@ -128,6 +128,6 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     int len = bytes.length - offset;
     o.writeBytes(bytes, offset, len);
     assertEquals(len, o.size());
-    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArray());
+    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.copyToArray());
   }
 }

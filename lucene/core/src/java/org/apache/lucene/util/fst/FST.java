@@ -434,7 +434,7 @@ public final class FST<T> implements Accountable {
       // Serialize empty-string output:
       ByteBuffersDataOutput ros = new ByteBuffersDataOutput();
       outputs.writeFinalOutput(emptyOutput, ros);
-      byte[] emptyOutputBytes = ros.toArray();
+      byte[] emptyOutputBytes = ros.copyToArray();
 
       // reverse
       final int stopAt = emptyOutputBytes.length/2;
