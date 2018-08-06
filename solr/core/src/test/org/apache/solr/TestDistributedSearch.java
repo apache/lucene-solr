@@ -109,6 +109,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   
   @Test
   //05-Jul-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void test() throws Exception {
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore

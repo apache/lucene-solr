@@ -150,10 +150,10 @@ limitations under the License.
 
             <li id="cloud" class="global optional" ng-show="isCloudEnabled" ng-class="{active:showingCloud}"><p><a href="#/~cloud">Cloud</a></p>
               <ul ng-show="showingCloud">
+                <li class="nodes" ng-class="{active:page=='cloud-nodes'}"><a href="#/~cloud?view=nodes">Nodes</a></li>
                 <li class="tree" ng-class="{active:page=='cloud-tree'}"><a href="#/~cloud?view=tree">Tree</a></li>
-                <li class="graph" ng-class="{active:page=='cloud-graph'}"><a href="#/~cloud">Graph</a></li>
+                <li class="graph" ng-class="{active:page=='cloud-graph'}"><a href="#/~cloud?view=graph">Graph</a></li>
                 <li class="rgraph" ng-class="{active:page=='cloud-rgraph'}"><a href="#/~cloud?view=rgraph">Graph (Radial)</a></li>
-                <!--<li class="dump" ng-class="{active:page=='cloud-dump'}"><a ng-click="dumpCloud()">Dump</a></li>-->
               </ul>
             </li>
 

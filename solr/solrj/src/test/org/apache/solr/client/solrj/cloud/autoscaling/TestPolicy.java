@@ -43,7 +43,6 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.Clause.RangeVal;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
@@ -72,9 +71,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.CORES;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.REPLICA;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
@@ -568,7 +567,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     for (Suggester.SuggestionInfo suggestionInfo : l) {
       Map s = suggestionInfo.toMap(new LinkedHashMap<>());
       assertEquals("POST", Utils.getObjectByPath(s, true, "operation/method"));
-      if (Utils.getObjectByPath(s, false, "operation/command/add-replica") != null)  {
+      if (Utils.getObjectByPath(s, false, "operation/command/add-replica") != null) {
         numAdds++;
         assertEquals(1.0d, Utils.getObjectByPath(s, true, "violation/violation/delta"));
         assertEquals("/c/articles_coll/shards", Utils.getObjectByPath(s, true, "operation/path"));
@@ -578,7 +577,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         assertEquals("/c/articles_coll", Utils.getObjectByPath(s, true, "operation/path"));
         targetNodes.add((String) Utils.getObjectByPath(s, true, "operation/command/move-replica/targetNode"));
         movedReplicas.add((String) Utils.getObjectByPath(s, true, "operation/command/move-replica/replica"));
-      } else  {
+      } else {
         fail("Unexpected operation type suggested for suggestion: " + suggestionInfo);
       }
     }
@@ -713,7 +712,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     suggester.hint(Hint.SRC_NODE, "node1");
     SolrRequest op = suggester.getSuggestion();
     assertNotNull(op);
-    assertEquals("node2 should have been selected by move replica","node2",
+    assertEquals("node2 should have been selected by move replica", "node2",
         op.getParams().get("targetNode"));
 
     session = suggester.getSession();
@@ -802,13 +801,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
       throw new RuntimeException("");
     });
-    assertTrue( clause.getReplica().isPass(2));
+    assertTrue(clause.getReplica().isPass(2));
 
     clause = Clause.create("{replica: '3 - 5', node:'#ANY'}");
-    assertEquals(Operand.RANGE_EQUAL,  clause.getReplica().getOperand());
+    assertEquals(Operand.RANGE_EQUAL, clause.getReplica().getOperand());
     RangeVal range = (RangeVal) clause.getReplica().getValue();
-    assertEquals(3.0 , range.min);
-    assertEquals(5.0 , range.max);
+    assertEquals(3.0, range.min);
+    assertEquals(5.0, range.max);
     assertTrue(clause.replica.isPass(3));
     assertTrue(clause.replica.isPass(4));
     assertTrue(clause.replica.isPass(5));
@@ -833,7 +832,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{replica: '#EQUAL', node:'node_1'}"));
     clause = Clause.create("{replica : 0, freedisk:'<20%'}");
-    assertEquals(clause.tag.computedType, Clause.ComputedType.PERCENT);
+    assertEquals(clause.tag.computedType, ComputedType.PERCENT);
     assertEquals(clause.tag.op, Operand.LESS_THAN);
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{replica : 0, INDEX.sizeInGB:'>300'}"));
@@ -865,11 +864,39 @@ public class TestPolicy extends SolrTestCaseJ4 {
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{replica: '#ALL' , shard: '#EACH' , sysprop.zone:'#EACH'}"));
     clause = Clause.create("{replica: '#EQUAL' , shard: '#EACH' , sysprop.zone:[east, west]}");
-    assertEquals(Clause.ComputedType.EQUAL, clause.replica.computedType);
+    assertEquals(ComputedType.EQUAL, clause.replica.computedType);
     assertEquals(Operand.IN, clause.tag.op);
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{replica: '#EQUAL' , shard: '#EACH' , sysprop.zone:[east]}"));
 
+    clause = Clause.create("{cores: '#EQUAL' , node:'#ANY'}");
+    assertEquals(ComputedType.EQUAL, clause.globalTag.computedType);
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{cores: '#EQUAL' , node:'node1'}"));
+
+    clause = Clause.create("{cores: '#EQUAL' , node:[node1 , node2 , node3]}");
+    assertEquals(Operand.IN, clause.getTag().op);
+    assertEquals(ComputedType.EQUAL, clause.getGlobalTag().computedType);
+
+    clause = Clause.create("{cores: '3-5' , node:'#ANY'}");
+    assertEquals(Operand.RANGE_EQUAL, clause.globalTag.op);
+    assertEquals(3.0d, ((RangeVal) clause.globalTag.val).min.doubleValue(), 0.001);
+    assertEquals(5.0d, ((RangeVal) clause.globalTag.val).max.doubleValue(), 0.001);
+
+    clause = Clause.create("{cores: 1.66 , node:'#ANY'}");
+    assertEquals(Operand.RANGE_EQUAL, clause.globalTag.op);
+    assertEquals(1.0d, ((RangeVal) clause.globalTag.val).min.doubleValue(), 0.001);
+    assertEquals(2.0d, ((RangeVal) clause.globalTag.val).max.doubleValue(), 0.001);
+    assertEquals(1.66d, ((RangeVal) clause.globalTag.val).actual.doubleValue(), 0.001);
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{cores:5, sysprop.zone : west}"));
+
+    clause = Clause.create("{cores: '14%' , node:'#ANY'}");
+    assertEquals(ComputedType.PERCENT, clause.getGlobalTag().computedType);
+
+    clause = Clause.create("{cores: '14%' , node:[node1, node2, node3]}");
+    assertEquals(Operand.IN, clause.getTag().op);
   }
 
 
@@ -998,20 +1025,29 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     });
     List<Violation> violations = session.getViolations();
-    assertEquals(1, violations.size());
-    Violation violation = violations.get(0);
-    assertEquals("node1", violation.node);
-    RangeVal val = (RangeVal) violation.getClause().replica.val;
-    assertEquals(1.0d, val.min.doubleValue(), 0.01);
-    assertEquals(2.0, val.max.doubleValue(), 0.01);
-    assertEquals(1.2d, val.actual.doubleValue(), 0.01d);
-    assertEquals(1, violation.replicaCountDelta.doubleValue(), 0.01);
-    assertEquals(3, violation.getViolatingReplicas().size());
-    Set<String> expected = ImmutableSet.of("r1", "r3", "r5");
-    for (Violation.ReplicaInfoAndErr replicaInfoAndErr : violation.getViolatingReplicas()) {
-      assertTrue(expected.contains(replicaInfoAndErr.replicaInfo.getCore()));
+    assertEquals(2, violations.size());
+    for (Violation violation : violations) {
+      if (violation.node.equals("node1")) {
+        RangeVal val = (RangeVal) violation.getClause().replica.val;
+        assertEquals(1.0d, val.min.doubleValue(), 0.01);
+        assertEquals(2.0, val.max.doubleValue(), 0.01);
+        assertEquals(1.2d, val.actual.doubleValue(), 0.01d);
+        assertEquals(1, violation.replicaCountDelta.doubleValue(), 0.01);
+        assertEquals(3, violation.getViolatingReplicas().size());
+        Set<String> expected = ImmutableSet.of("r1", "r3", "r5");
+        for (Violation.ReplicaInfoAndErr replicaInfoAndErr : violation.getViolatingReplicas()) {
+          assertTrue(expected.contains(replicaInfoAndErr.replicaInfo.getCore()));
+        }
+      } else if (violation.node.equals("node5")) {
+        assertEquals(-1, violation.replicaCountDelta.doubleValue(), 0.01);
+
+      } else {
+        fail();
+      }
     }
-    System.out.println();
+//    Violation violation = violations.get(0);
+//    assertEquals("node1", violation.node);
+
 
   }
 
@@ -2342,9 +2378,16 @@ public class TestPolicy extends SolrTestCaseJ4 {
     AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = autoScalingConfig.getPolicy().createSession(cloudManagerWithData(dataproviderdata));
     List<Violation> violations = session.getViolations();
-    assertEquals(1, violations.size());
-    assertEquals(1.0d, violations.get(0).replicaCountDelta, 0.01);
-    assertEquals(1.53d, ((RangeVal) violations.get(0).getClause().getReplica().val).actual);
+    assertEquals(2, violations.size());
+    for (Violation violation : violations) {
+      if (violation.node.equals("10.0.0.6:8983_solr")) {
+        assertEquals(1.0d, violation.replicaCountDelta, 0.01);
+        assertEquals(1.53d, ((RangeVal) violation.getClause().getReplica().val).actual);
+      } else if (violation.node.equals("10.0.0.6:7574_solr")) {
+        assertEquals(-1.0d, violation.replicaCountDelta, 0.01);
+      }
+
+    }
 
 
     dataproviderdata = "{" +
@@ -2465,7 +2508,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
 
-
   public void testFreeDiskSuggestions() {
     String dataproviderdata = "{" +
         "  liveNodes:[node1,node2]," +
@@ -2494,6 +2536,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       assertEquals(500d, r.delta, 0.1);
 
     }
+
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
     assertEquals(3, l.size());
     Map m = l.get(0).toMap(new LinkedHashMap<>());
@@ -3060,9 +3103,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
       suggester = createSuggester(cloudManager, jsonObj, suggester);
     }
 
-    assertEquals("count = "+count ,0,count);
+    assertEquals("count = " + count, 0, count);
   }
-public void testUtilizeNodeFailure2() throws Exception {
+
+  public void testUtilizeNodeFailure2() throws Exception {
     String state = "{  'liveNodes':[" +
         "  '127.0.0.1:51075_solr'," +
         "  '127.0.0.1:51076_solr'," +
@@ -3144,7 +3188,7 @@ public void testUtilizeNodeFailure2() throws Exception {
       suggester = createSuggester(cloudManager, jsonObj, suggester);
     }
 
-    assertEquals("count = "+count ,1,count);
+    assertEquals("count = " + count, 1, count);
   }
 
   //SOLR-12358
@@ -3413,18 +3457,18 @@ public void testUtilizeNodeFailure2() throws Exception {
         "        {'node':'solr-27:8983_solr'}]}]}";
 
     List l = (List) ((Map) Utils.fromJSONString(rowsData)).get("sortedNodes");
-    List<Suggestion.ConditionType> params = new ArrayList<>();
+    List<Variable.Type> params = new ArrayList<>();
     params.add(CORES);
-    params.add(Suggestion.ConditionType.FREEDISK);
-    params.add(Suggestion.ConditionType.SYSLOADAVG);
-    params.add(Suggestion.ConditionType.NODE);
+    params.add(Variable.Type.FREEDISK);
+    params.add(Variable.Type.SYSLOADAVG);
+    params.add(Variable.Type.NODE);
     List<Row> rows = new ArrayList<>();
     for (Object o : l) {
       Map m = (Map) o;
       Cell[] c = new Cell[params.size()];
       List attrs = (List) m.get("attributes");
       for (int i = 0; i < params.size(); i++) {
-        Suggestion.ConditionType param = params.get(i);
+        Variable.Type param = params.get(i);
         for (Object attr : attrs) {
           Object o1 = ((Map) attr).get(param.tagName);
           if (o1 != null) {
@@ -3454,6 +3498,7 @@ public void testUtilizeNodeFailure2() throws Exception {
 
 
   }
+
   public void testViolationOutput() throws IOException {
     String autoScalingjson = "{" +
         "  'cluster-preferences': [" +
@@ -3512,7 +3557,7 @@ public void testUtilizeNodeFailure2() throws Exception {
     new SolrJSONWriter(writer)
         .writeObj(val)
         .close();
-    JSONWriter.write (writer, true, JsonTextWriter.JSON_NL_MAP, val);
+    JSONWriter.write(writer, true, JsonTextWriter.JSON_NL_MAP, val);
 
     Object root = Utils.fromJSONString(writer.toString());
     assertEquals(2l,
@@ -3525,7 +3570,7 @@ public void testUtilizeNodeFailure2() throws Exception {
   }
 
 
-  public void testFreediskPercentage(){
+  public void testFreediskPercentage() {
     String dataproviderdata = "{" +
         "  'liveNodes': [" +
         "    'node1:8983'," +

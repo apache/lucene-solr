@@ -173,7 +173,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
+  //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void deleteReplicaFromClusterState() throws Exception {
     deleteReplicaFromClusterState("true");
     deleteReplicaFromClusterState("false");

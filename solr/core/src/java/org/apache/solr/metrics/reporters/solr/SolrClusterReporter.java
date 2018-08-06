@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.apache.http.client.HttpClient;
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -270,13 +271,15 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       if (oid == null) {
         return lastKnownUrl;
       }
-      String[] ids = oid.split("-");
-      if (ids.length != 3) { // unknown format
-        log.warn("Unknown format of leader id, skipping: " + oid);
+      String nodeName = null;
+      try {
+        nodeName = LeaderElector.getNodeName(oid);
+      } catch (Exception e) {
+        log.warn("Unknown format of leader id, skipping: " + oid, e);
         return lastKnownUrl;
       }
       // convert nodeName back to URL
-      String url = zk.getZkStateReader().getBaseUrlForNodeName(ids[1]);
+      String url = zk.getZkStateReader().getBaseUrlForNodeName(nodeName);
       // check that it's parseable
       try {
         new java.net.URL(url);

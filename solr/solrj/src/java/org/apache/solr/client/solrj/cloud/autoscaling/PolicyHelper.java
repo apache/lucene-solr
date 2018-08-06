@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.util.Utils.time;
@@ -127,7 +127,7 @@ public class PolicyHelper {
               if (replicaInfo != null) {
                 Object idxSz = replicaInfo.getVariables().get(FREEDISK.perReplicaValue);
                 if (idxSz != null) {
-                  diskSpaceReqd.put(shardName, 1.5 * (Double) Suggestion.ConditionType.FREEDISK.validate(null, idxSz, false));
+                  diskSpaceReqd.put(shardName, 1.5 * (Double) Variable.Type.FREEDISK.validate(null, idxSz, false));
                 }
               }
             }
@@ -213,13 +213,14 @@ public class PolicyHelper {
 
   public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf, SolrCloudManager cloudManager) {
     Policy policy = autoScalingConf.getPolicy();
-    Suggestion.SuggestionCtx suggestionCtx = new Suggestion.SuggestionCtx();
+    Suggestion.Ctx suggestionCtx = new Suggestion.Ctx();
     suggestionCtx.session = policy.createSession(cloudManager);
     List<Violation> violations = suggestionCtx.session.getViolations();
     for (Violation violation : violations) {
-      Suggestion.ConditionType tagType = Suggestion.getTagType(violation.getClause().isPerCollectiontag() ?
+      String name = violation.getClause().isPerCollectiontag() ?
           violation.getClause().tag.name :
-          violation.getClause().globalTag.name);
+          violation.getClause().globalTag.name;
+      Variable.Type tagType = VariableBase.getTagType(name);
       tagType.getSuggestions(suggestionCtx.setViolation(violation));
       suggestionCtx.violation = null;
     }

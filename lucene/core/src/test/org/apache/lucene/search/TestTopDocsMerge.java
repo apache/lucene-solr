@@ -372,7 +372,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         }
       }
 
-      TestUtil.assertEquals(topHits, mergedHits);
+      TestUtil.assertConsistent(topHits, mergedHits);
     }
     reader.close();
     dir.close();

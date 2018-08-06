@@ -44,6 +44,11 @@ Upgrade Notes
   MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
   switch to "Direct" instead. (Dawid Weiss)
 
+Other Changes
+----------------------
+
+* SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -123,11 +128,17 @@ New Features
 
 * SOLR-12536: autoscaling policy support to equally distribute replicas on the basis of arbitrary properties (noble)
 
+* SOLR-8207: Add "Nodes" view to the Admin UI "Cloud" tab, listing nodes and key metrics (janhoy)
+
 * SOLR-11990: Make it possible to co-locate replicas of multiple collections together in a node. A collection may be
   co-located with another collection during collection creation time by specifying a 'withCollection' parameter. It can
   also be co-located afterwards by using the modify collection API. The co-location guarantee is enforced regardless of
   future cluster operations whether they are invoked manually via the Collection API or by the Autoscaling framework.
   (noble, shalin)
+
+* SOLR-12402: Factor out SolrDefaultStreamFactory class. (Christine Poerschke)
+
+* SOLR-12592: support #EQUAL function, range operator, decimal and percentage in cores in autoscaling policies (noble)
 
 Bug Fixes
 ----------------------
@@ -183,6 +194,23 @@ Bug Fixes
 
 * SOLR-12477: An update would return a client error(400) if it hit a AlreadyClosedException.
   We now return the error as a server error(500) instead (Jeffery via Varun Thacker)
+  
+* SOLR-12606: Fix InfixSuggestersTest.testShutdownDuringBuild() failures. (Steve Rowe)
+
+* SOLR-12607: Fixed two separate bugs in shard splits which can cause data loss. The first case is when using TLOG
+  replicas only, the updates forwarded from parent shard leader to the sub-shard leader are written only in tlog and
+  not the index. If this happens after the buffered updates have been replayed then the updates can never be executed
+  even though they remain the transaction log. The second case is when synchronously forwarding updates to sub-shard
+  leader fails and the underlying errors are not propagated to the client. (Cao Manh Dat, shalin)
+
+* SOLR-12344: SolrSlf4jReporter doesn't set MDC context. (ab)
+
+* SOLR-12594: MetricsHistoryHandler.getOverseerLeader fails when hostname contains hyphen. (ab)
+
+* SOLR-12615: HashQParserPlugin will no longer throw an NPE if the hash key field is a string when there are documents
+  with empty values. All documents with empty values ( string , numeric ) will be processed by worker=0
+  This would fix the NPE when using the search stream with partitionKeys. (Varun Thacker)
+
 
 Optimizations
 ----------------------
@@ -200,6 +228,10 @@ Optimizations
 
 * SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery.
   (Cao Manh Dat)
+
+* SOLR-12509: Improve SplitShardCmd performance and reliability. A new method of splitting has been
+  introduced (splitMethod=link) which uses hard-linking of index files when possible, resulting in
+  significant speedups and reduced CPU / IO load on shard leader. (ab)
 
 Other Changes
 ----------------------
@@ -227,6 +259,8 @@ Other Changes
 * SOLR-12574: Put under a common "significantTerms" bucket all output by SignificantTerms Query Parser (Alexandre Rafalovitch)
 
 * SOLR-12164: Improve Ref Guide main landing page. (Cassandra Targett)
+
+* SOLR-12617: Remove Commons BeanUtils as a dependency (Varun Thacker)
 
 ==================  7.4.0 ==================
 

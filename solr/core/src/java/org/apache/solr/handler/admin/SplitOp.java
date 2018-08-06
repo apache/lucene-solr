@@ -30,11 +30,13 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.SplitIndexCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,9 +80,14 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     }
 
     log.info("Invoked split action for core: " + cname);
-    SolrCore core = it.handler.coreContainer.getCore(cname);
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+    String methodStr = params.get(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
+    SolrIndexSplitter.SplitMethod splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
+    if (splitMethod == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported value of '" + CommonAdminParams.SPLIT_METHOD + "': " + methodStr);
+    }
+    SolrCore parentCore = it.handler.coreContainer.getCore(cname);
     List<SolrCore> newCores = null;
+    SolrQueryRequest req = null;
 
     try {
       // TODO: allow use of rangesStr in the future
@@ -91,9 +98,9 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       String routeFieldName = null;
       if (it.handler.coreContainer.isZooKeeperAware()) {
         ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
-        String collectionName = req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName();
+        String collectionName = parentCore.getCoreDescriptor().getCloudDescriptor().getCollectionName();
         DocCollection collection = clusterState.getCollection(collectionName);
-        String sliceName = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
+        String sliceName = parentCore.getCoreDescriptor().getCloudDescriptor().getShardId();
         Slice slice = collection.getSlice(sliceName);
         router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
         if (ranges == null) {
@@ -101,7 +108,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
           ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
         }
         Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
-        if (routerObj != null && routerObj instanceof Map) {
+        if (routerObj instanceof Map) {
           Map routerProps = (Map) routerObj;
           routeFieldName = (String) routerProps.get("field");
         }
@@ -131,9 +138,10 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         paths = Arrays.asList(pathsArr);
       }
 
+      req = new LocalSolrQueryRequest(parentCore, params);
 
-      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges, router, routeFieldName, splitKey);
-      core.getUpdateHandler().split(cmd);
+      SplitIndexCommand cmd = new SplitIndexCommand(req, it.rsp, paths, newCores, ranges, router, routeFieldName, splitKey, splitMethod);
+      parentCore.getUpdateHandler().split(cmd);
 
       if (it.handler.coreContainer.isZooKeeperAware()) {
         for (SolrCore newcore : newCores) {
@@ -150,7 +158,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       throw e;
     } finally {
       if (req != null) req.close();
-      if (core != null) core.close();
+      if (parentCore != null) parentCore.close();
       if (newCores != null) {
         for (SolrCore newCore : newCores) {
           newCore.close();

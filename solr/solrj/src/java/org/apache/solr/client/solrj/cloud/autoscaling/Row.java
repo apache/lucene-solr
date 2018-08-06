@@ -54,7 +54,7 @@ public class Row implements MapWriter {
   boolean isLive = true;
   Policy.Session session;
 
-  public Row(String node, List<Pair<String, Suggestion.ConditionType>> params, List<String> perReplicaAttributes, Policy.Session session) {
+  public Row(String node, List<Pair<String, Variable.Type>> params, List<String> perReplicaAttributes, Policy.Session session) {
     this.session = session;
     collectionVsShardVsReplicas = session.nodeStateProvider.getReplicaInfo(node, perReplicaAttributes);
     if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
@@ -64,7 +64,7 @@ public class Row implements MapWriter {
     List<String> paramNames = params.stream().map(Pair::first).collect(Collectors.toList());
     Map<String, Object> vals = isLive ? session.nodeStateProvider.getNodeValues(node, paramNames) : Collections.emptyMap();
     for (int i = 0; i < params.size(); i++) {
-      Pair<String, Suggestion.ConditionType> pair = params.get(i);
+      Pair<String, Variable.Type> pair = params.get(i);
       cells[i] = new Cell(i, pair.first(), Clause.validate(pair.first(), vals.get(pair.first()), false), null, pair.second(), this);
       if (NODE.equals(pair.first())) cells[i].val = node;
       if (cells[i].val == null) anyValueMissing = true;

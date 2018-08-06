@@ -96,6 +96,10 @@ Changes in Runtime Behavior
 * LUCENE-7444: StandardAnalyzer no longer defaults to removing English stopwords
   (Alan Woodward)
 
+* LUCENE-8060: IndexSearcher's search and searchAfter methods now only compute
+  total hit counts accurately up to 1,000 in order to enable top-hits
+  optimizations such as block-max WAND (LUCENE-8135). (Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
@@ -167,6 +171,9 @@ API Changes:
   been changed from a protected method to a java.util.function.Supplier as a
   constructor argument. (Adrien Grand)
 
+* LUCENE-8437: CheckIndex.Status.cantOpenSegments and missingSegmentVersion
+  have been removed as they were not computed correctly. (Adrien Grand)
+
 Bug Fixes:
 
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
@@ -192,6 +199,9 @@ Bug Fixes:
 * LUCENE-8429: DaciukMihovAutomatonBuilder is no longer prone to stack
   overflows by enforcing a maximum term length. (Adrien Grand)
 
+* LUCENE-8441: IndexWriter now checks doc value type for index sort fields
+  and fails the document if they are not compatible. (Jim Ferenczi, Mike McCandless)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
@@ -202,6 +212,10 @@ Changes in Runtime Behavior:
   used by deleted documents. (Adrien Grand)
 
 Improvements
+
+* LUCENE-8440: Add support for indexing and searching Line and Point shapes using LatLonShape encoding (Nick Knize)
+
+* LUCENE-8435: Add new LatLonShapePolygonQuery for querying indexed LatLonShape fields by arbitrary polygons (Nick Knize)
 
 * LUCENE-8367: Make per-dimension drill down optional for each facet dimension (Mike McCandless)
 

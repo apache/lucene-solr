@@ -384,7 +384,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
       sd.doc += base[sd.shardIndex];
     }
 
-    TestUtil.assertEquals(hits, shardHits);
+    TestUtil.assertConsistent(hits, shardHits);
 
     if (moreHits) {
       // Return a continuation:

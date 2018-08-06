@@ -38,7 +38,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -120,7 +120,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     Policy.Session session = config.getPolicy().createSession(cloudManager);
 
     for (Row row : session.getSortedNodes()) {
-      Object val = row.getVal(Suggestion.ConditionType.TOTALDISK.tagName, null);
+      Object val = row.getVal(Type.TOTALDISK.tagName, null);
       log.info("node: {} , totaldisk : {}, freedisk : {}", row.node, val, row.getVal("freedisk",null));
       assertTrue(val != null);
 
@@ -130,7 +130,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     for (Row row : session.getSortedNodes()) {
       row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
         for (ReplicaInfo replicaInfo : replicaInfos) {
-          if (replicaInfo.getVariables().containsKey(Suggestion.ConditionType.CORE_IDX.tagName)) count.incrementAndGet();
+          if (replicaInfo.getVariables().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
         }
       }));
     }

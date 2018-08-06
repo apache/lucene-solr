@@ -469,15 +469,17 @@ Note that for this filter to work properly, the upstream tokenizer must not remo
 
 == ICU Folding Filter
 
-This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode Technical Report 30] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
+This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
 To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`. For more information about adding jars, see the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in Solrconfig>>.
 
 *Factory class:* `solr.ICUFoldingFilterFactory`
 
-*Arguments:* None
+*Arguments:*
 
-*Example:*
+`filter`:: (string, optional) A Unicode set filter that can be used to e.g., exclude a set of characters from being processed. See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information.
+
+*Example without a filter:*
 
 [source,xml]
 ----
@@ -487,27 +489,39 @@ To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructio
 </analyzer>
 ----
 
-For detailed information on this normalization form, see http://www.unicode.org/reports/tr30/tr30-4.html.
+*Example with a filter to exclude Swedish/Finnish characters:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.ICUFoldingFilterFactory" filter="[^åäöÅÄÖ]"/>
+</analyzer>
+----
+
+For detailed information on this normalization form, see http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings].
 
 == ICU Normalizer 2 Filter
 
 This filter factory normalizes text according to one of five Unicode Normalization Forms as described in http://unicode.org/reports/tr15/[Unicode Standard Annex #15]:
 
-* NFC: (name="nfc" mode="compose") Normalization Form C, canonical decomposition
-* NFD: (name="nfc" mode="decompose") Normalization Form D, canonical decomposition, followed by canonical composition
-* NFKC: (name="nfkc" mode="compose") Normalization Form KC, compatibility decomposition
-* NFKD: (name="nfkc" mode="decompose") Normalization Form KD, compatibility decomposition, followed by canonical composition
-* NFKC_Casefold: (name="nfkc_cf" mode="compose") Normalization Form KC, with additional Unicode case folding. Using the ICU Normalizer 2 Filter is a better-performing substitution for the <<Lower Case Filter>> and NFKC normalization.
+* NFC: (`name="nfc" mode="compose"`) Normalization Form C, canonical decomposition
+* NFD: (`name="nfc" mode="decompose"`) Normalization Form D, canonical decomposition, followed by canonical composition
+* NFKC: (`name="nfkc" mode="compose"`) Normalization Form KC, compatibility decomposition
+* NFKD: (`name="nfkc" mode="decompose"`) Normalization Form KD, compatibility decomposition, followed by canonical composition
+* NFKC_Casefold: (`name="nfkc_cf" mode="compose"`) Normalization Form KC, with additional Unicode case folding. Using the ICU Normalizer 2 Filter is a better-performing substitution for the <<Lower Case Filter>> and NFKC normalization.
 
 *Factory class:* `solr.ICUNormalizer2FilterFactory`
 
 *Arguments:*
 
-`name`:: (string) The name of the normalization form; `nfc`, `nfd`, `nfkc`, `nfkd`, `nfkc_cf`
+`name`:: The name of the normalization form. Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf` (the default). Required.
 
-`mode`:: (string) The mode of Unicode character composition and decomposition; `compose` or `decompose`
+`mode`:: The mode of Unicode character composition and decomposition. Valid options are: `compose` (the default) or `decompose`. Required.
 
-*Example:*
+`filter`:: A Unicode set filter that can be used to e.g., exclude a set of characters from being processed. See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information. Optional.
+
+*Example with NFKC_Casefold:*
 
 [source,xml]
 ----
@@ -517,7 +531,17 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 </analyzer>
 ----
 
-For detailed information about these Unicode Normalization Forms, see http://unicode.org/reports/tr15/.
+*Example with a filter to exclude Swedish/Finnish characters:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.ICUNormalizer2FilterFactory" name="nfkc_cf" mode="compose" filter="[^åäöÅÄÖ]"/>
+</analyzer>
+----
+
+For detailed information about these normalization forms, see http://unicode.org/reports/tr15/[Unicode Normalization Forms].
 
 To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
 

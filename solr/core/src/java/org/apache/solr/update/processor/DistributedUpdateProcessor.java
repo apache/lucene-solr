@@ -431,13 +431,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         boolean isSubset = aslice.getRange() != null && aslice.getRange().isSubsetOf(myRange);
         if (isSubset &&
             (docId == null // in case of deletes
-            || (docId != null && coll.getRouter().isTargetSlice(docId, doc, req.getParams(), aslice.getName(), coll)))) {
+            || coll.getRouter().isTargetSlice(docId, doc, req.getParams(), aslice.getName(), coll))) {
           Replica sliceLeader = aslice.getLeader();
           // slice leader can be null because node/shard is created zk before leader election
           if (sliceLeader != null && zkController.getClusterState().liveNodesContain(sliceLeader.getNodeName()))  {
             if (nodes == null) nodes = new ArrayList<>();
             ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(sliceLeader);
-            nodes.add(new StdNode(nodeProps, coll.getName(), shardId));
+            nodes.add(new StdNode(nodeProps, coll.getName(), aslice.getName()));
           }
         }
       }
@@ -880,7 +880,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // not the leader anymore maybe or the error'd node is not my replica?
           if (!foundErrorNodeInReplicaList) {
             log.warn("Core "+cloudDesc.getCoreNodeName()+" belonging to "+collection+" "+
-                shardId+", does not have error'd node " + stdNode.getNodeProps().getCoreUrl() + " as a replica. " +
+                cloudDesc.getShardId()+", does not have error'd node " + stdNode.getNodeProps().getCoreUrl() + " as a replica. " +
                 "No request recovery command will be sent!");
             if (!shardId.equals(cloudDesc.getShardId())) {
               // some replicas on other shard did not receive the updates (ex: during splitshard),
@@ -1134,7 +1134,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 }
               }
             }
-            if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
               cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
             }
           }
@@ -1676,7 +1676,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             return;
           }
 
-          if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+          if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
             // TLOG replica not leader, don't write the DBQ to IW
             cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
           }
@@ -1835,7 +1835,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               }
             }
 
-            if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
               cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
             }
           }

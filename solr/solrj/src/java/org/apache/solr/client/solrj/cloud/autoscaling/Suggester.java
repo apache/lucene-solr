@@ -46,7 +46,7 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /* A suggester is capable of suggesting a collection operation

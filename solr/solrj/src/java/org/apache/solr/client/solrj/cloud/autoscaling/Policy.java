@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -56,8 +56,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.NODE;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.WITH_COLLECTION;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.NODE;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_COLLECTION;
 
 /*The class that reads, parses and applies policies specified in
  * autoscaling.json
@@ -91,7 +91,7 @@ public class Policy implements MapWriter {
   final Map<String, List<Clause>> policies;
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
-  final List<Pair<String, ConditionType>> params;
+  final List<Pair<String, Type>> params;
   final List<String> perReplicaAttributes;
 
   public Policy() {
@@ -124,7 +124,7 @@ public class Policy implements MapWriter {
         .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
     for (String newParam : new ArrayList<>(newParams)) {
-      ConditionType t = Suggestion.getTagType(newParam);
+      Type t = VariableBase.getTagType(newParam);
       if(t != null && !t.associatedPerNodeValues.isEmpty()){
         for (String s : t.associatedPerNodeValues) {
           if(!newParams.contains(s)) newParams.add(s);
@@ -134,8 +134,8 @@ public class Policy implements MapWriter {
 
     this.policies = Collections.unmodifiableMap(
         policiesFromMap((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
-    List<Pair<String, Suggestion.ConditionType>> params = newParams.stream()
-        .map(s -> new Pair<>(s, Suggestion.getTagType(s)))
+    List<Pair<String, Type>> params = newParams.stream()
+        .map(s -> new Pair<>(s, VariableBase.getTagType(s)))
         .collect(toList());
     //let this be there always, there is no extra cost
     params.add(new Pair<>(WITH_COLLECTION.tagName, WITH_COLLECTION));
@@ -156,7 +156,7 @@ public class Policy implements MapWriter {
     this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) : DEFAULT_PREFERENCES;
     this.params = Collections.unmodifiableList(
         buildParams(this.clusterPreferences, this.clusterPolicy, this.policies).stream()
-            .map(s -> new Pair<>(s, Suggestion.getTagType(s)))
+            .map(s -> new Pair<>(s, VariableBase.getTagType(s)))
             .collect(toList())
     );
     perReplicaAttributes = readPerReplicaAttrs();
@@ -514,8 +514,8 @@ public class Policy implements MapWriter {
           Map<String, String> withCollMap = (Map<String, String>) vals.get("withCollection");
           if (!withCollMap.isEmpty()) {
             Clause withCollClause = new Clause((Map<String,Object>)Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}") ,
-                new Clause.Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
-                new Clause.Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true
+                new Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
+                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true
             );
             expandedClauses.add(withCollClause);
           }
@@ -614,16 +614,5 @@ public class Policy implements MapWriter {
       for (int i = 0; i < matrix.size(); i++) if (matrix.get(i).node.equals(node)) return i;
       throw new RuntimeException("NO such node found " + node);
     }
-  }
-  static final Map<String, Suggestion.ConditionType> validatetypes = new HashMap<>();
-  static {
-    for (Suggestion.ConditionType t : Suggestion.ConditionType.values())
-      validatetypes.put(t.tagName, t);
-  }
-  public static ConditionType getTagType(String name) {
-    ConditionType info = validatetypes.get(name);
-    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = ConditionType.STRING;
-    if (info == null && name.startsWith(Clause.METRICS_PREFIX)) info = ConditionType.LAZY;
-    return info;
   }
 }

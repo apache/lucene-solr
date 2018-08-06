@@ -173,6 +173,9 @@ ant.fileScanner{
       if (f.toString().contains('solr/contrib') && !validLoggerNamePattern.matcher(text).find()) {
         reportViolation(f, 'invalid logger name [not log or LOG]');
       }
+      if (f.toString().contains('solr/core') && !validLoggerNamePattern.matcher(text).find()) {
+        reportViolation(f, 'invalid logger name [not log or LOG]');
+      }
     }
     checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
     if (f.name.contains("Test")) {

@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.Tessellator.Triangle;
@@ -26,6 +27,9 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
+
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
 /**
  * An indexed shape utility class.
@@ -62,14 +66,65 @@ public class LatLonShape {
   private LatLonShape() {
   }
 
-  /** the lionshare of the indexing is done by the tessellator */
+  /** create indexable fields for polygon geometry */
   public static Field[] createIndexableFields(String fieldName, Polygon polygon) {
+    // the lionshare of the indexing is done by the tessellator
     List<Triangle> tessellation = Tessellator.tessellate(polygon);
     List<LatLonTriangle> fields = new ArrayList<>();
-    for (int i = 0; i < tessellation.size(); ++i) {
-      fields.add(new LatLonTriangle(fieldName, tessellation.get(i)));
+    for (Triangle t : tessellation) {
+      fields.add(new LatLonTriangle(fieldName, t.getEncodedX(0), t.getEncodedY(0),
+          t.getEncodedX(1), t.getEncodedY(1), t.getEncodedX(2), t.getEncodedY(2)));
     }
     return fields.toArray(new Field[fields.size()]);
+  }
+
+  /** create indexable fields for line geometry */
+  public static Field[] createIndexableFields(String fieldName, Line line) {
+    int numPoints = line.numPoints();
+    List<LatLonTriangle> fields = new ArrayList<>(numPoints - 1);
+
+    // encode the line vertices
+    int[] encodedLats = new int[numPoints];
+    int[] encodedLons = new int[numPoints];
+    for (int i = 0; i < numPoints; ++i) {
+      encodedLats[i] = encodeLatitude(line.getLat(i));
+      encodedLons[i] = encodeLongitude(line.getLon(i));
+    }
+
+    // create "flat" triangles
+    int aLat, bLat, aLon, bLon, temp;
+    for (int i = 0, j = 1; j < numPoints; ++i, ++j) {
+      aLat = encodedLats[i];
+      aLon = encodedLons[i];
+      bLat = encodedLats[j];
+      bLon = encodedLons[j];
+      if (aLat > bLat) {
+        temp = aLat;
+        aLat = bLat;
+        bLat = temp;
+        temp = aLon;
+        aLon = bLon;
+        bLon = temp;
+      } else if (aLat == bLat) {
+        if (aLon > bLon) {
+          temp = aLat;
+          aLat = bLat;
+          bLat = temp;
+          temp = aLon;
+          aLon = bLon;
+          bLon = temp;
+        }
+      }
+      fields.add(new LatLonTriangle(fieldName, aLon, aLat, bLon, bLat, aLon, aLat));
+    }
+    return fields.toArray(new Field[fields.size()]);
+  }
+
+  /** create indexable fields for point geometry */
+  public static Field[] createIndexableFields(String fieldName, double lat, double lon) {
+    final int encodedLat = encodeLatitude(lat);
+    final int encodedLon = encodeLongitude(lon);
+    return new Field[] {new LatLonTriangle(fieldName, encodedLon, encodedLat, encodedLon, encodedLat, encodedLon, encodedLat)};
   }
 
   /** create a query to find all polygons that intersect a defined bounding box
@@ -80,16 +135,18 @@ public class LatLonShape {
     return new LatLonShapeBoundingBoxQuery(field, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
 
+  public static Query newPolygonQuery(String field, Polygon... polygons) {
+    return new LatLonShapePolygonQuery(field, polygons);
+  }
+
   /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}
    * these triangles are encoded and inserted as separate indexed POINT fields
    */
   private static class LatLonTriangle extends Field {
 
-    public LatLonTriangle(String name, Triangle t) {
+    LatLonTriangle(String name, int ax, int ay, int bx, int by, int cx, int cy) {
       super(name, TYPE);
-      setTriangleValue(t.getEncodedX(0), t.getEncodedY(0),
-                       t.getEncodedX(1), t.getEncodedY(1),
-                       t.getEncodedX(2), t.getEncodedY(2));
+      setTriangleValue(ax, ay, bx, by, cx, cy);
     }
 
     public void setTriangleValue(int aX, int aY, int bX, int bY, int cX, int cY) {

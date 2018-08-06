@@ -89,12 +89,13 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  //commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testOutOfSyncReplicasCannotBecomeLeader() throws Exception {
     testOutOfSyncReplicasCannotBecomeLeader(false);
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testOutOfSyncReplicasCannotBecomeLeaderAfterRestart() throws Exception {
     testOutOfSyncReplicasCannotBecomeLeader(true);
   }
