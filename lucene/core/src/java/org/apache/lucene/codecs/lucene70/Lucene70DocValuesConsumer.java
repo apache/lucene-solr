@@ -17,9 +17,7 @@
 package org.apache.lucene.codecs.lucene70;
 
 
-import static org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
-import static org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat.NUMERIC_BLOCK_SHIFT;
-import static org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE;
+import static org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat.*;
 
 import java.io.Closeable; // javadocs
 import java.io.IOException;
@@ -48,7 +46,6 @@ import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
@@ -497,8 +494,11 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     long start = data.getFilePointer();
 
     long numBlocks = 1L + ((size + Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) >>> Lucene70DocValuesFormat.TERMS_DICT_REVERSE_INDEX_SHIFT);
-    RAMOutputStream addressBuffer = new RAMOutputStream();
-    DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(meta, addressBuffer, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
+    ByteBuffersDataOutput addressBuffer = new ByteBuffersDataOutput();
+    DirectMonotonicWriter writer;
+    try (ByteBuffersIndexOutput addressOutput = new ByteBuffersIndexOutput(addressBuffer, "temp", "temp")) {
+      writer = DirectMonotonicWriter.getInstance(meta, addressOutput, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
+    }
 
     TermsEnum iterator = values.termsEnum();
     BytesRefBuilder previous = new BytesRefBuilder();
@@ -526,7 +526,7 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeLong(start);
     meta.writeLong(data.getFilePointer() - start);
     start = data.getFilePointer();
-    addressBuffer.writeTo(data);
+    addressBuffer.copyTo(data);
     meta.writeLong(start);
     meta.writeLong(data.getFilePointer() - start);
   }
