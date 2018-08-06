@@ -41,7 +41,7 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   @Test
   public void testReuse() throws IOException {
     AtomicInteger allocations = new AtomicInteger(0);
-    ByteBuffersDataOutput.BufferReuser reuser = new ByteBuffersDataOutput.BufferReuser(
+    ByteBuffersDataOutput.BufferBufferRecycler reuser = new ByteBuffersDataOutput.BufferBufferRecycler(
         (size) -> {
           allocations.incrementAndGet();
           return ByteBuffer.allocate(size);
@@ -50,7 +50,8 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     ByteBuffersDataOutput o = new ByteBuffersDataOutput(
         ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
         ByteBuffersDataOutput.DEFAULT_MAX_BITS_PER_BLOCK, 
-        reuser);
+        reuser::allocate,
+        reuser::reuse);
 
     // Add some random data first.
     long genSeed = randomLong();
@@ -60,7 +61,7 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
 
     // Use the same sequence over reused instance.
     final int expectedAllocationCount = allocations.get();
-    o.reset(reuser::reuse);
+    o.reset();
     addRandomData(o, new Random(genSeed), addCount);
 
     assertEquals(expectedAllocationCount, allocations.get());

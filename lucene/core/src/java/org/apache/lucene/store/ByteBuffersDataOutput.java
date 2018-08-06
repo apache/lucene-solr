@@ -29,17 +29,20 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   public final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = (size) -> {
     return ByteBuffer.allocate(size);
   };
-  
-  public final static class BufferReuser implements IntFunction<ByteBuffer> {
+
+  public final static Consumer<ByteBuffer> NO_REUSE = (bb) -> {
+    throw new RuntimeException("reset() is not allowed on this buffer.");
+  };
+
+  public final static class BufferBufferRecycler {
     private final ArrayDeque<ByteBuffer> reuse = new ArrayDeque<>();
     private final IntFunction<ByteBuffer> delegate;
 
-    public BufferReuser(IntFunction<ByteBuffer> delegate) {
+    public BufferBufferRecycler(IntFunction<ByteBuffer> delegate) {
       this.delegate = Objects.requireNonNull(delegate);
     }
 
-    @Override
-    public ByteBuffer apply(int size) {
+    public ByteBuffer allocate(int size) {
       while (!reuse.isEmpty()) {
         ByteBuffer bb = reuse.removeFirst();
         // If we don't have a buffer of exactly the requested size, discard it.
@@ -50,7 +53,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
 
       return delegate.apply(size);        
     }
-    
+
     public void reuse(ByteBuffer buffer) {
       buffer.rewind();
       reuse.addLast(buffer);
@@ -77,6 +80,11 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   private final IntFunction<ByteBuffer> blockAllocate;
 
   /**
+   * {@link ByteBuffer} recycler on {@link #reset}.
+   */
+  private final Consumer<ByteBuffer> blockReuse;
+
+  /**
    * Current block size: {@code 2^bits}.
    */
   private int blockBits;
@@ -92,16 +100,17 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   private ByteBuffer currentBlock = EMPTY;
 
   public ByteBuffersDataOutput(long expectedSize) {
-    this(computeBlockSizeBitsFor(expectedSize), DEFAULT_MAX_BITS_PER_BLOCK, ALLOCATE_BB_ON_HEAP);
+    this(computeBlockSizeBitsFor(expectedSize), DEFAULT_MAX_BITS_PER_BLOCK, ALLOCATE_BB_ON_HEAP, NO_REUSE);
   }
 
   public ByteBuffersDataOutput() {
-    this(DEFAULT_MIN_BITS_PER_BLOCK, DEFAULT_MAX_BITS_PER_BLOCK, ALLOCATE_BB_ON_HEAP);
+    this(DEFAULT_MIN_BITS_PER_BLOCK, DEFAULT_MAX_BITS_PER_BLOCK, ALLOCATE_BB_ON_HEAP, NO_REUSE);
   }
 
   public ByteBuffersDataOutput(int minBitsPerBlock, 
                                int maxBitsPerBlock,
-                               IntFunction<ByteBuffer> blockAllocate) {
+                               IntFunction<ByteBuffer> blockAllocate,
+                               Consumer<ByteBuffer> blockReuse) {
     if (minBitsPerBlock < 10 ||
         minBitsPerBlock > maxBitsPerBlock ||
         maxBitsPerBlock > 31) {
@@ -113,6 +122,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     this.maxBitsPerBlock = maxBitsPerBlock;
     this.blockBits = minBitsPerBlock;
     this.blockAllocate = Objects.requireNonNull(blockAllocate, "Block allocator must not be null.");
+    this.blockReuse = Objects.requireNonNull(blockReuse, "Block reuse must not be null.");
   }
 
   @Override
@@ -339,16 +349,14 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
 
   /**
    * This method resets this object to a clean (zero-size) state and
-   * publishes any currently allocated buffers for reuse. 
-   * 
-   * The argument passed to this method may collect those existing buffers,
-   * rewind them and reuse them in the block allocator passed to the constructor.
+   * publishes any currently allocated buffers for reuse, if reuse strategy
+   * has been provided in the constructor.
    * 
    * Sharing byte buffers for reads and writes is dangerous and will very likely
    * lead to hard-to-debug issues, use with great care.
    */
-  public void reset(Consumer<? super ByteBuffer> reuseBuffers) {
-    blocks.stream().forEach(reuseBuffers);
+  public void reset() {
+    blocks.stream().forEach(blockReuse);
     blocks.clear();
     currentBlock = EMPTY;
   }
@@ -377,7 +385,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     // We copy over data blocks to an output with one-larger block bit size.
     // We also discard references to blocks as we're copying to allow GC to
     // clean up partial results in case of memory pressure.
-    ByteBuffersDataOutput cloned = new ByteBuffersDataOutput(blockBits, blockBits, blockAllocate);
+    ByteBuffersDataOutput cloned = new ByteBuffersDataOutput(blockBits, blockBits, blockAllocate, NO_REUSE);
     ByteBuffer block;
     while ((block = blocks.pollFirst()) != null) {
       block.flip();
