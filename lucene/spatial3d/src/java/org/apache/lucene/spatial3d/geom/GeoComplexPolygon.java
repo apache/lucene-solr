@@ -1504,16 +1504,16 @@ class GeoComplexPolygon extends GeoBasePolygon {
       
       final SidedPlane testPointBound1 = new SidedPlane(intersectionPoint, testPointPlane, testPoint);
       final SidedPlane testPointBound2 = new SidedPlane(testPoint, testPointPlane, intersectionPoint);
-      if (testPointBound1.isNumericallyIdentical(testPointBound2)) {
-        throw new IllegalArgumentException("Dual iterator unreliable when bounds planes are numerically identical");
+      if (testPointBound1.isFunctionallyIdentical(testPointBound2)) {
+        throw new IllegalArgumentException("Dual iterator unreliable when bounds planes are functionally identical");
       }
       this.testPointCutoffPlane = testPointBound1;
       this.testPointOtherCutoffPlane = testPointBound2;
 
       final SidedPlane checkPointBound1 = new SidedPlane(intersectionPoint, travelPlane, thePointX, thePointY, thePointZ);
       final SidedPlane checkPointBound2 = new SidedPlane(thePointX, thePointY, thePointZ, travelPlane, intersectionPoint);
-      if (checkPointBound1.isNumericallyIdentical(checkPointBound2)) {
-        throw new IllegalArgumentException("Dual iterator unreliable when bounds planes are numerically identical");
+      if (checkPointBound1.isFunctionallyIdentical(checkPointBound2)) {
+        throw new IllegalArgumentException("Dual iterator unreliable when bounds planes are functionally identical");
       }
       this.checkPointCutoffPlane = checkPointBound1;
       this.checkPointOtherCutoffPlane = checkPointBound2;
