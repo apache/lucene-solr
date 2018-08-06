@@ -117,7 +117,7 @@ public class ClientUtils
     XML.Writable valWriter = null;
     if(v instanceof SolrInputDocument) {
       final SolrInputDocument solrDoc = (SolrInputDocument) v;
-      valWriter = (writer1) -> solrInputDocumentXmlOutput(solrDoc, writer1);
+      valWriter = (writer1) -> writeXML(solrDoc, writer1);
     } else if(v != null) {
       final Object val = v;
       valWriter = (writer1) -> XML.escapeCharData(val.toString(), writer1);
@@ -135,11 +135,6 @@ public class ClientUtils
       }
     }
   }
-
-  private static void solrInputDocumentXmlOutput(SolrInputDocument v, Writer writer) throws IOException {
-    writeXML(v, writer);
-  }
-
 
   public static String toXML( SolrInputDocument doc )
   {
