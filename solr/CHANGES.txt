@@ -233,6 +233,8 @@ Optimizations
   introduced (splitMethod=link) which uses hard-linking of index files when possible, resulting in
   significant speedups and reduced CPU / IO load on shard leader. (ab)
 
+* SOLR-11881: Retry update requests sent by leaders to it's followers (Varun Thacker, Mark Miller, Tomás Fernández Löbbe)
+
 Other Changes
 ----------------------
 
