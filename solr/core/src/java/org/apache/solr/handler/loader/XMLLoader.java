@@ -455,9 +455,10 @@ public class XMLLoader extends ContentStreamLoader {
               break;
             }
             if(!isLabeledChildDoc){
-              // do not add empty data if a labeled child document was added
+              // only add data if this is not a childDoc, since it was added already
               doc.addField(name, v);
             } else {
+              // reset so next field is not treated as child doc
               isLabeledChildDoc = false;
             }
             // field is over
