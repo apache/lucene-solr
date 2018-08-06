@@ -50,6 +50,9 @@ Bug Fixes:
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
   bogus tiles when building GeoPolygons. (Ignacio Vera)
 
+* LUCENE-8444: Prevent building functionally identical plane bounds when constructing
+  DualCrossingEdgeIterator . (Ignacio Vera)
+
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
 
 * LUCENE-8164: IndexWriter silently accepts broken payload. This has been fixed
