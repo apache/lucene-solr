@@ -92,7 +92,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     FSDirectory dir = new SimpleFSDirectory(indexDir);
     MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random(), new RAMDirectory(dir, newIOContext(random())));
     
-    // close the underlaying directory
+    // close the underlying directory
     dir.close();
     
     // Check size

@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.zip.CRC32;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.BitUtil;
@@ -226,6 +227,7 @@ public final class ByteBuffersDirectory extends BaseDirectory {
 
       return new ByteBuffersIndexOutput(
           new ByteBuffersDataOutput(), outputName, fileName,
+          new CRC32(),
           (output) -> {
             cachedLength = output.size();
             content = outputToInput.apply(fileName, output);

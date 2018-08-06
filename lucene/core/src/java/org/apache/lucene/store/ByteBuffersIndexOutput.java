@@ -1,26 +1,32 @@
 package org.apache.lucene.store;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.zip.CRC32;
+import java.util.zip.Checksum;
 
 public final class ByteBuffersIndexOutput extends IndexOutput {
-  private ByteBuffersDataOutput delegate;
-  private BufferedChecksum crc;
-  private Consumer<ByteBuffersDataOutput> onClose;
+  private final Consumer<ByteBuffersDataOutput> onClose;
+  
+  private final Checksum checksum;
+  private long lastChecksumPosition;
+  private long lastChecksum;
 
-  public ByteBuffersIndexOutput(String resourceDescription, String name) {
-    this(new ByteBuffersDataOutput(), resourceDescription, name, null);
-  }
+  private ByteBuffersDataOutput delegate;
 
   public ByteBuffersIndexOutput(ByteBuffersDataOutput delegate, String resourceDescription, String name) {
-    this(delegate, resourceDescription, name, null);
+    this(delegate, resourceDescription, name, new CRC32(), null);
   }
 
-  public ByteBuffersIndexOutput(ByteBuffersDataOutput delegate, String resourceDescription, String name, Consumer<ByteBuffersDataOutput> onClose) {
+  public ByteBuffersIndexOutput(ByteBuffersDataOutput delegate, String resourceDescription, String name, 
+      Checksum checksum,
+      Consumer<ByteBuffersDataOutput> onClose) {
     super(resourceDescription, name);
     this.delegate = delegate;
-    this.crc = new BufferedChecksum(new CRC32());
+    this.checksum = checksum;
     this.onClose = onClose;
   }
 
@@ -43,30 +49,99 @@ public final class ByteBuffersIndexOutput extends IndexOutput {
   @Override
   public long getChecksum() throws IOException {
     ensureOpen();
-    // TODO: compute checksum on the current content of the delegate instead of computing it on the fly?
-    // then we can override more methods and pass them directly to the delegate for efficiency.
-    return crc.getValue();
+
+    if (checksum == null) {
+      throw new IOException("This index output has no checksum computing ability: " + toString());
+    }
+
+    // Compute checksum on the current content of the delegate.
+    //
+    // This way we can override more methods and pass them directly to the delegate for efficiency of writing,
+    // while allowing the checksum to be correctly computed on the current content of the output buffer (IndexOutput
+    // is per-thread, so no concurrent changes).
+    if (lastChecksumPosition != delegate.size()) {
+      lastChecksumPosition = delegate.size();
+      checksum.reset();
+      byte [] buffer = null;
+      for (ByteBuffer bb : delegate.toBufferList()) {
+        if (bb.hasArray()) {
+          checksum.update(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining());
+        } else {
+          if (buffer == null) buffer = new byte [1024 * 4];
+
+          bb = bb.asReadOnlyBuffer();
+          int remaining = bb.remaining();
+          while (remaining > 0) {
+            int len = Math.min(remaining, buffer.length);
+            bb.get(buffer, 0, len);
+            checksum.update(buffer, 0, len);
+            remaining -= len;
+          }
+        }
+      }
+      lastChecksum = checksum.getValue(); 
+    }
+    return lastChecksum;
   }
 
   @Override
   public void writeByte(byte b) throws IOException {
     ensureOpen();
     delegate.writeByte(b);
-    crc.update(b);
   }
 
   @Override
   public void writeBytes(byte[] b, int offset, int length) throws IOException {
     ensureOpen();
     delegate.writeBytes(b, offset, length);
-    crc.update(b, offset, length);
   }
 
   @Override
   public void writeBytes(byte[] b, int length) throws IOException {
     ensureOpen();
     delegate.writeBytes(b, length);
-    crc.update(b, 0, length);
+  }
+
+  @Override
+  public void writeInt(int i) throws IOException {
+    ensureOpen();
+    delegate.writeInt(i);
+  }
+
+  @Override
+  public void writeShort(short i) throws IOException {
+    ensureOpen();
+    delegate.writeShort(i);
+  }
+
+  @Override
+  public void writeLong(long i) throws IOException {
+    ensureOpen();
+    delegate.writeLong(i);
+  }
+
+  @Override
+  public void writeString(String s) throws IOException {
+    ensureOpen();
+    delegate.writeString(s);
+  }
+
+  @Override
+  public void copyBytes(DataInput input, long numBytes) throws IOException {
+    ensureOpen();
+    delegate.copyBytes(input, numBytes);
+  }
+
+  @Override
+  public void writeMapOfStrings(Map<String, String> map) throws IOException {
+    ensureOpen();
+    delegate.writeMapOfStrings(map);
+  }
+
+  @Override
+  public void writeSetOfStrings(Set<String> set) throws IOException {
+    ensureOpen();
+    delegate.writeSetOfStrings(set);
   }
 
   private void ensureOpen() {

@@ -22,6 +22,16 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.util.English;
+import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 
 public class TestByteBuffersDirectory extends BaseDirectoryTestCase {
@@ -35,6 +45,22 @@ public class TestByteBuffersDirectory extends BaseDirectoryTestCase {
   @Override
   protected Directory getDirectory(Path path) throws IOException {
     return implSupplier.get();
+  }
+  
+  @Test
+  public void testBuildIndex() throws IOException {
+    try (Directory dir = getDirectory(null);
+         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+            new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE))) {
+      int docs = RandomizedTest.randomIntBetween(0, 10);
+      for (int i = docs; i > 0; i--) {
+        Document doc = new Document();
+        doc.add(newStringField("content", English.intToEnglish(i).trim(), Field.Store.YES));
+        writer.addDocument(doc);
+      }
+      writer.commit();
+      assertEquals(docs, writer.numDocs());
+    }
   }
   
   @ParametersFactory(argumentFormatting = "impl=%2$s")
