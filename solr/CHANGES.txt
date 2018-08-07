@@ -107,6 +107,9 @@ New Features
 
 * SOLR-12592: support #EQUAL function, range operator, decimal and percentage in cores in autoscaling policies (noble)
 
+* SOLR-12485: Uploading docs in XML now supports child documents as field values, thus providing a label to the
+  relationship instead of the current "anonymous" relationship. (Moshe Bla, David Smiley)
+
 Bug Fixes
 ----------------------
 
