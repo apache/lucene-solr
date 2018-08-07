@@ -104,16 +104,10 @@ public class XML {
 
   /** does NOT escape character data in val or attributes, must already be valid XML */
   public final static void writeUnescapedXML(Writer out, String tag, String val, Object... attrs) throws IOException {
-    writeElementXML(out, tag, (writer1) -> writer1.write(val), attrs);
+    writeXML(out, tag, (writer1) -> writer1.write(val), attrs);
   }
 
-  /** does NOT escape character data in attributes, must already be valid XML */
-  public final static void writeElementXML(Writer out, String tag, Writable valWritable, Object... attrs) throws IOException {
-    writeXML(out, tag, valWritable, null, attrs);
-  }
-
-  private final static void writeXML(Writer out, String tag, Writable valWritable,
-                                     Escapable<String, Writer> attrWriteFunc, Object... attrs) throws IOException {
+  public final static void writeXML(Writer out, String tag, Writable valWritable, Object... attrs) throws IOException {
     out.write('<');
     out.write(tag);
     for (int i=0; i<attrs.length; i++) {
@@ -121,10 +115,7 @@ public class XML {
       out.write(attrs[i++].toString());
       out.write('=');
       out.write('"');
-      if(attrWriteFunc != null)
-        attrWriteFunc.escape(attrs[i].toString(), out);
-      else
-        out.write(attrs[i].toString());
+      escapeAttributeValue(attrs[i].toString(), out);
       out.write('"');
     }
     if (valWritable == null) {
@@ -143,7 +134,7 @@ public class XML {
   /** escapes character data in val and attributes */
   public final static void writeXML(Writer out, String tag, String val, Object... attrs) throws IOException {
     final Writable writable = val!= null? (writer1) -> XML.escapeCharData(val, writer1): null;
-    writeXML(out, tag, writable, XML::escapeAttributeValue, attrs);
+    writeXML(out, tag, writable, attrs);
   }
 
   /** escapes character data in val and attributes */
@@ -151,7 +142,7 @@ public class XML {
     writeXML(out, tag, val, attrs.entrySet().stream().flatMap((entry) -> Stream.of(entry.getKey(), entry.getValue())).toArray());
   }
 
-  public static void escape(char [] chars, int offset, int length, Writer out, String [] escapes) throws IOException{
+  private static void escape(char [] chars, int offset, int length, Writer out, String [] escapes) throws IOException{
      for (int i=offset; i<length; i++) {
       char ch = chars[i];
       if (ch<escapes.length) {
@@ -182,10 +173,5 @@ public class XML {
   @FunctionalInterface
   public interface Writable {
     void write(Writer w) throws IOException;
-  }
-
-  @FunctionalInterface
-  public interface Escapable<T, U> {
-    void escape(T val, U out) throws IOException;
   }
 }

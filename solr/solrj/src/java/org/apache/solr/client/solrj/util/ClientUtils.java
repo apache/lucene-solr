@@ -125,13 +125,13 @@ public class ClientUtils
 
     if (update == null) {
       if (v != null) {
-        XML.writeElementXML(writer, "field", valWriter, "name", name);
+        XML.writeXML(writer, "field", valWriter, "name", name);
       }
     } else {
       if (v == null)  {
-        XML.writeXML(writer, "field", null, "name", name, "update", update, "null", true);
+        XML.writeXML(writer, "field", (String) null, "name", name, "update", update, "null", true);
       } else  {
-        XML.writeElementXML(writer, "field", valWriter, "name", name, "update", update);
+        XML.writeXML(writer, "field", valWriter, "name", name, "update", update);
       }
     }
   }
