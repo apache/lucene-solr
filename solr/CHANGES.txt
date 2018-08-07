@@ -44,10 +44,20 @@ Upgrade Notes
   MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
   switch to "Direct" instead. (Dawid Weiss)
 
+* SOLR-12586: The date format patterns used by ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
+  are now interpreted by Java 8's java.time.DateTimeFormatter instead of Joda Time.  The pattern language is very
+  similar but not the same.  Typically, simply update the pattern by changing an uppercase 'Z' to lowercase 'z' and
+  that's it.  For the current recommended set of patterns in schemaless mode, see "Schemaless Mode" in the ref guide.
+  (David Smiley, Bar Rotstein)
+
 Other Changes
 ----------------------
 
 * SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
+
+* SOLR-12586: Remove Joda Time dependency.  Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
+  to use Java 8's java.time.DateTimeFormatter instead (see upgrade notes).
+  (David Smiley, Bar Rotstein)
 
 ==================  7.5.0 ==================
 
