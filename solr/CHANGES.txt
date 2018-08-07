@@ -282,6 +282,8 @@ Other Changes
 
 * SOLR-12617: Remove Commons BeanUtils as a dependency (Varun Thacker)
 
+* SOLR-11008: Use a lighter config for MetricsHandlerTest and ensure the core is up before the test starts (Varun Thacker)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
