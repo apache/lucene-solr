@@ -2664,6 +2664,7 @@ public class TestIndexWriter extends LuceneTestCase {
          Closeable closeable = () -> IOUtils.close(toClose)) {
       IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
           .setUseCompoundFile(false)
+          .setMergePolicy(NoMergePolicy.INSTANCE) // avoid merging away the randomFile
           .setMaxBufferedDocs(2)
           .setRAMBufferSizeMB(-1);
       IndexWriter w = new IndexWriter(dir, iwc);
@@ -2702,6 +2703,7 @@ public class TestIndexWriter extends LuceneTestCase {
         w.rollback();
         iwc = new IndexWriterConfig(new MockAnalyzer(random()))
             .setUseCompoundFile(false)
+            .setMergePolicy(NoMergePolicy.INSTANCE)
             .setMaxBufferedDocs(2)
             .setRAMBufferSizeMB(-1);
         w = new IndexWriter(dir, iwc);
