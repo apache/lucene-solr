@@ -53,19 +53,19 @@ public class RetrieveFieldsOptimizer {
     storedFields.clear();
   }
 
-  boolean returnStoredFields() {
+  public boolean returnStoredFields() {
     return !(storedFields != null && storedFields.isEmpty());
   }
 
-  boolean returnDVFields() {
+  public boolean returnDVFields() {
     return !dvFields.isEmpty();
   }
 
-  Set<String> getStoredFields() {
+  public Set<String> getStoredFields() {
     return storedFields;
   }
 
-  Set<String> getDvFields() {
+  public Set<String> getDvFields() {
     return dvFields;
   }
 
