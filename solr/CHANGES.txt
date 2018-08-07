@@ -179,6 +179,8 @@ Bug Fixes
   This would fix the NPE when using the search stream with partitionKeys. (Varun Thacker)
 
 
+* SOLR-11770: NPE in tvrh if no field is specified and document doesn't contain any fields with term vectors
+
 Optimizations
 ----------------------
 

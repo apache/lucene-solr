@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
@@ -36,13 +37,42 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.FileUtils;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
+  @Rule
+  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    switch (random().nextInt(3)) {
+      case 0:
+        System.setProperty("solr.tests.id.stored", "true");
+        System.setProperty("solr.tests.id.docValues", "true");
+        break;
+      case 1:
+        System.setProperty("solr.tests.id.stored", "true");
+        System.setProperty("solr.tests.id.docValues", "false");
+        break;
+      case 2:
+        System.setProperty("solr.tests.id.stored", "false");
+        System.setProperty("solr.tests.id.docValues", "true");
+        break;
+      default:
+        fail("Bad random number generatged not between 0-2 iunclusive");
+        break;
+    }
+  }
 
   @Before
   @Override
