@@ -837,13 +837,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
     super.initializeMetrics(manager, registry, tag, scope);
 
-    manager.registerGauge(this, registry, () -> core != null ? NumberUtils.readableSize(core.getIndexSize()) : "",
+    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
         tag, true, "indexSize", getCategory().toString(), scope);
     manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
         tag, true, "indexVersion", getCategory().toString(), scope);
     manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
         tag, true, GENERATION, getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> core != null ? core.getIndexDir() : "",
+    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
         tag, true, "indexPath", getCategory().toString(), scope);
     manager.registerGauge(this, registry, () -> isMaster,
         tag, true, "isMaster", getCategory().toString(), scope);

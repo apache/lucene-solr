@@ -213,6 +213,8 @@ Bug Fixes
 
 * SOLR-11770: NPE in tvrh if no field is specified and document doesn't contain any fields with term vectors
 
+* SOLR-12541: Metrics handler throws an error if there are transient cores. (ab)
+
 Optimizations
 ----------------------
 
