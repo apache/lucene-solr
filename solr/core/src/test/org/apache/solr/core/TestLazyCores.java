@@ -33,9 +33,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -239,6 +241,19 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       checkInCores(cc, "collection1", "collection4", "collection5", "collection6", "collection7",
           "collection8", "collection9");
       checkNotInCores(cc, Arrays.asList("collection2", "collection3"));
+
+      // verify that getting metrics from an unloaded core doesn't cause exceptions (SOLR-12541)
+      MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+      SolrQueryResponse resp = new SolrQueryResponse();
+      handler.handleRequest(makeReq(core1, CommonParams.QT, "/admin/metrics"), resp);
+      NamedList values = resp.getValues();
+      assertNotNull(values.get("metrics"));
+      values = (NamedList) values.get("metrics");
+      NamedList nl = (NamedList) values.get("solr.core.collection2");
+      assertNotNull(nl);
+      Object o = nl.get("REPLICATION./replication.indexPath");
+      assertNotNull(o);
 
 
       // Note decrementing the count when the core is removed from the lazyCores list is appropriate, since the
