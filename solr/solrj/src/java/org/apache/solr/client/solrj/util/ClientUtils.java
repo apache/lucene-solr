@@ -129,7 +129,7 @@ public class ClientUtils
       }
     } else {
       if (v == null)  {
-        XML.writeXML(writer, "field", (String) null, "name", name, "update", update, "null", true);
+        XML.writeXML(writer, "field", (XML.Writable) null, "name", name, "update", update, "null", true);
       } else  {
         XML.writeXML(writer, "field", valWriter, "name", name, "update", update);
       }
