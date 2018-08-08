@@ -111,7 +111,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       assert scoreMode.needsScores();
       return new ReqOptSumScorer(
           excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost),
-          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost));
+          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost), scoreMode);
     }
   }
 
