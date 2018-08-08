@@ -134,6 +134,9 @@ Optimizations
   or phrase queries as sub queries, which know how to leverage this information
   to run faster. (Adrien Grand)
 
+* LUCENE-8439: Disjunction max queries can skip blocks to select the top documents
+  when the total hit count is not required. (Jim Ferenczi, Adrien Grand)
+
 ======================= Lucene 7.5.0 =======================
 
 API Changes:
