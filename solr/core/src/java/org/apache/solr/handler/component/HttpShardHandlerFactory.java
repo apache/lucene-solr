@@ -16,39 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.URLUtil;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
-import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
-import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
-import org.apache.solr.util.stats.MetricUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -63,6 +30,39 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
+import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
+import org.apache.solr.util.stats.MetricUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
@@ -89,9 +89,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   );
 
   protected InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
-  protected CloseableHttpClient defaultClient;
+  protected Http2SolrClient defaultClient;
   protected InstrumentedHttpRequestExecutor httpRequestExecutor;
-  private LBHttpSolrClient loadbalancer;
+  private LBHttp2SolrClient loadbalancer;
   //default values:
   int soTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
   int connectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
@@ -150,7 +150,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   /**
    * Get {@link ShardHandler} that uses custom http client.
    */
-  public ShardHandler getShardHandler(final HttpClient httpClient){
+  public ShardHandler getShardHandler(final Http2SolrClient httpClient){
     return new HttpShardHandler(this, httpClient);
   }
 
@@ -209,11 +209,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         new DefaultSolrThreadFactory("httpShardExecutor")
     );
 
-    ModifiableSolrParams clientParams = getClientParams();
+    //TODO no commit, replace all metrics
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(this.metricNameStrategy);
     clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
-    this.defaultClient = HttpClientUtil.createClient(clientParams, clientConnectionManager, false, httpRequestExecutor);
-    this.loadbalancer = createLoadbalancer(defaultClient);
+    this.defaultClient = new Http2SolrClient.Builder().connectionTimeout(connectionTimeout).idleTimeout(soTimeout).build();
+    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
   }
 
   protected ModifiableSolrParams getClientParams() {
@@ -221,19 +221,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
     clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections);
     return clientParams;
-  }
-
-  protected ExecutorService getThreadPoolExecutor(){
-    return this.commExecutor;
-  }
-
-  protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
-    LBHttpSolrClient client = new Builder()
-        .withHttpClient(httpClient)
-        .withConnectionTimeout(connectionTimeout)
-        .withSocketTimeout(soTimeout)
-        .build();
-    return client;
   }
 
   protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
@@ -258,7 +245,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         }
       } finally { 
         if (defaultClient != null) {
-          HttpClientUtil.close(defaultClient);
+          IOUtils.closeQuietly(defaultClient);
         }
         if (clientConnectionManager != null)  {
           clientConnectionManager.close();

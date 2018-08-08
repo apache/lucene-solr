@@ -31,9 +31,12 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 // commented 20-July-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+@Ignore
+//TODO nocommit
 public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 1;
   protected static final int NUM_SHARDS = 1;

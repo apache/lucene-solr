@@ -338,7 +338,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrClient(j.getLocalPort()));
-      String shardStr = buildUrl(j.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
+      String shardStr = buildUrl(j.getLocalPort());
+
+      if (shardStr.endsWith("/")) shardStr += DEFAULT_TEST_CORENAME;
+      else shardStr += "/" + DEFAULT_TEST_CORENAME;
+
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }

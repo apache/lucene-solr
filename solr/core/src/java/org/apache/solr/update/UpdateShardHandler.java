@@ -111,7 +111,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
 
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(metricNameStrategy);
-    Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder("");
+    Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
       updateOnlyClientBuilder.connectionTimeout(cfg.getDistributedConnectionTimeout())
           .idleTimeout(cfg.getDistributedSocketTimeout());
@@ -147,6 +147,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
     registry = manager.registry(registryName);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
+    //TODO nocommit, replace all the metrics
     updateOnlyConnectionManager.initializeMetrics(manager, registryName, tag, expandedScope);
     defaultConnectionManager.initializeMetrics(manager, registryName, tag, expandedScope);
     updateExecutor = MetricUtils.instrumentedExecutorService(updateExecutor, this, registry,

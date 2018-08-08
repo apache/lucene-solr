@@ -31,6 +31,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,8 @@ import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.security.TestAuthorizationFramework.verifySecurityStatus;
 
+@Ignore
+//TODO nocommit
 public class PKIAuthenticationIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

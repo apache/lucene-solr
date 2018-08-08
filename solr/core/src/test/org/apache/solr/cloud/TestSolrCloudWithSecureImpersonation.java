@@ -45,6 +45,7 @@ import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_ADDRESS_PARAM;
@@ -336,6 +337,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore
+  //TODO nocommit
   public void testForwarding() throws Exception {
     String collectionName = "forwardingCollection";
     miniCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");

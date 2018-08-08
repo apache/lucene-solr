@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -82,8 +81,6 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
@@ -92,42 +89,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  * @lucene.experimental
  */
 public class Http2SolrClient extends SolrClient {
-  private static volatile SslContextFactory defaultSslContextFactory;
-
-  static {
-    defaultSslContextFactory = new SslContextFactory(false);
-
-    if (null != System.getProperty("javax.net.ssl.keyStore")) {
-      defaultSslContextFactory.setKeyStorePath
-          (System.getProperty("javax.net.ssl.keyStore"));
-    }
-    if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
-      defaultSslContextFactory.setKeyStorePassword
-          (System.getProperty("javax.net.ssl.keyStorePassword"));
-    }
-    if (null != System.getProperty("javax.net.ssl.trustStore")) {
-      defaultSslContextFactory.setTrustStorePath
-          (System.getProperty("javax.net.ssl.trustStore"));
-    }
-    if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
-      defaultSslContextFactory.setTrustStorePassword
-          (System.getProperty("javax.net.ssl.trustStorePassword"));
-    }
-
-    String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
-    boolean sslCheckPeerName = true;
-    if (checkPeerNameStr == null && "false".equalsIgnoreCase(checkPeerNameStr)) {
-      sslCheckPeerName = false;
-    }
-
-    if (System.getProperty("tests.jettySsl.clientAuth") != null) {
-      sslCheckPeerName = sslCheckPeerName || Boolean.getBoolean("tests.jettySsl.clientAuth");
-    }
-    defaultSslContextFactory.setNeedClientAuth(sslCheckPeerName);
-
-  }
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static volatile SslContextFactory defaultSslContextFactory = getDefaultSslContextFactory();
   private static final int MAX_OUTSTANDING_REQUESTS = 1000;
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
@@ -156,12 +118,8 @@ public class Http2SolrClient extends SolrClient {
     }
   };
 
-  private Request.BeginListener requestBeginListener = new Request.BeginListener() {
+  private Request.BeginListener beginListener = req -> {
 
-    @Override
-    public void onBegin(Request arg0) {
-
-    }
   };
 
   private Response.CompleteListener requestCompleteListener = new Response.CompleteListener() {
@@ -177,7 +135,6 @@ public class Http2SolrClient extends SolrClient {
    * The URL of the Solr server.
    */
   private String serverBaseUrl;
-
   private boolean closeClient;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
@@ -202,6 +159,7 @@ public class Http2SolrClient extends SolrClient {
     } else {
       httpClient = builder.httpClient;
     }
+    if (builder.beginListener != null) this.beginListener = builder.beginListener;
     if (!httpClient.isStarted()) {
       try {
         httpClient.start();
@@ -239,7 +197,6 @@ public class Http2SolrClient extends SolrClient {
 
     if (builder.idleTimeout != null) httpClient.setIdleTimeout(builder.idleTimeout);
     if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
-
     return httpClient;
   }
 
@@ -248,7 +205,7 @@ public class Http2SolrClient extends SolrClient {
     return httpClient;
   }
 
-  public void close() throws IOException {
+  public void close() {
     // we wait for async requests, so far devs don't want to give sugar for this
     phaser.arriveAndAwaitAdvance();
     phaser.arriveAndDeregister();
@@ -286,7 +243,7 @@ public class Http2SolrClient extends SolrClient {
     Request req = makeRequest(solrRequest, collection);
     try {
       if (onComplete != null) {
-        req.onRequestBegin(requestBeginListener).onRequestQueued(requestQueuedListener)
+        req.onRequestBegin(beginListener).onRequestQueued(requestQueuedListener)
             .onComplete(requestCompleteListener).send(new BufferingResponseListener() {
 
           @Override
@@ -316,13 +273,13 @@ public class Http2SolrClient extends SolrClient {
         Http2ClientResponse arsp = new Http2ClientResponse();
         if (returnStream) {
           InputStreamResponseListener listener = new InputStreamResponseListener();
-          req.send(listener);
+          req.onRequestBegin(beginListener).send(listener);
           // Wait for the response headers to arrive
           listener.get(idleTimeout, TimeUnit.SECONDS);
           // TODO: process response
           arsp.stream = listener.getInputStream();
         } else {
-          ContentResponse response = req.send();
+          ContentResponse response = req.onRequestBegin(beginListener).send();
           ByteArrayInputStream is = new ByteArrayInputStream(response.getContent());
           arsp.response = processErrorsAndResponse(response, parser,
               is, response.getEncoding(), isV2ApiRequest(solrRequest));
@@ -354,6 +311,8 @@ public class Http2SolrClient extends SolrClient {
 
   private Request makeRequest(SolrRequest solrRequest, String collection)
       throws SolrServerException, IOException {
+    if (solrRequest.getBasePath() == null && serverBaseUrl == null)
+      throw new IllegalArgumentException("Destination node is not provided!");
 
     if (solrRequest instanceof V2RequestSupport) {
       solrRequest = ((V2RequestSupport) solrRequest).getV2Request();
@@ -658,6 +617,11 @@ public class Http2SolrClient extends SolrClient {
     private Integer connectionTimeout;
     private boolean useHttp1_1 = false;
     protected String baseSolrUrl;
+    private Request.BeginListener beginListener = request -> {};
+
+    public Builder() {
+      this.sslContextFactory = defaultSslContextFactory;
+    }
 
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
@@ -690,6 +654,11 @@ public class Http2SolrClient extends SolrClient {
 
     public Builder connectionTimeout(int connectionTimeOut) {
       this.connectionTimeout = connectionTimeOut;
+      return this;
+    }
+
+    public Builder withListener(Request.BeginListener beginListener) {
+      this.beginListener = beginListener;
       return this;
     }
   }
@@ -793,6 +762,41 @@ public class Http2SolrClient extends SolrClient {
 
   // public for testing, only used by tests
   public static void resetSslContextFactory() {
-    Http2SolrClient.defaultSslContextFactory = null;
+    Http2SolrClient.defaultSslContextFactory = getDefaultSslContextFactory();
   }
+
+  private static SslContextFactory getDefaultSslContextFactory() {
+    SslContextFactory sslContextFactory = new SslContextFactory(false);
+
+    if (null != System.getProperty("javax.net.ssl.keyStore")) {
+      sslContextFactory.setKeyStorePath
+          (System.getProperty("javax.net.ssl.keyStore"));
+    }
+    if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
+      sslContextFactory.setKeyStorePassword
+          (System.getProperty("javax.net.ssl.keyStorePassword"));
+    }
+    if (null != System.getProperty("javax.net.ssl.trustStore")) {
+      sslContextFactory.setTrustStorePath
+          (System.getProperty("javax.net.ssl.trustStore"));
+    }
+    if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
+      sslContextFactory.setTrustStorePassword
+          (System.getProperty("javax.net.ssl.trustStorePassword"));
+    }
+
+    String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+    boolean sslCheckPeerName = true;
+    if (checkPeerNameStr == null && "false".equalsIgnoreCase(checkPeerNameStr)) {
+      sslCheckPeerName = false;
+    }
+
+    if (System.getProperty("tests.jettySsl.clientAuth") != null) {
+      sslCheckPeerName = sslCheckPeerName || Boolean.getBoolean("tests.jettySsl.clientAuth");
+    }
+
+    sslContextFactory.setNeedClientAuth(sslCheckPeerName);
+    return sslContextFactory;
+  }
+
 }

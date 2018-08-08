@@ -36,7 +36,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -74,11 +76,11 @@ public class HttpShardHandler extends ShardHandler {
   private CompletionService<ShardResponse> completionService;
   private Set<Future<ShardResponse>> pending;
   private Map<String,List<String>> shardToURLs;
-  private HttpClient httpClient;
+  private Http2SolrClient httpClient;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, HttpClient httpClient) {
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Http2SolrClient httpClient) {
     this.httpClient = httpClient;
     this.httpShardHandlerFactory = httpShardHandlerFactory;
     completionService = httpShardHandlerFactory.newCompletionService();
@@ -168,9 +170,8 @@ public class HttpShardHandler extends ShardHandler {
         if (urls.size() <= 1) {
           String url = urls.get(0);
           srsp.setShardAddress(url);
-          try (SolrClient client = new Builder(url).withHttpClient(httpClient).build()) {
-            ssr.nl = client.request(req);
-          }
+          req.setBasePath(url);
+          ssr.nl = httpClient.request(req);
         } else {
           LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
           ssr.nl = rsp.getResponse();
