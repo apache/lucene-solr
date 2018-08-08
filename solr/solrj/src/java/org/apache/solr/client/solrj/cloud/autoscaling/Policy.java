@@ -572,7 +572,7 @@ public class Policy implements MapWriter {
       setApproxValuesAndSortNodes(clusterPreferences, matrix);
 
       for (Clause clause : expandedClauses) {
-        List<Violation> errs = clause.test(this);
+        List<Violation> errs = clause.test(this, null);
         violations.addAll(errs);
       }
     }
