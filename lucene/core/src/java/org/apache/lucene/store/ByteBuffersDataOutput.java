@@ -26,9 +26,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   private final static List<ByteBuffer> EMPTY_LIST = Arrays.asList(EMPTY);
   private final static byte [] EMPTY_BYTE_ARRAY = {};
 
-  public final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = (size) -> {
-    return ByteBuffer.allocate(size);
-  };
+  public final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = ByteBuffer::allocate;
 
   public final static Consumer<ByteBuffer> NO_REUSE = (bb) -> {
     throw new RuntimeException("reset() is not allowed on this buffer.");
@@ -405,6 +403,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     while ((block = blocks.pollFirst()) != null) {
       block.flip();
       cloned.writeBytes(block);
+      // NOCOMMIT: the discarded block should be recycled if recycler is not null (potential direct memory leak).
     }
 
     assert blocks.isEmpty();
@@ -424,6 +423,8 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     return blockBits;
   }
 
+  // TODO: move this block-based conversion to UnicodeUtil.
+  
   private static final long HALF_SHIFT = 10;
   private static final int SURROGATE_OFFSET = 
       Character.MIN_SUPPLEMENTARY_CODE_POINT - 
