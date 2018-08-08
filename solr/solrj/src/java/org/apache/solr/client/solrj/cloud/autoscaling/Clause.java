@@ -42,6 +42,7 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.EQUAL;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.GREATER_THAN;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.LESS_THAN;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.NOT_EQUAL;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.RANGE_EQUAL;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.WILDCARD;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
@@ -215,7 +216,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (this.isPerCollectiontag() && that.isPerCollectiontag()) {
       v = Integer.compare(this.replica.op.priority, that.replica.op.priority);
       if (v == 0) {// higher the number of replicas , harder to satisfy
-        v = Preference.compareWithTolerance((Double) this.replica.val, (Double) that.replica.val, 1);
+        Double thisVal = this.replica.val instanceof RangeVal ? ((RangeVal) this.replica.val).max.doubleValue() : (Double) this.replica.val;
+        Double thatVal = that.replica.val instanceof RangeVal ? ((RangeVal) that.replica.val).max.doubleValue() : (Double) that.replica.val;
+        v = Preference.compareWithTolerance(thisVal, thatVal, 1);
         v = this.replica.op == LESS_THAN ? v : v * -1;
       }
       if (v == 0) v = compareTypes(this.type, that.type);
@@ -240,7 +243,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   //replica value is zero
   boolean isReplicaZero() {
-    return replica != null && replica.getOperand() == Operand.EQUAL &&
+    return replica != null && replica.getOperand() == Operand.EQUAL && replica.val instanceof Double &&
         Preference.compareWithTolerance(0d, (Double) replica.val, 1) == 0;
   }
 
@@ -353,7 +356,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return operand;
   }
 
-  public List<Violation> test(Policy.Session session) {
+  public List<Violation> test(Policy.Session session, double[] deviations) {
     ComputedValueEvaluator computedValueEvaluator = new ComputedValueEvaluator(session);
     Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, computedValueEvaluator);
     if (isPerCollectiontag()) {
@@ -377,6 +380,13 @@ public class Clause implements MapWriter, Comparable<Clause> {
                   sealedClause.getReplica().delta(replicas),
                   tag.varType.meta.isNodeSpecificVal() ? null : counts.getKey());
               tag.varType.addViolatingReplicas(ctx.reset(counts.getKey(), replicas, violation));
+            } else {
+              if (deviations != null && sealedClause.replica.op == RANGE_EQUAL) {
+                Number actualCount = replicas.getVal(type);
+                Double realDelta = ((RangeVal) sealedClause.replica.val).realDelta(actualCount.doubleValue());
+                realDelta = this.isReplicaZero() ? -1 * realDelta : realDelta;
+                deviations[0] += Math.abs(realDelta);
+              }
             }
           }
         }
@@ -422,7 +432,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
               tagVsCount.get(row.node).increment(shards.getValue());
             }
           } else {
+            tagVsCount.computeIfAbsent(String.valueOf(t.getValue()), s -> new ReplicaCount());
             boolean pass = sealedClause.getTag().isPass(tagVal);
+            if(!pass && !isReplicaZero()) continue;
             tagVsCount.computeIfAbsent(pass ? String.valueOf(tagVal) : "", s -> new ReplicaCount());
             if (pass) {
               tagVsCount.get(String.valueOf(tagVal)).increment(shards.getValue());

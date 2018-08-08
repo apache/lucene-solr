@@ -2467,8 +2467,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    }}}";
 
     String autoScalingjson = "  { cluster-policy:[" +
-        "    { replica :'<34%', shard: '#EACH', sysprop.az : east}," +
-        "    { replica :'<67%', shard: '#EACH', sysprop.az : west}" +
+        "    { replica :'33%', shard: '#EACH', sysprop.az : east}," +
+        "    { replica :'67%', shard: '#EACH', sysprop.az : west}" +
         "    ]," +
         "  cluster-preferences :[{ minimize : cores }]}";
 
@@ -2480,6 +2480,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     List<String> nodes = new ArrayList<>();
 
+    int westCount = 0, eastCount = 0;
     for (int i = 0; i < 12; i++) {
       SolrRequest suggestion = txn.getCurrentSession()
           .getSuggester(ADDREPLICA)
@@ -2488,9 +2489,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
       assertNotNull(suggestion);
       String node = suggestion.getParams().get("node");
       nodes.add(node);
+      if ("10.0.0.6:8983_solr".equals(node)) eastCount++;
+      if ("10.0.0.6:7574_solr".equals(node)) westCount++;
       if (i % 3 == 1) assertEquals("10.0.0.6:8983_solr", node);
       else assertEquals("10.0.0.6:7574_solr", node);
     }
+    assertEquals(8, westCount);
+    assertEquals(4, eastCount);
 
     List<Violation> violations = txn.close();
     assertTrue(violations.isEmpty());
@@ -2655,7 +2660,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}";
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
-    assertEquals(2, violations.size());
+    assertEquals("expected 2 violations", 2, violations.size());
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
     assertEquals(2, suggestions.size());
     for (Suggester.SuggestionInfo suggestion : suggestions) {
@@ -3562,11 +3567,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Object root = Utils.fromJSONString(writer.toString());
     assertEquals(2l,
         Utils.getObjectByPath(root, true, "violations[0]/violation/replica/NRT"));
-    assertEquals(0l,
-        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/PULL"));
-    assertEquals(0l,
-        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/TLOG"));
-
   }
 
 
