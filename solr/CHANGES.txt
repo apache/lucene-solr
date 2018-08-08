@@ -211,6 +211,9 @@ Optimizations
 
 * SOLR-11881: Retry update requests sent by leaders to it's followers (Varun Thacker, Mark Miller, Tomás Fernández Löbbe)
 
+* SOLR-12616: Optimize Export writer upto 4 sort fields to get better performance.
+  This was removed in SOLR-11598 but brought back in the same version (Amrit Sarkar, Varun Thacker)
+
 Other Changes
 ----------------------
 
