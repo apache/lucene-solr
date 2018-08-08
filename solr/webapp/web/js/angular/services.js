@@ -81,6 +81,12 @@ solrAdminServices.factory('System',
       }}
     });
   }])
+.factory('ZookeeperStatus',
+  ['$resource', function($resource) {
+    return $resource('admin/zookeeper/status', {wt:'json', _:Date.now()}, {
+      "monitor": {}
+    });
+  }])
 .factory('Properties',
   ['$resource', function($resource) {
     return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});

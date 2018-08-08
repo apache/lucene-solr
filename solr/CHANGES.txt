@@ -140,6 +140,8 @@ New Features
 
 * SOLR-8207: Add "Nodes" view to the Admin UI "Cloud" tab, listing nodes and key metrics (janhoy)
 
+* SOLR-7767: "ZK Status" sub menu under "Cloud" tab to see status of zookeeper ensemble (janhoy) 
+
 * SOLR-11990: Make it possible to co-locate replicas of multiple collections together in a node. A collection may be
   co-located with another collection during collection creation time by specifying a 'withCollection' parameter. It can
   also be co-located afterwards by using the modify collection API. The co-location guarantee is enforced regardless of
