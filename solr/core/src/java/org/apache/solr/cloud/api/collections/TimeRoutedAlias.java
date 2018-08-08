@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -171,6 +172,13 @@ public class TimeRoutedAlias {
         }
       } catch (Exception e) {
         throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE + ", " + e, e);
+      }
+    }
+    if (preemptiveCreateMath != null) {
+      try {
+        new DateMathParser().parseMath(preemptiveCreateMath);
+      } catch (ParseException e) {
+        throw new SolrException(BAD_REQUEST, "Invalid date math for preemptiveCreateMath:" + preemptiveCreateMath);
       }
     }
 
