@@ -25,7 +25,6 @@ import java.io.Writer;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -66,8 +65,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
 
   // Even if this is null, it should be ok
   protected QueryResponseWriter getBaseWriter( SolrQueryRequest request ) {
-    SolrCore core = request.getCore();
-    return core == null ? null : request.getCore().getQueryResponseWriter( _baseWriter );
+    return request.getCore().getQueryResponseWriter( _baseWriter );
   }
   
   @Override
@@ -76,8 +74,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
     if( obj != null && (obj instanceof ContentStream ) ) {
       return ((ContentStream)obj).getContentType();
     }
-    QueryResponseWriter writer = getBaseWriter(request);
-    return writer == null ? null : writer.getContentType( request, response );
+    return getBaseWriter( request ).getContentType( request, response );
   }
 
   @Override

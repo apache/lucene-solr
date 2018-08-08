@@ -58,7 +58,10 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  // Test the monitoring endpoint, used in the Cloud => Zookeeper Admin UI screen
+  /*
+    Test the monitoring endpoint, used in the Cloud => ZkStatus Admin UI screen
+    NOTE: We do not currently test with multiple zookeepers, but the only difference is that there are multiple "details" objects and mode is "ensemble"... 
+   */
   @Test
   public void monitorZookeeper() throws IOException, SolrServerException, InterruptedException, ExecutionException, TimeoutException {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();

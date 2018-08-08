@@ -51,6 +51,10 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int ZOOKEEPER_DEFAULT_PORT = 2181;
+  private static final String STATUS_RED = "red";
+  private static final String STATUS_GREEN = "green";
+  private static final String STATUS_YELLOW = "yellow";
+  private static final String STATUS_NA = "N/A";
   private CoreContainer cores;
 
   public ZookeeperStatusHandler(CoreContainer cc) {
@@ -83,7 +87,7 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
     List<String> zookeepers = Arrays.asList(zkHost.split("/")[0].split(","));
     List<Object> details = new ArrayList<>();
     int numOk = 0;
-    String status = "N/A";
+    String status = STATUS_NA;
     int standalone = 0;
     int followers = 0;
     int reportedFollowers = 0;
@@ -118,26 +122,26 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
     zkStatus.put("zkHost", zkHost);
     zkStatus.put("details", details);
     if (followers+leaders > 0 && standalone > 0) {
-      status = "red";
+      status = STATUS_RED;
       errors.add("The zk nodes do not agree on their mode, check details");
     }
     if (standalone > 1) {
-      status = "red";
+      status = STATUS_RED;
       errors.add("Only one zk allowed in standalone mode");
     }
     if (leaders > 1) {
       zkStatus.put("mode", "ensemble");
-      status = "red";
+      status = STATUS_RED;
       errors.add("Only one leader allowed, got " + leaders);
     }
     if (followers > 0 && leaders == 0) {
       zkStatus.put("mode", "ensemble");
-      status = "red";
+      status = STATUS_RED;
       errors.add("We do not have a leader");
     }
     if (leaders > 0 && followers != reportedFollowers) {
       zkStatus.put("mode", "ensemble");
-      status = "red";
+      status = STATUS_RED;
       errors.add("Leader reports " + reportedFollowers + " followers, but we only found " + followers + 
         ". Please check zkHost configuration");
     }
@@ -145,22 +149,22 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
       zkStatus.put("mode", "standalone");
     }
     if (followers+leaders > 0 && (zookeepers.size())%2 == 0) {
-      if (!"red".equals(status)) {
-        status = "yellow";
+      if (!STATUS_RED.equals(status)) {
+        status = STATUS_YELLOW;
       }
       errors.add("We have an even number of zookeepers which is not recommended");
     }
     if (followers+leaders > 0 && standalone == 0) {
       zkStatus.put("mode", "ensemble");
     }
-    if (status.equals("N/A")) {
+    if (status.equals(STATUS_NA)) {
       if (numOk == zookeepers.size()) {
-        status = "green";
+        status = STATUS_GREEN;
       } else if (numOk < zookeepers.size() && numOk > zookeepers.size() / 2) {
-        status = "yellow";
+        status = STATUS_YELLOW;
         errors.add("Some zookeepers are down: " + numOk + "/" + zookeepers.size());
       } else {
-        status = "red";
+        status = STATUS_RED;
         errors.add("Mismatch in number of zookeeper nodes live. numOK=" + numOk + ", expected " + zookeepers.size());
       }
     }
