@@ -32,10 +32,11 @@ abstract class DisjunctionScorer extends Scorer {
   private final boolean needsScores;
 
   private final DisiPriorityQueue subScorers;
-  private final DisjunctionDISIApproximation approximation;
+  private final DocIdSetIterator approximation;
+  private final BlockMaxDISI blockMaxApprox;
   private final TwoPhase twoPhase;
 
-  protected DisjunctionScorer(Weight weight, List<Scorer> subScorers, boolean needsScores) {
+  protected DisjunctionScorer(Weight weight, List<Scorer> subScorers, ScoreMode scoreMode) throws IOException {
     super(weight);
     if (subScorers.size() <= 1) {
       throw new IllegalArgumentException("There must be at least 2 subScorers");
@@ -45,8 +46,17 @@ abstract class DisjunctionScorer extends Scorer {
       final DisiWrapper w = new DisiWrapper(scorer);
       this.subScorers.add(w);
     }
-    this.needsScores = needsScores;
-    this.approximation = new DisjunctionDISIApproximation(this.subScorers);
+    this.needsScores = scoreMode != ScoreMode.COMPLETE_NO_SCORES;
+    if (scoreMode == ScoreMode.TOP_SCORES) {
+      for (Scorer scorer : subScorers) {
+        scorer.advanceShallow(0);
+      }
+      this.blockMaxApprox = new BlockMaxDISI(new DisjunctionDISIApproximation(this.subScorers), this);
+      this.approximation = blockMaxApprox;
+    } else {
+      this.approximation = new DisjunctionDISIApproximation(this.subScorers);
+      this.blockMaxApprox = null;
+    }
 
     boolean hasApproximation = false;
     float sumMatchCost = 0;
@@ -165,6 +175,10 @@ abstract class DisjunctionScorer extends Scorer {
   @Override
   public final int docID() {
    return subScorers.top().doc;
+  }
+
+  BlockMaxDISI getBlockMaxApprox() {
+    return blockMaxApprox;
   }
 
   DisiWrapper getSubMatches() throws IOException {

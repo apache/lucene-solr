@@ -187,7 +187,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       } else if (scoreMode == ScoreMode.TOP_SCORES) {
         return new WANDScorer(weight, optionalScorers);
       } else {
-        return new DisjunctionSumScorer(weight, optionalScorers, scoreMode.needsScores());
+        return new DisjunctionSumScorer(weight, optionalScorers, scoreMode);
       }
     }
   }
