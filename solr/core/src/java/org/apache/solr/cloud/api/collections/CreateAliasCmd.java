@@ -119,7 +119,6 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String start = message.getStr(TimeRoutedAlias.ROUTER_START);
     Instant startTime = parseStart(start, timeRoutedAlias.getTimeZone());
-    checkPreemptiveCreateWindow(timeRoutedAlias.getPreemptiveCreateWindow());
 
     String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, startTime);
 
@@ -137,16 +136,6 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
     Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
     checkMilis(start);
     return start;
-  }
-
-  private void checkPreemptiveCreateWindow(String str) {
-    if (StringUtils.isNotBlank(str)) {
-      try {
-        new DateMathParser().parseMath(str);
-      } catch (ParseException e) {
-        throw new SolrException(BAD_REQUEST, "Invalid date math for preemptiveCreateMath:" + str);
-      }
-    }
   }
 
   private void checkMilis(Instant date) {

@@ -48,7 +48,6 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -66,7 +65,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.solr.common.util.ExecutorUtil.newMDCAwareSingleThreadExecutor;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor.CreationType.ASYNC_PREEMPTIVE;
@@ -91,15 +89,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // To avoid needless/redundant concurrent communication with the Overseer from this JVM, we
-  //   maintain a Semaphore from an alias name keyed ConcurrentHashMap.
-  //   Alternatively a Lock or CountDownLatch could have been used but they didn't seem
-  //   to make it any easier.
-  private static ConcurrentHashMap<String, Semaphore> aliasToSemaphoreMap = new ConcurrentHashMap<>(4);
-
-  // map of executors, one per alias to perform async calls to maintain()
-  private static ConcurrentHashMap<String, ExecutorService> asyncMaintainers = new ConcurrentHashMap<>();
-
   private final String thisCollection;
 
   private final TimeRoutedAlias timeRoutedAlias;
@@ -114,6 +103,8 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private List<Map.Entry<Instant, String>> parsedCollectionsDesc; // k=timestamp (start), v=collection.  Sorted descending
   private Aliases parsedCollectionsAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
   private SolrQueryRequest req;
+  private ExecutorService preemptiveCreationExecutor;
+  private final Object execLock = new Object();
 
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, UpdateRequestProcessor next) {
     //TODO get from "Collection property"
@@ -185,7 +176,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     final Instant docTimestampToRoute = parseRouteKey(routeValue);
     updateParsedCollectionAliases();
     String candidateCollection = findCandidateCollectionGivenTimestamp(docTimestampToRoute, cmd.getPrintableId());
-    String targetCollection = createCollectionsIfRequired(cmd, docTimestampToRoute, candidateCollection);
+    String targetCollection = createCollectionsIfRequired(docTimestampToRoute, candidateCollection, cmd.getPrintableId());
     if (thisCollection.equals(targetCollection)) {
       // pass on through; we've reached the right collection
       super.processAdd(cmd);
@@ -196,17 +187,34 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private String createCollectionsIfRequired(AddUpdateCommand cmd, Instant docTimestamp, String targetCollection) {
+  private String createCollectionsIfRequired(Instant docTimestamp, String targetCollection, String printableId) {
     try {
       CreationType creationType = requiresCreateCollection(docTimestamp, timeRoutedAlias.getPreemptiveCreateWindow());
       switch (creationType) {
         case SYNCHRONOUS:
-          return maintain(targetCollection, docTimestamp, cmd);
+          // This next line blocks until all collections required by the current document have been created
+          return maintain(targetCollection, docTimestamp, printableId);
         case ASYNC_PREEMPTIVE:
-          // in this case we just need to get creation underway and there's no need to adjust the target.
-          ExecutorService executorService = asyncMaintainers
-              .computeIfAbsent(timeRoutedAlias.getAliasName(), (alias) -> preemptiveCreationExecutor());
-          executorService.execute(() -> maintain(targetCollection, docTimestamp, cmd));
+          // Note: creating an executor is slightly expensive, but only likely to happen once per hour/day/week
+          // (depending on time slice size for the TRA). Executor is used to ensure we pick up the MDC logging stuff
+          // from ExecutorUtil. Even though it is possible that multiple requests hit this code in the 1-2 sec that
+          // it takes to create a collection, it's an established anti-pattern to feed data with a very large number
+          // of client connections. This in mind, we only guard against spamming the overseer within a batch of
+          // updates, intentionally tolerating a low level of redundant requests in favor of simpler code. Most
+          // super-sized installations with many update clients will likely be multi-tenant and multiple tenants
+          // probably don't write to the same alias. As such, we have deferred any solution the "many clients causing
+          // collection creation simultaneously" problem until such time as someone actually has that problem in a
+          // real world use case that isn't just an anti-pattern.
+          synchronized (execLock) {
+            if (preemptiveCreationExecutor == null) {
+              preemptiveCreationExecutor = preemptiveCreationExecutor();
+            }
+            preemptiveCreationExecutor.execute(() -> {
+              maintain(targetCollection, docTimestamp, printableId);
+              preemptiveCreationExecutor = null;
+            });
+            preemptiveCreationExecutor.shutdown(); // shutdown immediately to ensure no new requests accepted
+          }
           return targetCollection;
         case NONE:
           return targetCollection; // just for clarity...
@@ -241,25 +249,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     // presumably rare case adds complexity and is intentionally ignored at this time. If this shows itself to
     // be a frequent or otherwise important use case this decision can be revisited.
 
-    ExecutorService threadPoolExecutor = newMDCAwareSingleThreadExecutor(threadFactory, discardPolicy, oneAtATime);
-
-    // add a hook to keep from leaking threads in tests.
-    this.req.getCore().addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        try {
-          threadPoolExecutor.shutdown();
-          threadPoolExecutor.awaitTermination(250, TimeUnit.MILLISECONDS);
-          threadPoolExecutor.shutdownNow();
-        } catch (InterruptedException e) {
-          log.error("Interrupted while closing executor for TRA update processor");
-        }
-      }
-
-      @Override
-      public void postClose(SolrCore core) { }
-    });
-    return threadPoolExecutor;
+    return newMDCAwareSingleThreadExecutor(threadFactory, discardPolicy, oneAtATime);
   }
 
   /**
@@ -358,9 +348,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     //   and update the alias contingent on the most recent collection name being the same as
     //   what we think so here, otherwise it will return (without error).
 
-    // (see docs on aliasToSemaphoreMap)
-    final Semaphore semaphore = aliasToSemaphoreMap.computeIfAbsent(getAliasName(), n -> new Semaphore(1));
-    if (semaphore.tryAcquire()) {
       try {
         MaintainRoutedAliasCmd.remoteInvoke(collHandler, getAliasName(), mostRecentCollName);
         // we don't care about the response.  It's possible no collection was created because
@@ -374,28 +361,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
         throw e;
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } finally {
-        semaphore.release(); // to signal we're done to anyone waiting on it
       }
-
-    } else {
-      // Failed to acquire permit because another URP instance on this JVM is creating a collection.
-      // So wait till it's available
-      log.debug("Collection creation is already in progress so we'll wait then try again.");
-      try {
-        if (semaphore.tryAcquire(DEFAULT_COLLECTION_OP_TIMEOUT, TimeUnit.MILLISECONDS)) {
-          semaphore.release(); // we don't actually want a permit so give it back
-          // return to continue...
-        } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Waited too long for another update thread to be done with collection creation.");
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Interrupted waiting on collection creation.", e); // if we were interrupted, give up.
-      }
-    }
   }
 
   private SolrException newAliasMustExistException() {
@@ -494,10 +460,10 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
    *
    * @param targetCollection the initial notion of the latest collection available.
    * @param docTimestamp the timestamp from the document that determines routing
-   * @param cmd the updateCommand that is being processed
+   * @param printableId an identifier for the add command used in error messages
    * @return The latest collection, including collections created during maintenance
    */
-  public String maintain(String targetCollection, Instant docTimestamp, AddUpdateCommand cmd) {
+  public String maintain(String targetCollection, Instant docTimestamp, String printableId) {
     do { // typically we don't loop; it's only when we need to create a collection
 
       // Note: This code no longer short circuits immediately when it sees that the expected latest
@@ -526,7 +492,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
             "We need to create a new time routed collection but for unknown reasons were unable to do so.");
       }
       // then retry the loop ...
-      targetCollection = findCandidateCollectionGivenTimestamp(docTimestamp, cmd.getPrintableId());
+      targetCollection = findCandidateCollectionGivenTimestamp(docTimestamp, printableId);
 
     } while (true);
   }
