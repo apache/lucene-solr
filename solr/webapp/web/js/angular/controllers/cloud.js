@@ -407,13 +407,13 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               if (cores) {
                 for (coreId in cores) {
                   var core = cores[coreId];
-                  var keyName = "solr.core." + core['core'].replace('_', '.').replace('_', '.');
+                  var keyName = "solr.core." + core['core'].replace(/(.*?)_(shard\d+)_(replica_.\d+)/, '\$1.\$2.\$3');
                   var nodeMetric = m.metrics[keyName];
                   var size = nodeMetric['INDEX.sizeInBytes'];
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  core['label'] = core['core'].replace('_shard', '_s').replace(/_replica_./, 'r');
+                  core['label'] = core['core'].replace(/(.*?)_shard(\d+)_replica_.(\d+)/, '\$1_s\$2r\$3');
                   indexSizeTotal += size;
                   var numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
                   numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
