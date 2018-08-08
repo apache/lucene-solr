@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics) {
+    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics, ZookeeperStatus) {
 
         $scope.showDebug = false;
 
@@ -41,6 +41,9 @@ solrAdminApp.controller('CloudController',
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
             nodesSubController($scope, Collections, System, Metrics);
+        } else if (view === "zkstatus") {
+            $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
+            zkStatusSubController($scope, ZookeeperStatus, false);
         }
     }
 );
@@ -486,7 +489,39 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.initClusterState();
 };
 
+var zkStatusSubController = function($scope, ZookeeperStatus) {
+    $scope.showZkStatus = true;
+    $scope.showNodes = false;
+    $scope.showTree = false;
+    $scope.showGraph = false;
+    $scope.tree = {};
+    $scope.showData = false;
+    $scope.showDetails = false;
+    
+    $scope.toggleDetails = function() {
+      $scope.showDetails = !$scope.showDetails === true;
+    };
+
+    $scope.initZookeeper = function() {
+      ZookeeperStatus.monitor({}, function(data) {
+        $scope.zkState = data.zkStatus;
+        $scope.mainKeys = ["ok", "clientPort", "zk_server_state", "zk_version", 
+          "zk_approximate_data_size", "zk_znode_count", "zk_num_alive_connections"];
+        $scope.detailKeys = ["dataDir", "dataLogDir", 
+          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
+          "zk_packets_sent", "zk_packets_received",
+          "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
+        $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort"];
+        $scope.ensembleDetailKeys = ["peerType", "electionAlg", "initLimit", "syncLimit",
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs"];
+      });
+    };
+
+    $scope.initZookeeper();
+};
+
 var treeSubController = function($scope, Zookeeper) {
+    $scope.showZkStatus = false;
     $scope.showTree = true;
     $scope.showGraph = false;
     $scope.tree = {};
@@ -545,6 +580,7 @@ function secondsForHumans ( seconds ) {
 }
 
 var graphSubController = function ($scope, Zookeeper, isRadial) {
+    $scope.showZkStatus = false;
     $scope.showTree = false;
     $scope.showGraph = true;
 
