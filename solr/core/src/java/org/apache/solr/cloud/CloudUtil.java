@@ -45,8 +45,8 @@ import org.slf4j.LoggerFactory;
 
 public class CloudUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  
+
+
   /**
    * See if coreNodeName has been taken over by another baseUrl and unload core
    * + throw exception if it has been.
