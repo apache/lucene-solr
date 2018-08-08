@@ -2361,7 +2361,7 @@ public class Plane extends Vector {
     //System.out.println("cross product magnitude = "+(cross1 * cross1 + cross2 * cross2 + cross3 * cross3));
     // Should be MINIMUM_RESOLUTION_SQUARED, but that gives us planes that are *almost* parallel, and those are problematic too,
     // so we have a tighter constraint on parallelism in this method.
-    if (cross1 * cross1 + cross2 * cross2 + cross3 * cross3 >= MINIMUM_RESOLUTION) {
+    if (cross1 * cross1 + cross2 * cross2 + cross3 * cross3 >= 5 * MINIMUM_RESOLUTION) {
       return false;
     }
     

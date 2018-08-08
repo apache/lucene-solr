@@ -44,10 +44,20 @@ Upgrade Notes
   MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
   switch to "Direct" instead. (Dawid Weiss)
 
+* SOLR-12586: The date format patterns used by ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
+  are now interpreted by Java 8's java.time.DateTimeFormatter instead of Joda Time.  The pattern language is very
+  similar but not the same.  Typically, simply update the pattern by changing an uppercase 'Z' to lowercase 'z' and
+  that's it.  For the current recommended set of patterns in schemaless mode, see "Schemaless Mode" in the ref guide.
+  (David Smiley, Bar Rotstein)
+
 Other Changes
 ----------------------
 
 * SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
+
+* SOLR-12586: Remove Joda Time dependency.  Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
+  to use Java 8's java.time.DateTimeFormatter instead (see upgrade notes).
+  (David Smiley, Bar Rotstein)
 
 ==================  7.5.0 ==================
 
@@ -142,6 +152,9 @@ New Features
 
 * SOLR-12592: support #EQUAL function, range operator, decimal and percentage in cores in autoscaling policies (noble)
 
+* SOLR-12485: Uploading docs in XML now supports child documents as field values, thus providing a label to the
+  relationship instead of the current "anonymous" relationship. (Moshe Bla, David Smiley)
+
 Bug Fixes
 ----------------------
 
@@ -209,6 +222,14 @@ Bug Fixes
 
 * SOLR-12594: MetricsHistoryHandler.getOverseerLeader fails when hostname contains hyphen. (ab)
 
+* SOLR-12615: HashQParserPlugin will no longer throw an NPE if the hash key field is a string when there are documents
+  with empty values. All documents with empty values ( string , numeric ) will be processed by worker=0
+  This would fix the NPE when using the search stream with partitionKeys. (Varun Thacker)
+
+* SOLR-11770: NPE in tvrh if no field is specified and document doesn't contain any fields with term vectors
+
+* SOLR-12541: Metrics handler throws an error if there are transient cores. (ab)
+
 Optimizations
 ----------------------
 
@@ -229,6 +250,8 @@ Optimizations
 * SOLR-12509: Improve SplitShardCmd performance and reliability. A new method of splitting has been
   introduced (splitMethod=link) which uses hard-linking of index files when possible, resulting in
   significant speedups and reduced CPU / IO load on shard leader. (ab)
+
+* SOLR-11881: Retry update requests sent by leaders to it's followers (Varun Thacker, Mark Miller, Tomás Fernández Löbbe)
 
 Other Changes
 ----------------------

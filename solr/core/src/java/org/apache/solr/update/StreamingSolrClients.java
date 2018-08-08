@@ -143,7 +143,6 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClien
   
   @Override
   public void handleError(Throwable ex) {
-    req.trackRequestResult(null, false);
     log.error("error", ex);
     Error error = new Error();
     error.e = (Exception) ex;
@@ -152,6 +151,10 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClien
     }
     error.req = req;
     errors.add(error);
+    if (!req.shouldRetry(error)) {
+      // only track the error if we are not retrying the request
+      req.trackRequestResult(null, false);
+    }
   }
   @Override
   public void onSuccess(HttpResponse resp) {

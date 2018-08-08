@@ -73,6 +73,8 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
         ft.readableToIndexed(f.stringValue(), bytesRefBuilder);
       }
       return bytesRefBuilder.get();
+    } else if (obj instanceof String) { // Allows the idField to be stored=false, docValues=true
+      return new BytesRef(((String)obj));
     }
     throw new AssertionError("Expected an IndexableField but got: " + obj.getClass());
   }

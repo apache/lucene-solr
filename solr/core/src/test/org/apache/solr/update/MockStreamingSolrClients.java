@@ -16,19 +16,19 @@
  */
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.SocketException;
 
 public class MockStreamingSolrClients extends StreamingSolrClients {
   
-  public enum Exp {CONNECT_EXCEPTION, SOCKET_EXCEPTION};
+  public enum Exp {CONNECT_EXCEPTION, SOCKET_EXCEPTION, BAD_REQUEST};
   
   private volatile Exp exp = null;
   
@@ -46,12 +46,14 @@ public class MockStreamingSolrClients extends StreamingSolrClients {
     this.exp = exp;
   }
 
-  private IOException exception() {
+  private Exception exception() {
     switch (exp) {
       case CONNECT_EXCEPTION:
         return new ConnectException();
       case SOCKET_EXCEPTION:
         return new SocketException();
+      case BAD_REQUEST:
+        return new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad Request");
       default:
         break;
     }
@@ -70,10 +72,17 @@ public class MockStreamingSolrClients extends StreamingSolrClients {
     public NamedList<Object> request(SolrRequest request, String collection)
         throws SolrServerException, IOException {
       if (exp != null) {
-        if (LuceneTestCase.random().nextBoolean()) {
-          throw exception();
+        Exception e = exception();
+        if (e instanceof IOException) {
+          if (LuceneTestCase.random().nextBoolean()) {
+            throw (IOException)e;
+          } else {
+            throw new SolrServerException(e);
+          }
+        } else if (e instanceof SolrServerException) {
+          throw (SolrServerException)e;
         } else {
-          throw new SolrServerException(exception());
+          throw new SolrServerException(e);
         }
       }
       
