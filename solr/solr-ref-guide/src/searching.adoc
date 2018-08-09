@@ -26,7 +26,6 @@
   near-real-time-searching, +
   realtime-get, +
   exporting-result-sets, +
-  streaming-expressions, +
   parallel-sql-interface, +
   analytics
 
@@ -85,6 +84,5 @@ This section describes how Solr works with search requests. It covers the follow
 * <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>: How to include documents in search results nearly immediately after they are indexed.
 * <<realtime-get.adoc#realtime-get,RealTime Get>>: How to get the latest version of a document without opening a searcher.
 * <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>>: Functionality to export large result sets out of Solr.
-* <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>: A stream processing language for Solr, with a suite of functions to perform many types of queries and parallel execution tasks.
 * <<parallel-sql-interface.adoc#parallel-sql-interface,Parallel SQL Interface>>: An interface for sending SQL statements to Solr, and using advanced parallel query processing and relational algebra for complex data analysis.
 * <<analytics.adoc#analytics,The Analytics Component>>: A framework to compute complex analytics over a result set.
