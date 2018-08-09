@@ -21,6 +21,7 @@ import java.io.File;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -211,6 +212,8 @@ public final class RamUsageTester {
       a(StringBuffer.class, v -> charArraySize(v.capacity()));
       // Types with large buffers:
       a(ByteArrayOutputStream.class, v -> byteArraySize(v.size()));
+      // Approximate ByteBuffers with their underling storage (ignores field overhead).
+      a(ByteBuffer.class, v -> byteArraySize(v.capacity()));
       // For File and Path, we just take the length of String representation as approximation:
       a(File.class, v -> charArraySize(v.toString().length()));
       a(Path.class, v -> charArraySize(v.toString().length()));
