@@ -19,13 +19,13 @@
 This section of the user guide explores functions that are commonly used in the field of
 Digital Signal Processing (DSP).
 
-== Dot product
+== Dot Product
 
 The `dotProduct` function is used to calculate the dot product of two arrays.
 The dot product is a fundamental calculation for the DSP functions discussed in this section. Before diving into
 the more advanced DSP functions, its useful to get a better understanding of how the dot product calculation works.
 
-=== Combining two arrays
+=== Combining Two Arrays
 
 The `dotProduct` function can be used to combine two arrays into a single product. A simple example can help
 illustrate this concept.
@@ -280,7 +280,7 @@ the second vector and sliding it across the first vector. The *dot product* of t
 is calculated at each point as the second vector is slid across the first vector.
 The dot products are collected in a *third vector* which is the *convolution* of the two vectors.
 
-=== Moving Average function
+=== Moving Average Function
 
 Before looking at an example of convolution its useful to review the `movingAvg` function. The moving average
 function computes a moving average by sliding a window across a vector and computing
@@ -715,5 +715,3 @@ let(a=sin(sequence(256, 0, 6)),
 ----
 
 image::images/math-expressions/hidden-signal-fft.png[]
-
-
