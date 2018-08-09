@@ -115,7 +115,7 @@ http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!
 http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!,user2!
 ----
 
-== Distributed tracing and debugging parameters
+== Distributed Tracing and Debugging Parameters
 
 There are several distributed tracing parameters which can be used to trace the request as well as find timing information for a distributed request.
 
@@ -125,7 +125,7 @@ There are several distributed tracing parameters which can be used to trace the 
 |debug=track | Gives debug information for each phase of the distributed query.
 |===
 
-== Optimizations and related parameters
+== Optimizations and Related Parameters
 
 The table below summarizes the general parameters for controlling routing.
 
