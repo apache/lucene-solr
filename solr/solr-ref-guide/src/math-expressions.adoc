@@ -1,5 +1,5 @@
 = Math Expressions
-:page-children: scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, machine-learning
+:page-children: scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -55,5 +55,7 @@ record in your Solr Cloud cluster computable.
 == <<numerical-analysis.adoc#numerical-analysis,Interpolation, Derivatives and Integrals>>
 
 == <<curve-fitting.adoc#curve-fitting,Curve Fitting>>
+
+== <<dsp.adoc#dsp,Digital Signal Processing>>
 
 == <<machine-learning.adoc#machine-learning,Machine Learning>>

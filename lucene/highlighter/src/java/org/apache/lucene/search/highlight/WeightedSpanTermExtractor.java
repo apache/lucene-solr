@@ -306,7 +306,7 @@ public class WeightedSpanTermExtractor {
         q = spanQuery;
       }
       LeafReaderContext context = getLeafContext();
-      SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(q, ScoreMode.COMPLETE_NO_SCORES);
+      SpanWeight w = (SpanWeight) searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
       Bits acceptDocs = context.reader().getLiveDocs();
       final Spans spans = w.getSpans(context, SpanWeight.Postings.POSITIONS);
       if (spans == null) {
@@ -360,7 +360,7 @@ public class WeightedSpanTermExtractor {
   protected void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query, float boost) throws IOException {
     Set<Term> nonWeightedTerms = new HashSet<>();
     final IndexSearcher searcher = new IndexSearcher(getLeafContext());
-    searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES).extractTerms(nonWeightedTerms);
+    searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1).extractTerms(nonWeightedTerms);
 
     for (final Term queryTerm : nonWeightedTerms) {
 

@@ -115,7 +115,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
         DrillDownQuery drillDown = new DrillDownQuery(config);
         drillDown.add("A", Integer.toString(id, 16));
         TopDocs docs = searcher.search(drillDown, 10);
-        assertEquals(1, docs.totalHits);
+        assertEquals(1, docs.totalHits.value);
       }
       return null;
     }

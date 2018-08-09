@@ -18,7 +18,6 @@ package org.apache.lucene.search.similarities;
 
 
 import java.util.Collections;
-import java.util.Objects;
 
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.FieldInvertState;
@@ -141,20 +140,11 @@ public abstract class Similarity {
    */
   public static abstract class SimScorer {
 
-    private final String field;
-
     /**
      * Sole constructor. (For invocation by subclass 
      * constructors.)
      */
-    public SimScorer(String field) {
-      this.field = Objects.requireNonNull(field);
-    }
-
-    /** Return the field that this {@link SimScorer} operates on. */
-    public final String getField() {
-      return field;
-    }
+    protected SimScorer() {}
 
     /**
      * Score a single document. {@code freq} is the document-term sloppy

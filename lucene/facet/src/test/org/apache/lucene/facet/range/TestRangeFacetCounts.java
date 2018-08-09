@@ -298,7 +298,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     DrillDownQuery ddq = new DrillDownQuery(config);
     DrillSidewaysResult dsr = ds.search(null, ddq, 10);
 
-    assertEquals(100, dsr.hits.totalHits);
+    assertEquals(100, dsr.hits.totalHits.value);
     assertEquals("dim=dim path=[] value=100 childCount=2\n  b (75)\n  a (25)\n", dsr.facets.getTopChildren(10, "dim").toString());
     assertEquals("dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
@@ -308,7 +308,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     ddq.add("dim", "b");
     dsr = ds.search(null, ddq, 10);
 
-    assertEquals(75, dsr.hits.totalHits);
+    assertEquals(75, dsr.hits.totalHits.value);
     assertEquals("dim=dim path=[] value=100 childCount=2\n  b (75)\n  a (25)\n", dsr.facets.getTopChildren(10, "dim").toString());
     assertEquals("dim=field path=[] value=16 childCount=5\n  less than 10 (7)\n  less than or equal to 10 (8)\n  over 90 (7)\n  90 or above (8)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
@@ -318,7 +318,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     ddq.add("field", LongPoint.newRangeQuery("field", 0L, 10L));
     dsr = ds.search(null, ddq, 10);
 
-    assertEquals(11, dsr.hits.totalHits);
+    assertEquals(11, dsr.hits.totalHits.value);
     assertEquals("dim=dim path=[] value=11 childCount=2\n  b (8)\n  a (3)\n", dsr.facets.getTopChildren(10, "dim").toString());
     assertEquals("dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
@@ -495,7 +495,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         } else {
           ddq.add("field", range.getQuery(fastMatchQuery, vs));
         }
-        assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits);
+        assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits.value);
       }
     }
 
@@ -639,7 +639,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
           ddq.add("field", range.getQuery(fastMatchFilter, vs));
         }
 
-        assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits);
+        assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits.value);
       }
     }
 
@@ -841,7 +841,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     ddq.add("field", ranges[1].getQuery(fastMatchFilter, vs));
 
     // Test simple drill-down:
-    assertEquals(1, s.search(ddq, 10).totalHits);
+    assertEquals(1, s.search(ddq, 10).totalHits.value);
 
     // Test drill-sideways after drill-down
     DrillSideways ds = new DrillSideways(s, config, (TaxonomyReader) null) {
@@ -860,11 +860,37 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
 
     DrillSidewaysResult dsr = ds.search(ddq, 10);
-    assertEquals(1, dsr.hits.totalHits);
+    assertEquals(1, dsr.hits.totalHits.value);
     assertEquals("dim=field path=[] value=3 childCount=6\n  < 1 (0)\n  < 2 (1)\n  < 5 (3)\n  < 10 (3)\n  < 20 (3)\n  < 50 (3)\n",
                  dsr.facets.getTopChildren(10, "field").toString());
 
     writer.close();
     IOUtils.close(r, dir);
+  }
+
+  public void testLongRangeEquals() throws Exception {
+    assertEquals(new LongRange("field", -7, true, 17, false),
+                 new LongRange("field", -7, true, 17, false));
+    assertEquals(new LongRange("field", -7, true, 17, false).hashCode(),
+                 new LongRange("field", -7, true, 17, false).hashCode());
+    assertFalse(new LongRange("field", -7, true, 17, false).equals(new LongRange("field", -7, true, 17, true)));
+    assertFalse(new LongRange("field", -7, true, 17, false).hashCode() ==
+                new LongRange("field", -7, true, 17, true).hashCode());
+    assertFalse(new LongRange("field", -7, true, 17, false).equals(new LongRange("field", -7, true, 18, false)));
+    assertFalse(new LongRange("field", -7, true, 17, false).hashCode() ==
+                new LongRange("field", -7, true, 18, false).hashCode());
+  }
+
+  public void testDoubleRangeEquals() throws Exception {
+    assertEquals(new DoubleRange("field", -7d, true, 17d, false),
+                 new DoubleRange("field", -7d, true, 17d, false));
+    assertEquals(new DoubleRange("field", -7d, true, 17d, false).hashCode(),
+                 new DoubleRange("field", -7d, true, 17d, false).hashCode());
+    assertFalse(new DoubleRange("field", -7d, true, 17d, false).equals(new DoubleRange("field", -7d, true, 17d, true)));
+    assertFalse(new DoubleRange("field", -7d, true, 17d, false).hashCode() ==
+                new DoubleRange("field", -7d, true, 17d, true).hashCode());
+    assertFalse(new DoubleRange("field", -7d, true, 17d, false).equals(new DoubleRange("field", -7d, true, 18d, false)));
+    assertFalse(new DoubleRange("field", -7d, true, 17d, false).hashCode() ==
+                new DoubleRange("field", -7d, true, 18, false).hashCode());
   }
 }

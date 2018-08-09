@@ -17,12 +17,18 @@
 
 package org.apache.lucene.index;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
+
+import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.MutableBits;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOSupplier;
+import org.apache.lucene.util.IOUtils;
 
 final class PendingSoftDeletes extends PendingDeletes {
 
@@ -44,7 +50,7 @@ final class PendingSoftDeletes extends PendingDeletes {
 
   @Override
   boolean delete(int docID) throws IOException {
-    MutableBits mutableBits = getMutableBits(); // we need to fetch this first it might be a shared instance with hardDeletes
+    FixedBitSet mutableBits = getMutableBits(); // we need to fetch this first it might be a shared instance with hardDeletes
     if (hardDeletes.delete(docID)) {
       if (mutableBits.get(docID)) { // delete it here too!
         mutableBits.clear(docID);
@@ -52,6 +58,7 @@ final class PendingSoftDeletes extends PendingDeletes {
       } else {
         // if it was deleted subtract the delCount
         pendingDeleteCount--;
+        assert assertPendingDeletes();
       }
       return true;
     }
@@ -59,39 +66,48 @@ final class PendingSoftDeletes extends PendingDeletes {
   }
 
   @Override
-  int numPendingDeletes() {
+  protected int numPendingDeletes() {
     return super.numPendingDeletes() + hardDeletes.numPendingDeletes();
   }
 
   @Override
-  void onNewReader(SegmentReader reader, SegmentCommitInfo info) throws IOException {
+  void onNewReader(CodecReader reader, SegmentCommitInfo info) throws IOException {
     super.onNewReader(reader, info);
     hardDeletes.onNewReader(reader, info);
-    if (dvGeneration != info.getDocValuesGen()) { // only re-calculate this if we haven't seen this generation
+    if (dvGeneration < info.getDocValuesGen()) { // only re-calculate this if we haven't seen this generation
       final DocIdSetIterator iterator = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(field, reader);
-      if (iterator == null) { // nothing is deleted we don't have a soft deletes field in this segment
-        this.pendingDeleteCount = 0;
-      } else {
+      int newDelCount;
+      if (iterator != null) { // nothing is deleted we don't have a soft deletes field in this segment
         assert info.info.maxDoc() > 0 : "maxDoc is 0";
-        pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
+        newDelCount = applySoftDeletes(iterator, getMutableBits());
+        assert newDelCount >= 0 : " illegal pending delete count: " + newDelCount;
+      } else {
+        newDelCount = 0;
       }
+      assert info.getSoftDelCount() == newDelCount : "softDeleteCount doesn't match " + info.getSoftDelCount() + " != " + newDelCount;
       dvGeneration = info.getDocValuesGen();
     }
-    assert numPendingDeletes() + info.getDelCount() <= info.info.maxDoc() :
-        numPendingDeletes() + " + " + info.getDelCount() + " > " + info.info.maxDoc();
+    assert getDelCount() <= info.info.maxDoc() : getDelCount() + " > " + info.info.maxDoc();
   }
 
   @Override
   boolean writeLiveDocs(Directory dir) throws IOException {
+    // we need to set this here to make sure our stats in SCI are up-to-date otherwise we might hit an assertion
+    // when the hard deletes are set since we need to account for docs that used to be only soft-delete but now hard-deleted
+    this.info.setSoftDelCount(this.info.getSoftDelCount() + pendingDeleteCount);
+    super.dropChanges();
     // delegate the write to the hard deletes - it will only write if somebody used it.
-    return hardDeletes.writeLiveDocs(dir);
+    if (hardDeletes.writeLiveDocs(dir)) {
+      return true;
+    }
+    return false;
   }
 
   @Override
-  void reset() {
-    dvGeneration = -2;
-    super.reset();
-    hardDeletes.reset();
+  void dropChanges() {
+    // don't reset anything here - this is called after a merge (successful or not) to prevent
+    // rewriting the deleted docs to disk. we only pass it on and reset the number of pending deletes
+    hardDeletes.dropChanges();
   }
 
   /**
@@ -101,54 +117,47 @@ final class PendingSoftDeletes extends PendingDeletes {
    * @param bits the bit set to apply the deletes to
    * @return the number of bits changed by this function
    */
-  static int applySoftDeletes(DocIdSetIterator iterator, MutableBits bits) throws IOException {
+  static int applySoftDeletes(DocIdSetIterator iterator, FixedBitSet bits) throws IOException {
     assert iterator != null;
     int newDeletes = 0;
     int docID;
+    DocValuesFieldUpdates.Iterator hasValue = iterator instanceof DocValuesFieldUpdates.Iterator
+        ? (DocValuesFieldUpdates.Iterator) iterator : null;
     while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (bits.get(docID)) { // doc is live - clear it
-        bits.clear(docID);
-        newDeletes++;
-        // now that we know we deleted it and we fully control the hard deletes we can do correct accounting
-        // below.
+      if (hasValue == null || hasValue.hasValue()) {
+        if (bits.get(docID)) { // doc is live - clear it
+          bits.clear(docID);
+          newDeletes++;
+          // now that we know we deleted it and we fully control the hard deletes we can do correct accounting
+          // below.
+        }
+      } else {
+        if (bits.get(docID) == false) {
+          bits.set(docID);
+          newDeletes--;
+        }
       }
     }
     return newDeletes;
   }
 
   @Override
-  void onDocValuesUpdate(FieldInfo info, List<DocValuesFieldUpdates> updatesToApply) throws IOException {
-    if (field.equals(info.name)) {
-      assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
-      DocValuesFieldUpdates.Iterator[] subs = new DocValuesFieldUpdates.Iterator[updatesToApply.size()];
-      for(int i=0; i<subs.length; i++) {
-        subs[i] = updatesToApply.get(i).iterator();
-      }
-      DocValuesFieldUpdates.Iterator iterator = DocValuesFieldUpdates.mergedIterator(subs);
-      pendingDeleteCount += applySoftDeletes(new DocIdSetIterator() {
-        int docID = -1;
-        @Override
-        public int docID() {
-          return docID;
-        }
-
-        @Override
-        public int nextDoc() {
-          return docID = iterator.nextDoc();
-        }
-
-        @Override
-        public int advance(int target) {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long cost() {
-          throw new UnsupportedOperationException();
-        }
-      }, getMutableBits());
-      dvGeneration = info.getDocValuesGen();
+  void onDocValuesUpdate(FieldInfo info, DocValuesFieldUpdates.Iterator iterator) throws IOException {
+    if (this.field.equals(info.name)) {
+      pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
+      assert assertPendingDeletes();
+      this.info.setSoftDelCount(this.info.getSoftDelCount() + pendingDeleteCount);
+      super.dropChanges();
     }
+    assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
+    assert dvGeneration != -2 : "docValues generation is still uninitialized";
+    dvGeneration = info.getDocValuesGen();
+  }
+
+  private boolean assertPendingDeletes() {
+    assert pendingDeleteCount + info.getSoftDelCount() >= 0 : " illegal pending delete count: " + pendingDeleteCount + info.getSoftDelCount();
+    assert info.info.maxDoc() >= getDelCount();
+    return true;
   }
 
   @Override
@@ -160,5 +169,77 @@ final class PendingSoftDeletes extends PendingDeletes {
     sb.append(" dvGeneration=").append(dvGeneration);
     sb.append(" hardDeletes=").append(hardDeletes);
     return sb.toString();
+  }
+
+  @Override
+  int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    ensureInitialized(readerIOSupplier); // initialize to ensure we have accurate counts
+    return super.numDeletesToMerge(policy, readerIOSupplier);
+  }
+
+  private void ensureInitialized(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    if (dvGeneration == -2) {
+      FieldInfos fieldInfos = readFieldInfos();
+      FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+      // we try to only open a reader if it's really necessary ie. indices that are mainly append only might have
+      // big segments that don't even have any docs in the soft deletes field. In such a case it's simply
+      // enough to look at the FieldInfo for the field and check if the field has DocValues
+      if (fieldInfo != null && fieldInfo.getDocValuesType() != DocValuesType.NONE) {
+        // in order to get accurate numbers we need to have a least one reader see here.
+        onNewReader(readerIOSupplier.get(), info);
+      } else {
+        // we are safe here since we don't have any doc values for the soft-delete field on disk
+        // no need to open a new reader
+        dvGeneration = fieldInfo == null ? -1 : fieldInfo.getDocValuesGen();
+      }
+    }
+  }
+
+  @Override
+  boolean isFullyDeleted(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+    ensureInitialized(readerIOSupplier); // initialize to ensure we have accurate counts - only needed in the soft-delete case
+    return super.isFullyDeleted(readerIOSupplier);
+  }
+
+  private FieldInfos readFieldInfos() throws IOException {
+    SegmentInfo segInfo = info.info;
+    Directory dir = segInfo.dir;
+    if (info.hasFieldUpdates() == false) {
+      // updates always outside of CFS
+      Closeable toClose;
+      if (segInfo.getUseCompoundFile()) {
+        toClose = dir = segInfo.getCodec().compoundFormat().getCompoundReader(segInfo.dir, segInfo, IOContext.READONCE);
+      } else {
+        toClose = null;
+        dir = segInfo.dir;
+      }
+      try {
+        return segInfo.getCodec().fieldInfosFormat().read(dir, segInfo, "", IOContext.READONCE);
+      } finally {
+        IOUtils.close(toClose);
+      }
+    } else {
+      FieldInfosFormat fisFormat = segInfo.getCodec().fieldInfosFormat();
+      final String segmentSuffix = Long.toString(info.getFieldInfosGen(), Character.MAX_RADIX);
+      return fisFormat.read(dir, segInfo, segmentSuffix, IOContext.READONCE);
+    }
+  }
+
+  @Override
+  Bits getHardLiveDocs() {
+    return hardDeletes.getLiveDocs();
+  }
+
+  static int countSoftDeletes(DocIdSetIterator softDeletedDocs, Bits hardDeletes) throws IOException {
+    int count = 0;
+    if (softDeletedDocs != null) {
+      int doc;
+      while ((doc = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        if (hardDeletes == null || hardDeletes.get(doc)) {
+          count++;
+        }
+      }
+    }
+    return count;
   }
 }

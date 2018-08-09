@@ -14,13 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ASSERT_SUCCEEDED=1
-ASSERT_FAILURE=0
+ASSERT_SUCCESS=0
+ASSERT_FAILURE=1
+
+TEST_SUCCESS=0
+TEST_FAILURE=1
 
 function assert_cmd_succeeded() {
   retval=$?
   
-  if [[ $? -ne 0 ]]; then
+  if [[ $retval -ne 0 ]]; then
     echo "Expected command $1 to succeed, but exited with $retval"
     return $ASSERT_FAILURE
   fi
@@ -31,7 +34,7 @@ function assert_cmd_succeeded() {
 function assert_cmd_failed() {
   retval=$?
   
-  if [[ $? -eq 0 ]]; then
+  if [[ $retval -eq 0 ]]; then
     echo "Expected command $1 to fail, but exited with $retval"
     return $ASSERT_FAILURE
   fi
@@ -43,7 +46,7 @@ function assert_output_contains() {
   local actual_output="$1"
   local needle="$2"
 
-  if echo "$actual_output" | grep -q "$needle"; then
+  if [[ "$actual_output" == *"$needle"* ]]; then
     return $ASSERT_SUCCESS
   fi
 
@@ -67,9 +70,9 @@ function assert_collection_exists() {
   local coll_name=$1
   local coll_list=$(bin/solr zk ls /collections -z localhost:9983)
 
-  for coll in "$coll_list";
+  for coll in $coll_list;
   do
-    if [[ $(echo $coll | tr -d " ") -eq $coll_name ]]; then
+    if [[ $(echo $coll | tr -d " ") == $coll_name ]]; then
       return $ASSERT_SUCCESS
     fi
   done
@@ -81,9 +84,10 @@ function assert_collection_exists() {
 function assert_collection_doesnt_exist() {
   local coll_name=$1
   local coll_list=$(bin/solr zk ls /collections -z localhost:9983)
-  for coll in "$coll_list";
+  for coll in $coll_list;
   do
-    if [[ $(echo $coll | tr -d " ") -eq $coll_name ]]; then
+    echo "Comparing $coll to $coll_name"
+    if [[ $(echo $coll | tr -d " ") == "$coll_name" ]]; then
       echo "Expected not to find collection [$coll_name], but it exists"
       return $ASSERT_FAILURE
     fi
@@ -96,9 +100,9 @@ function assert_config_exists() {
   local config_name=$1
   local config_list=$(bin/solr zk ls /configs -z localhost:9983)
 
-  for config in "$config_list";
+  for config in $config_list;
   do
-    if [[ $(echo $config | tr -d " ") -eq $config_name ]]; then
+    if [[ $(echo $config | tr -d " ") == $config_name ]]; then
       return $ASSERT_SUCCESS
     fi
   done
@@ -111,9 +115,9 @@ function assert_config_doesnt_exist() {
   local config_name=$1
   local config_list=$(bin/solr zk ls /configs -z localhost:9983)
 
-  for config in "$config_list";
+  for config in $config_list;
   do
-    if [[ $(echo $config | tr -d " ") -eq $config_name ]]; then
+    if [[ $(echo $config | tr -d " ") == $config_name ]]; then
       echo "Expected not to find config [$config_name], but it exists"
       return $ASSERT_FAILURE
     fi

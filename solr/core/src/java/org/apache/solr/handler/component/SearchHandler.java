@@ -229,16 +229,19 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       }
     }
 
-    if(isZkAware) {
+    if (isZkAware) {
+      String shardsTolerant = req.getParams().get(ShardParams.SHARDS_TOLERANT);
+      boolean requireZkConnected = shardsTolerant != null && shardsTolerant.equals(ShardParams.REQUIRE_ZK_CONNECTED);
       ZkController zkController = cc.getZkController();
-      NamedList<Object> headers = rb.rsp.getResponseHeader();
-      if(headers != null) {
-        headers.add("zkConnected", 
-            zkController != null 
-          ? !zkController.getZkClient().getConnectionManager().isLikelyExpired() 
-          : false);
+      boolean zkConnected = zkController != null && ! zkController.getZkClient().getConnectionManager().isLikelyExpired();
+      if (requireZkConnected && false == zkConnected) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper is not connected");
+      } else {
+        NamedList<Object> headers = rb.rsp.getResponseHeader();
+        if (headers != null) {
+          headers.add("zkConnected", zkConnected);
+        }
       }
-      
     }
 
     return shardHandler;
@@ -392,7 +395,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
           // now wait for replies, but if anyone puts more requests on
           // the outgoing queue, send them out immediately (by exiting
           // this loop)
-          boolean tolerant = rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false);
+          boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
           while (rb.outgoing.size() == 0) {
             ShardResponse srsp = tolerant ? 
                 shardHandler1.takeCompletedIncludingErrors():

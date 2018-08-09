@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
@@ -157,6 +158,8 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
+  //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testNodeLost() throws Exception  {
     // let's start a node so that we have at least two
     JettySolrRunner runner = cluster.startJettySolrRunner();
@@ -238,6 +241,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
   }
 
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testNodeWithMultipleReplicasLost() throws Exception {
     AssertingTriggerAction.expectedNode = null;
 
@@ -414,6 +418,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
+  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testSelectedCollections() throws Exception {
     log.info("Found number of jetties: {}", cluster.getJettySolrRunners().size());
     AssertingTriggerAction.expectedNode = null;

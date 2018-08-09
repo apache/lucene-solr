@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -46,6 +47,7 @@ import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
+import org.apache.solr.cloud.autoscaling.SearchRateTrigger;
 import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerEventQueue;
@@ -139,6 +141,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testTriggerThrottling() throws Exception  {
     // for this test we want to create two triggers so we must assert that the actions were created twice
     actionInitCalled = new CountDownLatch(2);
@@ -266,7 +269,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // commented 20-July-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testNodeLostTriggerRestoreState() throws Exception {
     // for this test we want to update the trigger so we must assert that the actions were created twice
     TestTriggerIntegration.actionInitCalled = new CountDownLatch(2);
@@ -327,6 +330,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testNodeAddedTriggerRestoreState() throws Exception {
     // for this test we want to update the trigger so we must assert that the actions were created twice
     TestTriggerIntegration.actionInitCalled = new CountDownLatch(2);
@@ -385,6 +389,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testNodeAddedTrigger() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
@@ -612,6 +617,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   public static long eventQueueActionWait = 5000;
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 16-Apr-2018
   public void testEventQueue() throws Exception {
     waitForSeconds = 1;
     SolrClient solrClient = cluster.simGetSolrClient();
@@ -1162,7 +1168,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
         "'event' : 'searchRate'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'enabled' : true," +
-        "'rate' : 1.0," +
+        "'aboveRate' : 1.0," +
         "'actions' : [" +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}" +
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
@@ -1192,7 +1198,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
 //      solrClient.query(COLL1, query);
 //    }
 
-    cluster.getSimClusterStateProvider().simSetCollectionValue(COLL1, "QUERY./select.requestTimes:1minRate", 500, true);
+    cluster.getSimClusterStateProvider().simSetCollectionValue(COLL1, "QUERY./select.requestTimes:1minRate", 500, false, true);
 
     boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
@@ -1214,12 +1220,12 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     long now = cluster.getTimeSource().getTimeNs();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
-    Map<String, Double> nodeRates = (Map<String, Double>)ev.event.getProperties().get("node");
+    Map<String, Double> nodeRates = (Map<String, Double>)ev.event.getProperties().get(SearchRateTrigger.HOT_NODES);
     assertNotNull("nodeRates", nodeRates);
     assertTrue(nodeRates.toString(), nodeRates.size() > 0);
     AtomicDouble totalNodeRate = new AtomicDouble();
     nodeRates.forEach((n, r) -> totalNodeRate.addAndGet(r));
-    List<ReplicaInfo> replicaRates = (List<ReplicaInfo>)ev.event.getProperties().get("replica");
+    List<ReplicaInfo> replicaRates = (List<ReplicaInfo>)ev.event.getProperties().get(SearchRateTrigger.HOT_REPLICAS);
     assertNotNull("replicaRates", replicaRates);
     assertTrue(replicaRates.toString(), replicaRates.size() > 0);
     AtomicDouble totalReplicaRate = new AtomicDouble();
@@ -1227,7 +1233,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
       assertTrue(r.toString(), r.getVariable("rate") != null);
       totalReplicaRate.addAndGet((Double)r.getVariable("rate"));
     });
-    Map<String, Object> shardRates = (Map<String, Object>)ev.event.getProperties().get("shard");
+    Map<String, Object> shardRates = (Map<String, Object>)ev.event.getProperties().get(SearchRateTrigger.HOT_SHARDS);
     assertNotNull("shardRates", shardRates);
     assertEquals(shardRates.toString(), 1, shardRates.size());
     shardRates = (Map<String, Object>)shardRates.get(COLL1);
@@ -1235,7 +1241,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     assertEquals(shardRates.toString(), 1, shardRates.size());
     AtomicDouble totalShardRate = new AtomicDouble();
     shardRates.forEach((s, r) -> totalShardRate.addAndGet((Double)r));
-    Map<String, Double> collectionRates = (Map<String, Double>)ev.event.getProperties().get("collection");
+    Map<String, Double> collectionRates = (Map<String, Double>)ev.event.getProperties().get(SearchRateTrigger.HOT_COLLECTIONS);
     assertNotNull("collectionRates", collectionRates);
     assertEquals(collectionRates.toString(), 1, collectionRates.size());
     Double collectionRate = collectionRates.get(COLL1);

@@ -23,8 +23,6 @@ package org.apache.lucene.spatial3d.geom;
  * @lucene.experimental
  */
 public class Plane extends Vector {
-  /** For plane envelopes, we need a small distance that can't lead to numerical confusion. */
-  public final static double MINIMUM_PLANE_OFFSET = MINIMUM_RESOLUTION * 1.1;
   /** An array with no points in it */
   public final static GeoPoint[] NO_POINTS = new GeoPoint[0];
   /** An array with no bounds in it */
@@ -116,7 +114,7 @@ public class Plane extends Vector {
    *   or false in the negative direction.
    */
   public Plane(final Plane basePlane, final boolean above) {
-    this(basePlane.x, basePlane.y, basePlane.z, above?Math.nextUp(basePlane.D + MINIMUM_PLANE_OFFSET):Math.nextDown(basePlane.D - MINIMUM_PLANE_OFFSET));
+    this(basePlane.x, basePlane.y, basePlane.z, above?Math.nextUp(basePlane.D + MINIMUM_RESOLUTION):Math.nextDown(basePlane.D - MINIMUM_RESOLUTION));
   }
   
   /** Construct the most accurate normalized plane through an x-y point and including the Z axis.
@@ -467,12 +465,13 @@ public class Plane extends Vector {
    * Find points on the boundary of the intersection of a plane and the unit sphere,
    * given a starting point, and ending point, and a list of proportions of the arc (e.g. 0.25, 0.5, 0.75).
    * The angle between the starting point and ending point is assumed to be less than pi.
+   * @param planetModel is the planet model.
    * @param start is the start point.
    * @param end is the end point.
    * @param proportions is an array of fractional proportions measured between start and end.
    * @return an array of points corresponding to the proportions passed in.
    */
-  public GeoPoint[] interpolate(final GeoPoint start, final GeoPoint end, final double[] proportions) {
+  public GeoPoint[] interpolate(final PlanetModel planetModel, final GeoPoint start, final GeoPoint end, final double[] proportions) {
     // Steps:
     // (1) Translate (x0,y0,z0) of endpoints into origin-centered place:
     // x1 = x0 + D*A
@@ -597,7 +596,7 @@ public class Plane extends Vector {
       final double sinNewAngle = Math.sin(newAngle);
       final double cosNewAngle = Math.cos(newAngle);
       final Vector newVector = new Vector(cosNewAngle * startMagnitude, sinNewAngle * startMagnitude, 0.0);
-      returnValues[i] = reverseModify(newVector, transX, transY, transZ, sinRA, cosRA, sinHA, cosHA);
+      returnValues[i] = reverseModify(planetModel, newVector, transX, transY, transZ, sinRA, cosRA, sinHA, cosHA);
     }
 
     return returnValues;
@@ -622,6 +621,7 @@ public class Plane extends Vector {
 
   /**
    * Reverse modify a point to produce a GeoPoint in normal space.
+   * @param planetModel is the planet model.
    * @param point is the translated point.
    * @param transX is the translation x value.
    * @param transY is the translation y value.
@@ -632,10 +632,11 @@ public class Plane extends Vector {
    * @param cosHA is the cosine of the height angle.
    * @return the original point.
    */
-  protected static GeoPoint reverseModify(final Vector point, final double transX, final double transY, final double transZ,
-                                          final double sinRA, final double cosRA, final double sinHA, final double cosHA) {
+  protected static GeoPoint reverseModify(final PlanetModel planetModel,
+    final Vector point, final double transX, final double transY, final double transZ,
+    final double sinRA, final double cosRA, final double sinHA, final double cosHA) {
     final Vector result = point.rotateXZ(-sinHA, cosHA).rotateXY(-sinRA, cosRA).translate(-transX, -transY, -transZ);
-    return new GeoPoint(result.x, result.y, result.z);
+    return planetModel.createSurfacePoint(result.x, result.y, result.z);
   }
 
   /**
@@ -2360,7 +2361,7 @@ public class Plane extends Vector {
     //System.out.println("cross product magnitude = "+(cross1 * cross1 + cross2 * cross2 + cross3 * cross3));
     // Should be MINIMUM_RESOLUTION_SQUARED, but that gives us planes that are *almost* parallel, and those are problematic too,
     // so we have a tighter constraint on parallelism in this method.
-    if (cross1 * cross1 + cross2 * cross2 + cross3 * cross3 >= MINIMUM_RESOLUTION) {
+    if (cross1 * cross1 + cross2 * cross2 + cross3 * cross3 >= 5 * MINIMUM_RESOLUTION) {
       return false;
     }
     

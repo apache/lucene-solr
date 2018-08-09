@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -34,13 +36,18 @@ import java.util.function.Predicate;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /* A suggester is capable of suggesting a collection operation
  * given a particular session. Before it suggests a new operation,
@@ -50,6 +57,8 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.Conditio
  *
  */
 public abstract class Suggester implements MapWriter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
   Policy.Session session;
   SolrRequest operation;
@@ -94,34 +103,40 @@ public abstract class Suggester implements MapWriter {
 
   abstract SolrRequest init();
 
-
+  @SuppressWarnings("unchecked")
   public SolrRequest getSuggestion() {
     if (!isInitialized) {
       Set<String> collections = (Set<String>) hints.getOrDefault(Hint.COLL, Collections.emptySet());
       Set<Pair<String, String>> s = (Set<Pair<String, String>>) hints.getOrDefault(Hint.COLL_SHARD, Collections.emptySet());
       if (!collections.isEmpty() || !s.isEmpty()) {
-        HashSet<Pair<String, String>> shards = new HashSet<>(s);
-        collections.stream().forEach(c -> shards.add(new Pair<>(c, null)));
-        ClusterStateProvider stateProvider = session.cloudManager.getClusterStateProvider();
-        for (Pair<String, String> shard : shards) {
-          // if this is not a known collection from the existing clusterstate,
-          // then add it
-          if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(shard.first()))) {
-            session.addClausesForCollection(stateProvider, shard.first());
+        HashSet<Pair<String, String>> collectionShardPairs = new HashSet<>(s);
+        collections.forEach(c -> collectionShardPairs.add(new Pair<>(c, null)));
+        collections.forEach(c -> {
+          try {
+            getWithCollection(c).ifPresent(withCollection -> collectionShardPairs.add(new Pair<>(withCollection, null)));
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Exception while fetching 'withCollection' attribute for collection: " + c, e);
           }
-          for (Row row : session.matrix) {
-            Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.computeIfAbsent(shard.first(), it -> new HashMap<>());
-            if (shard.second() != null) shardInfo.computeIfAbsent(shard.second(), it -> new ArrayList<>());
+        });
+        s.forEach(kv -> {
+          try {
+            getWithCollection(kv.first()).ifPresent(withCollection -> collectionShardPairs.add(new Pair<>(withCollection, null)));
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Exception while fetching 'withCollection' attribute for collection: " + kv.first(), e);
           }
-        }
+        });
+        setupCollection(collectionShardPairs);
         Collections.sort(session.expandedClauses);
       }
       Set<String> srcNodes = (Set<String>) hints.get(Hint.SRC_NODE);
       if (srcNodes != null && !srcNodes.isEmpty()) {
         // the source node is dead so live nodes may not have it
         for (String srcNode : srcNodes) {
-          if (session.matrix.stream().noneMatch(row -> row.node.equals(srcNode)))
+          if (session.matrix.stream().noneMatch(row -> row.node.equals(srcNode))) {
             session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session));
+          }
         }
       }
       session.applyRules();
@@ -129,7 +144,34 @@ public abstract class Suggester implements MapWriter {
       this.operation = init();
       isInitialized = true;
     }
+    if (operation != null && session.transaction != null && session.transaction.isOpen()) {
+      session.transaction.updateSession(session);
+    }
     return operation;
+  }
+
+  protected Optional<String> getWithCollection(String collectionName) throws IOException {
+    DocCollection collection = session.cloudManager.getClusterStateProvider().getCollection(collectionName);
+    if (collection != null) {
+      return Optional.ofNullable(collection.getStr(WITH_COLLECTION));
+    } else {
+      return Optional.empty();
+    }
+  }
+
+  private void setupCollection(HashSet<Pair<String, String>> collectionShardPairs) {
+    ClusterStateProvider stateProvider = session.cloudManager.getClusterStateProvider();
+    for (Pair<String, String> shard : collectionShardPairs) {
+      // if this is not a known collection from the existing clusterstate,
+      // then add it
+      if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(shard.first()))) {
+        session.addClausesForCollection(stateProvider, shard.first());
+      }
+      for (Row row : session.matrix) {
+        Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.computeIfAbsent(shard.first(), it -> new HashMap<>());
+        if (shard.second() != null) shardInfo.computeIfAbsent(shard.second(), it -> new ArrayList<>());
+      }
+    }
   }
 
   public Policy.Session getSession() {
@@ -178,9 +220,15 @@ public abstract class Suggester implements MapWriter {
       for (int i = 0; i < fresh.size(); i++) {
         Violation freshViolation = fresh.get(i);
         Violation oldViolation = null;
-        for (Violation v : old) {
+        for (Violation v : old) {//look for exactly same clause being violated
           if (v.equals(freshViolation)) oldViolation = v;
         }
+        if (oldViolation == null) {//if no match, look for similar violation
+          for (Violation v : old) {
+            if (v.isSimilarViolation(freshViolation)) oldViolation = v;
+          }
+        }
+
         if (oldViolation != null && freshViolation.isLessSerious(oldViolation)) return true;
       }
     }
@@ -188,7 +236,10 @@ public abstract class Suggester implements MapWriter {
   }
 
   boolean containsNewErrors(List<Violation> violations) {
+    boolean isTxOpen = session.transaction != null && session.transaction.isOpen();
     for (Violation v : violations) {
+      //the computed value can change over time. So it's better to evaluate it in the end
+      if (isTxOpen && v.getClause().hasComputedValue) continue;
       int idx = originalViolations.indexOf(v);
       if (idx < 0 /*|| originalViolations.get(idx).isLessSerious(v)*/) return true;
     }
@@ -221,12 +272,12 @@ public abstract class Suggester implements MapWriter {
     }
   }
 
-  List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
-    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, rows);
+  List<Violation> testChangedMatrix(boolean strict, Policy.Session session) {
+    Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       if (strict || clause.strict) {
-        List<Violation> errs = clause.test(rows);
+        List<Violation> errs = clause.test(session);
         if (!errs.isEmpty()) {
           errors.addAll(errs);
         }
@@ -255,7 +306,7 @@ public abstract class Suggester implements MapWriter {
       Collection c = v instanceof Collection ? (Collection) v : Collections.singleton(v);
       for (Object o : c) {
         if (!(o instanceof Pair)) {
-          throw new RuntimeException("SHARD hint must use a Pair");
+          throw new RuntimeException("COLL_SHARD hint must use a Pair");
         }
         Pair p = (Pair) o;
         if (p.first() == null || p.second() == null) {
@@ -288,7 +339,11 @@ public abstract class Suggester implements MapWriter {
       Double actualFreediskInGb = (Double) FREEDISK.validate(null, hintValVsActual.second(), false);
       if (actualFreediskInGb == null) return false;
       return actualFreediskInGb > hintFreediskInGb;
-    });
+    }),
+    NUMBER(true, o -> {
+      if (!(o instanceof Number)) throw new RuntimeException("NUMBER hint must be a number");
+    }),
+    REPLICA(true);
 
     public final boolean multiValued;
     public final Consumer<Object> validator;
@@ -338,5 +393,68 @@ public abstract class Suggester implements MapWriter {
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put("action", String.valueOf(getAction()));
     ew.put("hints", (MapWriter) ew1 -> hints.forEach((hint, o) -> ew1.putNoEx(hint.toString(), o)));
+  }
+
+  protected Collection setupWithCollectionTargetNodes(Set<String> collections, Set<Pair<String, String>> s, String withCollection) {
+    Collection originalTargetNodesCopy = null;
+    if (withCollection != null) {
+      if (log.isDebugEnabled()) {
+        HashSet<String> set = new HashSet<>(collections);
+        s.forEach(kv -> set.add(kv.first()));
+        log.debug("Identified withCollection = {} for collection: {}", withCollection, set);
+      }
+
+      originalTargetNodesCopy = Utils.getDeepCopy((Collection) hints.get(Hint.TARGET_NODE), 10, true);
+
+      Set<String> withCollectionNodes = new HashSet<>();
+
+      for (Row row : getMatrix()) {
+        row.forEachReplica(r -> {
+          if (withCollection.equals(r.getCollection()) &&
+              "shard1".equals(r.getShard())) {
+            withCollectionNodes.add(r.getNode());
+          }
+        });
+      }
+
+      if (originalTargetNodesCopy != null && !originalTargetNodesCopy.isEmpty()) {
+        // find intersection of the set of target nodes with the set of 'withCollection' nodes
+        Set<String> set = (Set<String>) hints.computeIfAbsent(Hint.TARGET_NODE, h -> new HashSet<>());
+        set.retainAll(withCollectionNodes);
+        if (set.isEmpty()) {
+          // no nodes common between the sets, we have no choice but to restore the original target node hint
+          hints.put(Hint.TARGET_NODE, originalTargetNodesCopy);
+        }
+      } else if (originalTargetNodesCopy == null) {
+        hints.put(Hint.TARGET_NODE, withCollectionNodes);
+      }
+    }
+    return originalTargetNodesCopy;
+  }
+
+  protected String findWithCollection(Set<String> collections, Set<Pair<String, String>> s) {
+    List<String> withCollections = new ArrayList<>(1);
+    collections.forEach(c -> {
+      try {
+        getWithCollection(c).ifPresent(withCollections::add);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Exception while fetching 'withCollection' attribute for collection: " + c, e);
+      }
+    });
+    s.forEach(kv -> {
+      try {
+        getWithCollection(kv.first()).ifPresent(withCollections::add);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Exception while fetching 'withCollection' attribute for collection: " + kv.first(), e);
+      }
+    });
+
+    if (withCollections.size() > 1) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "The number of 'withCollection' attributes should be exactly 1 for any policy but found: " + withCollections);
+    }
+    return withCollections.isEmpty() ? null : withCollections.get(0);
   }
 }

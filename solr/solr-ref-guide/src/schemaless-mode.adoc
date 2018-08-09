@@ -103,22 +103,10 @@ To start, you should define it as follows (see the javadoc links below for updat
   <updateProcessor class="solr.ParseDoubleFieldUpdateProcessorFactory" name="parse-double"/>
   <updateProcessor class="solr.ParseDateFieldUpdateProcessorFactory" name="parse-date">
     <arr name="format">
-      <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss,SSSZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss.SSS</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss,SSS</str>
-      <str>yyyy-MM-dd'T'HH:mm:ssZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss</str>
-      <str>yyyy-MM-dd'T'HH:mmZ</str>
-      <str>yyyy-MM-dd'T'HH:mm</str>
-      <str>yyyy-MM-dd HH:mm:ss.SSSZ</str>
-      <str>yyyy-MM-dd HH:mm:ss,SSSZ</str>
-      <str>yyyy-MM-dd HH:mm:ss.SSS</str>
-      <str>yyyy-MM-dd HH:mm:ss,SSS</str>
-      <str>yyyy-MM-dd HH:mm:ssZ</str>
-      <str>yyyy-MM-dd HH:mm:ss</str>
-      <str>yyyy-MM-dd HH:mmZ</str>
-      <str>yyyy-MM-dd HH:mm</str>
+      <str>yyyy-MM-dd'T'HH:mm[:ss[.SSS]][z</str>
+      <str>yyyy-MM-dd'T'HH:mm[:ss[,SSS]][z</str>
+      <str>yyyy-MM-dd HH:mm[:ss[.SSS]][z</str>
+      <str>yyyy-MM-dd HH:mm[:ss[,SSS]][z</str>
       <str>yyyy-MM-dd</str>
     </arr>
   </updateProcessor>
@@ -205,10 +193,10 @@ IMPORTANT: After all of these changes have been made, Solr should be restarted o
 
 === Disabling Automatic Field Guessing
 
-Automatic field creation can be disabled with the `update.autoCreateFields` property. To do this, you can use the <<config-api.adoc#config-api,Config API>> with a command such as:
+Automatic field creation can be disabled with the `update.autoCreateFields` property. To do this, you can use <<solr-control-script-reference.adoc#set-or-unset-configuration-properties,`bin/solr config`>> with a command such as:
 
 [source,bash]
-curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false
 
 == Examples of Indexed Documents
 

@@ -39,8 +39,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.CloseShieldInputStream;
-import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -102,6 +100,7 @@ import org.apache.solr.security.AuthorizationResponse;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
+import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
@@ -444,9 +443,9 @@ public class HttpSolrCall {
       action = REMOTEQUERY;
     } else {
       if (!retry) {
-        // we couldn't find a core to work with, try reloading aliases
-        // TODO: it would be nice if admin ui elements skipped this...
+        // we couldn't find a core to work with, try reloading aliases & this collection
         cores.getZkController().getZkStateReader().aliasesManager.update();
+        cores.getZkController().zkStateReader.forceUpdateCollection(collectionName);
         action = RETRY;
       }
     }
@@ -567,7 +566,7 @@ public class HttpSolrCall {
   }
 
   private boolean shouldAuthorize() {
-    if(PKIAuthenticationPlugin.PATH.equals(path)) return false;
+    if(PublicKeyHandler.PATH.equals(path)) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
     if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {
       boolean b = cores.getPkiAuthenticationPlugin().needsAuthorization(req);
@@ -608,7 +607,7 @@ public class HttpSolrCall {
       } else if (isPostOrPutRequest) {
         HttpEntityEnclosingRequestBase entityRequest =
             "POST".equals(req.getMethod()) ? new HttpPost(urlstr) : new HttpPut(urlstr);
-        InputStream in = new CloseShieldInputStream(req.getInputStream()); // Prevent close of container streams
+        InputStream in = req.getInputStream();
         HttpEntity entity = new InputStreamEntity(in, req.getContentLength());
         entityRequest.setEntity(entity);
         method = entityRequest;
@@ -804,7 +803,7 @@ public class HttpSolrCall {
       }
 
       if (Method.HEAD != reqMethod) {
-        OutputStream out = new CloseShieldOutputStream(response.getOutputStream()); // Prevent close of container streams, see SOLR-8933
+        OutputStream out = response.getOutputStream();
         QueryResponseWriterUtil.writeQueryResponse(out, responseWriter, solrReq, solrRsp, ct);
       }
       //else http HEAD request, nothing to write out, waited this long just to get ContentType

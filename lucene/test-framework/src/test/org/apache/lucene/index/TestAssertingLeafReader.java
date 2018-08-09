@@ -25,7 +25,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestAssertingLeafReader extends LuceneTestCase {
   public void testAssertBits() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
     // Not deleted:
     w.addDocument(new Document());
 

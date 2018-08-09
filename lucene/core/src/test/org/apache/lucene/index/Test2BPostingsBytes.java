@@ -42,7 +42,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  * so you get &gt; Integer.MAX_VALUE postings data for the term
  * @lucene.experimental
  */
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 @Monster("takes ~20GB-30GB of space and 10 minutes")
 public class Test2BPostingsBytes extends LuceneTestCase {
 

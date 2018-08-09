@@ -544,11 +544,11 @@ public class LibVersionsCheckTask extends Task {
         Integer sm1 = SPECIAL_MEANINGS.get(parts1[i].toLowerCase(Locale.ROOT));
         Integer sm2 = SPECIAL_MEANINGS.get(parts2[i].toLowerCase(Locale.ROOT));
         if (sm1 != null) {
-          sm2 = sm2 == null ? new Integer(0) : sm2;
+          sm2 = sm2 == null ? 0 : sm2;
           return sm1.compareTo(sm2);
         }
         if (sm2 != null) {
-          return new Integer(0).compareTo(sm2);
+          return Integer.valueOf(0).compareTo(sm2);
         }
         return parts1[i].compareTo(parts2[i]);
       }

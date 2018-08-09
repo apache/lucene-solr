@@ -34,9 +34,11 @@ import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.util.Hash;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,13 +47,15 @@ import org.slf4j.LoggerFactory;
 
 public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   File indexDir1 = null, indexDir2 = null, indexDir3 = null;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig.xml", "schema12.xml");
+   // System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
+    System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_SIMPLE);
+    initCore("solrconfig.xml", "schema15.xml");
   }
 
   @Override
@@ -67,6 +71,15 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSplitByPaths() throws Exception {
+    doTestSplitByPaths(SolrIndexSplitter.SplitMethod.REWRITE);
+  }
+
+  @Test
+  public void testSplitByPathsLink() throws Exception {
+    doTestSplitByPaths(SolrIndexSplitter.SplitMethod.LINK);
+  }
+
+  private void doTestSplitByPaths(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     LocalSolrQueryRequest request = null;
     try {
       // add two docs
@@ -81,10 +94,10 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       List<DocRouter.Range> ranges = getRanges(id1, id2);
 
       request = lrf.makeRequest("q", "dummy");
-
-      SplitIndexCommand command = new SplitIndexCommand(request,
-          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null, null);
-      new SolrIndexSplitter(command).split();
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SplitIndexCommand command = new SplitIndexCommand(request, rsp,
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null, null, splitMethod);
+      doSplit(command);
 
       Directory directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
@@ -106,9 +119,23 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       if (request != null) request.close(); // decrefs the searcher
     }
   }
+
+  private void doSplit(SplitIndexCommand command) throws Exception {
+    NamedList<Object> results = new NamedList<>();
+    new SolrIndexSplitter(command).split(results);
+    command.rsp.addResponse(results);
+  }
   
   // SOLR-5144
   public void testSplitDeletes() throws Exception {
+    doTestSplitDeletes(SolrIndexSplitter.SplitMethod.REWRITE);
+  }
+
+  public void testSplitDeletesLink() throws Exception {
+    doTestSplitDeletes(SolrIndexSplitter.SplitMethod.LINK);
+  }
+
+  private void doTestSplitDeletes(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     LocalSolrQueryRequest request = null;
     try {
       // add two docs
@@ -126,10 +153,11 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       List<DocRouter.Range> ranges = getRanges(id1, id2);
 
       request = lrf.makeRequest("q", "dummy");
+      SolrQueryResponse rsp = new SolrQueryResponse();
 
-      SplitIndexCommand command = new SplitIndexCommand(request,
-          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null, null);
-      new SolrIndexSplitter(command).split();
+      SplitIndexCommand command = new SplitIndexCommand(request, rsp,
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null, null, splitMethod);
+      doSplit(command);
 
       Directory directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
@@ -152,11 +180,25 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSplitByCores() throws Exception {
-    // add two docs
+    doTestSplitByCores(SolrIndexSplitter.SplitMethod.REWRITE);
+  }
+
+  @Test
+  public void testSplitByCoresLink() throws Exception {
+    doTestSplitByCores(SolrIndexSplitter.SplitMethod.LINK);
+  }
+
+  private void doTestSplitByCores(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
+    // add three docs and 1 delete
     String id1 = "dorothy";
     assertU(adoc("id", id1));
     String id2 = "kansas";
     assertU(adoc("id", id2));
+    String id3 = "wizard";
+    assertU(adoc("id", id3));
+    assertU(commit());
+    assertJQ(req("q", "*:*"), "/response/numFound==3");
+    assertU(delI("wizard"));
     assertU(commit());
     assertJQ(req("q", "*:*"), "/response/numFound==2");
     List<DocRouter.Range> ranges = getRanges(id1, id2);
@@ -165,16 +207,17 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     try {
 
       core1 = h.getCoreContainer().create("split1",
-          ImmutableMap.of("dataDir", indexDir1.getAbsolutePath(), "configSet", "minimal"));
+          ImmutableMap.of("dataDir", indexDir1.getAbsolutePath(), "configSet", "cloud-minimal"));
       core2 = h.getCoreContainer().create("split2",
-          ImmutableMap.of("dataDir", indexDir2.getAbsolutePath(), "configSet", "minimal"));
+          ImmutableMap.of("dataDir", indexDir2.getAbsolutePath(), "configSet", "cloud-minimal"));
 
       LocalSolrQueryRequest request = null;
       try {
         request = lrf.makeRequest("q", "dummy");
-
-        SplitIndexCommand command = new SplitIndexCommand(request, null, Lists.newArrayList(core1, core2), ranges, new PlainIdRouter(), null, null);
-        new SolrIndexSplitter(command).split();
+        SolrQueryResponse rsp = new SolrQueryResponse();
+        SplitIndexCommand command = new SplitIndexCommand(request, rsp, null, Lists.newArrayList(core1, core2), ranges,
+            new PlainIdRouter(), null, null, splitMethod);
+        doSplit(command);
       } finally {
         if (request != null) request.close();
       }
@@ -196,6 +239,15 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSplitAlternately() throws Exception {
+    doTestSplitAlternately(SolrIndexSplitter.SplitMethod.REWRITE);
+  }
+
+  @Test
+  public void testSplitAlternatelyLink() throws Exception {
+    doTestSplitAlternately(SolrIndexSplitter.SplitMethod.LINK);
+  }
+
+  private void doTestSplitAlternately(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     LocalSolrQueryRequest request = null;
     Directory directory = null;
     try {
@@ -208,30 +260,35 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       assertU(commit());
 
       request = lrf.makeRequest("q", "dummy");
-
-      SplitIndexCommand command = new SplitIndexCommand(request,
-          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath(), indexDir3.getAbsolutePath()), null, null, new PlainIdRouter(), null, null);
-      new SolrIndexSplitter(command).split();
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SplitIndexCommand command = new SplitIndexCommand(request, rsp,
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath(), indexDir3.getAbsolutePath()),
+          null, null, new PlainIdRouter(), null, null, splitMethod);
+      doSplit(command);
 
       directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       DirectoryReader reader = DirectoryReader.open(directory);
-      assertEquals("split index1 has wrong number of documents", max / 3, reader.numDocs());
+      int numDocs1 = reader.numDocs();
       reader.close();
       h.getCore().getDirectoryFactory().release(directory);
       directory = h.getCore().getDirectoryFactory().get(indexDir2.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
-      assertEquals("split index2 has wrong number of documents", max / 3, reader.numDocs());
+      int numDocs2 = reader.numDocs();
       reader.close();
       h.getCore().getDirectoryFactory().release(directory);
       directory = h.getCore().getDirectoryFactory().get(indexDir3.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
-      assertEquals("split index3 has wrong number of documents", max / 3, reader.numDocs());
+      int numDocs3 = reader.numDocs();
       reader.close();
       h.getCore().getDirectoryFactory().release(directory);
       directory = null;
+      assertEquals("split indexes lost some documents!", max, numDocs1 + numDocs2 + numDocs3);
+      assertEquals("split index1 has wrong number of documents", max / 3, numDocs1);
+      assertEquals("split index2 has wrong number of documents", max / 3, numDocs2);
+      assertEquals("split index3 has wrong number of documents", max / 3, numDocs3);
     } finally {
       if (request != null) request.close(); // decrefs the searcher
       if (directory != null)  {
@@ -242,7 +299,16 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSplitByRouteKey() throws Exception  {
+  public void testSplitByRouteKey() throws Exception {
+    doTestSplitByRouteKey(SolrIndexSplitter.SplitMethod.REWRITE);
+  }
+
+  @Test
+  public void testSplitByRouteKeyLink() throws Exception  {
+    doTestSplitByRouteKey(SolrIndexSplitter.SplitMethod.LINK);
+  }
+
+  private void doTestSplitByRouteKey(SolrIndexSplitter.SplitMethod splitMethod) throws Exception  {
     File indexDir = createTempDir().toFile();
 
     CompositeIdRouter r1 = new CompositeIdRouter();
@@ -274,9 +340,11 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     Directory directory = null;
     try {
       request = lrf.makeRequest("q", "dummy");
-      SplitIndexCommand command = new SplitIndexCommand(request,
-          Lists.newArrayList(indexDir.getAbsolutePath()), null, Lists.newArrayList(splitKeyRange), new CompositeIdRouter(), null, splitKey);
-      new SolrIndexSplitter(command).split();
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SplitIndexCommand command = new SplitIndexCommand(request, rsp,
+          Lists.newArrayList(indexDir.getAbsolutePath()), null, Lists.newArrayList(splitKeyRange),
+          new CompositeIdRouter(), null, splitKey, splitMethod);
+      doSplit(command);
       directory = h.getCore().getDirectoryFactory().get(indexDir.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       DirectoryReader reader = DirectoryReader.open(directory);

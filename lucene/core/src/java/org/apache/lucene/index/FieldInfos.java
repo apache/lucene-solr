@@ -43,6 +43,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
   private final boolean hasNorms;
   private final boolean hasDocValues;
   private final boolean hasPointValues;
+  private final String softDeletesField;
   
   // used only by fieldInfo(int)
   private final FieldInfo[] byNumber;
@@ -62,6 +63,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     boolean hasNorms = false;
     boolean hasDocValues = false;
     boolean hasPointValues = false;
+    String softDeletesField = null;
 
     int size = 0; // number of elements in byNumberTemp, number of used array slots
     FieldInfo[] byNumberTemp = new FieldInfo[10]; // initial array capacity of 10
@@ -92,6 +94,12 @@ public class FieldInfos implements Iterable<FieldInfo> {
       hasDocValues |= info.getDocValuesType() != DocValuesType.NONE;
       hasPayloads |= info.hasPayloads();
       hasPointValues |= (info.getPointDimensionCount() != 0);
+      if (info.isSoftDeletesField()) {
+        if (softDeletesField != null && softDeletesField.equals(info.name) == false) {
+          throw new IllegalArgumentException("multiple soft-deletes fields [" + info.name + ", " + softDeletesField + "]");
+        }
+        softDeletesField = info.name;
+      }
     }
     
     this.hasVectors = hasVectors;
@@ -102,6 +110,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     this.hasNorms = hasNorms;
     this.hasDocValues = hasDocValues;
     this.hasPointValues = hasPointValues;
+    this.softDeletesField = softDeletesField;
 
     List<FieldInfo> valuesTemp = new ArrayList<>();
     byNumber = new FieldInfo[size];
@@ -152,6 +161,11 @@ public class FieldInfos implements Iterable<FieldInfo> {
   /** Returns true if any fields have PointValues */
   public boolean hasPointValues() {
     return hasPointValues;
+  }
+
+  /** Returns the soft-deletes field name if exists; otherwise returns null */
+  public String getSoftDeletesField() {
+    return softDeletesField;
   }
   
   /** Returns the number of fields */
@@ -221,13 +235,17 @@ public class FieldInfos implements Iterable<FieldInfo> {
     // norms back on after they were already ommitted; today
     // we silently discard the norm but this is badly trappy
     private int lowestUnassignedFieldNumber = -1;
+
+    // The soft-deletes field from IWC to enforce a single soft-deletes field
+    private final String softDeletesFieldName;
     
-    FieldNumbers() {
+    FieldNumbers(String softDeletesFieldName) {
       this.nameToNumber = new HashMap<>();
       this.numberToName = new HashMap<>();
       this.indexOptions = new HashMap<>();
       this.docValuesType = new HashMap<>();
       this.dimensions = new HashMap<>();
+      this.softDeletesFieldName = softDeletesFieldName;
     }
     
     /**
@@ -236,7 +254,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * number assigned if possible otherwise the first unassigned field number
      * is used as the field number.
      */
-    synchronized int addOrGet(String fieldName, int preferredFieldNumber, IndexOptions indexOptions, DocValuesType dvType, int dimensionCount, int dimensionNumBytes) {
+    synchronized int addOrGet(String fieldName, int preferredFieldNumber, IndexOptions indexOptions, DocValuesType dvType, int dimensionCount, int dimensionNumBytes, boolean isSoftDeletesField) {
       if (indexOptions != IndexOptions.NONE) {
         IndexOptions currentOpts = this.indexOptions.get(fieldName);
         if (currentOpts == null) {
@@ -282,6 +300,16 @@ public class FieldInfos implements Iterable<FieldInfo> {
         assert fieldNumber >= 0;
         numberToName.put(fieldNumber, fieldName);
         nameToNumber.put(fieldName, fieldNumber);
+      }
+
+      if (isSoftDeletesField) {
+        if (softDeletesFieldName == null) {
+          throw new IllegalArgumentException("this index has [" + fieldName + "] as soft-deletes already but soft-deletes field is not configured in IWC");
+        } else if (fieldName.equals(softDeletesFieldName) == false) {
+          throw new IllegalArgumentException("cannot configure [" + softDeletesFieldName + "] as soft-deletes; this index uses [" + fieldName + "] as soft-deletes already");
+        }
+      } else if (fieldName.equals(softDeletesFieldName)) {
+        throw new IllegalArgumentException("cannot configure [" + softDeletesFieldName + "] as soft-deletes; this index uses [" + fieldName + "] as non-soft-deletes already");
       }
 
       return fieldNumber.intValue();
@@ -346,7 +374,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
     
     synchronized Set<String> getFieldNames() {
-      return Collections.unmodifiableSet(new HashSet<String>(nameToNumber.keySet()));
+      return Collections.unmodifiableSet(new HashSet<>(nameToNumber.keySet()));
     }
 
     synchronized void clear() {
@@ -383,11 +411,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     private final HashMap<String,FieldInfo> byName = new HashMap<>();
     final FieldNumbers globalFieldNumbers;
     private boolean finished;
-    
-    Builder() {
-      this(new FieldNumbers());
-    }
-    
+
     /**
      * Creates a new instance with the given {@link FieldNumbers}. 
      */
@@ -413,8 +437,9 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // number for this field.  If the field was seen
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
-        final int fieldNumber = globalFieldNumbers.addOrGet(name, -1, IndexOptions.NONE, DocValuesType.NONE, 0, 0);
-        fi = new FieldInfo(name, fieldNumber, false, false, false, IndexOptions.NONE, DocValuesType.NONE, -1, new HashMap<>(), 0, 0);
+        final boolean isSoftDeletesField = name.equals(globalFieldNumbers.softDeletesFieldName);
+        final int fieldNumber = globalFieldNumbers.addOrGet(name, -1, IndexOptions.NONE, DocValuesType.NONE, 0, 0, isSoftDeletesField);
+        fi = new FieldInfo(name, fieldNumber, false, false, false, IndexOptions.NONE, DocValuesType.NONE, -1, new HashMap<>(), 0, 0, isSoftDeletesField);
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, DocValuesType.NONE);
         byName.put(fi.name, fi);
@@ -427,7 +452,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
                                           boolean storeTermVector,
                                           boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
                                           DocValuesType docValues, long dvGen,
-                                          int dimensionCount, int dimensionNumBytes) {
+                                          int dimensionCount, int dimensionNumBytes, boolean isSoftDeletesField) {
       assert assertNotFinished();
       if (docValues == null) {
         throw new NullPointerException("DocValuesType must not be null");
@@ -439,8 +464,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // number for this field.  If the field was seen
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
-        final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, indexOptions, docValues, dimensionCount, dimensionNumBytes);
-        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, dvGen, new HashMap<>(), dimensionCount, dimensionNumBytes);
+        final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, indexOptions, docValues, dimensionCount, dimensionNumBytes, isSoftDeletesField);
+        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, dvGen, new HashMap<>(), dimensionCount, dimensionNumBytes, isSoftDeletesField);
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);
@@ -473,7 +498,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return addOrUpdateInternal(fi.name, fi.number, fi.hasVectors(),
                                  fi.omitsNorms(), fi.hasPayloads(),
                                  fi.getIndexOptions(), fi.getDocValuesType(), dvGen,
-                                 fi.getPointDimensionCount(), fi.getPointNumBytes());
+                                 fi.getPointDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
     }
     
     public FieldInfo fieldInfo(String fieldName) {

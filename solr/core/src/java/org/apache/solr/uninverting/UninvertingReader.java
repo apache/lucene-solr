@@ -282,7 +282,7 @@ public class UninvertingReader extends FilterLeafReader {
       }
       filteredInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
           fi.hasPayloads(), fi.getIndexOptions(), type, fi.getDocValuesGen(), fi.attributes(),
-          fi.getPointDimensionCount(), fi.getPointNumBytes()));
+          fi.getPointDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField()));
     }
     fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
   }

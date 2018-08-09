@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
@@ -178,8 +177,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
         keywords.add("liście");
 
         final Tokenizer src = new StandardTokenizer();
-        TokenStream result = new StandardFilter(src);
-        result = new SetKeywordMarkerFilter(result, keywords);
+        TokenStream result = new SetKeywordMarkerFilter(src, keywords);
         result = new MorfologikFilter(result); 
 
         return new TokenStreamComponents(src, result);

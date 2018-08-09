@@ -145,7 +145,7 @@ public class TestOrdValues extends LuceneTestCase {
     }
     Query q = new FunctionQuery(vs);
     TopDocs td = s.search(q, 1000);
-    assertEquals("All docs should be matched!", N_DOCS, td.totalHits);
+    assertEquals("All docs should be matched!", N_DOCS, td.totalHits.value);
     ScoreDoc sd[] = td.scoreDocs;
     for (int i = 0; i < sd.length; i++) {
       float score = sd[i].score;

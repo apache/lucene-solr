@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -444,9 +445,11 @@ public class MiniSolrCloudCluster {
     }
   }
 
+  /** Delete all collections (and aliases) */
   public void deleteAllCollections() throws Exception {
     try (ZkStateReader reader = new ZkStateReader(solrClient.getZkStateReader().getZkClient())) {
-      reader.createClusterStateWatchersAndUpdate();
+      reader.createClusterStateWatchersAndUpdate(); // up to date aliases & collections
+      reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
       for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
         CollectionAdminRequest.deleteCollection(collection).process(solrClient);
       }
@@ -533,6 +536,7 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner getReplicaJetty(Replica replica) {
     for (JettySolrRunner jetty : jettys) {
+      if (jetty.isStopped()) continue;
       if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString()))
         return jetty;
     }

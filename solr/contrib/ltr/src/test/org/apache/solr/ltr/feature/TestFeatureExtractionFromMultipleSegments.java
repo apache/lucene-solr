@@ -44,28 +44,28 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     setuptest("solrconfig-multiseg.xml", "schema.xml");
     // index 400 documents
     for(int i = 0; i<400;i=i+20) {
-      assertU(adoc("id", new Integer(i).toString(),   "popularity", "201", "description", "apple is a company " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", new Integer(i+1).toString(), "popularity", "201", "description", "d " + randomString(i%6+3), "normHits", "0.11"));
+      assertU(adoc("id", Integer.toString(i),   "popularity", "201", "description", "apple is a company " + randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+1), "popularity", "201", "description", "d " + randomString(i%6+3), "normHits", "0.11"));
 
-      assertU(adoc("id", new Integer(i+2).toString(), "popularity", "201", "description", "apple is a company too " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", new Integer(i+3).toString(), "popularity", "201", "description", "new york city is big apple " + randomString(i%6+3), "normHits", "0.11"));
+      assertU(adoc("id", Integer.toString(i+2), "popularity", "201", "description", "apple is a company too " + randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+3), "popularity", "201", "description", "new york city is big apple " + randomString(i%6+3), "normHits", "0.11"));
 
-      assertU(adoc("id", new Integer(i+6).toString(), "popularity", "301", "description", "function name " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", new Integer(i+7).toString(), "popularity", "301", "description", "function " + randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+6), "popularity", "301", "description", "function name " + randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+7), "popularity", "301", "description", "function " + randomString(i%6+3), "normHits", "0.1"));
 
-      assertU(adoc("id", new Integer(i+8).toString(), "popularity", "301", "description", "This is a sample function for testing " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", new Integer(i+9).toString(), "popularity", "301", "description", "Function to check out stock prices "+randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", new Integer(i+10).toString(),"popularity", "301", "description", "Some descriptions "+randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+8), "popularity", "301", "description", "This is a sample function for testing " + randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+9), "popularity", "301", "description", "Function to check out stock prices "+randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+10),"popularity", "301", "description", "Some descriptions "+randomString(i%6+3), "normHits", "0.1"));
 
-      assertU(adoc("id", new Integer(i+11).toString(), "popularity", "201", "description", "apple apple is a company " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", new Integer(i+12).toString(), "popularity", "201", "description", "Big Apple is New York.", "normHits", "0.01"));
-      assertU(adoc("id", new Integer(i+13).toString(), "popularity", "201", "description", "New some York is Big. "+ randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+11), "popularity", "201", "description", "apple apple is a company " + randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+12), "popularity", "201", "description", "Big Apple is New York.", "normHits", "0.01"));
+      assertU(adoc("id", Integer.toString(i+13), "popularity", "201", "description", "New some York is Big. "+ randomString(i%6+3), "normHits", "0.1"));
 
-      assertU(adoc("id", new Integer(i+14).toString(), "popularity", "201", "description", "apple apple is a company " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", new Integer(i+15).toString(), "popularity", "201", "description", "Big Apple is New York.", "normHits", "0.01"));
-      assertU(adoc("id", new Integer(i+16).toString(), "popularity", "401", "description", "barack h", "normHits", "0.0"));
-      assertU(adoc("id", new Integer(i+17).toString(), "popularity", "201", "description", "red delicious apple " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", new Integer(i+18).toString(), "popularity", "201", "description", "nyc " + randomString(i%6+3), "normHits", "0.11"));
+      assertU(adoc("id", Integer.toString(i+14), "popularity", "201", "description", "apple apple is a company " + randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+15), "popularity", "201", "description", "Big Apple is New York.", "normHits", "0.01"));
+      assertU(adoc("id", Integer.toString(i+16), "popularity", "401", "description", "barack h", "normHits", "0.0"));
+      assertU(adoc("id", Integer.toString(i+17), "popularity", "201", "description", "red delicious apple " + randomString(i%6+3), "normHits", "0.1"));
+      assertU(adoc("id", Integer.toString(i+18), "popularity", "201", "description", "nyc " + randomString(i%6+3), "normHits", "0.11"));
     }
 
     assertU(commit());
@@ -85,7 +85,7 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     query.setQuery("{!edismax qf='description^1' boost='sum(product(pow(normHits, 0.7), 1600), .1)' v='apple'}");
     // request 100 rows, if any rows are fetched from the second or subsequent segments the tests should succeed if LTRRescorer::extractFeaturesInfo() advances the doc iterator properly
     int numRows = 100;
-    query.add("rows", (new Integer(numRows)).toString());
+    query.add("rows", Integer.toString(numRows));
     query.add("wt", "json");
     query.add("fq", "popularity:201");
     query.add("fl", "*, score,id,normHits,description,fv:[features store='feature-store-6' format='dense' efi.user_text='apple']");

@@ -82,9 +82,9 @@ public class TestSimilarityProvider extends LuceneTestCase {
 
     // sanity check of searching
     TopDocs foodocs = searcher.search(new TermQuery(new Term("foo", "brown")), 10);
-    assertTrue(foodocs.totalHits > 0);
+    assertTrue(foodocs.totalHits.value > 0);
     TopDocs bardocs = searcher.search(new TermQuery(new Term("bar", "brown")), 10);
-    assertTrue(bardocs.totalHits > 0);
+    assertTrue(bardocs.totalHits.value > 0);
     assertTrue(foodocs.scoreDocs[0].score < bardocs.scoreDocs[0].score);
   }
 
@@ -111,7 +111,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
 
     @Override
     public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimScorer(collectionStats.field()) {
+      return new SimScorer() {
 
         @Override
         public float score(float freq, long norm) {
@@ -131,7 +131,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
 
     @Override
     public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimScorer(collectionStats.field()) {
+      return new SimScorer() {
         @Override
         public float score(float freq, long norm) {
           return 10;

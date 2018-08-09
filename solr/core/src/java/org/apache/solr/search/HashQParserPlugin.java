@@ -297,7 +297,7 @@ public class HashQParserPlugin extends QParserPlugin {
       if (doc == values.docID()) {
         ref = values.binaryValue();
       } else {
-        ref = null;
+        ref = new BytesRef(); // EMPTY_BYTES . worker=0 will always process empty values
       }
       this.fieldType.indexedToReadable(ref, charsRefBuilder);
       CharsRef charsRef = charsRefBuilder.get();
@@ -327,7 +327,7 @@ public class HashQParserPlugin extends QParserPlugin {
       if (valuesDocID == doc) {
         l = values.longValue();
       } else {
-        l = 0;
+        l = 0; //worker=0 will always process empty values
       }
       return Longs.hashCode(l);
     }

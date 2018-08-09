@@ -139,6 +139,7 @@ public final class FixedShingleFilter extends TokenFilter {
     }
     clearAttributes();
     this.offsetAtt.setOffset(0, endToken.endOffset());
+    this.incAtt.setPositionIncrement(endToken.posInc());
   }
 
   private void finishInnerStream() throws IOException {

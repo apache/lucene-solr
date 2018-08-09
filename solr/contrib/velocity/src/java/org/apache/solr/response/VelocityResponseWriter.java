@@ -35,6 +35,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -184,6 +185,11 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
       }
 
       if (jsonWrapper != null) {
+        for (int i=0; i<jsonWrapper.length(); i++) {
+          if (!Character.isJavaIdentifierPart(jsonWrapper.charAt(i))) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid function name for " + JSON + ": '" + jsonWrapper + "'");
+          }
+        }
         writer.write(jsonWrapper + "(");
         writer.write(getJSONWrap(stringWriter.toString()));
         writer.write(')');

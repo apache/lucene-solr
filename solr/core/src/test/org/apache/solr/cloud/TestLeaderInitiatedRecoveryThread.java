@@ -30,6 +30,7 @@ import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.junit.Test;
 
 /**
  * Test for {@link LeaderInitiatedRecoveryThread}
@@ -43,6 +44,8 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     fixShardCount(2);
   }
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testPublishDownState() throws Exception {
     waitForRecoveriesToFinish(true);
 

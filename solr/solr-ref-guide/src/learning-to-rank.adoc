@@ -512,7 +512,7 @@ To delete the `currentFeatureStore` feature store:
 curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/feature-store/currentFeatureStore'
 ----
 
-==== Using large models
+==== Using Large Models
 
 With SolrCloud, large models may fail to upload due to the limitation of ZooKeeper's buffer. In this case, `DefaultWrapperModel` may help you to separate the model definition from uploaded file.
 
@@ -559,6 +559,8 @@ Then, configure `DefaultWrapperModel` to wrap `myModel.json`:
 NOTE: No `"features"` are configured in `myWrapperModel` because the features of the wrapped model (`myModel`) will be used; also note that the `"store"` configured for the wrapper model must match that of the wrapped model i.e., in this example the feature store called `largeModelsFeatureStore` is used.
 
 CAUTION: `<lib dir="/path/to/models" regex=".*\.json" />` doesn't work as expected in this case, because `SolrResourceLoader` considers given resources as JAR if `<lib />` indicates files.
+
+As an alternative to the above-described `DefaultWrapperModel`, it is possible to <<setting-up-an-external-zookeeper-ensemble#increasing-the-file-size-limit,increase ZooKeeper's file size limit>>.
 
 === Applying Changes
 

@@ -28,12 +28,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
+import org.apache.solr.client.solrj.cloud.autoscaling.UnsupportedSuggester;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.AutoScalingParams;
@@ -88,8 +89,8 @@ public class ComputePlanAction extends TriggerActionBase {
         log.trace("-- state: {}", clusterState);
       }
       try {
-        Suggester intialSuggester = getSuggester(session, event, cloudManager);
-        Suggester suggester = intialSuggester;
+        Suggester initialSuggester = getSuggester(session, event, context, cloudManager);
+        Suggester suggester = initialSuggester;
         int maxOperations = getMaxNumOps(event, autoScalingConf, clusterState);
         int requestedOperations = getRequestedNumOps(event);
         if (requestedOperations > maxOperations) {
@@ -112,19 +113,19 @@ public class ComputePlanAction extends TriggerActionBase {
           if (suggester.getSession() != null) {
             session = suggester.getSession();
           }
-          suggester = getSuggester(session, event, cloudManager);
+          suggester = getSuggester(session, event, context, cloudManager);
 
           // break on first null op
           // unless a specific number of ops was requested
           // uncomment the following to log too many operations
           /*if (opCount > 10) {
-            PolicyHelper.logState(cloudManager, intialSuggester);
+            PolicyHelper.logState(cloudManager, initialSuggester);
           }*/
 
           if (operation == null) {
             if (requestedOperations < 0) {
               //uncomment the following to log zero operations
-//              PolicyHelper.logState(cloudManager, intialSuggester);
+//              PolicyHelper.logState(cloudManager, initialSuggester);
               break;
             } else {
               log.info("Computed plan empty, remained " + (opCount - opLimit) + " requested ops to try.");
@@ -167,7 +168,13 @@ public class ComputePlanAction extends TriggerActionBase {
     // estimate a maximum default limit that should be sufficient for most purposes:
     // number of nodes * total number of replicas * 3
     AtomicInteger totalRF = new AtomicInteger();
-    clusterState.forEachCollection(coll -> totalRF.addAndGet(coll.getReplicationFactor() * coll.getSlices().size()));
+    clusterState.forEachCollection(coll -> {
+      Integer rf = coll.getReplicationFactor();
+      if (rf == null) {
+        rf = coll.getReplicas().size() / coll.getSlices().size();
+      }
+      totalRF.addAndGet(rf * coll.getSlices().size());
+    });
     int totalMax = clusterState.getLiveNodes().size() * totalRF.get() * 3;
     int maxOp = (Integer) autoScalingConfig.getProperties().getOrDefault(AutoScalingParams.MAX_COMPUTE_OPERATIONS, totalMax);
     Object o = event.getProperty(AutoScalingParams.MAX_COMPUTE_OPERATIONS, maxOp);
@@ -190,7 +197,7 @@ public class ComputePlanAction extends TriggerActionBase {
 
   private static final String START = "__start__";
 
-  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, SolrCloudManager cloudManager) {
+  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, ActionContext context, SolrCloudManager cloudManager) {
     Suggester suggester;
     switch (event.getEventType()) {
       case NODEADDED:
@@ -203,6 +210,7 @@ public class ComputePlanAction extends TriggerActionBase {
         break;
       case SEARCHRATE:
       case METRIC:
+      case INDEXSIZE:
         List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>)event.getProperty(TriggerEvent.REQUESTED_OPS, Collections.emptyList());
         int start = (Integer)event.getProperty(START, 0);
         if (ops.isEmpty() || start >= ops.size()) {
@@ -210,14 +218,16 @@ public class ComputePlanAction extends TriggerActionBase {
         }
         TriggerEvent.Op op = ops.get(start);
         suggester = session.getSuggester(op.getAction());
+        if (suggester instanceof UnsupportedSuggester) {
+          List<TriggerEvent.Op> unsupportedOps = (List<TriggerEvent.Op>)context.getProperties().computeIfAbsent("unsupportedOps", k -> new ArrayList<TriggerEvent.Op>());
+          unsupportedOps.add(op);
+        }
         for (Map.Entry<Suggester.Hint, Object> e : op.getHints().entrySet()) {
           suggester = suggester.hint(e.getKey(), e.getValue());
         }
-        if (++start >= ops.size()) {
-          event.getProperties().remove(START);
-        } else {
-          event.getProperties().put(START, start);
-        }
+        suggester = suggester.forceOperation(true);
+        start++;
+        event.getProperties().put(START, start);
         break;
       case SCHEDULED:
         String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
@@ -225,7 +235,7 @@ public class ComputePlanAction extends TriggerActionBase {
         suggester = session.getSuggester(action);
         break;
       default:
-        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate and metric. Received: " + event.getEventType());
+        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate, metric and indexSize. Received: " + event.getEventType());
     }
     return suggester;
   }

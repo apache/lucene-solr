@@ -1,6 +1,6 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/configsets-api.html",
-  "description": "Create ConfigSets.",
+  "documentation": "https://lucene.apache.org/solr/guide/configsets-api.html#configsets-create",
+  "description": "Create configsets.",
   "methods": [
     "POST"
   ],
@@ -11,20 +11,20 @@
   "commands": {
     "create": {
       "type" :"object",
-      "description": "Create a ConfigSet, based on another ConfigSet already in ZooKeeper.",
+      "description": "Create a configset, based on another configset already in ZooKeeper.",
       "documentation": "https://lucene.apache.org/solr/guide/configsets-api.html#configsets-create",
       "properties": {
         "name" :{
           "type" :"string",
-          "description" : "The name of the ConfigSet to be created."
+          "description" : "The name of the configset to be created."
         },
         "baseConfigSet":{
           "type" : "string",
-          "description" :"The existing ConfigSet to copy as the basis for the new one."
+          "description" :"The existing configset to copy as the basis for the new one."
         },
         "properties" : {
           "type":"object",
-          "description": "Additional key-value pairs, in the form of 'ConfigSetProp.<key>=<value>', as needed. These properties will override the same properties in the base ConfigSet.",
+          "description": "Additional key-value pairs, in the form of 'ConfigSetProp.<key>=<value>', as needed. These properties will override the same properties in the base configset.",
           "additionalProperties" : true
         }
       },

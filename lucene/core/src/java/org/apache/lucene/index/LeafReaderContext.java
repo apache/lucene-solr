@@ -24,9 +24,9 @@ import java.util.List;
  * {@link IndexReaderContext} for {@link LeafReader} instances.
  */
 public final class LeafReaderContext extends IndexReaderContext {
-  /** The readers ord in the top-level's leaves array */
+  /** The reader's ord in the top-level's leaves array */
   public final int ord;
-  /** The readers absolute doc base */
+  /** The reader's absolute doc base */
   public final int docBase;
   
   private final LeafReader reader;

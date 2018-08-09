@@ -30,10 +30,9 @@ public class TopFieldDocs extends TopDocs {
    * @param totalHits  Total number of hits for the query.
    * @param scoreDocs  The top hits for the query.
    * @param fields     The sort criteria used to find the top hits.
-   * @param maxScore   The maximum score encountered.
    */
-  public TopFieldDocs (long totalHits, ScoreDoc[] scoreDocs, SortField[] fields, float maxScore) {
-    super (totalHits, scoreDocs, maxScore);
+  public TopFieldDocs (TotalHits totalHits, ScoreDoc[] scoreDocs, SortField[] fields) {
+    super (totalHits, scoreDocs);
     this.fields = fields;
   }
 }

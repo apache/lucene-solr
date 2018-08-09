@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
@@ -263,7 +264,10 @@ public final class MultiFields extends Fields {
    *  will be unavailable.
    */
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
-    final FieldInfos.Builder builder = new FieldInfos.Builder();
+    final String softDeletesField = reader.leaves().stream()
+        .map(l -> l.reader().getFieldInfos().getSoftDeletesField())
+        .filter(Objects::nonNull).findAny().orElse(null);
+    final FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(softDeletesField));
     for(final LeafReaderContext ctx : reader.leaves()) {
       builder.add(ctx.reader().getFieldInfos());
     }

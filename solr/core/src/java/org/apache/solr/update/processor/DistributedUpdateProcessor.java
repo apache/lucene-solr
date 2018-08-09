@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -82,7 +83,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.SolrCmdDistributor.Node;
-import org.apache.solr.update.SolrCmdDistributor.RetryNode;
+import org.apache.solr.update.SolrCmdDistributor.ForwardNode;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.UpdateCommand;
@@ -111,6 +112,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public static final String DISTRIB_INPLACE_PREVVERSION = "distrib.inplace.prevversion";
   private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * Request forwarded to a leader of a different shard will be retried up to this amount of times by default
+   */
+  static final int MAX_RETRIES_ON_FORWARD_DEAULT = 25;
+  
+  /**
+   * Requests from leader to it's followers will be retried this amount of times by default
+   */
+  static final int MAX_RETRIES_TO_FOLLOWERS_DEFAULT = 3;
 
   /**
    * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
@@ -174,6 +185,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<Node> nodes;
   private Set<String> skippedCoreNodeNames;
   private boolean isIndexChanged = false;
+  
+  /**
+   * Number of times requests forwarded to some other shard's leader can be retried
+   */
+  private final int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD_DEAULT;
+  /**
+   * Number of times requests from leaders to followers can be retried
+   */
+  private final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 
   private UpdateCommand updateCommand;  // the current command this processor is working on.
     
@@ -367,7 +387,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           } else if (!clusterState.getLiveNodes().contains(replica.getNodeName()) || replica.getState() == Replica.State.DOWN) {
             skippedCoreNodeNames.add(replica.getName());
           } else {
-            nodes.add(new StdNode(new ZkCoreNodeProps(replica), collection, shardId));
+            nodes.add(new StdNode(new ZkCoreNodeProps(replica), collection, shardId, maxRetriesToFollowers));
           }
         }
         return nodes;
@@ -376,7 +396,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // I need to forward on to the leader...
         forwardToLeader = true;
         return Collections.singletonList(
-            new RetryNode(new ZkCoreNodeProps(leaderReplica), zkController.getZkStateReader(), collection, shardId));
+            new ForwardNode(new ZkCoreNodeProps(leaderReplica), zkController.getZkStateReader(), collection, shardId, maxRetriesOnForward));
       }
 
     } catch (InterruptedException e) {
@@ -431,13 +451,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         boolean isSubset = aslice.getRange() != null && aslice.getRange().isSubsetOf(myRange);
         if (isSubset &&
             (docId == null // in case of deletes
-            || (docId != null && coll.getRouter().isTargetSlice(docId, doc, req.getParams(), aslice.getName(), coll)))) {
+            || coll.getRouter().isTargetSlice(docId, doc, req.getParams(), aslice.getName(), coll))) {
           Replica sliceLeader = aslice.getLeader();
           // slice leader can be null because node/shard is created zk before leader election
           if (sliceLeader != null && zkController.getClusterState().liveNodesContain(sliceLeader.getNodeName()))  {
             if (nodes == null) nodes = new ArrayList<>();
             ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(sliceLeader);
-            nodes.add(new StdNode(nodeProps, coll.getName(), shardId));
+            nodes.add(new StdNode(nodeProps, coll.getName(), aslice.getName()));
           }
         }
       }
@@ -778,7 +798,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
     for (final SolrCmdDistributor.Error error : errors) {
       
-      if (error.req.node instanceof RetryNode) {
+      if (error.req.node instanceof ForwardNode) {
         // if it's a forward, any fail is a problem - 
         // otherwise we assume things are fine if we got it locally
         // until we start allowing min replication param
@@ -895,7 +915,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // not the leader anymore maybe or the error'd node is not my replica?
           if (!foundErrorNodeInReplicaList) {
             log.warn("Core "+cloudDesc.getCoreNodeName()+" belonging to "+collection+" "+
-                shardId+", does not have error'd node " + stdNode.getNodeProps().getCoreUrl() + " as a replica. " +
+                cloudDesc.getShardId()+", does not have error'd node " + stdNode.getNodeProps().getCoreUrl() + " as a replica. " +
                 "No request recovery command will be sent!");
             if (!shardId.equals(cloudDesc.getShardId())) {
               // some replicas on other shard did not receive the updates (ex: during splitshard),
@@ -957,6 +977,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     isIndexChanged = true;
   }
 
+  public static int bucketHash(BytesRef idBytes) {
+    assert idBytes != null;
+    return Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
+  }
+
   /**
    * @return whether or not to drop this cmd
    * @throws IOException If there is a low-level I/O error.
@@ -981,7 +1006,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not use a pluggable hash here)
-    int bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
+    int bucketHash = bucketHash(idBytes);
 
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
@@ -1078,7 +1103,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // The leader forwarded us this update.
             cmd.setVersion(versionOnUpdate);
 
-            if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
+            if (shouldBufferUpdate(cmd, isReplayOrPeersync, ulog.getState())) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
               ulog.add(cmd);
@@ -1127,9 +1152,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   }
                 }
               }
-            }
-
-            if (!cmd.isInPlaceUpdate()) {
+            } else {
               // if we aren't the leader, then we need to check that updates were not re-ordered
               if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
                 // we're OK... this update has a version higher than anything we've seen
@@ -1146,7 +1169,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 }
               }
             }
-            if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
               cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
             }
           }
@@ -1171,6 +1194,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       vinfo.unlockForUpdate();
     }
     return false;
+  }
+
+  @VisibleForTesting
+  boolean shouldBufferUpdate(AddUpdateCommand cmd, boolean isReplayOrPeersync, UpdateLog.State state) {
+    if (state == UpdateLog.State.APPLYING_BUFFERED
+        && !isReplayOrPeersync
+        && !cmd.isInPlaceUpdate()) {
+      // this a new update sent from the leader, it contains whole document therefore it won't depend on other updates
+      return false;
+    }
+
+    return state != UpdateLog.State.ACTIVE && isReplayOrPeersync == false;
   }
 
   /**
@@ -1285,7 +1320,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     NamedList<Object> rsp = null;
     try (HttpSolrClient hsc = new HttpSolrClient.Builder(leaderUrl).
-        withHttpClient(updateShardHandler.getHttpClient()).build()) {
+        withHttpClient(updateShardHandler.getUpdateOnlyHttpClient()).build()) {
       rsp = hsc.request(ur);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error during fetching [" + id +
@@ -1522,7 +1557,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // don't forward to ourself
           leaderForAnyShard = true;
         } else {
-          leaders.add(new RetryNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName));
+          leaders.add(new ForwardNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName, maxRetriesOnForward));
         }
       }
 
@@ -1676,7 +1711,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             return;
           }
 
-          if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+          if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
             // TLOG replica not leader, don't write the DBQ to IW
             cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
           }
@@ -1745,7 +1780,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not use a pluggable hash here)
-    int bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
+    int bucketHash = bucketHash(idBytes);
 
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
@@ -1835,7 +1870,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               }
             }
 
-            if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
               cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
             }
           }
@@ -2084,7 +2119,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     private int achievedRf = Integer.MAX_VALUE;
     private final int requestedRf;
 
-    RollupRequestReplicationTracker(String minRepFact) {
+    public RollupRequestReplicationTracker(String minRepFact) {
       try {
         this.requestedRf = Integer.parseInt(minRepFact);
       } catch (NumberFormatException nfe) {
@@ -2137,7 +2172,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return requestedRf;
     }
 
-    LeaderRequestReplicationTracker(String shardId, int requestedRf) {
+    public LeaderRequestReplicationTracker(String shardId, int requestedRf) {
       this.requestedRf = requestedRf;
       this.myShardId = shardId;
     }
@@ -2149,8 +2184,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     public void trackRequestResult(Node node, boolean success) {
       if (log.isDebugEnabled()) {
-        log.debug("trackRequestResult(" + node + "): success? " + success +
-            ", shardId=" + myShardId);
+        log.debug("trackRequestResult({}): success? {}, shardId={}", node, success, myShardId);
       }
 
       if (success) {

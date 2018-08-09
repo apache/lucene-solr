@@ -70,7 +70,7 @@ public class OriginalScoreFeature extends Feature {
     public OriginalScoreWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
       super(OriginalScoreFeature.this, searcher, request, originalQuery, efi);
-      w = searcher.createNormalizedWeight(originalQuery, ScoreMode.COMPLETE);
+      w = searcher.createWeight(searcher.rewrite(originalQuery), ScoreMode.COMPLETE, 1);
     };
 
 

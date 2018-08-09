@@ -57,6 +57,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath(), false);
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "1024");
   }
   
   @AfterClass
@@ -64,6 +65,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     HdfsTestUtil.teardownClass(dfsCluster);
     System.clearProperty("solr.hdfs.home");
     System.clearProperty(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_MAXMERGESIZEMB);
+    System.clearProperty("solr.hdfs.blockcache.blocksperbank");
     dfsCluster = null;
   }
 

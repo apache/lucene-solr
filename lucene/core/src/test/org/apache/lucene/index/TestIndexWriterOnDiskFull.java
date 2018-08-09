@@ -35,6 +35,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -161,7 +162,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
     final String idFormat = TestUtil.getPostingsFormat("id");
     final String contentFormat = TestUtil.getPostingsFormat("content");
-    assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
 
     int START_COUNT = 57;
     int NUM_DIR = TEST_NIGHTLY ? 50 : 5;
@@ -501,9 +501,9 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random()))
           .setMergeScheduler(new SerialMergeScheduler())
           .setReaderPooling(true)
-          .setMergePolicy(new MergePolicyWrapper(newLogMergePolicy(2)) {
+          .setMergePolicy(new FilterMergePolicy(newLogMergePolicy(2)) {
             @Override
-            public boolean keepFullyDeletedSegment(CodecReader reader) throws IOException {
+            public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
               // we can do this because we add/delete/add (and dont merge to "nothing")
               return true;
             }

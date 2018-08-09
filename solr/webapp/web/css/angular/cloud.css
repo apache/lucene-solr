@@ -421,6 +421,12 @@ limitations under the License.
   padding-bottom: 15px;
 }
 
+#nodesPaging
+{
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
 #content #cloud #legend .shard-inactive,
 #content #cloud #legend .shard-inactive li,
 #content #cloud #legend .shard-inactive li text,
@@ -433,4 +439,273 @@ limitations under the License.
 #content #graph-content .link.shard-inactive
 {
   stroke: #e9e9e9;
+}
+
+#content #cloud #legend .replicatype,
+#content #cloud #legend .replicatype rect,
+#content #graph-content .node.replicatype rect
+{
+  color: #007BA7;
+  stroke: #007BA7;
+  fill:rgb(0,123,167);
+
+}
+
+#content #graph-content .node.replicatype text
+{
+  fill: #007BA7;
+}
+
+/* Nodes tab */
+#nodes-table {
+  border-collapse: collapse;
+}
+
+#nodes-table td, #nodes-table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  vertical-align: top;
+}
+#nodes-table th {
+  font-weight: bolder;
+  font-stretch: extra-expanded;
+  background: #F8F8F8;
+}
+#content #cloud #nodes-content #nodes-table
+{
+  border-top: 1px solid #c0c0c0;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+#content #cloud #nodes-content .host-name,
+#content #cloud #nodes-content .node-name a
+{
+  font-weight: bold;
+  font-size: larger;
+}
+
+#content #cloud #nodes-content a,
+#content #cloud #nodes-content a:hover,
+#content #cloud #nodes-content a.hover
+{
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: #beebff;
+}
+
+#content #cloud #nodes-content a:hover,
+#content #cloud #nodes-content a.hover
+{
+  background-color: #beebff;
+}
+
+#content #cloud #nodes-content .host-spec,
+#content #cloud #nodes-content .node-spec,
+#content #cloud #nodes-content .node-spec a
+{
+  font-style: italic;
+}
+#content #cloud #nodes-content .node-uptime
+{
+  font-weight: bolder;
+  font-size: 20px;
+}
+#content #cloud #nodes-content .node-load,
+#content #cloud #nodes-content .node-cpu,
+#content #cloud #nodes-content .node-heap,
+#content #cloud #nodes-content .node-disk
+{
+  font-weight: bolder;
+  font-size: 20px;
+}
+
+#content #cloud #nodes-content .pct-normal
+{
+  color: darkgreen;
+}
+
+#content #cloud #nodes-content .pct-warn
+{
+  color: orange;
+}
+
+#content #cloud #nodes-content .pct-critical
+{
+  color: red;
+}
+
+/* Styling of reload and details buttons */
+#content #cloud #controls,
+#content #cloud #frame #zk-status-content #zk-controls
+{
+  display: block;
+  height: 30px;
+}
+
+#content #cloud .reload
+{
+  background-image: url( ../../img/ico/arrow-circle.png );
+  padding-left: 21px;
+  float: left;
+}
+
+#content #cloud .reload.loader
+{
+  padding-left: 0;
+}
+
+#content #cloud .details-button 
+{
+  background-image: url(../../img/ico/ui-check-box-uncheck.png);
+  background-position: 0 50%;
+  color: #8D8D8D;
+  margin-top: 7px;
+  margin-left: 10px;
+  padding-left: 21px;
+  width: 30px;
+}
+
+#content #cloud .details-button.on
+{
+  background-image: url( ../../img/ico/ui-check-box.png );
+  color: #333;
+}
+
+#content #cloud #nodes-content .more
+{
+  font-style: italic;
+  text-underline: #0000fa;
+}
+
+/* Disk usage details d3 chart bars style */
+.chart {
+    background: #eee;
+    padding: 1px;
+}
+.chart div {
+    width:90%;
+}
+.chart div div {
+    display:inline-block;
+}
+.chart div div.rect {
+    transition: all 0.5s ease-out;
+    -moz-transition: all 0.5s ease-out;
+    -webkit-transition: all 0.5s ease-out;
+    width:0;
+    font: 10px sans-serif;
+    background-color: #4CAF50;
+    text-align: left;
+    padding: 3px;
+    margin: 2px;
+    color: #000000;
+    box-shadow: 1px 1px 1px #666;
+}
+
+#content #nodes-content .leader
+{
+  font-weight: bold;
+}
+
+#content #nodes-content .scroll-height-250
+{
+  max-height: 250px;
+  overflow-scrolling: auto;
+  overflow: auto;
+  /*overflow-y: auto;*/
+}
+
+#content #nodes-content .min-width-150
+{
+  min-width: 150px;
+}
+
+#content #cloud #nodes-content .node-cores
+{
+  min-width: 150px;
+}
+
+#content #nodes-content .core-details
+{
+  padding-left: 21px;
+}
+
+
+
+::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 7px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: rgba(0,0,0,.5);
+    -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+}
+#content #cloud #zk-table td,
+#content #cloud #zk-table th 
+{
+  border: 0px solid #ddd;
+  border-bottom: 0.50px solid #eee;
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+#content #cloud #zk-table th 
+{
+  border-bottom: 1px solid #ddd;
+  border-top: 1px solid #ddd;
+  font-weight: bolder;
+  font-stretch: extra-expanded;
+  background: #F8F8F8;
+}
+
+#content #cloud #zk-table
+{
+  border-top: 1px solid #c0c0c0;
+  margin-top: 10px;
+  border-collapse: collapse;
+
+  font-weight: bold;
+}
+
+#content #cloud #zk-table #detail-divider 
+{
+  background-color: #f8f8f8;
+  height: 10px;
+}
+
+.zookeeper-status
+{
+  font-size: large;
+}
+
+.zookeeper-errors
+{
+  background-color: lightpink;
+  padding: 10px;
+  border: 1px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.zookeeper-errors li::before 
+{
+  content: "- ";
+}
+
+.zkstatus-green
+{
+  color: darkgreen;
+}
+
+.zkstatus-yellow
+{
+  color: orange;
+}
+
+.zkstatus-red
+{
+  color: red;
 }

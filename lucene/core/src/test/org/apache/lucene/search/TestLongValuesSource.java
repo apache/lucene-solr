@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -103,7 +104,7 @@ public class TestLongValuesSource extends LuceneTestCase {
     };
     Collections.shuffle(Arrays.asList(fields), random());
     int numSorts = TestUtil.nextInt(random(), 1, fields.length);
-    return new Sort(Arrays.copyOfRange(fields, 0, numSorts));
+    return new Sort(ArrayUtil.copyOfSubArray(fields, 0, numSorts));
   }
 
   // Take a Sort, and replace any field sorts with Sortables
@@ -135,12 +136,12 @@ public class TestLongValuesSource extends LuceneTestCase {
   void checkSorts(Query query, Sort sort) throws Exception {
     int size = TestUtil.nextInt(random(), 1, searcher.getIndexReader().maxDoc() / 5);
     Sort mutatedSort = convertSortToSortable(sort);
-    TopDocs actual = searcher.search(query, size, mutatedSort, random().nextBoolean(), random().nextBoolean());
-    TopDocs expected = searcher.search(query, size, sort, random().nextBoolean(), random().nextBoolean());
+    TopDocs actual = searcher.search(query, size, mutatedSort, random().nextBoolean());
+    TopDocs expected = searcher.search(query, size, sort, random().nextBoolean());
 
     CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
 
-    if (size < actual.totalHits) {
+    if (size < actual.totalHits.value) {
       expected = searcher.searchAfter(expected.scoreDocs[size-1], query, size, sort);
       actual = searcher.searchAfter(actual.scoreDocs[size-1], query, size, mutatedSort);
       CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);

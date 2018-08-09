@@ -27,7 +27,7 @@
 
   <updateRequestProcessorChain name="extract-single">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <str name="source">source1_s</str>
       <str name="dest">dest_s</str>
@@ -36,7 +36,7 @@
 
   <updateRequestProcessorChain name="extract-single-regex">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <str name="source">source1_s</str>
       <lst name="dest">
@@ -48,7 +48,7 @@
 
   <updateRequestProcessorChain name="extract-multi">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <str name="source">source1_s</str>
       <str name="source">source2_s</str>
@@ -58,7 +58,7 @@
 
   <updateRequestProcessorChain name="extract-multi-regex">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <str name="source">source1_s</str>
       <str name="source">source2_s</str>
@@ -71,7 +71,7 @@
 
   <updateRequestProcessorChain name="extract-array">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <arr name="source">
         <str>source1_s</str>
@@ -83,7 +83,7 @@
 
   <updateRequestProcessorChain name="extract-array-regex">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <arr name="source">
         <str>source1_s</str>
@@ -98,7 +98,7 @@
 
   <updateRequestProcessorChain name="extract-selector">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <lst name="source">
         <str name="fieldRegex">source\d_.*</str>
@@ -112,7 +112,7 @@
 
   <updateRequestProcessorChain name="extract-selector-regex">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <lst name="source">
         <str name="fieldRegex">source\d_.*</str>
@@ -129,7 +129,7 @@
 
   <updateRequestProcessorChain name="extract-regex-replaceall">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <lst name="source">
         <str name="fieldRegex">foo.*</str>
@@ -144,7 +144,7 @@
 
   <updateRequestProcessorChain name="extract-regex-replaceall-with-entity-type">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <lst name="source">
         <str name="fieldRegex">foo.*</str>
@@ -160,13 +160,13 @@
   <!-- example used in OpenNLPExtractNamedEntitiesUpdateProcessorFactory javadocs -->
   <updateRequestProcessorChain name="multiple-extract">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <str name="source">text</str>
       <str name="dest">people_s</str>
     </processor>
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <arr name="source">
         <str>title</str>
@@ -175,7 +175,7 @@
       <str name="dest">titular_people</str>
     </processor>
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <lst name="source">
         <str name="fieldRegex">.*_txt$</str>
@@ -186,7 +186,7 @@
       <str name="dest">people_s</str>
     </processor>
     <processor class="solr.processor.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <lst name="source">
         <str name="fieldRegex">^desc(.*)s$</str>
@@ -197,7 +197,7 @@
       </lst>
     </processor>
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
-      <str name="modelFile">en-test-ner-person.bin</str>
+      <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <str name="source">summary</str>
       <str name="dest">summary_{EntityType}_s</str>

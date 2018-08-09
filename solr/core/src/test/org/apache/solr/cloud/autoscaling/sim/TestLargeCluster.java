@@ -46,6 +46,7 @@ import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
+import org.apache.solr.cloud.autoscaling.SearchRateTrigger;
 import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
@@ -53,12 +54,14 @@ import org.apache.solr.cloud.autoscaling.CapturedEvent;
 import org.apache.solr.cloud.autoscaling.TriggerValidationException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -73,7 +76,7 @@ import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAut
 @TimeoutSuite(millis = 4 * 3600 * 1000)
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @ThreadLeakLingering(linger = 20000) // ComputePlanAction may take significant time to complete
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12075")
+//05-Jul-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12075")
 public class TestLargeCluster extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -82,8 +85,9 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   public static final int NUM_NODES = 100;
 
   static Map<String, List<CapturedEvent>> listenerEvents = new ConcurrentHashMap<>();
-  static AtomicInteger triggerFiredCount = new AtomicInteger();
-  static CountDownLatch triggerFiredLatch;
+  static AtomicInteger triggerFinishedCount = new AtomicInteger();
+  static AtomicInteger triggerStartedCount = new AtomicInteger();
+  static CountDownLatch triggerFinishedLatch;
   static int waitForSeconds;
 
   @BeforeClass
@@ -93,12 +97,12 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
-
     waitForSeconds = 5;
-    triggerFiredCount.set(0);
-    triggerFiredLatch = new CountDownLatch(1);
+    triggerStartedCount.set(0);
+    triggerFinishedCount.set(0);
+    triggerFinishedLatch = new CountDownLatch(1);
     listenerEvents.clear();
-    // disable .scheduled_maintenance
+    // disable .scheduled_maintenance and .auto_add_replicas
     String suspendTriggerCommand = "{" +
         "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
         "}";
@@ -106,6 +110,19 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     SolrClient solrClient = cluster.simGetSolrClient();
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+    suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {'name' : '.auto_add_replicas'}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // do this in advance if missing
+    if (!cluster.getSimClusterStateProvider().simListCollections().contains(CollectionAdminParams.SYSTEM_COLL)) {
+      cluster.getSimClusterStateProvider().createSystemCollection();
+      CloudTestUtils.waitForState(cluster, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
+          CloudTestUtils.clusterShape(1, 1));
+    }
   }
 
   public static class TestTriggerListener extends TriggerListenerBase {
@@ -122,27 +139,36 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     }
   }
 
-  public static class TestTriggerAction extends TriggerActionBase {
+  public static class FinishTriggerAction extends TriggerActionBase {
     @Override
     public void process(TriggerEvent event, ActionContext context) throws Exception {
-      triggerFiredCount.incrementAndGet();
-      triggerFiredLatch.countDown();
+      triggerFinishedCount.incrementAndGet();
+      triggerFinishedLatch.countDown();
+    }
+  }
+
+  public static class StartTriggerAction extends TriggerActionBase {
+    @Override
+    public void process(TriggerEvent event, ActionContext context) throws Exception {
+      triggerStartedCount.incrementAndGet();
     }
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testBasic() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
-        "'name' : 'node_lost_trigger'," +
+        "'name' : 'node_lost_trigger1'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'enabled' : true," +
         "'actions' : [" +
+        "{'name':'start','class':'" + StartTriggerAction.class.getName() + "'}," +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
-        "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}" +
+        "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
         "}}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
@@ -153,7 +179,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'foo'," +
-        "'trigger' : 'node_lost_trigger'," +
+        "'trigger' : 'node_lost_trigger1'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED', 'FAILED']," +
         "'beforeAction' : ['compute', 'execute']," +
         "'afterAction' : ['compute', 'execute']," +
@@ -216,6 +242,19 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
       }
     }
 
+    // wait until started == finished
+    TimeOut timeOut = new TimeOut(20 * waitForSeconds * NUM_NODES, TimeUnit.SECONDS, cluster.getTimeSource());
+    while (!timeOut.hasTimedOut()) {
+      if (triggerStartedCount.get() == triggerFinishedCount.get()) {
+        break;
+      }
+      timeOut.sleep(1000);
+    }
+    if (timeOut.hasTimedOut()) {
+      fail("did not finish processing all events in time: started=" + triggerStartedCount.get() + ", finished=" + triggerFinishedCount.get());
+    }
+
+
     log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 30 * nodes.size(), TimeUnit.SECONDS,
         CloudTestUtils.clusterShape(5, 15)) + "ms");
     long newMoveReplicaOps = cluster.simGetOpCount(CollectionParams.CollectionAction.MOVEREPLICA.name());
@@ -227,18 +266,20 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void testAddNode() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
-        "'name' : 'node_added_trigger'," +
+        "'name' : 'node_added_trigger2'," +
         "'event' : 'nodeAdded'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'enabled' : true," +
         "'actions' : [" +
+        "{'name':'start','class':'" + StartTriggerAction.class.getName() + "'}," +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
-        "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}" +
+        "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
         "}}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
@@ -256,20 +297,34 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
         CloudTestUtils.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3)) + " ms");
 
+    // start adding nodes
     int numAddNode = NUM_NODES / 5;
     List<String> addNodesList = new ArrayList<>(numAddNode);
     for (int i = 0; i < numAddNode; i++) {
       addNodesList.add(cluster.simAddNode());
       cluster.getTimeSource().sleep(5000);
     }
-    boolean await = triggerFiredLatch.await(1000000 / SPEED, TimeUnit.MILLISECONDS);
+    // wait until at least one event is generated
+    boolean await = triggerFinishedLatch.await(10000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("trigger did not fire", await);
+
+    // wait until started == finished
+    TimeOut timeOut = new TimeOut(20 * waitForSeconds * NUM_NODES, TimeUnit.SECONDS, cluster.getTimeSource());
+    while (!timeOut.hasTimedOut()) {
+      if (triggerStartedCount.get() == triggerFinishedCount.get()) {
+        break;
+      }
+      timeOut.sleep(1000);
+    }
+    if (timeOut.hasTimedOut()) {
+      fail("did not finish processing all events in time: started=" + triggerStartedCount.get() + ", finished=" + triggerFinishedCount.get());
+    }
 
     List<SolrInputDocument> systemColl = cluster.simGetSystemCollection();
     int startedEventPos = -1;
     for (int i = 0; i < systemColl.size(); i++) {
       SolrInputDocument d = systemColl.get(i);
-      if (!"node_added_trigger".equals(d.getFieldValue("event.source_s"))) {
+      if (!"node_added_trigger2".equals(d.getFieldValue("event.source_s"))) {
         continue;
       }
       if ("NODEADDED".equals(d.getFieldValue("event.type_s")) &&
@@ -291,13 +346,13 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     SolrInputDocument finishedEvent = null;
     long lastNumOps = cluster.simGetOpCount("MOVEREPLICA");
     while (count-- > 0) {
-      cluster.getTimeSource().sleep(150000);
+      cluster.getTimeSource().sleep(10000);
       long currentNumOps = cluster.simGetOpCount("MOVEREPLICA");
       if (currentNumOps == lastNumOps) {
         int size = systemColl.size() - 1;
         for (int i = size; i > lastIgnoredPos; i--) {
           SolrInputDocument d = systemColl.get(i);
-          if (!"node_added_trigger".equals(d.getFieldValue("event.source_s"))) {
+          if (!"node_added_trigger2".equals(d.getFieldValue("event.source_s"))) {
             continue;
           }
           if ("SUCCEEDED".equals(d.getFieldValue("stage_s"))) {
@@ -318,6 +373,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testNodeLost() throws Exception {
     doTestNodeLost(waitForSeconds, 5000, 0);
   }
@@ -400,14 +456,15 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
-        "'name' : 'node_lost_trigger'," +
+        "'name' : 'node_lost_trigger3'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '" + waitFor + "s'," +
         "'enabled' : true," +
         "'actions' : [" +
+        "{'name':'start','class':'" + StartTriggerAction.class.getName() + "'}," +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
-        "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}" +
+        "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
         "}}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
@@ -434,8 +491,8 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
       cluster.simRemoveNode(nodes.get(i), false);
       cluster.getTimeSource().sleep(killDelay);
     }
-    // wait for the trigger to fire
-    boolean await = triggerFiredLatch.await(20 * waitFor * 1000 / SPEED, TimeUnit.MILLISECONDS);
+    // wait for the trigger to fire at least once
+    boolean await = triggerFinishedLatch.await(20 * waitFor * 1000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("trigger did not fire within timeout, " +
         "waitFor=" + waitFor + ", killDelay=" + killDelay + ", minIgnored=" + minIgnored,
         await);
@@ -443,7 +500,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     int startedEventPos = -1;
     for (int i = 0; i < systemColl.size(); i++) {
       SolrInputDocument d = systemColl.get(i);
-      if (!"node_lost_trigger".equals(d.getFieldValue("event.source_s"))) {
+      if (!"node_lost_trigger3".equals(d.getFieldValue("event.source_s"))) {
         continue;
       }
       if ("NODELOST".equals(d.getFieldValue("event.type_s")) &&
@@ -456,11 +513,22 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
             "waitFor=" + waitFor + ", killDelay=" + killDelay + ", minIgnored=" + minIgnored,
           startedEventPos > -1);
     SolrInputDocument startedEvent = systemColl.get(startedEventPos);
+    // wait until started == finished
+    TimeOut timeOut = new TimeOut(20 * waitFor * NUM_NODES, TimeUnit.SECONDS, cluster.getTimeSource());
+    while (!timeOut.hasTimedOut()) {
+      if (triggerStartedCount.get() == triggerFinishedCount.get()) {
+        break;
+      }
+      timeOut.sleep(1000);
+    }
+    if (timeOut.hasTimedOut()) {
+      fail("did not finish processing all events in time: started=" + triggerStartedCount.get() + ", finished=" + triggerFinishedCount.get());
+    }
     int ignored = 0;
     int lastIgnoredPos = startedEventPos;
     for (int i = startedEventPos + 1; i < systemColl.size(); i++) {
       SolrInputDocument d = systemColl.get(i);
-      if (!"node_lost_trigger".equals(d.getFieldValue("event.source_s"))) {
+      if (!"node_lost_trigger3".equals(d.getFieldValue("event.source_s"))) {
         continue;
       }
       if ("NODELOST".equals(d.getFieldValue("event.type_s"))) {
@@ -485,13 +553,13 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     SolrInputDocument finishedEvent = null;
     long lastNumOps = cluster.simGetOpCount("MOVEREPLICA");
     while (count-- > 0) {
-      cluster.getTimeSource().sleep(150000);
+      cluster.getTimeSource().sleep(waitFor * 10000);
       long currentNumOps = cluster.simGetOpCount("MOVEREPLICA");
       if (currentNumOps == lastNumOps) {
         int size = systemColl.size() - 1;
         for (int i = size; i > lastIgnoredPos; i--) {
           SolrInputDocument d = systemColl.get(i);
-          if (!"node_lost_trigger".equals(d.getFieldValue("event.source_s"))) {
+          if (!"node_lost_trigger3".equals(d.getFieldValue("event.source_s"))) {
             continue;
           }
           if ("SUCCEEDED".equals(d.getFieldValue("stage_s"))) {
@@ -519,8 +587,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
-  // JIRA closed 24-Feb-2018. Still apparently a problem.
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11714")
+  //commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String collectionName = "testSearchRate";
@@ -540,7 +607,7 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
 
     String metricName = "QUERY./select.requestTimes:1minRate";
     // simulate search traffic
-    cluster.getSimClusterStateProvider().simSetShardValue(collectionName, "shard1", metricName, 40, true);
+    cluster.getSimClusterStateProvider().simSetShardValue(collectionName, "shard1", metricName, 40, false, true);
 
     // now define the trigger. doing it earlier may cause partial events to be generated (where only some
     // nodes / replicas exceeded the threshold).
@@ -549,12 +616,12 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
         "'name' : 'search_rate_trigger'," +
         "'event' : 'searchRate'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
-        "'rate' : 1.0," +
+        "'aboveRate' : 1.0," +
         "'enabled' : true," +
         "'actions' : [" +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
-        "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}" +
+        "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
         "}}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
@@ -574,14 +641,14 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
 
-    boolean await = triggerFiredLatch.await(40000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFinishedLatch.await(waitForSeconds * 20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
     cluster.getTimeSource().sleep(2000);
     assertEquals(listenerEvents.toString(), 1, listenerEvents.get("srt").size());
     CapturedEvent ev = listenerEvents.get("srt").get(0);
     assertEquals(TriggerEventType.SEARCHRATE, ev.event.getEventType());
-    Map<String, Number> m = (Map<String, Number>)ev.event.getProperty("node");
+    Map<String, Number> m = (Map<String, Number>)ev.event.getProperty(SearchRateTrigger.HOT_NODES);
     assertNotNull(m);
     assertEquals(nodes.size(), m.size());
     assertEquals(nodes, m.keySet());
@@ -592,7 +659,19 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     ops.forEach(op -> {
       assertEquals(CollectionParams.CollectionAction.ADDREPLICA, op.getAction());
       assertEquals(1, op.getHints().size());
-      Pair<String, String> hint = (Pair<String, String>)op.getHints().get(Suggester.Hint.COLL_SHARD);
+      Object o = op.getHints().get(Suggester.Hint.COLL_SHARD);
+      // this may be a pair or a HashSet of pairs with size 1
+      Pair<String, String> hint = null;
+      if (o instanceof Pair) {
+        hint = (Pair<String, String>)o;
+      } else if (o instanceof Set) {
+        assertEquals("unexpected number of hints: " + o, 1, ((Set)o).size());
+        o = ((Set)o).iterator().next();
+        assertTrue("unexpected hint: " + o, o instanceof Pair);
+        hint = (Pair<String, String>)o;
+      } else {
+        fail("unexpected hints: " + o);
+      }
       assertNotNull(hint);
       assertEquals(collectionName, hint.first());
       assertEquals("shard1", hint.second());

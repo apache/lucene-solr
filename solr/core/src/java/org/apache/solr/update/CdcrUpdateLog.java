@@ -352,7 +352,6 @@ public class CdcrUpdateLog extends UpdateLog {
     long latestVersion = startingUpdates.getMaxRecentVersion();
     try {
       startingVersions = startingUpdates.getVersions(numRecordsToKeep);
-      startingOperation = startingUpdates.getLatestOperation();
 
       // populate recent deletes list (since we can't get that info from the index)
       for (int i=startingUpdates.deleteList.size()-1; i>=0; i--) {
@@ -389,9 +388,7 @@ public class CdcrUpdateLog extends UpdateLog {
    */
   private void copyBufferedUpdates(File tlogSrc, long offsetSrc, long latestVersion) {
     recoveryInfo = new RecoveryInfo();
-    recoveryInfo.positionOfStart = tlog == null ? 0 : tlog.snapshot();
     state = State.BUFFERING;
-    operationFlags |= FLAG_GAP;
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString());
@@ -611,7 +608,7 @@ public class CdcrUpdateLog extends UpdateLog {
         tlogs.removeLast();
         currentTlog = tlogs.peekLast();
       }
-      assert this.tlogs.peekLast().id == subReader.tlogs.peekLast().id;
+      assert this.tlogs.peekLast().id == subReader.tlogs.peekLast().id : this.tlogs.peekLast().id+" != "+subReader.tlogs.peekLast().id;
       this.pointer.set(currentTlog.tlogFile);
       this.lastPositionInTLog = subReader.lastPositionInTLog;
       this.numRecordsReadInCurrentTlog = subReader.numRecordsReadInCurrentTlog;

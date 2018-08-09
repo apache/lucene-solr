@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.prefix.tree;
 import java.io.PrintStream;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -245,7 +244,8 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
     protected BytesRef concat(BytesRef source, byte b) {
       //+2 for new char + potential leaf
-      final byte[] buffer = Arrays.copyOfRange(source.bytes, source.offset, source.offset + source.length + 2);
+      final byte[] buffer = new byte[source.length + 2];
+      System.arraycopy(source.bytes, source.offset, buffer, 0, source.length);
       BytesRef target = new BytesRef(buffer);
       target.length = source.length;
       target.bytes[target.length++] = b;

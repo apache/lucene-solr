@@ -141,7 +141,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       list.add( doc );
 
       if( ids != null ) {
-        ids.put( doc, new Integer(docid) );
+        ids.put( doc, docid );
       }
     }
     return list;
