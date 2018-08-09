@@ -246,7 +246,7 @@ This supports values calculated at the time of execution.
 ** `freedisk`
 * `#ALL` : This is applied to the `replica` attribute only. This means all replicas that meet the rule condition.
 * `#EQUAL`:  This is applied to the `replica` and `cores` attributes only. This means equal number of replicas/cores in each bucket. The buckets can be defined using an array operator (`[]`) or `#EACH`. The buckets can be defined using the following properties:
-** `node` <- <<Rule Types,global rules>>, i.e. with the `cores` attribute, may only specify this attribute
+** `node` \<- <<Rule Types,global rules>>, i.e. with the `cores` attribute, may only specify this attribute
 ** `sysprop.*`
 ** `port`
 ** `diskType`
