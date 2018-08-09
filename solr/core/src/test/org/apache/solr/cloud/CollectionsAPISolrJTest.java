@@ -514,31 +514,25 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState("Expecting attribute 'maxShardsPerNode' to be deleted", collection,
         (n, c) -> null == c.get("maxShardsPerNode"));
 
-    try {
-      CollectionAdminRequest.modifyCollection(collection, null)
-          .setAttribute("non_existent_attr", 25)
-          .process(cluster.getSolrClient());
-      fail("An attempt to set unknown collection attribute should have failed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    expectThrows(IllegalArgumentException.class,
+        "An attempt to set unknown collection attribute should have failed",
+        () -> CollectionAdminRequest.modifyCollection(collection, null)
+            .setAttribute("non_existent_attr", 25)
+            .process(cluster.getSolrClient())
+    );
 
-    try {
-      CollectionAdminRequest.modifyCollection(collection, null)
-          .setAttribute("non_existent_attr", null)
-          .process(cluster.getSolrClient());
-      fail("An attempt to set null value should have failed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    expectThrows(IllegalArgumentException.class,
+        "An attempt to set null value should have failed",
+        () -> CollectionAdminRequest.modifyCollection(collection, null)
+            .setAttribute("non_existent_attr", null)
+            .process(cluster.getSolrClient())
+    );
 
-    try {
-      CollectionAdminRequest.modifyCollection(collection, null)
-          .unsetAttribute("non_existent_attr")
-          .process(cluster.getSolrClient());
-      fail("An attempt to unset unknown collection attribute should have failed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    expectThrows(IllegalArgumentException.class,
+        "An attempt to unset unknown collection attribute should have failed",
+        () -> CollectionAdminRequest.modifyCollection(collection, null)
+            .unsetAttribute("non_existent_attr")
+            .process(cluster.getSolrClient())
+    );
   }
 }
