@@ -28,15 +28,18 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
 
   public final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = ByteBuffer::allocate;
 
+  /**
+   * A singleton instance of "no-reuse" buffer strategy.
+   */
   public final static Consumer<ByteBuffer> NO_REUSE = (bb) -> {
     throw new RuntimeException("reset() is not allowed on this buffer.");
   };
 
-  public final static class BufferBufferRecycler {
+  public final static class ByteBufferRecycler {
     private final ArrayDeque<ByteBuffer> reuse = new ArrayDeque<>();
     private final IntFunction<ByteBuffer> delegate;
 
-    public BufferBufferRecycler(IntFunction<ByteBuffer> delegate) {
+    public ByteBufferRecycler(IntFunction<ByteBuffer> delegate) {
       this.delegate = Objects.requireNonNull(delegate);
     }
 
@@ -59,11 +62,11 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   }
 
   public final static int DEFAULT_MIN_BITS_PER_BLOCK = 10; // 1024 B
-  public final static int DEFAULT_MAX_BITS_PER_BLOCK = 25; //   32 MB
+  public final static int DEFAULT_MAX_BITS_PER_BLOCK = 26; //   64 MB
 
   /**
    * Maximum number of blocks at the current {@link #blockBits} block size
-   * before we increase block sizes.
+   * before we increase the block size (and thus decrease the number of blocks).
    */
   final static int MAX_BLOCKS_BEFORE_BLOCK_EXPANSION = 100;
 
@@ -197,9 +200,9 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
 
   /**
    * Return a contiguous array with the current content written to the output. The returned
-   * array is always a copy. 
+   * array is always a copy (can be mutated).
    */
-  public byte[] copyToArray() {
+  public byte[] toArrayCopy() {
     if (blocks.size() == 0) {
       return EMPTY_BYTE_ARRAY;
     }
@@ -364,8 +367,8 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * @return Returns a new {@link ByteBuffersDataOutput} with the {@link #reset()} capability. 
    */
   // TODO: perhaps we can move it out to an utility class (as a supplier of preconfigured instances?) 
-  public static ByteBuffersDataOutput newResettableBuffer() {
-    ByteBuffersDataOutput.BufferBufferRecycler reuser = new ByteBuffersDataOutput.BufferBufferRecycler(
+  public static ByteBuffersDataOutput newResettableInstance() {
+    ByteBuffersDataOutput.ByteBufferRecycler reuser = new ByteBuffersDataOutput.ByteBufferRecycler(
         ByteBuffersDataOutput.ALLOCATE_BB_ON_HEAP); 
     return new ByteBuffersDataOutput(
         ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
@@ -392,22 +395,24 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     blocks.add(currentBlock);
   }
 
-  private void rewriteToBlockSize(int blockBits) {
-    assert blockBits <= maxBitsPerBlock;
+  private void rewriteToBlockSize(int targetBlockBits) {
+    assert targetBlockBits <= maxBitsPerBlock;
 
     // We copy over data blocks to an output with one-larger block bit size.
     // We also discard references to blocks as we're copying to allow GC to
     // clean up partial results in case of memory pressure.
-    ByteBuffersDataOutput cloned = new ByteBuffersDataOutput(blockBits, blockBits, blockAllocate, NO_REUSE);
+    ByteBuffersDataOutput cloned = new ByteBuffersDataOutput(targetBlockBits, targetBlockBits, blockAllocate, NO_REUSE);
     ByteBuffer block;
     while ((block = blocks.pollFirst()) != null) {
       block.flip();
       cloned.writeBytes(block);
-      // NOCOMMIT: the discarded block should be recycled if recycler is not null (potential direct memory leak).
+      if (blockReuse != NO_REUSE) {
+        blockReuse.accept(block);
+      }
     }
 
     assert blocks.isEmpty();
-    this.blockBits = blockBits;
+    this.blockBits = targetBlockBits;
     blocks.addAll(cloned.blocks);
   }
 

@@ -306,8 +306,8 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
       return pos1;
     }
 
-    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableBuffer();
-    private final ByteBuffersDataOutput bufferWriter = ByteBuffersDataOutput.newResettableBuffer();
+    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableInstance();
+    private final ByteBuffersDataOutput bufferWriter = ByteBuffersDataOutput.newResettableInstance();
 
     private void flushBlock() throws IOException {
       //System.out.println("BTW.flushBlock seg=" + segment + " pendingCount=" + pendingCount + " fp=" + out.getFilePointer());

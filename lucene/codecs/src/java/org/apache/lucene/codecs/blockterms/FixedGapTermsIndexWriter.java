@@ -111,11 +111,11 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     long packedOffsetsStart;
     private long numTerms;
 
-    private ByteBuffersDataOutput offsetsBuffer = ByteBuffersDataOutput.newResettableBuffer();
+    private ByteBuffersDataOutput offsetsBuffer = ByteBuffersDataOutput.newResettableInstance();
     private MonotonicBlockPackedWriter termOffsets = new MonotonicBlockPackedWriter(offsetsBuffer, BLOCKSIZE);
     private long currentOffset;
 
-    private ByteBuffersDataOutput addressBuffer = ByteBuffersDataOutput.newResettableBuffer();
+    private ByteBuffersDataOutput addressBuffer = ByteBuffersDataOutput.newResettableInstance();
     private MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(addressBuffer, BLOCKSIZE);
 
     private final BytesRefBuilder lastTerm = new BytesRefBuilder();

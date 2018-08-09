@@ -33,7 +33,7 @@ public final class ByteBuffersDirectory extends BaseDirectory {
 
   public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_ONE_BUFFER = 
       (fileName, output) -> {
-        ByteBuffersDataInput dataInput = new ByteBuffersDataInput(Arrays.asList(ByteBuffer.wrap(output.copyToArray())));
+        ByteBuffersDataInput dataInput = new ByteBuffersDataInput(Arrays.asList(ByteBuffer.wrap(output.toArrayCopy())));
         String inputName = String.format(Locale.ROOT, "%s (file=%s, buffers=%s)",
             ByteBuffersIndexInput.class.getSimpleName(),
             fileName,
@@ -43,7 +43,7 @@ public final class ByteBuffersDirectory extends BaseDirectory {
 
   public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_BYTE_ARRAY = 
       (fileName, output) -> {
-        byte[] array = output.copyToArray();
+        byte[] array = output.toArrayCopy();
         String inputName = String.format(Locale.ROOT, "%s (file=%s, length=%s)",
             ByteArrayIndexInput.class.getSimpleName(),
             fileName,

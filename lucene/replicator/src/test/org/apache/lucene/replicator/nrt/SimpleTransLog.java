@@ -41,7 +41,7 @@ import org.apache.lucene.store.DataInput;
 class SimpleTransLog implements Closeable {
 
   final FileChannel channel;
-  final ByteBuffersDataOutput buffer = ByteBuffersDataOutput.newResettableBuffer();
+  final ByteBuffersDataOutput buffer = ByteBuffersDataOutput.newResettableInstance();
   final byte[] intBuffer = new byte[4];
   final ByteBuffer intByteBuffer = ByteBuffer.wrap(intBuffer);
 
@@ -85,7 +85,7 @@ class SimpleTransLog implements Closeable {
   private synchronized long flushBuffer() throws IOException {
     long pos = channel.position();
     int len = Math.toIntExact(buffer.size());
-    byte[] bytes = buffer.copyToArray();
+    byte[] bytes = buffer.toArrayCopy();
     buffer.reset();
 
     intBuffer[0] = (byte) (len >> 24);

@@ -96,7 +96,7 @@ public abstract class MultiLevelSkipListWriter {
   protected void init() {
     skipBuffer = new ByteBuffersDataOutput [numberOfSkipLevels];
     for (int i = 0; i < numberOfSkipLevels; i++) {
-      skipBuffer[i] = ByteBuffersDataOutput.newResettableBuffer();
+      skipBuffer[i] = ByteBuffersDataOutput.newResettableInstance();
     }
   }
 

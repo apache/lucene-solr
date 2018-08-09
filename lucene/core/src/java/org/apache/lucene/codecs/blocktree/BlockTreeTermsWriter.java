@@ -461,7 +461,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}
       //indexBuilder.DEBUG = false;
-      final byte[] bytes = scratchBytes.copyToArray();
+      final byte[] bytes = scratchBytes.toArrayCopy();
       assert bytes.length > 0;
       indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef), new BytesRef(bytes, 0, bytes.length));
       scratchBytes.reset();
@@ -503,7 +503,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     }
   }
 
-  private final ByteBuffersDataOutput scratchBytes = ByteBuffersDataOutput.newResettableBuffer();
+  private final ByteBuffersDataOutput scratchBytes = ByteBuffersDataOutput.newResettableInstance();
   private final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
 
   static final BytesRef EMPTY_BYTES_REF = new BytesRef();
@@ -975,10 +975,10 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       }
     }
 
-    private final ByteBuffersDataOutput suffixWriter = ByteBuffersDataOutput.newResettableBuffer();
-    private final ByteBuffersDataOutput statsWriter = ByteBuffersDataOutput.newResettableBuffer();
-    private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableBuffer();
-    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableBuffer();
+    private final ByteBuffersDataOutput suffixWriter = ByteBuffersDataOutput.newResettableInstance();
+    private final ByteBuffersDataOutput statsWriter = ByteBuffersDataOutput.newResettableInstance();
+    private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableInstance();
+    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableInstance();
   }
 
   private boolean closed;

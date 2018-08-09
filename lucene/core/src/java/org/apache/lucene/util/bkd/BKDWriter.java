@@ -1065,7 +1065,7 @@ public class BKDWriter implements Closeable {
     }
 
     /** Reused while packing the index */
-    ByteBuffersDataOutput writeBuffer = ByteBuffersDataOutput.newResettableBuffer();
+    ByteBuffersDataOutput writeBuffer = ByteBuffersDataOutput.newResettableInstance();
 
     // This is the "file" we append the byte[] to:
     List<byte[]> blocks = new ArrayList<>();
@@ -1087,7 +1087,7 @@ public class BKDWriter implements Closeable {
 
   /** Appends the current contents of writeBuffer as another block on the growing in-memory file */
   private int appendBlock(ByteBuffersDataOutput writeBuffer, List<byte[]> blocks) throws IOException {
-    byte[] block = writeBuffer.copyToArray();
+    byte[] block = writeBuffer.toArrayCopy();
     blocks.add(block);
     writeBuffer.reset();
     return block.length;
@@ -1196,7 +1196,7 @@ public class BKDWriter implements Closeable {
         assert leftNumBytes == 0: "leftNumBytes=" + leftNumBytes;
       }
       
-      byte[] bytes2 = writeBuffer.copyToArray();
+      byte[] bytes2 = writeBuffer.toArrayCopy();
       writeBuffer.reset();
       // replace our placeholder:
       blocks.set(idxSav, bytes2);

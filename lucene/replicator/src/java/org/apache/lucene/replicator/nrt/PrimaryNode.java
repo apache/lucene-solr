@@ -247,7 +247,7 @@ public abstract class PrimaryNode extends Node {
     try (ByteBuffersIndexOutput tmpIndexOutput = new ByteBuffersIndexOutput(buffer, "temporary", "temporary")) {
       infos.write(dir, tmpIndexOutput);
     }
-    byte[] infosBytes = buffer.copyToArray();
+    byte[] infosBytes = buffer.toArrayCopy();
 
     Map<String,FileMetaData> filesMetaData = new HashMap<String,FileMetaData>();
     for(SegmentCommitInfo info : infos) {

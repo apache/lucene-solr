@@ -254,7 +254,7 @@ public class FSTTermsWriter extends FieldsConsumer {
     private long numTerms;
 
     private final IntsRefBuilder scratchTerm = new IntsRefBuilder();
-    private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableBuffer();
+    private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableInstance();
 
     TermsWriter(FieldInfo fieldInfo) {
       this.numTerms = 0;
@@ -273,7 +273,7 @@ public class FSTTermsWriter extends FieldsConsumer {
       meta.totalTermFreq = state.totalTermFreq;
       postingsWriter.encodeTerm(meta.longs, metaWriter, fieldInfo, state, true);
       if (metaWriter.size() > 0) {
-        meta.bytes = metaWriter.copyToArray();
+        meta.bytes = metaWriter.toArrayCopy();
         metaWriter.reset();
       }
       builder.add(Util.toIntsRef(text, scratchTerm), meta);

@@ -880,7 +880,7 @@ class SortingLeafReader extends FilterLeafReader {
         docs = new int[32];
         offsets = new long[32];
         payload = new BytesRef(32);
-        buffer = ByteBuffersDataOutput.newResettableBuffer();
+        buffer = ByteBuffersDataOutput.newResettableInstance();
         sorter = new DocOffsetSorter(maxDoc);
       }
 

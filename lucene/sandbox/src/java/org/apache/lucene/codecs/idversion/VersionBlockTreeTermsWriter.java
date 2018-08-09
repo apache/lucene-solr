@@ -357,7 +357,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}
       //indexBuilder.DEBUG = false;
-      final byte[] bytes = scratchBytes.copyToArray();
+      final byte[] bytes = scratchBytes.toArrayCopy();
       assert bytes.length > 0;
       indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef), FST_OUTPUTS.newPair(new BytesRef(bytes, 0, bytes.length), Long.MAX_VALUE - maxVersionIndex));
       scratchBytes.reset();
@@ -399,7 +399,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     }
   }
 
-  private final ByteBuffersDataOutput scratchBytes = ByteBuffersDataOutput.newResettableBuffer();
+  private final ByteBuffersDataOutput scratchBytes = ByteBuffersDataOutput.newResettableInstance();
   private final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
 
   class TermsWriter {
@@ -827,9 +827,9 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       }
     }
 
-    private final ByteBuffersDataOutput suffixWriter = ByteBuffersDataOutput.newResettableBuffer();
-    private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableBuffer();
-    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableBuffer();
+    private final ByteBuffersDataOutput suffixWriter = ByteBuffersDataOutput.newResettableInstance();
+    private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableInstance();
+    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableInstance();
   }
 
   private boolean closed;

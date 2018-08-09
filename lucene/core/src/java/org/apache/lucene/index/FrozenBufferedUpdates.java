@@ -187,7 +187,7 @@ final class FrozenBufferedUpdates {
         }
       }
     }
-    return out.copyToArray();
+    return out.toArrayCopy();
   }
 
   /** Returns the {@link SegmentCommitInfo} that this packet is supposed to apply its deletes to, or null

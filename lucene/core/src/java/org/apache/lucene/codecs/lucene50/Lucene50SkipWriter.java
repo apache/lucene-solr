@@ -163,7 +163,7 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
     bufferSkip(numDocs);
   }
 
-  private final ByteBuffersDataOutput freqNormOut = ByteBuffersDataOutput.newResettableBuffer();
+  private final ByteBuffersDataOutput freqNormOut = ByteBuffersDataOutput.newResettableInstance();
 
   @Override
   protected void writeSkipData(int level, DataOutput skipBuffer) throws IOException {
