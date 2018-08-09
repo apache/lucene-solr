@@ -22,8 +22,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -78,7 +78,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  //@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void doTest() throws Exception {
     waitForRecoveriesToFinish(false);
 
@@ -87,6 +87,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     testMixedCaseFields();
     testBasicGrouping();
     testBasicGroupingTint();
+    testBasicGroupingIntLongPoints();
+    testBasicGroupingFloatDoublePoints();
     testBasicGroupingFacets();
     testSelectDistinct();
     testSelectDistinctFacets();
@@ -107,21 +109,29 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       commit();
 
-      indexDoc(sdoc("id", "1", "text", "XXXX XXXX", "str_s", "a", "field_i", "7"));
-      indexDoc(sdoc("id", "2", "text", "XXXX XXXX", "str_s", "b", "field_i", "8"));
-      indexDoc(sdoc("id", "3", "text", "XXXX XXXX", "str_s", "a", "field_i", "20"));
-      indexDoc(sdoc("id", "4", "text", "XXXX XXXX", "str_s", "b", "field_i", "11"));
-      indexDoc(sdoc("id", "5", "text", "XXXX XXXX", "str_s", "c", "field_i", "30"));
-      indexDoc(sdoc("id", "6", "text", "XXXX XXXX", "str_s", "c", "field_i", "40"));
-      indexDoc(sdoc("id", "7", "text", "XXXX XXXX", "str_s", "c", "field_i", "50"));
-      indexDoc(sdoc("id", "8", "text", "XXXX XXXX", "str_s", "c", "field_i", "60"));
+      indexDoc(sdoc("id", "1", "text", "XXXX XXXX", "str_s", "a", "field_i", "7", "field_i_p", "7",
+          "field_f_p", "7.5", "field_d_p", "7.5", "field_l_p", "7"));
+      indexDoc(sdoc("id", "2", "text", "XXXX XXXX", "str_s", "b", "field_i", "8", "field_i_p", "8",
+          "field_f_p", "8.5", "field_d_p", "8.5","field_l_p", "8" ));
+      indexDoc(sdoc("id", "3", "text", "XXXX XXXX", "str_s", "a", "field_i", "20", "field_i_p", "20",
+          "field_f_p", "20.5", "field_d_p", "20.5", "field_l_p", "20"));
+      indexDoc(sdoc("id", "4", "text", "XXXX XXXX", "str_s", "b", "field_i", "11", "field_i_p", "11",
+          "field_f_p", "11.5", "field_d_p", "11.5", "field_l_p", "11"));
+      indexDoc(sdoc("id", "5", "text", "XXXX XXXX", "str_s", "c", "field_i", "30","field_i_p", "30", "" +
+          "field_f_p", "30.5", "field_d_p", "30.5", "field_l_p", "30"));
+      indexDoc(sdoc("id", "6", "text", "XXXX XXXX", "str_s", "c", "field_i", "40", "field_i_p", "40",
+          "field_f_p", "40.5", "field_d_p", "40.5", "field_l_p", "40"));
+      indexDoc(sdoc("id", "7", "text", "XXXX XXXX", "str_s", "c", "field_i", "50", "field_i_p", "50",
+          "field_f_p", "50.5", "field_d_p", "50.5", "field_l_p", "50"));
+      indexDoc(sdoc("id", "8", "text", "XXXX XXXX", "str_s", "c", "field_i", "60", "field_i_p", "60",
+          "field_f_p", "60.5", "field_d_p", "60.5", "field_l_p", "60"));
       commit();
 
 
       System.out.println("############# testBasicSelect() ############");
 
       SolrParams sParams = mapParams(CommonParams.QT, "/sql", 
-          "stmt", "select id, field_i, str_s from collection1 where (text='(XXXX)' OR text='XXXX') AND text='XXXX' order by field_i desc");
+          "stmt", "select id, field_i, str_s, field_i_p, field_f_p, field_d_p, field_l_p from collection1 where (text='(XXXX)' OR text='XXXX') AND text='XXXX' order by field_i desc");
 
       SolrStream solrStream = new SolrStream(jetty.url, sParams);
       List<Tuple> tuples = getTuples(solrStream);
@@ -130,47 +140,103 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       Tuple tuple;
 
       tuple = tuples.get(0);
-      assert(tuple.getLong("id") == 8);
-      assert(tuple.getLong("field_i") == 60);
+      assertEquals(tuple.getLong("id").longValue(),8);
+      assertEquals(tuple.getLong("field_i").longValue(), 60);
       assert(tuple.get("str_s").equals("c"));
+      assertEquals(tuple.getLong("field_i_p").longValue(), 60L);
+      assertEquals(tuple.getDouble("field_f_p"), 60.5, 0.0);
+      assertEquals(tuple.getDouble("field_d_p"), 60.5, 0.0);
+      assertEquals(tuple.getLong("field_l_p").longValue(), 60);
+
+
+
 
       tuple = tuples.get(1);
-      assert(tuple.getLong("id") == 7);
-      assert(tuple.getLong("field_i") == 50);
+      assertEquals(tuple.getLong("id").longValue(), 7);
+      assertEquals(tuple.getLong("field_i").longValue(), 50);
       assert(tuple.get("str_s").equals("c"));
+      assertEquals(tuple.getLong("field_i_p").longValue(), 50);
+      assertEquals(tuple.getDouble("field_f_p"), 50.5, 0.0);
+      assertEquals(tuple.getDouble("field_d_p"), 50.5, 0.0);
+      assertEquals(tuple.getLong("field_l_p").longValue(), 50);
+
+
+
 
       tuple = tuples.get(2);
-      assert(tuple.getLong("id") == 6);
-      assert(tuple.getLong("field_i") == 40);
+      assertEquals(tuple.getLong("id").longValue(),6);
+      assertEquals(tuple.getLong("field_i").longValue(), 40);
       assert(tuple.get("str_s").equals("c"));
+      assertEquals(tuple.getLong("field_i_p").longValue(), 40);
+      assertEquals(tuple.getDouble("field_f_p"), 40.5, 0.0);
+      assertEquals(tuple.getDouble("field_d_p"), 40.5, 0.0);
+      assertEquals(tuple.getLong("field_l_p").longValue(), 40);
+
+
+
+
 
       tuple = tuples.get(3);
-      assert(tuple.getLong("id") == 5);
-      assert(tuple.getLong("field_i") == 30);
+      assertEquals(tuple.getLong("id").longValue(), 5);
+      assertEquals(tuple.getLong("field_i").longValue(), 30);
       assert(tuple.get("str_s").equals("c"));
+      assertEquals(tuple.getLong("field_i_p").longValue(), 30);
+      assertEquals(tuple.getDouble("field_f_p"), 30.5, 0.0);
+      assertEquals(tuple.getDouble("field_d_p"), 30.5, 0.0);
+      assertEquals(tuple.getLong("field_l_p").longValue(), 30);
+
+
+
 
       tuple = tuples.get(4);
-      assert(tuple.getLong("id") == 3);
-      assert(tuple.getLong("field_i") == 20);
+      assertEquals(tuple.getLong("id").longValue(),3);
+      assertEquals(tuple.getLong("field_i").longValue(), 20);
       assert(tuple.get("str_s").equals("a"));
+      assertEquals(tuple.getLong("field_i_p").longValue(), 20);
+      assertEquals(tuple.getDouble("field_f_p"), 20.5, 0.0);
+      assertEquals(tuple.getDouble("field_d_p"), 20.5, 0.0);
+      assertEquals(tuple.getLong("field_l_p").longValue(), 20);
+
+
+
 
       tuple = tuples.get(5);
-      assert(tuple.getLong("id") == 4);
-      assert(tuple.getLong("field_i") == 11);
+      assertEquals(tuple.getLong("id").longValue(), 4);
+      assertEquals(tuple.getLong("field_i").longValue(), 11);
       assert(tuple.get("str_s").equals("b"));
+      assertEquals(tuple.getLong("field_i_p").longValue(), 11);
+      assertEquals(tuple.getDouble("field_f_p"), 11.5, 0.0);
+      assertEquals(tuple.getDouble("field_d_p"), 11.5, 0.0);
+      assertEquals(tuple.getLong("field_l_p").longValue(), 11);
+
+
+
 
       tuple = tuples.get(6);
-      assert(tuple.getLong("id") == 2);
-      assert(tuple.getLong("field_i") == 8);
+      assertEquals(tuple.getLong("id").longValue(), 2);
+      assertEquals(tuple.getLong("field_i").longValue(), 8);
       assert(tuple.get("str_s").equals("b"));
+      assertEquals(tuple.getLong("field_i_p").longValue(), 8);
+      assertEquals(tuple.getDouble("field_f_p"), 8.5, 0.0);
+      assertEquals(tuple.getDouble("field_d_p"), 8.5, 0.0);
+      assertEquals(tuple.getLong("field_l_p").longValue(), 8);
+
+
+
 
       tuple = tuples.get(7);
-      assert(tuple.getLong("id") == 1);
-      assert(tuple.getLong("field_i") == 7);
+      assertEquals(tuple.getLong("id").longValue(), 1);
+      assertEquals(tuple.getLong("field_i").longValue(), 7);
       assert(tuple.get("str_s").equals("a"));
+      assertEquals(tuple.getLong("field_i_p").longValue(), 7);
+      assertEquals(tuple.getDouble("field_f_p"), 7.5, 0.0);
+      assertEquals(tuple.getDouble("field_d_p"), 7.5, 0.0);
+      assertEquals(tuple.getLong("field_l_p").longValue(), 7);
+
+
 
       //Assert field order
-      assertResponseContains(clients.get(0), sParams, "{\"docs\":[{\"id\":\"8\",\"field_i\":60,\"str_s\":\"c\"}");
+      assertResponseContains(clients.get(0), sParams, "{\"docs\":[{\"id\":\"8\",\"field_i\":60,\"str_s\":\"c\",\"field_i_p\":60,\"field_f_p\":60.5,\"field_d_p\":60.5,\"field_l_p\":60}");
 
       //Test unlimited unsorted result. Should sort on _version_ desc
       sParams = mapParams(CommonParams.QT, "/sql", "stmt", "select id, field_i, str_s from collection1 where text='XXXX'");
@@ -931,6 +997,127 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
       assert(tuple.getDouble("EXPR$5") == 14); //avg(field_i)
+
+
+
+    } finally {
+      delete();
+    }
+  }
+
+  private void testBasicGroupingIntLongPoints() throws Exception {
+    try {
+
+      Random random = random();
+      int r = random.nextInt(2);
+      String[] intOrLong = {"field_i_p", "field_l_p"};
+      String[] facetOrMap = {"facet", "map_reduce"};
+      String field = intOrLong[r];
+      r = random.nextInt(2);
+      String mode = facetOrMap[r];
+      CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+      del("*:*");
+
+      commit();
+
+      indexr("id", "1", "text", "XXXX XXXX", "str_s", "a", field, "7");
+      indexr("id", "2", "text", "XXXX XXXX", "str_s", "b", field, "8");
+      indexr("id", "3", "text", "XXXX XXXX", "str_s", "a", field, "20");
+      indexr("id", "4", "text", "XXXX XXXX", "str_s", "b", field, "11");
+      indexr("id", "5", "text", "XXXX XXXX", "str_s", "c", field, "30");
+      indexr("id", "6", "text", "XXXX XXXX", "str_s", "c", field, "40");
+      indexr("id", "7", "text", "XXXX XXXX", "str_s", "c", field, "50");
+      indexr("id", "8", "text", "XXXX XXXX", "str_s", "c", field, "60");
+      indexr("id", "9", "text", "XXXX XXXY", "str_s", "d", field, "70");
+      commit();
+
+      SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", mode,
+          "stmt", "select str_s, count(*), sum("+field+"), min("+field+"), max("+field+"), avg("+field+") from collection1 where text='XXXX' group by str_s order by sum("+field+") asc limit 2");
+
+      SolrStream solrStream = new SolrStream(jetty.url, sParams);
+      List<Tuple> tuples = getTuples(solrStream);
+
+      //Only two results because of the limit.
+      assert(tuples.size() == 2);
+      Tuple tuple;
+
+      tuple = tuples.get(0);
+      assert(tuple.get("str_s").equals("b"));
+      assert(tuple.getDouble("EXPR$1") == 2); //count(*)
+      assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
+      assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
+      assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
+      assert(tuple.getDouble("EXPR$5") == 10); //avg(field_i)
+
+      tuple = tuples.get(1);
+      assert(tuple.get("str_s").equals("a"));
+      assert(tuple.getDouble("EXPR$1") == 2); //count(*)
+      assert(tuple.getDouble("EXPR$2") == 27); //sum(field_i)
+      assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
+      assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
+      assert(tuple.getDouble("EXPR$5") == 14); //avg(field_i)
+
+
+
+    } finally {
+      delete();
+    }
+  }
+
+  private void testBasicGroupingFloatDoublePoints() throws Exception {
+    try {
+
+      Random random = random();
+      int r = random.nextInt(2);
+      String[] intOrLong = {"field_f_p", "field_d_p"};
+      String[] facetOrMap = {"facet", "map_reduce"};
+      String field = intOrLong[r];
+      r = random.nextInt(2);
+      String mode = facetOrMap[r];
+
+      CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+      del("*:*");
+
+      commit();
+
+      indexr("id", "1", "text", "XXXX XXXX", "str_s", "a", field, "7.0");
+      indexr("id", "2", "text", "XXXX XXXX", "str_s", "b", field, "8.0");
+      indexr("id", "3", "text", "XXXX XXXX", "str_s", "a", field, "20.0");
+      indexr("id", "4", "text", "XXXX XXXX", "str_s", "b", field, "11.0");
+      indexr("id", "5", "text", "XXXX XXXX", "str_s", "c", field, "30.0");
+      indexr("id", "6", "text", "XXXX XXXX", "str_s", "c", field, "40.0");
+      indexr("id", "7", "text", "XXXX XXXX", "str_s", "c", field, "50.0");
+      indexr("id", "8", "text", "XXXX XXXX", "str_s", "c", field, "60.0");
+      indexr("id", "9", "text", "XXXX XXXY", "str_s", "d", field, "70.0");
+      commit();
+
+      SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", mode,
+          "stmt", "select str_s, count(*), sum("+field+"), min("+field+"), max("+field+"), avg("+field+") from collection1 where text='XXXX' group by str_s order by sum("+field+") asc limit 2");
+
+      SolrStream solrStream = new SolrStream(jetty.url, sParams);
+      List<Tuple> tuples = getTuples(solrStream);
+
+      //Only two results because of the limit.
+      assert(tuples.size() == 2);
+      Tuple tuple;
+
+      tuple = tuples.get(0);
+      assert(tuple.get("str_s").equals("b"));
+      assertEquals(tuple.getDouble("EXPR$1"), 2, 0.0); //count(*)
+      assertEquals(tuple.getDouble("EXPR$2"), 19, 0.0); //sum(field_i)
+      assertEquals(tuple.getDouble("EXPR$3"), 8, 0.0); //min(field_i)
+      assertEquals(tuple.getDouble("EXPR$4"), 11, 0.0); //max(field_i)
+      assertEquals(tuple.getDouble("EXPR$5"), 9.5, 0.0); //avg(field_i)
+
+      tuple = tuples.get(1);
+      assert(tuple.get("str_s").equals("a"));
+      assertEquals(tuple.getDouble("EXPR$1"), 2, 0.0); //count(*)
+      assertEquals(tuple.getDouble("EXPR$2"), 27, 0.0); //sum(field_i)
+      assertEquals(tuple.getDouble("EXPR$3"), 7, 0.0); //min(field_i)
+      assertEquals(tuple.getDouble("EXPR$4"), 20, 0.0); //max(field_i)
+      assertEquals(tuple.getDouble("EXPR$5"), 13.5, 0.0); //avg(field_i)
 
 
 
