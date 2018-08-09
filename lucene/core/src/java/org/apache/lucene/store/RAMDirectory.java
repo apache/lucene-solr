@@ -49,7 +49,14 @@ import org.apache.lucene.util.Accountables;
  * {@link MMapDirectory}, which is a high-performance directory
  * implementation working directly on the file system cache of the
  * operating system, so copying data to Java heap space is not useful.
+ * 
+ * @deprecated This class uses inefficient synchronization and is discouraged
+ * in favor of {@link MMapDirectory}. It will be removed in future versions 
+ * of Lucene. See {@link ByteBuffersDirectory} for an efficient 
+ * in-memory directory implementation, noting that in 99% of cases 
+ * {@link MMapDirectory} will be a better choice.
  */
+@Deprecated
 public class RAMDirectory extends BaseDirectory implements Accountable {
   protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<>();
   protected final AtomicLong sizeInBytes = new AtomicLong();
