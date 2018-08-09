@@ -22,6 +22,7 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.solr.common.SolrException;
@@ -73,7 +74,7 @@ public abstract class AuditLoggerPlugin implements Closeable {
     public String formatEvent(AuditEvent event) {
       ObjectMapper mapper = new ObjectMapper();
       mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-      mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+      mapper.setSerializationInclusion(Include.NON_NULL);
       try {
         StringWriter sw = new StringWriter();
         mapper.writeValue(sw, event);
