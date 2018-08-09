@@ -54,7 +54,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomBytes;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
- * Base class for per-Directory tests.
+ * Base class for {@link Directory} implementations.
  */
 public abstract class BaseDirectoryTestCase extends LuceneTestCase {
 

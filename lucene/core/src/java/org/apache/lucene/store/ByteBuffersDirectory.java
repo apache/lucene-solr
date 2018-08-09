@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.zip.CRC32;
 
 import org.apache.lucene.index.IndexFileNames;
@@ -90,17 +91,26 @@ public final class ByteBuffersDirectory extends BaseDirectory {
    */
   private final BiFunction<String, ByteBuffersDataOutput, IndexInput> outputToInput;
 
+  /**
+   * A supplier of {@link ByteBuffersDataOutput} instances used to buffer up 
+   * the content of written files.
+   */
+  private final Supplier<ByteBuffersDataOutput> bbOutputSupplier;
+
   public ByteBuffersDirectory() {
     this(new SingleInstanceLockFactory());
   }
   
   public ByteBuffersDirectory(LockFactory lockFactory) {
-    this(lockFactory, OUTPUT_AS_MANY_BUFFERS);
+    this(lockFactory, ByteBuffersDataOutput::new, OUTPUT_AS_MANY_BUFFERS);
   }
 
-  public ByteBuffersDirectory(LockFactory factory, BiFunction<String, ByteBuffersDataOutput, IndexInput> outputToInput) {
+  public ByteBuffersDirectory(LockFactory factory, 
+      Supplier<ByteBuffersDataOutput> bbOutputSupplier,
+      BiFunction<String, ByteBuffersDataOutput, IndexInput> outputToInput) {
     super(factory);
     this.outputToInput = Objects.requireNonNull(outputToInput);
+    this.bbOutputSupplier = Objects.requireNonNull(bbOutputSupplier);
   }
 
   @Override
@@ -194,8 +204,9 @@ public final class ByteBuffersDirectory extends BaseDirectory {
     files.clear();
   }
 
-  private final static class FileEntry {
+  private final class FileEntry {
     private final String fileName;
+
     private volatile IndexInput content;
     private volatile long cachedLength;
 
@@ -226,11 +237,11 @@ public final class ByteBuffersDirectory extends BaseDirectory {
       String outputName = String.format(Locale.ROOT, "%s output (file=%s)", clazzName, fileName);
 
       return new ByteBuffersIndexOutput(
-          new ByteBuffersDataOutput(), outputName, fileName,
+          bbOutputSupplier.get(), outputName, fileName,
           new CRC32(),
           (output) -> {
-            cachedLength = output.size();
             content = outputToInput.apply(fileName, output);
+            cachedLength = output.size();
           });
     }
   }
