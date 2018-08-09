@@ -40,8 +40,8 @@ public class VariableBase implements Variable {
   }
 
   static Object getOperandAdjustedValue(Object val, Object original) {
-    if (original instanceof Clause.Condition) {
-      Clause.Condition condition = (Clause.Condition) original;
+    if (original instanceof Condition) {
+      Condition condition = (Condition) original;
       if (condition.computedType == null && isIntegerEquivalent(val)) {
         if (condition.op == Operand.LESS_THAN) {
           //replica : '<3'
@@ -102,11 +102,12 @@ public class VariableBase implements Variable {
 
   @Override
   public Object validate(String name, Object val, boolean isRuleVal) {
-    if (val instanceof Clause.Condition) {
-      Clause.Condition condition = (Clause.Condition) val;
+    if (val instanceof Condition) {
+      Condition condition = (Condition) val;
       val = condition.op.readRuleValue(condition);
       if (val != condition.val) return val;
     }
+    if (!isRuleVal && "".equals(val) && this.varType.type != String.class) val = -1;
     if (name == null) name = this.varType.tagName;
     if (varType.type == Double.class) {
       Double num = Clause.parseDouble(name, val);

@@ -20,7 +20,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 import java.util.function.Function;
 
 /**
- * This clause is an instance with no conditions with computed value
+ * This clause is an instance with no conditions with computed value. every value is computed just in time
  */
 public class SealedClause extends Clause {
   SealedClause(Clause clause, Function<Condition, Object> computedValueEvaluator) {

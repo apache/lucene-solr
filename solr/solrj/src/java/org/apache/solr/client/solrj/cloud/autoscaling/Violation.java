@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 
@@ -160,17 +161,24 @@ public class Violation implements MapWriter {
     ew.putIfNotNull("collection", coll);
     ew.putIfNotNull("shard", shard);
     ew.putIfNotNull("node", node);
-    ew.putIfNotNull("tagKey", String.valueOf(tagKey));
+    ew.putStringIfNotNull("tagKey", tagKey);
     ew.putIfNotNull("violation", (MapWriter) ew1 -> {
       if (getClause().isPerCollectiontag()) ew1.put("replica", actualVal);
       else ew1.put(clause.tag.name, String.valueOf(actualVal));
       ew1.putIfNotNull("delta", replicaCountDelta);
     });
     ew.put("clause", getClause());
+    if (!replicaInfoAndErrs.isEmpty()) {
+      ew.put("violatingReplicas", (IteratorWriter) iw -> {
+        for (ReplicaInfoAndErr replicaInfoAndErr : replicaInfoAndErrs) {
+          iw.add(replicaInfoAndErr.replicaInfo);
+        }
+      });
+    }
   }
 
   static class Ctx {
-    final Function<Clause.Condition, Object> evaluator;
+    final Function<Condition, Object> evaluator;
     String tagKey;
     Clause clause;
     ReplicaCount count;
@@ -178,7 +186,7 @@ public class Violation implements MapWriter {
     List<Row> allRows;
     List<Violation> allViolations = new ArrayList<>();
 
-    public Ctx(Clause clause, List<Row> allRows, Function<Clause.Condition, Object> evaluator) {
+    public Ctx(Clause clause, List<Row> allRows, Function<Condition, Object> evaluator) {
       this.allRows = allRows;
       this.clause = clause;
       this.evaluator = evaluator;
