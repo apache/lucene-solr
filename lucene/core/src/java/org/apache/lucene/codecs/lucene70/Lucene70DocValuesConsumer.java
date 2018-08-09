@@ -44,7 +44,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersIndexOutput;
-import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -284,7 +283,7 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
  
   private void writeValuesMultipleBlocks(SortedNumericDocValues values, long gcd) throws IOException {
     final long[] buffer = new long[NUMERIC_BLOCK_SIZE];
-    final GrowableByteArrayDataOutput encodeBuffer = new GrowableByteArrayDataOutput(NUMERIC_BLOCK_SIZE);
+    final ByteBuffersDataOutput encodeBuffer = ByteBuffersDataOutput.newResettableInstance();
     int upTo = 0;
     for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
       for (int i = 0, count = values.docValueCount(); i < count; ++i) {
@@ -300,7 +299,7 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     }
   }
 
-  private void writeBlock(long[] values, int length, long gcd, GrowableByteArrayDataOutput buffer) throws IOException {
+  private void writeBlock(long[] values, int length, long gcd, ByteBuffersDataOutput buffer) throws IOException {
     assert length > 0;
     long min = values[0];
     long max = values[0];
@@ -316,7 +315,7 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     } else {
       final int bitsPerValue = DirectWriter.unsignedBitsRequired(max - min);
       buffer.reset();
-      assert buffer.getPosition() == 0;
+      assert buffer.size() == 0;
       final DirectWriter w = DirectWriter.getInstance(buffer, length, bitsPerValue);
       for (int i = 0; i < length; ++i) {
         w.add((values[i] - min) / gcd);
@@ -324,8 +323,8 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
       w.finish();
       data.writeByte((byte) bitsPerValue);
       data.writeLong(min);
-      data.writeInt(buffer.getPosition());
-      data.writeBytes(buffer.getBytes(), buffer.getPosition());
+      data.writeInt(Math.toIntExact(buffer.size()));
+      buffer.copyTo(data);
     }
   }
 
