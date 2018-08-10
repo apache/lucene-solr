@@ -65,7 +65,7 @@ In case, replicas have to be moved from one node to another, perhaps in response
 nodes will be chosen by preferring nodes that already have a replica of the `withCollection` so that the number of moves
 is minimized. However, this also means that unless there are Autoscaling policy violations, Solr will continue to move
 such replicas to already loaded nodes instead of preferring empty nodes. Therefore, it is advised to have policy rules
-which can prevent such overloading by e.g. setting the maximum number of cores per node to a fixed value.
+which can prevent such overloading by e.g., setting the maximum number of cores per node to a fixed value.
 
 Example:
 `{'cores' : '<8', 'node' : '#ANY'}`

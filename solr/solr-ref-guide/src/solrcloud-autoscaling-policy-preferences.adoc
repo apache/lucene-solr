@@ -20,7 +20,7 @@
 
 The autoscaling policy and preferences are a set of rules and sorting preferences that help Solr select the target of cluster management operations so the overall load on the cluster remains balanced.
 
-Solr consults the configured policy and preferences when performing <<Commands That Use Autoscaling Policy and Preferences,Collections API commands>> in all contexts: manual, e.g. using `bin/solr`; semi-automatic, via the <<solrcloud-autoscaling-api.adoc#suggestions-api,Suggestions API>> or the Admin UI's <<suggestions-screen.adoc#suggestions-screen,Suggestions Screen>>; or fully automatic, via configured <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,Triggers>>.
+Solr consults the configured policy and preferences when performing <<Commands That Use Autoscaling Policy and Preferences,Collections API commands>> in all contexts: manual, e.g., using `bin/solr`; semi-automatic, via the <<solrcloud-autoscaling-api.adoc#suggestions-api,Suggestions API>> or the Admin UI's <<suggestions-screen.adoc#suggestions-screen,Suggestions Screen>>; or fully automatic, via configured <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,Triggers>>.
 
 == Cluster Preferences Specification
 
@@ -92,10 +92,10 @@ A policy is a hard rule to be satisfied by each node. If a node does not satisfy
 
 ==== Rule Types
 
-Policy rules can be either global or per-collection: 
+Policy rules can be either global or per-collection:
 
 * *Global rules* constrain the number of cores per node or node group.  This type of rule applies to cores from all collections hosted on the specified node(s).  As a result, <<Defining Collection-Specific Policies,collection-specific policies>>, which are associated with individual collections, may not contain global rules.
-* *Per-collection rules* constrain the number of replicas per node or node group. 
+* *Per-collection rules* constrain the number of replicas per node or node group.
 
 Global rules have three parts:
 
@@ -108,28 +108,28 @@ Per-collection rules have four parts:
 * <<Node Selector>>
 * <<Replica Selector and Rule Evaluation Context>>
 * <<Replica Count Constraint>>
-* <<Rule Strictness>>  
+* <<Rule Strictness>>
 
 ==== Node Selector
 
 Rule evaluation is restricted to node(s) matching the value of one of the following attributes: `node`, `port`, `ip_\*`, `sysprop.*`, or `diskType`.  For replica/core count constraints other than `#EQUAL`, a condition specified in one of the following attributes may instead be used to select nodes: `freedisk`, `host`, `sysLoadAvg`, `heapUsage`, `nodeRole`, or `metrics.*`.
 
-Except for `node`, the attributes above cause selected nodes to be partitioned into node groups. A node group is referred to as a "bucket". Those attributes usable with the `#EQUAL` directive may define buckets either via the value `#EACH` or an array `["value1", ...]` (a subset of all possible values); in both cases, each node is placed in the bucket corresponding to the matching attribute value.  
+Except for `node`, the attributes above cause selected nodes to be partitioned into node groups. A node group is referred to as a "bucket". Those attributes usable with the `#EQUAL` directive may define buckets either via the value `#EACH` or an array `["value1", ...]` (a subset of all possible values); in both cases, each node is placed in the bucket corresponding to the matching attribute value.
 
-The `node` attribute always places each selected node into its own bucket, regardless of the attribute value's form (`#ANY`, `node-name`, or `["node1-name", ...]`).  
+The `node` attribute always places each selected node into its own bucket, regardless of the attribute value's form (`#ANY`, `node-name`, or `["node1-name", ...]`).
 
-Replica and core count constraints, described below, are evaluated against the total number in each bucket. 
+Replica and core count constraints, described below, are evaluated against the total number in each bucket.
 
 ==== Core Count Constraint
 
 The `cores` attribute value can be specified in one of the following forms:
- 
-* the `#EQUAL` directive, which will cause cores to be distributed equally among the nodes specified via the rule's <<Node Selector>>. 
+
+* the `#EQUAL` directive, which will cause cores to be distributed equally among the nodes specified via the rule's <<Node Selector>>.
 * a constraint on the core count on each <<Node Selector,selected node>>, specified as one of:
-** an integer value (e.g. `2`), a lower bound (e.g. `>0`), or an upper bound (e.g. `<3`)
-** a decimal value, interpreted as an acceptable range of core counts, from the floor of the value to the ceiling of the value, with the system preferring the rounded value (e.g. `1.6`: `1` or `2` is acceptable, and `2` is preferred)
-** a range of acceptable core counts, as inclusive lower and upper integer bounds separated by a hyphen (e.g. `3-5`)
-** a percentage (e.g. `33%`), which is multiplied by the number of cores in the cluster at runtime. This value is then interpreted as described above for literal decimal values.
+** an integer value (e.g., `2`), a lower bound (e.g., `>0`), or an upper bound (e.g., `<3`)
+** a decimal value, interpreted as an acceptable range of core counts, from the floor of the value to the ceiling of the value, with the system preferring the rounded value (e.g., `1.6`: `1` or `2` is acceptable, and `2` is preferred)
+** a range of acceptable core counts, as inclusive lower and upper integer bounds separated by a hyphen (e.g., `3-5`)
+** a percentage (e.g., `33%`), which is multiplied by the number of cores in the cluster at runtime. This value is then interpreted as described above for literal decimal values.
 
 ==== Replica Selector and Rule Evaluation Context
 
@@ -150,14 +150,14 @@ The `replica` attribute value can be specified in one of the following forms:
 * `#ALL`: All <<Replica Selector and Rule Evaluation Context,selected replicas>> will be placed on the <<Node Selector,selected nodes>>.
 * `#EQUAL`: Distribute <<Replica Selector and Rule Evaluation Context,selected replicas>> evenly among all the <<Node Selector,selected nodes>>.
 * a constraint on the replica count on each <<Node Selector,selected node>>, specified as one of:
-** an integer value (e.g. `2`), a lower bound (e.g. `>0`), or an upper bound (e.g. `<3`)
-** a decimal value, interpreted as an acceptable range of replica counts, from the floor of the value to the ceiling of the value, with the system preferring the rounded value (e.g. `1.6`: `1` or `2` is acceptable, and `2` is preferred)
-** a range of acceptable replica counts, as inclusive lower and upper integer bounds separated by a hyphen (e.g. `3-5`)
-** a percentage (e.g. `33%`), which is multiplied by the number of <<Replica Selector and Rule Evaluation Context,selected replicas>> at runtime. This value is then interpreted as described above for literal decimal values.
+** an integer value (e.g., `2`), a lower bound (e.g., `>0`), or an upper bound (e.g., `<3`)
+** a decimal value, interpreted as an acceptable range of replica counts, from the floor of the value to the ceiling of the value, with the system preferring the rounded value (e.g., `1.6`: `1` or `2` is acceptable, and `2` is preferred)
+** a range of acceptable replica counts, as inclusive lower and upper integer bounds separated by a hyphen (e.g., `3-5`)
+** a percentage (e.g., `33%`), which is multiplied by the number of <<Replica Selector and Rule Evaluation Context,selected replicas>> at runtime. This value is then interpreted as described above for literal decimal values.
 
 ==== Rule Strictness
 
-By default, the rule must be satisfied, and if it can't, then no action will be taken. 
+By default, the rule must be satisfied, and if it can't, then no action will be taken.
 
 If the `strict` attribute value is specified as `false`, Solr tries to satisfy the rule on a best effort basis, but if no node can satisfy the rule then any node may be chosen.
 
@@ -228,7 +228,7 @@ Each attribute in the policy may specify one of the following operators along wi
 * `>`: Greater than
 * `!`: Not
 * Range operator `(-)`: a value such as `"3-5"` means a value between 3 to 5 (inclusive). This is only supported in the `replica` and `cores` attributes.
-* Array operator `[]`. e.g: `sysprop.zone = ["east", "west","apac"]`. This is equivalent to having multiple rules with each of these values. This can be used in the following attributes
+* Array operator `[]`: e.g., `sysprop.zone= ["east","west","apac"]`. This is equivalent to having multiple rules with each of these values. This can be used in the following attributes:
 ** `sysprop.*`
 ** `port`
 ** `ip_*`
@@ -240,13 +240,13 @@ Each attribute in the policy may specify one of the following operators along wi
 
 This supports values calculated at the time of execution.
 
-* `%` : A certain percentage of the value. This is supported by the following attributes
+* `%` : A certain percentage of the value. This is supported by the following attributes:
 ** `replica`
 ** `cores`
 ** `freedisk`
 * `#ALL` : This is applied to the `replica` attribute only. This means all replicas that meet the rule condition.
-* `#EQUAL`:  This is applied to the `replica` and `cores` attributes only. This means equal number of replicas/cores in each bucket. The buckets can be defined using an array operator (`[]`) or `#EACH`. The buckets can be defined using the following properties:
-** `node` \<- <<Rule Types,global rules>>, i.e. with the `cores` attribute, may only specify this attribute
+* `#EQUAL`:  This is applied to the `replica` and `cores` attributes only. This means an equal number of replicas/cores in each bucket. The buckets can be defined using an array operator (`[]`) or `#EACH`. The buckets can be defined using the following properties:
+** `node` \<- <<Rule Types,global rules>>, i.e., with the `cores` attribute, may only specify this attribute
 ** `sysprop.*`
 ** `port`
 ** `diskType`
