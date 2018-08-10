@@ -39,10 +39,10 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * &lt;fieldType name="text_ko" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.KoreanTokenizerFactory"
- *       decompoundMode="DISCARD"
+ *       decompoundMode="discard"
  *       userDictionary="user.txt"
  *       userDictionaryEncoding="UTF-8"
- *       outputUnknownUnigrams="true"
+ *       outputUnknownUnigrams="false"
  *     /&gt;
  *  &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
