@@ -35,6 +35,18 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 /**
  * Factory for {@link KoreanTokenizer}.
+ * <pre class="prettyprint">
+ * &lt;fieldType name="text_ko" class="solr.TextField"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.KoreanTokenizerFactory"
+ *       decompoundMode="DISCARD"
+ *       userDictionary="user.txt"
+ *       userDictionaryEncoding="UTF-8"
+ *       outputUnknownUnigrams="true"
+ *     /&gt;
+ *  &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;
+ </pre>
  * @lucene.experimental
  */
 public class KoreanTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
