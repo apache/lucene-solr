@@ -18,11 +18,13 @@ package org.apache.lucene.document;
 
 import java.util.List;
 
+import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues.Relation;
 
+/** random bounding box and polygon query tests for random indexed {@link Polygon} types */
 public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
   protected final PolygonValidator VALIDATOR = new PolygonValidator();
@@ -53,30 +55,46 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Validator getValidator() {
+  protected Validator getValidator(QueryRelation relation) {
+    VALIDATOR.setRelation(relation);
     return VALIDATOR;
   }
 
-  protected class PolygonValidator implements Validator {
+  protected class PolygonValidator extends Validator {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Polygon2D poly = Polygon2D.create(quantizePolygon((Polygon)shape));
-      return poly.relate(minLat, maxLat, minLon, maxLon) != Relation.CELL_OUTSIDE_QUERY;
+      Polygon p = (Polygon)shape;
+      if (queryRelation == QueryRelation.WITHIN) {
+        // within: bounding box of shape should be within query box
+        return minLat <= quantizeLat(p.minLat) && maxLat >= quantizeLat(p.maxLat)
+            && minLon <= quantizeLon(p.minLon) && maxLon >= quantizeLon(p.maxLon);
+      }
+
+      Polygon2D poly = Polygon2D.create(quantizePolygon(p));
+      Relation r = poly.relate(minLat, maxLat, minLon, maxLon);
+      if (queryRelation == QueryRelation.DISJOINT) {
+        return r == Relation.CELL_OUTSIDE_QUERY;
+      }
+      return r != Relation.CELL_OUTSIDE_QUERY;
     }
 
     @Override
     public boolean testPolygonQuery(Polygon2D query, Object shape) {
-
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate((Polygon) shape);
       for (Tessellator.Triangle t : tessellation) {
         // we quantize the triangle for consistency with the index
-        if (query.relateTriangle(quantizeLon(t.getLon(0)), quantizeLat(t.getLat(0)),
+        Relation r = query.relateTriangle(quantizeLon(t.getLon(0)), quantizeLat(t.getLat(0)),
             quantizeLon(t.getLon(1)), quantizeLat(t.getLat(1)),
-            quantizeLon(t.getLon(2)), quantizeLat(t.getLat(2))) != Relation.CELL_OUTSIDE_QUERY) {
-          return true;
+            quantizeLon(t.getLon(2)), quantizeLat(t.getLat(2)));
+        if (queryRelation == QueryRelation.DISJOINT) {
+          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
+        } else if (queryRelation == QueryRelation.WITHIN) {
+          if (r != Relation.CELL_INSIDE_QUERY) return false;
+        } else {
+          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
         }
       }
-      return false;
+      return queryRelation == QueryRelation.INTERSECTS ? false : true;
     }
   }
 }

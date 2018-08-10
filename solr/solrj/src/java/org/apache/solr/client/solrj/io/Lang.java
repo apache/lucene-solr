@@ -246,6 +246,7 @@ public class Lang {
         .withFunctionName("zeros", ZerosEvaluator.class)
         .withFunctionName("getValue", GetValueEvaluator.class)
         .withFunctionName("setValue", SetValueEvaluator.class)
+        .withFunctionName("knnRegress", KnnRegressionEvaluator.class)
 
         // Boolean Stream Evaluators
 

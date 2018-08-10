@@ -20,33 +20,48 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 public class MockingHttp2SolrClient extends Http2SolrClient {
 
-  public enum Exp {CONNECT_EXCEPTION, SOCKET_EXCEPTION};
+  public enum Exp {CONNECT_EXCEPTION, SOCKET_EXCEPTION, BAD_REQUEST};
 
   private volatile Exp exp = null;
+  private boolean oneExpPerReq;
+  private Set<SolrRequest> reqGotException;
 
   public MockingHttp2SolrClient(String baseSolrUrl, Builder builder) {
     super(baseSolrUrl, builder);
+    this.oneExpPerReq = builder.oneExpPerReq;
+    this.reqGotException = new HashSet<>();
   }
 
   public static class Builder extends Http2SolrClient.Builder {
+    private boolean oneExpPerReq = false;
 
-    public Builder(String baseSolrUrl, UpdateShardHandlerConfig config) {
-      super(baseSolrUrl);
+    public Builder(UpdateShardHandlerConfig config) {
+      super();
       this.connectionTimeout(config.getDistributedConnectionTimeout());
       this.idleTimeout(config.getDistributedSocketTimeout());
     }
 
     public MockingHttp2SolrClient build() {
-      return new MockingHttp2SolrClient(baseSolrUrl, this);
+      return new MockingHttp2SolrClient(null, this);
+    }
+
+    // DBQ won't cause exception
+    Builder oneExpPerReq() {
+      oneExpPerReq = true;
+      return this;
     }
   }
 
@@ -55,12 +70,14 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
     this.exp = exp;
   }
 
-  private IOException exception() {
+  private Exception exception() {
     switch (exp) {
       case CONNECT_EXCEPTION:
         return new ConnectException();
       case SOCKET_EXCEPTION:
         return new SocketException();
+      case BAD_REQUEST:
+        return new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad Request");
       default:
         break;
     }
@@ -70,26 +87,68 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   @Override
   public NamedList<Object> request(SolrRequest request, String collection)
       throws SolrServerException, IOException {
+    if (request instanceof UpdateRequest) {
+      UpdateRequest ur = (UpdateRequest) request;
+      if (!ur.getDeleteQuery().isEmpty())
+        return super.request(request, collection);
+    }
+
     if (exp != null) {
-      if (LuceneTestCase.random().nextBoolean()) {
-        throw exception();
+      if (oneExpPerReq) {
+        if (reqGotException.contains(request))
+          return super.request(request, collection);
+        else
+          reqGotException.add(request);
+      }
+
+      Exception e = exception();
+      if (e instanceof IOException) {
+        if (LuceneTestCase.random().nextBoolean()) {
+          throw (IOException) e;
+        } else {
+          throw new SolrServerException(e);
+        }
+      } else if (e instanceof SolrServerException) {
+        throw (SolrServerException) e;
       } else {
-        throw new SolrServerException(exception());
+        throw new SolrServerException(e);
       }
     }
 
-    return super.request(request);
+    return super.request(request, collection);
   }
 
-  public Http2ClientResponse request(SolrRequest solrRequest, String collection, OnComplete onComplete)
+  public Http2ClientResponse request(SolrRequest request, String collection, OnComplete onComplete)
       throws SolrServerException, IOException {
+    if (request instanceof UpdateRequest) {
+      UpdateRequest ur = (UpdateRequest) request;
+      // won't throw exception if request is DBQ
+      if (ur.getDeleteQuery() != null && !ur.getDeleteQuery().isEmpty())
+        return super.request(request, collection, onComplete);
+    }
+
     if (exp != null) {
-      if (LuceneTestCase.random().nextBoolean()) {
-        throw exception();
+      if (oneExpPerReq) {
+        if (reqGotException.contains(request))
+          return super.request(request, collection, onComplete);
+        else
+          reqGotException.add(request);
+      }
+
+      Exception e = exception();
+      if (e instanceof IOException) {
+        if (LuceneTestCase.random().nextBoolean()) {
+          throw (IOException) e;
+        } else {
+          throw new SolrServerException(e);
+        }
+      } else if (e instanceof SolrServerException) {
+        throw (SolrServerException) e;
       } else {
-        throw new SolrServerException(exception());
+        throw new SolrServerException(e);
       }
     }
-    return super.request(solrRequest, collection, onComplete);
+
+    return super.request(request, collection, onComplete);
   }
 }

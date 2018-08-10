@@ -82,7 +82,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.SolrCmdDistributor.Node;
-import org.apache.solr.update.SolrCmdDistributor.RetryNode;
+import org.apache.solr.update.SolrCmdDistributor.ForwardNode;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.UpdateCommand;
@@ -111,6 +111,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public static final String DISTRIB_INPLACE_PREVVERSION = "distrib.inplace.prevversion";
   private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * Request forwarded to a leader of a different shard will be retried up to this amount of times by default
+   */
+  static final int MAX_RETRIES_ON_FORWARD_DEAULT = 25;
+  
+  /**
+   * Requests from leader to it's followers will be retried this amount of times by default
+   */
+  static final int MAX_RETRIES_TO_FOLLOWERS_DEFAULT = 3;
 
   /**
    * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
@@ -174,6 +184,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<Node> nodes;
   private Set<String> skippedCoreNodeNames;
   private boolean isIndexChanged = false;
+  
+  /**
+   * Number of times requests forwarded to some other shard's leader can be retried
+   */
+  private final int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD_DEAULT;
+  /**
+   * Number of times requests from leaders to followers can be retried
+   */
+  private final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 
   private UpdateCommand updateCommand;  // the current command this processor is working on.
     
@@ -367,7 +386,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           } else if (!clusterState.getLiveNodes().contains(replica.getNodeName()) || replica.getState() == Replica.State.DOWN) {
             skippedCoreNodeNames.add(replica.getName());
           } else {
-            nodes.add(new StdNode(new ZkCoreNodeProps(replica), collection, shardId));
+            nodes.add(new StdNode(new ZkCoreNodeProps(replica), collection, shardId, maxRetriesToFollowers));
           }
         }
         return nodes;
@@ -376,7 +395,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // I need to forward on to the leader...
         forwardToLeader = true;
         return Collections.singletonList(
-            new RetryNode(new ZkCoreNodeProps(leaderReplica), zkController.getZkStateReader(), collection, shardId));
+            new ForwardNode(new ZkCoreNodeProps(leaderReplica), zkController.getZkStateReader(), collection, shardId, maxRetriesOnForward));
       }
 
     } catch (InterruptedException e) {
@@ -763,7 +782,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
     for (final SolrCmdDistributor.Error error : errors) {
       
-      if (error.req.node instanceof RetryNode) {
+      if (error.req.node instanceof ForwardNode) {
         // if it's a forward, any fail is a problem - 
         // otherwise we assume things are fine if we got it locally
         // until we start allowing min replication param
@@ -1522,7 +1541,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // don't forward to ourself
           leaderForAnyShard = true;
         } else {
-          leaders.add(new RetryNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName));
+          leaders.add(new ForwardNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName, maxRetriesOnForward));
         }
       }
 
@@ -2084,7 +2103,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     private int achievedRf = Integer.MAX_VALUE;
     private final int requestedRf;
 
-    RollupRequestReplicationTracker(String minRepFact) {
+    public RollupRequestReplicationTracker(String minRepFact) {
       try {
         this.requestedRf = Integer.parseInt(minRepFact);
       } catch (NumberFormatException nfe) {
@@ -2138,7 +2157,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return requestedRf;
     }
 
-    LeaderRequestReplicationTracker(String shardId, int requestedRf) {
+    public LeaderRequestReplicationTracker(String shardId, int requestedRf) {
       this.requestedRf = requestedRf;
       this.myShardId = shardId;
     }
@@ -2150,8 +2169,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     public void trackRequestResult(Node node, boolean success) {
       if (log.isDebugEnabled()) {
-        log.debug("trackRequestResult(" + node + "): success? " + success +
-            ", shardId=" + myShardId);
+        log.debug("trackRequestResult({}): success? {}, shardId={}", node, success, myShardId);
       }
 
       if (success) {

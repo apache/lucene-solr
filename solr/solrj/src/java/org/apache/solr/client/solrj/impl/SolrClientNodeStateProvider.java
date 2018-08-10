@@ -94,7 +94,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return solrClient.getClusterStateProvider();
   }
 
-  private void readReplicaDetails() throws IOException {
+  protected void readReplicaDetails() throws IOException {
     ClusterStateProvider clusterStateProvider = getClusterStateProvider();
     ClusterState clusterState = clusterStateProvider.getClusterState();
     if (clusterState == null) { // zkStateReader still initializing

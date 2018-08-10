@@ -397,8 +397,8 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
           "No 'leader' replica available for shard " + slice.getName() + " of collection " + collection);
     }
-    return new SolrCmdDistributor.RetryNode(new ZkCoreNodeProps(leader), zkController.getZkStateReader(),
-        collection, slice.getName());
+    return new SolrCmdDistributor.ForwardNode(new ZkCoreNodeProps(leader), zkController.getZkStateReader(),
+        collection, slice.getName(), DistributedUpdateProcessor.MAX_RETRIES_ON_FORWARD_DEAULT);
   }
 
 }

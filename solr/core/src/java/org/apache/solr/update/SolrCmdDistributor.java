@@ -20,10 +20,13 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Phaser;
 
+import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -44,21 +47,20 @@ import org.slf4j.LoggerFactory;
  * Used for distributing commands from a shard leader to its replicas.
  */
 public class SolrCmdDistributor {
-  private static final int MAX_RETRIES_ON_FORWARD = 25;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final List<Error> allErrors = new ArrayList<>();
   private Http2SolrClient client;
   private Phaser pendingTasksPhaser = new Phaser(1);
-  private int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD;
+  private int retryPause = 500;
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     this.client = updateShardHandler.getUpdateOnlyHttpClient();
   }
-  
-  public SolrCmdDistributor(Http2SolrClient client, int maxRetriesOnForward) {
+
+  public SolrCmdDistributor(Http2SolrClient client, int retryPause) {
     this.client = client;
-    this.maxRetriesOnForward = maxRetriesOnForward;
+    this.retryPause = retryPause;
   }
   
   public void finish() {
@@ -73,6 +75,10 @@ public class SolrCmdDistributor {
                             RollupRequestReplicationTracker rollupTracker,
                             LeaderRequestReplicationTracker leaderTracker) throws IOException {
     
+    if (!cmd.isDeleteById()) {
+      blockUntilFinished(); // For DBQ, flush all writes before submitting
+    }
+    
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
@@ -82,7 +88,6 @@ public class SolrCmdDistributor {
       } else {
         uReq.deleteByQuery(cmd.query);
       }
-
       submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker), false);
     }
   }
@@ -198,47 +203,48 @@ public class SolrCmdDistributor {
   }
 
   private boolean checkRetry(Error err) {
-    String oldNodeUrl = err.req.node.getUrl();
+    log.info("SolrCmdDistributor got error", err);
+    try {
+      String oldNodeUrl = err.req.node.getUrl();
 
-    // if there is a retry url, we want to retry...
-    boolean isRetry = err.req.node.checkRetry();
+      /*
+       * if this is a retryable request we may want to retry, depending on the error we received and
+       * the number of times we have already retried
+       */
+      boolean isRetry = err.req.shouldRetry(err);
+      if (testing_errorHook != null) Diagnostics.call(testing_errorHook, err.t);
 
-    boolean doRetry = false;
-    int rspCode = err.statusCode;
-
-    if (testing_errorHook != null) Diagnostics.call(testing_errorHook,
-        err.t);
-
-    // this can happen in certain situations such as close
-    if (isRetry) {
-      if (rspCode == 404 || rspCode == 403 || rspCode == 503) {
-        doRetry = true;
-      }
-
-      // if it's a connect exception, lets try again
-      if (err.t instanceof SolrServerException) {
-        if (((SolrServerException) err.t).getRootCause() instanceof ConnectException) {
-          doRetry = true;
-        }
-      }
-
-      if (err.t instanceof ConnectException) {
-        doRetry = true;
-      }
-
-      if (err.req.retries < maxRetriesOnForward && doRetry) {
+      // this can happen in certain situations such as close
+      if (isRetry) {
         err.req.retries++;
 
-        SolrException.log(SolrCmdDistributor.log, "forwarding update to "
-            + oldNodeUrl + " failed - retrying ... retries: "
-            + err.req.retries + " " + err.req.cmd.toString() + " params:"
-            + err.req.uReq.getParams() + " rsp:" + rspCode, err.t);
-
+        if (err.req.node instanceof ForwardNode) {
+          SolrException.log(SolrCmdDistributor.log, "forwarding update to "
+              + oldNodeUrl + " failed - retrying ... retries: "
+              + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
+              + err.req.cmd.toString() + " params:"
+              + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.t);
+        } else {
+          SolrException.log(SolrCmdDistributor.log, "FROMLEADER request to "
+              + oldNodeUrl + " failed - retrying ... retries: "
+              + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
+              + err.req.cmd.toString() + " params:"
+              + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.t);
+        }
+        try {
+          Thread.sleep(retryPause); //TODO: Do we want this wait for every error?
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          log.warn(null, e);
+        }
         return true;
       } else {
         return false;
       }
-    } else {
+    } catch (Exception e) {
+      // continue on
+      log.error("Unexpected Error while doing request retries", e);
+      // avoid infinite loop
       return false;
     }
   }
@@ -265,6 +271,16 @@ public class SolrCmdDistributor {
       this.cmd = cmd;
       this.rollupTracker = rollupTracker;
       this.leaderTracker = leaderTracker;
+    }
+    
+    /**
+     * @return true if this request should be retried after receiving a particular error
+     *         false otherwise
+     */
+    boolean shouldRetry(Error err) {
+      boolean isRetry = node.checkRetry(err);
+      isRetry &= uReq.getDeleteQuery() == null || uReq.getDeleteQuery().isEmpty(); //Don't retry DBQs 
+      return isRetry && retries < node.getMaxRetries();
     }
     
     public String toString() {
@@ -338,27 +354,36 @@ public class SolrCmdDistributor {
   
   public static abstract class Node {
     public abstract String getUrl();
-    public abstract boolean checkRetry();
+    public abstract boolean checkRetry(Error e);
     public abstract String getCoreName();
     public abstract String getBaseUrl();
     public abstract ZkCoreNodeProps getNodeProps();
     public abstract String getCollection();
     public abstract String getShardId();
+    public abstract int getMaxRetries();
   }
 
   public static class StdNode extends Node {
     protected ZkCoreNodeProps nodeProps;
     protected String collection;
     protected String shardId;
+    private final boolean retry;
+    private final int maxRetries;
 
     public StdNode(ZkCoreNodeProps nodeProps) {
-      this(nodeProps, null, null);
+      this(nodeProps, null, null, 0);
     }
     
-    public StdNode(ZkCoreNodeProps nodeProps, String collection, String shardId) {    
+    public StdNode(ZkCoreNodeProps nodeProps, String collection, String shardId) {
+      this(nodeProps, collection, shardId, 0);
+    }
+    
+    public StdNode(ZkCoreNodeProps nodeProps, String collection, String shardId, int maxRetries) {
       this.nodeProps = nodeProps;
       this.collection = collection;
       this.shardId = shardId;
+      this.retry = maxRetries > 0;
+      this.maxRetries = maxRetries;
     }
     
     public String getCollection() {
@@ -380,8 +405,32 @@ public class SolrCmdDistributor {
     }
 
     @Override
-    public boolean checkRetry() {
+    public boolean checkRetry(Error err) {
+      if (!retry) return false;
+
+      if (err.statusCode == 404 || err.statusCode == 403 || err.statusCode == 503) {
+        return true;
+      }
+
+      // if it's a connect exception, lets try again
+      if (err.t instanceof SolrServerException) {
+        if (isRetriableException(((SolrServerException) err.t).getRootCause())) {
+          return true;
+        }
+      } else {
+        if (isRetriableException(err.t)) {
+          return true;
+        }
+      }
       return false;
+    }
+    
+    /**
+     * @return true if Solr should retry in case of hitting this exception
+     *         false otherwise
+     */
+    private boolean isRetriableException(Throwable t) {
+      return t instanceof SocketException || t instanceof NoHttpResponseException || t instanceof SocketTimeoutException;
     }
 
     @Override
@@ -404,6 +453,8 @@ public class SolrCmdDistributor {
       result = prime * result + ((baseUrl == null) ? 0 : baseUrl.hashCode());
       result = prime * result + ((coreName == null) ? 0 : coreName.hashCode());
       result = prime * result + ((url == null) ? 0 : url.hashCode());
+      result = prime * result + Boolean.hashCode(retry);
+      result = prime * result + Integer.hashCode(maxRetries);
       return result;
     }
 
@@ -413,6 +464,8 @@ public class SolrCmdDistributor {
       if (obj == null) return false;
       if (getClass() != obj.getClass()) return false;
       StdNode other = (StdNode) obj;
+      if (this.retry != other.retry) return false;
+      if (this.maxRetries != other.maxRetries) return false;
       String baseUrl = nodeProps.getBaseUrl();
       String coreName = nodeProps.getCoreName();
       String url = nodeProps.getCoreUrl();
@@ -432,39 +485,56 @@ public class SolrCmdDistributor {
     public ZkCoreNodeProps getNodeProps() {
       return nodeProps;
     }
+
+    @Override
+    public int getMaxRetries() {
+      return this.maxRetries;
+    }
   }
   
   // RetryNodes are used in the case of 'forward to leader' where we want
   // to try the latest leader on a fail in the case the leader just went down.
-  public static class RetryNode extends StdNode {
+  public static class ForwardNode extends StdNode {
     
     private ZkStateReader zkStateReader;
     
-    public RetryNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId) {
-      super(nodeProps, collection, shardId);
+    public ForwardNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId, int maxRetries) {
+      super(nodeProps, collection, shardId, maxRetries);
       this.zkStateReader = zkStateReader;
       this.collection = collection;
       this.shardId = shardId;
     }
 
     @Override
-    public boolean checkRetry() {
-      ZkCoreNodeProps leaderProps;
-      try {
-        leaderProps = new ZkCoreNodeProps(zkStateReader.getLeaderRetry(
-            collection, shardId));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return false;
-      } catch (Exception e) {
-        // we retry with same info
-        log.warn(null, e);
-        return true;
+    public boolean checkRetry(Error err) {
+      boolean doRetry = false;
+      if (err.statusCode == 404 || err.statusCode == 403 || err.statusCode == 503) {
+        doRetry = true;
       }
-     
-      this.nodeProps = leaderProps;
       
-      return true;
+      // if it's a connect exception, lets try again
+      if (err.t instanceof SolrServerException && ((SolrServerException) err.t).getRootCause() instanceof ConnectException) {
+        doRetry = true;
+      } else if (err.t instanceof ConnectException) {
+        doRetry = true;
+      }
+      if (doRetry) {
+        ZkCoreNodeProps leaderProps;
+        try {
+          leaderProps = new ZkCoreNodeProps(zkStateReader.getLeaderRetry(
+              collection, shardId));
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return false;
+        } catch (Exception e) {
+          // we retry with same info
+          log.warn(null, e);
+          return true;
+        }
+       
+        this.nodeProps = leaderProps;
+      }
+      return doRetry;
     }
 
     @Override
@@ -482,7 +552,7 @@ public class SolrCmdDistributor {
       if (this == obj) return true;
       if (!super.equals(obj)) return false;
       if (getClass() != obj.getClass()) return false;
-      RetryNode other = (RetryNode) obj;
+      ForwardNode other = (ForwardNode) obj;
       if (nodeProps.getCoreUrl() == null) {
         if (other.nodeProps.getCoreUrl() != null) return false;
       } else if (!nodeProps.getCoreUrl().equals(other.nodeProps.getCoreUrl())) return false;

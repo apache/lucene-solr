@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
@@ -94,6 +95,16 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return new Polygon(lats, lons);
   }
 
+  protected Line quantizeLine(Line line) {
+    double[] lats = new double[line.numPoints()];
+    double[] lons = new double[line.numPoints()];
+    for (int i = 0; i < lats.length; ++i) {
+      lats[i] = quantizeLat(line.getLat(i));
+      lons[i] = quantizeLon(line.getLon(i));
+    }
+    return new Line(lats, lons);
+  }
+
   protected abstract Field[] createIndexableFields(String field, Object shape);
 
   private void addShapeToDoc(String field, Document doc, Object shape) {
@@ -103,12 +114,12 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
-  protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
-    return LatLonShape.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
+  protected Query newRectQuery(String field, QueryRelation queryRelation, double minLat, double maxLat, double minLon, double maxLon) {
+    return LatLonShape.newBoxQuery(field, queryRelation, minLat, maxLat, minLon, maxLon);
   }
 
-  protected Query newPolygonQuery(String field, Polygon... polygons) {
-    return LatLonShape.newPolygonQuery(field, polygons);
+  protected Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
+    return LatLonShape.newPolygonQuery(field, queryRelation, polygons);
   }
 
   // A particularly tricky adversary for BKD tree:
@@ -240,7 +251,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           break;
         }
       }
-      Query query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+      QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Query query = newRectQuery(FIELD_NAME, queryRelation, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
       if (VERBOSE) {
         System.out.println("  query=" + query);
@@ -280,7 +292,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           expected = false;
         } else {
           // check quantized poly against quantized query
-          expected = getValidator().testBBoxQuery(quantizeLatCeil(rect.minLat), quantizeLat(rect.maxLat),
+          expected = getValidator(queryRelation).testBBoxQuery(quantizeLatCeil(rect.minLat), quantizeLat(rect.maxLat),
               quantizeLonCeil(rect.minLon), quantizeLon(rect.maxLon), shapes[id]);
         }
 
@@ -292,10 +304,11 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           } else {
             b.append("FAIL: id=" + id + " should not match but did\n");
           }
+          b.append("  relation=" + queryRelation + "\n");
           b.append("  query=" + query + " docID=" + docID + "\n");
           b.append("  shape=" + shapes[id] + "\n");
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  rect=Rectangle(" + quantizeLatCeil(rect.minLat) + " TO " + quantizeLat(rect.maxLat) + " lon=" + quantizeLonCeil(rect.minLon) + " TO " + quantizeLon(rect.maxLon) + ")");
+          b.append("  rect=Rectangle(" + quantizeLatCeil(rect.minLat) + " TO " + quantizeLat(rect.maxLat) + " lon=" + quantizeLonCeil(rect.minLon) + " TO " + quantizeLon(rect.maxLon) + ")\n");
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
@@ -326,7 +339,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
       // Polygon
       Polygon queryPolygon = GeoTestUtil.nextPolygon();
       Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
-      Query query = newPolygonQuery(FIELD_NAME, queryPolygon);
+      QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Query query = newPolygonQuery(FIELD_NAME, queryRelation, queryPolygon);
 
       if (VERBOSE) {
         System.out.println("  query=" + query);
@@ -365,7 +379,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = getValidator().testPolygonQuery(queryPoly2D, shapes[id]);
+          expected = getValidator(queryRelation).testPolygonQuery(queryPoly2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -376,6 +390,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           } else {
             b.append("FAIL: id=" + id + " should not match but did\n");
           }
+          b.append("  relation=" + queryRelation + "\n");
           b.append("  query=" + query + " docID=" + docID + "\n");
           b.append("  shape=" + shapes[id] + "\n");
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
@@ -394,7 +409,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
-  protected abstract Validator getValidator();
+  protected abstract Validator getValidator(QueryRelation relation);
 
   /** internal point class for testing point shapes */
   protected static class Point {
@@ -466,8 +481,13 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
-  protected interface Validator {
-    boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
-    boolean testPolygonQuery(Polygon2D poly2d, Object shape);
+  protected abstract class Validator {
+    protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
+    public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
+    public abstract boolean testPolygonQuery(Polygon2D poly2d, Object shape);
+
+    public void setRelation(QueryRelation relation) {
+      this.queryRelation = relation;
+    }
   }
 }

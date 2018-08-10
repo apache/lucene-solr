@@ -2856,7 +2856,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
   public void testPolyfit() throws Exception {
     String cexpr = "let(echo=true," +
                    "    a=array(0,1,2,3,4,5,6,7)," +
-                   "    fit=polyfit(a, 1))";
+                   "    fit=polyfit(a, 1)," +
+        "               predictions=predict(fit, a))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -2867,6 +2868,18 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     List<Number> out = (List<Number>)tuples.get(0).get("fit");
+    assertTrue(out.size() == 8);
+    assertTrue(out.get(0).intValue() == 0);
+    assertTrue(out.get(1).intValue() == 1);
+    assertTrue(out.get(2).intValue() == 2);
+    assertTrue(out.get(3).intValue() == 3);
+    assertTrue(out.get(4).intValue() == 4);
+    assertTrue(out.get(5).intValue() == 5);
+    assertTrue(out.get(6).intValue() == 6);
+    assertTrue(out.get(7).intValue() == 7);
+
+
+    out = (List<Number>)tuples.get(0).get("predictions");
     assertTrue(out.size() == 8);
     assertTrue(out.get(0).intValue() == 0);
     assertTrue(out.get(1).intValue() == 1);
@@ -3379,6 +3392,77 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(predictions.get(7).doubleValue(), 103.43841512086125, .0001);
     assertEquals(predictions.get(8).doubleValue(), 138.88047884217636, .0001);
     assertEquals(predictions.get(9).doubleValue(), 85.86401719768607, .0001);
+  }
+
+  @Test
+  public void testKnnRegress() throws Exception {
+    String cexpr = "let(echo=true, a=array(8.5, 12.89999962, 5.199999809, 10.69999981, 3.099999905, 3.5, 9.199999809, 9, 15.10000038, 10.19999981), " +
+                                  "b=array(5.099999905, 5.800000191, 2.099999905, 8.399998665, 2.900000095, 1.200000048, 3.700000048, 7.599999905, 7.699999809, 4.5)," +
+                                  "c=array(4.699999809, 8.800000191, 15.10000038, 12.19999981, 10.60000038, 3.5, 9.699999809, 5.900000095, 20.79999924, 7.900000095)," +
+                                  "d=array(85.09999847, 106.3000031, 50.20000076, 130.6000061, 54.79999924, 30.29999924, 79.40000153, 91, 135.3999939, 89.30000305)," +
+        "e=transpose(matrix(a, b, c))," +
+        "f=knnRegress(e, d, 1)," +
+        "g=predict(f, e))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> predictions = (List<Number>)tuples.get(0).get("g");
+    assertEquals(predictions.size(), 10);
+    //k=1 should bring back only one prediction for the exact match in the training set
+    assertEquals(predictions.get(0).doubleValue(), 85.09999847, 0);
+    assertEquals(predictions.get(1).doubleValue(), 106.3000031, 0);
+    assertEquals(predictions.get(2).doubleValue(), 50.20000076, 0);
+    assertEquals(predictions.get(3).doubleValue(), 130.6000061, 0);
+    assertEquals(predictions.get(4).doubleValue(), 54.79999924, 0);
+    assertEquals(predictions.get(5).doubleValue(), 30.29999924, 0);
+    assertEquals(predictions.get(6).doubleValue(), 79.40000153, 0);
+    assertEquals(predictions.get(7).doubleValue(), 91, 0);
+    assertEquals(predictions.get(8).doubleValue(), 135.3999939, 0);
+    assertEquals(predictions.get(9).doubleValue(), 89.30000305, 0);
+
+    cexpr = "let(echo=true, a=array(8.5, 12.89999962, 5.199999809, 10.69999981, 3.099999905, 3.5, 9.199999809, 9, 15.10000038, 10.19999981), " +
+        "b=array(5.099999905, 5.800000191, 2.099999905, 8.399998665, 2.900000095, 1.200000048, 3.700000048, 7.599999905, 7.699999809, 4.5)," +
+        "c=array(4.699999809, 8.800000191, 15.10000038, 12.19999981, 10.60000038, 3.5, 9.699999809, 5.900000095, 20.79999924, 7.900000095)," +
+        "d=array(85.09999847, 106.3000031, 50.20000076, 130.6000061, 54.79999924, 30.29999924, 79.40000153, 91, 135.3999939, 89.30000305)," +
+        "e=transpose(matrix(a, b, c))," +
+        "f=knnRegress(e, d, 1)," +
+        "g=predict(f, array(8, 5, 4)))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number prediction = (Number)tuples.get(0).get("g");
+    assertEquals(prediction.doubleValue(), 85.09999847, 0);
+
+    cexpr = "let(echo=true, a=array(8.5, 12.89999962, 5.199999809, 10.69999981, 3.099999905, 3.5, 9.199999809, 9, 15.10000038, 8.19999981), " +
+        "b=array(5.099999905, 5.800000191, 2.099999905, 8.399998665, 2.900000095, 1.200000048, 3.700000048, 7.599999905, 5.699999809, 4.5)," +
+        "c=array(4.699999809, 8.800000191, 15.10000038, 12.19999981, 10.60000038, 3.5, 9.699999809, 5.900000095, 20.79999924, 4.900000095)," +
+        "d=array(85.09999847, 106.3000031, 50.20000076, 130.6000061, 54.79999924, 30.29999924, 79.40000153, 91, 135.3999939, 89.30000305)," +
+        "e=transpose(matrix(a, b, c))," +
+        "f=knnRegress(e, d, 2)," +
+        "g=predict(f, array(8, 5, 4)))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    prediction = (Number)tuples.get(0).get("g");
+    assertEquals(prediction.doubleValue(), 87.20000076, 0);
   }
 
   @Test

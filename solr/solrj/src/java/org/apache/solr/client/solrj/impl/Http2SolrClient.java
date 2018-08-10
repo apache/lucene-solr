@@ -141,18 +141,20 @@ public class Http2SolrClient extends SolrClient {
     // TODO: what about shared instances?
     available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
 
-    if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
-      serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
-    }
+    if (serverBaseUrl != null)  {
+      if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
+        serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
+      }
 
-    if (serverBaseUrl.startsWith("//")) {
-      serverBaseUrl = serverBaseUrl.substring(1, serverBaseUrl.length());
+      if (serverBaseUrl.startsWith("//")) {
+        serverBaseUrl = serverBaseUrl.substring(1, serverBaseUrl.length());
+      }
+      this.serverBaseUrl = serverBaseUrl;
     }
 
     if (builder.idleTimeout != null) idleTimeout = builder.idleTimeout;
     else idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
 
-    this.serverBaseUrl = serverBaseUrl;
     if (builder.httpClient == null) {
       httpClient = createHttpClient(builder);
       closeClient = true;

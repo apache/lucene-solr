@@ -134,6 +134,12 @@ Optimizations
   or phrase queries as sub queries, which know how to leverage this information
   to run faster. (Adrien Grand)
 
+* LUCENE-8439: Disjunction max queries can skip blocks to select the top documents
+  if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
+
+* LUCENE-8204: Boolean queries with a mix of required and optional clauses are
+  now faster if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
+
 ======================= Lucene 7.5.0 =======================
 
 API Changes:
@@ -176,6 +182,12 @@ API Changes:
 
 Bug Fixes:
 
+* LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
+  bogus tiles when building GeoPolygons. (Ignacio Vera)
+
+* LUCENE-8444: Prevent building functionally identical plane bounds when constructing
+  DualCrossingEdgeIterator . (Ignacio Vera)
+
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
 
 * LUCENE-8164: IndexWriter silently accepts broken payload. This has been fixed
@@ -212,6 +224,8 @@ Changes in Runtime Behavior:
   used by deleted documents. (Adrien Grand)
 
 Improvements
+
+* LUCENE-8447: Add DISJOINT and WITHIN support to LatLonShape queries. (Nick Knize)
 
 * LUCENE-8440: Add support for indexing and searching Line and Point shapes using LatLonShape encoding (Nick Knize)
 
