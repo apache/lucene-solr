@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -23,7 +22,6 @@ import org.apache.lucene.util.UnicodeUtil;
 
 public final class ByteBuffersDataOutput extends DataOutput implements Accountable {
   private final static ByteBuffer EMPTY = ByteBuffer.allocate(0);
-  private final static List<ByteBuffer> EMPTY_LIST = Arrays.asList(EMPTY);
   private final static byte [] EMPTY_BYTE_ARRAY = {};
 
   public final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = ByteBuffer::allocate;
@@ -175,16 +173,41 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   }
 
   /**
-   * Return a list of read-only {@link ByteBuffer} blocks over the 
+   * Return a list of read-only view of {@link ByteBuffer} blocks over the 
    * current content written to the output.
    */
   public ArrayList<ByteBuffer> toBufferList() {
     if (blocks.isEmpty()) {
-      return new ArrayList<>(EMPTY_LIST);
+      return new ArrayList<>();
     } else {
       ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
       for (ByteBuffer bb : blocks) {
         bb = (ByteBuffer) bb.asReadOnlyBuffer().flip(); // cast for jdk8 (covariant in jdk9+) 
+        result.add(bb);
+      }
+      return result;
+    }
+  }
+
+  /**
+   * Returns a list of writeable blocks over the (source) content buffers.
+   * 
+   * This method returns the raw content of source buffers that may change over the lifetime 
+   * of this object (blocks can be recycled or discarded, for example). Most applications 
+   * should favor calling {@link #toBufferList()} which returns a read-only <i>view</i> over 
+   * the content of the source buffers.
+   * 
+   * The difference between {@link #toBufferList()} and {@link #toWriteableBufferList()} is that
+   * read-only view of source buffers will always return {@code false} from {@link ByteBuffer#hasArray()}
+   * (which sometimes may be required to avoid double copying).
+   */
+  public ArrayList<ByteBuffer> toWriteableBufferList() {
+    if (blocks.isEmpty()) {
+      return new ArrayList<>();
+    } else {
+      ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
+      for (ByteBuffer bb : blocks) {
+        bb = (ByteBuffer) bb.duplicate().flip(); // cast for jdk8 (covariant in jdk9+) 
         result.add(bb);
       }
       return result;

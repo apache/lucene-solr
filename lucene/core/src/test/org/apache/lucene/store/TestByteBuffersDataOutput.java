@@ -130,4 +130,23 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     assertEquals(len, o.size());
     Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArrayCopy());
   }
+
+  @Test
+  public void testToBufferListReturnsReadOnlyBuffers() throws Exception {
+    ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
+    dst.writeBytes(new byte [100]);
+    for (ByteBuffer bb : dst.toBufferList()) {
+      assertTrue(bb.isReadOnly());
+    }
+  }
+  
+  @Test
+  public void testToWriteableBufferListReturnsOriginalBuffers() throws Exception {
+    ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
+    dst.writeBytes(new byte [100]);
+    for (ByteBuffer bb : dst.toWriteableBufferList()) {
+      assertTrue(!bb.isReadOnly());
+      assertTrue(!bb.hasArray()); // heap-based by default, so array should be there.
+    }
+  }
 }

@@ -91,10 +91,13 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
         int blockOffset = blockOffset(pos);
         block.position(blockOffset);
         int chunk = Math.min(len, block.remaining());
-        block.limit(blockOffset + chunk);
+        if (chunk == 0) {
+          throw new EOFException();
+        }
 
-        // Update pos early on for EOF detection, then try to get buffer content.
+        // Update pos early on for EOF detection on output buffer, then try to get buffer content.
         pos += chunk;
+        block.limit(blockOffset + chunk);
         buffer.put(block);
 
         len -= chunk;
@@ -115,6 +118,9 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
         ByteBuffer block = blocks[blockIndex(pos)].duplicate();
         block.position(blockOffset(pos));
         int chunk = Math.min(len, block.remaining());
+        if (chunk == 0) {
+          throw new EOFException();
+        }
 
         // Update pos early on for EOF detection, then try to get buffer content.
         pos += chunk;
