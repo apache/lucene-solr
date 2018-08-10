@@ -1889,4 +1889,26 @@ shape:
     assertTrue(polygon.isWithin(point) == largePolygon.isWithin(point));
   }
 
+  @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8451")  
+  public void testLUCENE8451() {
+    //POLYGON((-2.5185339401969213 -24.093993739745027,0.0 8.828539494442529E-27,5.495998489568957E-11 -8.321407453133E-11,2.7174659198424288E-11 1.0260761462208114E-10,88.32137548549387 16.934529875343244,-87.97237709688223 39.919704493657484,-88.0876897472551 34.91204903885665,-2.5185339401969213 -24.093993739745027))
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-24.093993739745027), Geo3DUtil.fromDegrees(-2.5185339401969213)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(8.828539494442529E-27), Geo3DUtil.fromDegrees(0.0)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-8.321407453133E-11), Geo3DUtil.fromDegrees(5.495998489568957E-11)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(1.0260761462208114E-10), Geo3DUtil.fromDegrees(2.7174659198424288E-11)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(16.934529875343244), Geo3DUtil.fromDegrees(88.32137548549387)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(39.919704493657484), Geo3DUtil.fromDegrees(-87.97237709688223)));
+    points.add(new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(34.91204903885665), Geo3DUtil.fromDegrees(-88.0876897472551)));
+    final GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points);
+    final GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, description);
+    final GeoPolygon largePolygon = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, Collections.singletonList(description));
+
+    //POINT(179.99999999999983 -5.021400461974724E-11)
+    final GeoPoint point = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.021400461974724E-11), Geo3DUtil.fromDegrees(179.99999999999983));
+    assertTrue(polygon.isWithin(point) == largePolygon.isWithin(point));
+
+  }
+
 }
