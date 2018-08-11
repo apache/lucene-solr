@@ -33,13 +33,10 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
-
 /**
  * Tests for the field mutating update processors
  * that parse Dates, Longs, Doubles, and Booleans.
