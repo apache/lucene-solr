@@ -119,6 +119,9 @@ Other:
 * LUCENE-8420: Upgrade OpenNLP to 1.9.0 so OpenNLP tool can read the new model format which 1.8.x
   cannot read. 1.9.0 can read the old format. (Koji Sekiguchi)
 
+* LUCENE-8453: Add documentation to analysis factories of Korean (Nori) analyzer
+  module.  (Tomoko Uchida via Uwe Schindler)
+
 ======================= Lucene 7.4.1 =======================
 
 Bug Fixes:
