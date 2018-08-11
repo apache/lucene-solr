@@ -40,10 +40,10 @@ import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
  * &lt;fieldType name="text_ko" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.KoreanTokenizerFactory"
- *       decompoundMode="discard"
- *       userDictionary="user.txt"
- *       userDictionaryEncoding="UTF-8"
- *       outputUnknownUnigrams="false"
+ *                decompoundMode="discard"
+ *                userDictionary="user.txt"
+ *                userDictionaryEncoding="UTF-8"
+ *                outputUnknownUnigrams="false"
  *     /&gt;
  *  &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
