@@ -34,6 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *    &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
+ *
+ * <p>
+ * Supports the following attributes:
+ * <ul>
+ *   <li>tags: List of stop tags. if not specified, {@link KoreanPartOfSpeechStopFilter#DEFAULT_STOP_TAGS} is used.</li>
+ * </ul>
  * @lucene.experimental
  */
 public class KoreanPartOfSpeechStopFilterFactory extends TokenFilterFactory {

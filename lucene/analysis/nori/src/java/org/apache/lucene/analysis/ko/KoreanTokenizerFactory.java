@@ -32,6 +32,7 @@ import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
 
 /**
  * Factory for {@link KoreanTokenizer}.
@@ -46,7 +47,16 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  *     /&gt;
  *  &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
- </pre>
+ * </pre>
+ *
+ * <p>
+ * Supports the following attributes:
+ * <ul>
+ *   <li>userDictionary: User dictionary path.</li>
+ *   <li>userDictionaryEncoding: User dictionary encoding.</li>
+ *   <li>decompoundMode: Decompound mode. Either 'none', 'discard', 'mixed'. Default is discard. See {@link DecompoundMode}</li>
+ *   <li>outputUnknownUnigrams: If true outputs unigrams for unknown words.</li>
+ * </ul>
  * @lucene.experimental
  */
 public class KoreanTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
