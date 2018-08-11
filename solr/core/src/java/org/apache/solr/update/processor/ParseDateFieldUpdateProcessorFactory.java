@@ -26,6 +26,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQueries;
 import java.util.Collection;
@@ -120,6 +121,16 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
       protected Object mutateValue(Object srcVal) {
         if (srcVal instanceof CharSequence) {
           String srcStringVal = srcVal.toString();
+          // trim single quotes around date if present
+          // see issue #5279  (Apache HttpClient)
+          int stringValLen = srcStringVal.length();
+          if (stringValLen > 1
+              && srcStringVal.startsWith("'")
+              && srcStringVal.endsWith("'")
+          ) {
+            srcStringVal = srcStringVal.substring(1, stringValLen - 1);
+          }
+
           for (Map.Entry<String,DateTimeFormatter> format : formats.entrySet()) {
             DateTimeFormatter parser = format.getValue();
             try {
@@ -159,8 +170,9 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
     Collection<String> formatsParam = args.removeConfigArgs(FORMATS_PARAM);
     if (null != formatsParam) {
       for (String value : formatsParam) {
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
-            .appendPattern(value).toFormatter(locale).withZone(defaultTimeZone);
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder().parseLenient().parseCaseInsensitive()
+            .appendPattern(value).toFormatter(locale)
+            .withResolverStyle(ResolverStyle.LENIENT).withZone(defaultTimeZone);
         validateFormatter(formatter);
         formats.put(value, formatter);
       }
