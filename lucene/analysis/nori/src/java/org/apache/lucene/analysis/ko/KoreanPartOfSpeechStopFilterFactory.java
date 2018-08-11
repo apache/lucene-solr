@@ -25,12 +25,27 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link KoreanPartOfSpeechStopFilter}.
+ * <pre class="prettyprint">
+ * &lt;fieldType name="text_ko" class="solr.TextField"&gt;
+ *    &lt;analyzer&gt;
+ *      &lt;tokenizer class="solr.KoreanTokenizerFactory"/&gt;
+ *      &lt;filter class="solr.KoreanPartOfSpeechStopFilterFactory"
+ *              tags="E,J"/&gt;
+ *    &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;
+ * </pre>
+ *
+ * <p>
+ * Supports the following attributes:
+ * <ul>
+ *   <li>tags: List of stop tags. if not specified, {@link KoreanPartOfSpeechStopFilter#DEFAULT_STOP_TAGS} is used.</li>
+ * </ul>
  * @lucene.experimental
  */
 public class KoreanPartOfSpeechStopFilterFactory extends TokenFilterFactory {
   private Set<POS.Tag> stopTags;
 
-  /** Creates a new JapanesePartOfSpeechStopFilterFactory */
+  /** Creates a new KoreanPartOfSpeechStopFilterFactory */
   public KoreanPartOfSpeechStopFilterFactory(Map<String,String> args) {
     super(args);
     Set<String> stopTagStr = getSet(args, "tags");
