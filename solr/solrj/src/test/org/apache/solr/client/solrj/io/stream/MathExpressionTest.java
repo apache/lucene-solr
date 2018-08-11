@@ -3466,6 +3466,52 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testGaussfit() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "x=array(79.56,81.32,82.82,84.64,86.18,87.89,89.53,91.14,92.8,94.43,96.08,97.72,99.37,101,102.66,104.3,105.94,107.59,109.23,110.87,112.52,114.13,115.82,117.44,119.27), " +
+        "y=array(3, 3, 26, 54, 139, 344, 685, 1289, 2337, 3593, 4781, 5964, 6538, 6357, 5705, 4548, 3280, 2058, 1191, 649, 285, 112, 34, 18, 7)," +
+        "g=gaussfit(x,y))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> predictions = (List<Number>)tuples.get(0).get("g");
+    assertEquals(predictions.size(), 25);
+    assertEquals(predictions.get(0).doubleValue(), 1.5217511259930976, 0);
+    assertEquals(predictions.get(1).doubleValue(), 6.043059526517849, 0);
+    assertEquals(predictions.get(2).doubleValue(), 17.74876254851105, 0);
+    assertEquals(predictions.get(3).doubleValue(), 58.12355990996735, 0);
+    assertEquals(predictions.get(4).doubleValue(), 142.98079858358975, 0);
+    assertEquals(predictions.get(5).doubleValue(), 347.5571069372449, 0);
+    assertEquals(predictions.get(6).doubleValue(), 729.8016076579886, 0);
+    assertEquals(predictions.get(7).doubleValue(), 1361.3981561397804, 0);
+    assertEquals(predictions.get(8).doubleValue(), 2322.566306687647, 0);
+    assertEquals(predictions.get(9).doubleValue(), 3524.6949840829216, 0);
+    assertEquals(predictions.get(10).doubleValue(), 4824.273031596218, 0);
+    assertEquals(predictions.get(11).doubleValue(), 5915.519574509397, 0);
+    assertEquals(predictions.get(12).doubleValue(),  6514.552728035438, 0);
+    assertEquals(predictions.get(13).doubleValue(), 6438.3295998729845, 0);
+    assertEquals(predictions.get(14).doubleValue(), 5702.59200814961, 0);
+    assertEquals(predictions.get(15).doubleValue(), 4538.7945530007, 0);
+    assertEquals(predictions.get(16).doubleValue(), 3243.606591784876, 0);
+    assertEquals(predictions.get(17).doubleValue(), 2074.9937785806937, 0);
+    assertEquals(predictions.get(18).doubleValue(), 1194.697766441063, 0);
+    assertEquals(predictions.get(19).doubleValue(), 617.6162726398896, 0);
+    assertEquals(predictions.get(20).doubleValue(), 285.248193084953, 0);
+    assertEquals(predictions.get(21).doubleValue(), 120.84133189889134, 0);
+    assertEquals(predictions.get(22).doubleValue(), 43.87052382491055, 0);
+    assertEquals(predictions.get(23).doubleValue(), 14.918461016939522, 0);
+    assertEquals(predictions.get(24).doubleValue(), 3.887269101204326, 0);
+  }
+
+
+  @Test
   public void testPlot() throws Exception {
     String cexpr = "let(a=array(3,2,3), plot(type=scatter, x=a, y=array(5,6,3)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
