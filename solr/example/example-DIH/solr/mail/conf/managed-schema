@@ -915,6 +915,40 @@
       </analyzer>
     </fieldType>
     
+    <!-- Korean morphological analysis -->
+    <dynamicField name="*_txt_ko" type="text_ko"  indexed="true"  stored="true"/>
+    <fieldType name="text_ko" class="solr.TextField" positionIncrementGap="100">
+      <analyzer>
+        <!-- Nori Korean morphological analyzer/tokenizer (KoreanTokenizer)
+          The Korean (nori) analyzer integrates Lucene nori analysis module into Solr.
+          It uses the mecab-ko-dic dictionary to perform morphological analysis of Korean texts.
+
+          This dictionary was built with MeCab, it defines a format for the features adapted
+          for the Korean language.
+          
+          Nori also has a convenient user dictionary feature that allows overriding the statistical
+          model with your own entries for segmentation, part-of-speech tags and readings without a need
+          to specify weights. Notice that user dictionaries have not been subject to extensive testing.
+
+          The tokenizer supports multiple schema attributes:
+            * userDictionary: User dictionary path.
+            * userDictionaryEncoding: User dictionary encoding.
+            * decompoundMode: Decompound mode. Either 'none', 'discard', 'mixed'. Default is 'discard'.
+            * outputUnknownUnigrams: If true outputs unigrams for unknown words.
+        -->
+        <tokenizer class="solr.KoreanTokenizerFactory" decompoundMode="discard" outputUnknownUnigrams="false"/>
+        <!-- Removes some part of speech stuff like EOMI (Pos.E), you can add a parameter 'tags',
+          listing the tags to remove. By default it removes: 
+          E, IC, J, MAG, MAJ, MM, SP, SSC, SSO, SC, SE, XPN, XSA, XSN, XSV, UNA, NA, VSV
+          This is basically an equivalent to stemming.
+        -->
+        <filter class="solr.KoreanPartOfSpeechStopFilterFactory" />
+        <!-- Replaces term text with the Hangul transcription of Hanja characters, if applicable: -->
+        <filter class="solr.KoreanReadingFormFilterFactory" />
+        <filter class="solr.LowerCaseFilterFactory" />
+      </analyzer>
+    </fieldType>
+
     <!-- Latvian -->
     <fieldType name="text_lv" class="solr.TextField" positionIncrementGap="100">
       <analyzer> 
