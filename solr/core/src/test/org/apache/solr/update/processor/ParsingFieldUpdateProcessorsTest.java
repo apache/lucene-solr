@@ -896,7 +896,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertTrue(mixedDates.isEmpty());
   }
 
-  // TestsExtractionDateUtil that mimic TestExtractionDateUtil
+  // tests that mimic the tests that were in TestExtractionDateUtil
   public void testISO8601() throws IOException {
     // dates with atypical years
     // This test tries to mimic TestExtractionDateUtil#testISO8601
@@ -913,7 +913,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     for(String notInFormatDateString: dateStrings) {
       IndexSchema schema = h.getCore().getLatestSchema();
       assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
-      SolrInputDocument d = processAdd("parse-date-extraction-util-formats", doc(f("id", id), f("date_dt", notInFormatDateString)));
+      SolrInputDocument d = processAdd("parse-date-patterns-from-extract-contrib", doc(f("id", id), f("date_dt", notInFormatDateString)));
       assertNotNull(d);
       assertTrue("Date string: " + notInFormatDateString + " was not parsed as a date", d.getFieldValue("date_dt") instanceof Date);
       assertEquals(notInFormatDateString, ((Date) d.getField("date_dt").getFirstValue()).toInstant().toString());
@@ -936,7 +936,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       String expectedString = lenientDateStrings[++i];
       IndexSchema schema = h.getCore().getLatestSchema();
       assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
-      SolrInputDocument d = processAdd("parse-date-extraction-util-formats", doc(f("id", id), f("date_dt", lenientDateString)));
+      SolrInputDocument d = processAdd("parse-date-patterns-from-extract-contrib", doc(f("id", id), f("date_dt", lenientDateString)));
       assertNotNull(d);
       assertTrue("Date string: " + lenientDateString + " was not parsed as a date",
           d.getFieldValue("date_dt") instanceof Date);
@@ -954,40 +954,39 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss z yyyy", Locale.ENGLISH)
             .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli());
 
-    assertParsedDate(inputString, Date.from(Instant.ofEpochMilli(expectTs)), "parse-date-extraction-util-formats");
+    assertParsedDate(inputString, Date.from(Instant.ofEpochMilli(expectTs)), "parse-date-patterns-from-extract-contrib");
   }
 
   public void testNoTime() throws IOException {
     Instant instant = instant(2005, 10, 7, 0, 0, 0);
     String inputString = "2005-10-07";
-    assertParsedDate(inputString, Date.from(instant), "parse-date-extraction-util-formats");
+    assertParsedDate(inputString, Date.from(instant), "parse-date-patterns-from-extract-contrib");
   }
 
   public void testRfc1123() throws IOException {
-    assertParsedDate("Fri, 07 Oct 2005 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-extraction-util-formats");
+    assertParsedDate("Fri, 07 Oct 2005 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
   }
 
   public void testRfc1036() throws IOException {
-    assertParsedDate("Friday, 07-Oct-05 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-extraction-util-formats");
+    assertParsedDate("Friday, 07-Oct-05 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12593")
   public void testAnsiC() throws IOException {
     assertParsedDate(
-        "Fri Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-extraction-util-formats");
+        "Fri Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
 
-    assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-extraction-util-formats"); // with timezone (not ANSI C) in DST
+    assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib"); // with timezone (not ANSI C) in DST
   }
 
   public void testLenient() throws IOException {
     /// the Ansi C format, but input here has longer day of week
-    assertParsedDate("Friday Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-extraction-util-formats");
+    assertParsedDate("Friday Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
   }
 
   public void testParseQuotedDate() throws IOException {
     // also using 2 digit day
     assertParsedDate("'Fri, 14 Oct 2005 13:14:15 GMT'",
-        Date.from(instant(2005, 10, 14, 13, 14, 15)), "parse-date-extraction-util-formats");
+        Date.from(instant(2005, 10, 14, 13, 14, 15)), "parse-date-patterns-from-extract-contrib");
   }
 
   private static Instant instant(final int year, final int month, final int day, int hour, int minute, int second) {

@@ -109,12 +109,12 @@
     </processor>
   </updateRequestProcessorChain>
 
-  <updateRequestProcessorChain name="parse-date-extraction-util-formats">
+  <updateRequestProcessorChain name="parse-date-patterns-from-extract-contrib">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="defaultTimeZone">UTC</str>
       <str name="locale">en</str>
       <arr name="format">
-        <str>yyyy-MM-dd['T'[HH:mm:ss['.'SSS]['Z'</str>
+        <str>yyyy-MM-dd['T'[HH:mm:ss['.'SSS][z</str>
         <str>yyyy-MM-dd HH:mm:ss</str>
         <str>EEE MMM d HH:mm:ss [z ]yyyy</str>
         <str>EEEE, dd-MMM-yy HH:mm:ss zzz</str>
