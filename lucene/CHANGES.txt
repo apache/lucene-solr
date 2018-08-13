@@ -108,6 +108,9 @@ Improvements
 
 * LUCENE-8414: Make segmentInfos private in IndexWriter (Simon Willnauer, Nhat Nguyen)
 
+* LUCENE-8446: The UnifiedHighlighter's DefaultPassageFormatter now treats overlapping matches in
+  the passage as merged (as if one larger match).  (David Smiley)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
