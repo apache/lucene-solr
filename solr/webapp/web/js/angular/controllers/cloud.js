@@ -407,13 +407,18 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               if (cores) {
                 for (coreId in cores) {
                   var core = cores[coreId];
-                  var keyName = "solr.core." + core['core'].replace(/(.*?)_(shard\d+)_(replica_.\d+)/, '\$1.\$2.\$3');
+                  var keyName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica_?[ntp]?\d+)/, '\$1.\$2.\$4');
                   var nodeMetric = m.metrics[keyName];
                   var size = nodeMetric['INDEX.sizeInBytes'];
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  core['label'] = core['core'].replace(/(.*?)_shard(\d+)_replica_.(\d+)/, '\$1_s\$2r\$3');
+                  core['label'] = core['core'].replace(/(.*?)_shard((\d+_?)+)_replica_?[ntp]?(\d+)/, '\$1_s\$2r\$4');
+                  if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
+                    // If core state is not active, display the real state, or if shard is inactive, display that
+                    var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
+                    core['label'] += "_(" + labelState + ")";
+                  }
                   indexSizeTotal += size;
                   var numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
                   numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
