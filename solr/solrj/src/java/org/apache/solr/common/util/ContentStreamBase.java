@@ -87,7 +87,7 @@ public abstract class ContentStreamBase implements ContentStream
       
       contentType = conn.getContentType();
       name = url.toExternalForm();
-      size = new Long( conn.getContentLength() );
+      size = (long) conn.getContentLength();
       return conn.getInputStream();
     }
   }
@@ -155,7 +155,7 @@ public abstract class ContentStreamBase implements ContentStream
       this.contentType = contentType;
       name = null;
       try {
-        size = new Long( str.getBytes(DEFAULT_CHARSET).length );
+        size = (long) str.getBytes(DEFAULT_CHARSET).length;
       } catch (UnsupportedEncodingException e) {
         // won't happen
         throw new RuntimeException(e);
@@ -277,7 +277,7 @@ public abstract class ContentStreamBase implements ContentStream
       
       this.contentType = contentType;
       name = source;
-      size = new Long(bytes.length);
+      size = (long) bytes.length;
       sourceInfo = source;
     }
 

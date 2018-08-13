@@ -16,6 +16,9 @@
  */
 package org.apache.solr.update;
 
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,15 +29,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.index.Term;
@@ -47,10 +49,14 @@ import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.handler.loader.XMLLoader;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
@@ -61,7 +67,9 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -73,7 +81,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   private static final String child = "child_s";
   private static final String parent = "parent_s";
   private static final String type = "type_s";
-  
+
   private static ExecutorService exe;
   private static AtomicInteger counter = new AtomicInteger();
   private static boolean cachedMode;
@@ -82,6 +90,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -159,15 +170,15 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
                doc(child,"d","id", "66")), "overwrite", "false"));
     
     assertU(commit());
-    
+
     assertQ(req(parent+":"+overwritten, "//*[@numFound='1']"));
     assertQ(req(parent+":"+dubbed, "//*[@numFound='2']"));
-    
+
     final SolrIndexSearcher searcher = getSearcher();
     assertSingleParentOf(searcher, one("ab"), dubbed);
-    
+
     final TopDocs docs = searcher.search(join(one("cd")), 10);
-    assertEquals(2, docs.totalHits);
+    assertEquals(2, docs.totalHits.value);
     final String pAct = searcher.doc(docs.scoreDocs[0].doc).get(parent)+
                         searcher.doc(docs.scoreDocs[1].doc).get(parent);
     assertTrue(pAct.contains(dubbed) && pAct.contains(overwritten) && pAct.length()==2);
@@ -260,10 +271,96 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertQ(req(parent + ":Y"), "//*[@numFound='0']");
     assertQ(req(parent + ":W"), "//*[@numFound='0']");
   }
-  
+
+  @Test
+  public void testExceptionThrownChildDocWAnonymousChildren() throws Exception {
+    SolrInputDocument document1 = sdoc("id", id(), parent, "X",
+        "child1_s", sdoc("id", id(), "child_s", "y"),
+        "child2_s", sdoc("id", id(), "child_s", "z"));
+
+    SolrInputDocument exceptionChildDoc = (SolrInputDocument) document1.get("child1_s").getValue();
+    addChildren("child", exceptionChildDoc, 0, false);
+
+    thrown.expect(SolrException.class);
+    final String expectedMessage = "Anonymous child docs can only hang from others or the root";
+    thrown.expectMessage(expectedMessage);
+    indexSolrInputDocumentsDirectly(document1);
+  }
+
+  @Test
+  public void testSolrNestedFieldsList() throws Exception {
+
+    final String id1 = id();
+    List<SolrInputDocument> children1 = Arrays.asList(sdoc("id", id(), child, "y"), sdoc("id", id(), child, "z"));
+
+    SolrInputDocument document1 = sdoc("id", id1, parent, "X",
+        "children", children1);
+
+    final String id2 = id();
+    List<SolrInputDocument> children2 = Arrays.asList(sdoc("id", id(), child, "b"), sdoc("id", id(), child, "c"));
+
+    SolrInputDocument document2 = sdoc("id", id2, parent, "A",
+        "children", children2);
+
+    indexSolrInputDocumentsDirectly(document1, document2);
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertJQ(req("q","*:*",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/numFound==" + "XyzAbc".length());
+    assertJQ(req("q",parent+":" + document2.getFieldValue(parent),
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/docs/[0]/id=='" + document2.getFieldValue("id") + "'");
+    assertQ(req("q",child+":(y z b c)", "sort","_docid_ asc"),
+        "//*[@numFound='" + "yzbc".length() + "']", // assert physical order of children
+        "//doc[1]/arr[@name='child_s']/str[text()='y']",
+        "//doc[2]/arr[@name='child_s']/str[text()='z']",
+        "//doc[3]/arr[@name='child_s']/str[text()='b']",
+        "//doc[4]/arr[@name='child_s']/str[text()='c']");
+    assertSingleParentOf(searcher, one("bc"), "A");
+    assertSingleParentOf(searcher, one("yz"), "X");
+  }
+
+  @Test
+  public void testSolrNestedFieldsSingleVal() throws Exception {
+    SolrInputDocument document1 = sdoc("id", id(), parent, "X",
+        "child1_s", sdoc("id", id(), "child_s", "y"),
+        "child2_s", sdoc("id", id(), "child_s", "z"));
+
+    SolrInputDocument document2 = sdoc("id", id(), parent, "A",
+        "child1_s", sdoc("id", id(), "child_s", "b"),
+        "child2_s", sdoc("id", id(), "child_s", "c"));
+
+    indexSolrInputDocumentsDirectly(document1, document2);
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertJQ(req("q","*:*",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/numFound==" + "XyzAbc".length());
+    assertJQ(req("q",parent+":" + document2.getFieldValue(parent),
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/docs/[0]/id=='" + document2.getFieldValue("id") + "'");
+    assertQ(req("q",child+":(y z b c)", "sort","_docid_ asc"),
+        "//*[@numFound='" + "yzbc".length() + "']", // assert physical order of children
+        "//doc[1]/arr[@name='child_s']/str[text()='y']",
+        "//doc[2]/arr[@name='child_s']/str[text()='z']",
+        "//doc[3]/arr[@name='child_s']/str[text()='b']",
+        "//doc[4]/arr[@name='child_s']/str[text()='c']");
+    assertSingleParentOf(searcher, one("bc"), "A");
+    assertSingleParentOf(searcher, one("yz"), "X");
+  }
+
   @SuppressWarnings("serial")
   @Test
-  public void testSolrJXML() throws IOException {
+  public void testSolrJXML() throws Exception {
     UpdateRequest req = new UpdateRequest();
     
     List<SolrInputDocument> docs = new ArrayList<>();
@@ -323,7 +420,12 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     requestWriter.write(req, os);
     assertBlockU(os.toString());
     assertU(commit());
-    
+
+    assertJQ(req("q","*:*",
+        "fl","*",
+        "sort","id asc",
+        "wt","json"),
+        "/response/numFound==" + 6);
     final SolrIndexSearcher searcher = getSearcher();
     assertSingleParentOf(searcher, one("yz"), "X");
     assertSingleParentOf(searcher, one("bc"), "A");
@@ -398,7 +500,185 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertSingleParentOf(searcher, one("bc"), "A");
        
   }
-  
+
+  @Test
+  public void testXMLMultiLevelLabeledChildren() throws IOException, XMLStreamException {
+    String xml_doc1 =
+        "<doc >" +
+            "  <field name=\"id\">1</field>" +
+            "  <field name=\"empty_s\"></field>" +
+            "  <field name=\"parent_s\">X</field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >2</field>" +
+            "      <field name=\"child_s\">y</field>" +
+            "    </doc>" +
+            "    <doc>  " +
+            "      <field name=\"id\" >3</field>" +
+            "      <field name=\"child_s\">z</field>" +
+            "    </doc>" +
+            "  </field> " +
+            "</doc>";
+
+    String xml_doc2 =
+        "<doc >" +
+            "  <field name=\"id\">4</field>" +
+            "  <field name=\"parent_s\">A</field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >5</field>" +
+            "      <field name=\"child_s\">b</field>" +
+            "      <field name=\"grandChild\">" +
+            "        <doc>  " +
+            "          <field name=\"id\" >7</field>" +
+            "          <field name=\"child_s\">d</field>" +
+            "        </doc>" +
+            "      </field>" +
+            "    </doc>" +
+            "  </field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >6</field>" +
+            "      <field name=\"child_s\">c</field>" +
+            "    </doc>" +
+            "  </field> " +
+            "</doc>";
+
+    XMLStreamReader parser =
+        inputFactory.createXMLStreamReader(new StringReader(xml_doc1));
+    parser.next(); // read the START document...
+    //null for the processor is all right here
+    XMLLoader loader = new XMLLoader();
+    SolrInputDocument document1 = loader.readDoc(parser);
+
+    XMLStreamReader parser2 =
+        inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
+    parser2.next(); // read the START document...
+    //null for the processor is all right here
+    //XMLLoader loader = new XMLLoader();
+    SolrInputDocument document2 = loader.readDoc(parser2);
+
+    assertFalse(document1.hasChildDocuments());
+    assertEquals(document1.toString(), sdoc("id", "1", "empty_s", "", "parent_s", "X", "test",
+        sdocs(sdoc("id", "2", "child_s", "y"), sdoc("id", "3", "child_s", "z"))).toString());
+
+    assertFalse(document2.hasChildDocuments());
+    assertEquals(document2.toString(), sdoc("id", "4", "parent_s", "A", "test",
+        sdocs(sdoc("id", "5", "child_s", "b", "grandChild", Collections.singleton(sdoc("id", "7", "child_s", "d"))),
+            sdoc("id", "6", "child_s", "c"))).toString());
+  }
+
+  @Test
+  public void testXMLLabeledChildren() throws IOException, XMLStreamException {
+    UpdateRequest req = new UpdateRequest();
+
+    List<SolrInputDocument> docs = new ArrayList<>();
+
+    String xml_doc1 =
+        "<doc >" +
+            "  <field name=\"id\">1</field>" +
+            "  <field name=\"empty_s\"></field>" +
+            "  <field name=\"parent_s\">X</field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >2</field>" +
+            "      <field name=\"child_s\">y</field>" +
+            "    </doc>"+
+            "    <doc>  " +
+            "      <field name=\"id\" >3</field>" +
+            "      <field name=\"child_s\">z</field>" +
+            "    </doc>" +
+            "  </field> " +
+            "</doc>";
+
+    String xml_doc2 =
+        "<doc >" +
+            "  <field name=\"id\">4</field>" +
+            "  <field name=\"parent_s\">A</field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >5</field>" +
+            "      <field name=\"child_s\">b</field>" +
+            "    </doc>"+
+            "  </field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >6</field>" +
+            "      <field name=\"child_s\">c</field>" +
+            "    </doc>" +
+            "  </field> " +
+            "</doc>";
+
+    XMLStreamReader parser =
+        inputFactory.createXMLStreamReader( new StringReader( xml_doc1 ) );
+    parser.next(); // read the START document...
+    //null for the processor is all right here
+    XMLLoader loader = new XMLLoader();
+    SolrInputDocument document1 = loader.readDoc( parser );
+
+    XMLStreamReader parser2 =
+        inputFactory.createXMLStreamReader( new StringReader( xml_doc2 ) );
+    parser2.next(); // read the START document...
+    //null for the processor is all right here
+    //XMLLoader loader = new XMLLoader();
+    SolrInputDocument document2 = loader.readDoc( parser2 );
+
+    assertFalse(document1.hasChildDocuments());
+    assertEquals(document1.toString(), sdoc("id", "1", "empty_s", "", "parent_s", "X", "test",
+        sdocs(sdoc("id", "2", "child_s", "y"), sdoc("id", "3", "child_s", "z"))).toString());
+
+    assertFalse(document2.hasChildDocuments());
+    assertEquals(document2.toString(), sdoc("id", "4", "parent_s", "A", "test",
+        sdocs(sdoc("id", "5", "child_s", "b"), sdoc("id", "6", "child_s", "c"))).toString());
+
+    docs.add(document1);
+    docs.add(document2);
+
+    Collections.shuffle(docs, random());
+    req.add(docs);
+
+    RequestWriter requestWriter = new RequestWriter();
+    OutputStream os = new ByteArrayOutputStream();
+    requestWriter.write(req, os);
+    assertBlockU(os.toString());
+    assertU(commit());
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertSingleParentOf(searcher, one("yz"), "X");
+    assertSingleParentOf(searcher, one("bc"), "A");
+
+  }
+
+  @Test
+  public void testJavaBinCodecNestedRelation() throws IOException {
+    SolrInputDocument topDocument = new SolrInputDocument();
+    topDocument.addField("parent_f1", "v1");
+    topDocument.addField("parent_f2", "v2");
+
+    int childsNum = atLeast(10);
+    Map<String, SolrInputDocument> children = new HashMap<>(childsNum);
+    for(int i = 0; i < childsNum; ++i) {
+      SolrInputDocument child = new SolrInputDocument();
+      child.addField("key", (i + 5) * atLeast(4));
+      String childKey = String.format(Locale.ROOT, "child%d", i);
+      topDocument.addField(childKey, child);
+      children.put(childKey, child);
+    }
+
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.marshal(topDocument, os);
+    }
+    byte[] buffer = os.toByteArray();
+    //now read the Object back
+    SolrInputDocument result;
+    try (JavaBinCodec jbc = new JavaBinCodec(); InputStream is = new ByteArrayInputStream(buffer)) {
+      result = (SolrInputDocument) jbc.unmarshal(is);
+    }
+
+    assertTrue(compareSolrInputDocument(topDocument, result));
+  }
+
   
   @Test
   public void testJavaBinCodec() throws IOException { //actually this test must be in other test class
@@ -521,7 +801,18 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       attachField(document, type, String.valueOf(typeValue));
     }
   }
-  
+
+  private void indexSolrInputDocumentsDirectly(SolrInputDocument ... docs) throws IOException {
+    SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
+    for (SolrInputDocument doc: docs) {
+      updateCmd.solrDoc = doc;
+      h.getCore().getUpdateHandler().addDoc(updateCmd);
+      updateCmd.clear();
+    }
+    assertU(commit());
+  }
+
   /**
    * Merges two documents like
    * 
@@ -561,7 +852,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   protected void assertSingleParentOf(final SolrIndexSearcher searcher,
       final String childTerm, String parentExp) throws IOException {
     final TopDocs docs = searcher.search(join(childTerm), 10);
-    assertEquals(1, docs.totalHits);
+    assertEquals(1, docs.totalHits.value);
     final String pAct = searcher.doc(docs.scoreDocs[0].doc).get(parent);
     assertEquals(parentExp, pAct);
   }

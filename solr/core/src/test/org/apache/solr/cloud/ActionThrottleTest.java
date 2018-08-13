@@ -36,13 +36,19 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public long getTime() {
+    public long getTimeNs() {
       return returnValues.get(index++);
     }
 
     @Override
-    public long getEpochTime() {
-      return getTime();
+    public long getEpochTimeNs() {
+      return getTimeNs();
+    }
+
+    @Override
+    public long[] getTimeAndEpochNs() {
+      long time = getTimeNs();
+      return new long[]{time, time};
     }
 
     @Override
@@ -64,30 +70,30 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
   public void testBasics() throws Exception {
 
     ActionThrottle at = new ActionThrottle("test", 1000);
-    long start = timeSource.getTime();
+    long start = timeSource.getTimeNs();
 
     at.minimumWaitBetweenActions();
 
     // should be no wait
-    assertTrue(TimeUnit.MILLISECONDS.convert(timeSource.getTime() - start, TimeUnit.NANOSECONDS) < 1000);
+    assertTrue(TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS) < 1000);
     at.markAttemptingAction();
 
     if (random().nextBoolean()) Thread.sleep(100);
 
     at.minimumWaitBetweenActions();
 
-    long elaspsedTime = TimeUnit.MILLISECONDS.convert(timeSource.getTime() - start, TimeUnit.NANOSECONDS);
+    long elaspsedTime = TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS);
 
     assertTrue(elaspsedTime + "ms", elaspsedTime >= 995);
 
-    start = timeSource.getTime();
+    start = timeSource.getTimeNs();
 
     at.markAttemptingAction();
     at.minimumWaitBetweenActions();
 
     Thread.sleep(random().nextInt(1000));
 
-    elaspsedTime = TimeUnit.MILLISECONDS.convert(timeSource.getTime() - start, TimeUnit.NANOSECONDS);
+    elaspsedTime = TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS);
 
     assertTrue(elaspsedTime + "ms", elaspsedTime >= 995);
   }
@@ -96,13 +102,13 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
   public void testAZeroNanoTimeReturnInWait() throws Exception {
 
     ActionThrottle at = new ActionThrottle("test", 1000, new TestNanoTimeSource(Arrays.asList(new Long[]{0L, 10L})));
-    long start = timeSource.getTime();
+    long start = timeSource.getTimeNs();
     
     at.markAttemptingAction();
     
     at.minimumWaitBetweenActions();
     
-    long elaspsedTime = TimeUnit.MILLISECONDS.convert(timeSource.getTime() - start, TimeUnit.NANOSECONDS);
+    long elaspsedTime = TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS);
     
     assertTrue(elaspsedTime + "ms", elaspsedTime >= 995);
 

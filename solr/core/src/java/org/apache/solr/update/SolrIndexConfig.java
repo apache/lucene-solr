@@ -299,6 +299,10 @@ public class SolrIndexConfig implements MapSerializable {
           maxThreadCount = ((ConcurrentMergeScheduler) scheduler).getMaxThreadCount();
         }
         ((ConcurrentMergeScheduler)scheduler).setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+        Boolean ioThrottle = (Boolean) args.remove("ioThrottle");
+        if (ioThrottle != null && !ioThrottle) { //by-default 'enabled'
+            ((ConcurrentMergeScheduler) scheduler).disableAutoIOThrottle();
+        }
         SolrPluginUtils.invokeSetters(scheduler, args);
       } else {
         SolrPluginUtils.invokeSetters(scheduler, mergeSchedulerInfo.initArgs);

@@ -17,8 +17,6 @@
 
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -57,6 +55,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 /**
  * Extracts named entities using an OpenNLP NER <code>modelFile</code> from the values found in
  * any matching <code>source</code> field into a configured <code>dest</code> field, after
@@ -77,6 +77,10 @@ import org.slf4j.LoggerFactory;
  * <p>See the <a href="http://opennlp.apache.org/models.html">OpenNLP website</a>
  * for information on downloading pre-trained models.</p>
  *
+ * Note that in order to use model files larger than 1MB on SolrCloud, 
+ * <a href="https://lucene.apache.org/solr/guide/setting-up-an-external-zookeeper-ensemble#increasing-zookeeper-s-1mb-file-size-limit"
+ * >ZooKeeper server and client configuration is required</a>.
+ * 
  * <p>
  * The <code>source</code> field(s) can be configured as either:
  * </p>
@@ -166,6 +170,8 @@ import org.slf4j.LoggerFactory;
  *     &lt;str name="source"&gt;summary&lt;/str&gt;
  *     &lt;str name="dest"&gt;summary_{EntityType}_s&lt;/str&gt;
  *   &lt;/processor&gt;
+ *   &lt;processor class="solr.LogUpdateProcessorFactory" /&gt;
+ *   &lt;processor class="solr.RunUpdateProcessorFactory" /&gt;
  * &lt;/updateRequestProcessorChain&gt;
  * </pre>
  *
@@ -494,13 +500,13 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
               SolrInputField destField = null;
               String entityName = entity.first();
               String entityType = entity.second();
-              resolvedDest = resolvedDest.replace(ENTITY_TYPE, entityType);
-              if (doc.containsKey(resolvedDest)) {
-                destField = doc.getField(resolvedDest);
+              final String resolved = resolvedDest.replace(ENTITY_TYPE, entityType);
+              if (doc.containsKey(resolved)) {
+                destField = doc.getField(resolved);
               } else {
-                SolrInputField targetField = destMap.get(resolvedDest);
+                SolrInputField targetField = destMap.get(resolved);
                 if (targetField == null) {
-                  destField = new SolrInputField(resolvedDest);
+                  destField = new SolrInputField(resolved);
                 } else {
                   destField = targetField;
                 }
@@ -508,7 +514,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
               destField.addValue(entityName);
 
               // put it in map to avoid concurrent modification...
-              destMap.put(resolvedDest, destField);
+              destMap.put(resolved, destField);
             }
           }
         }

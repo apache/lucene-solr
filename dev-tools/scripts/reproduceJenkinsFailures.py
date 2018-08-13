@@ -14,10 +14,12 @@
 # limitations under the License.
 
 import argparse
+import http.client
 import os
 import re
 import subprocess
 import sys
+import time
 import traceback
 import urllib.error
 import urllib.request
@@ -95,7 +97,7 @@ def run(cmd, rememberFailure=True):
     lastFailureCode = code
   return code
 
-def fetchAndParseJenkinsLog(url):
+def fetchAndParseJenkinsLog(url, numRetries):
   global revisionFromLog
   global branchFromLog
   global antOptions
@@ -127,11 +129,19 @@ def fetchAndParseJenkinsLog(url):
                 print('[repro] Ant options: %s' % antOptions)
   except urllib.error.URLError as e:
     raise RuntimeError('ERROR: fetching %s : %s' % (url, e))
-  
+  except http.client.IncompleteRead as e:
+    if numRetries > 0:
+      print('[repro] Encountered IncompleteRead exception, pausing and then retrying...')
+      time.sleep(2) # pause for 2 seconds
+      return fetchAndParseJenkinsLog(url, numRetries - 1)
+    else:
+      print('[repro] Encountered IncompleteRead exception, aborting after too many retries.')
+      raise RuntimeError('ERROR: fetching %s : %s' % (url, e))
+
   if revisionFromLog == None:
     if reJenkinsURLWithoutConsoleText.match(url):
       print('[repro] Not a Jenkins log. Appending "/consoleText" and retrying ...\n')
-      fetchAndParseJenkinsLog(url + '/consoleText')                                                        
+      return fetchAndParseJenkinsLog(url + '/consoleText', numRetries)                                                        
     else:
       raise RuntimeError('ERROR: %s does not appear to be a Jenkins log.' % url)
   if 0 == len(tests):
@@ -148,7 +158,15 @@ def prepareWorkspace(useGit, gitRef):
     checkoutCmd = 'git checkout %s' % gitRef
     code = run(checkoutCmd)
     if 0 != code:
-      raise RuntimeError('ERROR: "%s" failed.  See above.' % checkoutCmd)
+      addWantedBranchCmd = "git remote set-branches --add origin %s" % gitRef
+      checkoutBranchCmd = 'git checkout -t -b %s origin/%s' % (gitRef, gitRef) # Checkout remote branch as new local branch
+      print('"%s" failed. Trying "%s" and "%s".' % (checkoutCmd, addWantedBranchCmd, checkoutBranchCmd))
+      code = run(addWantedBranchCmd)
+      if 0 != code:
+        raise RuntimeError('ERROR: "%s" failed.  See above.' % addWantedBranchCmd)
+      code = run(checkoutBranchCmd)
+      if 0 != code:
+        raise RuntimeError('ERROR: "%s" failed.  See above.' % checkoutBranchCmd)
     gitCheckoutSucceeded = True
     run('git merge --ff-only', rememberFailure=False) # Ignore failure on non-branch ref
   
@@ -223,7 +241,7 @@ def getLocalGitBranch():
 
 def main():
   config = readConfig()
-  tests = fetchAndParseJenkinsLog(config.url)
+  tests = fetchAndParseJenkinsLog(config.url, numRetries = 2)
   if config.useGit:
     localGitBranch = getLocalGitBranch()
 
@@ -243,7 +261,7 @@ def main():
           tests[testcase] = oldTests[testcase]
       if len(tests) > 0:
         print('\n[repro] Re-testing 100%% failures at the tip of %s' % branchFromLog)
-        prepareWorkspace(False, branchFromLog)
+        prepareWorkspace(True, branchFromLog)
         modules = groupTestsByModule(tests)
         runTests(config.testIters, modules, tests)
         failures = printReport(config.testIters, ' at the tip of %s' % branchFromLog)

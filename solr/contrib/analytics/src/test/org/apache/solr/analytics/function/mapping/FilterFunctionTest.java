@@ -417,9 +417,9 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     assertFalse(func.exists());
 
     // Value exists
-    val.setValue(new Long(3)).setExists(true);
+    val.setValue(3L).setExists(true);
     filter.setValue(true).setExists(true);
-    assertEquals(new Long(3), func.getObject());
+    assertEquals(3L, func.getObject());
     assertTrue(func.exists());
 
     val.setValue(new Date(2)).setExists(true);
@@ -974,7 +974,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
       assertTrue("There should be no values to stream", false);
     });
 
-    val.setValues(new Integer(3), "3", new Date(3));
+    val.setValues(3, "3", new Date(3));
     filter.setExists(false);
     func.streamObjects( value -> {
       assertTrue("There should be no values to stream", false);
@@ -1012,7 +1012,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     assertFalse(values2.hasNext());
     
     // Multiple values
-    val.setValues(new Integer(3), "3", new Date(3));
+    val.setValues(3, "3", new Date(3));
     
     filter.setValue(false).setExists(true);
     func.streamObjects( value -> {
@@ -1020,7 +1020,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
     });
 
     filter.setValue(true).setExists(true);
-    Iterator<Object> values3 = Arrays.<Object>asList(new Integer(3), "3", new Date(3)).iterator();
+    Iterator<Object> values3 = Arrays.<Object>asList(3, "3", new Date(3)).iterator();
     func.streamObjects( value -> {
       assertTrue(values3.hasNext());
       assertEquals(values3.next(), value);

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
@@ -47,6 +48,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
@@ -71,6 +73,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   private static CountDownLatch triggerFiredLatch = new CountDownLatch(1);
   private static final AtomicReference<Map> actionContextPropsRef = new AtomicReference<>();
   private static final AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
+  private static SolrCloudManager cloudManager;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -82,10 +85,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-
-    fired.set(false);
-    triggerFiredLatch = new CountDownLatch(1);
-    actionContextPropsRef.set(null);
 
     // remove everything from autoscaling.json in ZK
     zkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, "{}".getBytes(UTF_8), true);
@@ -129,6 +128,20 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
+    deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
+    deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
+    deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+
+    fired.set(false);
+    triggerFiredLatch = new CountDownLatch(1);
+    actionContextPropsRef.set(null);
+  }
+
+  private void deleteChildrenRecursively(String path) throws Exception {
+    cloudManager.getDistribStateManager().removeRecursively(path, true, false);
   }
 
   @After
@@ -145,6 +158,8 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
+  //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testNodeLost() throws Exception  {
     // let's start a node so that we have at least two
     JettySolrRunner runner = cluster.startJettySolrRunner();
@@ -226,6 +241,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
   }
 
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testNodeWithMultipleReplicasLost() throws Exception {
     AssertingTriggerAction.expectedNode = null;
 
@@ -365,7 +381,17 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   public static class AssertingTriggerAction implements TriggerAction {
-    static String expectedNode;
+    static volatile String expectedNode;
+
+    @Override
+    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+
+    }
+
+    @Override
+    public void init() {
+
+    }
 
     @Override
     public String getName() {
@@ -389,16 +415,12 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     public void close() throws IOException {
 
     }
-
-    @Override
-    public void init(Map<String, String> args) {
-
-    }
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testSelectedCollections() throws Exception {
+    log.info("Found number of jetties: {}", cluster.getJettySolrRunners().size());
     AssertingTriggerAction.expectedNode = null;
 
     // start 3 more nodes
@@ -467,7 +489,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
-    assertNotNull("The operations computed by ComputePlanAction should not be null" + getNodeStateProviderState() + context, operations);
+    assertNotNull("The operations computed by ComputePlanAction should not be null. " + getNodeStateProviderState() + context, operations);
     assertEquals("ComputePlanAction should have computed exactly 2 operations", 2, operations.size());
     SolrRequest request = operations.get(0);
     SolrParams params = request.getParams();

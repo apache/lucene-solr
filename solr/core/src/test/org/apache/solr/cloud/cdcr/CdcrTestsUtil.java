@@ -26,11 +26,17 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.CdcrParams;
+import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,5 +113,37 @@ public class CdcrTestsUtil extends SolrTestCaseJ4{
       Thread.sleep(1000);
     }
     return response != null ? response.getResults().getNumFound() : 0;
+  }
+
+  protected static boolean assertShardInSync(String collection, String shard, CloudSolrClient client) throws IOException, SolrServerException {
+    TimeOut waitTimeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    DocCollection docCollection = client.getZkStateReader().getClusterState().getCollection(collection);
+    Slice correctSlice = null;
+    for (Slice slice : docCollection.getSlices()) {
+      if (shard.equals(slice.getName())) {
+        correctSlice = slice;
+        break;
+      }
+    }
+    assertNotNull(correctSlice);
+
+    long leaderDocCount;
+    try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(correctSlice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+      leaderDocCount = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false")).getResults().getNumFound();
+    }
+
+    while (!waitTimeOut.hasTimedOut()) {
+      int replicasInSync = 0;
+      for (Replica replica : correctSlice.getReplicas()) {
+        try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(replica.getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+          long replicaDocCount = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false")).getResults().getNumFound();
+          if (replicaDocCount == leaderDocCount) replicasInSync++;
+        }
+      }
+      if (replicasInSync == correctSlice.getReplicas().size()) {
+        return true;
+      }
+    }
+    return false;
   }
 }

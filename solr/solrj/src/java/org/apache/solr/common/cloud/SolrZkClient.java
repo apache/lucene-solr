@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -261,7 +262,7 @@ public class SolrZkClient implements Closeable {
     return new SolrZkWatcher() {
       @Override
       public void process(final WatchedEvent event) {
-        log.debug("Submitting job to respond to event " + event);
+        log.debug("Submitting job to respond to event {}", event);
         try {
           if (watcher instanceof ConnectionManager) {
             zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
@@ -353,6 +354,38 @@ public class SolrZkClient implements Closeable {
     } else {
       return keeper.setData(path, data, version);
     }
+  }
+
+  public void atomicUpdate(String path, Function<byte[], byte[]> editor) throws KeeperException, InterruptedException {
+    for (; ; ) {
+      byte[] modified = null;
+      byte[] zkData = null;
+      Stat s = new Stat();
+      try {
+        if (exists(path, true)) {
+          zkData = getData(path, null, s, true);
+          modified = editor.apply(zkData);
+          if (modified == null) {
+            //no change , no need to persist
+            return;
+          }
+          setData(path, modified, s.getVersion(), true);
+          break;
+        } else {
+          modified = editor.apply(null);
+          if (modified == null) {
+            //no change , no need to persist
+            return;
+          }
+          create(path, modified, CreateMode.PERSISTENT, true);
+          break;
+        }
+      } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {
+        continue;
+      }
+    }
+
+
   }
 
   /**

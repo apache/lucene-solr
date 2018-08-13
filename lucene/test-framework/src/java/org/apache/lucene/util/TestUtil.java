@@ -92,6 +92,7 @@ import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
@@ -980,7 +981,7 @@ public final class TestUtil {
   // TODO: remove this, push this test to Lucene40/Lucene42 codec tests
   public static boolean fieldSupportsHugeBinaryDocValues(String field) {
     String dvFormat = getDocValuesFormat(field);
-    if (dvFormat.equals("Lucene40") || dvFormat.equals("Lucene42") || dvFormat.equals("Memory")) {
+    if (dvFormat.equals("Lucene40") || dvFormat.equals("Lucene42")) {
       return false;
     }
     return true;
@@ -1040,9 +1041,20 @@ public final class TestUtil {
     Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
   }
 
-  public static void assertEquals(TopDocs expected, TopDocs actual) {
-    Assert.assertEquals("wrong total hits", expected.totalHits, actual.totalHits);
-    Assert.assertEquals("wrong maxScore", expected.getMaxScore(), actual.getMaxScore(), 0.0);
+  /**
+   * Assert that the given {@link TopDocs} have the same top docs and consistent hit counts.
+   */
+  public static void assertConsistent(TopDocs expected, TopDocs actual) {
+    Assert.assertEquals("wrong total hits", expected.totalHits.value == 0, actual.totalHits.value == 0);
+    if (expected.totalHits.relation == TotalHits.Relation.EQUAL_TO) {
+      if (actual.totalHits.relation == TotalHits.Relation.EQUAL_TO) {
+        Assert.assertEquals("wrong total hits", expected.totalHits.value, actual.totalHits.value);
+      } else {
+        Assert.assertTrue("wrong total hits", expected.totalHits.value >= actual.totalHits.value);
+      }
+    } else if (actual.totalHits.relation == TotalHits.Relation.EQUAL_TO) {
+      Assert.assertTrue("wrong total hits", expected.totalHits.value <= actual.totalHits.value);
+    }
     Assert.assertEquals("wrong hit count", expected.scoreDocs.length, actual.scoreDocs.length);
     for(int hitIDX=0;hitIDX<expected.scoreDocs.length;hitIDX++) {
       final ScoreDoc expectedSD = expected.scoreDocs[hitIDX];

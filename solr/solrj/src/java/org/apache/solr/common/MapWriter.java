@@ -23,19 +23,21 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.apache.solr.common.util.Utils;
 
 /**
  * Use this class to push all entries of a Map into an output.
  * This avoids creating map instances and is supposed to be memory efficient.
- * If the entries are primitives, unnecessary boxing is also avoided
+ * If the entries are primitives, unnecessary boxing is also avoided.
  */
 public interface MapWriter extends MapSerializable {
 
   default String jsonStr(){
     return Utils.toJSONString(this);
   }
+
   @Override
   default Map toMap(Map<String, Object> map) {
     try {
@@ -64,6 +66,8 @@ public interface MapWriter extends MapSerializable {
             v = map;
           }
           map.put(k, v);
+          // note: It'd be nice to assert that there is no previous value at 'k' but it's possible the passed in
+          // map is already populated and the intention is to overwrite.
           return this;
         }
 
@@ -77,7 +81,9 @@ public interface MapWriter extends MapSerializable {
   void writeMap(EntryWriter ew) throws IOException;
 
   /**
-   * An interface to push one entry at a time to the output
+   * An interface to push one entry at a time to the output.
+   * The order of the keys is not defined, but we assume they are distinct -- don't call {@code put} more than once
+   * for the same key.
    */
   interface EntryWriter {
 
@@ -97,8 +103,18 @@ public interface MapWriter extends MapSerializable {
       return this;
     }
 
+    default EntryWriter put(String k, Object v, Predicate<Object> p) throws IOException {
+      if (p.test(v)) put(k, v);
+      return this;
+    }
+
     default EntryWriter putIfNotNull(String k, Object v) throws IOException {
       if(v != null) put(k,v);
+      return this;
+    }
+
+    default EntryWriter putStringIfNotNull(String k, Object v) throws IOException {
+      if(v != null) put(k,String.valueOf(v));
       return this;
     }
 

@@ -36,13 +36,13 @@ import java.util.stream.Stream;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
@@ -50,7 +50,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -60,7 +62,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +80,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final SolrCloudManager cloudManager;
   protected final SolrResourceLoader loader;
+  protected final AutoScaling.TriggerFactory triggerFactory;
   private final List<Map<String, String>> DEFAULT_ACTIONS = new ArrayList<>(3);
   private static Set<String> singletonCommands = Stream.of("set-cluster-preferences", "set-cluster-policy")
       .collect(collectingAndThen(toSet(), Collections::unmodifiableSet));
@@ -88,6 +90,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   public AutoScalingHandler(SolrCloudManager cloudManager, SolrResourceLoader loader) {
     this.cloudManager = cloudManager;
     this.loader = loader;
+    this.triggerFactory = new AutoScaling.TriggerFactoryImpl(loader, cloudManager);
     this.timeSource = cloudManager.getTimeSource();
     Map<String, String> map = new HashMap<>(2);
     map.put(NAME, "compute_plan");
@@ -249,7 +252,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
     List<Clause> cp = null;
     try {
-      cp = clusterPolicy.stream().map(Clause::new).collect(Collectors.toList());
+      cp = clusterPolicy.stream().map(Clause::create).collect(Collectors.toList());
     } catch (Exception e) {
       op.addError(e.getMessage());
       return currentConfig;
@@ -369,7 +372,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     if (timeout != null) {
       try {
         int timeoutSeconds = parseHumanTime(timeout);
-        resumeTime = new Date(TimeUnit.MILLISECONDS.convert(timeSource.getTime(), TimeUnit.NANOSECONDS)
+        resumeTime = new Date(TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs(), TimeUnit.NANOSECONDS)
             + TimeUnit.MILLISECONDS.convert(timeoutSeconds, TimeUnit.SECONDS));
       } catch (IllegalArgumentException e) {
         op.addError("Invalid 'timeout' value for suspend trigger: " + triggerName);
@@ -455,14 +458,26 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
     if (op.hasError()) return currentConfig;
 
+    AutoScalingConfig.TriggerListenerConfig listenerConfig = new AutoScalingConfig.TriggerListenerConfig(listenerName, op.getValuesExcluding("name"));
+
     // validate that we can load the listener class
     // todo allow creation from blobstore
+    TriggerListener listener = null;
     try {
-      loader.findClass(listenerClass, TriggerListener.class);
+      listener = loader.newInstance(listenerClass, TriggerListener.class);
+      listener.configure(loader, cloudManager, listenerConfig);
+    } catch (TriggerValidationException e) {
+      log.warn("invalid listener configuration", e);
+      op.addError("invalid listener configuration: " + e.toString());
+      return currentConfig;
     } catch (Exception e) {
       log.warn("error loading listener class ", e);
       op.addError("Listener not found: " + listenerClass + ". error message:" + e.getMessage());
       return currentConfig;
+    } finally {
+      if (listener != null) {
+        IOUtils.closeQuietly(listener);
+      }
     }
 
     Set<String> actionNames = new HashSet<>();
@@ -475,9 +490,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       op.addError("The trigger '" + triggerName + "' does not have actions named: " + actionNames);
       return currentConfig;
     }
-    AutoScalingConfig.TriggerListenerConfig listener = new AutoScalingConfig.TriggerListenerConfig(listenerName, op.getValuesExcluding("name"));
     // todo - handle races between competing set-trigger and set-listener invocations
-    currentConfig = currentConfig.withTriggerListenerConfig(listener);
+    currentConfig = currentConfig.withTriggerListenerConfig(listenerConfig);
     return currentConfig;
   }
 
@@ -531,6 +545,18 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       }
     }
     AutoScalingConfig.TriggerConfig trigger = new AutoScalingConfig.TriggerConfig(triggerName, opCopy.getValuesExcluding("name"));
+    // validate trigger config
+    AutoScaling.Trigger t = null;
+    try {
+      t = triggerFactory.create(trigger.event, trigger.name, trigger.properties);
+    } catch (Exception e) {
+      op.addError("Error validating trigger config " + trigger.name + ": " + e.toString());
+      return currentConfig;
+    } finally {
+      if (t != null) {
+        IOUtils.closeQuietly(t);
+      }
+    }
     currentConfig = currentConfig.withTriggerConfig(trigger);
     // check that there's a default SystemLogListener, unless user specified another one
     return withSystemLogListener(currentConfig, triggerName);

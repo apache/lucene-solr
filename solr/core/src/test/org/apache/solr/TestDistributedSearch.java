@@ -108,6 +108,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
   
   @Test
+  //05-Jul-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void test() throws Exception {
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
@@ -288,9 +290,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.range.end",900,
           "facet.range.other","all");
     assertEquals(tlong, response.getFacetRanges().get(0).getName());
-    assertEquals(new Integer(6), response.getFacetRanges().get(0).getBefore());
-    assertEquals(new Integer(5), response.getFacetRanges().get(0).getBetween());
-    assertEquals(new Integer(2), response.getFacetRanges().get(0).getAfter());
+    assertEquals(6, response.getFacetRanges().get(0).getBefore());
+    assertEquals(5, response.getFacetRanges().get(0).getBetween());
+    assertEquals(2, response.getFacetRanges().get(0).getAfter());
 
     // Test mincounts. Do NOT want to go through all the stuff where with validateControlData in query() method
     // Purposely packing a _bunch_ of stuff together here to insure that the proper level of mincount is used for
@@ -447,7 +449,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       // long
       FieldStatsInfo s = rsp.getFieldStatsInfo().get(tlong);
       assertNotNull("missing stats", s);
-      assertEquals("wrong cardinality", new Long(13), s.getCardinality());
+      assertEquals("wrong cardinality", Long.valueOf(13), s.getCardinality());
       //
       assertNull("expected null for min", s.getMin());
       assertNull("expected null for mean", s.getMean());
@@ -463,7 +465,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       // string
       s = rsp.getFieldStatsInfo().get(oddField);
       assertNotNull("missing stats", s);
-      assertEquals("wrong cardinality", new Long(1), s.getCardinality());
+      assertEquals("wrong cardinality", Long.valueOf(1), s.getCardinality());
       //
       assertNull("expected null for min", s.getMin());
       assertNull("expected null for mean", s.getMean());
@@ -726,7 +728,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       assertNotNull(p+" no stats for " + i1, s);
       //
       assertEquals(p+" wrong min", -987.0D, (Double)s.getMin(), 0.0001D );
-      assertEquals(p+" wrong calcDistinct", new Long(13), s.getCountDistinct());
+      assertEquals(p+" wrong calcDistinct", Long.valueOf(13), s.getCountDistinct());
       assertNotNull(p+" expected non-null list for distinct vals", s.getDistinctValues());
       assertEquals(p+" expected list for distinct vals", 13, s.getDistinctValues().size());
       //
@@ -909,13 +911,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     //SOLR 3161 ensure shards.qt=/update fails (anything but search handler really)
     // Also see TestRemoteStreaming#testQtUpdateFails()
-    try {
-      ignoreException("isShard is only acceptable");
-      // query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
-      // fail();
-    } catch (SolrException e) {
-      //expected
-    }
+
+    //SolrException e = expectThrows(SolrException.class, () -> {
+    //  ignoreException("isShard is only acceptable");
+    //  query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
+    //});
     unIgnoreException("isShard is only acceptable");
 
     // test debugging
@@ -1184,14 +1184,20 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         String s = shardsArr[i];
         if (shard.contains(s)) {
           found = true;
-          // make sure that it responded if it's up
+          // make sure that it responded if it's up and the landing node didn't error before sending the request to the shard
           if (upShards.contains(s)) {
             // this is no longer true if there was a query timeout on an up shard
             // assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
-            assertTrue("Expected to find shardAddress in the up shard info: " + info.toString(), info.get("shardAddress") != null);
-          }
-          else {
-            assertEquals("Expected to find the "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" header set if a shard is down",
+            boolean timeAllowedError = info.get("error") != null && info.get("error").toString().contains("Time allowed to handle this request");
+            if (timeAllowedError) {
+              assertEquals("Expected to find the " + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY + " header set if a shard is down",
+                  Boolean.TRUE, rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+              assertTrue("Expected to find error in the down shard info: " + info.toString(), info.get("error") != null);
+            } else {
+              assertTrue("Expected timeAllowedError or to find shardAddress in the up shard info: " + info.toString(), info.get("shardAddress") != null);
+            }
+          } else {
+            assertEquals("Expected to find the " + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY + " header set if a shard is down",
                 Boolean.TRUE, rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
             assertTrue("Expected to find error in the down shard info: " + info.toString(), info.get("error") != null);
           }
@@ -1210,23 +1216,35 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   private void validateCommonQueryParameters() throws Exception {
     ignoreException("parameter cannot be negative");
-    try {
+
+    SolrException e1 = expectThrows(SolrException.class, () -> {
+      SolrQuery query = new SolrQuery();
+      query.setParam("start", "non_numeric_value").setQuery("*");
+      QueryResponse resp = query(query);
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, e1.code());
+
+    SolrException e2 = expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setStart(-1).setQuery("*");
       QueryResponse resp = query(query);
-      fail("Expected the last query to fail, but got response: " + resp);
-    } catch (SolrException e) {
-      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, e2.code());
 
-    try {
+    SolrException e3 = expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setRows(-1).setStart(0).setQuery("*");
       QueryResponse resp = query(query);
-      fail("Expected the last query to fail, but got response: " + resp);
-    } catch (SolrException e) {
-      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, e3.code());
+
+    SolrException e4 = expectThrows(SolrException.class, () -> {
+      SolrQuery query = new SolrQuery();
+      query.setParam("rows", "non_numeric_value").setQuery("*");
+      QueryResponse resp = query(query);
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, e4.code());
+
     resetExceptionIgnores();
   }
 }

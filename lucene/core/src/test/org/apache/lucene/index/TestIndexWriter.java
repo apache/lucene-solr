@@ -18,11 +18,11 @@ package org.apache.lucene.index;
 
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -40,12 +40,16 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -64,6 +68,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -77,6 +82,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -88,10 +94,10 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
-import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -1772,7 +1778,7 @@ public class TestIndexWriter extends LuceneTestCase {
     builder.add(new Term("body", "test"), 2);
     PhraseQuery pq = builder.build();
     // body:"just ? test"
-    assertEquals(1, is.search(pq, 5).totalHits);
+    assertEquals(1, is.search(pq, 5).totalHits.value);
     ir.close();
     dir.close();
   }
@@ -1804,7 +1810,7 @@ public class TestIndexWriter extends LuceneTestCase {
     builder.add(new Term("body", "test"), 3);
     PhraseQuery pq = builder.build();
     // body:"just ? ? test"
-    assertEquals(1, is.search(pq, 5).totalHits);
+    assertEquals(1, is.search(pq, 5).totalHits.value);
     ir.close();
     dir.close();
   }
@@ -2223,14 +2229,21 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testMergeAllDeleted() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    AtomicBoolean keepFullyDeletedSegments = new AtomicBoolean();
+    iwc.setMergePolicy(new FilterMergePolicy(iwc.getMergePolicy()) {
+      @Override
+      public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+        return keepFullyDeletedSegments.get();
+      }
+    });
     final SetOnce<IndexWriter> iwRef = new SetOnce<>();
     IndexWriter evilWriter = RandomIndexWriter.mockIndexWriter(random(), dir, iwc, new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {
         if ("startCommitMerge".equals(message)) {
-          iwRef.get().setKeepFullyDeletedSegments(false);
+          keepFullyDeletedSegments.set(false);
         } else if ("startMergeInit".equals(message)) {
-          iwRef.get().setKeepFullyDeletedSegments(true);
+          keepFullyDeletedSegments.set(true);
         }
       }
     });
@@ -2635,7 +2648,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(r, r2, w, dir);
   }
 
-  public void testWithPendingDeletions() throws Exception {
+  public void testPendingDeleteDVGeneration() throws IOException {
     // irony: currently we don't emulate windows well enough to work on windows!
     assumeFalse("windows is not supported", Constants.WINDOWS);
 
@@ -2646,6 +2659,117 @@ public class TestIndexWriter extends LuceneTestCase {
     Path root = new FilterPath(path, fs);
 
     // MMapDirectory doesn't work because it closes its file handles after mapping!
+    List<Closeable> toClose = new ArrayList<>();
+    try (FSDirectory dir = new SimpleFSDirectory(root);
+         Closeable closeable = () -> IOUtils.close(toClose)) {
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
+          .setUseCompoundFile(false)
+          .setMergePolicy(NoMergePolicy.INSTANCE) // avoid merging away the randomFile
+          .setMaxBufferedDocs(2)
+          .setRAMBufferSizeMB(-1);
+      IndexWriter w = new IndexWriter(dir, iwc);
+      Document d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      d.add(new NumericDocValuesField("id", 1));
+      w.addDocument(d);
+      d = new Document();
+      d.add(new StringField("id", "2", Field.Store.YES));
+      d.add(new NumericDocValuesField("id", 2));
+      w.addDocument(d);
+      w.flush();
+      d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      d.add(new NumericDocValuesField("id", 1));
+      w.updateDocument(new Term("id", "1"), d);
+      w.commit();
+      Set<String> files = new HashSet<>(Arrays.asList(dir.listAll()));
+      int numIters = 10 + random().nextInt(50);
+      for (int i = 0; i < numIters; i++) {
+        if (random().nextBoolean()) {
+          d = new Document();
+          d.add(new StringField("id", "1", Field.Store.YES));
+          d.add(new NumericDocValuesField("id", 1));
+          w.updateDocument(new Term("id", "1"), d);
+        } else if (random().nextBoolean()) {
+          w.deleteDocuments(new Term("id", "2"));
+        } else {
+          w.updateNumericDocValue(new Term("id", "1"), "id", 2);
+        }
+        w.prepareCommit();
+        List<String> newFiles = new ArrayList<>(Arrays.asList(dir.listAll()));
+        newFiles.removeAll(files);
+        String randomFile = RandomPicks.randomFrom(random(), newFiles);
+        toClose.add(dir.openInput(randomFile, IOContext.DEFAULT));
+        w.rollback();
+        iwc = new IndexWriterConfig(new MockAnalyzer(random()))
+            .setUseCompoundFile(false)
+            .setMergePolicy(NoMergePolicy.INSTANCE)
+            .setMaxBufferedDocs(2)
+            .setRAMBufferSizeMB(-1);
+        w = new IndexWriter(dir, iwc);
+        expectThrows(NoSuchFileException.class, () -> {
+          dir.deleteFile(randomFile);
+        });
+      }
+      w.close();
+    }
+
+  }
+
+  public void testWithPendingDeletions() throws Exception {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+
+    Path path = createTempDir();
+
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+    IndexCommit indexCommit;
+    DirectoryReader reader;
+    // MMapDirectory doesn't work because it closes its file handles after mapping!
+    try (FSDirectory dir = new SimpleFSDirectory(root)) {
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random())).setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+      IndexWriter w = new IndexWriter(dir, iwc);
+      w.commit();
+      reader = w.getReader();
+      // we pull this commit to open it again later to check that we fail if a future file delete is pending
+      indexCommit = reader.getIndexCommit();
+      w.close();
+      w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
+      w.addDocument(new Document());
+      w.close();
+      IndexInput in = dir.openInput("segments_2", IOContext.DEFAULT);
+      dir.deleteFile("segments_2");
+      assertTrue(dir.getPendingDeletions().size() > 0);
+
+      // make sure we get NoSuchFileException if we try to delete and already-pending-delete file:
+      expectThrows(NoSuchFileException.class, () -> {
+        dir.deleteFile("segments_2");
+      });
+
+      try (IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setIndexCommit(indexCommit))) {
+        writer.addDocument(new Document());
+        writer.commit();
+        assertEquals(1, writer.maxDoc());
+        // now check that we moved to 3
+        dir.openInput("segments_3", IOContext.READ).close();;
+      }
+      reader.close();
+      in.close();
+    }
+  }
+
+  public void testPendingDeletesAlreadyWrittenFiles() throws IOException {
+    Path path = createTempDir();
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+    DirectoryReader reader;
+    // MMapDirectory doesn't work because it closes its file handles after mapping!
     try (FSDirectory dir = new SimpleFSDirectory(root)) {
       IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
       IndexWriter w = new IndexWriter(dir, iwc);
@@ -2653,18 +2777,14 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexInput in = dir.openInput("segments_1", IOContext.DEFAULT);
       w.addDocument(new Document());
       w.close();
-      assertTrue(dir.checkPendingDeletions());
 
-      // make sure we get NFSF if we try to delete and already-pending-delete file:
+      assertTrue(dir.getPendingDeletions().size() > 0);
+
+      // make sure we get NoSuchFileException if we try to delete and already-pending-delete file:
       expectThrows(NoSuchFileException.class, () -> {
         dir.deleteFile("segments_1");
       });
-
-      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-        new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
-      });
-      assertTrue(expected.getMessage().contains("still has pending deleted files; cannot initialize IndexWriter"));
-
+      new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random()))).close();
       in.close();
     }
   }
@@ -2958,94 +3078,10 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
   }
-  private static Bits getSoftDeletesLiveDocs(LeafReader reader, String field) {
-    try {
-      NumericDocValues softDelete = reader.getNumericDocValues(field);
-      if (softDelete != null) {
-        BitSet bitSet = BitSet.of(softDelete, reader.maxDoc());
-        Bits inLiveDocs = reader.getLiveDocs() == null ? new Bits.MatchAllBits(reader.maxDoc()) : reader.getLiveDocs();
-        Bits newliveDocs = new Bits() {
-          @Override
-          public boolean get(int index) {
-            return inLiveDocs.get(index) && bitSet.get(index) == false;
-          }
-
-          @Override
-          public int length() {
-            return inLiveDocs.length();
-          }
-        };
-        return newliveDocs;
-
-      } else {
-        return reader.getLiveDocs();
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private static DirectoryReader wrapSoftDeletes(DirectoryReader reader, String field) throws IOException {
-    return new FilterDirectoryReader(reader, new FilterDirectoryReader.SubReaderWrapper() {
-      @Override
-      public LeafReader wrap(LeafReader reader) {
-        Bits softDeletesLiveDocs = getSoftDeletesLiveDocs(reader, field);
-        int numDocs = getNumDocs(reader, softDeletesLiveDocs);
-        return new FilterLeafReader(reader) {
-
-          @Override
-          public Bits getLiveDocs() {
-            return softDeletesLiveDocs;
-          }
-
-          @Override
-          public CacheHelper getReaderCacheHelper() {
-            return in.getReaderCacheHelper();
-          }
-
-          @Override
-          public CacheHelper getCoreCacheHelper() {
-            return in.getCoreCacheHelper();
-          }
-
-          @Override
-          public int numDocs() {
-            return numDocs;
-          }
-        };
-      }
-    }) {
-      @Override
-      protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
-        return wrapSoftDeletes(in, field);
-      }
-
-      @Override
-      public CacheHelper getReaderCacheHelper() {
-        return in.getReaderCacheHelper();
-      }
-    };
-  }
-
-  private static int getNumDocs(LeafReader reader, Bits softDeletesLiveDocs) {
-    int numDocs;
-    if (softDeletesLiveDocs == reader.getLiveDocs()) {
-      numDocs = reader.numDocs();
-    } else {
-      int tmp = 0;
-      for (int i = 0; i < softDeletesLiveDocs.length(); i++) {
-        if (softDeletesLiveDocs.get(i) ) {
-           tmp++;
-        }
-      }
-      numDocs = tmp;
-    }
-    return numDocs;
-  }
 
   public void testSoftUpdateDocuments() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("soft_delete"));
     expectThrows(IllegalArgumentException.class, () -> {
       writer.softUpdateDocument(null, new Document(), new NumericDocValuesField("soft_delete", 1));
     });
@@ -3071,11 +3107,11 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(new StringField("version", "2", Field.Store.YES));
     Field field = new NumericDocValuesField("soft_delete", 1);
     writer.softUpdateDocument(new Term("id", "1"), doc, field);
-    DirectoryReader reader = wrapSoftDeletes(DirectoryReader.open(writer), "soft_delete");
+    DirectoryReader reader = DirectoryReader.open(writer);
     assertEquals(2, reader.docFreq(new Term("id", "1")));
     IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     Document document = reader.document(topDocs.scoreDocs[0].doc);
     assertEquals("2", document.get("version"));
 
@@ -3091,7 +3127,7 @@ public class TestIndexWriter extends LuceneTestCase {
     oldReader.close();
     searcher = new IndexSearcher(reader);
     topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     document = reader.document(topDocs.scoreDocs[0].doc);
     assertEquals("3", document.get("version"));
 
@@ -3104,52 +3140,78 @@ public class TestIndexWriter extends LuceneTestCase {
     oldReader.close();
     searcher = new IndexSearcher(reader);
     topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
-    assertEquals(0, topDocs.totalHits);
-
+    assertEquals(0, topDocs.totalHits.value);
+    int numSoftDeleted = 0;
+    for (SegmentCommitInfo info : writer.cloneSegmentInfos()) {
+     numSoftDeleted += info.getSoftDelCount();
+    }
+    assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
+    for (LeafReaderContext context : reader.leaves()) {
+      LeafReader leaf = context.reader();
+      assertNull(((SegmentReader) leaf).getHardLiveDocs());
+    }
     writer.close();
     reader.close();
     dir.close();
   }
 
   public void testSoftUpdatesConcurrently() throws IOException, InterruptedException {
+    softUpdatesConcurrently(false);
+  }
+
+  public void testSoftUpdatesConcurrentlyMixedDeletes() throws IOException, InterruptedException {
+    softUpdatesConcurrently(true);
+  }
+
+  public void softUpdatesConcurrently(boolean mixDeletes) throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    indexWriterConfig.setSoftDeletesField("soft_delete");
     AtomicBoolean mergeAwaySoftDeletes = new AtomicBoolean(random().nextBoolean());
+    if (mixDeletes == false) {
+      indexWriterConfig.setMergePolicy(new OneMergeWrappingMergePolicy(indexWriterConfig.getMergePolicy(), towrap ->
+          new MergePolicy.OneMerge(towrap.segments) {
+            @Override
+            public CodecReader wrapForMerge(CodecReader reader) throws IOException {
+              if (mergeAwaySoftDeletes.get()) {
+                return towrap.wrapForMerge(reader);
+              } else {
+                CodecReader wrapped = towrap.wrapForMerge(reader);
+                return new FilterCodecReader(wrapped) {
+                  @Override
+                  public CacheHelper getCoreCacheHelper() {
+                    return in.getCoreCacheHelper();
+                  }
 
-    indexWriterConfig.setMergePolicy(new OneMergeWrappingMergePolicy(indexWriterConfig.getMergePolicy(), towrap ->
-      new MergePolicy.OneMerge(towrap.segments) {
-        @Override
-        public CodecReader wrapForMerge(CodecReader reader) throws IOException {
-          if (mergeAwaySoftDeletes.get() == false) {
-            return towrap.wrapForMerge(reader);
+                  @Override
+                  public CacheHelper getReaderCacheHelper() {
+                    return in.getReaderCacheHelper();
+                  }
+
+                  @Override
+                  public Bits getLiveDocs() {
+                    return null; // everything is live
+                  }
+
+                  @Override
+                  public int numDocs() {
+                    return maxDoc();
+                  }
+                };
+              }
+            }
           }
-          Bits softDeletesLiveDocs = getSoftDeletesLiveDocs(reader, "soft_delete");
-          int numDocs = getNumDocs(reader, softDeletesLiveDocs);
-          CodecReader wrapped = towrap.wrapForMerge(reader);
-          return new FilterCodecReader(wrapped) {
-            @Override
-            public CacheHelper getCoreCacheHelper() {
-              return in.getCoreCacheHelper();
-            }
-
-            @Override
-            public CacheHelper getReaderCacheHelper() {
-              return in.getReaderCacheHelper();
-            }
-
-            @Override
-            public Bits getLiveDocs() {
-              return softDeletesLiveDocs;
-            }
-
-            @Override
-            public int numDocs() {
-              return numDocs;
-            }
-          };
+      ) {
+        @Override
+        public int numDeletesToMerge(SegmentCommitInfo info, int delCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+          if (mergeAwaySoftDeletes.get()) {
+            return super.numDeletesToMerge(info, delCount, readerSupplier);
+          } else {
+            return 0;
+          }
         }
-      }
-    ));
+      });
+    }
     IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
     Thread[] threads = new Thread[2 + random().nextInt(3)];
     CountDownLatch startLatch = new CountDownLatch(1);
@@ -3166,13 +3228,21 @@ public class TestIndexWriter extends LuceneTestCase {
             if (updateSeveralDocs) {
               Document doc = new Document();
               doc.add(new StringField("id", id, Field.Store.YES));
-              writer.softUpdateDocuments(new Term("id", id), Arrays.asList(doc, doc),
-                  new NumericDocValuesField("soft_delete", 1));
+              if (mixDeletes && random().nextBoolean()) {
+                writer.updateDocuments(new Term("id", id), Arrays.asList(doc, doc));
+              } else {
+                writer.softUpdateDocuments(new Term("id", id), Arrays.asList(doc, doc),
+                    new NumericDocValuesField("soft_delete", 1));
+              }
             } else {
               Document doc = new Document();
               doc.add(new StringField("id", id, Field.Store.YES));
-              writer.softUpdateDocument(new Term("id", id), doc,
-                  new NumericDocValuesField("soft_delete", 1));
+              if (mixDeletes && random().nextBoolean()) {
+                writer.updateDocument(new Term("id", id), doc);
+              } else {
+                writer.softUpdateDocument(new Term("id", id), doc,
+                    new NumericDocValuesField("soft_delete", 1));
+              }
             }
             ids.add(id);
           }
@@ -3188,18 +3258,26 @@ public class TestIndexWriter extends LuceneTestCase {
     for (int i = 0; i < threads.length; i++) {
       threads[i].join();
     }
-    DirectoryReader reader = wrapSoftDeletes(DirectoryReader.open(writer), "soft_delete");
+    DirectoryReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     for (String id : ids) {
       TopDocs topDocs = searcher.search(new TermQuery(new Term("id", id)), 10);
       if (updateSeveralDocs) {
-        assertEquals(2, topDocs.totalHits);
+        assertEquals(2, topDocs.totalHits.value);
         assertEquals(Math.abs(topDocs.scoreDocs[0].doc - topDocs.scoreDocs[1].doc), 1);
       } else {
-        assertEquals(1, topDocs.totalHits);
+        assertEquals(1, topDocs.totalHits.value);
+      }
+    }
+    if (mixDeletes == false) {
+      for (LeafReaderContext context : reader.leaves()) {
+        LeafReader leaf = context.reader();
+        assertNull(((SegmentReader) leaf).getHardLiveDocs());
       }
     }
     mergeAwaySoftDeletes.set(true);
+    writer.addDocument(new Document()); // add a dummy doc to trigger a segment here
+    writer.flush();
     writer.forceMerge(1);
     DirectoryReader oldReader = reader;
     reader = DirectoryReader.openIfChanged(reader, writer);
@@ -3216,8 +3294,311 @@ public class TestIndexWriter extends LuceneTestCase {
         assertEquals(1, reader.docFreq(new Term("id", id)));
       }
     }
-
+    int numSoftDeleted = 0;
+    for (SegmentCommitInfo info : writer.cloneSegmentInfos()) {
+      numSoftDeleted += info.getSoftDelCount() + info.getDelCount();
+    }
+    assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
+    writer.commit();
+    try (DirectoryReader dirReader = DirectoryReader.open(dir)) {
+      int delCount = 0;
+      for (LeafReaderContext ctx : dirReader.leaves()) {
+        SegmentCommitInfo segmentInfo = ((SegmentReader) ctx.reader()).getSegmentInfo();
+        delCount += segmentInfo.getSoftDelCount() + segmentInfo.getDelCount();
+      }
+      assertEquals(numSoftDeleted, delCount);
+    }
     IOUtils.close(reader, writer, dir);
   }
 
+  public void testDeleteHappensBeforeWhileFlush() throws IOException, InterruptedException {
+    CountDownLatch latch = new CountDownLatch(1);
+    CountDownLatch inFlush = new CountDownLatch(1);
+    try (Directory dir = new FilterDirectory(newDirectory()) {
+      @Override
+      public IndexOutput createOutput(String name, IOContext context) throws IOException {
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          if ("flush".equals(trace[i].getMethodName()) && DefaultIndexingChain.class.getName().equals(trace[i].getClassName())) {
+            try {
+              inFlush.countDown();
+              latch.await();
+            } catch (InterruptedException e) {
+              throw new AssertionError(e);
+            }
+          }
+        }
+        return super.createOutput(name, context);
+      }
+    }; IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+      Document document = new Document();
+      document.add(new StringField("id", "1", Field.Store.YES));
+      writer.addDocument(document);
+      Thread t = new Thread(() -> {
+        try {
+          inFlush.await();
+          writer.docWriter.flushControl.setApplyAllDeletes();
+          if (random().nextBoolean()) {
+            writer.updateDocument(new Term("id", "1"), document);
+          } else {
+            writer.deleteDocuments(new Term("id", "1"));
+          }
+
+        } catch (Exception e) {
+          throw new AssertionError(e);
+        } finally {
+          latch.countDown();
+        }
+      });
+      t.start();
+      try (IndexReader reader = writer.getReader()) {
+        assertEquals(1, reader.numDocs());
+      };
+      t.join();
+    }
+  }
+
+  private static void assertFiles(IndexWriter writer) throws IOException {
+    Predicate<String> filter = file -> file.startsWith("segments") == false && file.equals("write.lock") == false;
+    // remove segment files we don't know if we have committed and what is kept around
+    Set<String> segFiles = new HashSet<>(writer.cloneSegmentInfos().files(true)).stream()
+        .filter(filter).collect(Collectors.toSet());
+    Set<String> dirFiles = Arrays.stream(writer.getDirectory().listAll())
+        .filter(file -> !ExtrasFS.isExtra(file)) // ExtraFS might add an files, ignore them
+        .filter(filter).collect(Collectors.toSet());
+    assertEquals(segFiles.size(), dirFiles.size());
+  }
+
+  public void testFullyDeletedSegmentsReleaseFiles() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig();
+    config.setRAMBufferSizeMB(Integer.MAX_VALUE);
+    config.setMaxBufferedDocs(2); // no auto flush
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "doc-0", Field.Store.YES));
+    writer.addDocument(d);
+    writer.flush();
+    d = new Document();
+    d.add(new StringField("id", "doc-1", Field.Store.YES));
+    writer.addDocument(d);
+    writer.deleteDocuments(new Term("id", "doc-1"));
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    writer.flush();
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    writer.commit();
+    assertFiles(writer);
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    IOUtils.close(writer, dir);
+  }
+
+  public void testSegmentInfoIsSnapshot() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig();
+    config.setRAMBufferSizeMB(Integer.MAX_VALUE);
+    config.setMaxBufferedDocs(2); // no auto flush
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "doc-0", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "doc-1", Field.Store.YES));
+    writer.addDocument(d);
+    DirectoryReader reader = writer.getReader();
+    SegmentCommitInfo segmentInfo = ((SegmentReader) reader.leaves().get(0).reader()).getSegmentInfo();
+    SegmentCommitInfo originalInfo = ((SegmentReader) reader.leaves().get(0).reader()).getOriginalSegmentInfo();
+    assertEquals(0, originalInfo.getDelCount());
+    assertEquals(0, segmentInfo.getDelCount());
+    writer.deleteDocuments(new Term("id", "doc-0"));
+    writer.commit();
+    assertEquals(0, segmentInfo.getDelCount());
+    assertEquals(1, originalInfo.getDelCount());
+    IOUtils.close(reader, writer, dir);
+  }
+
+  public void testPreventChangingSoftDeletesField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("my_deletes"));
+    Document v1 = new Document();
+    v1.add(new StringField("id", "1", Field.Store.YES));
+    v1.add(new StringField("version", "1", Field.Store.YES));
+    writer.addDocument(v1);
+    Document v2 = new Document();
+    v2.add(new StringField("id", "1", Field.Store.YES));
+    v2.add(new StringField("version", "2", Field.Store.YES));
+    writer.softUpdateDocument(new Term("id", "1"), v2, new NumericDocValuesField("my_deletes", 1));
+    writer.commit();
+    writer.close();
+    for (SegmentCommitInfo si : SegmentInfos.readLatestCommit(dir)) {
+      FieldInfos fieldInfos = IndexWriter.readFieldInfos(si);
+      assertEquals("my_deletes", fieldInfos.getSoftDeletesField());
+      assertTrue(fieldInfos.fieldInfo("my_deletes").isSoftDeletesField());
+    }
+
+    IllegalArgumentException illegalError = expectThrows(IllegalArgumentException.class, () -> {
+      new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("your_deletes"));
+    });
+    assertEquals("cannot configure [your_deletes] as soft-deletes; " +
+        "this index uses [my_deletes] as soft-deletes already", illegalError.getMessage());
+
+    IndexWriterConfig softDeleteConfig = newIndexWriterConfig().setSoftDeletesField("my_deletes")
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("my_deletes", () -> new MatchAllDocsQuery(), newMergePolicy()));
+    writer = new IndexWriter(dir, softDeleteConfig);
+    Document tombstone = new Document();
+    tombstone.add(new StringField("id", "tombstone", Field.Store.YES));
+    tombstone.add(new NumericDocValuesField("my_deletes", 1));
+    writer.addDocument(tombstone);
+    writer.flush();
+    for (SegmentCommitInfo si : writer.cloneSegmentInfos()) {
+      FieldInfos fieldInfos = IndexWriter.readFieldInfos(si);
+      assertEquals("my_deletes", fieldInfos.getSoftDeletesField());
+      assertTrue(fieldInfos.fieldInfo("my_deletes").isSoftDeletesField());
+    }
+    writer.close();
+    // reopen writer without soft-deletes field should be prevented
+    IllegalArgumentException reopenError = expectThrows(IllegalArgumentException.class, () -> {
+      new IndexWriter(dir, newIndexWriterConfig());
+    });
+    assertEquals("this index has [my_deletes] as soft-deletes already" +
+        " but soft-deletes field is not configured in IWC", reopenError.getMessage());
+    dir.close();
+  }
+
+  public void testPreventAddingIndexesWithDifferentSoftDeletesField() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig().setSoftDeletesField("soft_deletes_1"));
+    for (int i = 0; i < 2; i++) {
+      Document d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      d.add(new StringField("version", Integer.toString(i), Field.Store.YES));
+      w1.softUpdateDocument(new Term("id", "1"), d, new NumericDocValuesField("soft_deletes_1", 1));
+    }
+    w1.commit();
+    w1.close();
+
+    Directory dir2 = newDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig().setSoftDeletesField("soft_deletes_2"));
+    IllegalArgumentException error = expectThrows(IllegalArgumentException.class, () -> w2.addIndexes(dir1));
+    assertEquals("cannot configure [soft_deletes_2] as soft-deletes; this index uses [soft_deletes_1] as soft-deletes already",
+        error.getMessage());
+    w2.close();
+
+    Directory dir3 = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("soft_deletes_1");
+    IndexWriter w3 = new IndexWriter(dir3, config);
+    w3.addIndexes(dir1);
+    for (SegmentCommitInfo si : w3.cloneSegmentInfos()) {
+      FieldInfo softDeleteField = IndexWriter.readFieldInfos(si).fieldInfo("soft_deletes_1");
+      assertTrue(softDeleteField.isSoftDeletesField());
+    }
+    w3.close();
+    IOUtils.close(dir1, dir2, dir3);
+  }
+
+  public void testNotAllowUsingExistingFieldAsSoftDeletes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    for (int i = 0; i < 2; i++) {
+      Document d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      if (random().nextBoolean()) {
+        d.add(new NumericDocValuesField("dv_field", 1));
+        w.updateDocument(new Term("id", "1"), d);
+      } else {
+        w.softUpdateDocument(new Term("id", "1"), d, new NumericDocValuesField("dv_field", 1));
+      }
+    }
+    w.commit();
+    w.close();
+    String softDeletesField = random().nextBoolean() ? "id" : "dv_field";
+    IllegalArgumentException error = expectThrows(IllegalArgumentException.class, () -> {
+      IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField(softDeletesField);
+      new IndexWriter(dir, config);
+    });
+    assertEquals("cannot configure [" + softDeletesField + "] as soft-deletes;" +
+        " this index uses [" + softDeletesField + "] as non-soft-deletes already", error.getMessage());
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("non-existing-field");
+    w = new IndexWriter(dir, config);
+    w.close();
+    dir.close();
+  }
+
+  public void testBrokenPayload() throws Exception {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document doc = new Document();
+    Token token = new Token("bar", 0, 3);
+    BytesRef evil = new BytesRef(new byte[1024]);
+    evil.offset = 1000; // offset + length is now out of bounds.
+    token.setPayload(evil);
+    doc.add(new TextField("foo", new CannedTokenStream(token)));
+    expectThrows(IndexOutOfBoundsException.class, () -> w.addDocument(doc));
+    w.close();
+    d.close();
+  }
+
+  public void testSoftAndHardLiveDocs() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    String softDeletesField = "soft_delete";
+    indexWriterConfig.setSoftDeletesField(softDeletesField);
+    IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
+    Set<Integer> uniqueDocs = new HashSet<>();
+    for (int i = 0; i < 100; i++) {
+      int docId = random().nextInt(5);
+      uniqueDocs.add(docId);
+      Document doc = new Document();
+      doc.add(new StringField("id",  String.valueOf(docId), Field.Store.YES));
+      if (docId %  2 == 0) {
+        writer.updateDocument(new Term("id", String.valueOf(docId)), doc);
+      } else {
+        writer.softUpdateDocument(new Term("id", String.valueOf(docId)), doc,
+            new NumericDocValuesField(softDeletesField,  0));
+      }
+      if (random().nextBoolean()) {
+        assertHardLiveDocs(writer, uniqueDocs);
+      }
+    }
+
+    if (random().nextBoolean()) {
+      writer.commit();
+    }
+    assertHardLiveDocs(writer, uniqueDocs);
+
+
+    IOUtils.close(writer, dir);
+  }
+
+  private void assertHardLiveDocs(IndexWriter writer, Set<Integer> uniqueDocs) throws IOException {
+    try (DirectoryReader reader = DirectoryReader.open(writer)) {
+      assertEquals(uniqueDocs.size(), reader.numDocs());
+      List<LeafReaderContext> leaves = reader.leaves();
+      for (LeafReaderContext ctx : leaves) {
+        LeafReader leaf = ctx.reader();
+        assertTrue(leaf instanceof SegmentReader);
+        SegmentReader sr = (SegmentReader) leaf;
+        if (sr.getHardLiveDocs() != null) {
+          Terms id = sr.terms("id");
+          TermsEnum iterator = id.iterator();
+          Bits hardLiveDocs = sr.getHardLiveDocs();
+          Bits liveDocs = sr.getLiveDocs();
+          for (Integer dId : uniqueDocs) {
+            boolean mustBeHardDeleted = dId % 2 == 0;
+            if (iterator.seekExact(new BytesRef(dId.toString()))) {
+              PostingsEnum postings = iterator.postings(null);
+              while (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+                if (liveDocs.get(postings.docID())) {
+                  assertTrue(hardLiveDocs.get(postings.docID()));
+                } else if (mustBeHardDeleted) {
+                  assertFalse(hardLiveDocs.get(postings.docID()));
+                } else {
+                  assertTrue(hardLiveDocs.get(postings.docID()));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

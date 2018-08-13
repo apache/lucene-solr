@@ -22,14 +22,18 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.search.ReturnFields;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -77,11 +81,11 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   @Test
   public void testJSON() throws IOException {
     final String[] namedListStyles = new String[] {
-        JSONWriter.JSON_NL_FLAT,
-        JSONWriter.JSON_NL_MAP,
-        JSONWriter.JSON_NL_ARROFARR,
-        JSONWriter.JSON_NL_ARROFMAP,
-        JSONWriter.JSON_NL_ARROFNTV,
+        JsonTextWriter.JSON_NL_FLAT,
+        JsonTextWriter.JSON_NL_MAP,
+        JsonTextWriter.JSON_NL_ARROFARR,
+        JsonTextWriter.JSON_NL_ARROFMAP,
+        JsonTextWriter.JSON_NL_ARROFNTV,
     };
     for (final String namedListStyle : namedListStyles) {
       implTestJSON(namedListStyle);
@@ -130,9 +134,9 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testJSONSolrDocument() throws IOException {
+  public void testJSONSolrDocument() throws Exception {
     SolrQueryRequest req = req(CommonParams.WT,"json",
-                               CommonParams.FL,"id,score");
+                               CommonParams.FL,"id,score,_children_,path");
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 
@@ -141,11 +145,22 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
     StringWriter buf = new StringWriter();
 
+    SolrDocument childDoc = new SolrDocument();
+    childDoc.addField("id", "2");
+    childDoc.addField("score", "0.4");
+    childDoc.addField("path", Arrays.asList("a>b", "a>b>c"));
+
+    SolrDocumentList childList = new SolrDocumentList();
+    childList.setNumFound(1);
+    childList.setStart(0);
+    childList.add(childDoc);
+
     SolrDocument solrDoc = new SolrDocument();
     solrDoc.addField("id", "1");
     solrDoc.addField("subject", "hello2");
     solrDoc.addField("title", "hello3");
     solrDoc.addField("score", "0.7");
+    solrDoc.setField("_children_", childList);
 
     SolrDocumentList list = new SolrDocumentList();
     list.setNumFound(1);
@@ -163,8 +178,12 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
                 result.contains("\"title\""));
     assertTrue("response doesn't contain expected fields: " + result, 
                result.contains("\"id\"") &&
-               result.contains("\"score\""));
+               result.contains("\"score\"") && result.contains("_children_"));
 
+    String expectedResult = "{'response':{'numFound':1,'start':0,'maxScore':0.7,'docs':[{'id':'1', 'score':'0.7'," +
+        " '_children_':{'numFound':1,'start':0,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
+    String error = JSONTestUtil.match(result, "=="+expectedResult);
+    assertNull("response validation failed with error: " + error, error);
 
     req.close();
   }
@@ -184,17 +203,23 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     methodsExpectedNotOverriden.add("writeMapOpener");
     methodsExpectedNotOverriden.add("writeMapSeparator");
     methodsExpectedNotOverriden.add("writeMapCloser");
-    methodsExpectedNotOverriden.add("public void org.apache.solr.response.JSONWriter.writeArray(java.lang.String,java.util.List) throws java.io.IOException");
+    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeArray(java.lang.String,java.util.List) throws java.io.IOException");
     methodsExpectedNotOverriden.add("writeArrayOpener");
     methodsExpectedNotOverriden.add("writeArraySeparator");
     methodsExpectedNotOverriden.add("writeArrayCloser");
-    methodsExpectedNotOverriden.add("public void org.apache.solr.response.JSONWriter.writeMap(org.apache.solr.common.MapWriter) throws java.io.IOException");
-    methodsExpectedNotOverriden.add("public void org.apache.solr.response.JSONWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
+    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeMap(org.apache.solr.common.MapWriter) throws java.io.IOException");
+    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
+    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator) throws java.io.IOException");
 
     final Class<?> subClass = ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
 
-    for (final Method superClassMethod : superClass.getDeclaredMethods()) {
+    List<Method> allSuperClassMethods = new ArrayList<>();
+    for (Method method : superClass.getDeclaredMethods()) allSuperClassMethods.add(method);
+    for (Method method : JsonTextWriter.class.getDeclaredMethods()) allSuperClassMethods.add(method);
+
+
+    for (final Method superClassMethod : allSuperClassMethods) {
       final String methodName = superClassMethod.getName();
       final String methodFullName = superClassMethod.toString();
       if (!methodName.startsWith("write")) continue;
@@ -208,10 +233,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
           && !methodsExpectedNotOverriden.contains(methodFullName);
 
       try {
-        final Method subClassMethod = subClass.getDeclaredMethod(
-            superClassMethod.getName(),
-            superClassMethod.getParameterTypes());
-
+        final Method subClassMethod = getDeclaredMethodInClasses(superClassMethod, subClass);
         if (expectOverriden) {
           assertEquals("getReturnType() difference",
               superClassMethod.getReturnType(),
@@ -242,9 +264,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
       // only own private method of its own
       if (subClassMethod.getName().equals("ifNeededWriteTypeAndValueKey")) continue;
       try {
-        final Method superClassMethod = superClass.getDeclaredMethod(
-            subClassMethod.getName(),
-            subClassMethod.getParameterTypes());
+        final Method superClassMethod = getDeclaredMethodInClasses( subClassMethod,superClass, JsonTextWriter.class);
 
           assertEquals("getReturnType() difference",
               subClassMethod.getReturnType(),
@@ -254,7 +274,22 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
       }
     }
   }
-  
+
+  private Method getDeclaredMethodInClasses(Method subClassMethod, Class<?>... classes) throws NoSuchMethodException {
+    for (int i = 0; i < classes.length; i++) {
+      Class<?> klass = classes[i];
+      try {
+        return klass.getDeclaredMethod(
+            subClassMethod.getName(),
+            subClassMethod.getParameterTypes());
+      } catch (NoSuchMethodException e) {
+        if(i==classes.length-1) throw e;
+      }
+    }
+    throw new  NoSuchMethodException(subClassMethod.toString());
+
+  }
+
   @Test
   public void testConstantsUnchanged() {
     assertEquals("json.nl", JSONWriter.JSON_NL_STYLE);

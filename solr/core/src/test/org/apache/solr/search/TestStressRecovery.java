@@ -47,6 +47,7 @@ public class TestStressRecovery extends TestRTGBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    randomizeUpdateLogImpl();
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
 
@@ -58,6 +59,7 @@ public class TestStressRecovery extends TestRTGBase {
   // This version simulates updates coming from the leader and sometimes being reordered
   // and tests the ability to buffer updates and apply them later
   @Test
+// 12-Jun-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testStressRecovery() throws Exception {
     assumeFalse("FIXME: This test is horribly slow sometimes on Windows!", Constants.WINDOWS);
     clearIndex();

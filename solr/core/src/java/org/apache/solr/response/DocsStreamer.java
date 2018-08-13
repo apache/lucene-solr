@@ -50,6 +50,8 @@ import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrDocumentFetcher;
+import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrReturnFields;
 
 /**
  * This streams SolrDocuments from a DocList and applies transformer
@@ -97,7 +99,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
       if (retrieveFieldsOptimizer.returnStoredFields()) {
         Document doc = docFetcher.doc(id, retrieveFieldsOptimizer.getStoredFields());
         // make sure to use the schema from the searcher and not the request (cross-core)
-        sdoc = convertLuceneDocToSolrDoc(doc, rctx.getSearcher().getSchema());
+        sdoc = convertLuceneDocToSolrDoc(doc, rctx.getSearcher().getSchema(),
+                                         rctx.getReturnFields());
       } else {
         // no need to get stored fields of the document, see SOLR-5968
         sdoc = new SolrDocument();
@@ -127,28 +130,72 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
   }
 
-  // TODO move to SolrDocumentFetcher ?  Refactor to also call docFetcher.decorateDocValueFields(...) ?
+  /**
+   * This method is less efficient then the 3 arg version because it may convert some fields that 
+   * are not needed
+   *
+   * @deprecated use the 3 arg version for better performance
+   * @see #convertLuceneDocToSolrDoc(Document,IndexSchema,ReturnFields)
+   */
+  @Deprecated
   public static SolrDocument convertLuceneDocToSolrDoc(Document doc, final IndexSchema schema) {
-    SolrDocument out = new SolrDocument();
+    return convertLuceneDocToSolrDoc(doc,schema, new SolrReturnFields());
+  }
+  
+  /**
+   * Converts the specified <code>Document</code> into a <code>SolrDocument</code>.
+   * <p>
+   * The use of {@link ReturnFields} can be important even when it was already used to retrieve the 
+   * {@link Document} from {@link SolrDocumentFetcher} because the Document may have been cached with 
+   * more fields then are desired.
+   * </p>
+   * 
+   * @param doc <code>Document</code> to be converted, must not be null
+   * @param schema <code>IndexSchema</code> containing the field/fieldType details for the index
+   *               the <code>Document</code> came from, must not be null.
+   * @param fields <code>ReturnFields</code> instance that can be use to limit the set of fields 
+   *               that will be converted, must not be null
+   */
+  public static SolrDocument convertLuceneDocToSolrDoc(Document doc,
+                                                       final IndexSchema schema,
+                                                       final ReturnFields fields) {
+    // TODO move to SolrDocumentFetcher ?  Refactor to also call docFetcher.decorateDocValueFields(...) ?
+    assert null != doc;
+    assert null != schema;
+    assert null != fields;
+    
+    // can't just use fields.wantsField(String)
+    // because that doesn't include extra fields needed by transformers
+    final Set<String> fieldNamesNeeded = fields.getLuceneFieldNames();
+    
+    final SolrDocument out = new SolrDocument();
+
+    // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded
+    // when it's smaller then the IndexableField[] in the Document -- but that's actually *less* effecient
+    // since Document.getFields(String) does a full (internal) iteration over the full IndexableField[]
+    // see SOLR-11891
     for (IndexableField f : doc.getFields()) {
-      // Make sure multivalued fields are represented as lists
-      Object existing = out.get(f.name());
-      if (existing == null) {
-        SchemaField sf = schema.getFieldOrNull(f.name());
-        if (sf != null && sf.multiValued()) {
-          List<Object> vals = new ArrayList<>();
-          vals.add(f);
-          out.setField(f.name(), vals);
+      final String fname = f.name();
+      if (null == fieldNamesNeeded || fieldNamesNeeded.contains(fname) ) {
+        // Make sure multivalued fields are represented as lists
+        Object existing = out.get(fname);
+        if (existing == null) {
+          SchemaField sf = schema.getFieldOrNull(fname);
+          if (sf != null && sf.multiValued()) {
+            List<Object> vals = new ArrayList<>();
+            vals.add(f);
+            out.setField(fname, vals);
+          } else {
+            out.setField(fname, f);
+          }
         } else {
-          out.setField(f.name(), f);
+          out.addField(fname, f);
         }
-      } else {
-        out.addField(f.name(), f);
       }
     }
     return out;
   }
-
+  
   @Override
   public void remove() { //do nothing
   }

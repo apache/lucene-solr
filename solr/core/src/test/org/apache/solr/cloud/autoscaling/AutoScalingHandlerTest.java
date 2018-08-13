@@ -17,15 +17,18 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -439,6 +442,123 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     }
 
   }
+
+  @Test
+  public void testValidation() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    // unknown trigger properties
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : true," +
+        "'foo': 'bar'," +
+        "'actions' : [" +
+        "{" +
+        "'name' : 'compute_plan'," +
+        "'class' : 'solr.ComputePlanAction'" +
+        "}]}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+
+    try {
+      solrClient.request(req);
+      fail("should have thrown Exception");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("foo=unknown property"));
+    }
+
+    // invalid trigger properties
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'search_rate_trigger'," +
+        "'event' : 'searchRate'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : true," +
+        "'aboveRate': 'foo'," +
+        "'actions' : [" +
+        "{" +
+        "'name' : 'compute_plan'," +
+        "'class' : 'solr.ComputePlanAction'" +
+        "}]}}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+
+    try {
+      solrClient.request(req);
+      fail("should have thrown Exception");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("aboveRate=Invalid configuration value: 'foo'"));
+    }
+
+    // unknown trigger action properties
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : true," +
+        "'actions' : [" +
+        "{" +
+        "'name' : 'compute_plan'," +
+        "'foo' : 'bar'," +
+        "'class' : 'solr.ComputePlanAction'" +
+        "}]}}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+
+    try {
+      solrClient.request(req);
+      fail("should have thrown Exception");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("foo=unknown property"));
+    }
+
+    // unknown trigger listener properties
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : true," +
+        "'actions' : [" +
+        "{" +
+        "'name' : 'compute_plan'," +
+        "'class' : 'solr.ComputePlanAction'" +
+        "}]}}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setListenerCommand = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'xyz'," +
+        "'trigger' : 'node_lost_trigger'," +
+        "'stage' : ['STARTED','ABORTED','SUCCEEDED']," +
+        "'foo' : 'bar'," +
+        "'beforeAction' : 'execute_plan'," +
+        "'class' : 'org.apache.solr.cloud.autoscaling.HttpTriggerListener'," +
+        "'url' : 'http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    try {
+      solrClient.request(req);
+      fail("should have thrown Exception");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("foo=unknown property"));
+    }
+  }
+
   @Test
   public void testPolicyAndPreferences() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -556,7 +676,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testReadApi() throws Exception  {
     CloudSolrClient solrClient = cluster.getSolrClient();
     // first trigger
@@ -574,9 +693,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
-        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'overseer', 'replica':0}" +
-        "    ]" +
+        "      {'replica':'<3', 'shard': '#EACH', 'node': '#ANY'}]" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
@@ -594,17 +711,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     String setPolicyCommand =  "{'set-policy': {" +
-        "    'xyz':[" +
-        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'overseer', 'replica':0}" +
-        "    ]," +
-        "    'policy1':[" +
-        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
-        "    ]," +
-        "    'policy2':[" +
-        "      {'replica':'<7', 'shard': '#EACH', 'node': '#ANY'}" +
-        "    ]" +
-        "}}";
+        "    'xyz':[{'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}]," +
+        "    'policy1':[{'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}]," +
+        "    'policy2':[{'replica':'<7', 'shard': '#EACH', 'node': '#ANY'}]}}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -628,7 +737,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
     List<Map> clusterPolicy = (List<Map>) response.get("cluster-policy");
     assertNotNull(clusterPolicy);
-    assertEquals(3, clusterPolicy.size());
+    assertEquals(2, clusterPolicy.size());
 
     Map policies = (Map) response.get("policies");
     assertNotNull(policies);
@@ -640,18 +749,18 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
 
     Map<String, Object> diagnostics = (Map<String, Object>) response.get("diagnostics");
-    List sortedNodes = (List) diagnostics.get("sortedNodes");
+    List sortedNodes = (List) Utils.getObjectByPath(response, false, "diagnostics/sortedNodes");
     assertNotNull(sortedNodes);
 
     assertEquals(2, sortedNodes.size());
     for (int i = 0; i < 2; i++) {
       Map node = (Map) sortedNodes.get(i);
       assertNotNull(node);
-      assertEquals(5, node.size());
       assertNotNull(node.get("node"));
       assertNotNull(node.get("cores"));
-      assertEquals(0L, node.get("cores"));
+      assertEquals(0d, node.get("cores"));
       assertNotNull(node.get("freedisk"));
+      assertNotNull(node.get("replicas"));
       assertTrue(node.get("freedisk") instanceof Double);
       assertNotNull(node.get("sysLoadAvg"));
       assertTrue(node.get("sysLoadAvg") instanceof Double);
@@ -681,8 +790,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     String tempClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
-        "      {'replica':'<4', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'overseer', 'replica':0}" +
+        "      {'replica':'<4', 'shard': '#EACH', 'node': '#ANY'}"+
         "    ]" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, tempClusterPolicyCommand);
@@ -712,18 +820,32 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     for (Map<String, Object> violation : violations) {
       assertEquals("readApiTestViolations", violation.get("collection"));
       assertEquals("shard1", violation.get("shard"));
-      assertEquals(2l, getObjectByPath(violation, true, "violation/delta"));
+      assertEquals(1.0d, getObjectByPath(violation, true, "violation/delta"));
       assertEquals(3l, getObjectByPath(violation, true, "violation/replica/NRT"));
       assertNotNull(violation.get("clause"));
     }
+    log.info("Before starting new jetty ,{}", cluster.getJettySolrRunners()
+        .stream()
+        .map(jettySolrRunner -> jettySolrRunner.getNodeName()).collect(Collectors.toList()));
     JettySolrRunner runner1 = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
+    log.info("started new jetty {}", runner1.getNodeName());
+
+    response = waitForResponse(namedList -> {
+          List l = (List) Utils.getObjectByPath(namedList, false, "diagnostics/liveNodes");
+          if (l != null && l.contains(runner1.getNodeName())) return true;
+          return false;
+        },
+        createAutoScalingRequest(SolrRequest.METHOD.GET, "/diagnostics", null),
+        200,
+        20,
+        runner1.getNodeName() + " could not come up ");
 
     req = createAutoScalingRequest(SolrRequest.METHOD.GET, "/suggestions", null);
     response = solrClient.request(req);
     List l = (List) response.get("suggestions");
     assertNotNull(l);
-    assertEquals(1, l.size());
+    assertEquals(2, l.size());
     for (int i = 0; i < l.size(); i++) {
       Object suggestion = l.get(i);
       assertEquals("violation", Utils.getObjectByPath(suggestion, true, "type"));
@@ -892,6 +1014,25 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(10L, properties.get(AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS));
     assertEquals(10L, properties.get(AutoScalingParams.TRIGGER_CORE_POOL_SIZE));
     assertEquals(5L, properties.get(AutoScalingParams.ACTION_THROTTLE_PERIOD_SECONDS));
+  }
+
+  public void testUpdatePolicy() throws IOException, SolrServerException {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setPropertiesCommand = "{'set-cluster-policy': [" +
+        "{'cores': '<4','node': '#ANY'}]}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals("<4", Utils.getObjectByPath(response,false,"cluster-policy[0]/cores"));
+    assertEquals("#ANY", Utils.getObjectByPath(response,false,"cluster-policy[0]/node"));
+    setPropertiesCommand = "{'set-cluster-policy': [" +
+        "{'cores': '<3','node': '#ANY'}]}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    response = solrClient.request(req);
+    assertEquals("<3", Utils.getObjectByPath(response,false,"cluster-policy[0]/cores"));
+    assertEquals("#ANY", Utils.getObjectByPath(response,false,"cluster-policy[0]/node"));
+
   }
 
   static class AutoScalingRequest extends SolrRequest {

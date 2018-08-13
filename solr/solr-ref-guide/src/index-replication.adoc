@@ -91,10 +91,10 @@ Before running a replication, you should set the following parameters on initial
 `replicateAfter`::
 String specifying action after which replication should occur. Valid values are commit, optimize, or startup. There can be multiple values for this parameter. If you use "startup", you need to have a "commit" and/or "optimize" entry also if you want to trigger replication on future commits or optimizes.
 
-`backupAfter`
+`backupAfter`::
 String specifying action after which a backup should occur. Valid values are commit, optimize, or startup. There can be multiple values for this parameter. It is not required for replication, it just makes a backup.
 
-`maxNumberOfBackups`
+`maxNumberOfBackups`::
 Integer specifying how many backups to keep. This can be used to delete all but the most recent N backups.
 
 `confFiles`::

@@ -67,7 +67,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(makeIDField("id0", 100));
     w.addDocument(doc);
@@ -192,7 +192,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     int minItemsInBlock = TestUtil.nextInt(random(), 2, 50);
     int maxItemsInBlock = 2*(minItemsInBlock-1) + random().nextInt(50);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat(minItemsInBlock, maxItemsInBlock)));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     //IndexWriter w = new IndexWriter(dir, iwc);
     int numDocs = atLeast(1000);
     Map<String,Long> idValues = new HashMap<String,Long>();
@@ -359,7 +359,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(makeIDField("id", 17));
     w.addDocument(doc);
@@ -415,7 +415,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(makeIDField("id", 17));
     w.addDocument(doc);
@@ -432,7 +432,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(makeIDField("id", 17));
     w.addDocument(doc);
@@ -460,7 +460,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       };
     IndexWriterConfig iwc = newIndexWriterConfig(a);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(newTextField("id", "id", Field.Store.NO));
     expectThrows(IllegalArgumentException.class, () -> {
@@ -476,7 +476,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(newStringField("id", "id", Field.Store.NO));
     expectThrows(IllegalArgumentException.class, () -> {
@@ -493,7 +493,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(new StringAndPayloadField("id", "id", new BytesRef("foo")));
     expectThrows(IllegalArgumentException.class, () -> {
@@ -509,7 +509,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(makeIDField("id", 17));
     w.addDocument(doc);
@@ -529,7 +529,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
 
     FieldType ft = new FieldType(StringAndPayloadField.TYPE);
@@ -555,7 +555,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(makeIDField("id", 17));
     doc.add(makeIDField("id", 17));
@@ -572,7 +572,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     // -1
     doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
@@ -590,7 +590,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     // Long.MAX_VALUE:
     doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0x7f, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
@@ -610,7 +610,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
 
     IDSource idsSource = getRandomIDs();
     int numIDs = atLeast(100);

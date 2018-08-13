@@ -53,7 +53,7 @@ public class ReplicaInfo implements MapWriter {
   }
 
   public ReplicaInfo(String name, String core, String coll, String shard, Replica.Type type, String node, Map<String, Object> vals) {
-    if(vals==null) vals = Collections.emptyMap();
+    if (vals == null) vals = Collections.emptyMap();
     this.name = name;
     if (vals != null) {
       this.variables.putAll(vals);
@@ -64,6 +64,25 @@ public class ReplicaInfo implements MapWriter {
     this.type = type;
     this.core = core;
     this.node = node;
+  }
+
+  ReplicaInfo(Map<String, Object> map) {
+    this.name = map.keySet().iterator().next();
+    Map details = (Map) map.get(name);
+    details = Utils.getDeepCopy(details, 4);
+    this.collection = (String) details.remove("collection");
+    this.shard = (String) details.remove("shard");
+    this.core = (String) details.remove("core");
+    this.node = (String) details.remove("node_name");
+    this.isLeader = Boolean.parseBoolean((String) details.getOrDefault("leader", "false"));
+    details.remove("leader");
+    type = Replica.Type.valueOf((String) details.getOrDefault("type", "NRT"));
+    details.remove("type");
+    this.variables.putAll(details);
+  }
+
+  public Object clone() {
+    return new ReplicaInfo(name, core, collection, shard, type, node, variables);
   }
 
   @Override
@@ -88,10 +107,12 @@ public class ReplicaInfo implements MapWriter {
     });
   }
 
+  /** Replica "coreNode" name. */
   public String getName() {
     return name;
   }
 
+  /** SolrCore name. */
   public String getCore() {
     return core;
   }
@@ -132,6 +153,24 @@ public class ReplicaInfo implements MapWriter {
 
   public Object getVariable(String name) {
     return variables.get(name);
+  }
+
+  public Object getVariable(String name, Object defValue) {
+    Object o = variables.get(name);
+    if (o != null) {
+      return o;
+    } else {
+      return defValue;
+    }
+  }
+
+  public boolean getBool(String name, boolean defValue) {
+    Object o = getVariable(name, defValue);
+    if (o instanceof Boolean) {
+      return (Boolean)o;
+    } else {
+      return Boolean.parseBoolean(String.valueOf(o));
+    }
   }
 
   @Override

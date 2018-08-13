@@ -19,7 +19,7 @@
 
 The JSON Request API allows a JSON body to be passed for the entire search request.
 
-The <<json-facet-api.adoc#JSONFacetAPI,JSON Facet API>> is part of the JSON Request API, and allows specification of faceted analytics in JSON.
+The <<json-facet-api.adoc#json-facet-api,JSON Facet API>> is part of the JSON Request API, and allows specification of faceted analytics in JSON.
 
 Here's an example of a search request using query parameters only:
 [source,bash]
@@ -93,12 +93,13 @@ That is equivalent to having the following JSON body or `json` parameter:
   }
 }
 
-See the <<json-facet-api.adoc#JSONFacetAPI,JSON Facet API>> for more on faceting and analytics commands in specified in JSON.
+See the <<json-facet-api.adoc#json-facet-api,JSON Facet API>> for more on faceting and analytics commands in specified in JSON.
 
 
 === Debugging
 
-If you want to see what your merged/parsed JSON looks like, you can turn on debugging (`debug=true`), and it will come back under the "json" key along with the other debugging information.
+If you want to see what your merged/parsed JSON looks like, you can turn on debugging (`debug=timing`), and it will come back under the "json" key along with the other debugging information.
+Note: `debug=true` as well as `debugQuery=true` might have too much performance implication and `debug=query` makes no effect on JSON facet in SolrCloud.
 
 == Passing Parameters via JSON
 We can also pass normal query request parameters in the JSON body within the params block:

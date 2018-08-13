@@ -29,8 +29,6 @@ limitations under the License.
       <button id="swap" class="action requires-core" ng-click="showSwapCores()"><span>Swap</span></button>
       <button id="reload" class="requires-core" ng-click="reloadCore()"
          ng-class="{success: reloadSuccess, warn: reloadFailure}"><span>Reload</span></button>
-      <button id="optimize" class="requires-core" ng-click="optimizeCore()" ng-show="core.index.hasDeletions || optimizeSuccess"
-         ng-class="{success: optimizeSuccess, warn: optimizeFailure}"><span>Optimize</span></button>
       </span>
       <div class="action add" data-rel="add" ng-show="showAdd" style="display:block;left:0px;">
 

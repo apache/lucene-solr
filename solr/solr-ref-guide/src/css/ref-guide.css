@@ -1556,6 +1556,7 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
     margin-top: 0;
     color: #7a2518;
     text-align: center;
+    padding-bottom: 10px;
 }
 
 .exampleblock > .content > :last-child>:last-child,

@@ -194,7 +194,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    */
   public void testSpanNearScorerSkipTo1() throws Exception {
     SpanNearQuery q = makeQuery();
-    Weight w = searcher.createNormalizedWeight(q, ScoreMode.COMPLETE);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
     LeafReaderContext leave = topReaderContext.leaves().get(0);
     Scorer s = w.scorer(leave);

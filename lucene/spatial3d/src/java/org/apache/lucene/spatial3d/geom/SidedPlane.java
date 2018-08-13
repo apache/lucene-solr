@@ -70,6 +70,18 @@ public class SidedPlane extends Plane implements Membership {
 
   /**
    * Construct a sided plane from a pair of vectors describing points, and including
+   * origin.  Choose the side arbitrarily.
+   *
+   * @param A is the first in-plane point
+   * @param B is the second in-plane point
+   */
+  public SidedPlane(final Vector A, final Vector B) {
+    super(A, B);
+    sigNum = 1.0;
+  }
+
+  /**
+   * Construct a sided plane from a pair of vectors describing points, and including
    * origin, plus a point p which describes the side.
    *
    * @param p point to evaluate
@@ -220,6 +232,30 @@ public class SidedPlane extends Plane implements Membership {
       return true;
     double sigNum = Math.signum(evalResult);
     return sigNum == this.sigNum;
+  }
+
+  /**
+   * Check whether a point is strictly within a plane.
+   * @param v is the point.
+   * @return true if within.
+   */
+  public boolean strictlyWithin(final Vector v) {
+    double evalResult = evaluate(v.x, v.y, v.z);
+    double sigNum = Math.signum(evalResult);
+    return sigNum == 0.0 || sigNum == this.sigNum;
+  }
+
+  /**
+   * Check whether a point is strictly within a plane.
+   * @param x is the point x value.
+   * @param y is the point y value.
+   * @param z is the point z value.
+   * @return true if within.
+   */
+  public boolean strictlyWithin(double x, double y, double z) {
+    double evalResult = evaluate(x, y, z);
+    double sigNum = Math.signum(evalResult);
+    return sigNum == 0.0 || sigNum == this.sigNum;
   }
 
   @Override

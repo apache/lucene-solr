@@ -99,11 +99,11 @@ public class CastingIntValueTest extends SolrTestCaseJ4 {
     AnalyticsValue casted = (AnalyticsValue)val;
 
     val.setValue(20).setExists(true);
-    assertEquals(new Integer(20), casted.getObject());
+    assertEquals(20, casted.getObject());
     assertTrue(casted.exists());
 
     val.setValue(1234).setExists(true);
-    assertEquals(new Integer(1234), casted.getObject());
+    assertEquals(1234, casted.getObject());
     assertTrue(casted.exists());
   }
 
@@ -237,7 +237,7 @@ public class CastingIntValueTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValue(20).setExists(true);
-    Iterator<Object> values = Arrays.<Object>asList(new Integer(20)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(20).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

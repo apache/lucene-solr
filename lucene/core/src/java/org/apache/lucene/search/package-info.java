@@ -453,8 +453,8 @@
  * <p>Assuming we are not sorting (since sorting doesn't affect the raw Lucene score),
  *    we call one of the search methods of the IndexSearcher, passing in the
  *    {@link org.apache.lucene.search.Weight Weight} object created by
- *    {@link org.apache.lucene.search.IndexSearcher#createNormalizedWeight(org.apache.lucene.search.Query,ScoreMode)
- *     IndexSearcher.createNormalizedWeight(Query,boolean)} and the number of results we want.
+ *    {@link org.apache.lucene.search.IndexSearcher#createWeight(org.apache.lucene.search.Query,ScoreMode,float)
+ *     IndexSearcher.createWeight(Query,ScoreMode,float)} and the number of results we want.
  *    This method returns a {@link org.apache.lucene.search.TopDocs TopDocs} object,
  *    which is an internal collection of search results. The IndexSearcher creates
  *    a {@link org.apache.lucene.search.TopScoreDocCollector TopScoreDocCollector} and

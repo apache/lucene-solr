@@ -23,8 +23,8 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -149,7 +149,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     q2.add(q1.build(), BooleanClause.Occur.SHOULD);
     q2.add(new CrazyMustUseBulkScorerQuery(), BooleanClause.Occur.SHOULD);
 
-    assertEquals(1, s.search(q2.build(), 10).totalHits);
+    assertEquals(1, s.count(q2.build()));
     r.close();
     dir.close();
   }
@@ -172,7 +172,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       .build();
 
     // no scores -> term scorer
-    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE_NO_SCORES);
+    Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
     BulkScorer scorer = ((BooleanWeight) weight).booleanScorer(ctx);
     assertTrue(scorer instanceof DefaultBulkScorer); // term scorer
 
@@ -181,7 +181,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD) // existing term
       .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD) // missing term
       .build();
-    weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+    weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
     scorer = ((BooleanWeight) weight).booleanScorer(ctx);
     assertTrue(scorer instanceof DefaultBulkScorer); // term scorer
 
@@ -210,7 +210,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
       .add(new TermQuery(new Term("foo", "bar")), Occur.MUST_NOT)
       .build();
-    Weight weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+    Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
     BulkScorer scorer = ((BooleanWeight) weight).booleanScorer(ctx);
     assertTrue(scorer instanceof ReqExclBulkScorer);
 
@@ -219,7 +219,7 @@ public class TestBooleanScorer extends LuceneTestCase {
         .add(new MatchAllDocsQuery(), Occur.SHOULD)
         .add(new TermQuery(new Term("foo", "bar")), Occur.MUST_NOT)
         .build();
-    weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+    weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
     scorer = ((BooleanWeight) weight).booleanScorer(ctx);
     assertTrue(scorer instanceof ReqExclBulkScorer);
 
@@ -227,7 +227,7 @@ public class TestBooleanScorer extends LuceneTestCase {
         .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
         .add(new TermQuery(new Term("foo", "bar")), Occur.MUST_NOT)
         .build();
-    weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+    weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
     scorer = ((BooleanWeight) weight).booleanScorer(ctx);
     assertTrue(scorer instanceof ReqExclBulkScorer);
 
@@ -235,7 +235,7 @@ public class TestBooleanScorer extends LuceneTestCase {
         .add(new TermQuery(new Term("foo", "baz")), Occur.FILTER)
         .add(new TermQuery(new Term("foo", "bar")), Occur.MUST_NOT)
         .build();
-    weight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+    weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
     scorer = ((BooleanWeight) weight).booleanScorer(ctx);
     assertTrue(scorer instanceof ReqExclBulkScorer);
 

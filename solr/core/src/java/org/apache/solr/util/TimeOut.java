@@ -17,6 +17,8 @@
 package org.apache.solr.util;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import org.apache.solr.common.util.TimeSource;
 
@@ -29,12 +31,12 @@ public class TimeOut {
 
   public TimeOut(long interval, TimeUnit unit, TimeSource timeSource) {
     this.timeSource = timeSource;
-    startTime = timeSource.getTime();
+    startTime = timeSource.getTimeNs();
     this.timeoutAt = startTime + NANOSECONDS.convert(interval, unit);
   }
 
   public boolean hasTimedOut() {
-    return timeSource.getTime() > timeoutAt;
+    return timeSource.getTimeNs() > timeoutAt;
   }
 
   public void sleep(long ms) throws InterruptedException {
@@ -42,10 +44,25 @@ public class TimeOut {
   }
 
   public long timeLeft(TimeUnit unit) {
-    return unit.convert(timeoutAt - timeSource.getTime(), NANOSECONDS);
+    return unit.convert(timeoutAt - timeSource.getTimeNs(), NANOSECONDS);
   }
 
   public long timeElapsed(TimeUnit unit) {
-    return unit.convert(timeSource.getTime() - startTime, NANOSECONDS);
+    return unit.convert(timeSource.getTimeNs() - startTime, NANOSECONDS);
+  }
+
+  /**
+   * Wait until the given {@link Supplier} returns true or the time out expires which ever happens first
+   * @param messageOnTimeOut the exception message to be used in case a TimeoutException is thrown
+   * @param supplier a {@link Supplier} that returns a {@link Boolean} value
+   * @throws InterruptedException if any thread has interrupted the current thread
+   * @throws TimeoutException if the timeout expires
+   */
+  public void waitFor(String messageOnTimeOut, Supplier<Boolean> supplier)
+      throws InterruptedException, TimeoutException {
+    while (!supplier.get() && !hasTimedOut()) {
+      Thread.sleep(500);
+    }
+    if (hasTimedOut()) throw new TimeoutException(messageOnTimeOut);
   }
 }

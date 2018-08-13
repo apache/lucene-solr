@@ -477,7 +477,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private long getHitCount(Directory dir, Term term) throws IOException {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
-    long hitCount = searcher.search(new TermQuery(term), 1000).totalHits;
+    long hitCount = searcher.search(new TermQuery(term), 1000).totalHits.value;
     reader.close();
     return hitCount;
   }
@@ -994,7 +994,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?
     final String fieldFormat = TestUtil.getPostingsFormat("field");
-    assumeFalse("This test cannot run with Memory codec", fieldFormat.equals("Memory"));
     assumeFalse("This test cannot run with SimpleText codec", fieldFormat.equals("SimpleText"));
     assumeFalse("This test cannot run with Direct codec", fieldFormat.equals("Direct"));
     final Random r = random();
@@ -1147,6 +1146,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testDeletesCheckIndexOutput() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     iwc.setMaxBufferedDocs(2);
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
@@ -1207,7 +1207,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w = new IndexWriter(d, iwc);
     IndexReader r = DirectoryReader.open(w, false, false);
     assertTrue(w.tryDeleteDocument(r, 1) != -1);
+    assertFalse(((StandardDirectoryReader)r).isCurrent());
     assertTrue(w.tryDeleteDocument(r.leaves().get(0).reader(), 0) != -1);
+    assertFalse(((StandardDirectoryReader)r).isCurrent());
     r.close();
     w.close();
 
@@ -1216,6 +1218,28 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertNotNull(MultiFields.getLiveDocs(r));
     r.close();
     d.close();
+  }
+
+  public void testNRTIsCurrentAfterDelete() throws Exception {
+    Directory d = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(d, iwc);
+    Document doc = new Document();
+    w.addDocument(doc);
+    w.addDocument(doc);
+    w.addDocument(doc);
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    w.addDocument(doc);
+    w.close();
+    iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setOpenMode(IndexWriterConfig.OpenMode.APPEND);
+    w = new IndexWriter(d, iwc);
+    IndexReader r = DirectoryReader.open(w, false, false);
+    w.deleteDocuments(new Term("id", "1"));
+    IndexReader r2 = DirectoryReader.open(w, true, true);
+    assertFalse(((StandardDirectoryReader)r).isCurrent());
+    assertTrue(((StandardDirectoryReader)r2).isCurrent());
+    IOUtils.close(r, r2, w, d);
   }
 
   public void testOnlyDeletesTriggersMergeOnClose() throws Exception {

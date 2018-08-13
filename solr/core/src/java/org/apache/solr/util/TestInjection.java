@@ -43,7 +43,6 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,6 +133,8 @@ public class TestInjection {
 
   public static String splitFailureBeforeReplicaCreation = null;
 
+  public static String splitFailureAfterReplicaCreation = null;
+
   public static String waitForReplicasInSync = "true:60";
 
   public static String failIndexFingerprintRequests = null;
@@ -144,6 +145,10 @@ public class TestInjection {
 
   private static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
+  public static Integer delayBeforeSlaveCommitRefresh=null;
+
+  public static boolean uifOutOfMemoryError = false;
+
   public static void reset() {
     nonGracefullClose = null;
     failReplicaRequests = null;
@@ -153,11 +158,14 @@ public class TestInjection {
     updateRandomPause = null;
     randomDelayInCoreCreation = null;
     splitFailureBeforeReplicaCreation = null;
+    splitFailureAfterReplicaCreation = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     waitForReplicasInSync = "true:60";
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
+    delayBeforeSlaveCommitRefresh = null;
+    uifOutOfMemoryError = false;
 
     for (Timer timer : timers) {
       timer.cancel();
@@ -381,25 +389,32 @@ public class TestInjection {
     return true;
   }
 
-  public static boolean injectSplitFailureBeforeReplicaCreation() {
-    if (splitFailureBeforeReplicaCreation != null)  {
+  private static boolean injectSplitFailure(String probability, String label) {
+    if (probability != null)  {
       Random rand = random();
       if (null == rand) return true;
 
-      Pair<Boolean,Integer> pair = parseValue(splitFailureBeforeReplicaCreation);
+      Pair<Boolean,Integer> pair = parseValue(probability);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
-        log.info("Injecting failure in creating replica for sub-shard");
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create replica");
+        log.info("Injecting failure: " + label);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error: " + label);
       }
     }
-
     return true;
   }
 
+  public static boolean injectSplitFailureBeforeReplicaCreation() {
+    return injectSplitFailure(splitFailureBeforeReplicaCreation, "before creating replica for sub-shard");
+  }
+
+  public static boolean injectSplitFailureAfterReplicaCreation() {
+    return injectSplitFailure(splitFailureAfterReplicaCreation, "after creating replica for sub-shard");
+  }
+
   @SuppressForbidden(reason = "Need currentTimeMillis, because COMMIT_TIME_MSEC_KEY use currentTimeMillis as value")
-  public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) throws InterruptedException {
+  public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) {
     if (waitForReplicasInSync == null) return true;
     log.info("Start waiting for replica in sync with leader");
     long currentTime = System.currentTimeMillis();
@@ -407,8 +422,8 @@ public class TestInjection {
     boolean enabled = pair.first();
     if (!enabled) return true;
     long t = System.currentTimeMillis() - 200;
-    try {
-      for (int i = 0; i < pair.second(); i++) {
+    for (int i = 0; i < pair.second(); i++) {
+      try {
         if (core.isClosed()) return true;
         Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
             collection, shardId);
@@ -416,31 +431,32 @@ public class TestInjection {
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.set(CommonParams.QT, ReplicationHandler.PATH);
           params.set(COMMAND, CMD_DETAILS);
-
+  
           NamedList<Object> response = leaderClient.request(new QueryRequest(params));
           long leaderVersion = (long) ((NamedList)response.get("details")).get("indexVersion");
-          RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-          try {
-            String localVersion = searcher.get().getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
-            if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges()) return true;
-            if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
-              log.info("Waiting time for tlog replica to be in sync with leader: {}", System.currentTimeMillis()-currentTime);
-              return true;
-            } else {
-              log.debug("Tlog replica not in sync with leader yet. Attempt: {}. Local Version={}, leader Version={}", i, localVersion, leaderVersion);
-              Thread.sleep(500);
-            }
-          } finally {
-            searcher.decref();
+          String localVersion = core.withSearcher(searcher ->
+              searcher.getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY));
+          if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges())
+            return true;
+          if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
+            log.info("Waiting time for tlog replica to be in sync with leader: {}", System.currentTimeMillis()-currentTime);
+            return true;
+          } else {
+            log.debug("Tlog replica not in sync with leader yet. Attempt: {}. Local Version={}, leader Version={}", i, localVersion, leaderVersion);
+            Thread.sleep(500);
           }
-
+  
         }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        if (core.isClosed()) return true;
+        log.error("Thread interrupted while waiting for core {} to be in sync with leader", core.getName());
+        return false;
+      } catch (Exception e) {
+        if (core.isClosed()) return true;
+        log.error("Exception when wait for replicas in sync with master. Will retry until timeout.", e);
       }
-
-    } catch (Exception e) {
-      log.error("Exception when wait for replicas in sync with master");
     }
-
     return false;
   }
   
@@ -453,6 +469,25 @@ public class TestInjection {
       percent = m.group(2);
     }
     return new Pair<>(Boolean.parseBoolean(val), Integer.parseInt(percent));
+  }
+
+  public static boolean injectDelayBeforeSlaveCommitRefresh() {
+    if (delayBeforeSlaveCommitRefresh!=null) {
+      try {
+        log.info("Pausing IndexFetcher for {}ms", delayBeforeSlaveCommitRefresh);
+        Thread.sleep(delayBeforeSlaveCommitRefresh);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
+  }
+
+  public static boolean injectUIFOutOfMemoryError() {
+    if (uifOutOfMemoryError ) {
+      throw new OutOfMemoryError("Test Injection");
+    }
+    return true;
   }
 
 }

@@ -16,8 +16,7 @@
  */
 package org.apache.lucene.analysis.icu.segmentation;
 
-
-import com.ibm.icu.text.BreakIterator;
+import com.ibm.icu.text.RuleBasedBreakIterator;
 
 /**
  * Class that allows for tailored Unicode Text Segmentation on
@@ -25,14 +24,16 @@ import com.ibm.icu.text.BreakIterator;
  * @lucene.experimental
  */
 public abstract class ICUTokenizerConfig {
-  
+  /** Rule status for emoji sequences */
+  public static final int EMOJI_SEQUENCE_STATUS = 299;
+
   /**
    * Sole constructor. (For invocation by subclass 
    * constructors, typically implicit.)
    */
   public ICUTokenizerConfig() {}
   /** Return a breakiterator capable of processing a given script. */
-  public abstract BreakIterator getBreakIterator(int script);
+  public abstract RuleBasedBreakIterator getBreakIterator(int script);
   /** Return a token type value for a given script and BreakIterator
    *  rule status. */
   public abstract String getType(int script, int ruleStatus);

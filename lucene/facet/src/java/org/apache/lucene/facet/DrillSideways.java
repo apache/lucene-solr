@@ -223,7 +223,7 @@ public class DrillSideways {
    * drill down and sideways counts.
    */
   public DrillSidewaysResult search(DrillDownQuery query, Query filter, FieldDoc after, int topN, Sort sort,
-          boolean doDocScores, boolean doMaxScore) throws IOException {
+          boolean doDocScores) throws IOException {
     if (filter != null) {
       query = new DrillDownQuery(config, filter, query);
     }
@@ -241,7 +241,7 @@ public class DrillSideways {
 
                   @Override
                   public TopFieldCollector newCollector() throws IOException {
-                    return TopFieldCollector.create(sort, fTopN, after, true, doDocScores, doMaxScore, true);
+                    return TopFieldCollector.create(sort, fTopN, after, Integer.MAX_VALUE);
                   }
 
                   @Override
@@ -255,14 +255,22 @@ public class DrillSideways {
 
                 };
         ConcurrentDrillSidewaysResult<TopFieldDocs> r = search(query, collectorManager);
-        return new DrillSidewaysResult(r.facets, r.collectorResult);
+        TopFieldDocs topDocs = r.collectorResult;
+        if (doDocScores) {
+          TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, query);
+        }
+        return new DrillSidewaysResult(r.facets, topDocs);
 
       } else {
 
         final TopFieldCollector hitCollector =
-                TopFieldCollector.create(sort, fTopN, after, true, doDocScores, doMaxScore, true);
+                TopFieldCollector.create(sort, fTopN, after, Integer.MAX_VALUE);
         DrillSidewaysResult r = search(query, hitCollector);
-        return new DrillSidewaysResult(r.facets, hitCollector.topDocs());
+        TopFieldDocs topDocs = hitCollector.topDocs();
+        if (doDocScores) {
+          TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, query);
+        }
+        return new DrillSidewaysResult(r.facets, topDocs);
       }
     } else {
       return search(after, query, topN);
@@ -295,7 +303,7 @@ public class DrillSideways {
 
                 @Override
                 public TopScoreDocCollector newCollector() throws IOException {
-                  return TopScoreDocCollector.create(fTopN, after, true);
+                  return TopScoreDocCollector.create(fTopN, after, Integer.MAX_VALUE);
                 }
 
                 @Override
@@ -313,7 +321,7 @@ public class DrillSideways {
 
     } else {
 
-      TopScoreDocCollector hitCollector = TopScoreDocCollector.create(topN, after, true);
+      TopScoreDocCollector hitCollector = TopScoreDocCollector.create(topN, after, Integer.MAX_VALUE);
       DrillSidewaysResult r = search(query, hitCollector);
       return new DrillSidewaysResult(r.facets, hitCollector.topDocs());
     }

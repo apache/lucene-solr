@@ -60,14 +60,14 @@ public class ActionThrottle {
   }
 
   public void markAttemptingAction() {
-    lastActionStartedAt = timeSource.getTime();
+    lastActionStartedAt = timeSource.getTimeNs();
   }
   
   public void minimumWaitBetweenActions() {
     if (lastActionStartedAt == null) {
       return;
     }
-    long diff = timeSource.getTime() - lastActionStartedAt;
+    long diff = timeSource.getTimeNs() - lastActionStartedAt;
     int diffMs = (int) TimeUnit.MILLISECONDS.convert(diff, TimeUnit.NANOSECONDS);
     long minNsBetweenActions = TimeUnit.NANOSECONDS.convert(minMsBetweenActions, TimeUnit.MILLISECONDS);
     log.debug("The last {} attempt started {}ms ago.", name, diffMs);

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -31,6 +29,10 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
@@ -67,10 +69,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
+import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 
 public class HdfsDirectoryFactory extends CachingDirectoryFactory implements SolrCoreAware, SolrMetricProducer {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -114,7 +113,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   
   public static Metrics metrics;
   private static Boolean kerberosInit;
-  
+
   // we use this cache for FileSystem instances when we don't have access to a long lived instance
   private com.google.common.cache.Cache<String,FileSystem> tmpFsCache = CacheBuilder.newBuilder()
       .concurrencyLevel(10)
@@ -151,7 +150,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   @Override
   public void init(NamedList args) {
     super.init(args);
-    params = SolrParams.toSolrParams(args);
+    params = args.toSolrParams();
     this.hdfsDataDir = getConfig(HDFS_HOME, null);
     if (this.hdfsDataDir != null && this.hdfsDataDir.length() == 0) {
       this.hdfsDataDir = null;
@@ -462,7 +461,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
     synchronized (HdfsDirectoryFactory.class) {
       if (kerberosInit == null) {
-        kerberosInit = new Boolean(true);
+        kerberosInit = Boolean.TRUE;
         final Configuration conf = getConf();
         final String authVal = conf.get(HADOOP_SECURITY_AUTHENTICATION);
         final String kerberos = "kerberos";
@@ -489,9 +488,9 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    MetricsHolder.metrics.initializeMetrics(manager, registry, scope);
-    LocalityHolder.reporter.initializeMetrics(manager, registry, scope);
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    MetricsHolder.metrics.initializeMetrics(manager, registry, tag, scope);
+    LocalityHolder.reporter.initializeMetrics(manager, registry, tag, scope);
   }
 
   @Override

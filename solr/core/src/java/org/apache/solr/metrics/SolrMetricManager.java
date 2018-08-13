@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
@@ -54,8 +55,10 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * This class maintains a repository of named {@link MetricRegistry} instances, and provides several
@@ -422,14 +425,14 @@ public class SolrMetricManager {
     } else {
       swapLock.lock();
       try {
-        return getOrCreate(registries, registry);
+        return getOrCreateRegistry(registries, registry);
       } finally {
         swapLock.unlock();
       }
     }
   }
 
-  private static MetricRegistry getOrCreate(ConcurrentMap<String, MetricRegistry> map, String registry) {
+  private static MetricRegistry getOrCreateRegistry(ConcurrentMap<String, MetricRegistry> map, String registry) {
     final MetricRegistry existing = map.get(registry);
     if (existing == null) {
       final MetricRegistry created = new MetricRegistry();
@@ -645,7 +648,7 @@ public class SolrMetricManager {
    *                   using dotted notation
    * @param metricPath (optional) additional top-most metric name path elements
    */
-  public void register(SolrInfoBean info, String registry, Metric metric, boolean force, String metricName, String... metricPath) {
+  public void registerMetric(SolrInfoBean info, String registry, Metric metric, boolean force, String metricName, String... metricPath) {
     MetricRegistry metricRegistry = registry(registry);
     String fullName = mkName(metricName, metricPath);
     if (info != null) {
@@ -659,8 +662,56 @@ public class SolrMetricManager {
     }
   }
 
-  public void registerGauge(SolrInfoBean info, String registry, Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
-    register(info, registry, gauge, force, metricName, metricPath);
+  /**
+   * This is a wrapper for {@link Gauge} metrics, which are usually implemented as
+   * lambdas that often keep a reference to their parent instance. In order to make sure that
+   * all such metrics are removed when their parent instance is removed / closed the
+   * metric is associated with an instance tag, which can be used then to remove
+   * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
+   */
+  public static class GaugeWrapper<T> implements Gauge<T> {
+    private final Gauge<T> gauge;
+    private final String tag;
+
+    public GaugeWrapper(Gauge<T> gauge, String tag) {
+      this.gauge = gauge;
+      this.tag = tag;
+    }
+
+    @Override
+    public T getValue() {
+      return gauge.getValue();
+    }
+
+    public String getTag() {
+      return tag;
+    }
+
+    public Gauge<T> getGauge() {
+      return gauge;
+    }
+  }
+
+  public void registerGauge(SolrInfoBean info, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
+    registerMetric(info, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
+  }
+
+  public int unregisterGauges(String registryName, String tag) {
+    if (tag == null) {
+      return 0;
+    }
+    MetricRegistry registry = registry(registryName);
+    AtomicInteger removed = new AtomicInteger();
+    registry.removeMatching((name, metric) -> {
+      if (metric instanceof GaugeWrapper &&
+          tag.equals(((GaugeWrapper)metric).getTag())) {
+        removed.incrementAndGet();
+        return true;
+      } else {
+        return false;
+      }
+    });
+    return removed.get();
   }
 
   /**
@@ -872,6 +923,15 @@ public class SolrMetricManager {
         new Class[]{SolrMetricManager.class, String.class},
         new Object[]{this, registry}
     );
+    // prepare MDC for plugins that want to use its properties
+    MDCLoggingContext.setNode(coreContainer);
+    if (solrCore != null) {
+      MDCLoggingContext.setCore(solrCore);
+    }
+    if (tag != null) {
+      // add instance tag to MDC
+      MDC.put("tag", "t:" + tag);
+    }
     try {
       if (reporter instanceof SolrCoreReporter) {
         ((SolrCoreReporter)reporter).init(pluginInfo, solrCore);
@@ -882,6 +942,9 @@ public class SolrMetricManager {
       }
     } catch (IllegalStateException e) {
       throw new IllegalArgumentException("reporter init failed: " + pluginInfo, e);
+    } finally {
+      MDCLoggingContext.clear();
+      MDC.remove("tag");
     }
     registerReporter(registry, pluginInfo.name, tag, reporter);
   }
@@ -1110,8 +1173,7 @@ public class SolrMetricManager {
         attrs, initArgs);
     for (PluginInfo info : infos) {
       try {
-        loadReporter(registryName, core, info,
-            String.valueOf(core.hashCode()));
+        loadReporter(registryName, core, info, core.getMetricTag());
       } catch (Exception e) {
         log.warn("Could not load shard reporter, pluginInfo=" + info, e);
       }

@@ -194,24 +194,24 @@ $ sudo vim /etc/hosts
 
 These steps will help you install and configure a single instance of ZooKeeper on AWS. This is not sufficient for a production, use, however, where a ZooKeeper ensemble of at least three nodes is recommended. See the section <<setting-up-an-external-zookeeper-ensemble.adoc#setting-up-an-external-zookeeper-ensemble,Setting Up an External ZooKeeper Ensemble>> for information about how to change this single-instance into an ensemble.
 
-. Download a stable version of ZooKeeper. In this example we're using ZooKeeper v3.4.6. On the node you're using to host ZooKeeper (`zookeeper-node`), download the package and untar it:
+. Download a stable version of ZooKeeper. In this example we're using ZooKeeper v{ivy-zookeeper-version}. On the node you're using to host ZooKeeper (`zookeeper-node`), download the package and untar it:
 +
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-# download stable version of ZooKeeper, here 3.4.6
-$ wget https://archive.apache.org/dist/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz
+# download stable version of ZooKeeper, here {ivy-zookeeper-version}
+$ wget https://archive.apache.org/dist/zookeeper/zookeeper-{ivy-zookeeper-version}/zookeeper-{ivy-zookeeper-version}.tar.gz
 # untar
-$ tar -zxvf zookeeper-3.4.6.tar.gz
+$ tar -zxvf zookeeper-{ivy-zookeeper-version}.tar.gz
 ----
 +
 Add an environment variable for ZooKeeper's home directory (`ZOO_HOME`) to the `.bashrc` for the user who will be running the process. The rest of the instructions assume you have set this variable. Correct the path to the ZooKeeper installation as appropriate if where you put it does not match the below.
 +
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-$ export ZOO_HOME=$PWD/zookeeper-3.4.6
+$ export ZOO_HOME=$PWD/zookeeper-{ivy-zookeeper-version}
 # put the env variable in .bashrc
 # vim ~/.bashrc
-export ZOO_HOME=/home/ec2-user/zookeeper-3.4.6
+export ZOO_HOME=/home/ec2-user/zookeeper-{ivy-zookeeper-version}
 ----
 . Change directories to `ZOO_HOME`, and create the ZooKeeper configuration by using the template provided by ZooKeeper.
 +

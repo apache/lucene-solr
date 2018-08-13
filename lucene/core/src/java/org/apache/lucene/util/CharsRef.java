@@ -17,7 +17,6 @@
 package org.apache.lucene.util;
 
 
-import java.util.Arrays;
 import java.util.Comparator;
 
 /**
@@ -202,7 +201,7 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
    * and an offset of zero.
    */
   public static CharsRef deepCopyOf(CharsRef other) {
-    return new CharsRef(Arrays.copyOfRange(other.chars, other.offset, other.offset + other.length), 0, other.length);
+    return new CharsRef(ArrayUtil.copyOfSubArray(other.chars, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

@@ -47,9 +47,6 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
   @Test
   public void testReporter() throws Exception {
     ensureLoggingConfiguredAppropriately();
-    LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, null, 100);
-    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
-    watcher.setThreshold("INFO");
     Path home = Paths.get(TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -70,6 +67,10 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     assertNotNull(reporter2);
     assertTrue(reporter2 instanceof SolrSlf4jReporter);
 
+    LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, null, 100);
+    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
+    watcher.setThreshold("INFO");
+
     watcher.reset();
     int cnt = 20;
     boolean active;
@@ -81,7 +82,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     if (!active) {
       fail("One or more reporters didn't become active in 20 seconds");
     }
-    Thread.sleep(5000);
+    Thread.sleep(10000);
 
     SolrDocumentList history = watcher.getHistory(-1, null);
     // dot-separated names are treated like class names and collapsed
@@ -91,6 +92,9 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     }
     if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
       fail("No 'foobar' logs in: " + history.toString());
+    }
+    if (history.stream().filter(d -> "x:collection1".equals(d.getFirstValue("core"))).count() == 0) {
+      fail("No 'solr.core' or MDC context in logs: " + history.toString());
     }
   }
 

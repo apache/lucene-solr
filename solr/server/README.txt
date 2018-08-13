@@ -47,7 +47,7 @@ server/logs
 
 server/resources
 
-  Contains configuration files, such as the Log4j configuration (log4j.properties) for configuring Solr loggers.
+  Contains configuration files, such as the Log4j configuration (log4j2.xml) for configuring Solr loggers.
 
 server/scripts/cloud-scripts
 
@@ -93,7 +93,7 @@ statements in the solrconfig.xml file to reference plugin jars outside of
 this directory for loading "contrib" plugins via relative paths.  
 
 If you make a copy of this example server and wish to use the 
-ExtractingRequestHandler (SolrCell), DataImportHandler (DIH), UIMA, the 
+ExtractingRequestHandler (SolrCell), DataImportHandler (DIH), the 
 clustering component, or any other modules in "contrib", you will need to 
 copy the required jars or update the paths to those jars in your 
 solrconfig.xml.
@@ -102,7 +102,7 @@ solrconfig.xml.
 
 By default, Jetty & Solr will log to the console and logs/solr.log. This can
 be convenient when first getting started, but eventually you will want to
-log just to a file. To configure logging, edit the log4j.properties file in
+log just to a file. To configure logging, edit the log4j2.xml file in
 "resources".
  
 It is also possible to setup log4j or other popular logging frameworks.

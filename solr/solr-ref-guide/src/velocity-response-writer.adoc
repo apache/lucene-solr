@@ -107,14 +107,14 @@ Resource bundles can be added by providing a JAR file visible by the SolrResourc
 |Context Reference |Description
 |`request` |{solr-javadocs}solr-core/org/apache/solr/request/SolrQueryRequest.html[SolrQueryRequest] javadocs
 |`response` |{solr-javadocs}solr-core/org/apache/solr/response/SolrQueryResponse.html[QueryResponse] most of the time, but in some cases where QueryResponse doesn't like the request handler's output (https://wiki.apache.org/solr/AnalysisRequestHandler[AnalysisRequestHandler], for example, causes a ClassCastException parsing "response"), the response will be a SolrResponseBase object.
-|`esc` |A Velocity http://velocity.apache.org/tools/2.0/tools-summary.html#EscapeTool[EscapeTool] instance
-|`date` |A Velocity http://velocity.apache.org/tools/2.0/tools-summary.html#ComparisonDateTool[ComparisonDateTool] instance
-|`list` |A Velocity http://velocity.apache.org/tools/2.0/apidocs/org/apache/velocity/tools/generic/ListTool.html[ListTool] instance
-|`math` |A Velocity http://velocity.apache.org/tools/2.0/tools-summary.html#MathTool[MathTool] instance
-|`number` |A Velocity http://velocity.apache.org/tools/2.0/tools-summary.html#NumberTool[NumberTool] instance
-|`sort` |A Velocity http://velocity.apache.org/tools/2.0/tools-summary.html#SortTool[SortTool] instance
-|`display` |A Velocity http://velocity.apache.org/tools/2.0/tools-summary.html#DisplayTool[DisplayTool] instance
-|`resource` |A Velocity http://velocity.apache.org/tools/2.0/tools-summary.html#ResourceTool[ResourceTool] instance
+|`esc` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#EscapeTool[EscapeTool] instance
+|`date` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#ComparisonDateTool[ComparisonDateTool] instance
+|`list` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/apidocs/org/apache/velocity/tools/generic/ListTool.html[ListTool] instance
+|`math` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#MathTool[MathTool] instance
+|`number` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#NumberTool[NumberTool] instance
+|`sort` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#SortTool[SortTool] instance
+|`display` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#DisplayTool[DisplayTool] instance
+|`resource` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#ResourceTool[ResourceTool] instance
 |`engine` |The current VelocityEngine instance
 |`page` |An instance of Solr's PageTool (only included if the response is a QueryResponse where paging makes sense)
 |`debug` |A shortcut to the debug part of the response, or null if debug is not on. This is handy for having debug-only sections in a template using `#if($debug)...#end`

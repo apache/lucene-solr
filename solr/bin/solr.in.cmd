@@ -78,16 +78,16 @@ REM If not set, defaults to <instance_dir>/data. Overridable per core through 'd
 REM set SOLR_DATA_HOME=
 
 REM Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
-REM This is an alternative to changing the rootLogger in log4j.properties
+REM This is an alternative to changing the rootLogger in log4j2.xml
 REM set SOLR_LOG_LEVEL=INFO
 
 REM Location where Solr should write logs to. Absolute or relative to solr start dir
 REM set SOLR_LOGS_DIR=logs
 
-REM Enables log rotation, cleanup, and archiving before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=false will skip start
-REM time rotation of logs, and the archiving of the last GC and console log files. It does not affect Log4j configuration. This
-REM pre-startup rotation may need to be disabled depending how much you customize the default logging setup.
-REM set SOLR_LOG_PRESTART_ROTATION=true
+REM Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
+REM start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
+REM framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
+REM set SOLR_LOG_PRESTART_ROTATION=false
 
 REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
 REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!
@@ -103,21 +103,38 @@ REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
 REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
 REM set SOLR_SSL_KEY_STORE_PASSWORD=secret
-REM set SOLR_SSL_KEY_STORE_TYPE=JKS
 REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
 REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret
-REM set SOLR_SSL_TRUST_STORE_TYPE=JKS
+REM Require clients to authenticate
 REM set SOLR_SSL_NEED_CLIENT_AUTH=false
+REM Enable clients to authenticate (but not require)
 REM set SOLR_SSL_WANT_CLIENT_AUTH=false
+REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
+REM this to false can be useful to disable these checks when re-using a certificate on many hosts
+REM set SOLR_SSL_CHECK_PEER_NAME=true
+REM Override Key/Trust Store types if necessary
+REM set SOLR_SSL_KEY_STORE_TYPE=JKS
+REM set SOLR_SSL_TRUST_STORE_TYPE=JKS
 
 REM Uncomment if you want to override previously defined SSL values for HTTP client
 REM otherwise keep them commented and the above values will automatically be set for HTTP clients
 REM set SOLR_SSL_CLIENT_KEY_STORE=
 REM set SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
-REM set SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+REM set SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
+
+REM Sets path of Hadoop credential provider (hadoop.security.credential.provider.path property) and
+REM enables usage of credential store.
+REM Credential provider should store the following keys:
+REM * solr.jetty.keystore.password
+REM * solr.jetty.truststore.password
+REM Set the two below if you want to set specific store passwords for HTTP client
+REM * javax.net.ssl.keyStorePassword
+REM * javax.net.ssl.trustStorePassword
+REM More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
+REM set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
 
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters

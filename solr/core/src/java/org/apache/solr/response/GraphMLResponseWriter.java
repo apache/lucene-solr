@@ -20,7 +20,6 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
@@ -31,13 +30,9 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.GraphHandler;
 import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public class GraphMLResponseWriter implements QueryResponseWriter {
-
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void init(NamedList args) {
     /* NOOP */
@@ -97,7 +92,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
           id = tuple.getString("collection") + "." + id;
         }
 
-        writer.write("<node id=\""+replace(id)+"\"");
+        printWriter.write("<node id=\""+ xmlEscape(id)+"\"");
 
         List<String> outfields = new ArrayList();
         Iterator<String> keys = tuple.fields.keySet().iterator();
@@ -115,7 +110,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
           for (String nodeAttribute : outfields) {
             Object o = tuple.get(nodeAttribute);
             if (o != null) {
-              printWriter.println("<data key=\""+nodeAttribute+"\">" + o.toString() + "</data>");
+              printWriter.println("<data key=\"" + xmlEscape(nodeAttribute) + "\">" + xmlEscape(o.toString()) + "</data>");
             }
           }
           printWriter.println("</node>");
@@ -128,20 +123,20 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
         if(ancestors != null) {
           for (String ancestor : ancestors) {
             ++edgeCount;
-            writer.write("<edge id=\"" + edgeCount + "\" ");
-            writer.write(" source=\"" + replace(ancestor) + "\" ");
-            printWriter.println(" target=\"" + replace(id) + "\"/>");
+            printWriter.write("<edge id=\"" + edgeCount + "\" ");
+            printWriter.write(" source=\"" + xmlEscape(ancestor) + "\" ");
+            printWriter.println(" target=\"" + xmlEscape(id) + "\"/>");
           }
         }
       }
 
-      writer.write("</graph></graphml>");
+      printWriter.write("</graph></graphml>");
     } finally {
       stream.close();
     }
   }
 
-  private String replace(String s) {
+  private String xmlEscape(String s) {
     if(s.indexOf(">") > -1) {
       s = s.replace(">", "&gt;");
     }

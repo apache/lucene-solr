@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
@@ -79,6 +80,7 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void testExecute() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String collectionName = "testExecute";
@@ -103,7 +105,7 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
     String survivor = otherNodes.get(0);
 
     try (ExecutePlanAction action = new ExecutePlanAction()) {
-      action.init(Collections.singletonMap("name", "execute_plan"));
+      action.configure(cluster.getLoader(), cluster, Collections.singletonMap("name", "execute_plan"));
 
       // used to signal if we found that ExecutePlanAction did in fact create the right znode before executing the operation
       AtomicBoolean znodeCreated = new AtomicBoolean(false);
@@ -134,7 +136,7 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
       };
       List<CollectionAdminRequest.AsyncCollectionAdminRequest> operations = Lists.asList(moveReplica, new CollectionAdminRequest.AsyncCollectionAdminRequest[]{mockRequest});
       NodeLostTrigger.NodeLostEvent nodeLostEvent = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST,
-          "mock_trigger_name", Collections.singletonList(TimeSource.CURRENT_TIME.getTime()),
+          "mock_trigger_name", Collections.singletonList(TimeSource.CURRENT_TIME.getTimeNs()),
           Collections.singletonList(sourceNodeName));
       ActionContext actionContext = new ActionContext(cluster, null,
           new HashMap<>(Collections.singletonMap("operations", operations)));

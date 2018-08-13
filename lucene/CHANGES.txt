@@ -29,7 +29,7 @@ API Changes
 * LUCENE-8099: CustomScoreQuery, BoostedQuery and BoostingQuery have been
   removed (Alan Woodward)
 
-* LUCENE-8012: Explanation now takes Number rather than float (Alan Woodward, 
+* LUCENE-8012: Explanation now takes Number rather than float (Alan Woodward,
   Robert Muir)
 
 * LUCENE-8116: SimScorer now only takes a frequency and a norm as per-document
@@ -38,7 +38,39 @@ API Changes
 * LUCENE-8113: TermContext has been renamed to TermStates, and can now be
   constructed lazily if term statistics are not required (Alan Woodward)
 
+* LUCENE-8242: Deprecated method IndexSearcher#createNormalizedWeight() has
+  been removed (Alan Woodward)
+
+* LUCENE-8267: Memory codecs removed from the codebase (MemoryPostings,
+  MemoryDocValues). (Dawid Weiss)
+
+* LUCENE-8144: Moved QueryCachingPolicy.ALWAYS_CACHE to the test framework.
+  (Nhat Nguyen via Adrien Grand)
+
+* LUCENE-8356: StandardFilter and StandardFilterFactory have been removed
+  (Alan Woodward)
+
+* LUCENE-8373: StandardAnalyzer.ENGLISH_STOP_WORD_SET has been removed
+  (Alan Woodward)
+
+* LUCENE-8388: Unused PostingsEnum#attributes() method has been removed 
+  (Alan Woodward)
+
+* LUCENE-8405: TopDocs.maxScore is removed. IndexSearcher and TopFieldCollector
+  no longer have an option to compute the maximum score when sorting by field.
+  (Adrien Grand)
+
+* LUCENE-8411: TopFieldCollector no longer takes a fillFields option, it now
+  always fills fields. (Adrien Grand)
+
+* LUCENE-8412: TopFieldCollector no longer takes a trackDocScores option. Scores
+  need to be set on top hits via TopFieldCollector#populateScores instead.
+  (Adrien Grand)
+
 Changes in Runtime Behavior
+
+* LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
+  numDocs. (Robert Muir, Dawid Weiss).
 
 * LUCENE-7837: Indices that were created before the previous major version
   will now fail to open even if they have been merged with the previous major
@@ -61,6 +93,13 @@ Changes in Runtime Behavior
 * LUCENE-8031: Length normalization correctly reflects omission of term frequencies.
   (Robert Muir, Adrien Grand)
 
+* LUCENE-7444: StandardAnalyzer no longer defaults to removing English stopwords
+  (Alan Woodward)
+
+* LUCENE-8060: IndexSearcher's search and searchAfter methods now only compute
+  total hit counts accurately up to 1,000 in order to enable top-hits
+  optimizations such as block-max WAND (LUCENE-8135). (Adrien Grand)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
@@ -76,6 +115,8 @@ Improvements
 
 * LUCENE-8135: Boolean queries now implement the block-max WAND algorithm in
   order to speed up selection of top scored documents. (Adrien Grand)
+
+* LUCENE-8279: CheckIndex now cross-checks terms with norms. (Adrien Grand)
 
 Optimizations
 
@@ -93,7 +134,171 @@ Optimizations
   or phrase queries as sub queries, which know how to leverage this information
   to run faster. (Adrien Grand)
 
+* LUCENE-8439: Disjunction max queries can skip blocks to select the top documents
+  if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
+
+* LUCENE-8204: Boolean queries with a mix of required and optional clauses are
+  now faster if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
+
+======================= Lucene 7.5.0 =======================
+
+API Changes:
+
+* LUCENE-8356: StandardFilter is deprecated (Alan Woodward)
+
+* LUCENE-8373: ENGLISH_STOP_WORD_SET on StandardAnalyzer is deprecated.  Instead
+  use EnglishAnalyzer.ENGLISH_STOP_WORD_SET.  The default constructor for
+  StopAnalyzer is also deprecated, and a stop word set should be explicitly
+  passed to the constructor.  (Alan Woodward)
+
+* LUCENE-8378: Add DocIdSetIterator.range static method to return an iterator
+  matching a range of docids (Mike McCandless)
+
+* LUCENE-8379: Add experimental TermQuery.getTermStates method (Mike McCandless)
+
+* LUCENE-8407: Add experimental SpanTermQuery.getTermStates method (David Smiley)
+
+* LUCENE-8390: MatchesIteratorSupplier replaced by IOSupplier (Alan Woodward,
+  David Smiley)
+
+* LUCENE-8397: Add DirectoryTaxonomyWriter.getCache (Mike McCandless)
+
+* LUCENE-8387: Add experimental IndexSearcher.getSlices API to see which slices
+  IndexSearcher is searching concurrently when it's created with an ExecutorService
+  (Mike McCandless)
+
+* LUCENE-8263: TieredMergePolicy's reclaimDeletesWeight has been replaced with a
+  new deletesPctAllowed setting to control how aggressively deletes should be
+  reclaimed. (Erick Erickson, Adrien Grand)
+
+* LUCENE-7314: Graduate LatLonPoint and query classes to core (Nick Knize)
+
+* LUCENE-8428: The way that oal.util.PriorityQueue creates sentinel objects has
+  been changed from a protected method to a java.util.function.Supplier as a
+  constructor argument. (Adrien Grand)
+
+* LUCENE-8437: CheckIndex.Status.cantOpenSegments and missingSegmentVersion
+  have been removed as they were not computed correctly. (Adrien Grand)
+
+Bug Fixes:
+
+* LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
+  bogus tiles when building GeoPolygons. (Ignacio Vera)
+
+* LUCENE-8444: Prevent building functionally identical plane bounds when constructing
+  DualCrossingEdgeIterator . (Ignacio Vera)
+
+* LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
+
+* LUCENE-8164: IndexWriter silently accepts broken payload. This has been fixed
+  via LUCENE-8165 since we are now checking for offset+length going out of bounds.
+  (Robert Muir, Nhat Nyugen, Simon Willnauer)
+
+* LUCENE-8370: Reproducing 
+  TestLucene{54,70}DocValuesFormat.testSortedSetVariableLengthBigVsStoredFields()
+  failures (Erick Erickson)
+
+* LUCENE-8376, LUCENE-8371: ConditionalTokenFilter.end() would not propagate correctly
+  if the last token in the stream was subsequently dropped; FixedShingleFilter did
+  not set position increment in end() (Alan Woodward)
+
+* LUCENE-8395: WordDelimiterGraphFilter would incorrectly insert a hole into a
+  TokenStream if a token consisting entirely of delimiter characters was 
+  encountered, but preserve_original was set. (Alan Woodward)
+
+* LUCENE-8398: TieredMergePolicy.getMaxMergedSegmentMB has rounding error (Erick Erickson)
+
+* LUCENE-8429: DaciukMihovAutomatonBuilder is no longer prone to stack
+  overflows by enforcing a maximum term length. (Adrien Grand)
+
+* LUCENE-8441: IndexWriter now checks doc value type for index sort fields
+  and fails the document if they are not compatible. (Jim Ferenczi, Mike McCandless)
+
+Changes in Runtime Behavior:
+
+* LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
+  findForcedMerges and findForcedDeletesMerges (Erick Erickson)
+
+* LUCENE-8263: TieredMergePolicy now reclaims deleted documents more
+  aggressively by default ensuring that no more than ~1/3 of the index size is
+  used by deleted documents. (Adrien Grand)
+
+Improvements
+
+* LUCENE-8447: Add DISJOINT and WITHIN support to LatLonShape queries. (Nick Knize)
+
+* LUCENE-8440: Add support for indexing and searching Line and Point shapes using LatLonShape encoding (Nick Knize)
+
+* LUCENE-8435: Add new LatLonShapePolygonQuery for querying indexed LatLonShape fields by arbitrary polygons (Nick Knize)
+
+* LUCENE-8367: Make per-dimension drill down optional for each facet dimension (Mike McCandless)
+
+* LUCENE-8396: Add Points Based Shape Indexing and Search that decomposes shapes
+  into a triangular mesh and indexes individual triangles as a 6 dimension point (Nick Knize)
+
+* LUCENE-8345, GitHub PR #392: Remove instantiation of redundant wrapper classes for primitives;
+  add wrapper class constructors to forbiddenapis.  (Michael Braun via Uwe Schindler)
+
+* LUCENE-8415: Clean up Directory contracts and JavaDoc comments. (Dawid Weiss)
+
+* LUCENE-8414: Make segmentInfos private in IndexWriter (Simon Willnauer, Nhat Nguyen)
+
+Other:
+
+* LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
+  Extended_Pictographic property. (Robert Muir)
+
+* LUCENE-8408: original Highlighter:  Remove obsolete static AttributeFactory instance
+  in TokenStreamFromTermVector.  (Michael Braun, David Smiley)
+
+* LUCENE-8420: Upgrade OpenNLP to 1.9.0 so OpenNLP tool can read the new model format which 1.8.x
+  cannot read. 1.9.0 can read the old format. (Koji Sekiguchi)
+
+* LUCENE-8453: Add documentation to analysis factories of Korean (Nori) analyzer
+  module.  (Tomoko Uchida via Uwe Schindler)
+
+======================= Lucene 7.4.1 =======================
+
+Bug Fixes:
+ 
+ * LUCENE-8365: Fix ArrayIndexOutOfBoundsException in UnifiedHighlighter. This fixes 
+   a "off by one" error in the UnifiedHighlighter's code that is only triggered when
+   two nested SpanNearQueries contain the same term. (Marc-Andre Morissette via Simon Willnauer)
+
+ * LUCENE-8381: Fix IndexWriter incorrectly interprets hard-deletes as soft-deletes
+   while wrapping reader for merges. (Simon Willnauer, Nhat Nguyen)
+
+ * LUCENE-8384: Fix missing advance docValues generation while handling docValues
+   update in PendingSoftDeletes. (Simon Willnauer, Nhat Nguyen)
+
 ======================= Lucene 7.4.0 =======================
+
+Upgrading
+
+* LUCENE-8344: If you are using the AnalyzingSuggester or FuzzySuggester subclass, and if you
+  explicitly use the preservePositionIncrements=false setting (not the default), then you ought
+  to rebuild your suggester index. If you don't, queries or indexed data with trailing position
+  gaps (e.g. stop words) may not work correctly. (David Smiley, Jim Ferenczi)
+
+API Changes
+
+* LUCENE-8242: IndexSearcher.createNormalizedWeight() has been deprecated.
+  Instead use IndexSearcher.createWeight(), rewriting the query first.
+  (Alan Woodward)
+
+* LUCENE-8248: MergePolicyWrapper is renamed to FilterMergePolicy and now
+  also overrides getMaxCFSSegmentSizeMB (Mike Sokolov via Mike McCandless)
+
+* LUCENE-8303: LiveDocsFormat is now only responsible for (de)serialization of
+  live docs. (Adrien Grand)
+
+Changes in Runtime Behavior
+
+* LUCENE-8309: Live docs are no longer backed by a FixedBitSet. (Adrien Grand)
+
+* LUCENE-8330: Detach IndexWriter from MergePolicy. MergePolicy now instead of 
+  requiring IndexWriter as a hard dependency expects a MergeContext which
+  IndexWriter implements. (Simon Willnauer, Robert Muir, Dawid Weiss, Mike McCandless)
 
 New Features
 
@@ -102,6 +307,200 @@ New Features
   mechanism to all keeping several version of a document or already 
   deleted documents around for later reuse. See "IW.softUpdateDocument(...)"
   for reference. (Simon Willnauer)
+
+* LUCENE-8197: A new FeatureField makes it easy and efficient to integrate
+  static relevance signals into the final score. (Adrien Grand, Robert Muir)
+
+* LUCENE-8202: Add a FixedShingleFilter (Alan Woodward, Adrien Grand, Jim
+  Ferenczi)
+
+* LUCENE-8125: ICUTokenizer support for emoji/emoji sequence tokens. (Robert Muir)
+
+* LUCENE-8196, LUCENE-8300: A new IntervalQuery in the sandbox allows efficient proximity
+  searches based on minimum-interval semantics. (Alan Woodward, Adrien Grand,
+  Jim Ferenczi, Simon Willnauer, Matt Weber)
+
+* LUCENE-8233: Add support for soft deletes to IndexWriter delete accounting. 
+  Soft deletes are accounted for inside the index writer and therefor also
+  by merge policies. A SoftDeletesRetentionMergePolicy is added that allows
+  to selectively carry over soft_deleted document across merges for retention
+  policies (Simon Willnauer, Mike McCandless, Robert Muir)
+
+* LUCENE-8237: Add a SoftDeletesDirectoryReaderWrapper that allows to respect
+  soft deletes if the reader is opened form a directory. (Simon Willnauer,
+  Mike McCandless, Uwe Schindler, Adrien Grand)
+
+* LUCENE-8229, LUCENE-8270: Add a method Weight.matches(LeafReaderContext, doc) 
+  that returns an iterator over matching positions for a given query and document.
+  This allows exact hit extraction and will enable implementation of accurate 
+  highlighters. (Alan Woodward, Adrien Grand, David Smiley)
+
+* LUCENE-8249: Implement Matches API for phrase queries (Alan Woodward, Adrien 
+  Grand)
+
+* LUCENE-8246: Allow to customize the number of deletes a merge claims. This
+  helps merge policies in the soft-delete case to correctly implement retention
+  policies without triggering uncessary merges. (Simon Willnauer, Mike McCandless)
+
+* LUCENE-8231: A new analysis module (nori) similar to Kuromoji
+  but to handle Korean using mecab-ko-dic and morphological analysis.
+  (Robert Muir, Jim Ferenczi)
+
+* LUCENE-8265: WordDelimter/GraphFilter now have an option to skip tokens
+  marked with KeywordAttribute (Mike Sokolov via Mike McCandless)
+
+* LUCENE-8297: Add IW#tryUpdateDocValues(Reader, int, Fields...) IndexWriter can
+  update doc values for a specific term but this might affect all documents 
+  containing the term. With tryUpdateDocValues users can update doc-values 
+  fields for individual documents. This allows for instance to soft-delete
+  individual documents. (Simon Willnauer)
+
+* LUCENE-8298: Allow DocValues updates to reset a value. Passing a DV field with a null
+  value to IW#updateDocValues or IW#tryUpdateDocValues will now remove the value from the 
+  provided document. This allows to undelete a soft-deleted document unless it's been claimed
+  by a merge. (Simon Willnauer) 
+
+* LUCENE-8273: ConditionalTokenFilter allows analysis chains to skip particular token
+  filters based on the attributes of the current token. This generalises the keyword
+  token logic currently used for stemmers and WDF.  It is integrated into 
+  CustomAnalyzer by using the `when` and `whenTerm` builder methods, and a new
+  ProtectedTermFilter is added as an example.  (Alan Woodward, Robert Muir,
+  David Smiley, Steve Rowe, Mike Sokolov)
+
+* LUCENE-8310: Ensure IndexFileDeleter accounts for pending deletes. Today we fail
+  creating the IndexWriter when the directory has a pending delete. Yet, this
+  is mainly done to prevent writing still existing files more than once.
+  IndexFileDeleter already accounts for that for existing files which we can
+  now use to also take pending deletes into account which ensures that all file
+  generations per segment always go forward. (Simon Willnauer)
+  
+* LUCENE-7960: Add preserveOriginal option to the NGram and EdgeNGram filters.
+  (Ingomar Wesp, Shawn Heisey via Robert Muir)
+
+* LUCENE-8335: Enforce soft-deletes field up-front. Soft deletes field must be marked
+  as such once it's introduced and can't be changed after the fact.
+  (Nhat Nguyen via Simon Willnauer)
+
+* LUCENE-8332: New ConcatenateGraphFilter for concatenating all tokens into one (or more
+  in the event of a graph input).  This is useful for fast analyzed exact-match lookup,
+  suggesters, and as a component of a named entity recognition system.  This was excised
+  out of CompletionTokenStream in the NRT doc suggester.  (David Smiley, Jim Ferenczi)
+
+Bug Fixes
+
+* LUCENE-8221: MoreLikeThis.setMaxDocFreqPct can easily int-overflow on larger
+  indexes.
+
+* LUCENE-8266: Detect bogus tiles when creating a standard polygon and
+  throw a TileException. (Ignacio Vera)
+
+* LUCENE-8234: Fixed bug in how spatial relationship is computed for
+  GeoStandardCircle when it covers the whole world. (Ignacio Vera)
+
+* LUCENE-8236: Filter duplicated points when creating GeoPath shapes to
+  avoid creation of bogus planes. (Ignacio Vera)
+
+* LUCENE-8243: IndexWriter.addIndexes(Directory[]) did not properly preserve
+  index file names for updated doc values fields (Simon Willnauer,
+  Michael McCandless, Nhat Nguyen)
+
+* LUCENE-8275: Push up #checkPendingDeletes to Directory to ensure IW fails if 
+  the directory has pending deletes files even if the directory is filtered or 
+  a FileSwitchDirectory (Simon Willnauer, Robert Muir)
+
+* LUCENE-8244: Do not leak open file descriptors in SearcherTaxonomyManager's
+  refresh on exception (Mike McCandless)
+
+* LUCENE-8305: ComplexPhraseQuery.rewrite now handles an embedded MultiTermQuery
+  that rewrites to a MatchNoDocsQuery instead of throwing an exception.
+  (Bjarke Mortensen, Andy Tran via David Smiley)
+
+* LUCENE-8287: Ensure that empty regex completion queries always return no results.
+  (Julie Tibshirani via Jim Ferenczi)
+
+* LUCENE-8317: Prevent concurrent deletes from being applied during full flush.
+  Future deletes could potentially be exposed to flushes/commits/refreshes if the 
+  amount of RAM used by deletes is greater than half of the IW RAM buffer. (Simon Willnauer)
+
+* LUCENE-8320: Fix WindowsFS to correctly account for rename and hardlinks. 
+  (Simon Willnauer, Nhat Nguyen)
+
+* LUCENE-8328: Ensure ReadersAndUpdates consistently executes under lock.
+  (Nhat Nguyen via Simon Willnauer)
+
+* LUCENE-8325: Fixed the smartcn tokenizer to not split UTF-16 surrogate pairs.
+  (chengpohi via Jim Ferenczi)
+
+* LUCENE-8186: LowerCaseTokenizerFactory now lowercases text in multi-term
+  queries. (Tim Allison via Adrien Grand)
+
+* LUCENE-8278: Some end-of-input no-scheme domain-only URL tokens are typed as
+  <ALPHANUM> rather than <URL>.  (Junte Zhang, Steve Rowe)
+
+* LUCENE-8355: Prevent IW from opening an already dropped segment while DV updates
+  are written. (Nhat Nguyen via Simon Willnauer)
+
+* LUCENE-8344: TokenStreamToAutomaton (used by some suggesters) was not ignoring a trailing
+  position increment when the preservePositionIncrement setting is false.
+  (David Smiley, Jim Ferenczi)
+
+* LUCENE-8357: FunctionScoreQuery.boostByQuery() and boostByValue() were
+  producing truncated Explanations (Markus Jelsma, Alan Woodward)
+
+* LUCENE-8360: NGramTokenFilter and EdgeNGramTokenFilter did not correctly
+  set position increments in end() (Alan Woodward)
+
+Other
+
+* LUCENE-8301: Update randomizedtesting to 2.6.0. (Dawid Weiss)
+
+* LUCENE-8299: Geo3D wrapper uses new polygon method factory that gives better
+  support for polygons with many points (>100). (Ignacio vera)
+
+* LUCENE-8261: InterpolatedProperties.interpolate and recursive property
+  references. (Steve Rowe, Dawid Weiss)
+
+* LUCENE-8228: removed obsolete IndexDeletionPolicy clone() requirements from
+  the javadoc. (Dawid Weiss)
+
+* LUCENE-8219: Use a realistic estimate of the number of nodes and links in
+   LevensteinAutomaton.java, to save reallocation of arrays.
+   (Christian Ziech)
+
+* LUCENE-8214: Improve selection of testPoint for GeoComplexPolygon.
+  (Ignacio Vera)
+  
+* SOLR-10912: Add automatic patch validation. (Mano Kovacs, Steve Rowe)
+
+* LUCENE-8122, LUCENE-8175: Upgrade analysis/icu to ICU 61.1.
+  (Robert Muir, Adrien Grand, Uwe Schindler)
+
+* LUCENE-8291: Remove QueryTemplateManager utility class from XML queryparser.
+  This class is just a general XML transforming tool (using property files and
+  XSLT) and has nothing to do with query parsing. It can easily be implemented
+  using more sophisticated libraries or using XSL transformers from the JDK.
+  This change also removes the Lucene demo webapp to prevent XSS issues in
+  untested/unmaintained code. (Uwe Schindler)
+
+Build
+
+* LUCENE-7935: Publish .sha512 hash files with the release artifacts and stop
+  publishing .md5 hashes since the algorithm is broken (janhoy)
+
+* LUCENE-8230: Upgrade forbiddenapis to version 2.5.  (Uwe Schindler)
+
+Documentation
+
+* LUCENE-8238: Improve WordDelimiterFilter and WordDelimiterGraphFilter javadocs
+  (Mike Sokolov via Mike McCandless)
+
+======================= Lucene 7.3.1 =======================
+
+Bug fixes
+
+* LUCENE-8254: LRUQueryCache could cause IndexReader to hang on close, when
+  shared with another reader with no CacheHelper (Alan Woodward, Simon Willnauer,
+  Adrien Grand)
 
 ======================= Lucene 7.3.0 =======================
 
@@ -744,6 +1143,12 @@ Other
 * LUCENE-7876: Avoid calls to LeafReader.fields() and MultiFields.getFields()
   that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
   (David Smiley)
+
+======================= Lucene 6.6.5 =======================
+(No Changes)
+
+======================= Lucene 6.6.4 =======================
+(No Changes)
 
 ======================= Lucene 6.6.3 =======================
 

@@ -125,11 +125,8 @@ class TermVectorsConsumer extends TermsHash {
     try {
       super.abort();
     } finally {
-      if (writer != null) {
-        IOUtils.closeWhileHandlingException(writer);
-        writer = null;
-      }
-
+      IOUtils.closeWhileHandlingException(writer);
+      writer = null;
       lastDocID = 0;
       reset();
     }

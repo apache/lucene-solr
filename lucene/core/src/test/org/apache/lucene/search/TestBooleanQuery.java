@@ -202,7 +202,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     // PhraseQuery w/ no terms added returns a null scorer
     PhraseQuery pq = new PhraseQuery("field", new String[0]);
     q.add(pq, BooleanClause.Occur.SHOULD);
-    assertEquals(1, s.search(q.build(), 10).totalHits);
+    assertEquals(1, s.search(q.build(), 10).totalHits.value);
 
     // A required clause which returns null scorer should return null scorer to
     // IndexSearcher.
@@ -210,12 +210,12 @@ public class TestBooleanQuery extends LuceneTestCase {
     pq = new PhraseQuery("field", new String[0]);
     q.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
     q.add(pq, BooleanClause.Occur.MUST);
-    assertEquals(0, s.search(q.build(), 10).totalHits);
+    assertEquals(0, s.search(q.build(), 10).totalHits.value);
 
     DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(
         Arrays.asList(new TermQuery(new Term("field", "a")), pq),
         1.0f);
-    assertEquals(1, s.search(dmq, 10).totalHits);
+    assertEquals(1, s.search(dmq, 10).totalHits.value);
 
     r.close();
     w.close();
@@ -247,13 +247,13 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     MultiReader multireader = new MultiReader(reader1, reader2);
     IndexSearcher searcher = newSearcher(multireader);
-    assertEquals(0, searcher.search(query.build(), 10).totalHits);
+    assertEquals(0, searcher.search(query.build(), 10).totalHits.value);
 
     final ExecutorService es = Executors.newCachedThreadPool(new NamedThreadFactory("NRT search threads"));
     searcher = new IndexSearcher(multireader, es);
     if (VERBOSE)
       System.out.println("rewritten form: " + searcher.rewrite(query.build()));
-    assertEquals(0, searcher.search(query.build(), 10).totalHits);
+    assertEquals(0, searcher.search(query.build(), 10).totalHits.value);
     es.shutdown();
     es.awaitTermination(1, TimeUnit.SECONDS);
 
@@ -313,7 +313,7 @@ public class TestBooleanQuery extends LuceneTestCase {
         q.add(new BooleanClause(new TermQuery(new Term("field", term)), BooleanClause.Occur.SHOULD));
       }
 
-      Weight weight = s.createNormalizedWeight(q.build(), ScoreMode.COMPLETE);
+      Weight weight = s.createWeight(s.rewrite(q.build()), ScoreMode.COMPLETE, 1);
 
       Scorer scorer = weight.scorer(s.leafContexts.get(0));
 
@@ -331,7 +331,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       // verify exact match:
       for(int iter2=0;iter2<10;iter2++) {
 
-        weight = s.createNormalizedWeight(q.build(), ScoreMode.COMPLETE);
+        weight = s.createWeight(s.rewrite(q.build()), ScoreMode.COMPLETE, 1);
         scorer = weight.scorer(s.leafContexts.get(0));
 
         if (VERBOSE) {
@@ -394,7 +394,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     SpanQuery sq2 = new SpanTermQuery(new Term(FIELD, "clckwork"));
     query.add(sq1, BooleanClause.Occur.SHOULD);
     query.add(sq2, BooleanClause.Occur.SHOULD);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(1000);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(1000, Integer.MAX_VALUE);
     searcher.search(query.build(), collector);
     hits = collector.topDocs().scoreDocs.length;
     for (ScoreDoc scoreDoc : collector.topDocs().scoreDocs){
@@ -420,7 +420,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     // No doc can match: BQ has only 2 clauses and we are asking for minShouldMatch=4
     bq.setMinimumNumberShouldMatch(4);
-    assertEquals(0, s.search(bq.build(), 1).totalHits);
+    assertEquals(0, s.search(bq.build(), 1).totalHits.value);
     r.close();
     w.close();
     dir.close();
@@ -617,7 +617,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(pq, Occur.MUST);
     q.add(new TermQuery(new Term("field", "c")), Occur.FILTER);
 
-    final Weight weight = searcher.createNormalizedWeight(q.build(), ScoreMode.COMPLETE);
+    final Weight weight = searcher.createWeight(searcher.rewrite(q.build()), ScoreMode.COMPLETE, 1);
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertTrue(scorer instanceof ConjunctionScorer);
     assertNotNull(scorer.twoPhaseIterator());
@@ -646,7 +646,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(pq, Occur.SHOULD);
     q.add(new TermQuery(new Term("field", "c")), Occur.SHOULD);
 
-    final Weight weight = searcher.createNormalizedWeight(q.build(), ScoreMode.COMPLETE);
+    final Weight weight = searcher.createWeight(searcher.rewrite(q.build()), ScoreMode.COMPLETE, 1);
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof DisjunctionScorer);
     assertNotNull(scorer.twoPhaseIterator());
@@ -677,9 +677,9 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(pq, Occur.SHOULD);
     q.add(new TermQuery(new Term("field", "d")), Occur.SHOULD);
 
-    final Weight weight = searcher.createNormalizedWeight(q.build(), ScoreMode.COMPLETE);
+    final Weight weight = searcher.createWeight(searcher.rewrite(q.build()), ScoreMode.COMPLETE, 1);
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
-    assertTrue(scorer instanceof ExactPhraseScorer);
+    assertTrue(scorer instanceof PhraseScorer);
     assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
@@ -706,7 +706,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(pq, Occur.SHOULD);
     q.add(new TermQuery(new Term("field", "c")), Occur.MUST_NOT);
 
-    final Weight weight = searcher.createNormalizedWeight(q.build(), ScoreMode.COMPLETE);
+    final Weight weight = searcher.createWeight(searcher.rewrite(q.build()), ScoreMode.COMPLETE, 1);
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof ReqExclScorer);
     assertNotNull(scorer.twoPhaseIterator());
@@ -735,7 +735,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(pq, Occur.MUST);
     q.add(new TermQuery(new Term("field", "c")), Occur.SHOULD);
 
-    final Weight weight = searcher.createNormalizedWeight(q.build(), ScoreMode.COMPLETE);
+    final Weight weight = searcher.createWeight(searcher.rewrite(q.build()), ScoreMode.COMPLETE, 1);
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof ReqOptSumScorer);
     assertNotNull(scorer.twoPhaseIterator());
@@ -768,11 +768,11 @@ public class TestBooleanQuery extends LuceneTestCase {
     BooleanQuery bq = bqBuilder.build();
 
     Set<Term> scoringTerms = new HashSet<>();
-    searcher.createNormalizedWeight(bq, ScoreMode.COMPLETE).extractTerms(scoringTerms);
+    searcher.createWeight(searcher.rewrite(bq), ScoreMode.COMPLETE, 1).extractTerms(scoringTerms);
     assertEquals(new HashSet<>(Arrays.asList(a, b)), scoringTerms);
 
     Set<Term> matchingTerms = new HashSet<>();
-    searcher.createNormalizedWeight(bq, ScoreMode.COMPLETE_NO_SCORES).extractTerms(matchingTerms);
+    searcher.createWeight(searcher.rewrite(bq), ScoreMode.COMPLETE_NO_SCORES, 1).extractTerms(matchingTerms);
     assertEquals(new HashSet<>(Arrays.asList(a, b, c)), matchingTerms);
   }
 }

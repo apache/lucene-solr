@@ -72,7 +72,7 @@ import org.slf4j.MDC;
  */
 public class JettySolrRunner {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int THREAD_POOL_MAX_THREADS = 10000;
   // NOTE: needs to be larger than SolrHttpClient.threadPoolSweeperMaxIdleTime
@@ -145,20 +145,20 @@ public class JettySolrRunner {
     private void executeDelay() {
       int delayMs = 0;
       for (Delay delay: delays) {
-        log.info("Delaying "+delay.delayValue+", for reason: "+delay.reason);
+        this.log.info("Delaying "+delay.delayValue+", for reason: "+delay.reason);
         if (delay.counter.decrementAndGet() == 0) {
           delayMs += delay.delayValue;
         }        
       }
 
       if (delayMs > 0) {
-        log.info("Pausing this socket connection for " + delayMs + "ms...");
+        this.log.info("Pausing this socket connection for " + delayMs + "ms...");
         try {
           Thread.sleep(delayMs);
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
-        log.info("Waking up after the delay of " + delayMs + "ms...");
+        this.log.info("Waking up after the delay of " + delayMs + "ms...");
       }
     }
 
@@ -289,7 +289,7 @@ public class JettySolrRunner {
         root.getServletContext().setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
         root.getServletContext().setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
 
-        logger.info("Jetty properties: {}", nodeProperties);
+        log.info("Jetty properties: {}", nodeProperties);
 
         debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         extraFilters = new LinkedList<>();

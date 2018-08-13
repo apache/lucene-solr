@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -49,6 +50,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.Before;
 
@@ -87,7 +89,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Builder class for a MiniSolrCloudCluster
    */
-  protected static class Builder {
+  public static class Builder {
 
     private final int nodeCount;
     private final Path baseDir;
@@ -187,7 +189,15 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public void configure() throws Exception {
-      cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig, null, securityJson);
+      cluster = build();
+    }
+
+    /**
+     * Configure, run and return the {@link MiniSolrCloudCluster}
+     * @throws Exception if an error occurs on startup
+     */
+    public MiniSolrCloudCluster build() throws Exception {
+      MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig, null, securityJson);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
@@ -199,6 +209,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           props.setClusterProperty(entry.getKey(), entry.getValue());
         }
       }
+      return cluster;
     }
 
   }
@@ -272,7 +283,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of shards and replicas
+   * number of active shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
@@ -341,6 +352,23 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
+  }
+
+  protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
+    int i = 0;
+    for (; i < numRetries; i++) {
+      try {
+        NamedList<Object> response = cluster.getSolrClient().request(request);
+        if (predicate.test(response)) return response;
+        Thread.sleep(intervalInMillis);
+      } catch (RuntimeException rte) {
+        throw rte;
+      } catch (Exception e) {
+        throw new RuntimeException("error executing request", e);
+      }
+    }
+    fail("Tried " + i + " times , could not succeed. " + messageOnFail);
+    return null;
   }
 
 }

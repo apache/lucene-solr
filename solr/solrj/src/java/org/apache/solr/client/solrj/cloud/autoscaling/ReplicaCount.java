@@ -22,8 +22,9 @@ import java.util.List;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.util.Utils;
 
-class ReplicaCount extends Number implements MapWriter {
+class ReplicaCount  implements MapWriter {
   long nrt, tlog, pull;
 
   public long total() {
@@ -31,30 +32,10 @@ class ReplicaCount extends Number implements MapWriter {
   }
 
   @Override
-  public int intValue() {
-    return (int) total();
-  }
-
-  @Override
-  public long longValue() {
-    return total();
-  }
-
-  @Override
-  public float floatValue() {
-    return total();
-  }
-
-  @Override
-  public double doubleValue() {
-    return total();
-  }
-
-  @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    ew.put(Replica.Type.NRT.name(), nrt);
-    ew.put(Replica.Type.PULL.name(), pull);
-    ew.put(Replica.Type.TLOG.name(), tlog);
+    if (nrt > 0) ew.put(Replica.Type.NRT.name(), nrt);
+    if (pull > 0) ew.put(Replica.Type.PULL.name(), pull);
+    if (tlog > 0) ew.put(Replica.Type.TLOG.name(), tlog);
     ew.put("count", total());
   }
 
@@ -88,5 +69,10 @@ class ReplicaCount extends Number implements MapWriter {
           nrt++;
       }
     }
+  }
+
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
   }
 }

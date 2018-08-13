@@ -124,7 +124,7 @@ Implementation of a custom metrics supplier is beyond the scope of this guide, b
 * `cpu`, which uses the current thread's CPU time
 
 <histogram>:: This element defines the implementation of a `Histogram` supplier. This element also supports the `clock` parameter shown above with the `meter` element, and also:
-`<str name="reservoir">`::: The fully-qualified class name of the `Reservoir` implementation to use. The default is `com.codahale.metrics.ExponentiallyDecayingReservoir` but there are other options available with the http://metrics.dropwizard.io/3.1.0/manual/core/#histograms[Codahale Metrics library] that Solr uses. The following parameters are supported, within the mentioned limitations:
+`<str name="reservoir">`::: The fully-qualified class name of the `Reservoir` implementation to use. The default is `com.codahale.metrics.ExponentiallyDecayingReservoir` but there are other options available with the http://metrics.dropwizard.io/{ivy-dropwizard-version}/manual/core.html#histograms[Codahale Metrics library] that Solr uses. The following parameters are supported, within the mentioned limitations:
 * `size`, the reservoir size. The default is 1028.
 * `alpha`, the decay parameter. The default is 0.015. This is only valid for the `ExponentiallyDecayingReservoir`.
 * `window`, the window size, in seconds, and only valid for the `SlidingTimeWindowReservoir`. The default is 300 (5 minutes).
@@ -161,13 +161,19 @@ Reporter configurations are specified in `solr.xml` file in `<metrics><reporter>
     <int name="port">9999</int>
     <int name="period">60</int>
   </reporter>
-  <reporter name="collection1Updates" registry="solr.core.collection1" class="org.apache.solr.metrics.reporters.SolrSlf4jReporter">
-    <int name="period">300</int>
-    <str name="prefix">example</str>
-    <str name="logger">updatesLogger</str>
-    <str name="filter">QUERYHANDLER./update</str>
-  </reporter>
- </metrics>
+  <metrics>
+    <reporter name="log_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrSlf4jReporter">
+      <int name="period">60</int>
+      <str name="filter">QUERY./select.requestTimes</str>
+      <str name="filter">QUERY./get.requestTimes</str>
+      <str name="filter">UPDATE./update.requestTimes</str>
+      <str name="filter">UPDATE./update.clientErrors</str>
+      <str name="filter">UPDATE./update.errors</str>
+      <str name="filter">SEARCHER.new.time</str>
+      <str name="filter">SEARCHER.new.warmup</str>
+      <str name="logger">org.apache.solr.metrics.reporters.SolrSlf4jReporter</str>
+    </reporter>
+  </metrics>
 ...
 </solr>
 ----
@@ -241,12 +247,46 @@ You can start a local MBean server with a system property at startup by adding `
 
 The SLF4J Reporter uses the `org.apache.solr.metrics.reporters.SolrSlf4jReporter` class.
 
-It takes the following arguments, in addition to the common arguments <<Reporter Arguments,above>>.
+It takes the following arguments, in addition to common arguments described <<Reporter Arguments,above>>.
 
 `logger`::
-The name of the logger to use. Default is empty, in which case the group or registry name will be used if specified in the plugin configuration.
+The name of the logger to use. Default is empty, in which case the group (or the initial part of the registry name that identifies a metrics group) will be used if specified in the plugin configuration.
 
 Users can specify logger name (and the corresponding logger configuration in e.g., Log4j configuration) to output metrics-related logging to separate file(s), which can then be processed by external applications.
+Here is an example for configuring the default `log4j2.xml` which ships in Solr. This can be used in conjunction with the `solr.xml` example provided earlier in this page to configure the SolrSlf4jReporter:
+
+[source,xml]
+----
+<Configuration>
+  <Appenders>
+  ...
+    <RollingFile
+        name="MetricsFile"
+        fileName="${sys:solr.log.dir}/solr_metrics.log"
+        filePattern="${sys:solr.log.dir}/solr_metrics.log.%i" >
+      <PatternLayout>
+        <Pattern>
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %m%n
+        </Pattern>
+      </PatternLayout>
+      <Policies>
+        <OnStartupTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="32 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+  ...
+  </Appenders>
+
+  <Loggers>
+  ...
+    <Logger name="org.apache.solr.metrics.reporters.SolrSlf4jReporter" level="info" additivity="false">
+      <AppenderRef ref="MetricsFile"/>
+    </Logger>
+  ...
+  </Loggers>
+</Configuration>
+----
 
 Each log line produced by this reporter consists of configuration-specific fields, and a message that follows this format:
 
@@ -263,7 +303,32 @@ type=METER, name={}, count={}, mean_rate={}, m1={}, m5={}, m15={}, rate_unit={}
 type=HISTOGRAM, name={}, count={}, min={}, max={}, mean={}, stddev={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}
 ----
 
-(curly braces added only as placeholders for actual values).
+(curly braces added here only as placeholders for actual values).
+
+Additionally, the following MDC context properties are passed to the logger and can be used in log formats:
+
+`node_name`::
+Solr node name (for SolrCloud deployments, otherwise null), prefixed with `n:`.
+
+`registry`::
+Metric registry name, prefixed with `m:`.
+
+For reporters that are specific to a SolrCore also the following properties are available:
+
+`collection`::
+Collection name, prefixed with `c:`.
+
+`shard`::
+Shard name, prefixed with `s:`.
+
+`replica`::
+Replica name (core node name), prefixed with `r:`.
+
+`core`::
+SolrCore name, prefixed with `x:`.
+
+`tag`::
+Reporter instance tag, prefixed with `t:`.
 
 === Graphite Reporter
 
@@ -520,7 +585,7 @@ A few query parameters are available to limit your request to only certain metri
 
 `prefix`:: The first characters of metric name that will filter the metrics returned to those starting with the provided string. It can be combined with `group` and/or `type` parameters. More than one prefix can be specified in a request; multiple prefixes should be separated by a comma. Prefix matching is also case-sensitive.
 
-`regex`:: A regular expression matching metric names. Note: dot separators in metric names must be escaped, eg.
+`regex`:: A regular expression matching metric names. Note: dot separators in metric names must be escaped, e.g.,
 `QUERY\./select\..*` is a valid regex that matches all metrics with the `QUERY./select.` prefix.
 
 `property`:: Allows requesting only this metric from any compound metric. Multiple `property` parameters can be combined to act as an OR request. For example, to only get the 99th and 999th percentile values from all metric types and groups, you can add `&property=p99_ms&property=p999_ms` to your request. This can be combined with `group`, `type`, and `prefix` as necessary.

@@ -66,6 +66,7 @@ import static org.apache.solr.common.params.AutoScalingParams.ACTION_THROTTLE_PE
 import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS;
 import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_CORE_POOL_SIZE;
 import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_SCHEDULE_DELAY_SECONDS;
+import static org.apache.solr.common.util.ExecutorUtil.awaitTermination;
 
 /**
  * Responsible for scheduling active triggers, starting and stopping them and
@@ -135,7 +136,7 @@ public class ScheduledTriggers implements Closeable {
     queueStats = new Stats();
     listeners = new TriggerListeners();
     // initialize cooldown timer
-    cooldownStart.set(cloudManager.getTimeSource().getTime() - cooldownPeriod.get());
+    cooldownStart.set(cloudManager.getTimeSource().getTimeNs() - cooldownPeriod.get());
   }
 
   /**
@@ -185,7 +186,7 @@ public class ScheduledTriggers implements Closeable {
 
     this.autoScalingConfig = autoScalingConfig;
     // reset cooldown
-    cooldownStart.set(cloudManager.getTimeSource().getTime() - cooldownPeriod.get());
+    cooldownStart.set(cloudManager.getTimeSource().getTimeNs() - cooldownPeriod.get());
   }
 
   /**
@@ -196,7 +197,7 @@ public class ScheduledTriggers implements Closeable {
    * @param newTrigger the trigger to be managed
    * @throws AlreadyClosedException if this class has already been closed
    */
-  public synchronized void add(AutoScaling.Trigger newTrigger) {
+  public synchronized void add(AutoScaling.Trigger newTrigger) throws Exception {
     if (isClosed) {
       throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
     }
@@ -259,7 +260,7 @@ public class ScheduledTriggers implements Closeable {
       }
       // even though we pause all triggers during action execution there is a possibility that a trigger was already
       // running at the time and would have already created an event so we reject such events during cooldown period
-      if (cooldownStart.get() + cooldownPeriod.get() > cloudManager.getTimeSource().getTime()) {
+      if (cooldownStart.get() + cooldownPeriod.get() > cloudManager.getTimeSource().getTimeNs()) {
         log.debug("-------- Cooldown period - rejecting event: " + event);
         event.getProperties().put(TriggerEvent.COOLDOWN, true);
         triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "In cooldown period.");
@@ -290,7 +291,7 @@ public class ScheduledTriggers implements Closeable {
           }
           actionExecutor.submit(() -> {
             assert hasPendingActions.get();
-            long eventProcessingStart = cloudManager.getTimeSource().getTime();
+            long eventProcessingStart = cloudManager.getTimeSource().getTimeNs();
             TriggerListeners triggerListeners1 = triggerListeners.copy();
             log.debug("-- processing actions for " + event);
             try {
@@ -321,13 +322,13 @@ public class ScheduledTriggers implements Closeable {
             } catch (Exception e) {
               log.warn("Exception executing actions", e);
             } finally {
-              cooldownStart.set(cloudManager.getTimeSource().getTime());
+              cooldownStart.set(cloudManager.getTimeSource().getTimeNs());
               hasPendingActions.set(false);
               // resume triggers after cool down period
               resumeTriggers(cloudManager.getTimeSource().convertDelay(TimeUnit.NANOSECONDS, cooldownPeriod.get(), TimeUnit.MILLISECONDS));
             }
             log.debug("-- processing took {} ms for event id={}",
-                TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getTime() - eventProcessingStart), event.id);
+                TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getTimeNs() - eventProcessingStart), event.id);
           });
         } else {
           if (enqueued) {
@@ -497,9 +498,21 @@ public class ScheduledTriggers implements Closeable {
     }
     // shutdown and interrupt all running tasks because there's no longer any
     // guarantee about cluster state
+    log.debug("Shutting down scheduled thread pool executor now");
     scheduledThreadPoolExecutor.shutdownNow();
+
+    log.debug("Shutting down action executor now");
     actionExecutor.shutdownNow();
+
     listeners.close();
+
+    log.debug("Awaiting termination for action executor");
+    awaitTermination(actionExecutor);
+
+    log.debug("Awaiting termination for scheduled thread pool executor");
+    awaitTermination(scheduledThreadPoolExecutor);
+
+    log.debug("ScheduledTriggers closed completely");
   }
 
   private class TriggerWrapper implements Runnable, Closeable {
@@ -672,7 +685,8 @@ public class ScheduledTriggers implements Closeable {
             }
             if (listener != null) {
               try {
-                listener.init(cloudManager, config);
+                listener.configure(loader, cloudManager, config);
+                listener.init();
                 listenersPerName.put(config.name, listener);
               } catch (Exception e) {
                 log.warn("Error initializing TriggerListener " + config, e);
@@ -756,6 +770,9 @@ public class ScheduledTriggers implements Closeable {
       updateLock.lock();
       try {
         for (TriggerListener listener : getTriggerListeners(trigger, stage)) {
+          if (!listener.isEnabled()) {
+            continue;
+          }
           if (actionName != null) {
             AutoScalingConfig.TriggerListenerConfig config = listener.getConfig();
             if (stage == TriggerEventProcessorStage.BEFORE_ACTION) {

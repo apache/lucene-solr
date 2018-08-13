@@ -45,6 +45,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -70,6 +71,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
+import org.apache.logging.log4j.Level;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -105,6 +107,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
@@ -396,7 +399,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return result;
   }
 
-  private static Map<String, String> savedClassLogLevels = new HashMap<>();
+  @SuppressForbidden(reason = "Using the Level class from log4j2 directly")
+  private static Map<String, Level> savedClassLogLevels = new HashMap<>();
 
   public static void initClassLogLevels() {
     Class currentClass = RandomizedContext.current().getTargetClass();
@@ -404,11 +408,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (annotation == null) {
       return;
     }
-    Map<String, String> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
+    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
     savedClassLogLevels.putAll(previousLevels);
   }
 
-  private Map<String, String> savedMethodLogLevels = new HashMap<>();
+  private Map<String, Level> savedMethodLogLevels = new HashMap<>();
 
   @Before
   public void initMethodLogLevels() {
@@ -417,7 +421,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (annotation == null) {
       return;
     }
-    Map<String, String> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
+    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
     savedMethodLogLevels.putAll(previousLevels);
   }
 
@@ -2178,15 +2182,37 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     Iterator<String> iter1 = sdoc1.getFieldNames().iterator();
     Iterator<String> iter2 = sdoc2.getFieldNames().iterator();
 
-    if(iter1.hasNext()) {
+    while (iter1.hasNext()) {
       String key1 = iter1.next();
       String key2 = iter2.next();
 
       Object val1 = sdoc1.getFieldValues(key1);
       Object val2 = sdoc2.getFieldValues(key2);
 
-      if(!key1.equals(key2) || !val1.equals(val2)) {
+      if(!key1.equals(key2)) {
         return false;
+      }
+
+      if(!(sdoc1.get(key1).getFirstValue() instanceof SolrInputDocument)) {
+        if(!val1.equals(val2)) {
+          return false;
+        }
+      } else {
+        if (!(sdoc2.get(key2).getFirstValue() instanceof SolrInputDocument)) {
+          return false;
+        }
+        Collection col1 = (Collection) val1;
+        Collection col2 = (Collection) val2;
+        if (col1.size() != col2.size()) {
+          return false;
+        }
+        Iterator<SolrInputDocument> colIter1 = col1.iterator();
+        Iterator<SolrInputDocument> colIter2 = col2.iterator();
+        while (colIter1.hasNext()) {
+          if (!compareSolrInputDocument(colIter1.next(), colIter2.next())) {
+            return false;
+          }
+        }
       }
     }
     if(sdoc1.getChildDocuments() == null && sdoc2.getChildDocuments() == null) {

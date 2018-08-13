@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.List;
-
 
 /**
  * Common util methods for dealing with {@link IndexReader}s and {@link IndexReaderContext}s.

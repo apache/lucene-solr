@@ -31,6 +31,7 @@ import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -40,12 +41,17 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.handler.admin.MetricsHistoryHandler;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -62,15 +68,13 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
-    Aliases aliases = zkStateReader.getAliases();
     final String collection = message.getStr(NAME);
-    for (Map.Entry<String, List<String>> ent :  aliases.getCollectionAliasListMap().entrySet()) {
-      if (ent.getValue().contains(collection)) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Collection : " + collection + " is part of alias " + ent.getKey() + " remove or modify the alias before removing this collection.");
-      }
-    }
+    ZkStateReader zkStateReader = ocmh.zkStateReader;
+
+    checkNotReferencedByAlias(zkStateReader, collection);
+    checkNotColocatedWith(zkStateReader, collection);
+
+    final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
 
     boolean removeCounterNode = true;
     try {
@@ -87,10 +91,19 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           return;
         }
       }
+      // remove collection-level metrics history
+      if (deleteHistory) {
+        MetricsHistoryHandler historyHandler = ocmh.overseer.getCoreContainer().getMetricsHistoryHandler();
+        if (historyHandler != null) {
+          String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.collection, collection);
+          historyHandler.removeHistory(registry);
+        }
+      }
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.UNLOAD.toString());
       params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
+      params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
 
       String asyncId = message.getStr(ASYNC);
       Map<String, String> requestMap = null;
@@ -131,7 +144,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Could not fully remove collection: " + collection);
       }
-
     } finally {
 
       try {
@@ -151,6 +163,42 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       } catch (KeeperException e) {
         SolrException.log(log, "Problem cleaning up collection in zk:"
             + collection, e);
+      }
+    }
+  }
+
+  private void checkNotReferencedByAlias(ZkStateReader zkStateReader, String collection) throws Exception {
+    String alias = referencedByAlias(collection, zkStateReader.getAliases());
+    if (alias != null) {
+      zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
+      alias = referencedByAlias(collection, zkStateReader.getAliases());
+      if (alias != null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Collection : " + collection + " is part of alias " + alias + " remove or modify the alias before removing this collection.");
+      }
+    }
+  }
+
+  private String referencedByAlias(String collection, Aliases aliases) {
+    return aliases.getCollectionAliasListMap().entrySet().stream()
+        .filter(e -> e.getValue().contains(collection))
+        .map(Map.Entry::getKey) // alias name
+        .findFirst().orElse(null);
+  }
+
+  private void checkNotColocatedWith(ZkStateReader zkStateReader, String collection) throws Exception {
+    DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+    if (docCollection != null)  {
+      String colocatedWith = docCollection.getStr(COLOCATED_WITH);
+      if (colocatedWith != null) {
+        DocCollection colocatedCollection = zkStateReader.getClusterState().getCollectionOrNull(colocatedWith);
+        if (colocatedCollection != null && collection.equals(colocatedCollection.getStr(WITH_COLLECTION))) {
+          // todo how do we clean up if reverse-link is not present?
+          // can't delete this collection because it is still co-located with another collection
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Collection: " + collection + " is co-located with collection: " + colocatedWith
+                  + " remove the link using modify collection API or delete the co-located collection: " + colocatedWith);
+        }
       }
     }
   }

@@ -142,7 +142,8 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     instance.tearDown();
     super.tearDown();
   }
-  
+
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void testFullImport() {
     assertQ(req("*:*"), "//result[@numFound='0']");
     

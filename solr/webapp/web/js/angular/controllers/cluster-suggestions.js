@@ -16,7 +16,7 @@
 */
 solrAdminApp.controller('ClusterSuggestionsController',
 function($scope, $http, Constants) {
-    $scope.resetMenu("cluster-suggestions", Constants.IS_ROOT_PAGE);
+    $scope.resetMenu("cluster-suggestion", Constants.IS_COLLECTION_PAGE);
     $scope.data={};
     var dataArr =[];
     var dataJson = {};

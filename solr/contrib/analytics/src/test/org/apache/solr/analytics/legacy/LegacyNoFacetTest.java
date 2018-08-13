@@ -61,10 +61,10 @@ public class LegacyNoFacetTest extends LegacyAbstractAnalyticsTest {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
-    defaults.put("int_id", new Integer(0));
-    defaults.put("long_ld", new Long(0));
-    defaults.put("float_fd", new Float(0));
-    defaults.put("double_dd", new Double(0));
+    defaults.put("int_id", 0);
+    defaults.put("long_ld", 0L);
+    defaults.put("float_fd", (float) 0);
+    defaults.put("double_dd", (double) 0);
     defaults.put("date_dtd", "1800-12-31T23:59:59Z");
     defaults.put("string_sd", "str0");
     

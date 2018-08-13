@@ -1530,9 +1530,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     final String meta = pre + "/../";
 
     String start = "0.0";
-    String gap = (new Double( (double)Float.MAX_VALUE )).toString();
-    String end = (new Double( ((double)Float.MAX_VALUE) * 3D )).toString();
-    String mid = (new Double( ((double)Float.MAX_VALUE) * 2D )).toString();
+    String gap = Double.toString(Float.MAX_VALUE );
+    String end = Double.toString(((double) Float.MAX_VALUE) * 3D);
+    String mid = Double.toString(((double) Float.MAX_VALUE) * 2D);
 
     assertQ(f+": checking counts for lower",
             req( "q", "id_i1:[30 TO 60]"
@@ -1807,9 +1807,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     final String meta = pre + "/../";
 
     String start = "0";
-    String gap = (new Long( (long)Integer.MAX_VALUE )).toString();
-    String end = (new Long( ((long)Integer.MAX_VALUE) * 3L )).toString();
-    String mid = (new Long( ((long)Integer.MAX_VALUE) * 2L )).toString();
+    String gap = Long.toString(Integer.MAX_VALUE );
+    String end = Long.toString( ((long)Integer.MAX_VALUE) * 3L );
+    String mid = Long.toString(((long)Integer.MAX_VALUE) * 2L );
 
     assertQ(f+": checking counts for lower",
             req( "q", "id_i1:[30 TO 60]"

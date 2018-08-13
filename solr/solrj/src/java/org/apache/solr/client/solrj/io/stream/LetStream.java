@@ -27,6 +27,7 @@ import java.util.HashSet;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eval.MemsetEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -183,12 +184,18 @@ public class LetStream extends TupleStream implements Expressible {
         }
       } else {
         //Add the data from the StreamContext to a tuple.
-        //Let the evaluator work from this tuple.
+        //Let the evaluator works from this tuple.
         //This will allow columns to be created from tuples already in the StreamContext.
         Tuple eTuple = new Tuple(lets);
         StreamEvaluator evaluator = (StreamEvaluator)o;
+        evaluator.setStreamContext(streamContext);
         Object eo = evaluator.evaluate(eTuple);
-        lets.put(name, eo);
+        if(evaluator instanceof MemsetEvaluator) {
+          Map mem = (Map)eo;
+          lets.putAll(mem);
+        } else {
+          lets.put(name, eo);
+        }
       }
     }
     stream.open();

@@ -16,9 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -40,12 +37,15 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 /**
  * An update processor that will convert conventional field-value document to atomic update document
  * <p>
  * sample request:
  * curl -X POST -H Content-Type: application/json
- * http://localhost:8983/solr/test/update/json/docs?processor=atomic;ampersand;Atomic.my_newfield=add;ampersand;Atomic.subject=set;ampersand;Atomic.count_i=inc;ampersand;commit=true
+ * http://localhost:8983/solr/test/update/json/docs?processor=atomic;ampersand;atomic.my_newfield=add;ampersand;atomic.subject=set;ampersand;atomic.count_i=inc;ampersand;commit=true
  * --data-binary {"id": 1,"title": "titleA"}
  * </p>
  * currently supports all types of atomic updates
@@ -59,7 +59,8 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   private final static String REMOVE = "remove";
   private final static String SET = "set";
   private final static String REMOVEREGEX = "removeregex";
-  private final static Set<String> VALID_OPS = new HashSet<>(Arrays.asList(ADD, INC, REMOVE, SET, REMOVEREGEX));
+  private final static String ADDDISTINCT = "add-distinct";
+  private final static Set<String> VALID_OPS = new HashSet<>(Arrays.asList(ADD, INC, REMOVE, SET, REMOVEREGEX, ADDDISTINCT));
 
   private final static String VERSION = "_version_";
   public static final String NAME = "atomic";
@@ -152,17 +153,17 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       // if atomic, put _version_ for optimistic concurrency if doc present in index
       if (isAtomicUpdateAddedByMe) {
         Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-        if (lastVersion != null) {
-          orgdoc.setField(VERSION, lastVersion);
-        }
-        processAddWithRetry(cmd, 0);
+        // if lastVersion is null then we put -1 to assert that document must not exist
+        lastVersion = lastVersion == null ? -1 : lastVersion;
+        orgdoc.setField(VERSION, lastVersion);
+        processAddWithRetry(cmd, 1, cmd.getSolrInputDocument().deepCopy());
       } else {
         super.processAdd(cmd);
       }
       // else send it for doc to get inserted for the first time
     }
 
-    private void processAddWithRetry(AddUpdateCommand cmd, int attempts) throws IOException {
+    private void processAddWithRetry(AddUpdateCommand cmd, int attempts, SolrInputDocument clonedOriginalDoc) throws IOException {
       try {
         super.processAdd(cmd);
       } catch (SolrException e) {
@@ -172,12 +173,20 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         }
         if (e.code() == ErrorCode.CONFLICT.code) { // version conflict
           log.warn("Atomic update failed due to " + e.getMessage() +
-              "Retrying with new version .... (" + attempts + ")");
+              " Retrying with new version .... (" + attempts + ")");
+
           Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-          if (lastVersion != null) {
-            cmd.solrDoc.setField(VERSION, lastVersion);
-          }
-          processAddWithRetry(cmd, attempts);
+          // if lastVersion is null then we put -1 to assert that document must not exist
+          lastVersion = lastVersion == null ? -1 : lastVersion;
+
+          // The AtomicUpdateDocumentMerger modifies the AddUpdateCommand.solrDoc to populate the real values of the
+          // modified fields. We don't want those absolute values because they are out-of-date due to the conflict
+          // so we restore the original document created in processAdd method and set the right version on it
+          cmd.solrDoc = clonedOriginalDoc;
+          clonedOriginalDoc = clonedOriginalDoc.deepCopy(); // copy again because the old cloned ref will be modified during processAdd
+          cmd.solrDoc.setField(VERSION, lastVersion);
+
+          processAddWithRetry(cmd, attempts, clonedOriginalDoc);
         }
       }
     }

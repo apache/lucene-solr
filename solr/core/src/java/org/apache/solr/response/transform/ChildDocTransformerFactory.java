@@ -27,8 +27,8 @@ import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.DocsStreamer;
@@ -38,9 +38,9 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryWrapperFilter;
-import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.SolrDocumentFetcher;
+import org.apache.solr.search.SolrReturnFields;
+import org.apache.solr.search.SyntaxError;
 
 /**
  *
@@ -80,7 +80,11 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     BitSetProducer parentsFilter = null;
     try {
       Query parentFilterQuery = QParser.getParser( parentFilter, req).getQuery();
-      parentsFilter = new QueryBitSetProducer(new QueryWrapperFilter(parentFilterQuery));
+      //TODO shouldn't we try to use the Solr filter cache, and then ideally implement
+      //  BitSetProducer over that?
+      // DocSet parentDocSet = req.getSearcher().getDocSet(parentFilterQuery);
+      // then return BitSetProducer with custom BitSet impl accessing the docSet
+      parentsFilter = new QueryBitSetProducer(parentFilterQuery);
     } catch (SyntaxError syntaxError) {
       throw new SolrException( ErrorCode.BAD_REQUEST, "Failed to create correct parent filter query" );
     }
@@ -121,6 +125,12 @@ class ChildDocTransformer extends DocTransformer {
   public String getName()  {
     return name;
   }
+  
+  @Override
+  public String[] getExtraRequestFields() {
+    // we always need the idField (of the parent) in order to fill out it's children
+    return new String[] { idField.getName() };
+  }
 
   @Override
   public void transform(SolrDocument doc, int docid) {
@@ -146,16 +156,16 @@ class ChildDocTransformer extends DocTransformer {
         while(i.hasNext()) {
           Integer childDocNum = i.next();
           Document childDoc = context.getSearcher().doc(childDocNum);
-          SolrDocument solrChildDoc = DocsStreamer.convertLuceneDocToSolrDoc(childDoc, schema);
-
-          if (shouldDecorateWithDVs) {
-            docFetcher.decorateDocValueFields(solrChildDoc, childDocNum, dvFieldsToReturn);
-          }
-
           // TODO: future enhancement...
           // support an fl local param in the transformer, which is used to build
           // a private ReturnFields instance that we use to prune unwanted field 
           // names from solrChildDoc
+          SolrDocument solrChildDoc = DocsStreamer.convertLuceneDocToSolrDoc(childDoc, schema,
+                                                                             new SolrReturnFields());
+
+          if (shouldDecorateWithDVs) {
+            docFetcher.decorateDocValueFields(solrChildDoc, childDocNum, dvFieldsToReturn);
+          }
           doc.addChildDocument(solrChildDoc);
         }
       }

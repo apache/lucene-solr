@@ -20,6 +20,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -39,7 +40,7 @@ import org.apache.solr.request.SolrQueryRequest;
 
 public class SignificantTermsQParserPlugin extends QParserPlugin {
 
-  public static final String NAME = "sigificantTerms";
+  public static final String NAME = "significantTerms";
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -55,11 +56,17 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
     @Override
     public Query parse() throws SyntaxError {
       String field = getParam("field");
-      int numTerms = Integer.parseInt(params.get("numTerms", "20"));
-      float minDocs = Float.parseFloat(params.get("minDocFreq", "5"));
-      float maxDocs = Float.parseFloat(params.get("maxDocFreq", ".3"));
-      int minTermLength = Integer.parseInt(params.get("minTermLength", "4"));
+      int numTerms = Integer.parseInt(getParamWithDefault("numTerms", "20"));
+      float minDocs = Float.parseFloat(getParamWithDefault("minDocFreq", "5"));
+      float maxDocs = Float.parseFloat(getParamWithDefault("maxDocFreq", ".3"));
+      int minTermLength = Integer.parseInt(getParamWithDefault("minTermLength", "4"));
+
       return new SignificantTermsQuery(field, numTerms, minDocs, maxDocs, minTermLength);
+    }
+
+    private String getParamWithDefault(String paramName, String defaultValue) {
+      String result = getParam(paramName);
+      return (result != null)? result: defaultValue;
     }
   }
 
@@ -135,12 +142,15 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
       NamedList<Integer> allFreq = new NamedList();
       NamedList<Integer> allQueryFreq = new NamedList();
 
-      rb.rsp.add("numDocs", numDocs);
-      rb.rsp.add("resultCount", count);
-      rb.rsp.add("sterms", outTerms);
-      rb.rsp.add("scores", scores);
-      rb.rsp.add("docFreq", outFreq);
-      rb.rsp.add("queryDocFreq", outQueryFreq);
+      LinkedHashMap<String, Object> response = new LinkedHashMap<>();
+
+      rb.rsp.add("significantTerms", response);
+
+      response.put("numDocs", numDocs);
+      response.put("sterms", outTerms);
+      response.put("scores", scores);
+      response.put("docFreq", outFreq);
+      response.put("queryDocFreq", outQueryFreq);
 
       //TODO: Use a priority queue
       TreeSet<TermWithScore> topTerms = new TreeSet<>();

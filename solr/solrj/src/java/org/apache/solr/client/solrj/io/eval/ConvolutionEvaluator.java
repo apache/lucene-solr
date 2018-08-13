@@ -53,6 +53,6 @@ public class ConvolutionEvaluator extends RecursiveNumericEvaluator implements T
           ((List)first).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray(),
           ((List)second).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray()
         )
-    ).mapToObj(Double::new).collect(Collectors.toList());
+    ).boxed().collect(Collectors.toList());
   }
 }

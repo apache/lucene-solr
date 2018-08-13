@@ -37,6 +37,7 @@ import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -68,6 +69,10 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
       solrClient = cluster.getSolrClient();
     } else {
       cloudManager = SimCloudManager.createCluster(1, TimeSource.get("simTime:50"));
+      // wait for defaults to be applied - due to accelerated time sometimes we may miss this
+      cloudManager.getTimeSource().sleep(10000);
+      AutoScalingConfig cfg = cloudManager.getDistribStateManager().getAutoScalingConfig();
+      assertFalse("autoscaling config is empty", cfg.isEmpty());
       solrClient = ((SimCloudManager)cloudManager).simGetSolrClient();
     }
     timeSource = cloudManager.getTimeSource();
@@ -118,8 +123,8 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
 
   public static class CapturingTriggerListener extends TriggerListenerBase {
     @Override
-    public void init(SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) {
-      super.init(cloudManager, config);
+    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
+      super.configure(loader, cloudManager, config);
       listenerCreated.countDown();
     }
 
@@ -127,7 +132,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-      CapturedEvent ev = new CapturedEvent(timeSource.getTime(), context, config, stage, actionName, event, message);
+      CapturedEvent ev = new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message);
       log.info("=======> " + ev);
       lst.add(ev);
     }
@@ -146,6 +151,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
   public void testInactiveShardCleanup() throws Exception {
     String collection1 = getClass().getSimpleName() + "_collection1";
     CollectionAdminRequest.Create create1 = CollectionAdminRequest.createCollection(collection1,
@@ -159,7 +165,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         .setShardName("shard1");
     split1.process(solrClient);
     CloudTestUtils.waitForState(cloudManager, "failed to split " + collection1, collection1,
-        CloudTestUtils.clusterShape(3, 1));
+        CloudTestUtils.clusterShape(3, 1, true));
 
     String setListenerCommand = "{" +
         "'set-listener' : " +

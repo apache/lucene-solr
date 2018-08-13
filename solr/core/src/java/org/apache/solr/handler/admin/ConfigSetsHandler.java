@@ -55,17 +55,17 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.BASE_CONFIGSET;
 import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
 import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.*;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.DELETE;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.LIST;
 
 /**
  * A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests.
@@ -137,6 +137,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   }
 
   private void handleConfigUploadRequest(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    if (!"true".equals(System.getProperty("configset.upload.enabled", "true"))) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Configset upload feature is disabled. To enable this, start Solr with '-Dconfigset.upload.enabled=true'.");
+    }
+
     String configSetName = req.getParams().get(NAME);
     if (StringUtils.isBlank(configSetName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
@@ -258,14 +263,14 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     CREATE_OP(CREATE) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
-        Map<String, Object> props = req.getParams().required().getAll(null, NAME, BASE_CONFIGSET);
+        Map<String, Object> props = CollectionsHandler.copy(req.getParams().required(), null, NAME, BASE_CONFIGSET);
         return copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX + ".");
       }
     },
     DELETE_OP(DELETE) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
-        return req.getParams().required().getAll(null, NAME);
+        return CollectionsHandler.copy(req.getParams().required(), null, NAME);
       }
     },
     LIST_OP(LIST) {

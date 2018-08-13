@@ -29,12 +29,9 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,22 +41,20 @@ import org.slf4j.LoggerFactory;
 public class NodeAddedTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private Set<String> lastLiveNodes;
+  private Set<String> lastLiveNodes = new HashSet<>();
 
   private Map<String, Long> nodeNameVsTimeAdded = new HashMap<>();
 
-  public NodeAddedTrigger(String name, Map<String, Object> properties,
-                          SolrResourceLoader loader,
-                          SolrCloudManager cloudManager) {
-    super(TriggerEventType.NODEADDED, name, properties, loader, cloudManager);
-    lastLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-    log.debug("Initial livenodes: {}", lastLiveNodes);
-    log.debug("NodeAddedTrigger {} instantiated with properties: {}", name, properties);
+  public NodeAddedTrigger(String name) {
+    super(TriggerEventType.NODEADDED, name);
   }
 
   @Override
-  public void init() {
+  public void init() throws Exception {
     super.init();
+    lastLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
+    log.debug("NodeAddedTrigger {} - Initial livenodes: {}", name, lastLiveNodes);
+    log.debug("NodeAddedTrigger {} instantiated with properties: {}", name, properties);
     // pick up added nodes for which marker paths were created
     try {
       List<String> added = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
@@ -67,7 +62,7 @@ public class NodeAddedTrigger extends TriggerBase {
         // don't add nodes that have since gone away
         if (lastLiveNodes.contains(n)) {
           log.debug("Adding node from marker path: {}", n);
-          nodeNameVsTimeAdded.put(n, cloudManager.getTimeSource().getTime());
+          nodeNameVsTimeAdded.put(n, cloudManager.getTimeSource().getTimeNs());
         }
         removeMarker(n);
       });
@@ -85,8 +80,10 @@ public class NodeAddedTrigger extends TriggerBase {
     if (old instanceof NodeAddedTrigger) {
       NodeAddedTrigger that = (NodeAddedTrigger) old;
       assert this.name.equals(that.name);
-      this.lastLiveNodes = new HashSet<>(that.lastLiveNodes);
-      this.nodeNameVsTimeAdded = new HashMap<>(that.nodeNameVsTimeAdded);
+      this.lastLiveNodes.clear();
+      this.lastLiveNodes.addAll(that.lastLiveNodes);
+      this.nodeNameVsTimeAdded.clear();
+      this.nodeNameVsTimeAdded.putAll(that.nodeNameVsTimeAdded);
     } else  {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
           "Unable to restore state from an unknown type of trigger");
@@ -138,7 +135,7 @@ public class NodeAddedTrigger extends TriggerBase {
       Set<String> copyOfNew = new HashSet<>(newLiveNodes);
       copyOfNew.removeAll(lastLiveNodes);
       copyOfNew.forEach(n -> {
-        long eventTime = cloudManager.getTimeSource().getTime();
+        long eventTime = cloudManager.getTimeSource().getTimeNs();
         log.debug("Tracking new node: {} at time {}", n, eventTime);
         nodeNameVsTimeAdded.put(n, eventTime);
       });
@@ -150,7 +147,7 @@ public class NodeAddedTrigger extends TriggerBase {
         Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeAdded = entry.getValue();
-        long now = cloudManager.getTimeSource().getTime();
+        long now = cloudManager.getTimeSource().getTimeNs();
         if (TimeUnit.SECONDS.convert(now - timeAdded, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           nodeNames.add(nodeName);
           times.add(timeAdded);
@@ -160,7 +157,7 @@ public class NodeAddedTrigger extends TriggerBase {
       if (!nodeNames.isEmpty()) {
         if (processor != null) {
           log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}, now={}", name,
-              nodeNames, times, cloudManager.getTimeSource().getTime());
+              nodeNames, times, cloudManager.getTimeSource().getTimeNs());
           if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames))) {
             // remove from tracking set only if the fire was accepted
             nodeNames.forEach(n -> {
@@ -184,6 +181,7 @@ public class NodeAddedTrigger extends TriggerBase {
   private void removeMarker(String nodeName) {
     String path = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
     try {
+      log.debug("NodeAddedTrigger {} - removing marker path: {}", name, path);
       if (stateManager.hasData(path)) {
         stateManager.removeData(path, -1);
       }

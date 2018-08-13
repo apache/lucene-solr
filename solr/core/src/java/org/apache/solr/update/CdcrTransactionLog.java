@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * methods {@link #incref()}, {@link #close()} and {@link #reopenOutputStream()}.</li>
  * <li>encode the number of records in the tlog file in the last commit record. The number of records will be
  * decoded and reuse if the tlog file is reopened. This is achieved by extending the constructor, and the
- * methods {@link #writeCommit(CommitUpdateCommand, int)} and {@link #getReader(long)}.</li>
+ * methods {@link #writeCommit(CommitUpdateCommand)} and {@link #getReader(long)}.</li>
  * </ul>
  */
 public class CdcrTransactionLog extends TransactionLog {
@@ -108,7 +108,7 @@ public class CdcrTransactionLog extends TransactionLog {
   }
 
   @Override
-  public long write(AddUpdateCommand cmd, long prevPointer, int flags) {
+  public long write(AddUpdateCommand cmd, long prevPointer) {
     assert (-1 <= prevPointer && (cmd.isInPlaceUpdate() || (-1 == prevPointer)));
 
     LogCodec codec = new LogCodec(resolver);
@@ -125,7 +125,7 @@ public class CdcrTransactionLog extends TransactionLog {
       codec.init(out);
       if (cmd.isInPlaceUpdate()) {
         codec.writeTag(JavaBinCodec.ARR, 6);
-        codec.writeInt(UpdateLog.UPDATE_INPLACE | flags);  // should just take one byte
+        codec.writeInt(UpdateLog.UPDATE_INPLACE);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeLong(prevPointer);
         codec.writeLong(cmd.prevVersion);
@@ -141,7 +141,7 @@ public class CdcrTransactionLog extends TransactionLog {
 
       } else {
         codec.writeTag(JavaBinCodec.ARR, 4);
-        codec.writeInt(UpdateLog.ADD | flags);  // should just take one byte
+        codec.writeInt(UpdateLog.ADD);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         if (cmd.getReq().getParamString().contains(CdcrUpdateProcessor.CDCR_UPDATE)) {
           // if the update is received via cdcr source; add extra boolean entry
@@ -179,7 +179,7 @@ public class CdcrTransactionLog extends TransactionLog {
   }
 
   @Override
-  public long writeDelete(DeleteUpdateCommand cmd, int flags) {
+  public long writeDelete(DeleteUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
 
     try {
@@ -190,7 +190,7 @@ public class CdcrTransactionLog extends TransactionLog {
       MemOutputStream out = new MemOutputStream(new byte[20 + br.length]);
       codec.init(out);
       codec.writeTag(JavaBinCodec.ARR, 4);
-      codec.writeInt(UpdateLog.DELETE | flags);  // should just take one byte
+      codec.writeInt(UpdateLog.DELETE);  // should just take one byte
       codec.writeLong(cmd.getVersion());
       codec.writeByteArray(br.bytes, br.offset, br.length);
       if (cmd.getReq().getParamString().contains(CdcrUpdateProcessor.CDCR_UPDATE)) {
@@ -217,7 +217,7 @@ public class CdcrTransactionLog extends TransactionLog {
   }
 
   @Override
-  public long writeDeleteByQuery(DeleteUpdateCommand cmd, int flags) {
+  public long writeDeleteByQuery(DeleteUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
     try {
       checkWriteHeader(codec, null);
@@ -225,7 +225,7 @@ public class CdcrTransactionLog extends TransactionLog {
       MemOutputStream out = new MemOutputStream(new byte[20 + (cmd.query.length())]);
       codec.init(out);
       codec.writeTag(JavaBinCodec.ARR, 4);
-      codec.writeInt(UpdateLog.DELETE_BY_QUERY | flags);  // should just take one byte
+      codec.writeInt(UpdateLog.DELETE_BY_QUERY);  // should just take one byte
       codec.writeLong(cmd.getVersion());
       codec.writeStr(cmd.query);
       if (cmd.getReq().getParamString().contains(CdcrUpdateProcessor.CDCR_UPDATE)) {
@@ -249,7 +249,7 @@ public class CdcrTransactionLog extends TransactionLog {
   }
 
   @Override
-  public long writeCommit(CommitUpdateCommand cmd, int flags) {
+  public long writeCommit(CommitUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
     synchronized (this) {
       try {
@@ -261,7 +261,7 @@ public class CdcrTransactionLog extends TransactionLog {
         }
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 4);
-        codec.writeInt(UpdateLog.COMMIT | flags);  // should just take one byte
+        codec.writeInt(UpdateLog.COMMIT);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeTag(JavaBinCodec.INT); // Enforce the encoding of a plain integer, to simplify decoding
         fos.writeInt(numRecords + 1); // the number of records in the file - +1 to account for the commit operation being written

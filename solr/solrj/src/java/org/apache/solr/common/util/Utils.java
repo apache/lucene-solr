@@ -19,6 +19,8 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
@@ -63,6 +65,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -133,6 +136,15 @@ public class Utils {
       Collections.sort((List)result);
     }
     return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
+  }
+
+  public static void toJSON(Object o, OutputStream os, boolean indent) throws IOException {
+    OutputStreamWriter writer = new OutputStreamWriter(os, UTF_8);
+    new SolrJSONWriter(writer)
+        .setIndent(indent)
+        .writeObj(o)
+        .close();
+    writer.flush();
   }
 
   public static byte[] toJSON(Object o) {
@@ -456,6 +468,48 @@ public class Utils {
     }
   }
 
+  /**Applies one json over other. The 'input' is applied over the sink
+   * The values in input isapplied over the values in 'sink' . If a value is 'null'
+   * that value is removed from sink
+   *
+   * @param sink the original json object to start with. Ensure that this Map is mutable
+   * @param input the json with new values
+   * @return whether there was any change made to sink or not.
+   */
+
+  public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
+    boolean isModified = false;
+    for (Map.Entry<String, Object> e : input.entrySet()) {
+      if (sink.get(e.getKey()) != null) {
+        Object sinkVal = sink.get(e.getKey());
+        if (e.getValue() == null) {
+          sink.remove(e.getKey());
+          isModified = true;
+        } else {
+          if (e.getValue() instanceof Map) {
+            Map<String, Object> mapInputVal = (Map<String, Object>) e.getValue();
+            if (sinkVal instanceof Map) {
+              if (mergeJson((Map<String, Object>) sinkVal, mapInputVal)) isModified = true;
+            } else {
+              sink.put(e.getKey(), mapInputVal);
+              isModified = true;
+            }
+          } else {
+            sink.put(e.getKey(), e.getValue());
+            isModified = true;
+          }
+
+        }
+      } else if (e.getValue() != null) {
+        sink.put(e.getKey(), e.getValue());
+        isModified = true;
+      }
+
+    }
+
+    return isModified;
+  }
+
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
@@ -471,10 +525,10 @@ public class Utils {
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
-    return unit.convert(timeSource.getTime(), TimeUnit.NANOSECONDS);
+    return unit.convert(timeSource.getTimeNs(), TimeUnit.NANOSECONDS);
   }
 
   public static long timeElapsed(TimeSource timeSource, long start, TimeUnit unit) {
-    return unit.convert(timeSource.getTime() - NANOSECONDS.convert(start, unit), NANOSECONDS);
+    return unit.convert(timeSource.getTimeNs() - NANOSECONDS.convert(start, unit), NANOSECONDS);
   }
 }

@@ -70,10 +70,9 @@ final class DocumentsWriterFlushControl implements Accountable {
   private boolean closed = false;
   private final DocumentsWriter documentsWriter;
   private final LiveIndexWriterConfig config;
-  private final BufferedUpdatesStream bufferedUpdatesStream;
   private final InfoStream infoStream;
 
-  DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config, BufferedUpdatesStream bufferedUpdatesStream) {
+  DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config) {
     this.infoStream = config.getInfoStream();
     this.stallControl = new DocumentsWriterStallControl();
     this.perThreadPool = documentsWriter.perThreadPool;
@@ -81,7 +80,6 @@ final class DocumentsWriterFlushControl implements Accountable {
     this.config = config;
     this.hardMaxBytesPerDWPT = config.getRAMPerThreadHardLimitMB() * 1024 * 1024;
     this.documentsWriter = documentsWriter;
-    this.bufferedUpdatesStream = bufferedUpdatesStream;
   }
 
   public synchronized long activeBytes() {
@@ -636,8 +634,8 @@ final class DocumentsWriterFlushControl implements Accountable {
         try {
           documentsWriter.subtractFlushedNumDocs(dwpt.getNumDocsInRAM());
           dwpt.abort();
-        } catch (Throwable ex) {
-          // ignore - keep on aborting the flush queue
+        } catch (Exception ex) {
+          // that's fine we just abort everything here this is best effort
         } finally {
           doAfterFlush(dwpt);
         }
@@ -647,8 +645,8 @@ final class DocumentsWriterFlushControl implements Accountable {
           flushingWriters.put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
           documentsWriter.subtractFlushedNumDocs(blockedFlush.dwpt.getNumDocsInRAM());
           blockedFlush.dwpt.abort();
-        } catch (Throwable ex) {
-          // ignore - keep on aborting the blocked queue
+        } catch (Exception ex) {
+          // that's fine we just abort everything here this is best effort
         } finally {
           doAfterFlush(blockedFlush.dwpt);
         }

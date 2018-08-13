@@ -124,6 +124,10 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     // we also automatically add a scheduled maintenance trigger
     while (!isClosed)  {
       try {
+        if (Thread.currentThread().isInterrupted()) {
+          log.warn("Interrupted");
+          break;
+        }
         AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
         AutoScalingConfig updatedConfig = withAutoAddReplicasTrigger(autoScalingConfig);
         updatedConfig = withScheduledMaintenanceTrigger(updatedConfig);
@@ -138,8 +142,16 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         Thread.currentThread().interrupt();
         log.warn("Interrupted", e);
         break;
-      } catch (IOException | KeeperException e) {
-        log.error("A ZK error has occurred", e);
+      }
+      catch (IOException | KeeperException e) {
+        if (e instanceof KeeperException.SessionExpiredException ||
+            (e.getCause()!=null && e.getCause() instanceof KeeperException.SessionExpiredException)) {
+          log.warn("Solr cannot talk to ZK, exiting " + 
+              getClass().getSimpleName() + " main queue loop", e);
+          return;
+        } else {
+          log.error("A ZK error has occurred", e);
+        }
       }
     }
 
@@ -226,7 +238,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           if (entry.getValue().getEventType().equals(TriggerEventType.NODEADDED)) {
             cleanOldNodeAddedMarkers = false;
           }
-          scheduledTriggers.add(entry.getValue());
+          try {
+            scheduledTriggers.add(entry.getValue());
+          } catch (Exception e) {
+            log.warn("Exception initializing trigger " + entry.getKey() + ", configuration ignored", e);
+          }
         }
       } catch (AlreadyClosedException e) {
         // this _should_ mean that we're closing, complain loudly if that's not the case
@@ -378,7 +394,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       AutoScalingConfig.TriggerConfig cfg = entry.getValue();
       TriggerEventType eventType = cfg.event;
       String triggerName = entry.getKey();
-      triggerMap.put(triggerName, triggerFactory.create(eventType, triggerName, cfg.properties));
+      try {
+        triggerMap.put(triggerName, triggerFactory.create(eventType, triggerName, cfg.properties));
+      } catch (TriggerValidationException e) {
+        log.warn("Error in trigger '" + triggerName + "' configuration, trigger config ignored: " + cfg, e);
+      }
     }
     return triggerMap;
   }

@@ -41,7 +41,7 @@ solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $in
 
                 segment.totalSize = Math.floor((segmentSizeInBytesLog / segmentSizeInBytesMaxLog ) * 100);
 
-                segment.deletedDocSize = Math.floor((segment.delCount / (segment.delCount + segment.totalSize)) * segment.totalSize);
+                segment.deletedDocSize = Math.floor((segment.delCount / segment.size) * segment.totalSize);
                 if (segment.delDocSize <= 0.001) delete segment.deletedDocSize;
 
                 segment.aliveDocSize = segment.totalSize - segment.deletedDocSize;
