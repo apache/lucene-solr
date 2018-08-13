@@ -244,6 +244,8 @@ Other Changes
 
 * SOLR-12164: Improve Ref Guide main landing page. (Cassandra Targett)
 
+* SOLR-10984: Clean up web.xml, removing old redirects and outdated comments (Varun Thacker, janhoy)
+
 * SOLR-12617: Remove Commons BeanUtils as a dependency (Varun Thacker)
 
 ==================  7.4.0 ==================
