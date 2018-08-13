@@ -37,7 +37,7 @@ public class SolrInputDocumentReaderTest {
     doc.addField("f2", "multi");
     doc.addField("f2", "valued");
     doc.addField("f2", "field");
-    doc.addField("f3", new Integer(123));
+    doc.addField("f3", 123);
     doc.addField("f4", "12345678901234567890");
     allFields = new String[] {"f1", "f2", "f3", "f4"};
   }
