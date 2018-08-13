@@ -3272,6 +3272,59 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out1.get(7).doubleValue(), 61.5, 0.0001);
   }
 
+
+  @Test
+  public void testOutliers() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=list(tuple(id=0.0), tuple(id=1), tuple(id=2), tuple(id=3)), " +
+        "               b=normalDistribution(100, 5)," +
+        "               d=array(100, 110, 90, 99), " +
+        "               e=outliers(b, d, .05, .95, a)," +
+        "               f=outliers(b, d, .05, .95))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Map> out = (List<Map>)tuples.get(0).get("e");
+    assertEquals(out.size(), 2);
+    Map high = out.get(0);
+    assertEquals(((String)high.get("id")), "1");
+
+    assertEquals(((Number)high.get("cumulativeProbablity")).doubleValue(), 0.9772498680518208, 0.0 );
+    assertEquals(((Number)high.get("highOutlierValue")).doubleValue(), 110.0, 0.0);
+    assertEquals(((Boolean)high.get("highOutlier")).booleanValue(), true);
+
+
+    Map low = out.get(1);
+    assertEquals(((String)low.get("id")), "2");
+    assertEquals(((Number)low.get("cumulativeProbablity")).doubleValue(), 0.022750131948179167, 0.0 );
+    assertEquals(((Number)low.get("lowOutlierValue")).doubleValue(), 90, 0.0);
+    assertEquals(((Boolean)low.get("lowOutlier")).booleanValue(), true);
+
+
+    List<Map> out1 = (List<Map>)tuples.get(0).get("f");
+    assertEquals(out1.size(), 2);
+    Map high1 = out1.get(0);
+    assert(high1.get("id") == null);
+    assertEquals(((Number)high1.get("cumulativeProbablity")).doubleValue(), 0.9772498680518208, 0.0 );
+    assertEquals(((Number)high1.get("highOutlierValue")).doubleValue(), 110.0, 0.0);
+    assertEquals(((Boolean)high1.get("highOutlier")).booleanValue(), true);
+
+
+    Map low1 = out1.get(1);
+    assert(low1.get("id") == null);
+    assertEquals(((Number)low1.get("cumulativeProbablity")).doubleValue(), 0.022750131948179167, 0.0 );
+    assertEquals(((Number)low1.get("lowOutlierValue")).doubleValue(), 90, 0.0);
+    assertEquals(((Boolean)low1.get("lowOutlier")).booleanValue(), true);
+
+  }
+
   @Test
   public void testLerp() throws Exception {
     String cexpr = "let(echo=true," +

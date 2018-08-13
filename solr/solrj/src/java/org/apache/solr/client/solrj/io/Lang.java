@@ -248,6 +248,7 @@ public class Lang {
         .withFunctionName("setValue", SetValueEvaluator.class)
         .withFunctionName("knnRegress", KnnRegressionEvaluator.class)
         .withFunctionName("gaussfit", GaussFitEvaluator.class)
+        .withFunctionName("outliers", OutliersEvaluator.class)
 
         // Boolean Stream Evaluators
 
