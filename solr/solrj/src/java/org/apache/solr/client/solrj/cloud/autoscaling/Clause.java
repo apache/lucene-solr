@@ -253,14 +253,14 @@ public class Clause implements MapWriter, Comparable<Clause> {
         new SealedClause(this, computedValueEvaluator);
   }
 
-  Condition parse(String s, Map m) {
+  Condition parse(String s, Map<String,Object> m) {
 
     Object expectedVal = null;
     ComputedType computedType = null;
     Object val = m.get(s);
     Type varType = VariableBase.getTagType(s);
     if (varType.meta.isHidden()) {
-      throw new IllegalArgumentException(formatString("''{0}'' is not allowed in a policy rule :  ''{1}''  ", varType.tagName, toJSONString(m)));
+      throwExp(m,"''{0}'' is not allowed", varType.tagName);
     }
     try {
       String conditionName = s.trim();
@@ -270,8 +270,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
         expectedVal = Policy.ANY;
       } else if (val instanceof List) {
         if (!varType.meta.supportArrayVals()) {
-          throw new IllegalArgumentException(formatString("array values are not supported for {0} in clause {1}",
-              conditionName, toJSONString(m)));
+          throwExp(m, "array values are not supported for {0}", conditionName);
         }
         expectedVal = readListVal(m, (List) val, varType, conditionName);
         operand = Operand.IN;
@@ -286,14 +285,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
             computedType = t;
             strVal = changedVal;
             if (varType == null || !varType.supportedComputedTypes.contains(computedType)) {
-              throw new IllegalArgumentException(formatString("''{0}'' is not allowed for variable :  ''{1}'' , in clause : ''{2}'' ",
-                  t, conditionName, toJSONString(m)));
+              throwExp(m,"''{0}'' is not allowed for variable :  ''{1}''",t,conditionName);
             }
           }
         }
         if (computedType == null && ((String) val).charAt(0) == '#' && !varType.wildCards.contains(val)) {
-          throw new IllegalArgumentException(formatString("''{0}'' is not an allowed value for ''{1}'' , in clause : ''{2}'' . Supported value is : {3}",
-              val, conditionName, toJSONString(m), varType.wildCards));
+          throwExp(m, "''{0}'' is not an allowed value for ''{1}'', supported value is : {2} ", val, conditionName,  varType.wildCards );
 
         }
         operand = varType == null ? operand : varType.getOperand(operand, strVal, computedType);
@@ -309,8 +306,13 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } catch (IllegalArgumentException iae) {
       throw iae;
     } catch (Exception e) {
-      throw new IllegalArgumentException("Invalid tag : " + s + ":" + val, e);
+      throwExp(m, "Invalid tag : {0} ",s );
+      return null;
     }
+  }
+
+  public void throwExp(Map<String, Object> clause, String msg, Object... args) {
+    throw new IllegalArgumentException("syntax error in clause :"+ toJSONString(clause)+ " , msg:  "+  formatString(msg, args));
   }
 
   private List readListVal(Map m, List val, Type varType, String conditionName) {

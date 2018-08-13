@@ -88,13 +88,28 @@ class ReplicaVariable extends VariableBase {
       } else {
         return "'replica': '#EQUAL` must be used with 'node':'#ANY'";
       }
-    }
-    if (condition.computedType == ComputedType.ALL) {
+    } else if (condition.computedType == ComputedType.ALL) {
       if (condition.getClause().tag != null && (condition.getClause().getTag().op == Operand.IN ||
           condition.getClause().getTag().op == Operand.WILDCARD)) {
         return StrUtils.formatString("array value or wild card cannot be used for tag {0} with replica : '#ALL'",
             condition.getClause().tag.getName());
       }
+    } else {
+      return checkNonEqualOp(condition);
+    }
+
+    return null;
+  }
+
+  static String checkNonEqualOp(Condition condition) {
+    if (condition.computedType == null &&
+        condition.val instanceof RangeVal &&
+        condition.op != Operand.RANGE_EQUAL) {
+      return "non-integer values cannot have any other operators";
+    }
+
+    if(condition.computedType == ComputedType.PERCENT && condition.op != Operand.RANGE_EQUAL){
+      return "percentage values cannot have any other operators";
     }
     return null;
   }
