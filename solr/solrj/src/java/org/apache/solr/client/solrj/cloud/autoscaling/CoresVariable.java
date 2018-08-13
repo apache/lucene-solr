@@ -104,8 +104,9 @@ public class CoresVariable extends VariableBase {
       } else {
         return "cores: '#EQUAL' can be used only with node: '#ANY', node :[....]";
       }
+    } else {
+      return ReplicaVariable.checkNonEqualOp(condition);
     }
-    return null;
   }
 
   @Override
