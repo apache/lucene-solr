@@ -38,11 +38,13 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
   public TokenStreamOffsetStrategy(UHComponents components, Analyzer indexAnalyzer) {
     super(new UHComponents(
-          components.getField(),
-          components.getFieldMatcher(),
-          ZERO_LEN_BYTES_REF_ARRAY,
-          components.getPhraseHelper(),
-          convertTermsToAutomata(components.getExtractedTerms(), components.getAutomata())),
+            components.getField(),
+            components.getFieldMatcher(),
+            components.getQuery(),
+            ZERO_LEN_BYTES_REF_ARRAY,
+            components.getPhraseHelper(),
+            convertTermsToAutomata(components.getTerms(), components.getAutomata()),
+            components.getHighlightFlags()),
         indexAnalyzer);
     assert phraseHelper.hasPositionSensitivity() == false;
   }

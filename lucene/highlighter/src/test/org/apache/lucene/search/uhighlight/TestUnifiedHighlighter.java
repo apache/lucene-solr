@@ -86,42 +86,39 @@ public class TestUnifiedHighlighter extends LuceneTestCase {
   }
 
   static UnifiedHighlighter randomUnifiedHighlighter(IndexSearcher searcher, Analyzer indexAnalyzer) {
-    return randomUnifiedHighlighter(searcher, indexAnalyzer, EnumSet.noneOf(HighlightFlag.class));
+    return randomUnifiedHighlighter(searcher, indexAnalyzer, EnumSet.noneOf(HighlightFlag.class), null);
   }
 
   static UnifiedHighlighter randomUnifiedHighlighter(IndexSearcher searcher, Analyzer indexAnalyzer,
-                                                             EnumSet<HighlightFlag> mandatoryFlags) {
-    if (random().nextBoolean()) {
-      return new UnifiedHighlighter(searcher, indexAnalyzer);
-    } else {
-      final UnifiedHighlighter uh = new UnifiedHighlighter(searcher, indexAnalyzer) {
-        Set<HighlightFlag> flags; // consistently random set of flags for this test run
-        @Override
-        protected Set<HighlightFlag> getFlags(String field) {
-          if (flags != null) {
-            return flags;
-          }
-          final EnumSet<HighlightFlag> result = EnumSet.copyOf(mandatoryFlags);
-          int r = random().nextInt();
-          for (HighlightFlag highlightFlag : HighlightFlag.values()) {
-            if (((1 << highlightFlag.ordinal()) & r) == 0) {
-              result.add(highlightFlag);
-            }
-          }
-          if (result.contains(HighlightFlag.WEIGHT_MATCHES)) {
-            // these two are required for WEIGHT_MATCHES
-            result.add(HighlightFlag.MULTI_TERM_QUERY);
-            result.add(HighlightFlag.PHRASES);
-          }
-          return flags = result;
+                                                     EnumSet<HighlightFlag> mandatoryFlags, Boolean requireFieldMatch) {
+    final UnifiedHighlighter uh = new UnifiedHighlighter(searcher, indexAnalyzer) {
+      Set<HighlightFlag> flags; // consistently random set of flags for this test run
+      @Override
+      protected Set<HighlightFlag> getFlags(String field) {
+        if (flags != null) {
+          return flags;
         }
-      };
-      uh.setCacheFieldValCharsThreshold(random().nextInt(100));
-      if (random().nextBoolean()) {
-        uh.setFieldMatcher(f -> true); // requireFieldMatch==false
+        final EnumSet<HighlightFlag> result = EnumSet.copyOf(mandatoryFlags);
+        int r = random().nextInt();
+        for (HighlightFlag highlightFlag : HighlightFlag.values()) {
+          if (((1 << highlightFlag.ordinal()) & r) == 0) {
+            result.add(highlightFlag);
+          }
+        }
+        if (result.contains(HighlightFlag.WEIGHT_MATCHES)) {
+          // these two are required for WEIGHT_MATCHES
+          result.add(HighlightFlag.MULTI_TERM_QUERY);
+          result.add(HighlightFlag.PHRASES);
+        }
+        return flags = result;
       }
-      return uh;
+    };
+    uh.setCacheFieldValCharsThreshold(random().nextInt(100));
+    if (requireFieldMatch == Boolean.FALSE || (requireFieldMatch == null && random().nextBoolean())) {
+      uh.setFieldMatcher(f -> true); // requireFieldMatch==false
     }
+    return uh;
+
   }
 
   //
@@ -1126,7 +1123,7 @@ public class TestUnifiedHighlighter extends LuceneTestCase {
         return (qf) -> true;
       }
     };
-    UnifiedHighlighter highlighterFieldMatch = randomUnifiedHighlighter(searcher, indexAnalyzer, EnumSet.of(HighlightFlag.MULTI_TERM_QUERY));
+    UnifiedHighlighter highlighterFieldMatch = randomUnifiedHighlighter(searcher, indexAnalyzer, EnumSet.of(HighlightFlag.MULTI_TERM_QUERY), null);
     highlighterFieldMatch.setFieldMatcher(null);//default
     BooleanQuery.Builder queryBuilder =
         new BooleanQuery.Builder()
@@ -1206,10 +1203,14 @@ public class TestUnifiedHighlighter extends LuceneTestCase {
     UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer);
     Query query = new PhraseQuery(2, "title", "this", "is", "the", "field");
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     String[] snippets = highlighter.highlight("title", query, topDocs, 10);
     assertEquals(1, snippets.length);
-    assertEquals("<b>This is the title field</b>.", snippets[0]);
+    if (highlighter.getFlags("title").contains(HighlightFlag.WEIGHT_MATCHES)) {
+      assertEquals("<b>This is the title field</b>.", snippets[0]);
+    } else {
+      assertEquals("<b>This</b> <b>is</b> <b>the</b> title <b>field</b>.", snippets[0]);
+    }
     ir.close();
   }
 
@@ -1223,7 +1224,7 @@ public class TestUnifiedHighlighter extends LuceneTestCase {
         return (qf) -> true;
       }
     };
-    UnifiedHighlighter highlighterFieldMatch = randomUnifiedHighlighter(searcher, indexAnalyzer, EnumSet.of(HighlightFlag.PHRASES, HighlightFlag.MULTI_TERM_QUERY));
+    UnifiedHighlighter highlighterFieldMatch = randomUnifiedHighlighter(searcher, indexAnalyzer, EnumSet.of(HighlightFlag.PHRASES, HighlightFlag.MULTI_TERM_QUERY), null);
     highlighterFieldMatch.setFieldMatcher(null);//default
     BooleanQuery.Builder queryBuilder =
         new BooleanQuery.Builder()

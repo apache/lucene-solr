@@ -94,8 +94,14 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   @Override
   public String toString() {
     final String name = getClass().getSimpleName();
+    String offset = "";
     try {
-      return name + "(term:" + getTerm().utf8ToString() +")";
+      offset = ",[" + startOffset() + "-" + endOffset() + "]";
+    } catch (Exception e) {
+      //ignore; for debugging only
+    }
+    try {
+      return name + "(term:" + getTerm().utf8ToString() + offset + ")";
     } catch (Exception e) {
       return name;
     }
@@ -158,6 +164,130 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
     }
   }
 
+  /** Based on a {@link MatchesIterator} with submatches. */
+  public static class OfMatchesIteratorWithSubs extends OffsetsEnum {
+    //Either CachedOE impls (which are the submatches) or OfMatchesIterator impls
+    private final PriorityQueue<OffsetsEnum> pendingQueue = new PriorityQueue<>();
+
+    public OfMatchesIteratorWithSubs(MatchesIterator matchesIterator) {
+      pendingQueue.add(new OfMatchesIterator(matchesIterator));
+    }
+
+    @Override
+    public boolean nextPosition() throws IOException {
+      OffsetsEnum formerHeadOE = pendingQueue.poll(); // removes the head
+      if (formerHeadOE instanceof CachedOE) {
+        // we're done with the former head.  CachedOE's are one use only.
+        // Look at the new head...
+        OffsetsEnum newHeadOE = pendingQueue.peek();
+        if (newHeadOE instanceof OfMatchesIterator) {
+          // We found the matchesIterator.  Requires processing.
+          nextWhenMatchesIterator((OfMatchesIterator) newHeadOE);  // May or may not remove or re-queue itself
+        } // else new head is a CacheOE or no more.  Nothing to do with it.
+
+      } else { // formerHeadOE is OfMatchesIterator; advance it
+        OfMatchesIterator miOE = (OfMatchesIterator) formerHeadOE;
+        if (miOE.nextPosition()) {
+          nextWhenMatchesIterator(miOE); // requires processing.  May or may not re-enqueue itself
+        }
+      }
+      return pendingQueue.isEmpty() == false;
+    }
+
+    private void nextWhenMatchesIterator(OfMatchesIterator miOE) throws IOException {
+      boolean isHead = miOE == pendingQueue.peek();
+      MatchesIterator subMatches = miOE.matchesIterator.getSubMatches();
+      if (subMatches != null) {
+        // remove this miOE from the queue, add it's submatches, next() it, then re-enqueue it
+        if (isHead) {
+          pendingQueue.poll(); // remove
+        }
+
+        enqueueCachedMatches(subMatches);
+
+        if (miOE.nextPosition()) {
+          pendingQueue.add(miOE);
+          assert pendingQueue.peek() != miOE; // miOE should follow cached entries
+        }
+
+      } else { // else has no subMatches.  It will stay enqueued.
+        if (!isHead) {
+          pendingQueue.add(miOE);
+        } // else it's *already* in pendingQueue
+      }
+    }
+
+    private boolean enqueueCachedMatches(MatchesIterator thisMI) throws IOException {
+      if (thisMI == null) {
+        return false;
+      } else {
+        while (thisMI.next()) {
+          if (false == enqueueCachedMatches(thisMI.getSubMatches())) { // recursion
+            // if no sub-matches then add ourselves
+            pendingQueue.add(new CachedOE(thisMI.startOffset(), thisMI.endOffset()));
+          }
+        }
+        return true;
+      }
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return pendingQueue.peek().freq();
+    }
+
+    @Override
+    public BytesRef getTerm() throws IOException {
+      return pendingQueue.peek().getTerm();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return pendingQueue.peek().startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return pendingQueue.peek().endOffset();
+    }
+
+    private static class CachedOE extends OffsetsEnum {
+      final int startOffset;
+      final int endOffset;
+
+      private CachedOE(int startOffset, int endOffset) {
+        this.startOffset = startOffset;
+        this.endOffset = endOffset;
+      }
+
+      @Override
+      public boolean nextPosition() throws IOException {
+        return false;
+      }
+
+      @Override
+      public int freq() throws IOException {
+        return 1; // nocommit terrible
+      }
+
+      @Override
+      public BytesRef getTerm() throws IOException {
+        return new BytesRef(); // nocommit terrible
+      }
+
+      @Override
+      public int startOffset() throws IOException {
+        return startOffset;
+      }
+
+      @Override
+      public int endOffset() throws IOException {
+        return endOffset;
+      }
+    }
+  }
+
+  /** Based on a {@link MatchesIterator}; does not look at submatches. */
   public static class OfMatchesIterator extends OffsetsEnum {
     private final MatchesIterator matchesIterator;
 

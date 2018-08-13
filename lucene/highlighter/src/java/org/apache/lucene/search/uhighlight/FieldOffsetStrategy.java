@@ -51,7 +51,7 @@ public abstract class FieldOffsetStrategy {
   public FieldOffsetStrategy(UHComponents components) {
     this.components = components;
     this.field = components.getField();
-    this.terms = components.getExtractedTerms();
+    this.terms = components.getTerms();
     this.phraseHelper = components.getPhraseHelper();
     this.automata = components.getAutomata();
   }
@@ -75,41 +75,85 @@ public abstract class FieldOffsetStrategy {
       return OffsetsEnum.EMPTY;
     }
 
-    final List<OffsetsEnum> offsetsEnums = new ArrayList<>(terms.length + automata.length);
-
-    final boolean useWeightMatchesIter = phraseHelper.useWeightMatchesIter();
-
-    // Handle position insensitive terms (a subset of this.terms field):
-    final BytesRef[] insensitiveTerms;
-    if (useWeightMatchesIter) {
-      insensitiveTerms = new BytesRef[0]; // don't -- WEIGHT_MATCHES will handle these
-    } else if (phraseHelper.hasPositionSensitivity()) {
-      insensitiveTerms = phraseHelper.getAllPositionInsensitiveTerms();
-      assert insensitiveTerms.length <= terms.length : "insensitive terms should be smaller set of all terms";
-    } else {
-      insensitiveTerms = terms;
-    }
-    if (insensitiveTerms.length > 0) {
-      createOffsetsEnumsForTerms(insensitiveTerms, termsIndex, doc, offsetsEnums);
-    }
+    final List<OffsetsEnum> offsetsEnums = new ArrayList<>();
 
     // Handle Weight.matches approach
-    if (useWeightMatchesIter) {
+    if (components.getHighlightFlags().contains(UnifiedHighlighter.HighlightFlag.WEIGHT_MATCHES)) {
+
       createOffsetsEnumsWeightMatcher(leafReader, doc, offsetsEnums);
-    }
 
-    // Handle spans
-    if (phraseHelper.hasPositionSensitivity()) {
-      phraseHelper.createOffsetsEnumsForSpans(leafReader, doc, offsetsEnums);
-    }
+    } else { // classic approach
 
-    // Handle automata
-    if (automata.length > 0 && useWeightMatchesIter==false) {// WEIGHT_MATCHES handled these already
-      createOffsetsEnumsForAutomata(termsIndex, doc, offsetsEnums);
+      // Handle position insensitive terms (a subset of this.terms field):
+      final BytesRef[] insensitiveTerms;
+      if (phraseHelper.hasPositionSensitivity()) {
+        insensitiveTerms = phraseHelper.getAllPositionInsensitiveTerms();
+        assert insensitiveTerms.length <= terms.length : "insensitive terms should be smaller set of all terms";
+      } else {
+        insensitiveTerms = terms;
+      }
+      if (insensitiveTerms.length > 0) {
+        createOffsetsEnumsForTerms(insensitiveTerms, termsIndex, doc, offsetsEnums);
+      }
+
+      // Handle spans
+      if (phraseHelper.hasPositionSensitivity()) {
+        phraseHelper.createOffsetsEnumsForSpans(leafReader, doc, offsetsEnums);
+      }
+
+      // Handle automata
+      if (automata.length > 0) {
+        createOffsetsEnumsForAutomata(termsIndex, doc, offsetsEnums);
+      }
     }
 
     //TODO if only one OE then return it; don't wrap in Multi.  If none, return NONE
     return new OffsetsEnum.MultiOffsetsEnum(offsetsEnums);
+  }
+
+  protected void createOffsetsEnumsWeightMatcher(LeafReader _leafReader, int docId, List<OffsetsEnum> results) throws IOException {
+    // remap fieldMatcher/requireFieldMatch fields to the field we are highlighting
+    LeafReader leafReader = new FilterLeafReader(_leafReader) {
+      @Override
+      public Terms terms(String field) throws IOException {
+        if (components.getFieldMatcher().test(field)) {
+          return super.terms(components.getField());
+        } else {
+          return super.terms(field);
+        }
+      }
+
+      //  So many subclasses do this!
+      //these ought to be a default or added via some intermediary like "FilterTransientLeafReader" (exception on close).
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return null;
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return null;
+      }
+    };
+    IndexSearcher indexSearcher = new IndexSearcher(leafReader);
+    indexSearcher.setQueryCache(null);
+    Matches matches = indexSearcher.rewrite(components.getQuery())
+        .createWeight(indexSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f)
+        .matches(leafReader.getContext(), docId);
+    if (matches == null) {
+      return; // doc doesn't match
+    }
+    for (String field : matches) {
+      if (components.getFieldMatcher().test(field)) {
+        MatchesIterator iterator = matches.getMatches(field);
+        if (iterator == null) {
+          continue;
+        }
+        //note: the iterator should be positioned on the first one already
+        results.add(new OffsetsEnum.OfMatchesIteratorWithSubs(iterator));
+      }
+    }
+
   }
 
   protected void createOffsetsEnumsForTerms(BytesRef[] sourceTerms, Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {
@@ -126,50 +170,6 @@ public abstract class FieldOffsetStrategy {
         }
       }
     }
-  }
-
-  protected void createOffsetsEnumsWeightMatcher(LeafReader _leafReader, int docId, List<OffsetsEnum> results) throws IOException {
-    // remap fieldMatcher/requireFieldMatch fields to the field we are highlighting
-    LeafReader leafReader = new FilterLeafReader(_leafReader) {
-      @Override
-      public Terms terms(String field) throws IOException {
-        if (components.getFieldMatcher().test(field)) {
-          return super.terms(components.getField());
-        } else {
-          return super.terms(field);
-        }
-      }
-
-      //these ought to be a default?  So many subclasses do this!
-      @Override
-      public CacheHelper getCoreCacheHelper() {
-        return null;
-      }
-
-      @Override
-      public CacheHelper getReaderCacheHelper() {
-        return null;
-      }
-    };
-    IndexSearcher indexSearcher = new IndexSearcher(leafReader);
-    indexSearcher.setQueryCache(null);
-    Matches matches = indexSearcher.rewrite(phraseHelper.getQuery())
-        .createWeight(indexSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f)
-        .matches(leafReader.getContext(), docId);
-    if (matches == null) {
-      return; // doc doesn't match
-    }
-    for (String field : matches) {
-      if (phraseHelper.getFieldMatcher().test(field)) {
-        MatchesIterator iterator = matches.getMatches(field);
-        if (iterator == null) {
-          continue;
-        }
-        //note: the iterator should be positioned on the first one already
-        results.add(new OffsetsEnum.OfMatchesIterator(iterator));
-      }
-    }
-
   }
 
   protected void createOffsetsEnumsForAutomata(Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {

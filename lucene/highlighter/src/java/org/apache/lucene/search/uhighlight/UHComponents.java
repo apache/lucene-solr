@@ -17,8 +17,10 @@
 
 package org.apache.lucene.search.uhighlight;
 
+import java.util.Set;
 import java.util.function.Predicate;
 
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -30,16 +32,22 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 public class UHComponents {
   private final String field;
   private final Predicate<String> fieldMatcher;
-  private final BytesRef[] extractedTerms;
+  private final Query query;
+  private final BytesRef[] terms;
   private final PhraseHelper phraseHelper;
   private final CharacterRunAutomaton[] automata;
+  private final Set<UnifiedHighlighter.HighlightFlag> highlightFlags;
 
-  public UHComponents(String field, Predicate<String> fieldMatcher, BytesRef[] extractedTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
+  public UHComponents(String field, Predicate<String> fieldMatcher, Query query,
+                      BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata,
+                      Set<UnifiedHighlighter.HighlightFlag> highlightFlags) {
     this.field = field;
     this.fieldMatcher = fieldMatcher;
-    this.extractedTerms = extractedTerms;
+    this.query = query;
+    this.terms = terms;
     this.phraseHelper = phraseHelper;
     this.automata = automata;
+    this.highlightFlags = highlightFlags;
   }
 
   public String getField() {
@@ -50,8 +58,12 @@ public class UHComponents {
     return fieldMatcher;
   }
 
-  public BytesRef[] getExtractedTerms() {
-    return extractedTerms;
+  public Query getQuery() {
+    return query;
+  }
+
+  public BytesRef[] getTerms() {
+    return terms;
   }
 
   public PhraseHelper getPhraseHelper() {
@@ -60,5 +72,9 @@ public class UHComponents {
 
   public CharacterRunAutomaton[] getAutomata() {
     return automata;
+  }
+
+  public Set<UnifiedHighlighter.HighlightFlag> getHighlightFlags() {
+    return highlightFlags;
   }
 }

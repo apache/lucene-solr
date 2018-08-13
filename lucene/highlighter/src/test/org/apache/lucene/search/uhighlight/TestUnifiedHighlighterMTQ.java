@@ -154,7 +154,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
 
   private UnifiedHighlighter randomUnifiedHighlighter(IndexSearcher searcher, Analyzer indexAnalyzer) {
     return TestUnifiedHighlighter.randomUnifiedHighlighter(searcher, indexAnalyzer,
-        EnumSet.of(HighlightFlag.MULTI_TERM_QUERY));
+        EnumSet.of(HighlightFlag.MULTI_TERM_QUERY), null);
   }
 
   public void testOnePrefix() throws Exception {

@@ -752,13 +752,15 @@ public class UnifiedHighlighter {
   }
 
   protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
-    BytesRef[] terms = filterExtractedTerms(getFieldMatcher(field), allTerms);
+    Predicate<String> fieldMatcher = getFieldMatcher(field);
+    BytesRef[] terms = filterExtractedTerms(fieldMatcher, allTerms);
     Set<HighlightFlag> highlightFlags = getFlags(field);
     PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
     CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
     OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
+    UHComponents components = new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, highlightFlags);
     return new FieldHighlighter(field,
-        getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags),
+        getOffsetStrategy(offsetSource, components),
         new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
         getScorer(field),
         maxPassages,
@@ -785,9 +787,6 @@ public class UnifiedHighlighter {
     if (shouldHighlightPhrasesStrictly(field)) {
       highlightFlags.add(HighlightFlag.PHRASES);
     }
-    if (highlightFlags.contains(HighlightFlag.PHRASES) && highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)) {
-      highlightFlags.add(HighlightFlag.WEIGHT_MATCHES);//nocommit for experimentation, use as default
-    }
     if (shouldPreferPassageRelevancyOverSpeed(field)) {
       highlightFlags.add(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED);
     }
@@ -795,21 +794,30 @@ public class UnifiedHighlighter {
   }
 
   protected PhraseHelper getPhraseHelper(String field, Query query, Set<HighlightFlag> highlightFlags) {
+    boolean useWeightMatchesIter = highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES);
+    if (useWeightMatchesIter) {
+      return PhraseHelper.NONE; // will be handled by Weight.matches which always considers phrases
+    }
     boolean highlightPhrasesStrictly = highlightFlags.contains(HighlightFlag.PHRASES);
     boolean handleMultiTermQuery = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY);
-    boolean useWeightMatchesIter = highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES);
     return highlightPhrasesStrictly ?
         new PhraseHelper(query, field, getFieldMatcher(field),
             this::requiresRewrite,
             this::preSpanQueryRewrite,
-            !handleMultiTermQuery,
-            useWeightMatchesIter && handleMultiTermQuery)
+            !handleMultiTermQuery
+        )
         : PhraseHelper.NONE;
   }
 
   protected CharacterRunAutomaton[] getAutomata(String field, Query query, Set<HighlightFlag> highlightFlags) {
+    // do we "eagerly" look in span queries for automata here, or do we not and let PhraseHelper handle those?
+    // if don't highlight phrases strictly,
+    final boolean lookInSpan =
+        !highlightFlags.contains(HighlightFlag.PHRASES) // no PhraseHelper
+        || highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES); // Weight.Matches will find all
+
     return highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
-        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), !highlightFlags.contains(HighlightFlag.PHRASES), this::preMultiTermQueryRewrite)
+        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), lookInSpan, this::preMultiTermQueryRewrite)
         : ZERO_LEN_AUTOMATA_ARRAY;
   }
 
@@ -847,15 +855,12 @@ public class UnifiedHighlighter {
     return offsetSource;
   }
 
-  protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms,
-                                                  PhraseHelper phraseHelper, CharacterRunAutomaton[] automata,
-                                                  Set<HighlightFlag> highlightFlags) {
-    final UHComponents components = new UHComponents(field, getFieldMatcher(field), terms, phraseHelper, automata);
+  protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, UHComponents components) {
     switch (offsetSource) {
       case ANALYSIS:
-        if (!phraseHelper.hasPositionSensitivity() &&
-            !highlightFlags.contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED) &&
-            !highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES)) {
+        if (!components.getPhraseHelper().hasPositionSensitivity() &&
+            !components.getHighlightFlags().contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED) &&
+            !components.getHighlightFlags().contains(HighlightFlag.WEIGHT_MATCHES)) {
           //skip using a memory index since it's pure term filtering
           return new TokenStreamOffsetStrategy(components, getIndexAnalyzer());
         } else {

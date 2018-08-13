@@ -38,9 +38,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -67,15 +65,13 @@ import org.apache.lucene.util.PriorityQueue;
 public class PhraseHelper {
 
   public static final PhraseHelper NONE = new PhraseHelper(new MatchAllDocsQuery(), "_ignored_",
-      (s) -> false, spanQuery -> null, query -> null, true, false);
+      (s) -> false, spanQuery -> null, query -> null, true);
 
-  private final Query query;
   private final String fieldName;
   private final Set<BytesRef> positionInsensitiveTerms; // (TermQuery terms)
   private final Set<SpanQuery> spanQueries;
   private final boolean willRewrite;
   private final Predicate<String> fieldMatcher;
-  private final boolean useWeightMatchesIter;
 
   /**
    * Constructor.
@@ -90,17 +86,12 @@ public class PhraseHelper {
    */
   public PhraseHelper(Query query, String field, Predicate<String> fieldMatcher, Function<SpanQuery, Boolean> rewriteQueryPred,
                       Function<Query, Collection<Query>> preExtractRewriteFunction,
-                      boolean ignoreQueriesNeedingRewrite, boolean useWeightMatchesIter) {
-    this.query = query;
+                      boolean ignoreQueriesNeedingRewrite) {
     this.fieldName = field;
     this.fieldMatcher = fieldMatcher;
-    this.useWeightMatchesIter = useWeightMatchesIter;
     // filter terms to those we want
     positionInsensitiveTerms = new HashSet<>();
     spanQueries = new HashSet<>();
-
-    // if useWeightMatchesIter:
-    // TODO once SpanQueries implement Weight.matches, we needn't capture them here.  But note SpanMultiTermQueryWrapper
 
     // TODO Have toSpanQuery(query) Function as an extension point for those with custom Query impls
 
@@ -141,8 +132,6 @@ public class PhraseHelper {
           for (Query newQuery : newQueriesToExtract) {
             extract(newQuery, boost, terms);
           }
-        } else if (useWeightMatchesIter && (query instanceof PhraseQuery || query instanceof MultiPhraseQuery)) {
-          return;// do nothing; these queries have Weight impls with proper getMulti
         } else {
           super.extract(query, boost, terms);
         }
@@ -160,10 +149,8 @@ public class PhraseHelper {
       @Override
       protected void extractWeightedTerms(Map<String, WeightedSpanTerm> terms, Query query, float boost)
           throws IOException {
-        if (!useWeightMatchesIter) { // when useWeightMatchesIterator, we needn't track these terms
-          query.createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER, ScoreMode.COMPLETE_NO_SCORES, boost)
-              .extractTerms(extractPosInsensitiveTermsTarget);
-        }
+        query.createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER, ScoreMode.COMPLETE_NO_SCORES, boost)
+            .extractTerms(extractPosInsensitiveTermsTarget);
       }
 
       // called on SpanQueries. Some other position-sensitive queries like PhraseQuery are converted beforehand
@@ -198,18 +185,6 @@ public class PhraseHelper {
     willRewrite = mustRewriteHolder[0];
   }
 
-  public Query getQuery() {
-    return query;
-  }
-
-  public boolean useWeightMatchesIter() {
-    return useWeightMatchesIter;
-  }
-
-  public Predicate<String> getFieldMatcher() {
-    return fieldMatcher;
-  }
-
   public Set<SpanQuery> getSpanQueries() {
     return spanQueries;
   }
@@ -230,7 +205,7 @@ public class PhraseHelper {
     return willRewrite;
   }
 
-  /** Returns the terms that are position-insensitive (sorted).  Always empty if {@link #useWeightMatchesIter}. */
+  /** Returns the terms that are position-insensitive (sorted). */
   public BytesRef[] getAllPositionInsensitiveTerms() {
     BytesRef[] result = positionInsensitiveTerms.toArray(new BytesRef[positionInsensitiveTerms.size()]);
     Arrays.sort(result);
