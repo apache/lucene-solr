@@ -116,12 +116,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       long docId = testUpdateAndDelete();
       
       // index a bad doc...
-      try {
-        indexr(t1, "a doc with no id");
-        fail("this should fail");
-      } catch (SolrException e) {
-        // expected
-      }
+      expectThrows(SolrException.class, () -> indexr(t1, "a doc with no id"));
       
       // TODO: bring this to its own method?
       // try indexing to a leader that has no replicas up
@@ -255,29 +250,26 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private void brindDownShardIndexSomeDocsAndRecover() throws Exception {
     SolrQuery query = new SolrQuery("*:*");
     query.set("distrib", false);
-    
+
     commit();
-    
+
     long deadShardCount = shardToJetty.get(SHARD2).get(0).client.solrClient
         .query(query).getResults().getNumFound();
 
     query("q", "*:*", "sort", "n_tl1 desc");
-    
+
     int oldLiveNodes = cloudClient.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
-    
+
     assertEquals(5, oldLiveNodes);
-    
+
     // kill a shard
     CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD1, 0);
-    
+
     // ensure shard is dead
-    try {
-      index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1,
-          "specific doc!");
-      fail("This server should be down and this update should have failed");
-    } catch (SolrServerException e) {
-      // expected..
-    }
+    expectThrows(SolrServerException.class,
+        "This server should be down and this update should have failed",
+        () -> index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1, "specific doc!")
+    );
     
     commit();
     

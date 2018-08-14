@@ -54,6 +54,34 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testHashPartitionWithEmptyValues() throws Exception {
+
+    assertU(adoc("id", "1", "a_s", "one", "a_i" , "1"));
+    assertU(adoc("id", "2", "a_s", "one", "a_i" , "1"));
+    assertU(adoc("id", "3"));
+    assertU(adoc("id", "4"));
+    assertU(commit());
+
+    //Test with string hash
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!hash worker=0 workers=1 cost="+getCost(random())+"}");
+    params.add("partitionKeys", "a_s");
+    params.add("wt", "xml");
+    String response = h.query(req(params));
+    h.validateXPath(response, "//*[@numFound='4']");
+
+    //Test with int hash
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!hash worker=0 workers=1 cost="+getCost(random())+"}");
+    params.add("partitionKeys", "a_i");
+    params.add("wt", "xml");
+    response = h.query(req(params));
+    h.validateXPath(response, "//*[@numFound='4']");
+  }
+
 
   @Test
   public void testHashPartition() throws Exception {
@@ -62,7 +90,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     Random random = random();
     HashSet<String> set = new HashSet();
 
-    for(int i=0; i<50; i++) {
+    for (int i=0; i<50; i++) {
       int v = random.nextInt(1000000);
       String val = Integer.toString(v);
       if(!set.contains(val)){

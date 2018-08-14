@@ -30,7 +30,7 @@ class ReplicaVariable extends VariableBase {
     super(type);
   }
 
-  static int getRelevantReplicasCount(Policy.Session session, Clause.Condition cv, String collection, String shard) {
+  static int getRelevantReplicasCount(Policy.Session session, Condition cv, String collection, String shard) {
     AtomicInteger totalReplicasOfInterest = new AtomicInteger(0);
     Clause clause = cv.getClause();
     for (Row row : session.matrix) {
@@ -50,12 +50,12 @@ class ReplicaVariable extends VariableBase {
 
 
   @Override
-  public Operand getOperand(Operand expected, Object strVal, Clause.ComputedType computedType) {
-    if (computedType == Clause.ComputedType.ALL) return expected;
+  public Operand getOperand(Operand expected, Object strVal, ComputedType computedType) {
+    if (computedType == ComputedType.ALL) return expected;
     return checkForRangeOperand(expected, strVal, computedType);
   }
 
-  static Operand checkForRangeOperand(Operand expected, Object strVal, Clause.ComputedType computedType) {
+  static Operand checkForRangeOperand(Operand expected, Object strVal, ComputedType computedType) {
     if (strVal instanceof String) {
       String s = ((String) strVal).trim();
       int hyphenIdx = s.indexOf('-');
@@ -79,8 +79,8 @@ class ReplicaVariable extends VariableBase {
   }
 
   @Override
-  public String postValidate(Clause.Condition condition) {
-    if (condition.computedType == Clause.ComputedType.EQUAL) {
+  public String postValidate(Condition condition) {
+    if (condition.computedType == ComputedType.EQUAL) {
       if (condition.getClause().tag != null &&
 //              condition.getClause().tag.varType == NODE &&
           (condition.getClause().tag.op == Operand.WILDCARD || condition.getClause().tag.op == Operand.IN)) {
@@ -88,28 +88,43 @@ class ReplicaVariable extends VariableBase {
       } else {
         return "'replica': '#EQUAL` must be used with 'node':'#ANY'";
       }
-    }
-    if (condition.computedType == Clause.ComputedType.ALL) {
+    } else if (condition.computedType == ComputedType.ALL) {
       if (condition.getClause().tag != null && (condition.getClause().getTag().op == Operand.IN ||
           condition.getClause().getTag().op == Operand.WILDCARD)) {
         return StrUtils.formatString("array value or wild card cannot be used for tag {0} with replica : '#ALL'",
             condition.getClause().tag.getName());
       }
+    } else {
+      return checkNonEqualOp(condition);
+    }
+
+    return null;
+  }
+
+  static String checkNonEqualOp(Condition condition) {
+    if (condition.computedType == null &&
+        condition.val instanceof RangeVal &&
+        condition.op != Operand.RANGE_EQUAL) {
+      return "non-integer values cannot have any other operators";
+    }
+
+    if(condition.computedType == ComputedType.PERCENT && condition.op != Operand.RANGE_EQUAL){
+      return "percentage values cannot have any other operators";
     }
     return null;
   }
 
   @Override
-  public Object computeValue(Policy.Session session, Clause.Condition cv, String collection, String shard, String node) {
-    if (cv.computedType == Clause.ComputedType.ALL)
+  public Object computeValue(Policy.Session session, Condition cv, String collection, String shard, String node) {
+    if (cv.computedType == ComputedType.ALL)
       return Double.valueOf(getRelevantReplicasCount(session, cv, collection, shard));
-    if (cv.computedType == Clause.ComputedType.EQUAL) {
+    if (cv.computedType == ComputedType.EQUAL) {
       int relevantReplicasCount = getRelevantReplicasCount(session, cv, collection, shard);
       double bucketsCount = getNumBuckets(session, cv.getClause());
       if (relevantReplicasCount == 0 || bucketsCount == 0) return 0;
       return (double) relevantReplicasCount / bucketsCount;
-    } else if (cv.computedType == Clause.ComputedType.PERCENT) {
-      return Clause.ComputedType.PERCENT.compute(getRelevantReplicasCount(session, cv, collection, shard), cv);
+    } else if (cv.computedType == ComputedType.PERCENT) {
+      return ComputedType.PERCENT.compute(getRelevantReplicasCount(session, cv, collection, shard), cv);
     } else {
       throw new IllegalArgumentException("Unsupported type " + cv.computedType);
 

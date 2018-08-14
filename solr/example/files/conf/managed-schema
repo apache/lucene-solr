@@ -322,6 +322,14 @@
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
+  <fieldType name="text_ko" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.KoreanTokenizerFactory" decompoundMode="discard" outputUnknownUnigrams="false"/>
+      <filter class="solr.KoreanPartOfSpeechStopFilterFactory" />
+      <filter class="solr.KoreanReadingFormFilterFactory" />
+      <filter class="solr.LowerCaseFilterFactory" />
+    </analyzer>
+  </fieldType>
   <fieldType name="text_lv" class="solr.TextField" positionIncrementGap="100">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
@@ -470,6 +478,7 @@
   <dynamicField name="*_txt_id" type="text_id" indexed="true" stored="true"/>
   <dynamicField name="*_txt_it" type="text_it" indexed="true" stored="true"/>
   <dynamicField name="*_txt_ja" type="text_ja" indexed="true" stored="true"/>
+  <dynamicField name="*_txt_ko" type="text_ko" indexed="true" stored="true"/>
   <dynamicField name="*_txt_lv" type="text_lv" indexed="true" stored="true"/>
   <dynamicField name="*_txt_nl" type="text_nl" indexed="true" stored="true"/>
   <dynamicField name="*_txt_no" type="text_no" indexed="true" stored="true"/>

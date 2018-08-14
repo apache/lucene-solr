@@ -134,6 +134,12 @@ Optimizations
   or phrase queries as sub queries, which know how to leverage this information
   to run faster. (Adrien Grand)
 
+* LUCENE-8439: Disjunction max queries can skip blocks to select the top documents
+  if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
+
+* LUCENE-8204: Boolean queries with a mix of required and optional clauses are
+  now faster if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
+
 ======================= Lucene 7.5.0 =======================
 
 API Changes:
@@ -176,6 +182,12 @@ API Changes:
 
 Bug Fixes:
 
+* LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
+  bogus tiles when building GeoPolygons. (Ignacio Vera)
+
+* LUCENE-8444: Prevent building functionally identical plane bounds when constructing
+  DualCrossingEdgeIterator . (Ignacio Vera)
+
 * LUCENE-8380: UTF8TaxonomyWriterCache inconsistency. (Ruslan Torobaev, Dawid Weiss)
 
 * LUCENE-8164: IndexWriter silently accepts broken payload. This has been fixed
@@ -213,6 +225,8 @@ Changes in Runtime Behavior:
 
 Improvements
 
+* LUCENE-8447: Add DISJOINT and WITHIN support to LatLonShape queries. (Nick Knize)
+
 * LUCENE-8440: Add support for indexing and searching Line and Point shapes using LatLonShape encoding (Nick Knize)
 
 * LUCENE-8435: Add new LatLonShapePolygonQuery for querying indexed LatLonShape fields by arbitrary polygons (Nick Knize)
@@ -229,6 +243,9 @@ Improvements
 
 * LUCENE-8414: Make segmentInfos private in IndexWriter (Simon Willnauer, Nhat Nguyen)
 
+* LUCENE-8446: The UnifiedHighlighter's DefaultPassageFormatter now treats overlapping matches in
+  the passage as merged (as if one larger match).  (David Smiley)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
@@ -239,6 +256,9 @@ Other:
 
 * LUCENE-8420: Upgrade OpenNLP to 1.9.0 so OpenNLP tool can read the new model format which 1.8.x
   cannot read. 1.9.0 can read the old format. (Koji Sekiguchi)
+
+* LUCENE-8453: Add documentation to analysis factories of Korean (Nori) analyzer
+  module.  (Tomoko Uchida via Uwe Schindler)
 
 ======================= Lucene 7.4.1 =======================
 

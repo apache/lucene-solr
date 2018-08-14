@@ -713,24 +713,20 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     log.info("### STARTING doOptimisticLockingAndUpdating");
     printLayout();
     
-    SolrInputDocument sd =  sdoc("id", 1000, "_version_", -1);
+    final SolrInputDocument sd =  sdoc("id", 1000, "_version_", -1);
     indexDoc(sd);
 
     ignoreException("version conflict");
     for (SolrClient client : clients) {
-      try {
-        client.add(sd);
-        fail();
-      } catch (SolrException e) {
-        assertEquals(409, e.code());
-      }
+      SolrException e = expectThrows(SolrException.class, () -> client.add(sd));
+      assertEquals(409, e.code());
     }
     unIgnoreException("version conflict");
 
     // TODO: test deletes.  SolrJ needs a good way to pass version for delete...
 
-    sd =  sdoc("id", 1000, "foo_i",5);
-    clients.get(0).add(sd);
+    final SolrInputDocument sd2 =  sdoc("id", 1000, "foo_i",5);
+    clients.get(0).add(sd2);
 
     List<Integer> expected = new ArrayList<>();
     int val = 0;

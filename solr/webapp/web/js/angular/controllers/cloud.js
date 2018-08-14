@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics) {
+    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics, ZookeeperStatus) {
 
         $scope.showDebug = false;
 
@@ -28,7 +28,7 @@ solrAdminApp.controller('CloudController',
             $scope.showDebug = false;
         };
 
-        var view = $location.search().view ? $location.search().view : "graph";
+        var view = $location.search().view ? $location.search().view : "nodes";
         if (view === "tree") {
             $scope.resetMenu("cloud-tree", Constants.IS_ROOT_PAGE);
             treeSubController($scope, Zookeeper);
@@ -41,6 +41,9 @@ solrAdminApp.controller('CloudController',
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
             nodesSubController($scope, Collections, System, Metrics);
+        } else if (view === "zkstatus") {
+            $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
+            zkStatusSubController($scope, ZookeeperStatus, false);
         }
     }
 );
@@ -404,13 +407,18 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               if (cores) {
                 for (coreId in cores) {
                   var core = cores[coreId];
-                  var keyName = "solr.core." + core['core'].replace('_', '.').replace('_', '.');
+                  var keyName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica_?[ntp]?\d+)/, '\$1.\$2.\$4');
                   var nodeMetric = m.metrics[keyName];
                   var size = nodeMetric['INDEX.sizeInBytes'];
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  core['label'] = core['core'].replace('_shard', '_s').replace(/_replica_./, 'r');
+                  core['label'] = core['core'].replace(/(.*?)_shard((\d+_?)+)_replica_?[ntp]?(\d+)/, '\$1_s\$2r\$4');
+                  if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
+                    // If core state is not active, display the real state, or if shard is inactive, display that
+                    var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
+                    core['label'] += "_(" + labelState + ")";
+                  }
                   indexSizeTotal += size;
                   var numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
                   numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
@@ -486,7 +494,39 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.initClusterState();
 };
 
+var zkStatusSubController = function($scope, ZookeeperStatus) {
+    $scope.showZkStatus = true;
+    $scope.showNodes = false;
+    $scope.showTree = false;
+    $scope.showGraph = false;
+    $scope.tree = {};
+    $scope.showData = false;
+    $scope.showDetails = false;
+    
+    $scope.toggleDetails = function() {
+      $scope.showDetails = !$scope.showDetails === true;
+    };
+
+    $scope.initZookeeper = function() {
+      ZookeeperStatus.monitor({}, function(data) {
+        $scope.zkState = data.zkStatus;
+        $scope.mainKeys = ["ok", "clientPort", "zk_server_state", "zk_version", 
+          "zk_approximate_data_size", "zk_znode_count", "zk_num_alive_connections"];
+        $scope.detailKeys = ["dataDir", "dataLogDir", 
+          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
+          "zk_packets_sent", "zk_packets_received",
+          "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
+        $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort"];
+        $scope.ensembleDetailKeys = ["peerType", "electionAlg", "initLimit", "syncLimit",
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs"];
+      });
+    };
+
+    $scope.initZookeeper();
+};
+
 var treeSubController = function($scope, Zookeeper) {
+    $scope.showZkStatus = false;
     $scope.showTree = true;
     $scope.showGraph = false;
     $scope.tree = {};
@@ -545,6 +585,7 @@ function secondsForHumans ( seconds ) {
 }
 
 var graphSubController = function ($scope, Zookeeper, isRadial) {
+    $scope.showZkStatus = false;
     $scope.showTree = false;
     $scope.showGraph = true;
 

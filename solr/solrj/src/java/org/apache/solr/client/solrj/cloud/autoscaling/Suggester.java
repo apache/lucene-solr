@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.common.ConditionalMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
@@ -70,6 +71,10 @@ public abstract class Suggester implements MapWriter {
     this.session = session.copy();
   }
 
+  boolean isLessDeviant(double[] previousBest, double[] newDeviation) {
+    if (previousBest == null) return true;
+    return newDeviation[0] < previousBest[0];
+  }
   public Suggester hint(Hint hint, Object value) {
     hint.validator.accept(value);
     if (hint.multiValued) {
@@ -203,7 +208,9 @@ public abstract class Suggester implements MapWriter {
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put("type", violation == null ? "improvement" : "violation");
-      ew.putIfNotNull("violation", violation);
+      ew.putIfNotNull("violation",
+          new ConditionalMapWriter(violation,
+              (k, v) -> !"violatingReplicas".equals(k)));
       ew.put("operation", operation);
     }
 
@@ -237,6 +244,7 @@ public abstract class Suggester implements MapWriter {
 
   boolean containsNewErrors(List<Violation> violations) {
     boolean isTxOpen = session.transaction != null && session.transaction.isOpen();
+    if (violations.size() > originalViolations.size()) return true;
     for (Violation v : violations) {
       //the computed value can change over time. So it's better to evaluate it in the end
       if (isTxOpen && v.getClause().hasComputedValue) continue;
@@ -272,12 +280,12 @@ public abstract class Suggester implements MapWriter {
     }
   }
 
-  List<Violation> testChangedMatrix(boolean strict, Policy.Session session) {
+  List<Violation> testChangedMatrix(boolean strict, Policy.Session session, double[] deviation) {
     Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       if (strict || clause.strict) {
-        List<Violation> errs = clause.test(session);
+        List<Violation> errs = clause.test(session, deviation);
         if (!errs.isEmpty()) {
           errors.addAll(errs);
         }

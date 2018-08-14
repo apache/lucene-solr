@@ -161,13 +161,19 @@ Reporter configurations are specified in `solr.xml` file in `<metrics><reporter>
     <int name="port">9999</int>
     <int name="period">60</int>
   </reporter>
-  <reporter name="collection1Updates" registry="solr.core.collection1" class="org.apache.solr.metrics.reporters.SolrSlf4jReporter">
-    <int name="period">300</int>
-    <str name="prefix">example</str>
-    <str name="logger">updatesLogger</str>
-    <str name="filter">QUERYHANDLER./update</str>
-  </reporter>
- </metrics>
+  <metrics>
+    <reporter name="log_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrSlf4jReporter">
+      <int name="period">60</int>
+      <str name="filter">QUERY./select.requestTimes</str>
+      <str name="filter">QUERY./get.requestTimes</str>
+      <str name="filter">UPDATE./update.requestTimes</str>
+      <str name="filter">UPDATE./update.clientErrors</str>
+      <str name="filter">UPDATE./update.errors</str>
+      <str name="filter">SEARCHER.new.time</str>
+      <str name="filter">SEARCHER.new.warmup</str>
+      <str name="logger">org.apache.solr.metrics.reporters.SolrSlf4jReporter</str>
+    </reporter>
+  </metrics>
 ...
 </solr>
 ----
@@ -241,12 +247,46 @@ You can start a local MBean server with a system property at startup by adding `
 
 The SLF4J Reporter uses the `org.apache.solr.metrics.reporters.SolrSlf4jReporter` class.
 
-It takes the following arguments, in addition to the common arguments <<Reporter Arguments,above>>.
+It takes the following arguments, in addition to common arguments described <<Reporter Arguments,above>>.
 
 `logger`::
 The name of the logger to use. Default is empty, in which case the group (or the initial part of the registry name that identifies a metrics group) will be used if specified in the plugin configuration.
 
 Users can specify logger name (and the corresponding logger configuration in e.g., Log4j configuration) to output metrics-related logging to separate file(s), which can then be processed by external applications.
+Here is an example for configuring the default `log4j2.xml` which ships in Solr. This can be used in conjunction with the `solr.xml` example provided earlier in this page to configure the SolrSlf4jReporter:
+
+[source,xml]
+----
+<Configuration>
+  <Appenders>
+  ...
+    <RollingFile
+        name="MetricsFile"
+        fileName="${sys:solr.log.dir}/solr_metrics.log"
+        filePattern="${sys:solr.log.dir}/solr_metrics.log.%i" >
+      <PatternLayout>
+        <Pattern>
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %m%n
+        </Pattern>
+      </PatternLayout>
+      <Policies>
+        <OnStartupTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="32 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+  ...
+  </Appenders>
+
+  <Loggers>
+  ...
+    <Logger name="org.apache.solr.metrics.reporters.SolrSlf4jReporter" level="info" additivity="false">
+      <AppenderRef ref="MetricsFile"/>
+    </Logger>
+  ...
+  </Loggers>
+</Configuration>
+----
 
 Each log line produced by this reporter consists of configuration-specific fields, and a message that follows this format:
 

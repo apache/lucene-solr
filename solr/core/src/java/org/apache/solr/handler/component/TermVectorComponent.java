@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,15 +27,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -44,11 +44,14 @@ import org.apache.solr.common.params.TermVectorParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.DocsStreamer;
+import org.apache.solr.response.RetrieveFieldsOptimizer;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SolrPluginUtils;
@@ -262,54 +265,49 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
     //Only load the id field to get the uniqueKey of that
     //field
-
-    final String finalUniqFieldName = uniqFieldName;
-
-    final List<String> uniqValues = new ArrayList<>();
-    
-    // TODO: is this required to be single-valued? if so, we should STOP
-    // once we find it...
-    final StoredFieldVisitor getUniqValue = new StoredFieldVisitor() {
-      @Override 
-      public void stringField(FieldInfo fieldInfo, byte[] bytes) {
-        uniqValues.add(new String(bytes, StandardCharsets.UTF_8));
-      }
-
-      @Override 
-      public void intField(FieldInfo fieldInfo, int value) {
-        uniqValues.add(Integer.toString(value));
-      }
-
-      @Override 
-      public void longField(FieldInfo fieldInfo, long value) {
-        uniqValues.add(Long.toString(value));
-      }
-
-      @Override
-      public Status needsField(FieldInfo fieldInfo) {
-        return (fieldInfo.name.equals(finalUniqFieldName)) ? Status.YES : Status.NO;
-      }
-    };
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
+    SolrReturnFields srf = new SolrReturnFields(uniqFieldName, rb.req);
+    RetrieveFieldsOptimizer retrieveFieldsOptimizer = RetrieveFieldsOptimizer.create(docFetcher, srf);
 
     while (iter.hasNext()) {
       Integer docId = iter.next();
       NamedList<Object> docNL = new NamedList<>();
 
       if (keyField != null) {
-        reader.document(docId, getUniqValue);
-        String uniqVal = null;
-        if (uniqValues.size() != 0) {
-          uniqVal = uniqValues.get(0);
-          uniqValues.clear();
-          docNL.add("uniqueKey", uniqVal);
-          termVectors.add(uniqVal, docNL);
+        SolrDocument sdoc = null;
+        try {
+          if (retrieveFieldsOptimizer.returnStoredFields()) {
+            Document doc = docFetcher.doc(docId, retrieveFieldsOptimizer.getStoredFields());
+            // make sure to use the schema from the searcher and not the request (cross-core)
+            sdoc = DocsStreamer.convertLuceneDocToSolrDoc(doc, searcher.getSchema(), srf);
+          } else {
+            // no need to get stored fields of the document, see SOLR-5968
+            sdoc = new SolrDocument();
+          }
+
+          // decorate the document with non-stored docValues fields
+          if (retrieveFieldsOptimizer.returnDVFields()) {
+            docFetcher.decorateDocValueFields(sdoc, docId, retrieveFieldsOptimizer.getDvFields());
+          }
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading document with docId " + docId, e);
         }
+        Object val = sdoc.getFieldValue(uniqFieldName);
+        String uniqVal = "";
+        if (val instanceof StoredField) {
+          uniqVal = ((StoredField) val).stringValue();
+        } else {
+          uniqVal = val.toString();
+        }
+
+        docNL.add("uniqueKey", uniqVal);
+        termVectors.add(uniqVal, docNL);
       } else {
         // support for schemas w/o a unique key,
         termVectors.add("doc-" + docId, docNL);
       }
 
-      if ( null != fields ) {
+      if (null != fields) {
         for (Map.Entry<String, FieldOptions> entry : fieldOptions.entrySet()) {
           final String field = entry.getKey();
           final Terms vector = reader.getTermVector(docId, field);
@@ -321,11 +319,14 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       } else {
         // extract all fields
         final Fields vectors = reader.getTermVectors(docId);
-        for (String field : vectors) {
-          Terms terms = vectors.terms(field);
-          if (terms != null) {
-            TermsEnum termsEnum = terms.iterator();
-            mapOneVector(docNL, allFields, reader, docId, termsEnum, field);
+        // There can be no documents with vectors
+        if (vectors != null) {
+          for (String field : vectors) {
+            Terms terms = vectors.terms(field);
+            if (terms != null) {
+              TermsEnum termsEnum = terms.iterator();
+              mapOneVector(docNL, allFields, reader, docId, termsEnum, field);
+            }
           }
         }
       }
