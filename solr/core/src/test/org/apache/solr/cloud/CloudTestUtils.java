@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -118,7 +119,7 @@ public class CloudTestUtils {
    * @param expectedReplicas expected number of active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
-    return clusterShape(expectedShards, expectedReplicas, false);
+    return clusterShape(expectedShards, expectedReplicas, false, false);
   }
 
   /**
@@ -129,30 +130,46 @@ public class CloudTestUtils {
    * @param expectedShards expected number of shards
    * @param expectedReplicas expected number of active replicas
    * @param withInactive if true then count also inactive shards
+   * @param requireLeaders if true then require that each shard has a leader
    */
-  public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas, boolean withInactive) {
+  public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas, boolean withInactive,
+                                                      boolean requireLeaders) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) {
-        log.debug("-- null collection");
+        log.trace("-- null collection");
         return false;
       }
       Collection<Slice> slices = withInactive ? collectionState.getSlices() : collectionState.getActiveSlices();
       if (slices.size() != expectedShards) {
-        log.debug("-- wrong number of active slices, expected=" + expectedShards + ", found=" + collectionState.getSlices().size());
+        log.trace("-- wrong number of active slices, expected={}, found={}", expectedShards, collectionState.getSlices().size());
         return false;
       }
+      Set<String> leaderless = new HashSet<>();
       for (Slice slice : slices) {
         int activeReplicas = 0;
+        if (requireLeaders && slice.getLeader() == null) {
+          leaderless.add(slice.getName());
+          continue;
+        }
+        // skip other checks, we're going to fail anyway
+        if (!leaderless.isEmpty()) {
+          continue;
+        }
         for (Replica replica : slice) {
           if (replica.isActive(liveNodes))
             activeReplicas++;
         }
         if (activeReplicas != expectedReplicas) {
-          log.debug("-- wrong number of active replicas in slice " + slice.getName() + ", expected=" + expectedReplicas + ", found=" + activeReplicas);
+          log.trace("-- wrong number of active replicas in slice {}, expected={}, found={}", slice.getName(), expectedReplicas, activeReplicas);
           return false;
         }
       }
-      return true;
+      if (leaderless.isEmpty()) {
+        return true;
+      } else {
+        log.trace("-- shards without leaders: {}", leaderless);
+        return false;
+      }
     };
   }
 }

@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -56,6 +57,7 @@ import org.apache.solr.cloud.autoscaling.CapturedEvent;
 import org.apache.solr.cloud.autoscaling.TriggerValidationException;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
@@ -86,6 +88,10 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   private static CountDownLatch actionStarted;
   private static CountDownLatch actionInterrupted;
   private static CountDownLatch actionCompleted;
+  private static CountDownLatch triggerStartedLatch;
+  private static CountDownLatch triggerFinishedLatch;
+  private static AtomicInteger triggerStartedCount;
+  private static AtomicInteger triggerFinishedCount;
   private static AtomicBoolean triggerFired;
   private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
 
@@ -131,12 +137,22 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     actionStarted = new CountDownLatch(1);
     actionInterrupted = new CountDownLatch(1);
     actionCompleted = new CountDownLatch(1);
+    triggerStartedLatch = new CountDownLatch(1);
+    triggerFinishedLatch = new CountDownLatch(1);
+    triggerStartedCount = new AtomicInteger();
+    triggerFinishedCount = new AtomicInteger();
     events.clear();
     listenerEvents.clear();
     while (cluster.getClusterStateProvider().getLiveNodes().size() < 2) {
       // perhaps a test stopped a node but didn't start it back
       // lets start a node
       cluster.simAddNode();
+    }
+    // do this in advance if missing
+    if (!cluster.getSimClusterStateProvider().simListCollections().contains(CollectionAdminParams.SYSTEM_COLL)) {
+      cluster.getSimClusterStateProvider().createSystemCollection();
+      CloudTestUtils.waitForState(cluster, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
+          CloudTestUtils.clusterShape(1, 1, false, true));
     }
   }
 
@@ -1152,15 +1168,33 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
     }
   }
 
+  public static class FinishTriggerAction extends TriggerActionBase {
+    @Override
+    public void process(TriggerEvent event, ActionContext context) throws Exception {
+      triggerFinishedCount.incrementAndGet();
+      triggerFinishedLatch.countDown();
+    }
+  }
+
+  public static class StartTriggerAction extends TriggerActionBase {
+    @Override
+    public void process(TriggerEvent event, ActionContext context) throws Exception {
+      triggerStartedLatch.countDown();
+      triggerStartedCount.incrementAndGet();
+    }
+  }
+
+
+
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String COLL1 = "collection1";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
         "conf", 1, 2);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cluster, COLL1, 10, TimeUnit.SECONDS, CloudTestUtils.clusterShape(1, 2));
+    CloudTestUtils.waitForState(cluster, COLL1, 10, TimeUnit.SECONDS, CloudTestUtils.clusterShape(1, 2, false, true));
 
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
@@ -1169,10 +1203,13 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'enabled' : true," +
         "'aboveRate' : 1.0," +
+        "'aboveNodeRate' : 1.0," +
         "'actions' : [" +
-        "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}" +
-        "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
+        "{'name':'start','class':'" + StartTriggerAction.class.getName() + "'}," +
+        "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
+        "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
         "{'name':'test','class':'" + TestSearchRateAction.class.getName() + "'}" +
+        "{'name':'finish','class':'" + FinishTriggerAction.class.getName() + "'}," +
         "]" +
         "}}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
@@ -1200,8 +1237,10 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
 
     cluster.getSimClusterStateProvider().simSetCollectionValue(COLL1, "QUERY./select.requestTimes:1minRate", 500, false, true);
 
-    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
-    assertTrue("The trigger did not fire at all", await);
+    boolean await = triggerStartedLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    assertTrue("The trigger did not start in time", await);
+    await = triggerFinishedLatch.await(60000 / SPEED, TimeUnit.MILLISECONDS);
+    assertTrue("The trigger did not finish in time", await);
     // wait for listener to capture the SUCCEEDED stage
     cluster.getTimeSource().sleep(5000);
     List<CapturedEvent> events = listenerEvents.get("srt");

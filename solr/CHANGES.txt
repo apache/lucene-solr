@@ -233,6 +233,8 @@ Bug Fixes
 
 * SOLR-12541: Metrics handler throws an error if there are transient cores. (ab)
 
+* SOLR-12470: Search Rate Trigger multiple bug fixes, improvements and documentation updates. (ab)
+
 Optimizations
 ----------------------
 

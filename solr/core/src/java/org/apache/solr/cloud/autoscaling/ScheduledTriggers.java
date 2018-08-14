@@ -308,7 +308,7 @@ public class ScheduledTriggers implements Closeable {
                   action.process(event, actionContext);
                 } catch (Exception e) {
                   triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED, action.getName(), actionContext, e, null);
-                  throw new Exception("Error executing action: " + action.getName() + " for trigger event: " + event, e);
+                  throw new TriggerActionException(event.getSource(), action.getName(), "Error processing action for trigger event: " + event, e);
                 }
                 List<String> afterActions = (List<String>) actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.AFTER_ACTION.toString(), k -> new ArrayList<String>());
                 afterActions.add(action.getName());
@@ -319,8 +319,11 @@ public class ScheduledTriggers implements Closeable {
                 assert ev.getId().equals(event.getId());
               }
               triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.SUCCEEDED);
-            } catch (Exception e) {
+            } catch (TriggerActionException e) {
               log.warn("Exception executing actions", e);
+            } catch (Exception e) {
+              triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED);
+              log.warn("Unhandled exception executing actions", e);
             } finally {
               cooldownStart.set(cloudManager.getTimeSource().getTimeNs());
               hasPendingActions.set(false);

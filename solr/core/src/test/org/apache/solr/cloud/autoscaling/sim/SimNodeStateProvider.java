@@ -30,6 +30,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -230,6 +232,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     }
   }
 
+  private static final Pattern REGISTRY_PATTERN = Pattern.compile("^solr\\.core\\.([\\w.-_]+?)\\.(shard[\\d_]+?)\\.(replica.*)");
   /**
    * Simulate getting replica metrics values. This uses per-replica properties set in
    * {@link SimClusterStateProvider#simSetCollectionValue(String, String, Object, boolean, boolean)} and
@@ -257,14 +260,15 @@ public class SimNodeStateProvider implements NodeStateProvider {
         // skip - this is probably solr.node or solr.jvm metric
         continue;
       }
-      String[] collParts = parts[1].substring(10).split("\\.");
-      if (collParts.length != 3) {
+      Matcher m = REGISTRY_PATTERN.matcher(parts[1]);
+
+      if (!m.matches()) {
         LOG.warn("Invalid registry name: " + parts[1]);
         continue;
       }
-      String collection = collParts[0];
-      String shard = collParts[1];
-      String replica = collParts[2];
+      String collection = m.group(1);
+      String shard = m.group(2);
+      String replica = m.group(3);
       String key = parts.length > 3 ? parts[2] + ":" + parts[3] : parts[2];
       replicas.forEach(r -> {
         if (r.getCollection().equals(collection) && r.getShard().equals(shard) && r.getCore().endsWith(replica)) {
