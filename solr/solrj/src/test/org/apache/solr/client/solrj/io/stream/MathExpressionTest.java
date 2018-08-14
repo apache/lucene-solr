@@ -3296,32 +3296,28 @@ public class MathExpressionTest extends SolrCloudTestCase {
     Map high = out.get(0);
     assertEquals(((String)high.get("id")), "1");
 
-    assertEquals(((Number)high.get("cumulativeProbablity")).doubleValue(), 0.9772498680518208, 0.0 );
-    assertEquals(((Number)high.get("highOutlierValue")).doubleValue(), 110.0, 0.0);
-    assertEquals(((Boolean)high.get("highOutlier")).booleanValue(), true);
+    assertEquals(((Number)high.get("cumulativeProbablity_d")).doubleValue(), 0.9772498680518208, 0.0 );
+    assertEquals(((Number)high.get("highOutlierValue_d")).doubleValue(), 110.0, 0.0);
 
 
     Map low = out.get(1);
     assertEquals(((String)low.get("id")), "2");
-    assertEquals(((Number)low.get("cumulativeProbablity")).doubleValue(), 0.022750131948179167, 0.0 );
-    assertEquals(((Number)low.get("lowOutlierValue")).doubleValue(), 90, 0.0);
-    assertEquals(((Boolean)low.get("lowOutlier")).booleanValue(), true);
+    assertEquals(((Number)low.get("cumulativeProbablity_d")).doubleValue(), 0.022750131948179167, 0.0 );
+    assertEquals(((Number)low.get("lowOutlierValue_d")).doubleValue(), 90, 0.0);
 
 
     List<Map> out1 = (List<Map>)tuples.get(0).get("f");
     assertEquals(out1.size(), 2);
     Map high1 = out1.get(0);
     assert(high1.get("id") == null);
-    assertEquals(((Number)high1.get("cumulativeProbablity")).doubleValue(), 0.9772498680518208, 0.0 );
-    assertEquals(((Number)high1.get("highOutlierValue")).doubleValue(), 110.0, 0.0);
-    assertEquals(((Boolean)high1.get("highOutlier")).booleanValue(), true);
+    assertEquals(((Number)high1.get("cumulativeProbablity_d")).doubleValue(), 0.9772498680518208, 0.0 );
+    assertEquals(((Number)high1.get("highOutlierValue_d")).doubleValue(), 110.0, 0.0);
 
 
     Map low1 = out1.get(1);
     assert(low1.get("id") == null);
-    assertEquals(((Number)low1.get("cumulativeProbablity")).doubleValue(), 0.022750131948179167, 0.0 );
-    assertEquals(((Number)low1.get("lowOutlierValue")).doubleValue(), 90, 0.0);
-    assertEquals(((Boolean)low1.get("lowOutlier")).booleanValue(), true);
+    assertEquals(((Number)low1.get("cumulativeProbablity_d")).doubleValue(), 0.022750131948179167, 0.0 );
+    assertEquals(((Number)low1.get("lowOutlierValue_d")).doubleValue(), 90, 0.0);
 
   }
 
