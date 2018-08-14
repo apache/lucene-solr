@@ -27,7 +27,6 @@ class ConjunctionScorer extends Scorer {
   final DocIdSetIterator disi;
   final Scorer[] scorers;
   final Collection<Scorer> required;
-  final MaxScoreSumPropagator maxScorePropagator;
 
   /** Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code required}. */
   ConjunctionScorer(Weight weight, Collection<Scorer> required, Collection<Scorer> scorers) throws IOException {
@@ -36,7 +35,6 @@ class ConjunctionScorer extends Scorer {
     this.disi = ConjunctionDISI.intersectScorers(required);
     this.scorers = scorers.toArray(new Scorer[scorers.size()]);
     this.required = required;
-    this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
   }
 
   @Override

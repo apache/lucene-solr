@@ -140,6 +140,9 @@ Optimizations
 * LUCENE-8204: Boolean queries with a mix of required and optional clauses are
   now faster if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
 
+* LUCENE-8448: Boolean queries now propagates the mininum score to their sub-scorers.
+  (Jim Ferenczi, Adrien Grand)
+
 ======================= Lucene 7.5.0 =======================
 
 API Changes:

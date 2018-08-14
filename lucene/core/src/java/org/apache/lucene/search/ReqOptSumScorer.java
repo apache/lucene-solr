@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -34,6 +35,7 @@ class ReqOptSumScorer extends Scorer {
   private final DocIdSetIterator approximation;
   private final TwoPhaseIterator twoPhase;
 
+  private final MaxScoreSumPropagator maxScorePropagator;
   private float minScore = 0;
   private float reqMaxScore;
   private boolean optIsRequired;
@@ -49,6 +51,11 @@ class ReqOptSumScorer extends Scorer {
     super(reqScorer.weight);
     assert reqScorer != null;
     assert optScorer != null;
+    if (scoreMode == ScoreMode.TOP_SCORES) {
+      this.maxScorePropagator = new MaxScoreSumPropagator(Arrays.asList(reqScorer, optScorer));
+    } else {
+      this.maxScorePropagator = null;
+    }
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
 
@@ -289,6 +296,7 @@ class ReqOptSumScorer extends Scorer {
     if (reqMaxScore < minScore) {
       optIsRequired = true;
     }
+    maxScorePropagator.setMinCompetitiveScore(minScore);
   }
 
   @Override
