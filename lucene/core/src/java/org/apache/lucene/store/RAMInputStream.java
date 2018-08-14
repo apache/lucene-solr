@@ -22,9 +22,18 @@ import java.io.IOException;
 
 import static org.apache.lucene.store.RAMOutputStream.BUFFER_SIZE;
 
-/** A memory-resident {@link IndexInput} implementation. 
- *  
- *  @lucene.internal */
+/** 
+ * A memory-resident {@link IndexInput} implementation. 
+ *
+ * @see ByteBuffersDataInput
+ * @see ByteBuffersIndexInput
+ *
+ * @lucene.internal 
+ * @deprecated This class uses inefficient synchronization and is discouraged
+ * in favor of {@link MMapDirectory}. It will be removed in future versions 
+ * of Lucene.
+ */
+@Deprecated
 public class RAMInputStream extends IndexInput implements Cloneable {
 
   private final RAMFile file;

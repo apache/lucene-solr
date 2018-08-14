@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -23,23 +22,26 @@ import org.apache.lucene.util.UnicodeUtil;
 
 public final class ByteBuffersDataOutput extends DataOutput implements Accountable {
   private final static ByteBuffer EMPTY = ByteBuffer.allocate(0);
-  private final static List<ByteBuffer> EMPTY_LIST = Arrays.asList(EMPTY);
   private final static byte [] EMPTY_BYTE_ARRAY = {};
 
-  public final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = (size) -> {
-    return ByteBuffer.allocate(size);
+  public final static IntFunction<ByteBuffer> ALLOCATE_BB_ON_HEAP = ByteBuffer::allocate;
+
+  /**
+   * A singleton instance of "no-reuse" buffer strategy.
+   */
+  public final static Consumer<ByteBuffer> NO_REUSE = (bb) -> {
+    throw new RuntimeException("reset() is not allowed on this buffer.");
   };
-  
-  public final static class BufferReuser implements IntFunction<ByteBuffer> {
+
+  public final static class ByteBufferRecycler {
     private final ArrayDeque<ByteBuffer> reuse = new ArrayDeque<>();
     private final IntFunction<ByteBuffer> delegate;
 
-    public BufferReuser(IntFunction<ByteBuffer> delegate) {
+    public ByteBufferRecycler(IntFunction<ByteBuffer> delegate) {
       this.delegate = Objects.requireNonNull(delegate);
     }
 
-    @Override
-    public ByteBuffer apply(int size) {
+    public ByteBuffer allocate(int size) {
       while (!reuse.isEmpty()) {
         ByteBuffer bb = reuse.removeFirst();
         // If we don't have a buffer of exactly the requested size, discard it.
@@ -50,7 +52,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
 
       return delegate.apply(size);        
     }
-    
+
     public void reuse(ByteBuffer buffer) {
       buffer.rewind();
       reuse.addLast(buffer);
@@ -58,11 +60,11 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   }
 
   public final static int DEFAULT_MIN_BITS_PER_BLOCK = 10; // 1024 B
-  public final static int DEFAULT_MAX_BITS_PER_BLOCK = 25; //   32 MB
+  public final static int DEFAULT_MAX_BITS_PER_BLOCK = 26; //   64 MB
 
   /**
    * Maximum number of blocks at the current {@link #blockBits} block size
-   * before we increase block sizes.
+   * before we increase the block size (and thus decrease the number of blocks).
    */
   final static int MAX_BLOCKS_BEFORE_BLOCK_EXPANSION = 100;
 
@@ -75,6 +77,11 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * {@link ByteBuffer} supplier.
    */
   private final IntFunction<ByteBuffer> blockAllocate;
+
+  /**
+   * {@link ByteBuffer} recycler on {@link #reset}.
+   */
+  private final Consumer<ByteBuffer> blockReuse;
 
   /**
    * Current block size: {@code 2^bits}.
@@ -92,16 +99,17 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   private ByteBuffer currentBlock = EMPTY;
 
   public ByteBuffersDataOutput(long expectedSize) {
-    this(computeBlockSizeBitsFor(expectedSize), DEFAULT_MAX_BITS_PER_BLOCK, ALLOCATE_BB_ON_HEAP);
+    this(computeBlockSizeBitsFor(expectedSize), DEFAULT_MAX_BITS_PER_BLOCK, ALLOCATE_BB_ON_HEAP, NO_REUSE);
   }
 
   public ByteBuffersDataOutput() {
-    this(DEFAULT_MIN_BITS_PER_BLOCK, DEFAULT_MAX_BITS_PER_BLOCK, ALLOCATE_BB_ON_HEAP);
+    this(DEFAULT_MIN_BITS_PER_BLOCK, DEFAULT_MAX_BITS_PER_BLOCK, ALLOCATE_BB_ON_HEAP, NO_REUSE);
   }
 
   public ByteBuffersDataOutput(int minBitsPerBlock, 
                                int maxBitsPerBlock,
-                               IntFunction<ByteBuffer> blockAllocate) {
+                               IntFunction<ByteBuffer> blockAllocate,
+                               Consumer<ByteBuffer> blockReuse) {
     if (minBitsPerBlock < 10 ||
         minBitsPerBlock > maxBitsPerBlock ||
         maxBitsPerBlock > 31) {
@@ -113,6 +121,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     this.maxBitsPerBlock = maxBitsPerBlock;
     this.blockBits = minBitsPerBlock;
     this.blockAllocate = Objects.requireNonNull(blockAllocate, "Block allocator must not be null.");
+    this.blockReuse = Objects.requireNonNull(blockReuse, "Block reuse must not be null.");
   }
 
   @Override
@@ -164,9 +173,59 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   }
 
   /**
-   * Return a contiguous array with the current content written to the output.
+   * Return a list of read-only view of {@link ByteBuffer} blocks over the 
+   * current content written to the output.
    */
-  public byte[] toArray() {
+  public ArrayList<ByteBuffer> toBufferList() {
+    if (blocks.isEmpty()) {
+      return new ArrayList<>();
+    } else {
+      ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
+      for (ByteBuffer bb : blocks) {
+        bb = (ByteBuffer) bb.asReadOnlyBuffer().flip(); // cast for jdk8 (covariant in jdk9+) 
+        result.add(bb);
+      }
+      return result;
+    }
+  }
+
+  /**
+   * Returns a list of writeable blocks over the (source) content buffers.
+   * 
+   * This method returns the raw content of source buffers that may change over the lifetime 
+   * of this object (blocks can be recycled or discarded, for example). Most applications 
+   * should favor calling {@link #toBufferList()} which returns a read-only <i>view</i> over 
+   * the content of the source buffers.
+   * 
+   * The difference between {@link #toBufferList()} and {@link #toWriteableBufferList()} is that
+   * read-only view of source buffers will always return {@code false} from {@link ByteBuffer#hasArray()}
+   * (which sometimes may be required to avoid double copying).
+   */
+  public ArrayList<ByteBuffer> toWriteableBufferList() {
+    if (blocks.isEmpty()) {
+      return new ArrayList<>();
+    } else {
+      ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
+      for (ByteBuffer bb : blocks) {
+        bb = (ByteBuffer) bb.duplicate().flip(); // cast for jdk8 (covariant in jdk9+) 
+        result.add(bb);
+      }
+      return result;
+    }
+  }
+
+  /**
+   * Return a {@link ByteBuffersDataInput} for the set of current buffers ({@link #toBufferList()}). 
+   */
+  public ByteBuffersDataInput toDataInput() {
+    return new ByteBuffersDataInput(toBufferList());
+  }
+
+  /**
+   * Return a contiguous array with the current content written to the output. The returned
+   * array is always a copy (can be mutated).
+   */
+  public byte[] toArrayCopy() {
     if (blocks.size() == 0) {
       return EMPTY_BYTE_ARRAY;
     }
@@ -184,30 +243,6 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     }
     return arr;
   }  
-
-  /**
-   * Return a list of read-only {@link ByteBuffer} blocks over the 
-   * current content written to the output.
-   */
-  public ArrayList<ByteBuffer> toBufferList() {
-    if (blocks.isEmpty()) {
-      return new ArrayList<>(EMPTY_LIST);
-    } else {
-      ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
-      for (ByteBuffer bb : blocks) {
-        bb = (ByteBuffer) bb.asReadOnlyBuffer().flip(); // cast for jdk8 (covariant in jdk9+) 
-        result.add(bb);
-      }
-      return result;
-    }
-  }
-
-  /**
-   * Return a {@link ByteBuffersDataInput} for the set of current buffers ({@link #toBufferList()}). 
-   */
-  public ByteBuffersDataInput toDataInput() {
-    return new ByteBuffersDataInput(toBufferList());
-  }
 
   /**
    * Copy the current content of this object into another {@link DataOutput}.
@@ -339,18 +374,30 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
 
   /**
    * This method resets this object to a clean (zero-size) state and
-   * publishes any currently allocated buffers for reuse. 
-   * 
-   * The argument passed to this method may collect those existing buffers,
-   * rewind them and reuse them in the block allocator passed to the constructor.
+   * publishes any currently allocated buffers for reuse to the reuse strategy
+   * provided in the constructor.
    * 
    * Sharing byte buffers for reads and writes is dangerous and will very likely
    * lead to hard-to-debug issues, use with great care.
    */
-  public void reset(Consumer<? super ByteBuffer> reuseBuffers) {
-    blocks.stream().forEach(reuseBuffers);
+  public void reset() {
+    blocks.stream().forEach(blockReuse);
     blocks.clear();
     currentBlock = EMPTY;
+  }
+
+  /**
+   * @return Returns a new {@link ByteBuffersDataOutput} with the {@link #reset()} capability. 
+   */
+  // TODO: perhaps we can move it out to an utility class (as a supplier of preconfigured instances?) 
+  public static ByteBuffersDataOutput newResettableInstance() {
+    ByteBuffersDataOutput.ByteBufferRecycler reuser = new ByteBuffersDataOutput.ByteBufferRecycler(
+        ByteBuffersDataOutput.ALLOCATE_BB_ON_HEAP); 
+    return new ByteBuffersDataOutput(
+        ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
+        ByteBuffersDataOutput.DEFAULT_MAX_BITS_PER_BLOCK,
+        reuser::allocate,
+        reuser::reuse);
   }
 
   private int blockSize() {
@@ -371,21 +418,24 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     blocks.add(currentBlock);
   }
 
-  private void rewriteToBlockSize(int blockBits) {
-    assert blockBits <= maxBitsPerBlock;
+  private void rewriteToBlockSize(int targetBlockBits) {
+    assert targetBlockBits <= maxBitsPerBlock;
 
     // We copy over data blocks to an output with one-larger block bit size.
     // We also discard references to blocks as we're copying to allow GC to
     // clean up partial results in case of memory pressure.
-    ByteBuffersDataOutput cloned = new ByteBuffersDataOutput(blockBits, blockBits, blockAllocate);
+    ByteBuffersDataOutput cloned = new ByteBuffersDataOutput(targetBlockBits, targetBlockBits, blockAllocate, NO_REUSE);
     ByteBuffer block;
     while ((block = blocks.pollFirst()) != null) {
       block.flip();
       cloned.writeBytes(block);
+      if (blockReuse != NO_REUSE) {
+        blockReuse.accept(block);
+      }
     }
 
     assert blocks.isEmpty();
-    this.blockBits = blockBits;
+    this.blockBits = targetBlockBits;
     blocks.addAll(cloned.blocks);
   }
 
@@ -401,6 +451,8 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     return blockBits;
   }
 
+  // TODO: move this block-based conversion to UnicodeUtil.
+  
   private static final long HALF_SHIFT = 10;
   private static final int SURROGATE_OFFSET = 
       Character.MIN_SUPPLEMENTARY_CODE_POINT - 

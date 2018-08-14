@@ -29,13 +29,12 @@ import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -556,8 +555,8 @@ public class BKDWriter implements Closeable {
     return oneDimWriter.finish();
   }
 
-  // reused when writing leaf blocks
-  private final GrowableByteArrayDataOutput scratchOut = new GrowableByteArrayDataOutput(32*1024);
+  // Reused when writing leaf blocks
+  private final ByteBuffersDataOutput scratchOut = ByteBuffersDataOutput.newResettableInstance();
 
   private class OneDimensionBKDWriter {
 
@@ -673,7 +672,7 @@ public class BKDWriter implements Closeable {
 
       commonPrefixLengths[0] = prefix;
 
-      assert scratchOut.getPosition() == 0;
+      assert scratchOut.size() == 0;
       writeLeafBlockDocs(scratchOut, leafDocs, 0, leafCount);
       writeCommonPrefixes(scratchOut, commonPrefixLengths, leafValues);
 
@@ -691,7 +690,7 @@ public class BKDWriter implements Closeable {
           ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * packedBytesLength, leafCount * packedBytesLength),
           packedValues, leafDocs, 0);
       writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, leafCount, 0, packedValues);
-      out.writeBytes(scratchOut.getBytes(), 0, scratchOut.getPosition());
+      scratchOut.copyTo(out);
       scratchOut.reset();
     }
   }
@@ -1065,7 +1064,7 @@ public class BKDWriter implements Closeable {
     }
 
     /** Reused while packing the index */
-    RAMOutputStream writeBuffer = new RAMOutputStream();
+    ByteBuffersDataOutput writeBuffer = ByteBuffersDataOutput.newResettableInstance();
 
     // This is the "file" we append the byte[] to:
     List<byte[]> blocks = new ArrayList<>();
@@ -1086,19 +1085,17 @@ public class BKDWriter implements Closeable {
   }
 
   /** Appends the current contents of writeBuffer as another block on the growing in-memory file */
-  private int appendBlock(RAMOutputStream writeBuffer, List<byte[]> blocks) throws IOException {
-    int pos = Math.toIntExact(writeBuffer.getFilePointer());
-    byte[] bytes = new byte[pos];
-    writeBuffer.writeTo(bytes, 0);
+  private int appendBlock(ByteBuffersDataOutput writeBuffer, List<byte[]> blocks) throws IOException {
+    byte[] block = writeBuffer.toArrayCopy();
+    blocks.add(block);
     writeBuffer.reset();
-    blocks.add(bytes);
-    return pos;
+    return block.length;
   }
 
   /**
    * lastSplitValues is per-dimension split value previously seen; we use this to prefix-code the split byte[] on each inner node
    */
-  private int recursePackIndex(RAMOutputStream writeBuffer, long[] leafBlockFPs, byte[] splitPackedValues, long minBlockFP, List<byte[]> blocks,
+  private int recursePackIndex(ByteBuffersDataOutput writeBuffer, long[] leafBlockFPs, byte[] splitPackedValues, long minBlockFP, List<byte[]> blocks,
                                int nodeID, byte[] lastSplitValues, boolean[] negativeDeltas, boolean isLeft) throws IOException {
     if (nodeID >= leafBlockFPs.length) {
       int leafID = nodeID - leafBlockFPs.length;
@@ -1197,9 +1194,8 @@ public class BKDWriter implements Closeable {
       } else {
         assert leftNumBytes == 0: "leftNumBytes=" + leftNumBytes;
       }
-      int numBytes2 = Math.toIntExact(writeBuffer.getFilePointer());
-      byte[] bytes2 = new byte[numBytes2];
-      writeBuffer.writeTo(bytes2, 0);
+      
+      byte[] bytes2 = writeBuffer.toArrayCopy();
       writeBuffer.reset();
       // replace our placeholder:
       blocks.set(idxSav, bytes2);
@@ -1214,7 +1210,7 @@ public class BKDWriter implements Closeable {
 
       assert Arrays.equals(lastSplitValues, cmp);
       
-      return numBytes + numBytes2 + leftNumBytes + rightNumBytes;
+      return numBytes + bytes2.length + leftNumBytes + rightNumBytes;
     }
   }
 
@@ -1537,7 +1533,7 @@ public class BKDWriter implements Closeable {
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
 
-      assert scratchOut.getPosition() == 0;
+      assert scratchOut.size() == 0;
 
       // Write doc IDs
       int[] docIDs = spareDocIds;
@@ -1563,10 +1559,8 @@ public class BKDWriter implements Closeable {
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
       writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues);
-      
-      out.writeBytes(scratchOut.getBytes(), 0, scratchOut.getPosition());
+      scratchOut.copyTo(out);
       scratchOut.reset();
-
     } else {
       // inner node
 

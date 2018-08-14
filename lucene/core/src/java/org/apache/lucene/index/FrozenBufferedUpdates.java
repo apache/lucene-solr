@@ -41,7 +41,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.ByteArrayDataInput;
-import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -151,45 +151,43 @@ final class FrozenBufferedUpdates {
     throws IOException {
     // TODO: we could do better here, e.g. collate the updates by field
     // so if you are updating 2 fields interleaved we don't keep writing the field strings
-    try (RAMOutputStream out = new RAMOutputStream()) {
-      String lastTermField = null;
-      String lastUpdateField = null;
-      for (LinkedHashMap<Term, T> updates : dvUpdates.values()) {
-        updateSizeConsumer.accept(updates.size());
-        for (T update : updates.values()) {
-          int code = update.term.bytes().length << 3;
 
-          String termField = update.term.field();
-          if (termField.equals(lastTermField) == false) {
-            code |= 1;
-          }
-          String updateField = update.field;
-          if (updateField.equals(lastUpdateField) == false) {
-            code |= 2;
-          }
-          if (update.hasValue()) {
-            code |= 4;
-          }
-          out.writeVInt(code);
-          out.writeVInt(update.docIDUpto);
-          if (termField.equals(lastTermField) == false) {
-            out.writeString(termField);
-            lastTermField = termField;
-          }
-          if (updateField.equals(lastUpdateField) == false) {
-            out.writeString(updateField);
-            lastUpdateField = updateField;
-          }
-          out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
-          if (update.hasValue()) {
-            update.writeTo(out);
-          }
+    ByteBuffersDataOutput out = new ByteBuffersDataOutput();
+    String lastTermField = null;
+    String lastUpdateField = null;
+    for (LinkedHashMap<Term, T> updates : dvUpdates.values()) {
+      updateSizeConsumer.accept(updates.size());
+      for (T update : updates.values()) {
+        int code = update.term.bytes().length << 3;
+
+        String termField = update.term.field();
+        if (termField.equals(lastTermField) == false) {
+          code |= 1;
+        }
+        String updateField = update.field;
+        if (updateField.equals(lastUpdateField) == false) {
+          code |= 2;
+        }
+        if (update.hasValue()) {
+          code |= 4;
+        }
+        out.writeVInt(code);
+        out.writeVInt(update.docIDUpto);
+        if (termField.equals(lastTermField) == false) {
+          out.writeString(termField);
+          lastTermField = termField;
+        }
+        if (updateField.equals(lastUpdateField) == false) {
+          out.writeString(updateField);
+          lastUpdateField = updateField;
+        }
+        out.writeBytes(update.term.bytes().bytes, update.term.bytes().offset, update.term.bytes().length);
+        if (update.hasValue()) {
+          update.writeTo(out);
         }
       }
-      byte[] bytes = new byte[(int) out.getFilePointer()];
-      out.writeTo(bytes, 0);
-      return bytes;
     }
+    return out.toArrayCopy();
   }
 
   /** Returns the {@link SegmentCommitInfo} that this packet is supposed to apply its deletes to, or null

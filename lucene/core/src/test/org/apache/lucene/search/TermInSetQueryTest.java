@@ -44,7 +44,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
-import org.junit.Ignore;
 
 public class TermInSetQueryTest extends LuceneTestCase {
 
@@ -174,10 +173,9 @@ public class TermInSetQueryTest extends LuceneTestCase {
     QueryUtils.checkEqual(query1, query2);
   }
 
-  @Ignore("NOCOMMIT: does not pass currently.")
   public void testRamBytesUsed() {
     List<BytesRef> terms = new ArrayList<>();
-    final int numTerms = 1000 + random().nextInt(1000);
+    final int numTerms = 10000 + random().nextInt(1000);
     for (int i = 0; i < numTerms; ++i) {
       terms.add(new BytesRef(RandomStrings.randomUnicodeOfLength(random(), 10)));
     }
@@ -185,7 +183,7 @@ public class TermInSetQueryTest extends LuceneTestCase {
     final long actualRamBytesUsed = RamUsageTester.sizeOf(query);
     final long expectedRamBytesUsed = query.ramBytesUsed();
     // error margin within 5%
-    assertEquals(actualRamBytesUsed, expectedRamBytesUsed, actualRamBytesUsed / 20);
+    assertEquals(expectedRamBytesUsed, actualRamBytesUsed, actualRamBytesUsed / 20);
   }
 
   private static class TermsCountingDirectoryReaderWrapper extends FilterDirectoryReader {

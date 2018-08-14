@@ -27,7 +27,9 @@ import org.apache.lucene.util.UnicodeUtil;
  * A {@link DataOutput} that can be used to build a byte[].
  *
  * @lucene.internal
+ * @deprecated This class will be removed in favor of {@link ByteBuffersDataOutput}.
  */
+@Deprecated
 public final class GrowableByteArrayDataOutput extends DataOutput {
 
   /** Minimum utf8 byte size of a string over which double pass over string is to save memory during encode */

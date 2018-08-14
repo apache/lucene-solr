@@ -35,13 +35,13 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   
   @Override
   protected byte[] toBytes(ByteBuffersDataOutput instance) {
-    return instance.toArray();
+    return instance.toArrayCopy();
   }
 
   @Test
   public void testReuse() throws IOException {
     AtomicInteger allocations = new AtomicInteger(0);
-    ByteBuffersDataOutput.BufferReuser reuser = new ByteBuffersDataOutput.BufferReuser(
+    ByteBuffersDataOutput.ByteBufferRecycler reuser = new ByteBuffersDataOutput.ByteBufferRecycler(
         (size) -> {
           allocations.incrementAndGet();
           return ByteBuffer.allocate(size);
@@ -50,21 +50,22 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     ByteBuffersDataOutput o = new ByteBuffersDataOutput(
         ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
         ByteBuffersDataOutput.DEFAULT_MAX_BITS_PER_BLOCK, 
-        reuser);
+        reuser::allocate,
+        reuser::reuse);
 
     // Add some random data first.
     long genSeed = randomLong();
     int addCount = randomIntBetween(1000, 5000);
     addRandomData(o, new Random(genSeed), addCount);
-    byte[] data = o.toArray();
+    byte[] data = o.toArrayCopy();
 
     // Use the same sequence over reused instance.
     final int expectedAllocationCount = allocations.get();
-    o.reset(reuser::reuse);
+    o.reset();
     addRandomData(o, new Random(genSeed), addCount);
 
     assertEquals(expectedAllocationCount, allocations.get());
-    assertArrayEquals(data, o.toArray());
+    assertArrayEquals(data, o.toArrayCopy());
   }
 
   @Test
@@ -91,17 +92,17 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   public void testSanity() {
     ByteBuffersDataOutput o = newInstance();
     assertEquals(0, o.size());
-    assertEquals(0, o.toArray().length);
+    assertEquals(0, o.toArrayCopy().length);
     assertEquals(0, o.ramBytesUsed());
 
     o.writeByte((byte) 1);
     assertEquals(1, o.size());
     assertTrue(o.ramBytesUsed() > 0);
-    assertArrayEquals(new byte [] { 1 }, o.toArray());
+    assertArrayEquals(new byte [] { 1 }, o.toArrayCopy());
 
     o.writeBytes(new byte [] {2, 3, 4}, 3);
     assertEquals(4, o.size());
-    assertArrayEquals(new byte [] { 1, 2, 3, 4 }, o.toArray());    
+    assertArrayEquals(new byte [] { 1, 2, 3, 4 }, o.toArrayCopy());    
   }
 
   @Test
@@ -115,7 +116,7 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     src.limit(offset + len);
     o.writeBytes(src);
     assertEquals(len, o.size());
-    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArray());
+    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArrayCopy());
   }
 
   @Test
@@ -127,6 +128,25 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     int len = bytes.length - offset;
     o.writeBytes(bytes, offset, len);
     assertEquals(len, o.size());
-    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArray());
+    Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArrayCopy());
+  }
+
+  @Test
+  public void testToBufferListReturnsReadOnlyBuffers() throws Exception {
+    ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
+    dst.writeBytes(new byte [100]);
+    for (ByteBuffer bb : dst.toBufferList()) {
+      assertTrue(bb.isReadOnly());
+    }
+  }
+  
+  @Test
+  public void testToWriteableBufferListReturnsOriginalBuffers() throws Exception {
+    ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
+    dst.writeBytes(new byte [100]);
+    for (ByteBuffer bb : dst.toWriteableBufferList()) {
+      assertTrue(!bb.isReadOnly());
+      assertTrue(!bb.hasArray()); // heap-based by default, so array should be there.
+    }
   }
 }

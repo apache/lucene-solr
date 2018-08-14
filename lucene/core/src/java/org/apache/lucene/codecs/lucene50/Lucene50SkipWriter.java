@@ -25,8 +25,9 @@ import java.util.SortedSet;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 import org.apache.lucene.index.Impact;
+import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 
 /**
  * Write skip lists with multiple levels, and support skip within block ints.
@@ -162,10 +163,10 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
     bufferSkip(numDocs);
   }
 
-  private final RAMOutputStream freqNormOut = new RAMOutputStream();
+  private final ByteBuffersDataOutput freqNormOut = ByteBuffersDataOutput.newResettableInstance();
 
   @Override
-  protected void writeSkipData(int level, IndexOutput skipBuffer) throws IOException {
+  protected void writeSkipData(int level, DataOutput skipBuffer) throws IOException {
 
     int delta = curDoc - lastSkipDoc[level];
 
@@ -197,13 +198,13 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
       curCompetitiveFreqNorms[level + 1].addAll(competitiveFreqNorms);
     }
     writeImpacts(competitiveFreqNorms, freqNormOut);
-    skipBuffer.writeVInt(Math.toIntExact(freqNormOut.getFilePointer()));
-    freqNormOut.writeTo(skipBuffer);
+    skipBuffer.writeVInt(Math.toIntExact(freqNormOut.size()));
+    freqNormOut.copyTo(skipBuffer);
     freqNormOut.reset();
     competitiveFreqNorms.clear();
   }
 
-  static void writeImpacts(CompetitiveImpactAccumulator acc, IndexOutput out) throws IOException {
+  static void writeImpacts(CompetitiveImpactAccumulator acc, DataOutput out) throws IOException {
     SortedSet<Impact> impacts = acc.getCompetitiveFreqNormPairs();
     Impact previous = new Impact(0, 0);
     for (Impact impact : impacts) {
