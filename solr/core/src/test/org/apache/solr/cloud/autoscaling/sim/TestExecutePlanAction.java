@@ -90,7 +90,7 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
     create.process(solrClient);
 
     log.info("Collection ready after " + CloudTestUtils.waitForState(cluster, collectionName, 120, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 2)) + "ms");
+        CloudTestUtils.clusterShape(1, 2, false, true)) + "ms");
 
     String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode(random());
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
@@ -152,7 +152,7 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
     }
 
     log.info("Collection ready after " + CloudTestUtils.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 2)) + "ms");
+        CloudTestUtils.clusterShape(1, 2, false, true)) + "ms");
   }
 
   @Test
@@ -179,7 +179,7 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
-        collectionName, CloudTestUtils.clusterShape(1, 2));
+        collectionName, CloudTestUtils.clusterShape(1, 2, false, true));
 
     String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode(random());
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
@@ -195,8 +195,10 @@ public class TestExecutePlanAction extends SimSolrCloudTestCase {
 
     cluster.simRemoveNode(sourceNodeName, false);
 
+    cluster.getTimeSource().sleep(3000);
+
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of collection to be 2 again",
-        collectionName, CloudTestUtils.clusterShape(1, 2));
+        collectionName, CloudTestUtils.clusterShape(1, 2, false, true));
 
     clusterState = cluster.getClusterStateProvider().getClusterState();
     docCollection = clusterState.getCollection(collectionName);

@@ -69,7 +69,7 @@ public class TestPolicyCloud extends SimSolrCloudTestCase {
         .process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "perReplicaDataColl",
-        CloudTestUtils.clusterShape(1, 5));
+        CloudTestUtils.clusterShape(1, 5, false, true));
     DocCollection coll = getCollectionState("perReplicaDataColl");
     String autoScaleJson = "{" +
         "  'cluster-preferences': [" +
@@ -119,7 +119,7 @@ public class TestPolicyCloud extends SimSolrCloudTestCase {
         .setPolicy("c1")
         .process(solrClient);
     CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", collectionName,
-        CloudTestUtils.clusterShape(1, 1));
+        CloudTestUtils.clusterShape(1, 1, false, true));
 
     getCollectionState(collectionName).forEachReplica((s, replica) -> assertEquals(nodeId, replica.getNodeName()));
 
@@ -152,7 +152,7 @@ public class TestPolicyCloud extends SimSolrCloudTestCase {
         .setPolicy("c1")
         .process(solrClient);
     CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", collectionName,
-        CloudTestUtils.clusterShape(1, 2));
+        CloudTestUtils.clusterShape(1, 2, false, true));
 
     DocCollection docCollection = getCollectionState(collectionName);
     List<Replica> list = docCollection.getReplicas(firstNode);
@@ -257,7 +257,7 @@ public class TestPolicyCloud extends SimSolrCloudTestCase {
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
         .process(solrClient);
     CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
-        CloudTestUtils.clusterShape(1, 3));
+        CloudTestUtils.clusterShape(1, 3, false, true));
 
     DocCollection coll = getCollectionState("policiesTest");
 
@@ -322,7 +322,7 @@ public class TestPolicyCloud extends SimSolrCloudTestCase {
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "shard1", 2)
         .process(solrClient);
     CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
-        CloudTestUtils.clusterShape(1, 2));
+        CloudTestUtils.clusterShape(1, 2, false, true));
     DocCollection rulesCollection = getCollectionState("policiesTest");
 
     Map<String, Object> val = cluster.getNodeStateProvider().getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
