@@ -26,6 +26,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQueries;
 import java.util.Collection;
@@ -51,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * Attempts to mutate selected fields that have only CharSequence-typed values
  * into Date values.  Solr will continue to index date/times in the UTC time
  * zone, but the input date/times may be expressed using other time zones,
- * and will be converted to UTC when they are mutated.
+ * and will be converted to an unambiguous {@link Date} when they are mutated.
  * </p>
  * <p>
  * The default selection behavior is to mutate both those fields that don't match
@@ -67,6 +68,8 @@ import org.slf4j.LoggerFactory;
  * One or more date "format" specifiers must be specified.  See 
  * <a href="https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html"
  * >Java 8's DateTimeFormatter javadocs</a> for a description of format strings.
+ * Note that "lenient" and case insensitivity is enabled.
+ * Furthermore, inputs surrounded in single quotes will be removed if found.
  * </p>
  * <p>
  * A default time zone name or offset may optionally be specified for those dates
@@ -120,6 +123,16 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
       protected Object mutateValue(Object srcVal) {
         if (srcVal instanceof CharSequence) {
           String srcStringVal = srcVal.toString();
+          // trim single quotes around date if present
+          // see issue #5279  (Apache HttpClient)
+          int stringValLen = srcStringVal.length();
+          if (stringValLen > 1
+              && srcStringVal.startsWith("'")
+              && srcStringVal.endsWith("'")
+          ) {
+            srcStringVal = srcStringVal.substring(1, stringValLen - 1);
+          }
+
           for (Map.Entry<String,DateTimeFormatter> format : formats.entrySet()) {
             DateTimeFormatter parser = format.getValue();
             try {
@@ -159,8 +172,9 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
     Collection<String> formatsParam = args.removeConfigArgs(FORMATS_PARAM);
     if (null != formatsParam) {
       for (String value : formatsParam) {
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
-            .appendPattern(value).toFormatter(locale).withZone(defaultTimeZone);
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder().parseLenient().parseCaseInsensitive()
+            .appendPattern(value).toFormatter(locale)
+            .withResolverStyle(ResolverStyle.LENIENT).withZone(defaultTimeZone);
         validateFormatter(formatter);
         formats.put(value, formatter);
       }

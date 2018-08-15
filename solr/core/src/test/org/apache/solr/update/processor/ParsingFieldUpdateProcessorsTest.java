@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,7 +37,6 @@ import java.util.Set;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
-
 /**
  * Tests for the field mutating update processors
  * that parse Dates, Longs, Doubles, and Booleans.
@@ -896,13 +896,124 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertTrue(mixedDates.isEmpty());
   }
 
-  private Date parse(DateTimeFormatter dateTimeFormatter, String dateString) {
+  // tests that mimic the tests that were in TestExtractionDateUtil
+  public void testISO8601() throws IOException {
+    // dates with atypical years
+    // This test tries to mimic TestExtractionDateUtil#testISO8601
+
+    String[] dateStrings = {
+        "0001-01-01T01:01:01Z", "+12021-12-01T03:03:03Z",
+        "0000-04-04T04:04:04Z", "-0005-05-05T05:05:05Z",
+        "-2021-12-01T04:04:04Z", "-12021-12-01T02:02:02Z"
+    };
+
+    int id = 1;
+
+    // ensure strings are parsed
+    for(String notInFormatDateString: dateStrings) {
+      IndexSchema schema = h.getCore().getLatestSchema();
+      assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
+      SolrInputDocument d = processAdd("parse-date-patterns-from-extract-contrib", doc(f("id", id), f("date_dt", notInFormatDateString)));
+      assertNotNull(d);
+      assertTrue("Date string: " + notInFormatDateString + " was not parsed as a date", d.getFieldValue("date_dt") instanceof Date);
+      assertEquals(notInFormatDateString, ((Date) d.getField("date_dt").getFirstValue()).toInstant().toString());
+      assertU(commit());
+      assertQ(req("id:" + id), "//date[@name='date_dt'][.='" + notInFormatDateString + "']");
+      ++id;
+    }
+
+    // odd values are date strings, even values are expected strings
+    String[] lenientDateStrings = {
+        "10995-12-31T23:59:59.990Z", "+10995-12-31T23:59:59.990Z",
+        "995-1-2T3:4:5Z", "0995-01-02T03:04:05Z",
+        "2021-01-01t03:04:05", "2021-01-01T03:04:05Z",
+        "2021-12-01 04:04:04", "2021-12-01T04:04:04Z"
+    };
+
+    // ensure sure strings that should be parsed using lenient resolver are properly parsed
+    for(int i = 0; i < lenientDateStrings.length; ++i) {
+      String lenientDateString = lenientDateStrings[i];
+      String expectedString = lenientDateStrings[++i];
+      IndexSchema schema = h.getCore().getLatestSchema();
+      assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
+      SolrInputDocument d = processAdd("parse-date-patterns-from-extract-contrib", doc(f("id", id), f("date_dt", lenientDateString)));
+      assertNotNull(d);
+      assertTrue("Date string: " + lenientDateString + " was not parsed as a date",
+          d.getFieldValue("date_dt") instanceof Date);
+      assertEquals(expectedString, ((Date) d.getField("date_dt").getFirstValue()).toInstant().toString());
+      ++id;
+    }
+  }
+
+  // this test has had problems when the JDK timezone is Americas/Metlakatla
+  public void testAKSTZone() throws IOException {
+    final String inputString = "Thu Nov 13 04:35:51 AKST 2008";
+
+    final long expectTs = 1226583351000L;
+    assertEquals(expectTs,
+        DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss z yyyy", Locale.ENGLISH)
+            .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli());
+
+    assertParsedDate(inputString, Date.from(Instant.ofEpochMilli(expectTs)), "parse-date-patterns-from-extract-contrib");
+  }
+
+  public void testNoTime() throws IOException {
+    Instant instant = instant(2005, 10, 7, 0, 0, 0);
+    String inputString = "2005-10-07";
+    assertParsedDate(inputString, Date.from(instant), "parse-date-patterns-from-extract-contrib");
+  }
+
+  public void testRfc1123() throws IOException {
+    assertParsedDate("Fri, 07 Oct 2005 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
+  }
+
+  public void testRfc1036() throws IOException {
+    assertParsedDate("Friday, 07-Oct-05 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
+  }
+
+  public void testAnsiC() throws IOException {
+    assertParsedDate(
+        "Fri Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
+
+    assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib"); // with timezone (not ANSI C) in DST
+  }
+
+  public void testLenient() throws IOException {
+    /// the Ansi C format, but input here has longer day of week
+    assertParsedDate("Friday Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
+  }
+
+  public void testParseQuotedDate() throws IOException {
+    // also using 2 digit day
+    assertParsedDate("'Fri, 14 Oct 2005 13:14:15 GMT'",
+        Date.from(instant(2005, 10, 14, 13, 14, 15)), "parse-date-patterns-from-extract-contrib");
+  }
+
+  private static Instant instant(final int year, final int month, final int day, int hour, int minute, int second) {
+    return LocalDate.of(year, month, day).atTime(hour, minute, second).toInstant(ZoneOffset.UTC);
+  }
+
+  private Instant inst20051007131415() {
+    return instant(2005, 10, 7, 13, 14, 15);
+  }
+
+  private void assertParsedDate(String inputDateString, Date expectedDate, String chain) throws IOException {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
+    SolrInputDocument d = processAdd(chain, doc(f("id", "1"), f("date_dt", inputDateString)));
+    assertNotNull(d);
+    assertTrue("Date string: " + inputDateString + " was not parsed as a date",
+        d.getFieldValue("date_dt") instanceof Date);
+    assertEquals(expectedDate, d.getField("date_dt").getFirstValue());
+  }
+
+  private static Date parse(DateTimeFormatter dateTimeFormatter, String dateString) {
     final TemporalAccessor temporalAccessor = dateTimeFormatter.parseBest(dateString, OffsetDateTime::from,
         ZonedDateTime::from, LocalDateTime::from, LocalDate::from, Instant::from);
     return temporalToDate(temporalAccessor, dateTimeFormatter.getZone());
   }
 
-  private Date temporalToDate(TemporalAccessor in, ZoneId timeZoneId) {
+  private static Date temporalToDate(TemporalAccessor in, ZoneId timeZoneId) {
     if (in instanceof OffsetDateTime) {
       return Date.from(((OffsetDateTime) in).toInstant());
     } else if (in instanceof ZonedDateTime) {
