@@ -194,6 +194,8 @@ Bug Fixes
 
 * SOLR-12665: Autoscaling policy not being refreshed due to caching (noble)
 
+* SOLR-12649: CloudSolrClient retries requests unnecessarily exception from server (noble, shalin)
+
 Optimizations
 ----------------------
 
