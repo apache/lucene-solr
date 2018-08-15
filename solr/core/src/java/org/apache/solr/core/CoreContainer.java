@@ -195,6 +195,8 @@ public class CoreContainer {
 
   private SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin;
 
+  private boolean useShortUserName; // for authorization (See SOLR-10814)
+
   private BackupRepositoryFactory backupRepoFactory;
 
   protected SolrMetricManager metricManager;
@@ -796,6 +798,11 @@ public class CoreContainer {
    */
   private void reloadSecurityProperties() {
     SecurityConfHandler.SecurityConfig securityConfig = securityConfHandler.getSecurityConfig(false);
+
+    String useShortUserNameStr = (String)securityConfig.getData().get("useShortUserName");
+    this.useShortUserName = (useShortUserNameStr != null) ?
+        Boolean.parseBoolean(useShortUserNameStr) : false; // Default is false.
+
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
     initializeAuthenticationPlugin((Map<String, Object>) securityConfig.getData().get("authentication"));
   }
@@ -1748,6 +1755,10 @@ public class CoreContainer {
   
   public boolean isCoreLoading(String name) {
     return solrCores.isCoreLoading(name);
+  }
+
+  public boolean useShortUserName() {
+    return useShortUserName;
   }
 
   public AuthorizationPlugin getAuthorizationPlugin() {

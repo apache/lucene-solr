@@ -406,6 +406,11 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     }
 
     @Override
+    public String getUserName() {
+      return (getUserPrincipal() != null) ? getUserPrincipal().getName() : null;
+    }
+
+    @Override
     public String getHttpHeader(String header) {
       return null;
     }

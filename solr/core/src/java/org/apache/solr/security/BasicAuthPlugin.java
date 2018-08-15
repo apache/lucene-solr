@@ -129,6 +129,11 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
                   public Principal getUserPrincipal() {
                     return new BasicUserPrincipal(username);
                   }
+
+                  @Override
+                  public String getRemoteUser() {
+                    return username;
+                  }
                 };
                 filterChain.doFilter(wrapper, response);
                 return true;
