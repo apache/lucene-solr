@@ -24,6 +24,8 @@ Solr provides two approaches to backing up and restoring Solr cores or collectio
 
 Support for backups when running SolrCloud is provided with the <<collections-api.adoc#collections-api,Collections API>>. This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
 
+NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same path on all nodes, or HDFS.
+
 Two commands are available:
 
 * `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collections-api.adoc#backup,Backup Collection>>.
