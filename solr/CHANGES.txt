@@ -272,6 +272,8 @@ Other Changes
 
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
 
+* SOLR-12523: Improve error reporting and docs regarding Collection backup feature shared-fs requirement (janhoy)
+
 * SOLR-12468: Upgrade Jetty to 9.4.11.v20180605 (Michael Braun, shalin)
 
 * SOLR-12527: factor out a test-framework/ConfigRequest class (Christine Poerschke)
