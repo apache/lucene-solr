@@ -286,6 +286,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
 
   @Test
   // commented 20-July-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testNodeLostTriggerRestoreState() throws Exception {
     // for this test we want to update the trigger so we must assert that the actions were created twice
     TestTriggerIntegration.actionInitCalled = new CountDownLatch(2);

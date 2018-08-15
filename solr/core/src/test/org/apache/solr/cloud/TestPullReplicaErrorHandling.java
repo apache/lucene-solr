@@ -134,7 +134,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   }
   
 //  @Repeat(iterations=10)
-@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+//commented 9-Aug-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public void testCantConnectToPullReplica() throws Exception {
     int numShards = 2;
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
