@@ -45,6 +45,7 @@ import org.apache.solr.core.backup.repository.HdfsBackupRepository;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -206,5 +207,11 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
       assertTrue(expected.contains(d));
     }
   }
+  @Override
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  public void test() throws Exception {
+    super.test();
+  }
 
-}
+  }

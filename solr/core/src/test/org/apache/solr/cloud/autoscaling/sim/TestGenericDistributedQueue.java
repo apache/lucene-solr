@@ -32,4 +32,9 @@ public class TestGenericDistributedQueue extends TestSimDistributedQueue {
   protected DistributedQueue makeDistributedQueue(String dqZNode) throws Exception {
     return new GenericDistributedQueue(stateManager, dqZNode);
   }
+
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  public void testDistributedQueue() throws Exception {
+    super.testDistributedQueue();
+  }
 }

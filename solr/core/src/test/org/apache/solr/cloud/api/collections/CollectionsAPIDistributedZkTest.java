@@ -421,6 +421,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018 SOLR-12028
   public void testCollectionsAPI() throws Exception {
 
     // create new collections rapid fire
