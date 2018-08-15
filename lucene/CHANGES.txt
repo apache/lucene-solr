@@ -125,6 +125,8 @@ Other:
 * LUCENE-8453: Add documentation to analysis factories of Korean (Nori) analyzer
   module.  (Tomoko Uchida via Uwe Schindler)
 
+* LUCENE-8455: Upgrade ECJ compiler to 4.6.1 in lucene/common-build.xml (Erick Erickson)
+
 ======================= Lucene 7.4.1 =======================
 
 Bug Fixes:
