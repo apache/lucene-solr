@@ -316,6 +316,7 @@ public class PolicyHelper {
       TimeSource timeSource = cloudManager.getTimeSource();
       synchronized (lockObj) {
         if (sessionWrapper.status == Status.NULL ||
+            sessionWrapper.zkVersion != cloudManager.getDistribStateManager().getAutoScalingConfig().getZkVersion() ||
             TimeUnit.SECONDS.convert(timeSource.getTimeNs() - sessionWrapper.lastUpdateTime, TimeUnit.NANOSECONDS) > SESSION_EXPIRY) {
           //no session available or the session is expired
           return createSession(cloudManager);
@@ -407,6 +408,7 @@ public class PolicyHelper {
     public Status status;
     private final SessionRef ref;
     private AtomicInteger refCount = new AtomicInteger();
+    public final long zkVersion;
 
     public long getCreateTime() {
       return createTime;
@@ -423,6 +425,9 @@ public class PolicyHelper {
       this.session = session;
       this.status = Status.UNUSED;
       this.ref = ref;
+      this.zkVersion = session == null ?
+          0 :
+          session.getPolicy().zkVersion;
     }
 
     public Policy.Session get() {

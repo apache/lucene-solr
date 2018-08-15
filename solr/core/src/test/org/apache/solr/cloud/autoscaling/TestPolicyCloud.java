@@ -84,6 +84,20 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "{}".getBytes(StandardCharsets.UTF_8), true);
   }
 
+  public void testCreateCollection() throws Exception  {
+    String commands =  "{ set-cluster-policy: [ {cores: '0', node: '#ANY'} ] }"; // disallow replica placement anywhere
+    cluster.getSolrClient().request(createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    String collectionName = "testCreateCollection";
+    expectThrows(HttpSolrClient.RemoteSolrException.class,
+        () -> CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient()));
+
+    CollectionAdminRequest.deleteCollection(collectionName).processAndWait(cluster.getSolrClient(), 60);
+
+    commands =  "{ set-cluster-policy: [ {cores: '<2', node: '#ANY'} ] }";
+    cluster.getSolrClient().request(createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
+  }
+
   public void testDataProviderPerReplicaDetails() throws Exception {
     CollectionAdminRequest.createCollection("perReplicaDataColl", "conf", 1, 5)
         .process(cluster.getSolrClient());

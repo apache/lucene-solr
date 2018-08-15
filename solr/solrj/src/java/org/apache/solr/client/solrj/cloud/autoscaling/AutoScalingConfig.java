@@ -350,7 +350,7 @@ public class AutoScalingConfig implements MapWriter {
   public Policy getPolicy() {
     if (policy == null) {
       if (jsonMap != null) {
-        policy = new Policy(jsonMap);
+        policy = new Policy(jsonMap, zkVersion);
       } else {
         policy = new Policy();
       }
