@@ -235,6 +235,8 @@ Bug Fixes
 
 * SOLR-12470: Search Rate Trigger multiple bug fixes, improvements and documentation updates. (ab)
 
+* SOLR-12665: Autoscaling policy not being refreshed due to caching (noble)
+
 Optimizations
 ----------------------
 

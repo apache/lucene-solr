@@ -93,13 +93,18 @@ public class Policy implements MapWriter {
   final List<Preference> clusterPreferences;
   final List<Pair<String, Type>> params;
   final List<String> perReplicaAttributes;
+  final int zkVersion;
 
   public Policy() {
     this(Collections.emptyMap());
   }
 
-  @SuppressWarnings("unchecked")
   public Policy(Map<String, Object> jsonMap) {
+    this(jsonMap, 0);
+  }
+  @SuppressWarnings("unchecked")
+  public Policy(Map<String, Object> jsonMap, int version) {
+    this.zkVersion = version;
     int[] idx = new int[1];
     List<Preference> initialClusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCES, emptyList())).stream()
         .map(m -> new Preference(m, idx[0]++))
@@ -150,7 +155,8 @@ public class Policy implements MapWriter {
         .collect(Collectors.toList());
   }
 
-  private Policy(Map<String, List<Clause>> policies, List<Clause> clusterPolicy, List<Preference> clusterPreferences) {
+  private Policy(Map<String, List<Clause>> policies, List<Clause> clusterPolicy, List<Preference> clusterPreferences, int version) {
+    this.zkVersion = version;
     this.policies = policies != null ? Collections.unmodifiableMap(policies) : Collections.emptyMap();
     this.clusterPolicy = clusterPolicy != null ? Collections.unmodifiableList(clusterPolicy) : Collections.emptyList();
     this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) : DEFAULT_PREFERENCES;
@@ -177,19 +183,19 @@ public class Policy implements MapWriter {
   }
 
   public Policy withPolicies(Map<String, List<Clause>> policies) {
-    return new Policy(policies, clusterPolicy, clusterPreferences);
+    return new Policy(policies, clusterPolicy, clusterPreferences, 0);
   }
 
   public Policy withClusterPreferences(List<Preference> clusterPreferences) {
-    return new Policy(policies, clusterPolicy, clusterPreferences);
+    return new Policy(policies, clusterPolicy, clusterPreferences, 0);
   }
 
   public Policy withClusterPolicy(List<Clause> clusterPolicy) {
-    return new Policy(policies, clusterPolicy, clusterPreferences);
+    return new Policy(policies, clusterPolicy, clusterPreferences, 0);
   }
 
   public Policy withParams(List<String> params) {
-    return new Policy(policies, clusterPolicy, clusterPreferences);
+    return new Policy(policies, clusterPolicy, clusterPreferences, 0);
   }
 
   public List<Clause> getClusterPolicy() {
