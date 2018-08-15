@@ -317,7 +317,7 @@ These factories all provide functionality to _modify_ fields in a document as th
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Boolean values.
 
-{solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Solr date values.
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Date values.
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseNumericFieldUpdateProcessorFactory.html[ParseNumericFieldUpdateProcessorFactory] derived classes::
 

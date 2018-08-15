@@ -55,8 +55,8 @@ Other Changes
 
 * SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
 
-* SOLR-12586: Remove Joda Time dependency.  Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
-  to use Java 8's java.time.DateTimeFormatter instead (see upgrade notes).
+* SOLR-12586, SOLR-12591: Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") to use Java 8's
+  java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
 
 ==================  7.5.0 ==================
