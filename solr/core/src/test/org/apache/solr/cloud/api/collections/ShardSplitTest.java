@@ -389,7 +389,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
     splitShard.setShardName(SHARD1);
     splitShard.setSplitMethod(splitMethod.toLower());
     CollectionAdminResponse rsp = splitShard.process(cloudClient);
-    waitForThingsToLevelOut(15);
+    waitForThingsToLevelOut(30);
 
     cloudClient.getZkStateReader().forceUpdateCollection(collectionName);
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
