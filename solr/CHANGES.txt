@@ -198,6 +198,8 @@ Bug Fixes
 
 * SOLR-12670: RecoveryStrategy logs wrong wait time when retrying recovery. (shalin)
 
+* SOLR-12668: Autoscaling trigger listeners should be executed in the order of their creation. (ab)
+
 Optimizations
 ----------------------
 
