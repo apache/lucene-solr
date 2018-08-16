@@ -947,7 +947,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
 
   // this test has had problems when the JDK timezone is Americas/Metlakatla
   public void testAKSTZone() throws IOException {
-    final String inputString = "Thu Nov 13 04:35:51 AKST 2008";
+    final String inputString = "Thu Nov 13 04:35:51 AKST 2008"; // "Ansi C" + timezone
 
     final long expectTs = 1226583351000L;
     assertEquals(expectTs,
@@ -955,6 +955,16 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli());
 
     assertParsedDate(inputString, Date.from(Instant.ofEpochMilli(expectTs)), "parse-date-patterns-from-extract-contrib");
+
+    // We might also test AKDT, but a bug in Java 9 (not in 8) causes this to fail
+    //assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib"); // with timezone (not ANSI C) in DST
+    // see https://bugs.openjdk.java.net/browse/JDK-8189784
+  }
+
+  public void testEDTZone() throws IOException {
+    //EDT is GMT-4
+    assertParsedDate("Fri Oct 7 09:14:15 EDT 2005", // Ansi C + timezone
+        Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
   }
 
   public void testNoTime() throws IOException {
@@ -974,8 +984,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   public void testAnsiC() throws IOException {
     assertParsedDate(
         "Fri Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
-
-    assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib"); // with timezone (not ANSI C) in DST
+    // also see testEDTZone
   }
 
   public void testLenient() throws IOException {
