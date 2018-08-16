@@ -258,6 +258,8 @@ Other Changes
 
 * SOLR-11766: Move Streaming Expressions section in Ref Guide to be a top-level section. (Cassandra Targett)
 
+* SOLR-12656: ShardSplitTest should extend AbstractFullDistribZkTestBase instead of BasicDistributedZkTest. (shalin)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

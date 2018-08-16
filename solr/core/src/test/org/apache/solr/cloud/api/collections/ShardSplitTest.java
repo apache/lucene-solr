@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -45,7 +44,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
-import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.SolrDocument;
@@ -76,7 +75,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 @Slow
 @LogLevel("org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
-public class ShardSplitTest extends BasicDistributedZkTest {
+public class ShardSplitTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -1104,23 +1103,5 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       found.removeAll(documentIds);
       log.error("EXTRA: ID: " + found);
     }
-  }
-
-  @Override
-  protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    HttpSolrClient client = (HttpSolrClient) super.createNewSolrClient(collection, baseUrl, DEFAULT_CONNECTION_TIMEOUT, 5 * 60 * 1000);
-    return client;
-  }
-
-  @Override
-  protected SolrClient createNewSolrClient(int port) {
-    HttpSolrClient client = (HttpSolrClient) super.createNewSolrClient(port, DEFAULT_CONNECTION_TIMEOUT, 5 * 60 * 1000);
-    return client;
-  }
-
-  @Override
-  protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client = super.createCloudClient(defaultCollection);
-    return client;
   }
 }
