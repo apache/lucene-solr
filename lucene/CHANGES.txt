@@ -127,6 +127,8 @@ Other:
 
 * LUCENE-8455: Upgrade ECJ compiler to 4.6.1 in lucene/common-build.xml (Erick Erickson)
 
+* LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
+
 ======================= Lucene 7.4.1 =======================
 
 Bug Fixes:
