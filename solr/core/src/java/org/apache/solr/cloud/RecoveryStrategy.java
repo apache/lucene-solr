@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -422,11 +423,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       try {
         // Wait an exponential interval between retries, start at 5 seconds and work up to a minute.
-        // If we're at attempt >= 4, there's no point computing pow(2, retries) because the result 
+        // If we're at attempt >= 4, there's no point computing pow(2, retries) because the result
         // will always be the minimum of the two (12). Since we sleep at 5 seconds sub-intervals in
         // order to check if we were closed, 12 is chosen as the maximum loopCount (5s * 12 = 1m).
-        double loopCount = retries < 4 ? Math.min(Math.pow(2, retries), 12) : 12;
-        LOG.info("Wait [{}] seconds before trying to recover again (attempt={})", loopCount, retries);
+        int loopCount = retries < 4 ? (int) Math.min(Math.pow(2, retries), 12) : 12;
+        LOG.info("Wait [{}] seconds before trying to recover again (attempt={})",
+            TimeUnit.MILLISECONDS.toSeconds(loopCount * startingRecoveryDelayMilliSeconds), retries);
         for (int i = 0; i < loopCount; i++) {
           if (isClosed()) {
             LOG.info("Recovery for core {} has been closed", core.getName());
