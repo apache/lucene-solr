@@ -65,6 +65,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -278,42 +279,45 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
 
     TestInjection.splitFailureBeforeReplicaCreation = "true:100"; // we definitely want split to fail
     try {
-      try {
-        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-        splitShard.setShardName(SHARD1);
-        splitShard.process(cloudClient);
-        fail("Shard split was not supposed to succeed after failure injection!");
-      } catch (Exception e) {
-        // expected
-      }
-
-      // assert that sub-shards cores exist and sub-shard is in construction state
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      zkStateReader.forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-      ClusterState state = zkStateReader.getClusterState();
-      DocCollection collection = state.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-
-      // should be cleaned up
-      Slice shard10 = collection.getSlice(SHARD1_0);
-      assertNull(shard10);
-
-      Slice shard11 = collection.getSlice(SHARD1_1);
-      assertNull(shard11);
-
-      // lets retry the split
-      TestInjection.reset(); // let the split succeed
-      try {
-        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-        splitShard.setShardName(SHARD1);
-        splitShard.process(cloudClient);
-        // Yay!
-      } catch (Exception e) {
-        log.error("Shard split failed", e);
-        fail("Shard split did not succeed after a previous failed split attempt left sub-shards in construction state");
-      }
-
+      splitAfterFailedSplit();
     } finally {
       TestInjection.reset();
+    }
+  }
+
+  private void splitAfterFailedSplit() throws KeeperException, InterruptedException {
+    try {
+      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+      splitShard.setShardName(SHARD1);
+      splitShard.process(cloudClient);
+      fail("Shard split was not supposed to succeed after failure injection!");
+    } catch (Exception e) {
+      // expected
+    }
+
+    // assert that sub-shards cores exist and sub-shard is in construction state
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    zkStateReader.forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+    ClusterState state = zkStateReader.getClusterState();
+    DocCollection collection = state.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+
+    // should be cleaned up
+    Slice shard10 = collection.getSlice(SHARD1_0);
+    assertNull(shard10);
+
+    Slice shard11 = collection.getSlice(SHARD1_1);
+    assertNull(shard11);
+
+    // lets retry the split
+    TestInjection.reset(); // let the split succeed
+    try {
+      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+      splitShard.setShardName(SHARD1);
+      splitShard.process(cloudClient);
+      // Yay!
+    } catch (Exception e) {
+      log.error("Shard split failed", e);
+      fail("Shard split did not succeed after a previous failed split attempt left sub-shards in construction state");
     }
   }
 
@@ -323,40 +327,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
 
     TestInjection.splitFailureAfterReplicaCreation = "true:100"; // we definitely want split to fail
     try {
-      try {
-        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-        splitShard.setShardName(SHARD1);
-        splitShard.process(cloudClient);
-        fail("Shard split was not supposed to succeed after failure injection!");
-      } catch (Exception e) {
-        // expected
-      }
-
-      // assert that sub-shards cores exist and sub-shard is in construction state
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      zkStateReader.forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-      ClusterState state = zkStateReader.getClusterState();
-      DocCollection collection = state.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-
-      // should be cleaned up
-      Slice shard10 = collection.getSlice(SHARD1_0);
-      assertNull(shard10);
-
-      Slice shard11 = collection.getSlice(SHARD1_1);
-      assertNull(shard11);
-
-      // lets retry the split
-      TestInjection.reset(); // let the split succeed
-      try {
-        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-        splitShard.setShardName(SHARD1);
-        splitShard.process(cloudClient);
-        // Yay!
-      } catch (Exception e) {
-        log.error("Shard split failed", e);
-        fail("Shard split did not succeed after a previous failed split attempt left sub-shards in construction state");
-      }
-
+      splitAfterFailedSplit();
     } finally {
       TestInjection.reset();
     }
