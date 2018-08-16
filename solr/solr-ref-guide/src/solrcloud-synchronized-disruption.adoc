@@ -1,0 +1,28 @@
+= SolrCloud Synchronized Disruption
+:page-children: solrcloud-synchronized-disruption-overview, solrcloud-synchronized-disruption-api
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+The goal of synchronized disruption is to allow for cluster wide disruptions that are ran by all nodes in the cluster at the same time, enabling very large clusters to have more consistent response time.
+
+Synchronized disruption includes an API to manage synchronized disruptions allowing to add and remove disruptions as needed.
+
+The following sections describe the synchronized disruption features of SolrCloud:
+
+* <<solrcloud-synchronized-disruption-overview.adoc#solrcloud-synchronized-disruption-overview,Overview of Synchronized Disruption in SolrCloud>>
+* <<solrcloud-synchronized-disruption-api.adoc#solrcloud-synchronized-disruption-api,Synchronized Disruption API>>

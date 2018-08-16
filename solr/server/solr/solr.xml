@@ -50,4 +50,9 @@
     <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
 
+
+  <synchronizeddisruption>
+    <disruption name="GarbageCollection" class="org.apache.solr.cloud.synchronizeddisruption.GarbageCollection" cron="0/30 * * * * ?" />
+  </synchronizeddisruption>
+
 </solr>
