@@ -239,6 +239,8 @@ Bug Fixes
 
 * SOLR-12649: CloudSolrClient retries requests unnecessarily exception from server (noble, shalin)
 
+* SOLR-12670: RecoveryStrategy logs wrong wait time when retrying recovery. (shalin)
+
 Optimizations
 ----------------------
 
