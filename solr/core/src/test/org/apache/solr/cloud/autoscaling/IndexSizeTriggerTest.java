@@ -47,6 +47,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
@@ -92,7 +93,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean() && false) {
+    if (random().nextBoolean()) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -463,10 +464,6 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   @Test
   //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testMixedBounds() throws Exception {
-//    if (cloudManager instanceof SimCloudManager) {
-//      log.warn("Requires SOLR-12208");
-//      return;
-//    }
 
     String collectionName = "testMixedBounds_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -626,15 +623,23 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    for (int j = 0; j < 8; j++) {
+    for (int j = 0; j < 10; j++) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParam("collection", collectionName);
-      for (int i = 0; i < 95; i++) {
+      for (int i = 0; i < 98; i++) {
         ureq.deleteById("id-" + (i * 100) + "-" + j);
       }
       solrClient.request(ureq);
     }
-    solrClient.commit(collectionName);
+    // make sure the actual index size is reduced by deletions, otherwise we may still violate aboveBytes
+    UpdateRequest ur = new UpdateRequest();
+    ur.setParam(UpdateParams.COMMIT, "true");
+    ur.setParam(UpdateParams.EXPUNGE_DELETES, "true");
+    ur.setParam(UpdateParams.OPTIMIZE, "true");
+    ur.setParam(UpdateParams.MAX_OPTIMIZE_SEGMENTS, "1");
+    ur.setParam(UpdateParams.WAIT_SEARCHER, "true");
+    ur.setParam(UpdateParams.OPEN_SEARCHER, "true");
+    solrClient.request(ur, collectionName);
 
     // resume trigger
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
