@@ -306,6 +306,8 @@ Other Changes
 
 * SOLR-12656: ShardSplitTest should extend AbstractFullDistribZkTestBase instead of BasicDistributedZkTest. (shalin)
 
+* LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
