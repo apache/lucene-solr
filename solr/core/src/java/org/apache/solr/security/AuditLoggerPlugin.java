@@ -50,6 +50,24 @@ public abstract class AuditLoggerPlugin implements Closeable {
       EventType.ANONYMOUS_REJECTED.name());
 
   /**
+   * Static method that can be called to audit log if logging is configured and event type is supported
+   * @param auditLoggerPlugin reference to the configured logger or null if not configured (will simply return)
+   * @param auditEvent the event to log if logging is configured
+   */
+  public static void auditIfConfigured(AuditLoggerPlugin auditLoggerPlugin, AuditEvent auditEvent) {
+    if (auditLoggerPlugin != null) {
+      if (auditLoggerPlugin.shouldLog(auditEvent)) {
+        auditLoggerPlugin.audit(auditEvent);
+      } else {
+        log.debug("Not logging audit event of type {}, method {}, path {}", 
+            auditEvent.getEventType().name(),
+            auditEvent.getHttpMethod(),
+            auditEvent.getResource());
+      }
+    }
+  }
+
+  /**
    * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
    * @param event the audit event
    */

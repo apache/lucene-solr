@@ -92,6 +92,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
@@ -559,9 +560,7 @@ public class HttpSolrCall {
    * @param auditEvent the audit event
    */
   private void auditIfConfigured(AuditEvent auditEvent) {
-    if (cores.getAuditLoggerPlugin() != null && cores.getAuditLoggerPlugin().shouldLog(auditEvent)) {
-      cores.getAuditLoggerPlugin().audit(auditEvent);
-    }
+    AuditLoggerPlugin.auditIfConfigured(cores.getAuditLoggerPlugin(), auditEvent);
   }
 
   private boolean shouldAuthorize() {

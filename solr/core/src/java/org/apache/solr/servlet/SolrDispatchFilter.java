@@ -73,6 +73,7 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.AuditEvent;
@@ -536,9 +537,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * @param auditEvent the audit event
    */
   private void auditIfConfigured(AuditEvent auditEvent) {
-    if (cores.getAuditLoggerPlugin() != null && cores.getAuditLoggerPlugin().shouldLog(auditEvent)) {
-      cores.getAuditLoggerPlugin().audit(auditEvent);
-    }
+    AuditLoggerPlugin.auditIfConfigured(cores.getAuditLoggerPlugin(), auditEvent);
   }
 
   /**
