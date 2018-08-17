@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 import org.apache.solr.common.util.Utils;
 
@@ -103,8 +103,8 @@ public interface MapWriter extends MapSerializable {
       return this;
     }
 
-    default EntryWriter put(String k, Object v, Predicate<Object> p) throws IOException {
-      if (p.test(v)) put(k, v);
+    default EntryWriter put(String k, Object v, BiPredicate<String, Object> p) throws IOException {
+      if (p.test(k,v)) put(k, v);
       return this;
     }
 

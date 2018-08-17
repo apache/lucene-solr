@@ -312,6 +312,8 @@ Other Changes
 
 * LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
 
+* SOLR-12014: Cryptic error message when creating a collection with sharding that violates autoscaling policies (noble)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
