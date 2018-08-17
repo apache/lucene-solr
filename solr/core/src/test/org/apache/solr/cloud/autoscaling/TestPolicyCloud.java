@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
@@ -88,14 +90,20 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     String commands =  "{ set-cluster-policy: [ {cores: '0', node: '#ANY'} ] }"; // disallow replica placement anywhere
     cluster.getSolrClient().request(createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
     String collectionName = "testCreateCollection";
-    expectThrows(HttpSolrClient.RemoteSolrException.class,
+    HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class,
         () -> CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient()));
 
+    assertTrue(exp.getMessage().contains("No node can satisfy the rules"));
+    assertTrue(exp.getMessage().contains("AutoScaling.error.diagnostics"));
     CollectionAdminRequest.deleteCollection(collectionName).processAndWait(cluster.getSolrClient(), 60);
 
     commands =  "{ set-cluster-policy: [ {cores: '<2', node: '#ANY'} ] }";
     cluster.getSolrClient().request(createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
+    SolrClientCloudManager scm = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getSolrClient().getZkStateReader().getZkClient()), cluster.getSolrClient());
+    Policy.Session session = scm.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(scm);
+    System.out.println(Utils.writeJson(PolicyHelper.getDiagnostics(session), new StringWriter(), true).toString());
+
   }
 
   public void testDataProviderPerReplicaDetails() throws Exception {
