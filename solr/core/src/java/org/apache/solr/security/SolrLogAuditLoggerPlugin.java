@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +46,12 @@ public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {
             .append(" username=\"").append(event.getUsername()).append("\"")
             .append(" resource=\"").append(event.getResource()).append("\"")
             .append(" collections=").append(event.getCollections()).toString());
+    if (pluginConfig.size() > 0) {
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Plugin config was not fully consumed. Remaining parameters are " + pluginConfig);
+    }
+    log.debug("Initialized SolrLogAuditLoggerPlugin");  
   }
-
+  
   /**
    * Audit logs an event to Solr log. The event should be a {@link AuditEvent} to be able to pull context info
    * @param event the event to log

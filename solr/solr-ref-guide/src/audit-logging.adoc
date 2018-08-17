@@ -22,30 +22,71 @@ Audit loggers are pluggable to suit any possible format or log destination.
 [quote]
 An audit trail (also called audit log) is a security-relevant chronological record, set of records, and/or destination and source of records that provide documentary evidence of the sequence of activities that have affected at any time a specific operation, procedure, or event. (https://en.wikipedia.org/wiki/Audit_trail[Wikipedia])
 
-== Events being logged
-These are the event types that will be logged by this framework:
+== Event types
+These are the event types triggered by the framework:
 
 [%header,format=csv,separator=;]
 |===
-foo;bar
-hello
+EventType;Usage
+AUTHENTICATED;User successfully authenticated
+REJECTED;Authentication request rejected
+ANONYMOUS;Request proceeds with unknown user
+ANONYMOUS_REJECTED;Request from unknown user rejected
+AUTHORIZED;Authorization succeeded
+UNAUTHORIZED;Authorization failed
+COMPLETED;Request completed successfully
+ERROR;Request was not executed due to an error
 |===
 
+By default only the final event types `REJECTED`, `ANONYMOUS_REJECTED`, `UNAUTHORIZED`, `COMPLETED` and `ERROR` are logged.
 
-An example `security.json` showing both sections is shown below to show how these plugins can work together:
+== Configuration in security.json
+Audit logging is configured in `security.json` under the `auditlogging` key.
+
+The example `security.json` below configures audit logging to Solr default log file, enabling logging of all available event types.
 
 [source,json]
 ----
 {
-"authentication":{ <1>
-   "blockUnknown": true, <2>
-   "class":"solr.BasicAuthPlugin",
-   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="} <3>
-},
-"authorization":{
-   "class":"solr.RuleBasedAuthorizationPlugin",
-   "permissions":[{"name":"security-edit",
-      "role":"admin"}], <4>
-   "user-role":{"solr":"admin"} <5>
-}}
+  "auditlogging":{
+     "class":"solr.SolrLogAuditLoggerPlugin",
+     "eventTypes": ["AUTHENTICATED", "REJECTED", "ANONYMOUS", 
+                    "ANONYMOUS_REJECTED", "AUTHORIZED", "UNAUTHORIZED", 
+                    "COMPLETED", "ERROR"]
+  }
+}
 ----
+
+=== Chaining multiple loggers
+Using the `MultiDestinationAuditLogger` you can configure multiple audit logger plugins in a chain, to log to multiple destinations, as follows:
+
+[source,json]
+----
+{
+  "auditlogging":{
+     "class" : "solr.MultiDestinationAuditLogger",
+     "plugins" : [
+       { "class" : "solr.SolrLogAuditLoggerPlugin" },
+       { "class" : "solr.MyOtherAuditPlugin",
+         "customParam" : "value"
+       }
+     ]
+  }
+}
+----
+
+=== Synchronous vs asynchronous audit logging
+AuditLoggerPlugin developers can choose to make audit logging asynchronous by subclassing the `AsyncAuditLoggerPlugin` base class intead of the normal `AuditLoggerPlugin`. This will cause the event to but put on a queue and consumed and logged by a background thread. For Audit loggers with async support, you can also configure queue size and whether it should block when the queue is full:
+
+[source,json]
+----
+{
+  "auditlogging":{
+     "class" : "solr.MyAsyncAuditLogger",
+     "blockAsync" : false,
+     "queueSize" : 4096
+  }
+}
+----
+
+It is not possible to enable async audit logging unless the plugin extends the `AsyncAuditLoggerPlugin`.   

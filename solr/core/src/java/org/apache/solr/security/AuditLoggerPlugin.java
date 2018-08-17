@@ -20,12 +20,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.security.AuditEvent.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +37,17 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AuditLoggerPlugin implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final String PARAM_EVENT_TYPES = "eventTypes";
 
   protected AuditEventFormatter formatter;
+
+  // Event types to be logged by default
+  protected List<String> eventTypes = Arrays.asList(
+      EventType.COMPLETED.name(), 
+      EventType.ERROR.name(),
+      EventType.REJECTED.name(),
+      EventType.UNAUTHORIZED.name(),
+      EventType.ANONYMOUS_REJECTED.name());
 
   /**
    * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
@@ -50,6 +62,12 @@ public abstract class AuditLoggerPlugin implements Closeable {
    */
   public void init(Map<String, Object> pluginConfig) {
     formatter = new JSONAuditEventFormatter();
+    if (pluginConfig.containsKey(PARAM_EVENT_TYPES)) {
+      eventTypes = (List<String>) pluginConfig.get(PARAM_EVENT_TYPES);
+    }
+    pluginConfig.remove(PARAM_EVENT_TYPES);
+    pluginConfig.remove("class");
+    log.debug("AuditLogger initialized with event types {}", eventTypes);
   }
 
   public void setFormatter(AuditEventFormatter formatter) {
@@ -63,6 +81,20 @@ public abstract class AuditLoggerPlugin implements Closeable {
     String formatEvent(AuditEvent event);
   }
 
+  /**
+   * Checks whether this event should be logged based on "eventTypes" config parameter.
+   * The framework will call this method and avoid logging if false.
+   * @param event the event to consider
+   * @return true if this event should be logged 
+   */
+  public boolean shouldLog(AuditEvent event) {
+    boolean shouldLog = eventTypes.contains(event.getEventType().name()); 
+    if (!shouldLog) {
+      log.debug("Event type {} is not configured for audit logging", event.getEventType().name());
+    }
+    return shouldLog;
+  }
+  
   /**
    * Event formatter that returns event as JSON string
    */

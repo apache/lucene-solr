@@ -33,8 +33,12 @@ public class MultiDestinationAuditLoggerTest extends LuceneTestCase {
     config.put("class", "solr.MultiDestinationAuditLogger");
     ArrayList<Map<String, Object>> plugins = new ArrayList<Map<String, Object>>();
 
-    plugins.add(Collections.singletonMap("class", "solr.SolrLogAuditLoggerPlugin"));
-    plugins.add(Collections.singletonMap("class", "solr.MockAuditLoggerPlugin"));
+    Map<String,Object> conf1 = new HashMap<>();
+    conf1.put("class", "solr.SolrLogAuditLoggerPlugin");
+    plugins.add(conf1);
+    Map<String,Object> conf2 = new HashMap<>();
+    conf2.put("class", "solr.MockAuditLoggerPlugin");
+    plugins.add(conf2);
     config.put("plugins", plugins);
 
     al.inform(new SolrResourceLoader());

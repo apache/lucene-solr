@@ -58,7 +58,7 @@ public class AuditEvent {
   private AuthorizationResponse autResponse;
   private String requestType;
   private double QTime = -1;
-  private int status = 0;
+  private int status = -1;
   private Throwable exception;
 
   /* Predefined event types. Custom types can be made through constructor */

@@ -20,8 +20,12 @@ package org.apache.solr.security;
 import java.util.HashMap;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.common.SolrException;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_ANONYMOUS;
+import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_AUTHENTICATED;
 
 public class SolrLogAuditLoggerPluginTest extends LuceneTestCase {
   private SolrLogAuditLoggerPlugin plugin;
@@ -35,19 +39,23 @@ public class SolrLogAuditLoggerPluginTest extends LuceneTestCase {
     plugin.init(config);
   }
 
+  @Test(expected = SolrException.class)
+  public void badConfig() {
+    config = new HashMap<>();
+    config.put("invalid", "parameter");
+    plugin.init(config);
+  }
+  
   @Test
-  public void init() {
-    plugin.audit(new AuditEvent(AuditEvent.EventType.REJECTED)
-        .setUsername("Jan")
-        .setHttpMethod("POST")
-        .setMessage("Wrong password")
-        .setResource("/collection1"));
-    plugin.audit(new AuditEvent(AuditEvent.EventType.AUTHORIZED)
-        .setUsername("Per")
-        .setHttpMethod("GET")
-        .setMessage("Async")
-        .setResource("/collection1"));
-    assertEquals(0, config.size());
+  public void audit() {
+    plugin.audit(EVENT_ANONYMOUS);
   }
 
+  @Test
+  public void eventFormatter() {
+    assertEquals("type=\"ANONYMOUS\" message=\"Anonymous\" method=\"GET\" username=\"null\" resource=\"/collection1\" collections=null", 
+        plugin.formatter.formatEvent(EVENT_ANONYMOUS));
+    assertEquals("type=\"AUTHENTICATED\" message=\"Authenticated\" method=\"GET\" username=\"Jan\" resource=\"/collection1\" collections=null", 
+        plugin.formatter.formatEvent(EVENT_AUTHENTICATED));
+  } 
 }

@@ -74,7 +74,6 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
       pluginList.forEach(pluginConf -> plugins.add(createPlugin(pluginConf)));
       pluginConfig.remove(PARAM_PLUGINS);
     }
-    pluginConfig.remove("class");
     if (pluginConfig.size() > 0) {
       log.error("Plugin config was not fully consumed. Remaining parameters are {}", pluginConfig);
     }

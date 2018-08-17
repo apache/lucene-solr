@@ -35,6 +35,7 @@ public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implement
 
   private static final String PARAM_BLOCKASYNC = "blockAsync";
   private static final String PARAM_QUEUE_SIZE = "queueSize";
+  private static final int DEFAULT_QUEUE_SIZE = 4096;
   private BlockingQueue<AuditEvent> queue;
   private boolean blockAsync;
 
@@ -73,7 +74,7 @@ public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implement
    */
   public void init(Map<String, Object> pluginConfig) {
     blockAsync = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCKASYNC, false)));
-    int blockingQueueSize = Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, 4000)));
+    int blockingQueueSize = Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, DEFAULT_QUEUE_SIZE)));
     pluginConfig.remove(PARAM_BLOCKASYNC);
     pluginConfig.remove(PARAM_QUEUE_SIZE);
     queue = new ArrayBlockingQueue<>(blockingQueueSize);
