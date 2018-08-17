@@ -69,7 +69,7 @@ public class SolrInputDocumentReader extends Reader {
    * max lengths as specified.
    *
    * @param doc Solr input document
-   * @param fields list of fields to read
+   * @param fields list of field names to include
    * @param fieldValueSep separator to insert between field values
    * @param maxCharsPerFieldValue max chars to consume per field value
    * @param maxTotalChars max chars to consume total

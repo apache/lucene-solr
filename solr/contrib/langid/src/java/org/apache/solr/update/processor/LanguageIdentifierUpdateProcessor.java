@@ -42,10 +42,9 @@ import java.util.regex.Pattern;
 
 /**
  * Identifies the language of a set of input fields.
- * Also supports mapping of field names based
- * on detected language.
- * <p>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ * Also supports mapping of field names based on detected language.
+ * <p/>
+ * See <a href="https://lucene.apache.org/solr/guide/7_4/detecting-languages-during-indexing.html">Detecting Languages During Indexing</a> in reference guide
  * @since 3.5
  * @lucene.experimental
  */
@@ -410,7 +409,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    * Returns a reader that streams String content from fields.
    * This is more memory efficient than building a full string buffer
    * @param doc the solr document
-   * @param fields the fields to read
+   * @param fields the field names to read
    * @return a reader over the fields
    */
   protected SolrInputDocumentReader solrDocReader(SolrInputDocument doc, String[] fields) {
