@@ -97,6 +97,7 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
 
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testNewReplicaOldLeader() throws Exception {
 
     String collection = "testNewReplicaOldLeader";
@@ -164,6 +165,7 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
 
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testNewLeaderOldReplica() throws Exception {
     // in case of new leader & old replica, new leader can still put old replica into LIR
 
@@ -333,6 +335,7 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
 
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testNewLeaderAndMixedReplicas() throws Exception {
     testLeaderAndMixedReplicas(false);
   }

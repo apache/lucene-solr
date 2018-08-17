@@ -69,9 +69,10 @@ a[data-toggle].btn-info {
 
 /* Used for nav buttons */
 .btn-primary {
-    color: #ffffff;
-    background-color: #F35B38;
-    border-color: #E6E7E8;
+    color: #F35B38;
+    background-color: transparent;
+    border-color: #CDCECF;
+    font-weight: bold;
 }
 
 .navbar-inverse .navbar-nav > .active > a, .navbar-inverse .navbar-nav > .active > a:hover, .navbar-inverse .navbar-nav > .active > a:focus {
@@ -115,10 +116,7 @@ li.sidebarTitle {
 
 }
 .scrollnav {
-    font-size: larger;
-    /* why do we need both of these??? */
-    padding-bottom: 1em;
-    margin-bottom: 2em;
+    margin-bottom: 1em;
 }
 .scrollnav .prev {
     text-align: left;
@@ -127,7 +125,7 @@ li.sidebarTitle {
 }
 .scrollnav .prev:before {
     padding-right: 0.5em;
-    content: "\25C0 ";
+    content: "\25C0";
     display: inline-block; /* text-decoration: none doesn't work, but this does */
 }
 .scrollnav .next {
@@ -139,4 +137,11 @@ li.sidebarTitle {
     padding-left: 0.5em;
     content: " \25B6";
     display: inline-block; /* text-decoration: none doesn't work, but this does */
+}
+
+/* used for Download Solr button on docs home page */
+.btn-home {
+  color: #ffffff;
+  background-color: #F35B38;
+  border-color: #E6E7E8;
 }

@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
@@ -59,7 +60,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTIO
  *
  * See SOLR-11990 for more details.
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=TRACE;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=TRACE;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
 public class TestWithCollection extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -186,7 +187,8 @@ public class TestWithCollection extends SolrCloudTestCase {
         .setWithCollection(abc)
         .process(solrClient);
     try {
-      CollectionAdminRequest.deleteCollection(abc).process(solrClient);
+      CollectionAdminResponse response = CollectionAdminRequest.deleteCollection(abc).process(solrClient);
+      fail("Deleting collection: " + abc + " should have failed with an exception. Instead response was: " + response.getResponse());
     } catch (HttpSolrClient.RemoteSolrException e) {
       assertTrue(e.getMessage().contains("is co-located with collection"));
     }
@@ -205,7 +207,8 @@ public class TestWithCollection extends SolrCloudTestCase {
         .process(solrClient);
     // sanity check
     try {
-      CollectionAdminRequest.deleteCollection(abc).process(solrClient);
+      CollectionAdminResponse response = CollectionAdminRequest.deleteCollection(abc).process(solrClient);
+      fail("Deleting collection: " + abc + " should have failed with an exception. Instead response was: " + response.getResponse());
     } catch (HttpSolrClient.RemoteSolrException e) {
       assertTrue(e.getMessage().contains("is co-located with collection"));
     }

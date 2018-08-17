@@ -30,11 +30,11 @@ and data structures and techniques for combining Solr's
 powerful streams with mathematical functions to make every
 record in your Solr Cloud cluster computable.
 
-*<<scalar-math.adoc#scalar-math,Scalar Math>>*: The simplest math expressions.
+*<<scalar-math.adoc#scalar-math,Scalar Math>>*: The functions that apply to scalar numbers.
 
 *<<vector-math.adoc#vector-math,Vector Math>>*: Vector math expressions and vector manipulation.
 
-*<<variables.adoc#variables,Variables>>*: Using variable expressions.
+*<<variables.adoc#variables,Variables>>*: Assigning and using variable.
 
 *<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix creation, manipulation, and matrix math.
 

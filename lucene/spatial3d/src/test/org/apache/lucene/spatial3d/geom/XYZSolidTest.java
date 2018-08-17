@@ -216,5 +216,21 @@ public class XYZSolidTest extends LuceneTestCase {
     // MHL for degenerate Z
     
   }
+
+  @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8457")
+  public void testLUCENE8457() {
+    GeoShape shape = GeoBBoxFactory.makeGeoBBox(PlanetModel.WGS84, Math.PI, 1.2487354264870392, 0.0, 3.5181789305199657E-12);
+    XYZBounds bounds = new XYZBounds();
+    shape.getBounds(bounds);
+    XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds);
+
+    GeoPoint point = new GeoPoint(PlanetModel.WGS84, 1.4812439919751819, -3.141592653589793);
+    //if the point is within the shape, it must be within the solid
+    if (shape.isWithin(point)) {
+      assertTrue(solid.isWithin(point));
+    }
+
+  }
   
 }

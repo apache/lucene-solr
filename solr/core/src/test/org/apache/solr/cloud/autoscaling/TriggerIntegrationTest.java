@@ -500,6 +500,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   static Map<String, List<CapturedEvent>> listenerEvents = new HashMap<>();
+  static List<CapturedEvent> allListenerEvents = new ArrayList<>();
   static CountDownLatch listenerCreated = new CountDownLatch(1);
   static boolean failDummyAction = false;
 
@@ -514,7 +515,9 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-      lst.add(new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message));
+      CapturedEvent ev = new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message);
+      lst.add(ev);
+      allListenerEvents.add(ev);
     }
   }
 
@@ -627,10 +630,28 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     assertEquals(TriggerEventProcessorStage.SUCCEEDED, capturedEvents.get(3).stage);
 
+    // check global ordering of events (SOLR-12668)
+    int fooIdx = -1;
+    int barIdx = -1;
+    for (int i = 0; i < allListenerEvents.size(); i++) {
+      CapturedEvent ev = allListenerEvents.get(i);
+      if (ev.stage == TriggerEventProcessorStage.BEFORE_ACTION && ev.actionName.equals("test")) {
+        if (ev.config.name.equals("foo")) {
+          fooIdx = i;
+        } else if (ev.config.name.equals("bar")) {
+          barIdx = i;
+        }
+      }
+    }
+    assertTrue("fooIdx not found", fooIdx != -1);
+    assertTrue("barIdx not found", barIdx != -1);
+    assertTrue("foo fired later than bar: fooIdx=" + fooIdx + ", barIdx=" + barIdx, fooIdx < barIdx);
+
     // reset
     triggerFired.set(false);
     triggerFiredLatch = new CountDownLatch(1);
     listenerEvents.clear();
+    allListenerEvents.clear();
     failDummyAction = true;
 
     newNode = cluster.startJettySolrRunner();

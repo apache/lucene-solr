@@ -174,11 +174,11 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
       }
       Thread.sleep(waitForSeconds * 1000);
       trigger.run();
-      // should generate node and collection event but not for COLL2 because of waitFor
+      // should generate collection event but not for COLL2 because of waitFor
       assertEquals(1, events.size());
       event = events.get(0);
       Map<String, Double> hotNodes = (Map<String, Double>)event.getProperty(SearchRateTrigger.HOT_NODES);
-      assertEquals(3, hotNodes.size());
+      assertTrue("hotNodes", hotNodes.isEmpty());
       hotNodes.forEach((n, r) -> assertTrue(n, r > rate));
       hotCollections = (Map<String, Double>)event.getProperty(SearchRateTrigger.HOT_COLLECTIONS);
       assertEquals(1, hotCollections.size());
@@ -193,7 +193,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
 
       Thread.sleep(waitForSeconds * 1000 * 2);
       trigger.run();
-      // should generate node and collection event
+      // should generate collection event
       assertEquals(1, events.size());
       event = events.get(0);
       hotCollections = (Map<String, Double>)event.getProperty(SearchRateTrigger.HOT_COLLECTIONS);
@@ -203,8 +203,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
       Rate = hotCollections.get(COLL2);
       assertNotNull(Rate);
       hotNodes = (Map<String, Double>)event.getProperty(SearchRateTrigger.HOT_NODES);
-      assertEquals(3, hotNodes.size());
-      hotNodes.forEach((n, r) -> assertTrue(n, r > rate));
+      assertTrue("hotNodes", hotNodes.isEmpty());
     }
   }
 
@@ -266,7 +265,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
       hotCollections = (Map<String, Object>)event.properties.get(SearchRateTrigger.HOT_COLLECTIONS);
       hotShards = (Map<String, Object>)event.properties.get(SearchRateTrigger.HOT_SHARDS);
       hotReplicas = (List<ReplicaInfo>)event.properties.get(SearchRateTrigger.HOT_REPLICAS);
-      assertFalse("no hot nodes?", hotNodes.isEmpty());
+      assertTrue("no hot nodes?", hotNodes.isEmpty());
       assertFalse("no hot collections?", hotCollections.isEmpty());
       assertFalse("no hot shards?", hotShards.isEmpty());
       assertFalse("no hot replicas?", hotReplicas.isEmpty());

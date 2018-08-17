@@ -55,8 +55,8 @@ Other Changes
 
 * SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
 
-* SOLR-12586: Remove Joda Time dependency.  Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
-  to use Java 8's java.time.DateTimeFormatter instead (see upgrade notes).
+* SOLR-12586, SOLR-12591: Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") to use Java 8's
+  java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
 
 ==================  7.5.0 ==================
@@ -235,6 +235,18 @@ Bug Fixes
 
 * SOLR-12541: Metrics handler throws an error if there are transient cores. (ab)
 
+* SOLR-12470: Search Rate Trigger multiple bug fixes, improvements and documentation updates. (ab)
+
+* SOLR-12665: Autoscaling policy not being refreshed due to caching (noble)
+
+* SOLR-12649: CloudSolrClient retries requests unnecessarily exception from server (noble, shalin)
+
+* SOLR-12670: RecoveryStrategy logs wrong wait time when retrying recovery. (shalin)
+
+* SOLR-12668: Autoscaling trigger listeners should be executed in the order of their creation. (ab)
+
+* SOLR-12475: Fix MaxSizeAutoCommitTest failures (Rupa Shankar, Anshum Gupta)
+
 Optimizations
 ----------------------
 
@@ -272,6 +284,8 @@ Other Changes
 
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
 
+* SOLR-12523: Improve error reporting and docs regarding Collection backup feature shared-fs requirement (janhoy)
+
 * SOLR-12468: Upgrade Jetty to 9.4.11.v20180605 (Michael Braun, shalin)
 
 * SOLR-12527: factor out a test-framework/ConfigRequest class (Christine Poerschke)
@@ -295,6 +309,10 @@ Other Changes
 * SOLR-11008: Use a lighter config for MetricsHandlerTest and ensure the core is up before the test starts (Varun Thacker)
 
 * SOLR-11766: Move Streaming Expressions section in Ref Guide to be a top-level section. (Cassandra Targett)
+
+* SOLR-12656: ShardSplitTest should extend AbstractFullDistribZkTestBase instead of BasicDistributedZkTest. (shalin)
+
+* LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
 
 ==================  7.4.0 ==================
 
