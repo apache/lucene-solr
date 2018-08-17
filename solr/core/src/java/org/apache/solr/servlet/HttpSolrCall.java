@@ -97,7 +97,6 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationResponse;
-import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.PublicKeyHandler;

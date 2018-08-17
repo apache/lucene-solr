@@ -105,7 +105,6 @@ public class AuditEvent {
    * Solr will fill in details such as ip, http method etc from the request, and
    * username if Principal exists on the request.
    * @param eventType a predefined or custom EventType
-   * @param exception
    * @param httpRequest the request to initialize from
    */
   public AuditEvent(EventType eventType, Throwable exception, HttpServletRequest httpRequest) {
