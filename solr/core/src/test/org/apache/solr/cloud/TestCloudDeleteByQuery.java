@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -199,12 +198,10 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 
   public void testMalformedDBQ(SolrClient client) throws Exception {
     assertNotNull("client not initialized", client);
-    try {
-      UpdateResponse rsp = update(params()).deleteByQuery("foo_i:not_a_num").process(client);
-      fail("Expected DBQ failure: " + rsp.toString());
-    } catch (SolrException e) {
-      assertEquals("not the expected DBQ failure: " + e.getMessage(), 400, e.code());
-    }
+    SolrException e = expectThrows(SolrException.class,
+        "Expected DBQ failure",
+        () -> update(params()).deleteByQuery("foo_i:not_a_num").process(client));
+    assertEquals("not the expected DBQ failure: " + e.getMessage(), 400, e.code());
   }
 
   //

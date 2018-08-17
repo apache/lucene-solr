@@ -53,7 +53,7 @@ public class ReplicaInfo implements MapWriter {
   }
 
   public ReplicaInfo(String name, String core, String coll, String shard, Replica.Type type, String node, Map<String, Object> vals) {
-    if(vals==null) vals = Collections.emptyMap();
+    if (vals == null) vals = Collections.emptyMap();
     this.name = name;
     if (vals != null) {
       this.variables.putAll(vals);
@@ -64,6 +64,21 @@ public class ReplicaInfo implements MapWriter {
     this.type = type;
     this.core = core;
     this.node = node;
+  }
+
+  ReplicaInfo(Map<String, Object> map) {
+    this.name = map.keySet().iterator().next();
+    Map details = (Map) map.get(name);
+    details = Utils.getDeepCopy(details, 4);
+    this.collection = (String) details.remove("collection");
+    this.shard = (String) details.remove("shard");
+    this.core = (String) details.remove("core");
+    this.node = (String) details.remove("node_name");
+    this.isLeader = Boolean.parseBoolean((String) details.getOrDefault("leader", "false"));
+    details.remove("leader");
+    type = Replica.Type.valueOf((String) details.getOrDefault("type", "NRT"));
+    details.remove("type");
+    this.variables.putAll(details);
   }
 
   public Object clone() {

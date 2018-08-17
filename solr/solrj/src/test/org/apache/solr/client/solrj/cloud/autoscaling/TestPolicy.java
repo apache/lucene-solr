@@ -766,9 +766,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals(Operand.EQUAL, REPLICA.getOperand(Operand.EQUAL, "2", null));
     assertEquals(Operand.NOT_EQUAL, REPLICA.getOperand(Operand.NOT_EQUAL, "2", null));
     assertEquals(Operand.RANGE_EQUAL, REPLICA.getOperand(Operand.EQUAL, "2.1", null));
-    assertEquals(Operand.RANGE_NOT_EQUAL, REPLICA.getOperand(Operand.NOT_EQUAL, "2.1", null));
     assertEquals(Operand.RANGE_EQUAL, REPLICA.getOperand(Operand.EQUAL, "2.01", null));
-    assertEquals(Operand.RANGE_NOT_EQUAL, REPLICA.getOperand(Operand.NOT_EQUAL, "2.01", null));
 
     Clause clause = Clause.create("{replica: '1.23', node:'#ANY'}");
     assertTrue(clause.getReplica().isPass(2));
@@ -781,11 +779,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertTrue(clause.getReplica().isPass(0));
     assertFalse(clause.getReplica().isPass(2));
 
-    clause = Clause.create("{replica: '!1.23', node:'#ANY'}");
-    assertFalse(clause.getReplica().isPass(2));
-    assertFalse(clause.getReplica().isPass(1));
-    assertTrue(clause.getReplica().isPass(0));
-    assertTrue(clause.getReplica().isPass(3));
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica: '!1.23', node:'#ANY'}"));
+
 
     clause = Clause.create("{replica: 1.23, node:'#ANY'}");
     assertTrue(clause.getReplica().isPass(2));
@@ -897,6 +893,23 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     clause = Clause.create("{cores: '14%' , node:[node1, node2, node3]}");
     assertEquals(Operand.IN, clause.getTag().op);
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica: '!14%' , node:'#ANY'}"));
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{cores: '!14%' , node:[node1, node2, node3]}"));
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{cores: '!1.66' , node:'#ANY'}"));
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica: '<14%' , node:'#ANY'}"));
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica: '>14%' , node:'#ANY'}"));
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{cores: '>14%' , node:'#ANY'}"));
+
   }
 
 
@@ -2437,7 +2450,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      'node':'10.0.0.6:8983_solr'," +
         "      'cores':2}}}";
     autoScalingjson = "  { cluster-policy:[" +
-        "    { replica :'<51%',node:'#ANY' , type: TLOG } ,{ replica :'<51%',node:'#ANY' , type: PULL } ]," +
+        "    { replica :'50%',node:'#ANY' , type: TLOG } ,{ replica :'50%',node:'#ANY' , type: PULL } ]," +
         "  cluster-preferences :[{ minimize : cores }]}";
     autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     session = autoScalingConfig.getPolicy().createSession(cloudManagerWithData(dataproviderdata));
@@ -2467,8 +2480,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    }}}";
 
     String autoScalingjson = "  { cluster-policy:[" +
-        "    { replica :'<34%', shard: '#EACH', sysprop.az : east}," +
-        "    { replica :'<67%', shard: '#EACH', sysprop.az : west}" +
+        "    { replica :'33%', shard: '#EACH', sysprop.az : east}," +
+        "    { replica :'67%', shard: '#EACH', sysprop.az : west}" +
         "    ]," +
         "  cluster-preferences :[{ minimize : cores }]}";
 
@@ -2480,6 +2493,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     List<String> nodes = new ArrayList<>();
 
+    int westCount = 0, eastCount = 0;
     for (int i = 0; i < 12; i++) {
       SolrRequest suggestion = txn.getCurrentSession()
           .getSuggester(ADDREPLICA)
@@ -2488,9 +2502,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
       assertNotNull(suggestion);
       String node = suggestion.getParams().get("node");
       nodes.add(node);
+      if ("10.0.0.6:8983_solr".equals(node)) eastCount++;
+      if ("10.0.0.6:7574_solr".equals(node)) westCount++;
       if (i % 3 == 1) assertEquals("10.0.0.6:8983_solr", node);
       else assertEquals("10.0.0.6:7574_solr", node);
     }
+    assertEquals(8, westCount);
+    assertEquals(4, eastCount);
 
     List<Violation> violations = txn.close();
     assertTrue(violations.isEmpty());
@@ -2655,7 +2673,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}";
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
-    assertEquals(2, violations.size());
+    assertEquals("expected 2 violations", 2, violations.size());
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
     assertEquals(2, suggestions.size());
     for (Suggester.SuggestionInfo suggestion : suggestions) {
@@ -3562,11 +3580,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Object root = Utils.fromJSONString(writer.toString());
     assertEquals(2l,
         Utils.getObjectByPath(root, true, "violations[0]/violation/replica/NRT"));
-    assertEquals(0l,
-        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/PULL"));
-    assertEquals(0l,
-        Utils.getObjectByPath(root, true, "violations[0]/violation/replica/TLOG"));
-
   }
 
 

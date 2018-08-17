@@ -927,7 +927,10 @@ public class CloudSolrClient extends SolrClient {
               rootCause instanceof NoHttpResponseException ||
               rootCause instanceof SocketException);
 
-      if (wasCommError || (exc instanceof RouteException)) {
+      if (wasCommError
+          || (exc instanceof RouteException && (errorCode == 404 || errorCode == 503)) // 404 because the core does not exist 503 service unavailable
+          //TODO there are other reasons for 404. We need to change the solr response format from HTML to structured data to know that
+          ) {
         // it was a communication error. it is likely that
         // the node to which the request to be sent is down . So , expire the state
         // so that the next attempt would fetch the fresh state

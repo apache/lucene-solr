@@ -32,6 +32,8 @@ class SortDoc {
   public SortDoc(SortValue[] sortValues) {
     this.sortValues = sortValues;
   }
+  public SortDoc() {
+  }
 
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
@@ -43,6 +45,7 @@ class SortDoc {
 
   public void reset() {
     this.docId = -1;
+    this.docBase = -1;
     for (SortValue value : sortValues) {
       value.reset();
     }
@@ -82,9 +85,9 @@ class SortDoc {
     SortValue[] sortValues1 = sd.sortValues;
     for(int i=0; i<sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sortValues1[i]);
-      if(comp < 0) {
+      if (comp < 0) {
         return true;
-      } if(comp > 0) {
+      } else if (comp > 0) {
         return false;
       }
     }

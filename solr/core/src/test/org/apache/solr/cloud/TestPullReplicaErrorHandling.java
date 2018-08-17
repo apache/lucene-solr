@@ -134,7 +134,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   }
   
 //  @Repeat(iterations=10)
-@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+//commented 9-Aug-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public void testCantConnectToPullReplica() throws Exception {
     int numShards = 2;
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
@@ -152,12 +152,13 @@ public void testCantConnectToPullReplica() throws Exception {
           assertNumDocs(10 + i, leaderClient);
         }
       }
-      try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
-        pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
-        fail("Shouldn't be able to query the pull replica");
-      } catch (SolrServerException e) {
-        //expected
-      }
+
+      SolrServerException e = expectThrows(SolrServerException.class, () -> {
+        try(HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+          pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+        }
+      });
+      
       assertNumberOfReplicas(numShards, 0, numShards, true, true);// Replica should still be active, since it doesn't disconnect from ZooKeeper
       {
         long numFound = 0;

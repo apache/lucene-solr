@@ -147,7 +147,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
-        "testNodeLost", CloudTestUtils.clusterShape(1, 2));
+        "testNodeLost", CloudTestUtils.clusterShape(1, 2, false, true));
 
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
     log.debug("-- cluster state: {}", clusterState);
@@ -210,7 +210,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
-        "testNodeWithMultipleReplicasLost", CloudTestUtils.clusterShape(2, 3));
+        "testNodeWithMultipleReplicasLost", CloudTestUtils.clusterShape(2, 3, false, true));
 
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
     log.debug("-- cluster state: {}", clusterState);

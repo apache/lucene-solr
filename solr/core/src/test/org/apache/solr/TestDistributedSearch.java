@@ -108,8 +108,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
   
   @Test
-  //05-Jul-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void test() throws Exception {
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
@@ -911,13 +909,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     //SOLR 3161 ensure shards.qt=/update fails (anything but search handler really)
     // Also see TestRemoteStreaming#testQtUpdateFails()
-    try {
-      ignoreException("isShard is only acceptable");
-      // query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
-      // fail();
-    } catch (SolrException e) {
-      //expected
-    }
+
+    //SolrException e = expectThrows(SolrException.class, () -> {
+    //  ignoreException("isShard is only acceptable");
+    //  query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
+    //});
     unIgnoreException("isShard is only acceptable");
 
     // test debugging
@@ -1219,41 +1215,34 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   private void validateCommonQueryParameters() throws Exception {
     ignoreException("parameter cannot be negative");
 
-    try {
+    SolrException e1 = expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setParam("start", "non_numeric_value").setQuery("*");
       QueryResponse resp = query(query);
-      fail("Expected the last query to fail, but got response: " + resp);
-    } catch (SolrException e) {
-      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, e1.code());
 
-    try {
+    SolrException e2 = expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setStart(-1).setQuery("*");
       QueryResponse resp = query(query);
-      fail("Expected the last query to fail, but got response: " + resp);
-    } catch (SolrException e) {
-      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, e2.code());
 
-    try {
+    SolrException e3 = expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setRows(-1).setStart(0).setQuery("*");
       QueryResponse resp = query(query);
-      fail("Expected the last query to fail, but got response: " + resp);
-    } catch (SolrException e) {
-      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, e3.code());
 
-    try {
+    SolrException e4 = expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setParam("rows", "non_numeric_value").setQuery("*");
       QueryResponse resp = query(query);
-      fail("Expected the last query to fail, but got response: " + resp);
-    } catch (SolrException e) {
-      assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, e4.code());
+
     resetExceptionIgnores();
   }
 }

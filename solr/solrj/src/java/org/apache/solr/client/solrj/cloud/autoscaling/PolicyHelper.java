@@ -28,12 +28,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
@@ -183,30 +185,20 @@ public class PolicyHelper {
   public static MapWriter getDiagnostics(Policy policy, SolrCloudManager cloudManager) {
     Policy.Session session = policy.createSession(cloudManager);
     List<Row> sorted = session.getSortedNodes();
-    List<Violation> violations = session.getViolations();
-
-    List<Preference> clusterPreferences = policy.getClusterPreferences();
-
-    List<Map<String, Object>> sortedNodes = new ArrayList<>(sorted.size());
-    for (Row row : sorted) {
-      Map<String, Object> map = Utils.makeMap("node", row.node);
-      map.put("isLive", row.isLive);
-      for (Cell cell : row.getCells()) {
-        for (Preference clusterPreference : clusterPreferences) {
-          Policy.SortParam name = clusterPreference.getName();
-          if (cell.getName().equalsIgnoreCase(name.name())) {
-            map.put(name.name(), cell.getValue());
-            break;
-          }
-        }
+    return ew -> ew.put("sortedNodes", (IteratorWriter) iw -> {
+      for (Row row : sorted) {
+        iw.add((MapWriter) ew1 -> {
+          ew1.put("node", row.node).
+              put("isLive", row.isLive);
+          for (Cell cell : row.getCells())
+            ew1.put(cell.name, cell.val,
+                (Predicate) o -> o != null && (!(o instanceof Map) || !((Map) o).isEmpty()));
+          ew1.put("replicas", row.collectionVsShardVsReplicas);
+        });
       }
-      sortedNodes.add(map);
-    }
-
-    return ew -> {
-      ew.put("sortedNodes", sortedNodes);
-      ew.put("violations", violations);
-    };
+    }).put("liveNodes", cloudManager.getClusterStateProvider().getLiveNodes())
+        .put("violations", session.getViolations())
+        .put("config", session.getPolicy());
 
 
   }
@@ -324,6 +316,7 @@ public class PolicyHelper {
       TimeSource timeSource = cloudManager.getTimeSource();
       synchronized (lockObj) {
         if (sessionWrapper.status == Status.NULL ||
+            sessionWrapper.zkVersion != cloudManager.getDistribStateManager().getAutoScalingConfig().getZkVersion() ||
             TimeUnit.SECONDS.convert(timeSource.getTimeNs() - sessionWrapper.lastUpdateTime, TimeUnit.NANOSECONDS) > SESSION_EXPIRY) {
           //no session available or the session is expired
           return createSession(cloudManager);
@@ -416,6 +409,7 @@ public class PolicyHelper {
     public Status status;
     private final SessionRef ref;
     private AtomicInteger refCount = new AtomicInteger();
+    public final long zkVersion;
 
     public long getCreateTime() {
       return createTime;
@@ -432,6 +426,9 @@ public class PolicyHelper {
       this.session = session;
       this.status = Status.UNUSED;
       this.ref = ref;
+      this.zkVersion = session == null ?
+          0 :
+          session.getPolicy().zkVersion;
     }
 
     public Policy.Session get() {

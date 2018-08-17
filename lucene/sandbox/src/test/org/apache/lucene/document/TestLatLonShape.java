@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
+import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
@@ -52,7 +53,7 @@ public class TestLatLonShape extends LuceneTestCase {
   }
 
   protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
-    return LatLonShape.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
+    return LatLonShape.newBoxQuery(field, QueryRelation.INTERSECTS, minLat, maxLat, minLon, maxLon);
   }
 
   @Ignore

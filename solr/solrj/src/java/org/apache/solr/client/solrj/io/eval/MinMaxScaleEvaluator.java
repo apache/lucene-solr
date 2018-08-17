@@ -76,7 +76,7 @@ public class MinMaxScaleEvaluator extends RecursiveObjectEvaluator implements Ma
     }
   }
 
-  private double[] scale(double[] values, double min, double max) {
+  public static double[] scale(double[] values, double min, double max) {
 
     double localMin = Double.MAX_VALUE;
     double localMax = Double.MIN_VALUE;
