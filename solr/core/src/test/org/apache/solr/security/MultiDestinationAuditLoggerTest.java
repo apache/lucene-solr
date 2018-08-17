@@ -17,7 +17,6 @@
 package org.apache.solr.security;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,5 +58,6 @@ public class MultiDestinationAuditLoggerTest extends LuceneTestCase {
     config.put("foo", "Should complain");
     al.init(config);
     assertEquals(1, config.size());
+    al.close();
   }
 }
