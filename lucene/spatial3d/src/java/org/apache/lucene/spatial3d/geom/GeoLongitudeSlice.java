@@ -36,6 +36,8 @@ class GeoLongitudeSlice extends GeoBaseBBox {
   protected final SidedPlane leftPlane;
   /** The right plane of the slice */
   protected final SidedPlane rightPlane;
+  /** Backing plane (for narrow angles) */
+  protected final SidedPlane backingPlane;
   /** The notable points for the slice (north and south poles) */
   protected final GeoPoint[] planePoints;
   /** The center point of the slice */
@@ -76,10 +78,18 @@ class GeoLongitudeSlice extends GeoBaseBBox {
       rightLon += Math.PI * 2.0;
     }
     final double middleLon = (leftLon + rightLon) * 0.5;
-    this.centerPoint = new GeoPoint(planetModel, 0.0, middleLon);
+    final double sinMiddleLon = Math.sin(middleLon);
+    final double cosMiddleLon = Math.cos(middleLon);
+
+    this.centerPoint = new GeoPoint(planetModel, 0.0, sinMiddleLon, 1.0, cosMiddleLon);
 
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
+    
+    // Compute the backing plane
+    // The normal for this plane is a unit vector through the origin that goes through the middle lon.  The plane's D is 0,
+    // because it goes through the origin.
+    this.backingPlane = new SidedPlane(this.centerPoint, cosMiddleLon, sinMiddleLon, 0.0, 0.0);
 
     this.planePoints = new GeoPoint[]{planetModel.NORTH_POLE, planetModel.SOUTH_POLE};
     this.edgePoints = new GeoPoint[]{planetModel.NORTH_POLE};
@@ -117,7 +127,8 @@ class GeoLongitudeSlice extends GeoBaseBBox {
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    return leftPlane.isWithin(x, y, z) &&
+    return backingPlane.isWithin(x, y, z) &&
+        leftPlane.isWithin(x, y, z) &&
         rightPlane.isWithin(x, y, z);
   }
 
@@ -158,7 +169,7 @@ class GeoLongitudeSlice extends GeoBaseBBox {
     bounds
       .addVerticalPlane(planetModel, leftLon, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, leftPlane)
-      .addIntersection(planetModel, rightPlane, leftPlane)
+      //.addIntersection(planetModel, rightPlane, leftPlane)
       .addPoint(planetModel.NORTH_POLE)
       .addPoint(planetModel.SOUTH_POLE);
   }
