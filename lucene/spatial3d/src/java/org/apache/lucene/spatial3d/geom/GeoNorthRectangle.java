@@ -130,7 +130,7 @@ class GeoNorthRectangle extends GeoBaseBBox {
 
     this.edgePoints = new GeoPoint[]{planetModel.NORTH_POLE};
     
-    System.out.println("LLHC = "+LLHC+" LRHC = "+LRHC);
+    //System.out.println("LLHC = "+LLHC+" LRHC = "+LRHC);
   }
 
   /**
