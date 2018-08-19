@@ -1326,4 +1326,34 @@ public class TestUnifiedHighlighter extends LuceneTestCase {
     }
     ir.close();
   }
+
+  // LUCENE-7909
+  public void testNestedBooleanQueryAccuracy() throws IOException {
+    IndexReader ir = indexSomeFields();
+    IndexSearcher searcher = newSearcher(ir);
+    UnifiedHighlighter highlighter = randomUnifiedHighlighter(searcher, indexAnalyzer,
+        EnumSet.of(HighlightFlag.WEIGHT_MATCHES), true);
+
+    // This query contains an inner Boolean of two MUST clauses (== "AND").  Only one of them is
+    //  actually in the data, the other is not.  We should highlight neither.  We can highlight the outer
+    //  SHOULD clauses though.
+    Query query = new BooleanQuery.Builder()
+        .add(new PhraseQuery("title", "title", "field"), BooleanClause.Occur.SHOULD)
+        .add(new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("category", "category")), BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term("category", "nonexistent")), BooleanClause.Occur.MUST)
+            .build(), BooleanClause.Occur.SHOULD)
+        .build();
+
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+
+    String[] snippets = highlighter.highlight("title", query, topDocs);
+    assertArrayEquals(new String[]{"This is the <b>title field</b>."}, snippets);
+
+    // no highlights, not of "category" since "nonexistent" wasn't there
+    snippets = highlighter.highlight("category", query, topDocs);
+    assertArrayEquals(new String[]{"This is the category field."}, snippets);
+
+    ir.close();
+  }
 }
