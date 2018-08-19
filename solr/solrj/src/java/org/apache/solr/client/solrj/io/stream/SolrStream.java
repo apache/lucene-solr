@@ -131,14 +131,12 @@ public class SolrStream extends TupleStream {
   private SolrParams loadParams(SolrParams paramsIn) throws IOException {
     ModifiableSolrParams solrParams = new ModifiableSolrParams(paramsIn);
     if (params.get("partitionKeys") != null) {
-      if(!params.get("partitionKeys").equals("none")) {
+      if(!params.get("partitionKeys").equals("none") && numWorkers > 1) {
         String partitionFilter = getPartitionFilter();
         solrParams.add("fq", partitionFilter);
       }
-    } else {
-      if(numWorkers > 1) {
+    } else if(numWorkers > 1) {
         throw new IOException("When numWorkers > 1 partitionKeys must be set. Set partitionKeys=none to send the entire stream to each worker.");
-      }
     }
 
     if(checkpoint > 0) {

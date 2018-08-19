@@ -38,6 +38,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -67,6 +68,9 @@ public class HashQParserPlugin extends QParserPlugin {
 
     public Query parse() {
       int workers = localParams.getInt("workers", 0);
+      if (workers < 2) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "workers needs to be more than 1");
+      }
       int worker = localParams.getInt("worker", 0);
       String keys = params.get("partitionKeys");
       keys = keys.replace(" ", "");

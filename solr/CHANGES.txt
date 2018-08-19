@@ -202,6 +202,8 @@ Bug Fixes
 
 * SOLR-12475: Fix MaxSizeAutoCommitTest failures (Rupa Shankar, Anshum Gupta)
 
+* SOLR-12674: RollupStream should not use the HashQueryParser for 1 worker. (Varun Thacker)
+
 Optimizations
 ----------------------
 
