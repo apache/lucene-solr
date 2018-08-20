@@ -33,7 +33,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Reader on top of SolrInputDocument that can "stream" a document as a character stream in a memory
- * efficient way, to avoid potentially large intermediate string buffers containing whole document content. 
+ * efficient way, to avoid potentially large intermediate string buffers containing whole document content.
+ * @lucene.experimental
  */
 public class SolrInputDocumentReader extends Reader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

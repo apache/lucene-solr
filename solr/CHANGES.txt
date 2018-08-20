@@ -80,6 +80,10 @@ Upgrade Notes
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
   findForcedMerges (optimize) and findForcedDeletesMerges (expungeDeletes) (Erick Erickson)
 
+* SOLR-11774: In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed some method signatures. 
+  If you have a custom language identifier implementation you will need to adapt your code. This class is annotated
+  with @lucene.experimental which means its API can change in-between major versions. 
+  
 * SOLR-12395: SignificantTermsQParserPlugin's name is now 'significantTerms' and its old name 'sigificantTerms' is deprecated.
 
 * SOLR-11694: Extremely outdated UIMA contrib module has been removed (Alexandre Rafalovitch)
