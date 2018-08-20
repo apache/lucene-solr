@@ -423,7 +423,7 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
     jetty.start(false);
-    jettys.add(jetty);
+    if (!jettys.contains(jetty)) jettys.add(jetty);
     return jetty;
   }
 
