@@ -235,7 +235,8 @@ Bug Fixes
 
 * SOLR-11770: NPE in tvrh if no field is specified and document doesn't contain any fields with term vectors
 
-* SOLR-11774: langid.map.individual won't work with langid.map.keepOrig (janhoy)
+* SOLR-11774: langid.map.individual now works together with langid.map.keepOrig. Also the detectLanguage() API 
+  is changed to accept a Reader allowing for more memory efficient implementations (janhoy)
 
 * SOLR-12541: Metrics handler throws an error if there are transient cores. (ab)
 
