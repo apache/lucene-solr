@@ -204,6 +204,8 @@ Bug Fixes
 
 * SOLR-12674: RollupStream should not use the HashQueryParser for 1 worker. (Varun Thacker)
 
+* SOLR-12679: MiniSolrCloudCluster.stopJettySolrRunner should remove jetty from the internal list. (shalin)
+
 Optimizations
 ----------------------
 

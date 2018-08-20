@@ -427,8 +427,15 @@ public class MiniSolrCloudCluster {
     return jetty;
   }
 
+  /**
+   * Stop the given Solr instance. It will be removed from the cluster's list of running instances.
+   * @param jetty a {@link JettySolrRunner} to be stopped
+   * @return the same {@link JettySolrRunner} instance provided to this method
+   * @throws Exception on error
+   */
   public JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
     jetty.stop();
+    jettys.remove(jetty);
     return jetty;
   }
 
