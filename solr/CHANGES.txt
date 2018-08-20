@@ -251,6 +251,10 @@ Bug Fixes
 
 * SOLR-12475: Fix MaxSizeAutoCommitTest failures (Rupa Shankar, Anshum Gupta)
 
+* SOLR-12674: RollupStream should not use the HashQueryParser for 1 worker. (Varun Thacker)
+
+* SOLR-12679: MiniSolrCloudCluster.stopJettySolrRunner should remove jetty from the internal list. (shalin)
+
 Optimizations
 ----------------------
 
@@ -317,6 +321,8 @@ Other Changes
 * SOLR-12656: ShardSplitTest should extend AbstractFullDistribZkTestBase instead of BasicDistributedZkTest. (shalin)
 
 * LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
+
+* SOLR-12014: Cryptic error message when creating a collection with sharding that violates autoscaling policies (noble)
 
 ==================  7.4.0 ==================
 

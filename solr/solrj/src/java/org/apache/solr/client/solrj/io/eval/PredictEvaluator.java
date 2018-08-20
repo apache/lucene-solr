@@ -97,13 +97,17 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
           predictors[i] = list.get(i).doubleValue();
         }
 
-        predictors = regressedTuple.scale(predictors);
+        if(regressedTuple.getScale()) {
+          predictors = regressedTuple.scale(predictors);
+        }
 
         return regressedTuple.predict(predictors);
       } else if (second instanceof Matrix) {
 
         Matrix m = (Matrix) second;
-        m = regressedTuple.scale(m);
+        if(regressedTuple.getScale()) {
+          m = regressedTuple.scale(m);
+        }
         double[][] data = m.getData();
         List<Number> predictions = new ArrayList();
         for (double[] predictors : data) {

@@ -18,6 +18,7 @@
 package org.apache.solr.common;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 public class ConditionalMapWriter implements MapWriter {
@@ -72,4 +73,10 @@ public class ConditionalMapWriter implements MapWriter {
   public void writeMap(EntryWriter ew) throws IOException {
     delegate.writeMap(new EntryWriterWrapper(ew));
   }
+
+  public static BiPredicate<String, Object> dedupeKeyPredicate(Set<String> keys) {
+    return (k, v) -> keys.add(k);
+  }
+
+  public static final BiPredicate<String, Object> NON_NULL_VAL = (s, o) -> o != null;
 }

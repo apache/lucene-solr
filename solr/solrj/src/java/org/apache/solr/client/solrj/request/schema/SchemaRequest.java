@@ -707,7 +707,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
       return new RequestWriter.ContentWriter() {
         @Override
         public void write(OutputStream os) throws IOException {
-          Utils.toJSON(getRequestParameters(),
+          Utils.writeJson(getRequestParameters(),
               os, false);
         }
 

@@ -73,7 +73,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
         if (useBinary) {
           new JavaBinCodec().marshal(payload, os);
         } else {
-          Utils.toJSON(payload, os, false);
+          Utils.writeJson(payload, os, false);
         }
       }
 

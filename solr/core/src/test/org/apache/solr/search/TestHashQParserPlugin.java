@@ -66,7 +66,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     //Test with string hash
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
-    params.add("fq", "{!hash worker=0 workers=1 cost="+getCost(random())+"}");
+    params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random())+"}");
     params.add("partitionKeys", "a_s");
     params.add("wt", "xml");
     String response = h.query(req(params));
@@ -75,7 +75,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     //Test with int hash
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
-    params.add("fq", "{!hash worker=0 workers=1 cost="+getCost(random())+"}");
+    params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random())+"}");
     params.add("partitionKeys", "a_i");
     params.add("wt", "xml");
     response = h.query(req(params));

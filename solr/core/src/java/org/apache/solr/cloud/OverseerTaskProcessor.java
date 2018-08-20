@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -121,6 +122,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private OverseerNodePrioritizer prioritizer;
 
+  private String thisNode;
+
   public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
                                         Stats stats,
                                         OverseerMessageHandlerSelector selector,
@@ -141,10 +144,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.runningZKTasks = new HashSet<>();
     this.runningTasks = new HashSet<>();
     this.completedTasks = new HashMap<>();
+    thisNode = Utils.getMDCNode();
   }
 
   @Override
   public void run() {
+    MDCLoggingContext.setNode(thisNode);
     log.debug("Process current queue of overseer operations");
     LeaderStatus isLeader = amILeader();
     while (isLeader == LeaderStatus.DONT_KNOW) {

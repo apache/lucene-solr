@@ -19,22 +19,26 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.common.ConditionalMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -51,8 +55,10 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
+import static org.apache.solr.common.util.Utils.handleExp;
 import static org.apache.solr.common.util.Utils.time;
 import static org.apache.solr.common.util.Utils.timeElapsed;
 
@@ -162,8 +168,14 @@ public class PolicyHelper {
             }
             SolrRequest op = suggester.getSuggestion();
             if (op == null) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules " +
-                  Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true)));
+              String errorId = "AutoScaling.error.diagnostics." + System.nanoTime();
+              Policy.Session sessionCopy = suggester.session;
+              log.error("errorId : " + errorId + "  " +
+                  handleExp(log, "", () -> Utils.writeJson(getDiagnostics(sessionCopy), new StringWriter(), true).toString()));
+
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " No node can satisfy the rules " +
+                  Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true) + " More details from logs in node : "
+                      + Utils.getMDCNode() + ", errorId : " + errorId));
             }
             session = suggester.getSession();
             positions.add(new ReplicaPosition(shardName, ++idx, e.getKey(), op.getParams().get(NODE)));
@@ -184,23 +196,30 @@ public class PolicyHelper {
 
   public static MapWriter getDiagnostics(Policy policy, SolrCloudManager cloudManager) {
     Policy.Session session = policy.createSession(cloudManager);
+    return getDiagnostics(session);
+  }
+
+  public static MapWriter getDiagnostics(Policy.Session session) {
     List<Row> sorted = session.getSortedNodes();
+    Set<String> alreadyWritten = new HashSet<>();
+    BiPredicate<String, Object> p = dedupeKeyPredicate(alreadyWritten)
+        .and(ConditionalMapWriter.NON_NULL_VAL)
+        .and((s, o) -> !(o instanceof Map) || !((Map) o).isEmpty());
+
     return ew -> ew.put("sortedNodes", (IteratorWriter) iw -> {
       for (Row row : sorted) {
         iw.add((MapWriter) ew1 -> {
-          ew1.put("node", row.node).
-              put("isLive", row.isLive);
+          alreadyWritten.clear();
+          ew1.put("node", row.node, p).
+              put("isLive", row.isLive, p);
           for (Cell cell : row.getCells())
-            ew1.put(cell.name, cell.val,
-                (Predicate) o -> o != null && (!(o instanceof Map) || !((Map) o).isEmpty()));
+            ew1.put(cell.name, cell.val, p);
           ew1.put("replicas", row.collectionVsShardVsReplicas);
         });
       }
-    }).put("liveNodes", cloudManager.getClusterStateProvider().getLiveNodes())
+    }).put("liveNodes", session.cloudManager.getClusterStateProvider().getLiveNodes())
         .put("violations", session.getViolations())
         .put("config", session.getPolicy());
-
-
   }
 
   public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf, SolrCloudManager cloudManager) {

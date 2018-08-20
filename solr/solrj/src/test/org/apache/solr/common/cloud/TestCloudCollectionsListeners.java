@@ -67,6 +67,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void testSimpleCloudCollectionsListener() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -194,6 +195,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void testWatchesWorkForBothStateFormats() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
 
