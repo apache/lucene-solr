@@ -278,6 +278,10 @@ Other Changes
 
 * SOLR-12675: Make LeaderVoteWaitTimeoutTest more resilient against side effects of test methods. (shalin)
 
+* SOLR-12130: CdcrReplicationDistributedZkTest is broken into two test classes, CdcrOpsAndBoundariesTest which does
+  not require node restarts and CdcrWithNodesRestartsTest which does. The tests themselves are made faster and more
+  resilient to spurious failures. (Varun Thacker, Amrit Sarkar via shalin)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

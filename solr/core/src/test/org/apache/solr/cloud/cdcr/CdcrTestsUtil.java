@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.cdcr;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
@@ -25,9 +26,15 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.ChaosMonkey;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -35,13 +42,19 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.CdcrParams;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CdcrTestsUtil extends SolrTestCaseJ4{
+public class CdcrTestsUtil extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected static void cdcrRestart(CloudSolrClient client) throws SolrServerException, IOException {
+    cdcrStop(client);
+    cdcrStart(client);
+  }
 
   protected static void cdcrStart(CloudSolrClient client) throws SolrServerException, IOException {
     QueryResponse response = invokeCdcrAction(client, CdcrParams.CdcrAction.START);
@@ -89,12 +102,16 @@ public class CdcrTestsUtil extends SolrTestCaseJ4{
     while (System.nanoTime() - start <= TimeUnit.NANOSECONDS.convert(20, TimeUnit.SECONDS)) {
       response = client.query(params);
       if (response.getResponse() != null && response.getResponse().get("fingerprint") != null) {
-        return (long)((LinkedHashMap)response.getResponse().get("fingerprint")).get("maxVersionEncountered");
+        return (long) ((LinkedHashMap) response.getResponse().get("fingerprint")).get("maxVersionEncountered");
       }
       Thread.sleep(200);
     }
     log.error("maxVersionEncountered not found for client : " + client + "in 20 attempts");
     return null;
+  }
+
+  protected static long waitForClusterToSync(long numDocs, CloudSolrClient clusterSolrClient) throws Exception {
+    return waitForClusterToSync((int) numDocs, clusterSolrClient, "*:*");
   }
 
   protected static long waitForClusterToSync(int numDocs, CloudSolrClient clusterSolrClient) throws Exception {
@@ -112,7 +129,7 @@ public class CdcrTestsUtil extends SolrTestCaseJ4{
       }
       Thread.sleep(1000);
     }
-    return response != null ? response.getResults().getNumFound() : 0;
+    return response != null ? response.getResults().getNumFound() : null;
   }
 
   protected static boolean assertShardInSync(String collection, String shard, CloudSolrClient client) throws IOException, SolrServerException {
@@ -146,4 +163,111 @@ public class CdcrTestsUtil extends SolrTestCaseJ4{
     }
     return false;
   }
+
+  public static void indexRandomDocs(Integer start, Integer count, CloudSolrClient solrClient) throws Exception {
+    // ADD operation on cluster 1
+    int docs = 0;
+    if (count == 0) {
+      docs = (TEST_NIGHTLY ? 100 : 10);
+    } else {
+      docs = count;
+    }
+    for (int k = start; k < docs; k++) {
+      UpdateRequest req = new UpdateRequest();
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", k);
+      req.add(doc);
+
+      req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+      req.process(solrClient);
+    }
+  }
+
+  public static void indexRandomDocs(Integer count, CloudSolrClient solrClient) throws Exception {
+    indexRandomDocs(0, count, solrClient);
+  }
+
+  public static void index(MiniSolrCloudCluster cluster, String collection, SolrInputDocument doc, boolean doCommit) throws IOException, SolrServerException {
+    CloudSolrClient client = createCloudClient(cluster, collection);
+    try {
+      client.add(doc);
+      if (doCommit) {
+        client.commit(true, true);
+      } else {
+        client.commit(true, false);
+      }
+    } finally {
+      client.close();
+    }
+  }
+
+  public static void index(MiniSolrCloudCluster cluster, String collection, SolrInputDocument doc) throws IOException, SolrServerException {
+    index(cluster, collection, doc, false);
+  }
+
+  public static CloudSolrClient createCloudClient(MiniSolrCloudCluster cluster, String defaultCollection) {
+    CloudSolrClient server = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean());
+    if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
+    return server;
+  }
+
+
+  public static void restartClusterNode(MiniSolrCloudCluster cluster, String collection, int index) throws Exception {
+    System.setProperty("collection", collection);
+    restartNode(cluster.getJettySolrRunner(index));
+    System.clearProperty("collection");
+  }
+
+  public static void restartClusterNodes(MiniSolrCloudCluster cluster, String collection) throws Exception {
+    System.setProperty("collection", collection);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      restartNode(jetty);
+    }
+    System.clearProperty("collection");
+  }
+
+  public static void restartNode(JettySolrRunner jetty) throws Exception {
+    ChaosMonkey.stop(jetty);
+    ChaosMonkey.start(jetty);
+    Thread.sleep(10000);
+  }
+
+  public static int numberOfFiles(String dir) {
+    File file = new File(dir);
+    if (!file.isDirectory()) {
+      assertTrue("Path to tlog " + dir + " does not exists or it's not a directory.", false);
+    }
+    log.debug("Update log dir {} contains: {}", dir, file.listFiles());
+    return file.listFiles().length;
+  }
+
+  public static int getNumberOfTlogFilesOnReplicas(MiniSolrCloudCluster cluster) throws Exception {
+    int count = 0;
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      for (SolrCore core : jetty.getCoreContainer().getCores()) {
+        count += numberOfFiles(core.getUlogDir() + "/tlog");
+      }
+    }
+    return count;
+  }
+
+  public static String getNonLeaderNode(MiniSolrCloudCluster cluster, String collection) throws Exception {
+    String leaderNode = getLeaderNode(cluster, collection);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      if (!jetty.getNodeName().equals(leaderNode)) {
+        return jetty.getNodeName();
+      }
+    }
+    return cluster.getJettySolrRunners().get(0).getNodeName();
+  }
+
+  public static String getLeaderNode(MiniSolrCloudCluster cluster, String collection) throws Exception {
+    for (Replica replica : cluster.getSolrClient().getClusterStateProvider().getCollection(collection).getReplicas()) {
+      if (cluster.getSolrClient().getClusterStateProvider().getCollection(collection).getLeader("shard1") == replica) {
+        return replica.getNodeName();
+      }
+    }
+    return "";
+  }
+
 }
