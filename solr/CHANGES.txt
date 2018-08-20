@@ -320,6 +320,8 @@ Other Changes
 
 * SOLR-12680: Fix ClassCastException and AIOOBE in TestSolrConfigHandlerConcurrent. (shalin)
 
+* SOLR-12675: Make LeaderVoteWaitTimeoutTest more resilient against side effects of test methods. (shalin)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -64,6 +64,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class TriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final int NODE_COUNT = 2;
 
   private static volatile CountDownLatch actionConstructorCalled;
   private static volatile CountDownLatch actionInitCalled;
@@ -84,7 +85,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
+    configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     // disable .scheduled_maintenance
@@ -115,19 +116,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
-    // ensure that exactly 2 jetty nodes are running
-    int numJetties = cluster.getJettySolrRunners().size();
-    log.info("Found {} jetty instances running", numJetties);
-    for (int i = 2; i < numJetties; i++)  {
-      int r = random().nextInt(cluster.getJettySolrRunners().size());
-      log.info("Shutdown extra jetty instance at port {}", cluster.getJettySolrRunner(r).getLocalPort());
-      cluster.stopJettySolrRunner(r);
-    }
-    for (int i = cluster.getJettySolrRunners().size(); i < 2; i++) {
-      // start jetty instances
-      cluster.startJettySolrRunner();
-    }
-    cluster.waitForAllNodes(5);
+    SolrCloudTestCase.ensureRunningJettys(NODE_COUNT, 5);
 
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     String overseerLeader = (String) overSeerStatus.get("leader");
