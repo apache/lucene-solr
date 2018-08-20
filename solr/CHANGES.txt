@@ -274,6 +274,8 @@ Other Changes
 
 * SOLR-12014: Cryptic error message when creating a collection with sharding that violates autoscaling policies (noble)
 
+* SOLR-12680: Fix ClassCastException and AIOOBE in TestSolrConfigHandlerConcurrent. (shalin)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

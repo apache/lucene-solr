@@ -65,21 +65,23 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
     for (Object o : caches.entrySet()) {
       final Map.Entry e = (Map.Entry) o;
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          try {
-            ArrayList errs = new ArrayList();
-            collectErrors.add(errs);
-            invokeBulkCall((String)e.getKey() , errs, (Map) e.getValue());
-          } catch (Exception e) {
-            e.printStackTrace();
+      if (e.getValue() instanceof Map) {
+        Map value = (Map) e.getValue();
+        Thread t = new Thread() {
+          @Override
+          public void run() {
+            try {
+              List<String> errs = new ArrayList<>();
+              collectErrors.add(errs);
+              invokeBulkCall((String)e.getKey() , errs, value);
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
           }
-
-        }
-      };
-      threads.add(t);
-      t.start();
+        };
+        threads.add(t);
+        t.start();
+      }
     }
 
 
@@ -146,7 +148,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
 
       //get another node
-      String url = urls.get(urls.size());
+      String url = urls.get(urls.size() - 1);
 
       long startTime = System.nanoTime();
       long maxTimeoutSeconds = 20;
@@ -163,13 +165,13 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
 
         Object o = getObjectByPath(m, true, asList("query", cacheName, "size"));
-        if(!val1.equals(o)) errmessages.add(StrUtils.formatString("'size' property not set, expected = {0}, actual {1}", val1, o));
+        if(!val1.equals(o.toString())) errmessages.add(StrUtils.formatString("'size' property not set, expected = {0}, actual {1}", val1, o));
 
         o = getObjectByPath(m, true, asList("query", cacheName, "initialSize"));
-        if(!val2.equals(o)) errmessages.add(StrUtils.formatString("'initialSize' property not set, expected = {0}, actual {1}", val2, o));
+        if(!val2.equals(o.toString())) errmessages.add(StrUtils.formatString("'initialSize' property not set, expected = {0}, actual {1}", val2, o));
 
         o = getObjectByPath(m, true, asList("query", cacheName, "autowarmCount"));
-        if(!val3.equals(o)) errmessages.add(StrUtils.formatString("'autowarmCount' property not set, expected = {0}, actual {1}", val3, o));
+        if(!val3.equals(o.toString())) errmessages.add(StrUtils.formatString("'autowarmCount' property not set, expected = {0}, actual {1}", val3, o));
         if(errmessages.isEmpty()) break;
       }
       if(!errmessages.isEmpty()) {
