@@ -251,6 +251,9 @@ Bug Fixes
 
 * SOLR-12598: Do not fetch non-stored fields (Nikolay Khitrin, Erick Erickson)
 
+* SOLR-12683: HashQuery will throw an exception if more than 4 partitionKeys is specified.
+  Earlier after the 4th partitionKey the keys would be silently ignored. (Varun Thacker)
+
 Optimizations
 ----------------------
 
