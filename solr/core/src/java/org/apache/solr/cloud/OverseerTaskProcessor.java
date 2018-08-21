@@ -388,10 +388,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     String statsName = "collection_am_i_leader";
     Timer.Context timerContext = stats.time(statsName);
     boolean success = true;
+    String propsId = null;
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
           Overseer.OVERSEER_ELECT + "/leader", null, null, true));
-      if (myId.equals(props.getStr(ID))) {
+      propsId = props.getStr(ID);
+      if (myId.equals(propsId)) {
         return LeaderStatus.YES;
       }
     } catch (KeeperException e) {
@@ -401,6 +403,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         return LeaderStatus.DONT_KNOW;
       } else if (e.code() != KeeperException.Code.SESSIONEXPIRED) {
         log.warn("", e);
+      } else {
+        log.debug("", e);
       }
     } catch (InterruptedException e) {
       success = false;
@@ -413,7 +417,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         stats.error(statsName);
       }
     }
-    log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
+    log.info("According to ZK I (id={}) am no longer a leader. propsId={}", myId, propsId);
     return LeaderStatus.NO;
   }
 

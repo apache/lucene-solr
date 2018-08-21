@@ -111,6 +111,9 @@ public class MultiCollectorTest extends LuceneTestCase {
 
           @Override
           public void setScorer(Scorer scorer) throws IOException {
+            while (expectedScorer.equals(scorer.getClass()) == false && scorer instanceof FilterScorer) {
+              scorer = ((FilterScorer) scorer).in;
+            }
             assertEquals(expectedScorer, scorer.getClass());
           }
 

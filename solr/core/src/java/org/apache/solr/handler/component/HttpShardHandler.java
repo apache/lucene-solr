@@ -430,7 +430,7 @@ public class HttpShardHandler extends ShardHandler {
           // And now recreate the | delimited list of equivalent servers
           final String sliceShardsStr = createSliceShardsStr(shardUrls);
           if (sliceShardsStr.isEmpty()) {
-            boolean tolerant = rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false);
+            boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
             if (!tolerant) {
               // stop the check when there are no replicas available for a shard
               throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,

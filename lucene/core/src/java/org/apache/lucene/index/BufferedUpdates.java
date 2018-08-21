@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
@@ -233,62 +234,49 @@ class BufferedUpdates {
     }
   }
  
-  public void addNumericUpdate(NumericDocValuesUpdate update, int docIDUpto) {
-    LinkedHashMap<Term,NumericDocValuesUpdate> fieldUpdates = numericUpdates.get(update.field);
-    if (fieldUpdates == null) {
-      fieldUpdates = new LinkedHashMap<>();
-      numericUpdates.put(update.field, fieldUpdates);
-      bytesUsed.addAndGet(BYTES_PER_NUMERIC_FIELD_ENTRY);
-    }
-    final NumericDocValuesUpdate current = fieldUpdates.get(update.term);
-    if (current != null && docIDUpto < current.docIDUpto) {
-      // Only record the new number if it's greater than or equal to the current
-      // one. This is important because if multiple threads are replacing the
-      // same doc at nearly the same time, it's possible that one thread that
-      // got a higher docID is scheduled before the other threads.
-      return;
-    }
-
-    update.docIDUpto = docIDUpto;
-    // since it's a LinkedHashMap, we must first remove the Term entry so that
-    // it's added last (we're interested in insertion-order).
-    if (current != null) {
-      fieldUpdates.remove(update.term);
-    }
-    fieldUpdates.put(update.term, update);
-    numNumericUpdates.incrementAndGet();
-    if (current == null) {
-      bytesUsed.addAndGet(BYTES_PER_NUMERIC_UPDATE_ENTRY + update.sizeInBytes());
+  void addNumericUpdate(NumericDocValuesUpdate update, int docIDUpto) {
+    if (addDocValuesUpdate(numericUpdates, update, docIDUpto, update::prepareForApply, BYTES_PER_NUMERIC_UPDATE_ENTRY,
+        BYTES_PER_NUMERIC_FIELD_ENTRY)) {
+      numNumericUpdates.incrementAndGet();
     }
   }
   
-  public void addBinaryUpdate(BinaryDocValuesUpdate update, int docIDUpto) {
-    LinkedHashMap<Term,BinaryDocValuesUpdate> fieldUpdates = binaryUpdates.get(update.field);
+  void addBinaryUpdate(BinaryDocValuesUpdate update, int docIDUpto) {
+    if (addDocValuesUpdate(binaryUpdates, update, docIDUpto, update::prepareForApply, BYTES_PER_BINARY_UPDATE_ENTRY,
+        BYTES_PER_BINARY_FIELD_ENTRY)) {
+      numBinaryUpdates.incrementAndGet();
+    }
+  }
+
+  private <T extends DocValuesUpdate> boolean addDocValuesUpdate(Map<String,LinkedHashMap<Term,T>> updates, T update,
+                                                                 int docIDUpto, IntFunction<T> prepareForApply,
+                                                                 long bytesPerUpdateEntry, long bytesPerFieldEntry) {
+    LinkedHashMap<Term,T> fieldUpdates = updates.get(update.field);
     if (fieldUpdates == null) {
       fieldUpdates = new LinkedHashMap<>();
-      binaryUpdates.put(update.field, fieldUpdates);
-      bytesUsed.addAndGet(BYTES_PER_BINARY_FIELD_ENTRY);
+      updates.put(update.field, fieldUpdates);
+      bytesUsed.addAndGet(bytesPerFieldEntry);
     }
-    final BinaryDocValuesUpdate current = fieldUpdates.get(update.term);
+    final T current = fieldUpdates.get(update.term);
     if (current != null && docIDUpto < current.docIDUpto) {
       // Only record the new number if it's greater than or equal to the current
       // one. This is important because if multiple threads are replacing the
       // same doc at nearly the same time, it's possible that one thread that
       // got a higher docID is scheduled before the other threads.
-      return;
+      return false;
     }
-    
-    update.docIDUpto = docIDUpto;
+
     // since it's a LinkedHashMap, we must first remove the Term entry so that
     // it's added last (we're interested in insertion-order).
     if (current != null) {
       fieldUpdates.remove(update.term);
     }
-    fieldUpdates.put(update.term, update);
-    numBinaryUpdates.incrementAndGet();
+
+    fieldUpdates.put(update.term, prepareForApply.apply(docIDUpto)); // only make a copy if necessary
     if (current == null) {
-      bytesUsed.addAndGet(BYTES_PER_BINARY_UPDATE_ENTRY + update.sizeInBytes());
+      bytesUsed.addAndGet(bytesPerUpdateEntry + update.sizeInBytes());
     }
+    return true;
   }
 
   void clearDeleteTerms() {

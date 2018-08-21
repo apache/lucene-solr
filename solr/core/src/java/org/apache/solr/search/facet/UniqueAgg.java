@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -145,7 +146,7 @@ public class UniqueAgg extends StrAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slot) throws IOException {
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
       int valuesDocID = docIdSetIterator().docID();
       if (valuesDocID < doc) {
         valuesDocID = docIdSetIterator().advance(doc);

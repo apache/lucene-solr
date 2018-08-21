@@ -44,7 +44,7 @@ public class RankEvaluator extends RecursiveNumericEvaluator implements OneValue
     }
     else if(value instanceof List){
       NaturalRanking rank = new NaturalRanking();      
-      return Arrays.stream(rank.rank(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).mapToObj(Double::new).collect(Collectors.toList());
+      return Arrays.stream(rank.rank(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).boxed().collect(Collectors.toList());
     }
     else{
       return doWork(Arrays.asList((Number)value));

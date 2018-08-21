@@ -82,6 +82,8 @@ The output will look like:
 
 Upload a configset, which is sent as a zipped file.
 
+This functionality is enabled by default, but can be disabled via a runtime parameter `-Dconfigset.upload.enabled=false`. Disabling this feature is advisable if you want to expose Solr installation to untrusted users (even though you should never do that!).
+
 A configset is uploaded in a "trusted" mode if authentication is enabled and the upload operation is performed as an authenticated request. Without authentication, a configset is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" configset, the following functionality will not work:
 
 * If specified in the configset, the DataImportHandler's ScriptTransformer will not initialize.

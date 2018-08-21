@@ -201,6 +201,7 @@ This transformer executes a separate query per transforming document passing doc
 * It must be given an unique name: `fl=*,children:[subquery]`
 * There might be a few of them, e.g., `fl=*,sons:[subquery],daughters:[subquery]`.
 * Every `[subquery]` occurrence adds a field into a result document with the given name, the value of this field is a document list, which is a result of executing subquery using document fields as an input.
+* Subquery would use `/select` search handler by default that causes error if it is not configured. This can be changed by supplying `foo.qt` parameter.
 
 Here is how it looks like in various formats:
 

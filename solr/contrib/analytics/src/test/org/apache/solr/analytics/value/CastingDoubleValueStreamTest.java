@@ -63,7 +63,7 @@ public class CastingDoubleValueStreamTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValues(20.0, -3.32, 42.5);
-    Iterator<Object> values = Arrays.<Object>asList(new Double(20.0), new Double(-3.32), new Double(42.5)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(20.0, -3.32, 42.5).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

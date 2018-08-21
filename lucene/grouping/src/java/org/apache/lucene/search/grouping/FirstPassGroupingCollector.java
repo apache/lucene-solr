@@ -111,10 +111,9 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
    * number of unique groups collected is &lt;= offset.
    *
    * @param groupOffset The offset in the collected groups
-   * @param fillFields Whether to fill to {@link SearchGroup#sortValues}
    * @return top groups, starting from offset
    */
-  public Collection<SearchGroup<T>> getTopGroups(int groupOffset, boolean fillFields) throws IOException {
+  public Collection<SearchGroup<T>> getTopGroups(int groupOffset) throws IOException {
 
     //System.out.println("FP.getTopGroups groupOffset=" + groupOffset + " fillFields=" + fillFields + " groupMap.size()=" + groupMap.size());
 
@@ -140,11 +139,9 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
       // System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.toString()));
       SearchGroup<T> searchGroup = new SearchGroup<>();
       searchGroup.groupValue = group.groupValue;
-      if (fillFields) {
-        searchGroup.sortValues = new Object[sortFieldCount];
-        for(int sortFieldIDX=0;sortFieldIDX<sortFieldCount;sortFieldIDX++) {
-          searchGroup.sortValues[sortFieldIDX] = comparators[sortFieldIDX].value(group.comparatorSlot);
-        }
+      searchGroup.sortValues = new Object[sortFieldCount];
+      for(int sortFieldIDX=0;sortFieldIDX<sortFieldCount;sortFieldIDX++) {
+        searchGroup.sortValues[sortFieldIDX] = comparators[sortFieldIDX].value(group.comparatorSlot);
       }
       result.add(searchGroup);
     }

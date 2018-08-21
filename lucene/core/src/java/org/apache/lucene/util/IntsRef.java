@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.util;
 
-import java.util.Arrays;
-
 
 /** Represents int[], as a slice (offset + length) into an
  *  existing int[].  The {@link #ints} member should never be null; use
@@ -127,7 +125,7 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
    * and an offset of zero.
    */
   public static IntsRef deepCopyOf(IntsRef other) {
-    return new IntsRef(Arrays.copyOfRange(other.ints, other.offset, other.offset + other.length), 0, other.length);
+    return new IntsRef(ArrayUtil.copyOfSubArray(other.ints, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

@@ -126,7 +126,7 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
       }
     }
     try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(coreContainer.getZkController().getZkServerAddress()), Optional.empty())
-        .withHttpClient(coreContainer.getUpdateShardHandler().getHttpClient())
+        .withHttpClient(coreContainer.getUpdateShardHandler().getDefaultHttpClient())
         .build()) {
       QueryResponse qr = cloudSolrClient.query(collection, params);
       rsp.setAllValues(qr.getResponse());

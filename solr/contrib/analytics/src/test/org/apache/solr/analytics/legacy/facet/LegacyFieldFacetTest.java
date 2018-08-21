@@ -90,11 +90,11 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest{
   public static void beforeClass() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
-    
-    defaults.put("int", new Integer(0));
-    defaults.put("long", new Long(0));
-    defaults.put("float", new Float(0));
-    defaults.put("double", new Double(0));
+
+    defaults.put("int", 0);
+    defaults.put("long", 0L);
+    defaults.put("float", (float) 0);
+    defaults.put("double", (double) 0);
     defaults.put("date", "1800-12-31T23:59:59Z");
     defaults.put("string", "str0");
 

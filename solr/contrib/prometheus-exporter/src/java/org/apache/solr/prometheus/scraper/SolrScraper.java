@@ -45,7 +45,7 @@ import java.util.concurrent.Callable;
  * SolrScraper
  */
 public class SolrScraper implements Callable<Map<String, Collector.MetricFamilySamples>> {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private SolrClient solrClient;
   private LinkedHashMap conf;
@@ -113,7 +113,7 @@ public class SolrScraper implements Callable<Map<String, Collector.MetricFamilyS
           queryResponse = solrClient.request(queryRequest, collection);
         }
       } catch (SolrServerException | IOException e) {
-        this.logger.error("failed to request: " + queryRequest.getPath() + " " + e.getMessage());
+        this.log.error("failed to request: " + queryRequest.getPath() + " " + e.getMessage());
       }
 
       ObjectMapper om = new ObjectMapper();
@@ -198,14 +198,14 @@ public class SolrScraper implements Callable<Map<String, Collector.MetricFamilyS
             }
           }
         } catch (JsonQueryException e) {
-          this.logger.error(e.toString() + " " + q.toString());
+          this.log.error(e.toString() + " " + q.toString());
           SolrExporter.scrapeErrorTotal.inc();
         }
       }
     } catch (HttpSolrClient.RemoteSolrException | IOException e) {
-      this.logger.error("failed to request: " + e.toString());
+      this.log.error("failed to request: " + e.toString());
     } catch (Exception e) {
-      this.logger.error(e.toString());
+      this.log.error(e.toString());
       e.printStackTrace();
     }
 

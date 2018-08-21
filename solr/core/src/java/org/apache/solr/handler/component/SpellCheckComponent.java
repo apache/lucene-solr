@@ -339,10 +339,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   protected SolrParams getCustomParams(String dictionary, SolrParams params) {
     ModifiableSolrParams result = new ModifiableSolrParams();
     Iterator<String> iter = params.getParameterNamesIterator();
-    String prefix = SpellingParams.SPELLCHECK_PREFIX + "." + dictionary + ".";
-    while (iter.hasNext()){
+    String prefix = SpellingParams.SPELLCHECK_PREFIX + dictionary + ".";
+    while (iter.hasNext()) {
       String nxt = iter.next();
-      if (nxt.startsWith(prefix)){
+      if (nxt.startsWith(prefix)) {
         result.add(nxt.substring(prefix.length()), params.getParams(nxt));
       }
     }
@@ -401,7 +401,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           try {
             nl = (NamedList) srsp.getSolrResponse().getResponse().get("spellcheck");
           } catch (Exception e) {
-            if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+            if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
               continue; // looks like a shard did not return anything
             }
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

@@ -25,7 +25,6 @@
  * <br>
  * {@link org.apache.lucene.analysis.standard.StandardAnalyzer StandardAnalyzer} includes
  * {@link org.apache.lucene.analysis.standard.StandardTokenizer StandardTokenizer},
- * {@link org.apache.lucene.analysis.standard.StandardFilter StandardFilter}, 
  * {@link org.apache.lucene.analysis.LowerCaseFilter LowerCaseFilter}
  * and {@link org.apache.lucene.analysis.StopFilter StopFilter}.
  */

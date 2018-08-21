@@ -24,6 +24,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.carrotsearch.hppc.IntHashSet;
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongObjectHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.LongCursor;
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -50,6 +59,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -73,23 +83,11 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryWrapperFilter;
-import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
-import com.carrotsearch.hppc.IntHashSet;
-import com.carrotsearch.hppc.IntObjectHashMap;
-import com.carrotsearch.hppc.LongHashSet;
-import com.carrotsearch.hppc.LongObjectHashMap;
-import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.LongCursor;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -440,7 +438,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           docs[i] = scoreDoc.doc;
           scores[i] = scoreDoc.score;
         }
-        DocSlice slice = new DocSlice(0, docs.length, docs, scores, topDocs.totalHits, topDocs.getMaxScore());
+        assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+        DocSlice slice = new DocSlice(0, docs.length, docs, scores, topDocs.totalHits.value, Float.NaN);
 
         if(fieldType instanceof StrField) {
           final BytesRef bytesRef = ordBytes.get((int)groupValue);
@@ -538,7 +537,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       DocIdSetIterator iterator = new BitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false, true);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, Integer.MAX_VALUE) : TopFieldCollector.create(sort, limit, Integer.MAX_VALUE);
         groups.put(group, collector);
       }
 
@@ -549,11 +548,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues)docValues;
         this.ordinalMap = multiSortedDocValues.mapping;
       }
-    }
-
-    @Override
-    public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE; // TODO: is this always true?
     }
 
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
@@ -627,17 +621,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       Iterator<LongCursor> iterator = groupSet.iterator();
       while (iterator.hasNext()) {
         LongCursor cursor = iterator.next();
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false, true);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, Integer.MAX_VALUE) : TopFieldCollector.create(sort, limit, Integer.MAX_VALUE);
         groups.put(cursor.value, collector);
       }
 
       this.field = field;
       this.collapsedSet = collapsedSet;
-    }
-    
-    @Override
-    public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE; // TODO: is this always true?
     }
 
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
@@ -683,8 +672,19 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   }
 
-  private interface GroupCollector {
+  //TODO lets just do simple abstract base class -- a fine use of inheritance
+  private interface GroupCollector extends Collector {
     public LongObjectMap<Collector> getGroups();
+
+    @Override
+    default ScoreMode scoreMode() {
+      final LongObjectMap<Collector> groups = getGroups();
+      if (groups.isEmpty()) {
+        return ScoreMode.COMPLETE; // doesn't matter?
+      } else {
+        return groups.iterator().next().value.scoreMode(); // we assume all the collectors should have the same nature
+      }
+    }
   }
 
   private Query getGroupQuery(String fname,
@@ -704,7 +704,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       bytesRefs[++index] = term.toBytesRef();
     }
 
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermInSetQuery(fname, bytesRefs)));
+    return new TermInSetQuery(fname, bytesRefs);
   }
 
   private Query getPointGroupQuery(SchemaField sf,
@@ -719,7 +719,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       values.add(numericToString(ft, cursor.value));
     }
 
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(sf.getType().getSetQuery(null, sf, values)));
+    return sf.getType().getSetQuery(null, sf, values);
   }
 
   private String numericToString(FieldType fieldType, long val) {
@@ -749,7 +749,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       IntObjectCursor<BytesRef> cursor = it.next();
       bytesRefs[++index] = cursor.value;
     }
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermInSetQuery(fname, bytesRefs)));
+    return new TermInSetQuery(fname, bytesRefs);
   }
 
 
@@ -799,7 +799,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
               fieldInfo.getDocValuesGen(),
               fieldInfo.attributes(),
               fieldInfo.getPointDimensionCount(),
-              fieldInfo.getPointNumBytes());
+              fieldInfo.getPointNumBytes(),
+              fieldInfo.isSoftDeletesField());
           newInfos.add(f);
 
         } else {

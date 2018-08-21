@@ -16,8 +16,28 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -29,10 +49,10 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -60,25 +80,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
@@ -86,6 +87,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slow 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
 public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -148,6 +150,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void test() throws Exception {
     // setLoggingLevel(null);
 
@@ -750,12 +753,13 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       throws SolrServerException, IOException {
     log.info("### STARTING testNumberOfCommitsWithCommitAfterAdd");
     long startCommits = getNumCommits((HttpSolrClient) clients.get(0));
-    
-    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    up.addFile(getFile("books_numeric_ids.csv"), "application/csv");
-    up.setCommitWithin(900000);
-    up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-    NamedList<Object> result = clients.get(0).request(up);
+
+
+    NamedList<Object> result = clients.get(0).request(
+        new StreamingUpdateRequest("/update",
+            getFile("books_numeric_ids.csv"), "application/csv")
+            .setCommitWithin(900000)
+            .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     
     long endCommits = getNumCommits((HttpSolrClient) clients.get(0));
 

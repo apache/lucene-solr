@@ -142,8 +142,16 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         Thread.currentThread().interrupt();
         log.warn("Interrupted", e);
         break;
-      } catch (IOException | KeeperException e) {
-        log.error("A ZK error has occurred", e);
+      }
+      catch (IOException | KeeperException e) {
+        if (e instanceof KeeperException.SessionExpiredException ||
+            (e.getCause()!=null && e.getCause() instanceof KeeperException.SessionExpiredException)) {
+          log.warn("Solr cannot talk to ZK, exiting " + 
+              getClass().getSimpleName() + " main queue loop", e);
+          return;
+        } else {
+          log.error("A ZK error has occurred", e);
+        }
       }
     }
 

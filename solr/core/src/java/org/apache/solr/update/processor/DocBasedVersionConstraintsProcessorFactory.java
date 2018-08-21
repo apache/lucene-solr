@@ -80,6 +80,11 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *     document version that is not great enough to be silently ignored (and return 
  *     a status 200 to the client) instead of generating a 409 Version Conflict error.
  *   </li>
+ *
+ *   <li><code>supportMissingVersionOnOldDocs</code> - This boolean parameter defaults to
+ *     <code>false</code>, but if set to <code>true</code> allows any documents written *before*
+ *     this feature is enabled and which are missing the versionField to be overwritten.
+ *   </li>
  * </ul>
  * @since 4.6.0
  */
@@ -90,6 +95,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
   private List<String> versionFields = null;
   private List<String> deleteVersionParamNames = Collections.emptyList();
   private boolean useFieldCache;
+  private boolean supportMissingVersionOnOldDocs = false;
 
   @Override
   public void init( NamedList args )  {
@@ -129,6 +135,17 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
       }
       ignoreOldUpdates = (Boolean) tmp;
     }
+
+    // optional - defaults to false
+    tmp = args.remove("supportMissingVersionOnOldDocs");
+    if (null != tmp) {
+      if (! (tmp instanceof Boolean) ) {
+        throw new SolrException(SERVER_ERROR,
+                "'supportMissingVersionOnOldDocs' must be configured as a <bool>");
+      }
+      supportMissingVersionOnOldDocs = ((Boolean)tmp).booleanValue();
+    }
+
     super.init(args);
   }
 
@@ -139,8 +156,9 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
     return new DocBasedVersionConstraintsProcessor(versionFields,
                                                    ignoreOldUpdates,
                                                    deleteVersionParamNames,
+                                                   supportMissingVersionOnOldDocs,
                                                    useFieldCache,
-                                                   req, rsp, next);
+                                                   req, next);
   }
 
   @Override

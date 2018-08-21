@@ -38,6 +38,9 @@ final class BlockMaxConjunctionScorer extends Scorer {
   BlockMaxConjunctionScorer(Weight weight, Collection<Scorer> scorersList) throws IOException {
     super(weight);
     this.scorers = scorersList.toArray(new Scorer[scorersList.size()]);
+    for (Scorer scorer : scorers) {
+      scorer.advanceShallow(0);
+    }
     this.maxScorePropagator = new MaxScoreSumPropagator(scorersList);
 
     // Put scorers with the higher max scores first
@@ -141,6 +144,20 @@ final class BlockMaxConjunctionScorer extends Scorer {
           if (doc == NO_MORE_DOCS) {
             return NO_MORE_DOCS;
           }
+
+          if (doc > upTo) {
+            // This check is useful when scorers return information about blocks
+            // that do not actually have any matches. Otherwise `doc` will always
+            // be in the current block already since it is always the result of
+            // lead.advance(advanceTarget(some_doc_id))
+            final int nextTarget = advanceTarget(doc);
+            if (nextTarget != doc) {
+              doc = lead.advance(nextTarget);
+              continue;
+            }
+          }
+
+          assert doc <= upTo;
 
           if (minScore > 0) {
             score = leadScorer.score();

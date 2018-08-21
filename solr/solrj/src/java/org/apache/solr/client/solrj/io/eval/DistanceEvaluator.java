@@ -22,14 +22,9 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.ml.distance.CanberraDistance;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
-import org.apache.commons.math3.ml.distance.EarthMoversDistance;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
-import org.apache.commons.math3.ml.distance.ManhattanDistance;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
@@ -40,94 +35,75 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
 
   public DistanceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    if(namedParams.size() > 0) {
-      if (namedParams.size() > 1) {
-        throw new IOException("distance function expects only one named parameter 'type'.");
-      }
-
-      StreamExpressionNamedParameter namedParameter = namedParams.get(0);
-      String name = namedParameter.getName();
-      if (!name.equalsIgnoreCase("type")) {
-        throw new IOException("distance function expects only one named parameter 'type'.");
-      }
-
-      String typeParam = namedParameter.getParameter().toString().trim();
-      this.type= DistanceType.valueOf(typeParam);
-    } else {
-      this.type = DistanceType.euclidean;
-    }
   }
 
   @Override
   public Object doWork(Object ... values) throws IOException{
 
-    if(values.length == 2) {
+    if(values.length == 1) {
+      if (values[0] instanceof Matrix) {
+        Matrix matrix = (Matrix) values[0];
+        EuclideanDistance euclideanDistance = new EuclideanDistance();
+        return distance(euclideanDistance, matrix);
+      } else {
+        throw new IOException("distance function operates on either two numeric arrays or a single matrix as parameters.");
+      }
+    } else if(values.length == 2) {
       Object first = values[0];
       Object second = values[1];
 
       if (null == first) {
         throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - null found for the first value", toExpression(constructingFactory)));
       }
+
       if (null == second) {
         throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - null found for the second value", toExpression(constructingFactory)));
       }
+
+      if(first instanceof Matrix) {
+        Matrix matrix = (Matrix) first;
+        DistanceMeasure distanceMeasure = (DistanceMeasure)second;
+        return distance(distanceMeasure, matrix);
+      } else {
+        if (!(first instanceof List<?>)) {
+          throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the first value, expecting a list of numbers", toExpression(constructingFactory), first.getClass().getSimpleName()));
+        }
+
+        if (!(second instanceof List<?>)) {
+          throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the second value, expecting a list of numbers", toExpression(constructingFactory), first.getClass().getSimpleName()));
+        }
+
+        DistanceMeasure distanceMeasure = new EuclideanDistance();
+        return distanceMeasure.compute(
+            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+        );
+      }
+    } else if (values.length == 3) {
+      Object first = values[0];
+      Object second = values[1];
+      DistanceMeasure distanceMeasure = (DistanceMeasure)values[2];
+
+      if (null == first) {
+        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - null found for the first value", toExpression(constructingFactory)));
+      }
+
+      if (null == second) {
+        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - null found for the second value", toExpression(constructingFactory)));
+      }
+
       if (!(first instanceof List<?>)) {
         throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the first value, expecting a list of numbers", toExpression(constructingFactory), first.getClass().getSimpleName()));
       }
+
       if (!(second instanceof List<?>)) {
         throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the second value, expecting a list of numbers", toExpression(constructingFactory), first.getClass().getSimpleName()));
       }
 
-      if (type.equals(DistanceType.euclidean)) {
-        EuclideanDistance euclideanDistance = new EuclideanDistance();
-        return euclideanDistance.compute(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
-        );
-      } else if (type.equals(DistanceType.manhattan)) {
-        ManhattanDistance manhattanDistance = new ManhattanDistance();
-        return manhattanDistance.compute(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
-        );
-
-      } else if (type.equals(DistanceType.canberra)) {
-        CanberraDistance canberraDistance = new CanberraDistance();
-        return canberraDistance.compute(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
-        );
-      } else if (type.equals(DistanceType.earthMovers)) {
-        EarthMoversDistance earthMoversDistance = new EarthMoversDistance();
-        return earthMoversDistance.compute(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
-        );
-      } else {
-        return null;
-      }
-    } else if(values.length == 1) {
-      if(values[0] instanceof Matrix) {
-        Matrix matrix = (Matrix)values[0];
-        if (type.equals(DistanceType.euclidean)) {
-          EuclideanDistance euclideanDistance = new EuclideanDistance();
-          return distance(euclideanDistance, matrix);
-        } else if (type.equals(DistanceType.canberra)) {
-          CanberraDistance canberraDistance = new CanberraDistance();
-          return distance(canberraDistance, matrix);
-        } else if (type.equals(DistanceType.manhattan)) {
-          ManhattanDistance manhattanDistance = new ManhattanDistance();
-          return distance(manhattanDistance, matrix);
-        } else if (type.equals(DistanceType.earthMovers)) {
-          EarthMoversDistance earthMoversDistance = new EarthMoversDistance();
-          return distance(earthMoversDistance, matrix);
-        } else {
-          return null;
-        }
-      } else {
-        throw new IOException("distance function operates on either two numeric arrays or a single matrix as parameters.");
-      }
+      return distanceMeasure.compute(
+          ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+          ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+      );
     } else {
       throw new IOException("distance function operates on either two numeric arrays or a single matrix as parameters.");
     }

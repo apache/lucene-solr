@@ -45,7 +45,8 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void testDynamicLoading() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
     setupRestTestHarnesses();

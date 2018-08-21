@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 /**
@@ -67,7 +66,6 @@ public class SolrCmdDistributor implements Closeable {
   
   private final List<Error> allErrors = new ArrayList<>();
   private final List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
-  private final ExecutorService updateExecutor;
   
   private final CompletionService<Object> completionService;
   private final Set<Future<Object>> pending = new HashSet<>();
@@ -78,16 +76,14 @@ public class SolrCmdDistributor implements Closeable {
   
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     this.clients = new StreamingSolrClients(updateShardHandler);
-    this.updateExecutor = updateShardHandler.getUpdateExecutor();
-    this.completionService = new ExecutorCompletionService<>(updateExecutor);
+    this.completionService = new ExecutorCompletionService<>(updateShardHandler.getUpdateExecutor());
   }
   
   public SolrCmdDistributor(StreamingSolrClients clients, int maxRetriesOnForward, int retryPause) {
     this.clients = clients;
     this.maxRetriesOnForward = maxRetriesOnForward;
     this.retryPause = retryPause;
-    this.updateExecutor = clients.getUpdateExecutor();
-    completionService = new ExecutorCompletionService<>(updateExecutor);
+    completionService = new ExecutorCompletionService<>(clients.getUpdateExecutor());
   }
   
   public void finish() {    

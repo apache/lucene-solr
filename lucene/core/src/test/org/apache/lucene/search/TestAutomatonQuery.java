@@ -89,7 +89,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: run aq=" + query);
     }
-    return searcher.search(query, 5).totalHits;
+    return searcher.search(query, 5).totalHits.value;
   }
   
   private void assertAutomatonHits(int expected, Automaton automaton)

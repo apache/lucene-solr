@@ -36,13 +36,13 @@ import java.util.stream.Stream;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
@@ -52,6 +52,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -61,7 +62,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -252,7 +252,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
     List<Clause> cp = null;
     try {
-      cp = clusterPolicy.stream().map(Clause::new).collect(Collectors.toList());
+      cp = clusterPolicy.stream().map(Clause::create).collect(Collectors.toList());
     } catch (Exception e) {
       op.addError(e.getMessage());
       return currentConfig;

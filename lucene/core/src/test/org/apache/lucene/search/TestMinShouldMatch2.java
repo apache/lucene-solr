@@ -333,7 +333,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
           SimScorer w = weight.similarity.scorer(1f,
                         searcher.collectionStatistics("field"),
                         searcher.termStatistics(term, context));
-          sims[(int)ord] = new LeafSimScorer(w, reader, true, 1);
+          sims[(int)ord] = new LeafSimScorer(w, reader, "field", true);
         }
       }
     }

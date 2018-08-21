@@ -23,9 +23,9 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFilterMergePolicy extends LuceneTestCase {
 
-  public void testMethodsOverridden() throws Exception {
+  public void testMethodsOverridden() {
     for (Method m : MergePolicy.class.getDeclaredMethods()) {
-      if (Modifier.isFinal(m.getModifiers())) continue;
+      if (Modifier.isFinal(m.getModifiers()) || Modifier.isPrivate(m.getModifiers())) continue;
       try {
         FilterMergePolicy.class.getDeclaredMethod(m.getName(),  m.getParameterTypes());
       } catch (NoSuchMethodException e) {

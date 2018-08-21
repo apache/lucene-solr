@@ -359,7 +359,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
                 : "no need \"textgrams\" when minPrefixChars="+minPrefixChars;
         if (fieldName.equals(TEXTGRAMS_FIELD_NAME) && minPrefixChars > 0) {
           // TODO: should use an EdgeNGramTokenFilterFactory here
-          TokenFilter filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars);
+          TokenFilter filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars, false);
           return new TokenStreamComponents(components.getTokenizer(), filter);
         } else {
           return components;
@@ -647,7 +647,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     //System.out.println("finalQuery=" + finalQuery);
 
     // Sort by weight, descending:
-    TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false, false);
+    TopFieldCollector c = TopFieldCollector.create(SORT, num, 1);
     List<LookupResult> results = null;
     SearcherManager mgr;
     IndexSearcher searcher;

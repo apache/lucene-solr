@@ -75,6 +75,56 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testRecoveringFlag() {
+    String collection = "recoveringFlag";
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
+      // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
+      zkShardTerms.registerTerm("replica1");
+      zkShardTerms.registerTerm("replica2");
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      zkShardTerms.startRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica2"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 1);
+
+      zkShardTerms.doneRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica1"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
+
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      assertEquals(zkShardTerms.getTerm("replica1"), 2);
+      assertEquals(zkShardTerms.getTerm("replica2"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
+
+      zkShardTerms.startRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica2"), 2);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 2);
+
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      assertEquals(zkShardTerms.getTerm("replica1"), 3);
+      assertEquals(zkShardTerms.getTerm("replica2"), 2);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 2);
+      zkShardTerms.doneRecovering("replica2");
+
+      assertEquals(zkShardTerms.getTerm("replica2"), 2);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
+      zkShardTerms.startRecovering("replica2");
+      zkShardTerms.doneRecovering("replica2");
+
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      zkShardTerms.startRecovering("replica2");
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      zkShardTerms.startRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica1"), 5);
+      assertEquals(zkShardTerms.getTerm("replica2"), 5);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 5);
+      zkShardTerms.doneRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
+
+    }
+  }
+
   public void testRegisterTerm() throws InterruptedException {
     String collection = "registerTerm";
     ZkShardTerms rep1Terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());

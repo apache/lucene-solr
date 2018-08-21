@@ -135,7 +135,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
         .add(shouldTerm, Occur.SHOULD)
         .build();
 
-    TopScoreDocCollector coll = TopScoreDocCollector.create(10, null, true);
+    TopScoreDocCollector coll = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE);
     searcher.search(query, coll);
     ScoreDoc[] expected = coll.topDocs().scoreDocs;
 
@@ -146,7 +146,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
         .add(new TermQuery(new Term("f", "C")), Occur.FILTER)
         .build();
 
-    coll = TopScoreDocCollector.create(10, null, true);
+    coll = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE);
     searcher.search(query, coll);
     ScoreDoc[] expectedFiltered = coll.topDocs().scoreDocs;
 
@@ -165,7 +165,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
           .add(should, Occur.SHOULD)
           .build();
 
-      coll = TopScoreDocCollector.create(10, null, false);
+      coll = TopScoreDocCollector.create(10, null, 1);
       searcher.search(query, coll);
       ScoreDoc[] actual = coll.topDocs().scoreDocs;
 
@@ -176,7 +176,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
           .add(new RandomApproximationQuery(new TermQuery(new Term("f", "C")), random()), Occur.FILTER)
           .build();
 
-      coll = TopScoreDocCollector.create(10, null, false);
+      coll = TopScoreDocCollector.create(10, null, 1);
       searcher.search(query, coll);
       ScoreDoc[] actualFiltered = coll.topDocs().scoreDocs;
 

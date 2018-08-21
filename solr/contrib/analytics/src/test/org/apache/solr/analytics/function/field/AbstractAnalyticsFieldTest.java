@@ -27,14 +27,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.util.Bits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.ExpressionFactory;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.Filter;
-import org.apache.solr.search.QueryWrapperFilter;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
@@ -84,11 +80,11 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
     
     missingDocuments = new ArrayList<>();
     
-    assertU(adoc("id", "-1"));
-    missingDocuments.add("-1");
+    assertU(adoc("id", "-2"));
+    missingDocuments.add("-2");
     assertU(adoc("id", "5"));
     missingDocuments.add("5");
-    for (int i = 0; i < 5; ++i) {
+    for (int i = -1; i < 5; ++i) {
       assertU(adoc(
           "id", "" + i, 
           
@@ -140,17 +136,17 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
           "double_dm_p", "" + (i + 10.5),
           "double_dm_p", "" + (i + 20.5),
           
-          "date_dt_t", "180" + i + "-12-31T23:59:59Z",
-          "date_dtm_t", "180" + i + "-12-31T23:59:59Z",
-          "date_dtm_t", "18" + (i + 10) + "-12-31T23:59:59Z",
-          "date_dtm_t", "18" + (i + 10) + "-12-31T23:59:59Z",
-          "date_dtm_t", "18" + (i + 20) + "-12-31T23:59:59Z",
+          "date_dt_t", (1800 + i) + "-12-31T23:59:59Z",
+          "date_dtm_t", (1800 + i) + "-12-31T23:59:59Z",
+          "date_dtm_t", (1800 + i + 10) + "-12-31T23:59:59Z",
+          "date_dtm_t", (1800 + i + 10) + "-12-31T23:59:59Z",
+          "date_dtm_t", (1800 + i + 20) + "-12-31T23:59:59Z",
           
-          "date_dt_p", "180" + i + "-12-31T23:59:59Z",
-          "date_dtm_p", "180" + i + "-12-31T23:59:59Z",
-          "date_dtm_p", "18" + (i + 10) + "-12-31T23:59:59Z",
-          "date_dtm_p", "18" + (i + 10) + "-12-31T23:59:59Z",
-          "date_dtm_p", "18" + (i + 20) + "-12-31T23:59:59Z",
+          "date_dt_p", (1800 + i) + "-12-31T23:59:59Z",
+          "date_dtm_p", (1800 + i) + "-12-31T23:59:59Z",
+          "date_dtm_p", (1800 + i + 10) + "-12-31T23:59:59Z",
+          "date_dtm_p", (1800 + i + 10) + "-12-31T23:59:59Z",
+          "date_dtm_p", (1800 + i + 20) + "-12-31T23:59:59Z",
           
           "string_s", "abc" + i,
           "string_sm", "abc" + i,
@@ -192,11 +188,11 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
       doubles.put(i + 20.5, 1);
       multiDoubles.put(""+i, doubles);
       
-      singleDates.put(""+i, Instant.parse("180" + i + "-12-31T23:59:59Z").toEpochMilli());
+      singleDates.put(""+i, Instant.parse((1800 + i) + "-12-31T23:59:59Z").toEpochMilli());
       Map<Long, Integer> dates = new HashMap<>();
-      dates.put(Instant.parse("180" + i + "-12-31T23:59:59Z").toEpochMilli(), 1);
-      dates.put(Instant.parse("18" + ( i + 10 ) + "-12-31T23:59:59Z").toEpochMilli(), 2);
-      dates.put(Instant.parse("18" + ( i + 20 ) + "-12-31T23:59:59Z").toEpochMilli(), 1);
+      dates.put(Instant.parse((1800 + i) + "-12-31T23:59:59Z").toEpochMilli(), 1);
+      dates.put(Instant.parse((1800 + i + 10) + "-12-31T23:59:59Z").toEpochMilli(), 2);
+      dates.put(Instant.parse((1800 + i + 20) + "-12-31T23:59:59Z").toEpochMilli(), 1);
       multiDates.put(""+i, dates);
       
       singleStrings.put(""+i, "abc" + i);
@@ -266,31 +262,24 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
   
   protected Set<String> collectFieldValues(AnalyticsField testField, Predicate<String> valuesFiller) throws IOException {
     StringField idField = new StringField("id");
-    Filter filter = new QueryWrapperFilter(new MatchAllDocsQuery());
     Set<String> missing = new HashSet<>();
     
     List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
-    for (int leafNum = 0; leafNum < contexts.size(); leafNum++) {
-      LeafReaderContext context = contexts.get(leafNum);
-      DocIdSet dis = filter.getDocIdSet(context, null); // solr docsets already exclude any deleted docs
-      if (dis == null) {
-        continue;
-      }
-      DocIdSetIterator disi = dis.iterator();
-      if (disi != null) {
-        testField.doSetNextReader(context);
-        idField.doSetNextReader(context);
-        int doc = disi.nextDoc();
-        while( doc != DocIdSetIterator.NO_MORE_DOCS){
-          // Add a document to the statistics being generated
-          testField.collect(doc);
-          idField.collect(doc);
+    for (LeafReaderContext context : contexts) {
+      testField.doSetNextReader(context);
+      idField.doSetNextReader(context);
+      Bits liveDocs = context.reader().getLiveDocs();
+      for (int doc = 0; doc < context.reader().maxDoc(); doc++) {
+        if (liveDocs != null && !liveDocs.get(doc)) {
+          continue;
+        }
+        // Add a document to the statistics being generated
+        testField.collect(doc);
+        idField.collect(doc);
 
-          String id = idField.getString();
-          if (!valuesFiller.test(id)) {
-            missing.add(id);
-          }
-          doc = disi.nextDoc();
+        String id = idField.getString();
+        if (!valuesFiller.test(id)) {
+          missing.add(id);
         }
       }
     }

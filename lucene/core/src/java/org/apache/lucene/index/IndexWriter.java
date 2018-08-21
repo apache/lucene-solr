@@ -29,7 +29,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -37,7 +36,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -47,12 +48,13 @@ import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
@@ -207,7 +209,8 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * referenced by the "front" of the index). For this, IndexFileDeleter
  * keeps track of the last non commit checkpoint.
  */
-public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
+public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
+    MergePolicy.MergeContext {
 
   /** Hard limit on maximum number of documents that may be added to the
    *  index.  If you try to add more than this you'll hit {@code IllegalArgumentException}. */
@@ -288,7 +291,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   private Collection<String> filesToCommit;
 
-  final SegmentInfos segmentInfos;       // the segments
+  private final SegmentInfos segmentInfos;
   final FieldNumbers globalFieldNumberMap;
 
   final DocumentsWriter docWriter;
@@ -345,6 +348,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  much like how hotels place an "authorization hold" on your credit
    *  card to make sure they can later charge you when you check out. */
   final AtomicLong pendingNumDocs = new AtomicLong();
+  final boolean softDeletesEnabled;
 
   private final DocumentsWriter.FlushNotifications flushNotifications = new DocumentsWriter.FlushNotifications() {
     @Override
@@ -511,16 +515,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             // TODO: we could instead just clone SIS and pull/incref readers in sync'd block, and then do this w/o IW's lock?
             // Must do this sync'd on IW to prevent a merge from completing at the last second and failing to write its DV updates:
-            if (readerPool.writeAllDocValuesUpdates()) {
-              checkpoint();
-            }
-
-            if (writeAllDeletes) {
-              // Must move the deletes to disk:
-              if (readerPool.commit(segmentInfos)) {
-                checkpointNoSIS();
-              }
-            }
+           writeReaderPool(writeAllDeletes);
 
             // Prevent segmentInfos from changing while opening the
             // reader; in theory we could instead do similar retry logic,
@@ -597,21 +592,29 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             }
 
             // Sort by largest ramBytesUsed:
-            PriorityQueue<ReadersAndUpdates> queue = readerPool.getReadersByRam();
+            final List<ReadersAndUpdates> list = readerPool.getReadersByRam();
             int count = 0;
-            while (ramBytesUsed > 0.5 * ramBufferSizeMB * 1024 * 1024) {
-              ReadersAndUpdates rld = queue.poll();
-              if (rld == null) {
+            for (ReadersAndUpdates rld : list) {
+
+              if (ramBytesUsed <= 0.5 * ramBufferSizeMB * 1024 * 1024) {
                 break;
               }
-
               // We need to do before/after because not all RAM in this RAU is used by DV updates, and
               // not all of those bytes can be written here:
               long bytesUsedBefore = rld.ramBytesUsed.get();
-
+              if (bytesUsedBefore == 0) {
+                continue; // nothing to do here - lets not acquire the lock
+              }
               // Only acquire IW lock on each write, since this is a time consuming operation.  This way
               // other threads get a chance to run in between our writes.
               synchronized (this) {
+                // It's possible that the segment of a reader returned by readerPool#getReadersByRam
+                // is dropped before being processed here. If it happens, we need to skip that reader.
+                // this is also best effort to free ram, there might be some other thread writing this rld concurrently
+                // which wins and then if readerPooling is off this rld will be dropped.
+                if (readerPool.get(rld.info, false) == null) {
+                  continue;
+                }
                 if (rld.writeFieldUpdates(directory, globalFieldNumberMap, bufferedUpdatesStream.getCompletedDelGen(), infoStream)) {
                   checkpointNoSIS();
                 }
@@ -638,16 +641,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * If the reader isn't being pooled, the segmentInfo's 
    * delCount is returned.
    */
+  @Override
   public int numDeletedDocs(SegmentCommitInfo info) {
     ensureOpen(false);
-    int delCount = info.getDelCount();
-
+    validate(info);
     final ReadersAndUpdates rld = getPooledInstance(info, false);
     if (rld != null) {
-      delCount += rld.getPendingDeleteCount();
+      return rld.getDelCount(); // get the full count from here since SCI might change concurrently
+    } else {
+      final int delCount = info.getDelCount(softDeletesEnabled);
+      assert delCount <= info.info.maxDoc(): "delCount: " + delCount + " maxDoc: " + info.info.maxDoc();
+      return delCount;
     }
-    assert delCount <= info.info.maxDoc(): "delCount: " + delCount + " maxDoc: " + info.info.maxDoc();
-    return delCount;
   }
 
   /**
@@ -704,14 +709,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *           IO error
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
-    if (d instanceof FSDirectory && ((FSDirectory) d).checkPendingDeletions()) {
-      throw new IllegalArgumentException("Directory " + d + " still has pending deleted files; cannot initialize IndexWriter");
-    }
     enableTestPoints = isEnableTestPoints();
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
     infoStream = config.getInfoStream();
-
+    softDeletesEnabled = config.getSoftDeletesField() != null;
     // obtain the write.lock. If the user configured a timeout,
     // we wrap with a sleeper and this might take some time.
     writeLock = d.obtainLock(WRITE_LOCK_NAME);
@@ -726,20 +728,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       mergeScheduler.setInfoStream(infoStream);
       codec = config.getCodec();
       OpenMode mode = config.getOpenMode();
-      boolean create;
+      final boolean indexExists;
+      final boolean create;
       if (mode == OpenMode.CREATE) {
+        indexExists = DirectoryReader.indexExists(directory);
         create = true;
       } else if (mode == OpenMode.APPEND) {
+        indexExists = true;
         create = false;
       } else {
         // CREATE_OR_APPEND - create only if an index does not exist
-        create = !DirectoryReader.indexExists(directory);
+        indexExists = DirectoryReader.indexExists(directory);
+        create = !indexExists;
       }
 
       // If index is too old, reading the segments will throw
       // IndexFormatTooOldException.
-
-      boolean initialIndexExists = true;
 
       String[] files = directory.listAll();
 
@@ -770,14 +774,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // searching.  In this case we write the next
         // segments_N file with no segments:
         final SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
-        try {
+        if (indexExists) {
           final SegmentInfos previous = SegmentInfos.readLatestCommit(directory);
           sis.updateGenerationVersionAndCounter(previous);
-        } catch (IOException e) {
-          // Likely this means it's a fresh directory
-          initialIndexExists = false;
         }
-        
         segmentInfos = sis;
         rollbackSegments = segmentInfos.createBackupSegmentInfos();
 
@@ -857,6 +857,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         rollbackSegments = segmentInfos.createBackupSegmentInfos();
       }
 
+
+
       commitUserData = new HashMap<>(segmentInfos.getUserData()).entrySet();
 
       pendingNumDocs.set(segmentInfos.totalMaxDoc());
@@ -885,7 +887,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         deleter = new IndexFileDeleter(files, directoryOrig, directory,
                                        config.getIndexDeletionPolicy(),
                                        segmentInfos, infoStream, this,
-                                       initialIndexExists, reader != null);
+                                       indexExists, reader != null);
 
         // We incRef all files when we return an NRT reader from IW, so all files must exist even in the NRT case:
         assert create || filesExist(segmentInfos);
@@ -966,12 +968,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * If this {@link SegmentInfos} has no global field number map the returned instance is empty
    */
   private FieldNumbers getFieldNumberMap() throws IOException {
-    final FieldNumbers map = new FieldNumbers();
+    final FieldNumbers map = new FieldNumbers(config.softDeletesField);
 
     for(SegmentCommitInfo info : segmentInfos) {
       FieldInfos fis = readFieldInfos(info);
       for(FieldInfo fi : fis) {
-        map.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDimensionCount(), fi.getPointNumBytes());
+        map.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
       }
     }
 
@@ -1099,6 +1101,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return directoryOrig;
   }
 
+  @Override
+  public InfoStream getInfoStream() {
+    return infoStream;
+  }
+
   /** Returns the analyzer used by this index. */
   public Analyzer getAnalyzer() {
     ensureOpen();
@@ -1155,7 +1162,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (docWriter.anyDeletions()) {
       return true;
     }
-    if (readerPool.anyPendingDeletes()) {
+    if (readerPool.anyDeletions()) {
       return true;
     }
     for (final SegmentCommitInfo info : segmentInfos) {
@@ -1356,7 +1363,90 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  to delete documents indexed after opening the NRT
    *  reader you must use {@link #deleteDocuments(Term...)}). */
   public synchronized long tryDeleteDocument(IndexReader readerIn, int docID) throws IOException {
+    // NOTE: DON'T use docID inside the closure
+    return tryModifyDocument(readerIn, docID, (leafDocId, rld) -> {
+      if (rld.delete(leafDocId)) {
+        if (isFullyDeleted(rld)) {
+          dropDeletedSegment(rld.info);
+          checkpoint();
+        }
 
+        // Must bump changeCount so if no other changes
+        // happened, we still commit this change:
+        changed();
+      }
+    });
+  }
+
+  /** Expert: attempts to update doc values by document ID, as long as
+   *  the provided reader is a near-real-time reader (from {@link
+   *  DirectoryReader#open(IndexWriter)}).  If the
+   *  provided reader is an NRT reader obtained from this
+   *  writer, and its segment has not been merged away, then
+   *  the update succeeds and this method returns a valid (&gt; 0) sequence
+   *  number; else, it returns -1 and the caller must then
+   *  either retry the update and resolve the document again.
+   *  If a doc values fields data is <code>null</code> the existing
+   *  value is removed from all documents matching the term. This can be used
+   *  to un-delete a soft-deleted document since this method will apply the
+   *  field update even if the document is marked as deleted.
+   *
+   *  <b>NOTE</b>: this method can only updates documents
+   *  visible to the currently open NRT reader.  If you need
+   *  to update documents indexed after opening the NRT
+   *  reader you must use {@link #updateDocValues(Term, Field...)}. */
+  public synchronized long tryUpdateDocValue(IndexReader readerIn, int docID, Field... fields) throws IOException {
+    // NOTE: DON'T use docID inside the closure
+    final DocValuesUpdate[] dvUpdates = buildDocValuesUpdate(null, fields);
+    return tryModifyDocument(readerIn, docID, (leafDocId, rld) -> {
+      long nextGen = bufferedUpdatesStream.getNextGen();
+      try {
+        Map<String, DocValuesFieldUpdates> fieldUpdatesMap = new HashMap<>();
+        for (DocValuesUpdate update : dvUpdates) {
+          DocValuesFieldUpdates docValuesFieldUpdates = fieldUpdatesMap.computeIfAbsent(update.field, k -> {
+            switch (update.type) {
+              case NUMERIC:
+                return new NumericDocValuesFieldUpdates(nextGen, k, rld.info.info.maxDoc());
+              case BINARY:
+                return new BinaryDocValuesFieldUpdates(nextGen, k, rld.info.info.maxDoc());
+              default:
+                throw new AssertionError("type: " + update.type + " is not supported");
+            }
+          });
+          if (update.hasValue()) {
+            switch (update.type) {
+              case NUMERIC:
+                docValuesFieldUpdates.add(leafDocId, ((NumericDocValuesUpdate) update).getValue());
+                break;
+              case BINARY:
+                docValuesFieldUpdates.add(leafDocId, ((BinaryDocValuesUpdate) update).getValue());
+                break;
+              default:
+                throw new AssertionError("type: " + update.type + " is not supported");
+            }
+          } else {
+            docValuesFieldUpdates.reset(leafDocId);
+          }
+        }
+        for (DocValuesFieldUpdates updates : fieldUpdatesMap.values()) {
+          updates.finish();
+          rld.addDVUpdate(updates);
+        }
+      } finally {
+        bufferedUpdatesStream.finishedSegment(nextGen);
+      }
+      // Must bump changeCount so if no other changes
+      // happened, we still commit this change:
+      changed();
+    });
+  }
+
+  @FunctionalInterface
+  private interface DocModifier {
+    void run(int docId, ReadersAndUpdates readersAndUpdates) throws IOException;
+  }
+
+  private synchronized long tryModifyDocument(IndexReader readerIn, int docID, DocModifier toApply) throws IOException {
     final LeafReader reader;
     if (readerIn instanceof LeafReader) {
       // Reader is already atomic: use the incoming docID:
@@ -1374,8 +1464,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (!(reader instanceof SegmentReader)) {
       throw new IllegalArgumentException("the reader must be a SegmentReader or composite reader containing only SegmentReaders");
     }
-      
-    final SegmentCommitInfo info = ((SegmentReader) reader).getSegmentInfo();
+
+    final SegmentCommitInfo info = ((SegmentReader) reader).getOriginalSegmentInfo();
 
     // TODO: this is a slow linear search, but, number of
     // segments should be contained unless something is
@@ -1386,21 +1476,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       ReadersAndUpdates rld = getPooledInstance(info, false);
       if (rld != null) {
         synchronized(bufferedUpdatesStream) {
-          if (rld.delete(docID)) {
-            if (isFullyDeleted(rld)) {
-              dropDeletedSegment(rld.info);
-              checkpoint();
-            }
-
-            // Must bump changeCount so if no other changes
-            // happened, we still commit this change:
-            changed();
-          }
+          toApply.run(docID, rld);
           return docWriter.deleteQueue.getNextSequenceNumber();
         }
       }
     }
-
     return -1;
   }
 
@@ -1670,7 +1750,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * Updates documents' DocValues fields to the given values. Each field update
    * is applied to the set of documents that are associated with the
    * {@link Term} to the same value. All updates are atomically applied and
-   * flushed together.
+   * flushed together. If a doc values fields data is <code>null</code> the existing
+   * value is removed from all documents matching the term.
+   *
    * 
    * @param updates
    *          the updates to apply
@@ -1710,15 +1792,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (dvType == DocValuesType.NONE) {
         throw new IllegalArgumentException("can only update NUMERIC or BINARY fields! field=" + f.name());
       }
-      if (!globalFieldNumberMap.contains(f.name(), dvType) && f.name().equals(config.softDeletesField) == false) {
-        throw new IllegalArgumentException("can only update existing docvalues fields! field=" + f.name() + ", type=" + dvType);
+      if (globalFieldNumberMap.contains(f.name(), dvType) == false) {
+        // if this field doesn't exists we try to add it. if it exists and the DV type doesn't match we
+        // get a consistent error message as if you try to do that during an indexing operation.
+        globalFieldNumberMap.addOrGet(f.name(), -1, IndexOptions.NONE, dvType, 0, 0, f.name().equals(config.softDeletesField));
+        assert globalFieldNumberMap.contains(f.name(), dvType);
       }
       if (config.getIndexSortFields().contains(f.name())) {
         throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + f.name() + ", sort=" + config.getIndexSort());
       }
+
       switch (dvType) {
         case NUMERIC:
-          dvUpdates[i] = new NumericDocValuesUpdate(term, f.name(), (Long) f.numericValue());
+          Long value = (Long)f.numericValue();
+          dvUpdates[i] = new NumericDocValuesUpdate(term, f.name(), value);
           break;
         case BINARY:
           dvUpdates[i] = new BinaryDocValuesUpdate(term, f.name(), f.binaryValue());
@@ -1738,11 +1825,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // for test purpose
   final synchronized int getNumBufferedDocuments(){
     return docWriter.getNumDocs();
-  }
-
-  // for test purpose
-  final synchronized Collection<String> getIndexFileNames() throws IOException {
-    return segmentInfos.files(true);
   }
 
   // for test purpose
@@ -2585,6 +2667,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         try {
           if (isFullyDeleted(rld)) {
             dropDeletedSegment(newSegment);
+            checkpoint();
           }
         } finally {
           release(rld);
@@ -2749,7 +2832,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             FieldInfos fis = readFieldInfos(info);
             for(FieldInfo fi : fis) {
               // This will throw exceptions if any of the incoming fields have an illegal schema change:
-              globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDimensionCount(), fi.getPointNumBytes());
+              globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));
           }
@@ -2864,11 +2947,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     // long so we can detect int overflow:
     long numDocs = 0;
-
-    Sort indexSort = config.getIndexSort();
-
     long seqNo;
-
     try {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "flush at addIndexes(CodecReader...)");
@@ -2876,10 +2955,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       flush(false, true);
 
       String mergedName = newSegmentName();
-
+      int numSoftDeleted = 0;
       for (CodecReader leaf : readers) {
         numDocs += leaf.numDocs();
         validateMergeReader(leaf);
+        if (softDeletesEnabled) {
+            Bits liveDocs = leaf.getLiveDocs();
+            numSoftDeleted += PendingSoftDeletes.countSoftDeletes(
+            DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), leaf), liveDocs);
+        }
       }
       
       // Best-effort up front check:
@@ -2904,8 +2988,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       merger.merge();                // merge 'em
-
-      SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, -1L, -1L, -1L);
+      SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, numSoftDeleted, -1L, -1L, -1L);
 
       info.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
       trackingDir.clearCreatedFiles();
@@ -2982,7 +3065,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     SegmentInfo newInfo = new SegmentInfo(directoryOrig, info.info.getVersion(), info.info.getMinVersion(), segName, info.info.maxDoc(),
                                           info.info.getUseCompoundFile(), info.info.getCodec(), 
                                           info.info.getDiagnostics(), info.info.getId(), info.info.getAttributes(), info.info.getIndexSort());
-    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getDelGen(), 
+    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getSoftDelCount(), info.getDelGen(),
                                                                info.getFieldInfosGen(), info.getDocValuesGen());
 
     newInfo.setFiles(info.info.files());
@@ -3133,11 +3216,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             applyAllDeletesAndUpdates();
             synchronized(this) {
-
-              if (readerPool.commit(segmentInfos)) {
-                checkpointNoSIS();
-              }
-
+              writeReaderPool(true);
               if (changeCount.get() != lastCommitChangeCount) {
                 // There are changes to commit, so we will write a new segments_N in startCommit.
                 // The act of committing is itself an NRT-visible change (an NRT reader that was
@@ -3216,6 +3295,39 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
         throw t;
       }
+    }
+  }
+
+  /**
+   * Ensures that all changes in the reader-pool are written to disk.
+   * @param writeDeletes if <code>true</code> if deletes should be written to disk too.
+   */
+  private final void writeReaderPool(boolean writeDeletes) throws IOException {
+    assert Thread.holdsLock(this);
+    if (writeDeletes) {
+      if (readerPool.commit(segmentInfos)) {
+        checkpointNoSIS();
+      }
+    } else { // only write the docValues
+      if (readerPool.writeAllDocValuesUpdates()) {
+        checkpoint();
+      }
+    }
+    // now do some best effort to check if a segment is fully deleted
+    List<SegmentCommitInfo> toDrop = new ArrayList<>(); // don't modify segmentInfos in-place
+    for (SegmentCommitInfo info : segmentInfos) {
+      ReadersAndUpdates readersAndUpdates = readerPool.get(info, false);
+      if (readersAndUpdates != null) {
+        if (isFullyDeleted(readersAndUpdates)) {
+          toDrop.add(info);
+        }
+      }
+    }
+    for (SegmentCommitInfo info : toDrop) {
+      dropDeletedSegment(info);
+    }
+    if (toDrop.isEmpty() == false) {
+      checkpoint();
     }
   }
   
@@ -3504,6 +3616,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       anyChanges |= maybeMerge.getAndSet(false);
       
       synchronized(this) {
+        writeReaderPool(applyAllDeletes);
         doAfterFlush();
         success = true;
         return anyChanges;
@@ -3552,13 +3665,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   private void skipDeletedDoc(DocValuesFieldUpdates.Iterator[] updatesIters, int deletedDoc) {
     for (DocValuesFieldUpdates.Iterator iter : updatesIters) {
-      if (iter.doc() == deletedDoc) {
+      if (iter.docID() == deletedDoc) {
         iter.nextDoc();
       }
       // when entering the method, all iterators must already be beyond the
       // deleted document, or right on it, in which case we advance them over
       // and they must be beyond it now.
-      assert iter.doc() > deletedDoc : "updateDoc=" + iter.doc() + " deletedDoc=" + deletedDoc;
+      assert iter.docID() > deletedDoc : "updateDoc=" + iter.docID() + " deletedDoc=" + deletedDoc;
     }
   }
   
@@ -3590,7 +3703,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     // Lazy init (only when we find a delete or update to carry over):
     final ReadersAndUpdates mergedDeletesAndUpdates = getPooledInstance(merge.info, true);
-    
+    int numDeletesBefore = mergedDeletesAndUpdates.getDelCount();
     // field -> delGen -> dv field updates
     Map<String,Map<Long,DocValuesFieldUpdates>> mappedDVUpdates = new HashMap<>();
 
@@ -3601,64 +3714,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       SegmentCommitInfo info = sourceSegments.get(i);
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
       final int maxDoc = info.info.maxDoc();
-      final Bits prevLiveDocs = merge.readers.get(i).getLiveDocs();
       final ReadersAndUpdates rld = getPooledInstance(info, false);
       // We hold a ref, from when we opened the readers during mergeInit, so it better still be in the pool:
       assert rld != null: "seg=" + info.info.name;
-      final Bits currentLiveDocs = rld.getLiveDocs();
 
       MergeState.DocMap segDocMap = mergeState.docMaps[i];
       MergeState.DocMap segLeafDocMap = mergeState.leafDocMaps[i];
 
-      if (prevLiveDocs != null) {
-
-        // If we had deletions on starting the merge we must
-        // still have deletions now:
-        assert currentLiveDocs != null;
-        assert prevLiveDocs.length() == maxDoc;
-        assert currentLiveDocs.length() == maxDoc;
-
-        // There were deletes on this segment when the merge
-        // started.  The merge has collapsed away those
-        // deletes, but, if new deletes were flushed since
-        // the merge started, we must now carefully keep any
-        // newly flushed deletes but mapping them to the new
-        // docIDs.
-
-        // Since we copy-on-write, if any new deletes were
-        // applied after merging has started, we can just
-        // check if the before/after liveDocs have changed.
-        // If so, we must carefully merge the liveDocs one
-        // doc at a time:
-        if (currentLiveDocs != prevLiveDocs) {
-          // This means this segment received new deletes
-          // since we started the merge, so we
-          // must merge them:
-          for (int j = 0; j < maxDoc; j++) {
-            if (prevLiveDocs.get(j) == false) {
-              // if the document was deleted before, it better still be deleted!
-              assert currentLiveDocs.get(j) == false;
-            } else if (currentLiveDocs.get(j) == false) {
-              // the document was deleted while we were merging:
-              mergedDeletesAndUpdates.delete(segDocMap.get(segLeafDocMap.get(j)));
-            }
-          }
-        }
-      } else if (currentLiveDocs != null) {
-        assert currentLiveDocs.length() == maxDoc;
-        // This segment had no deletes before but now it
-        // does:
-        for (int j = 0; j < maxDoc; j++) {
-          if (currentLiveDocs.get(j) == false) {
-            mergedDeletesAndUpdates.delete(segDocMap.get(segLeafDocMap.get(j)));
-          }
-        }
-      }
+      carryOverHardDeletes(mergedDeletesAndUpdates, maxDoc, mergeState.liveDocs[i],  merge.hardLiveDocs.get(i), rld.getHardLiveDocs(),
+          segDocMap, segLeafDocMap);
 
       // Now carry over all doc values updates that were resolved while we were merging, remapping the docIDs to the newly merged docIDs.
       // We only carry over packets that finished resolving; if any are still running (concurrently) they will detect that our merge completed
       // and re-resolve against the newly merged segment:
-      
       Map<String,List<DocValuesFieldUpdates>> mergingDVUpdates = rld.getMergingDVUpdates();
       for (Map.Entry<String,List<DocValuesFieldUpdates>> ent : mergingDVUpdates.entrySet()) {
 
@@ -3699,8 +3767,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           while ((doc = it.nextDoc()) != NO_MORE_DOCS) {
             int mappedDoc = segDocMap.get(segLeafDocMap.get(doc));
             if (mappedDoc != -1) {
-              // not deleted
-              mappedUpdates.add(mappedDoc, it.value());
+              if (it.hasValue()) {
+                // not deleted
+                mappedUpdates.add(mappedDoc, it);
+              } else {
+                mappedUpdates.reset(mappedDoc);
+              }
               anyDVUpdates = true;
             }
           }
@@ -3722,7 +3794,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (mergedDeletesAndUpdates == null) {
         infoStream.message("IW", "no new deletes or field updates since merge started");
       } else {
-        String msg = mergedDeletesAndUpdates.getPendingDeleteCount() + " new deletes";
+        String msg = mergedDeletesAndUpdates.getDelCount() - numDeletesBefore + " new deletes";
         if (anyDVUpdates) {
           msg += " and " + mergedDeletesAndUpdates.getNumDVUpdates() + " new field updates";
           msg += " (" + mergedDeletesAndUpdates.ramBytesUsed.get() + ") bytes";
@@ -3735,6 +3807,69 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     merge.info.setBufferedDeletesGen(minGen);
 
     return mergedDeletesAndUpdates;
+  }
+
+  /**
+   * This method carries over hard-deleted documents that are applied to the source segment during a merge.
+   */
+  private static void carryOverHardDeletes(ReadersAndUpdates mergedReadersAndUpdates, int maxDoc,
+                                           Bits mergeLiveDocs, // the liveDocs used to build the segDocMaps
+                                           Bits prevHardLiveDocs, // the hard deletes when the merge reader was pulled
+                                           Bits currentHardLiveDocs, // the current hard deletes
+                                           MergeState.DocMap segDocMap, MergeState.DocMap segLeafDocMap) throws IOException {
+
+    assert mergeLiveDocs == null || mergeLiveDocs.length() == maxDoc;
+    // if we mix soft and hard deletes we need to make sure that we only carry over deletes
+    // that were not deleted before. Otherwise the segDocMap doesn't contain a mapping.
+    // yet this is also required if any MergePolicy modifies the liveDocs since this is
+    // what the segDocMap is build on.
+    final IntPredicate carryOverDelete = mergeLiveDocs == null || mergeLiveDocs == prevHardLiveDocs
+        ? docId -> currentHardLiveDocs.get(docId) == false
+        : docId -> mergeLiveDocs.get(docId) && currentHardLiveDocs.get(docId) == false;
+    if (prevHardLiveDocs != null) {
+      // If we had deletions on starting the merge we must
+      // still have deletions now:
+      assert currentHardLiveDocs != null;
+      assert mergeLiveDocs != null;
+      assert prevHardLiveDocs.length() == maxDoc;
+      assert currentHardLiveDocs.length() == maxDoc;
+
+      // There were deletes on this segment when the merge
+      // started.  The merge has collapsed away those
+      // deletes, but, if new deletes were flushed since
+      // the merge started, we must now carefully keep any
+      // newly flushed deletes but mapping them to the new
+      // docIDs.
+
+      // Since we copy-on-write, if any new deletes were
+      // applied after merging has started, we can just
+      // check if the before/after liveDocs have changed.
+      // If so, we must carefully merge the liveDocs one
+      // doc at a time:
+      if (currentHardLiveDocs != prevHardLiveDocs) {
+        // This means this segment received new deletes
+        // since we started the merge, so we
+        // must merge them:
+        for (int j = 0; j < maxDoc; j++) {
+          if (prevHardLiveDocs.get(j) == false) {
+            // if the document was deleted before, it better still be deleted!
+            assert currentHardLiveDocs.get(j) == false;
+          } else if (carryOverDelete.test(j)) {
+            // the document was deleted while we were merging:
+            mergedReadersAndUpdates.delete(segDocMap.get(segLeafDocMap.get(j)));
+          }
+        }
+      }
+    } else if (currentHardLiveDocs != null) {
+      assert currentHardLiveDocs.length() == maxDoc;
+      // This segment had no deletes before but now it
+      // does:
+      for (int j = 0; j < maxDoc; j++) {
+        if (carryOverDelete.test(j)) {
+          mergedReadersAndUpdates.delete(segDocMap.get(segLeafDocMap.get(j)));
+        }
+      }
+    }
   }
 
   @SuppressWarnings("try")
@@ -4122,7 +4257,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
     setDiagnostics(si, SOURCE_MERGE, details);
-    merge.setMergeInfo(new SegmentCommitInfo(si, 0, -1L, -1L, -1L));
+    merge.setMergeInfo(new SegmentCommitInfo(si, 0, 0, -1L, -1L, -1L));
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merge seg=" + merge.info.info.name + " " + segString(merge.segments));
@@ -4179,7 +4314,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     final boolean drop = suppressExceptions == false;
     try (Closeable finalizer = merge::mergeFinished) {
       IOUtils.applyToAll(merge.readers, sr -> {
-        final ReadersAndUpdates rld = getPooledInstance(sr.getSegmentInfo(), false);
+        final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
         // We still hold a ref so it should not have been removed:
         assert rld != null;
         if (drop) {
@@ -4216,6 +4351,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
 
     merge.readers = new ArrayList<>(sourceSegments.size());
+    merge.hardLiveDocs = new ArrayList<>(sourceSegments.size());
 
     // This is try/finally to make sure merger's readers are
     // closed:
@@ -4231,30 +4367,66 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         final ReadersAndUpdates rld = getPooledInstance(info, true);
         rld.setIsMerging();
 
-        SegmentReader reader = rld.getReaderForMerge(context);
-        int delCount = reader.numDeletedDocs();
+        ReadersAndUpdates.MergeReader mr = rld.getReaderForMerge(context);
+        SegmentReader reader = mr.reader;
 
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "seg=" + segString(info) + " reader=" + reader);
         }
 
+        merge.hardLiveDocs.add(mr.hardLiveDocs);
         merge.readers.add(reader);
-        assert delCount <= info.info.maxDoc(): "delCount=" + delCount + " info.maxDoc=" + info.info.maxDoc() + " rld.pendingDeleteCount=" + rld.getPendingDeleteCount() + " info.getDelCount()=" + info.getDelCount();
         segUpto++;
       }
 
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
-      for (SegmentReader reader : merge.readers) {
+      int softDeleteCount = 0;
+      for (int r = 0; r < merge.readers.size(); r++) {
+        SegmentReader reader = merge.readers.get(r);
         CodecReader wrappedReader = merge.wrapForMerge(reader);
         validateMergeReader(wrappedReader);
+        if (softDeletesEnabled) {
+          if (reader != wrappedReader) { // if we don't have a wrapped reader we won't preserve any soft-deletes
+            Bits hardLiveDocs = merge.hardLiveDocs.get(r);
+            Bits wrappedLiveDocs = wrappedReader.getLiveDocs();
+            int hardDeleteCount = 0;
+            DocIdSetIterator softDeletedDocs = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader);
+            if (softDeletedDocs != null) {
+              int docId;
+              while ((docId = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                if (wrappedLiveDocs == null || wrappedLiveDocs.get(docId)) {
+                  if (hardLiveDocs == null || hardLiveDocs.get(docId)) {
+                    softDeleteCount++;
+                  } else {
+                    hardDeleteCount++;
+                  }
+                }
+              }
+            }
+            // Wrap the wrapped reader again if we have excluded some hard-deleted docs
+            if (hardLiveDocs != null && hardDeleteCount > 0) {
+              Bits liveDocs = wrappedLiveDocs == null ? hardLiveDocs : new Bits() {
+                @Override
+                public boolean get(int index) {
+                  return hardLiveDocs.get(index) && wrappedLiveDocs.get(index);
+                }
+                @Override
+                public int length() {
+                  return hardLiveDocs.length();
+                }
+              };
+              wrappedReader = FilterCodecReader.wrapLiveDocs(wrappedReader, liveDocs, wrappedReader.numDocs() - hardDeleteCount);
+            }
+          }
+        }
         mergeReaders.add(wrappedReader);
       }
       final SegmentMerger merger = new SegmentMerger(mergeReaders,
                                                      merge.info.info, infoStream, dirWrapper,
                                                      globalFieldNumberMap, 
                                                      context);
-
+      merge.info.setSoftDelCount(softDeleteCount);
       merge.checkAborted();
 
       merge.mergeStartNS = System.nanoTime();
@@ -4466,27 +4638,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return segString(segmentInfos);
   }
 
-  /** Returns a string description of the specified
-   *  segments, for debugging.
-   *
-   * @lucene.internal */
   synchronized String segString(Iterable<SegmentCommitInfo> infos) {
-    final StringBuilder buffer = new StringBuilder();
-    for(final SegmentCommitInfo info : infos) {
-      if (buffer.length() > 0) {
-        buffer.append(' ');
-      }
-      buffer.append(segString(info));
-    }
-    return buffer.toString();
+    return StreamSupport.stream(infos.spliterator(), false)
+        .map(this::segString).collect(Collectors.joining(" "));
   }
 
   /** Returns a string description of the specified
    *  segment, for debugging.
    *
    * @lucene.internal */
-  synchronized String segString(SegmentCommitInfo info) {
-    return info.toString(numDeletedDocs(info) - info.getDelCount());
+  private synchronized String segString(SegmentCommitInfo info) {
+    return info.toString(numDeletedDocs(info) - info.getDelCount(softDeletesEnabled));
   }
 
   private synchronized void doWait() {
@@ -5009,8 +5171,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @param info the segment to get the number of deletes for
    * @lucene.experimental
    */
+  @Override
   public final int numDeletesToMerge(SegmentCommitInfo info) throws IOException {
     ensureOpen(false);
+    validate(info);
     MergePolicy mergePolicy = config.getMergePolicy();
     final ReadersAndUpdates rld = getPooledInstance(info, false);
     int numDeletesToMerge;
@@ -5056,5 +5220,26 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   protected boolean isEnableTestPoints() {
     return false;
+  }
+
+  private void validate(SegmentCommitInfo info) {
+    if (info.info.dir != directoryOrig) {
+      throw new IllegalArgumentException("SegmentCommitInfo must be from the same directory");
+    }
+  }
+
+  /** Checks if the provided segment exists in the current segmentInfos */
+  final synchronized boolean segmentCommitInfoExist(SegmentCommitInfo sci) {
+    return segmentInfos.contains(sci);
+  }
+
+  /** Returns an unmodifiable view of the list of all segments of the current segmentInfos */
+  final synchronized List<SegmentCommitInfo> listOfSegmentCommitInfos() {
+    return segmentInfos.asList();
+  }
+
+  /** Tests should use this method to snapshot the current segmentInfos to have a consistent view */
+  final synchronized SegmentInfos cloneSegmentInfos() {
+    return segmentInfos.clone();
   }
 }

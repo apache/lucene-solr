@@ -40,7 +40,7 @@ import org.junit.BeforeClass;
  * Tests the behavior of <code>field(foo,min|max)</code> on numerious types of multivalued 'foo' fields,
  * as well as the beahvior of sorting on <code>foo asc|desc</code> to implicitly choose the min|max.
  */
-@SuppressCodecs({"Memory", "SimpleText"}) // see TestSortedSetSelector
+@SuppressCodecs({"SimpleText"}) // see TestSortedSetSelector
 public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
 
   /** Initializes core and does some sanity checking of schema */

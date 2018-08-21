@@ -30,7 +30,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
- * Ultimately returns a list of {@link OffsetsEnum} yielding potentially highlightable words in the text.  Needs
+ * Ultimately returns an {@link OffsetsEnum} yielding potentially highlightable words in the text.  Needs
  * information about the query up front.
  *
  * @lucene.internal

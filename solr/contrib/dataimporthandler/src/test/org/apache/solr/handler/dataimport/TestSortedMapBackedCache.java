@@ -126,12 +126,12 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
       int j = 0;
       for (int i = 0; i < data.size(); i++) {
         // We'll be deleting a_id=1 so remove it from the control data.
-        if (data.get(i).data[0].equals(new Integer(1))) {
+        if (data.get(i).data[0].equals(1)) {
           continue;
         }
 
         // We'll be changing "Cookie" to "Carrot" in a_id=3 so change it in the control data.
-        if (data.get(i).data[0].equals(new Integer(3))) {
+        if (data.get(i).data[0].equals(3)) {
           newIdEqualsThree = new Object[data.get(i).data.length];
           System.arraycopy(data.get(i).data, 0, newIdEqualsThree, 0, newIdEqualsThree.length);
           newIdEqualsThree[3] = "Carrot";
@@ -146,8 +146,8 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
       }
 
       // These new rows of data will get added to the cache, so add them to the control data too.
-      Object[] newDataRow1 = new Object[] { new Integer(99), new BigDecimal(Math.PI), "Z", "Zebra", new Float(99.99), Feb21_2011, null };
-      Object[] newDataRow2 = new Object[] { new Integer(2), new BigDecimal(Math.PI), "B", "Ballerina", new Float(2.22), Feb21_2011, null };
+      Object[] newDataRow1 = new Object[] {99, new BigDecimal(Math.PI), "Z", "Zebra", 99.99f, Feb21_2011, null };
+      Object[] newDataRow2 = new Object[] {2, new BigDecimal(Math.PI), "B", "Ballerina", 2.22f, Feb21_2011, null };
 
       newControlData.add(new ControlData(newDataRow1));
       newControlData.add(new ControlData(newDataRow2));
@@ -156,11 +156,11 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
       cache.open(getContext(new HashMap<String,String>()));
 
       // Delete a_id=1 from the cache.
-      cache.delete(new Integer(1));
+      cache.delete(1);
 
       // Because the cache allows duplicates, the only way to update is to
       // delete first then add.
-      cache.delete(new Integer(3));
+      cache.delete(3);
       cache.add(controlDataToMap(new ControlData(newIdEqualsThree), fieldNames, false));
 
       // Add this row with a new Primary key.

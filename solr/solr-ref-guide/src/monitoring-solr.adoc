@@ -1,5 +1,5 @@
 = Monitoring Solr
-:page-children: metrics-reporting, mbean-request-handler, configuring-logging, using-jmx-with-solr, monitoring-solr-with-prometheus-and-grafana, performance-statistics-reference
+:page-children: metrics-reporting, metrics-history, mbean-request-handler, configuring-logging, using-jmx-with-solr, monitoring-solr-with-prometheus-and-grafana, performance-statistics-reference
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -23,6 +23,8 @@ Administration and monitoring can be performed using the web-based administratio
 Common administrative tasks include:
 
 <<metrics-reporting.adoc#metrics-reporting,Metrics Reporting>>: Details of Solr's metrics registries and Metrics API.
+
+<<metrics-history.adoc#metrics-history,Metrics History>>: Metrics history collection, configuration and API.
 
 <<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>>: How to use Solr's MBeans for programmatic access to the system plugins and stats.
 

@@ -16,7 +16,7 @@
    specific language governing permissions and limitations
    under the License.    
 -->
-<ivy-module version="2.0">
+<ivy-module version="2.0" xmlns:maven="http://ant.apache.org/ivy/maven">
   <info organisation="org.apache.solr" module="server"/>
   <configurations defaultconfmapping="metrics->master;jetty->master;start->master;servlet->master;logging->master">
     <conf name="metrics" description="metrics jars" transitive="true"/>
@@ -59,8 +59,9 @@
 
     <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="jetty"/>
 
-    <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start"/>
-
+    <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start">
+      <artifact name="jetty-start" type="jar" maven:classifier="shaded"/>
+    </dependency>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

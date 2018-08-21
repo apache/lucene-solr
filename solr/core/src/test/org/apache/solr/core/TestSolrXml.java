@@ -74,6 +74,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("info handler class", "testInfoHandler", cfg.getInfoHandlerClass());
     assertEquals("config set handler class", "testConfigSetsHandler", cfg.getConfigSetsHandlerClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
+    assertEquals("replay update threads", 100, cfg.getReplayUpdatesThreads());
     assertThat("core root dir", cfg.getCoreRootDirectory().toString(), containsString("testCoreRootDirectory"));
     assertEquals("distrib conn timeout", 22, cfg.getUpdateShardHandlerConfig().getDistributedConnectionTimeout());
     assertEquals("distrib socket timeout", 33, cfg.getUpdateShardHandlerConfig().getDistributedSocketTimeout());

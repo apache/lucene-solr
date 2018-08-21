@@ -23,11 +23,12 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 /**
  *
  */
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-02-26
 public class TestGenericDistributedQueue extends TestSimDistributedQueue {
   DistribStateManager stateManager = new SimDistribStateManager();
 
   @Override
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   protected DistributedQueue makeDistributedQueue(String dqZNode) throws Exception {
     return new GenericDistributedQueue(stateManager, dqZNode);
   }

@@ -87,21 +87,6 @@ my @moves = (
     'solr/contrib/extraction/src/main/java'
  => 'solr/contrib/extraction/src/java',
 
-    'solr/contrib/uima/src/test/java'
- => 'solr/contrib/uima/src/test',
-
-    'solr/contrib/uima/src/test/resources/solr-uima'
- => 'solr/contrib/uima/src/test-files/uima/solr',
-
-    'solr/contrib/uima/src/test/resources'
- => 'solr/contrib/uima/src/test-files/uima',
-
-    'solr/contrib/uima/src/main/java'
- => 'solr/contrib/uima/src/java',
-
-    'solr/contrib/uima/src/main/resources'
- => 'solr/contrib/uima/src/resources',
-
     'solr/src/test-files/books.csv'
  => 'solr/solrj/src/test-files/solrj/books.csv',
 

@@ -35,7 +35,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -60,6 +59,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   private final SchemaField[] userVersionFields;
   private final SchemaField solrVersionField;
   private final boolean ignoreOldUpdates;
+  private final boolean supportMissingVersionOnOldDocs;
   private final String[] deleteVersionParamNames;
   private final SolrCore core;
 
@@ -72,13 +72,14 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   public DocBasedVersionConstraintsProcessor(List<String> versionFields,
                                              boolean ignoreOldUpdates,
                                              List<String> deleteVersionParamNames,
+                                             boolean supportMissingVersionOnOldDocs,
                                              boolean useFieldCache,
                                              SolrQueryRequest req,
-                                             SolrQueryResponse rsp,
                                              UpdateRequestProcessor next ) {
     super(next);
     this.ignoreOldUpdates = ignoreOldUpdates;
     this.deleteVersionParamNames = deleteVersionParamNames.toArray(EMPTY_STR_ARR);
+    this.supportMissingVersionOnOldDocs = supportMissingVersionOnOldDocs;
     this.core = req.getCore();
     this.versionFieldNames = versionFields.toArray(EMPTY_STR_ARR);
     IndexSchema schema = core.getLatestSchema();
@@ -123,10 +124,10 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     return rawValue;
   }
 
-  private static Object[] convertFieldValuesUsingType(Object[] rawValues, SchemaField[] fields) {
+  private Object[] convertFieldValuesUsingType(Object[] rawValues) {
     Object[] returnArr = new Object[rawValues.length];
     for (int i = 0; i < returnArr.length; i++) {
-      returnArr[i] = convertFieldValueUsingType(rawValues[i], fields[i]);
+      returnArr[i] = convertFieldValueUsingType(rawValues[i], userVersionFields[i]);
     }
     return returnArr;
   }
@@ -145,7 +146,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     assert null != indexedDocId;
     assert null != newUserVersions;
 
-    newUserVersions = convertFieldValuesUsingType(newUserVersions, userVersionFields);
+    newUserVersions = convertFieldValuesUsingType(newUserVersions);
 
     final DocFoundAndOldUserAndSolrVersions docFoundAndOldUserVersions;
     if (useFieldCache) {
@@ -165,11 +166,13 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     return versionInUpdateIsAcceptable(newUserVersions, oldUserVersions);
   }
 
-  private static void validateUserVersions(Object[] userVersions, String[] fieldNames, String errorMessage) {
+  private void validateUserVersions(Object[] userVersions, String[] fieldNames, String errorMessage) {
     assert userVersions.length == fieldNames.length;
     for (int i = 0; i < userVersions.length; i++) {
       Object userVersion = userVersions[i];
-      if ( null == userVersion) {
+      if (supportMissingVersionOnOldDocs && null == userVersion) {
+        userVersions[i] = (Comparable<Object>) o -> -1;
+      } else if (null == userVersion) {
         // could happen if they turn this feature on after building an index
         // w/o the versionField, or if validating a new doc, not present.
         throw new SolrException(SERVER_ERROR, errorMessage + fieldNames[i]);
@@ -320,7 +323,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
    * @return True if acceptable, false if not.
    */
   protected boolean newUpdateComparePasses(Comparable newUserVersion, Comparable oldUserVersion, String userVersionFieldName) {
-    return newUserVersion.compareTo(oldUserVersion) > 0;
+    return oldUserVersion.compareTo(newUserVersion) < 0;
   }
 
   private static Object[] getObjectValues(LeafReaderContext segmentContext,

@@ -64,6 +64,7 @@ org.apache.lucene.analysis.minhash.MinHashFilterFactory
 org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory
 org.apache.lucene.analysis.miscellaneous.CapitalizationFilterFactory
 org.apache.lucene.analysis.miscellaneous.CodepointCountFilterFactory
+org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilterFactory
 org.apache.lucene.analysis.miscellaneous.DateRecognizerFilterFactory
 org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.FingerprintFilterFactory
@@ -78,6 +79,7 @@ org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilterFactory
 org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilterFactory
 org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilterFactory
+org.apache.lucene.analysis.miscellaneous.ProtectedTermFilterFactory
 org.apache.lucene.analysis.miscellaneous.TrimFilterFactory
 org.apache.lucene.analysis.miscellaneous.TruncateTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.TypeAsSynonymFilterFactory
@@ -105,7 +107,6 @@ org.apache.lucene.analysis.shingle.FixedShingleFilterFactory
 org.apache.lucene.analysis.snowball.SnowballPorterFilterFactory
 org.apache.lucene.analysis.sr.SerbianNormalizationFilterFactory
 org.apache.lucene.analysis.standard.ClassicFilterFactory
-org.apache.lucene.analysis.standard.StandardFilterFactory
 org.apache.lucene.analysis.sv.SwedishLightStemFilterFactory
 org.apache.lucene.analysis.synonym.SynonymFilterFactory
 org.apache.lucene.analysis.synonym.SynonymGraphFilterFactory

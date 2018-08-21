@@ -35,7 +35,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 public class TestLongPostings extends LuceneTestCase {
 
   // Produces a realistic unicode random string that

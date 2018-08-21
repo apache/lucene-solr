@@ -25,7 +25,7 @@ You configure the tokenizer for a text field type in `schema.xml` with a `<token
 <fieldType name="text" class="solr.TextField">
   <analyzer type="index">
     <tokenizer class="solr.StandardTokenizerFactory"/>
-    <filter class="solr.StandardFilterFactory"/>
+    <filter class="solr.LowerCaseFilterFactory"/>
   </analyzer>
 </fieldType>
 ----

@@ -134,7 +134,17 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
     if (newReader == null) {
       return null;
     } else {
-      DirectoryTaxonomyReader tr = TaxonomyReader.openIfChanged(ref.taxonomyReader);
+      DirectoryTaxonomyReader tr;
+      try {
+        tr = TaxonomyReader.openIfChanged(ref.taxonomyReader);
+      } catch (Throwable t1) {
+        try {
+          IOUtils.close(newReader);
+        } catch (Throwable t2) {
+          t2.addSuppressed(t2);
+        }
+        throw t1;
+      }
       if (tr == null) {
         ref.taxonomyReader.incRef();
         tr = ref.taxonomyReader;

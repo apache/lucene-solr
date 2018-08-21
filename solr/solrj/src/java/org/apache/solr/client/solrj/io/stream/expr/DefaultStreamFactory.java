@@ -20,6 +20,8 @@ import org.apache.solr.client.solrj.io.Lang;
 
 /**
  * A default collection of mappings, used to convert strings into stream expressions.
+ *
+ * @since 7.4
  */
 public class DefaultStreamFactory extends StreamFactory {
 

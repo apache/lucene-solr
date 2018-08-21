@@ -97,7 +97,7 @@ public class ReplicateFromLeader {
                 new ModifiableSolrParams());
             CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
             cuc.setVersion(Long.parseLong(commitVersion));
-            updateLog.copyOverOldUpdates(cuc);
+            updateLog.commitAndSwitchToNewTlog(cuc);
             lastVersion = Long.parseLong(commitVersion);
           }
         });

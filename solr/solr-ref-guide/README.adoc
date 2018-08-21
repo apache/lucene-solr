@@ -25,7 +25,8 @@ These files are processed with AsciiDoctor in 2 different ways:
 
 * Via Jekyll to build an HTML browsable version of the Ref Guide.
 ** Prerequisites: `Ruby` (v2.1 or higher) and the following gems must be installed:
-*** `jekyll`: v3.5, not v4.x. Use `gem install --force --version 3.5.0 jekyll` to force install of Jekyll 3.5.0.
+*** `jekyll`: v3.5, not v4.x. Use `gem install jekyll --force --version 3.5.0` to force install of Jekyll 3.5.0.
+*** `asciidoctor`: v1.5.6.2, not 1.5.7 or higher. Use `gem install asciidoctor --force --version 1.5.6.2`. NOTE: You must do this before installing `jekyll-asciidoc` or you'll get a version of Asciidoctor that we can't use yet.
 *** `jekyll-asciidoc`: v2.1 or higher. Use `gem install jekyll-asciidoc` to install.
 *** `pygments.rb`: v1.1.2 or higher. Use `gem install pygments.rb` to install.
 * Via `asciidoctor-ant` to build the officially released PDF version of the Ref Guide.

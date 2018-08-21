@@ -54,6 +54,7 @@ import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.util.Version;
@@ -448,11 +449,50 @@ public class SolrConfig extends Config implements MapSerializable {
     return new UpdateHandlerInfo(get("updateHandler/@class", null),
         getInt("updateHandler/autoCommit/maxDocs", -1),
         getInt("updateHandler/autoCommit/maxTime", -1),
+        convertHeapOptionStyleConfigStringToBytes(get("updateHandler/autoCommit/maxSize", "")),
         getBool("updateHandler/indexWriter/closeWaitsForMerges", true),
         getBool("updateHandler/autoCommit/openSearcher", true),
         getInt("updateHandler/autoSoftCommit/maxDocs", -1),
         getInt("updateHandler/autoSoftCommit/maxTime", -1),
         getBool("updateHandler/commitWithin/softCommit", true));
+  }
+
+  /**
+   * Converts a Java heap option-like config string to bytes. Valid suffixes are: 'k', 'm', 'g'
+   * (case insensitive). If there is no suffix, the default unit is bytes.
+   * For example, 50k = 50KB, 20m = 20MB, 4g = 4GB, 300 = 300 bytes
+   * @param configStr the config setting to parse
+   * @return the size, in bytes. -1 if the given config string is empty
+   */
+  protected static long convertHeapOptionStyleConfigStringToBytes(String configStr) {
+    if (configStr.isEmpty()) {
+      return -1;
+    }
+    long multiplier = 1;
+    String numericValueStr = configStr;
+    char suffix = Character.toLowerCase(configStr.charAt(configStr.length() - 1));
+    if (Character.isLetter(suffix)) {
+      if (suffix == 'k') {
+        multiplier = FileUtils.ONE_KB;
+      }
+      else if (suffix == 'm') {
+        multiplier = FileUtils.ONE_MB;
+      }
+      else if (suffix == 'g') {
+        multiplier = FileUtils.ONE_GB;
+      } else {
+        throw new RuntimeException("Invalid suffix. Valid suffixes are 'k' (KB), 'm' (MB), 'g' (G). "
+            + "No suffix means the amount is in bytes. ");
+      }
+      numericValueStr = configStr.substring(0, configStr.length() - 1);
+    }
+    try {
+      return Long.parseLong(numericValueStr) * multiplier;
+    } catch (NumberFormatException e) {
+      throw new RuntimeException("Invalid format. The config setting should be a long with an "
+          + "optional letter suffix. Valid suffixes are 'k' (KB), 'm' (MB), 'g' (G). "
+          + "No suffix means the amount is in bytes.");
+    }
   }
 
   private void loadPluginInfo(SolrPluginInfo pluginInfo) {
@@ -631,6 +671,7 @@ public class SolrConfig extends Config implements MapSerializable {
     public final String className;
     public final int autoCommmitMaxDocs, autoCommmitMaxTime,
         autoSoftCommmitMaxDocs, autoSoftCommmitMaxTime;
+    public final long autoCommitMaxSizeBytes;
     public final boolean indexWriterCloseWaitsForMerges;
     public final boolean openSearcher;  // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
@@ -638,12 +679,14 @@ public class SolrConfig extends Config implements MapSerializable {
     /**
      * @param autoCommmitMaxDocs       set -1 as default
      * @param autoCommmitMaxTime       set -1 as default
+     * @param autoCommitMaxSize        set -1 as default
      */
-    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, boolean indexWriterCloseWaitsForMerges, boolean openSearcher,
+    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, long autoCommitMaxSize, boolean indexWriterCloseWaitsForMerges, boolean openSearcher,
                              int autoSoftCommmitMaxDocs, int autoSoftCommmitMaxTime, boolean commitWithinSoftCommit) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
+      this.autoCommitMaxSizeBytes = autoCommitMaxSize;
       this.indexWriterCloseWaitsForMerges = indexWriterCloseWaitsForMerges;
       this.openSearcher = openSearcher;
 

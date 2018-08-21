@@ -41,7 +41,6 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
   private static final int MIN_NODES = 4;
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
   public void testLeaderElectionWithZkExpiry() throws Exception {
     String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     Path ccDir = createTempDir("testLeaderElectionWithZkExpiry-solr");

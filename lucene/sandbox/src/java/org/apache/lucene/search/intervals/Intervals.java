@@ -85,7 +85,7 @@ public final class Intervals {
   }
 
   /**
-   * Create an ordered {@link IntervalsSource} with an unbounded width range
+   * Create an ordered {@link IntervalsSource}
    *
    * Returns intervals in which the subsources all appear in the given order
    *
@@ -96,14 +96,27 @@ public final class Intervals {
   }
 
   /**
-   * Create an unordered {@link IntervalsSource} with an unbounded width range
+   * Create an unordered {@link IntervalsSource}
+   *
+   * Returns intervals in which all the subsources appear.  The subsources may overlap
+   *
+   * @param subSources  an unordered set of {@link IntervalsSource}s
+   */
+  public static IntervalsSource unordered(IntervalsSource... subSources) {
+    return unordered(true, subSources);
+  }
+
+  /**
+   * Create an unordered {@link IntervalsSource}
    *
    * Returns intervals in which all the subsources appear.
    *
-   * @param subSources  an unordered set of queries
+   * @param subSources  an unordered set of {@link IntervalsSource}s
+   * @param allowOverlaps whether or not the sources should be allowed to overlap in a hit
    */
-  public static IntervalsSource unordered(IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.UNORDERED);
+  public static IntervalsSource unordered(boolean allowOverlaps, IntervalsSource... subSources) {
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources),
+        allowOverlaps ? IntervalFunction.UNORDERED : IntervalFunction.UNORDERED_NO_OVERLAP);
   }
 
   /**

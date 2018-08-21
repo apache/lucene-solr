@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -655,6 +656,20 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
  }
+  @Test
+  public void testStreamingRequest() throws Exception {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    QueryResponse rsp = client.query( new SolrQuery( "*:*") );
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
+    NamedList<Object> result = client.request(new StreamingUpdateRequest("/update",
+        getFile("solrj/books.csv"), "application/csv")
+        .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
+    assertNotNull("Couldn't upload books.csv", result);
+    rsp = client.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 10, rsp.getResults().getNumFound() );
+  }
 
  @Test
  public void testMultiContentStreamRequest() throws Exception {
@@ -743,8 +758,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     assertEquals( 23.0, ((Double)stats.getMin()).doubleValue(), 0 );
     assertEquals(94.0, ((Double) stats.getMax()).doubleValue(), 0);
-    assertEquals( new Long(nums.length), stats.getCount() );
-    assertEquals( new Long(0), stats.getMissing() );
+    assertEquals(Long.valueOf(nums.length), stats.getCount() );
+    assertEquals(Long.valueOf(0), stats.getMissing() );
     assertEquals( "26.4", stats.getStddev().toString().substring(0, 4) );
     
     // now lets try again with a new set...  (odd median)
@@ -769,8 +784,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     assertEquals(5.0, ((Double) stats.getMin()).doubleValue(), 0);
     assertEquals( 20.0, ((Double)stats.getMax()).doubleValue(), 0 );
-    assertEquals(new Long(nums.length), stats.getCount());
-    assertEquals( new Long(0), stats.getMissing() );
+    assertEquals(Long.valueOf(nums.length), stats.getCount());
+    assertEquals(Long.valueOf(0), stats.getMissing() );
     
     // Now try again with faceting
     //---------------------------------

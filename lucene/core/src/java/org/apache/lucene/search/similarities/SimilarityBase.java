@@ -90,7 +90,7 @@ public abstract class SimilarityBase extends Similarity {
     if (weights.length == 1) {
       return weights[0];
     } else {
-      return new MultiSimilarity.MultiSimScorer(collectionStats.field(), weights);
+      return new MultiSimilarity.MultiSimScorer(weights);
     }
   }
   
@@ -216,7 +216,6 @@ public abstract class SimilarityBase extends Similarity {
     final BasicStats stats;
     
     BasicSimScorer(BasicStats stats) {
-      super(stats.field);
       this.stats = stats;
     }
 

@@ -397,7 +397,7 @@ public class TermAutomatonQuery extends Query {
       }
 
       if (any) {
-        return new TermAutomatonScorer(this, enums, anyTermID, idToTerm, new LeafSimScorer(stats, context.reader(), true, Float.MAX_VALUE));
+        return new TermAutomatonScorer(this, enums, anyTermID, idToTerm, new LeafSimScorer(stats, context.reader(), field, true));
       } else {
         return null;
       }

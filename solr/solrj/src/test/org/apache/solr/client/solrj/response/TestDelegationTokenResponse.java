@@ -122,7 +122,7 @@ public class TestDelegationTokenResponse extends LuceneTestCase {
     }
 
     // valid
-    Long expirationTime = new Long(Long.MAX_VALUE);
+    Long expirationTime = Long.MAX_VALUE;
     delegationTokenResponse(renewRequest, renewResponse,
       getMapJson("long", expirationTime));
     assertEquals(expirationTime, renewResponse.getExpirationTime());

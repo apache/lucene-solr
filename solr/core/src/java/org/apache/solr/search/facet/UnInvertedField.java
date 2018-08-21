@@ -44,6 +44,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.uninverting.DocTermOrds;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -146,7 +147,7 @@ public class UnInvertedField extends DocTermOrds {
       if (deState == null) {
         deState = new SolrIndexSearcher.DocsEnumState();
         deState.fieldName = field;
-        deState.liveDocs = searcher.getSlowAtomicReader().getLiveDocs();
+        deState.liveDocs = searcher.getLiveDocsBits();
         deState.termsEnum = te;  // TODO: check for MultiTermsEnum in SolrIndexSearcher could now fail?
         deState.postingsEnum = postingsEnum;
         deState.minSetSizeCached = maxTermDocFreq;
@@ -431,7 +432,8 @@ public class UnInvertedField extends DocTermOrds {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
         // handle the biggest terms
         DocSet intersection = searcher.getDocSet(tt.termQuery, docs);
-        int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex);
+        int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex,
+                                                    slotNum -> { return new SlotContext(tt.termQuery); });
         countAcc.incrementCount(tt.termNum - startTermIndex, collected);
         if (collected > 0) {
           uniqueTerms++;
@@ -493,7 +495,7 @@ public class UnInvertedField extends DocTermOrds {
             if (arrIdx < 0) continue;
             if (arrIdx >= nTerms) break;
             countAcc.incrementCount(arrIdx, 1);
-            processor.collectFirstPhase(segDoc, arrIdx);
+            processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
           }
         } else {
           int tnum = 0;
@@ -507,7 +509,7 @@ public class UnInvertedField extends DocTermOrds {
               if (arrIdx >= 0) {
                 if (arrIdx >= nTerms) break;
                 countAcc.incrementCount(arrIdx, 1);
-                processor.collectFirstPhase(segDoc, arrIdx);
+                processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
               }
               delta = 0;
             }

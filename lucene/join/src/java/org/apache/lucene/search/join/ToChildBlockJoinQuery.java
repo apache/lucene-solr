@@ -282,7 +282,7 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public float getMaxScore(int upTo) throws IOException {
-      return parentScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+      return Float.POSITIVE_INFINITY;
     }
     
     int getParentDoc() {

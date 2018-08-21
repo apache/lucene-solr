@@ -139,6 +139,7 @@ final class WANDScorer extends Scorer {
 
     OptionalInt scalingFactor = OptionalInt.empty();
     for (Scorer scorer : scorers) {
+      scorer.advanceShallow(0);
       float maxScore = scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
       if (maxScore != 0 && Float.isFinite(maxScore)) {
         // 0 and +Infty should not impact the scale

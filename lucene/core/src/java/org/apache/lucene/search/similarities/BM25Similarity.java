@@ -189,7 +189,7 @@ public class BM25Similarity extends Similarity {
     for (int i = 0; i < cache.length; i++) {
       cache[i] = k1 * ((1 - b) + b * LENGTH_TABLE[i] / avgdl);
     }
-    return new BM25Scorer(collectionStats.field(), boost, k1, b, idf, avgdl, cache);
+    return new BM25Scorer(boost, k1, b, idf, avgdl, cache);
   }
   
   /** Collection statistics for the BM25 model. */
@@ -209,8 +209,7 @@ public class BM25Similarity extends Similarity {
     /** weight (idf * boost) */
     private final float weight;
 
-    BM25Scorer(String field, float boost, float k1, float b, Explanation idf, float avgdl, float[] cache) {
-      super(field);
+    BM25Scorer(float boost, float k1, float b, Explanation idf, float avgdl, float[] cache) {
       this.boost = boost;
       this.idf = idf;
       this.avgdl = avgdl;

@@ -48,7 +48,7 @@ import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAut
  * Integration test for {@link ScheduledTrigger}
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
+// 12-Jun-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
 public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -73,6 +73,7 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testScheduledTrigger() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 

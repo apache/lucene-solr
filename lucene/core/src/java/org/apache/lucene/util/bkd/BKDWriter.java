@@ -656,7 +656,7 @@ public class BKDWriter implements Closeable {
 
       if (leafBlockFPs.size() > 0) {
         // Save the first (minimum) value in each leaf block except the first, to build the split value index in the end:
-        leafBlockStartValues.add(Arrays.copyOf(leafValues, packedBytesLength));
+        leafBlockStartValues.add(ArrayUtil.copyOfSubArray(leafValues, 0, packedBytesLength));
       }
       leafBlockFPs.add(out.getFilePointer());
       checkMaxLeafNodeCount(leafBlockFPs.size());
@@ -687,8 +687,8 @@ public class BKDWriter implements Closeable {
           return scratchBytesRef1;
         }
       };
-      assert valuesInOrderAndBounds(leafCount, 0, Arrays.copyOf(leafValues, packedBytesLength),
-          Arrays.copyOfRange(leafValues, (leafCount - 1) * packedBytesLength, leafCount * packedBytesLength),
+      assert valuesInOrderAndBounds(leafCount, 0, ArrayUtil.copyOfSubArray(leafValues, 0, packedBytesLength),
+          ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * packedBytesLength, leafCount * packedBytesLength),
           packedValues, leafDocs, 0);
       writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, leafCount, 0, packedValues);
       out.writeBytes(scratchOut.getBytes(), 0, scratchOut.getPosition());
@@ -1591,8 +1591,8 @@ public class BKDWriter implements Closeable {
       reader.getValue(mid, scratchBytesRef1);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + splitDim * bytesPerDim, splitPackedValues, address + 1, bytesPerDim);
 
-      byte[] minSplitPackedValue = Arrays.copyOf(minPackedValue, packedBytesLength);
-      byte[] maxSplitPackedValue = Arrays.copyOf(maxPackedValue, packedBytesLength);
+      byte[] minSplitPackedValue = ArrayUtil.copyOfSubArray(minPackedValue, 0, packedBytesLength);
+      byte[] maxSplitPackedValue = ArrayUtil.copyOfSubArray(maxPackedValue, 0, packedBytesLength);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + splitDim * bytesPerDim,
           minSplitPackedValue, splitDim * bytesPerDim, bytesPerDim);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + splitDim * bytesPerDim,

@@ -40,8 +40,8 @@ public class LogDocMergePolicy extends LogMergePolicy {
   }
 
   @Override
-  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
-    return sizeDocs(info, writer);
+  protected long size(SegmentCommitInfo info, MergeContext mergeContext) throws IOException {
+    return sizeDocs(info, mergeContext);
   }
 
   /** Sets the minimum size for the lowest level segments.

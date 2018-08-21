@@ -43,7 +43,6 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdSetBuilder;
@@ -158,7 +157,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
   private DocSet createDocSet(SolrIndexSearcher searcher, long cost) throws IOException {
     int maxDoc = searcher.maxDoc();
-    BitDocSet liveDocs = searcher.getLiveDocs();
+    BitDocSet liveDocs = searcher.getLiveDocSet();
     FixedBitSet liveBits = liveDocs.size() == maxDoc ? null : liveDocs.getBits();
 
     DocSetBuilder builder = new DocSetBuilder(maxDoc, cost);
@@ -241,8 +240,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     }
 
     @Override
-    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
-      return te.impacts(scorer, flags);
+    public ImpactsEnum impacts(int flags) throws IOException {
+      return te.impacts(flags);
     }
 
     @Override

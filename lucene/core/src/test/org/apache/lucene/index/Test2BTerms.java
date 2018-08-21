@@ -55,7 +55,7 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 //
 //   ant test -Dtests.monster=true -Dtests.heapsize=8g -Dtests.codec=Lucene62 -Dtestcase=Test2BTerms
 //
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 @Monster("very slow, use 5g minimum heap")
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed")
@@ -261,7 +261,7 @@ public class Test2BTerms extends LuceneTestCase {
       final BytesRef term = terms.get(random().nextInt(terms.size()));
       System.out.println("TEST: search " + term);
       final long t0 = System.currentTimeMillis();
-      final long count = s.search(new TermQuery(new Term("field", term)), 1).totalHits;
+      final long count = s.count(new TermQuery(new Term("field", term)));
       if (count <= 0) {
         System.out.println("  FAILED: count=" + count);
         failed = true;

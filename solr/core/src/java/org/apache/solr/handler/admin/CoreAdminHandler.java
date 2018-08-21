@@ -44,6 +44,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -170,6 +171,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
 
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
+      String coreName = req.getParams().get(CoreAdminParams.CORE);
+      if (coreName == null) {
+        coreName = req.getParams().get(CoreAdminParams.NAME);
+      }
+      MDCLoggingContext.setCoreName(coreName);
       if (taskId == null) {
         callInfo.call();
       } else {

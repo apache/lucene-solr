@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -60,7 +59,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.PeerSync;
+import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -449,7 +448,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
   final public void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
-    boolean replayed = false;
     boolean successfulRecovery = false;
 
     UpdateLog ulog;
@@ -500,8 +498,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // when we went down.  We may have received updates since then.
       recentVersions = startingVersions;
       try {
-        if ((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0) {
-          // last operation at the time of startup had the GAP flag set...
+        if (ulog.existOldBufferLog()) {
           // this means we were previously doing a full index replication
           // that probably didn't complete and buffering updates in the
           // meantime.
@@ -542,9 +539,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
 
         LOG.info("Begin buffering updates. core=[{}]", coreName);
+        // recalling buffer updates will drop the old buffer tlog
         ulog.bufferUpdates();
-        replayed = false;
-        
+
         LOG.info("Publishing state of core [{}] as recovering, leader is [{}] and I am [{}]", core.getName(), leader.getCoreUrl(),
             ourUrl);
         zkController.publish(core.getCoreDescriptor(), Replica.State.RECOVERING);
@@ -575,6 +572,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         // that started before they saw recovering state 
         // are sure to have finished (see SOLR-7141 for
         // discussion around current value)
+        //TODO since SOLR-11216, we probably won't need this
         try {
           Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
         } catch (InterruptedException e) {
@@ -587,15 +585,15 @@ public class RecoveryStrategy implements Runnable, Closeable {
           LOG.info("Attempting to PeerSync from [{}] - recoveringAfterStartup=[{}]", leader.getCoreUrl(), recoveringAfterStartup);
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
-          PeerSync peerSync = new PeerSync(core,
-              Collections.singletonList(leader.getCoreUrl()), ulog.getNumRecordsToKeep(), false, false);
-          peerSync.setStartingVersions(recentVersions);
-          boolean syncSuccess = peerSync.sync().isSuccess();
+          PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core,
+              leader.getCoreUrl(), ulog.getNumRecordsToKeep());
+          boolean syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
           if (syncSuccess) {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
             // force open a new searcher
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+            req.close();
             LOG.info("PeerSync stage of recovery was successful.");
 
             // solrcloud_debug
@@ -603,8 +601,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             
             LOG.info("Replaying updates buffered during PeerSync.");
             replay(core);
-            replayed = true;
-            
+
             // sync success
             successfulRecovery = true;
             return;
@@ -630,8 +627,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           }
 
           replayFuture = replay(core);
-          replayed = true;
-          
+
           if (isClosed()) {
             LOG.info("RecoveryStrategy has been closed");
             break;
@@ -650,21 +646,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
       } catch (Exception e) {
         SolrException.log(LOG, "Error while trying to recover. core=" + coreName, e);
       } finally {
-        if (!replayed) {
-          // dropBufferedUpdate()s currently only supports returning to ACTIVE state, which risks additional updates
-          // being added w/o UpdateLog.FLAG_GAP, hence losing the info on restart that we are not up-to-date.
-          // For now, ulog will simply remain in BUFFERING state, and an additional call to bufferUpdates() will
-          // reset our starting point for playback.
-          LOG.info("Replay not started, or was not successful... still buffering updates.");
-
-          /** this prev code is retained in case we want to switch strategies.
-          try {
-            ulog.dropBufferedUpdates();
-          } catch (Exception e) {
-            SolrException.log(log, "", e);
-          }
-          **/
-        }
         if (successfulRecovery) {
           LOG.info("Registering as Active after recovery.");
           try {
@@ -805,6 +786,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       SolrQueryRequest req = new LocalSolrQueryRequest(core,
           new ModifiableSolrParams());
       core.getUpdateHandler().getUpdateLog().copyOverBufferingUpdates(new CommitUpdateCommand(req, false));
+      req.close();
       return null;
     }
     Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
@@ -820,6 +802,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
       }
     }
+
+    // the index may ahead of the tlog's caches after recovery, by calling this tlog's caches will be purged
+    core.getUpdateHandler().getUpdateLog().openRealtimeSearcher();
     
     // solrcloud_debug
     cloudDebugLog(core, "replayed");

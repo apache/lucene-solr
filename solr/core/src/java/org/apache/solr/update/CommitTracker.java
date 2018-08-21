@@ -49,10 +49,13 @@ public final class CommitTracker implements Runnable {
   
   // scheduler delay for maxDoc-triggered autocommits
   public static final int DOC_COMMIT_DELAY_MS = 1;
+  // scheduler delay for maxSize-triggered autocommits
+  public static final int SIZE_COMMIT_DELAY_MS = 1;
   
   // settings, not final so we can change them in testing
   private int docsUpperBound;
   private long timeUpperBound;
+  private long tLogFileSizeUpperBound;
   
   private final ScheduledExecutorService scheduler = 
       Executors.newScheduledThreadPool(1, new DefaultSolrThreadFactory("commitScheduler"));
@@ -70,13 +73,15 @@ public final class CommitTracker implements Runnable {
 
   private String name;
   
-  public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, boolean openSearcher, boolean softCommit) {
+  public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, long tLogFileSizeUpperBound,
+                       boolean openSearcher, boolean softCommit) {
     this.core = core;
     this.name = name;
     pending = null;
     
     this.docsUpperBound = docsUpperBound;
     this.timeUpperBound = timeUpperBound;
+    this.tLogFileSizeUpperBound = tLogFileSizeUpperBound;
     
     this.softCommit = softCommit;
     this.openSearcher = openSearcher;
@@ -154,9 +159,34 @@ public final class CommitTracker implements Runnable {
   
   /**
    * Indicate that documents have been added
+   * @param commitWithin amount of time (in ms) within which a commit should be scheduled
    */
   public void addedDocument(int commitWithin) {
-    // maxDocs-triggered autoCommit.  Use == instead of > so we only trigger once on the way up
+    addedDocument(commitWithin, -1);
+  }
+
+  /**
+   * Indicate that documents have been added
+   * @param commitWithin amount of time (in ms) within which a commit should be scheduled
+   * @param currentTlogSize current tlog size (in bytes). Use -1 if we don't want to check for a max size triggered commit
+   */
+  public void addedDocument(int commitWithin, long currentTlogSize) {
+    // maxDocs-triggered autoCommit
+    _scheduleMaxDocsTriggeredCommitIfNeeded();
+
+    // maxTime-triggered autoCommit
+    _scheduleCommitWithinIfNeeded(commitWithin);
+
+    // maxSize-triggered autoCommit
+    _scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
+  }
+
+  /**
+   * If a doc size upper bound is set, and the current number of documents has exceeded it, then
+   * schedule a commit and reset the counter
+   */
+  private void _scheduleMaxDocsTriggeredCommitIfNeeded() {
+    // Use == instead of > so we only trigger once on the way up
     if (docsUpperBound > 0) {
       long docs = docsSinceCommit.incrementAndGet();
       if (docs == docsUpperBound + 1) {
@@ -165,9 +195,6 @@ public final class CommitTracker implements Runnable {
         _scheduleCommitWithin(DOC_COMMIT_DELAY_MS);
       }
     }
-    
-    // maxTime-triggered autoCommit
-    _scheduleCommitWithinIfNeeded(commitWithin);
   }
   
   /** 
@@ -176,6 +203,26 @@ public final class CommitTracker implements Runnable {
   public void deletedDocument( int commitWithin ) {
     _scheduleCommitWithinIfNeeded(commitWithin);
   }
+
+  /**
+   * If the given current tlog size is greater than the file size upper bound, then schedule a commit
+   * @param currentTlogSize current tlog size (in bytes)
+   */
+  public void scheduleMaxSizeTriggeredCommitIfNeeded(long currentTlogSize) {
+    _scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
+  }
+
+  /**
+   * If the given current tlog size is greater than the file size upper bound, then schedule a commit
+   * @param currentTlogSize current tlog size (in bytes)
+   */
+  private void _scheduleMaxSizeTriggeredCommitIfNeeded(long currentTlogSize) {
+    if (tLogFileSizeUpperBound > 0 && currentTlogSize > tLogFileSizeUpperBound) {
+      docsSinceCommit.set(0);
+      _scheduleCommitWithin(SIZE_COMMIT_DELAY_MS);
+    }
+  }
+
   
   /** Inform tracker that a commit has occurred */
   public void didCommit() {
@@ -254,6 +301,10 @@ public final class CommitTracker implements Runnable {
     return docsUpperBound;
   }
 
+  long getTLogFileSizeUpperBound() {
+    return tLogFileSizeUpperBound;
+  }
+
   void setDocsUpperBound(int docsUpperBound) {
     this.docsUpperBound = docsUpperBound;
   }
@@ -261,6 +312,11 @@ public final class CommitTracker implements Runnable {
   // only for testing - not thread safe
   public void setTimeUpperBound(long timeUpperBound) {
     this.timeUpperBound = timeUpperBound;
+  }
+
+  // only for testing - not thread safe
+  public void setTLogFileSizeUpperBound(int sizeUpperBound) {
+    this.tLogFileSizeUpperBound = sizeUpperBound;
   }
   
   // only for testing - not thread safe

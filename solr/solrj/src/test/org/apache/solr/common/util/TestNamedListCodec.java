@@ -33,7 +33,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
   public void testSimple() throws Exception{
 
     NamedList nl = new NamedList();
-    Float fval = new Float( 10.01f );
+    Float fval = 10.01f;
     Boolean bval = Boolean.TRUE;
     String sval = "12qwaszx";
 
@@ -95,7 +95,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
   public void testIterator() throws Exception{
     
     NamedList nl = new NamedList();
-    Float fval = new Float( 10.01f );
+    Float fval = 10.01f;
     Boolean bval = Boolean.TRUE;
     String sval = "12qwaszx";
 

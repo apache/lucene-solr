@@ -5,7 +5,8 @@
 # under solr/solr-ref-guide: "ant clean build-site build-pdf".
 #
 # The following will be downloaded and installed into $HOME/.rvm/:
-# RVM, Ruby, and Ruby gems jekyll, jekyll-asciidoc, and pygments.rb.
+# RVM, Ruby, and Ruby gems jekyll, asciidoctor, jekyll-asciidoc, 
+# and pygments.rb.
 #
 # The script expects to be run in the top-level project directory.
 #
@@ -51,6 +52,7 @@ function echoRun() {
 }
 
 echoRun "source $RVM_PATH/scripts/rvm"   # Load RVM into a shell session *as a Bash function*
+echoRun "rvm cleanup all"                # Remove old stuff
 echoRun "rvm autolibs disable"           # Enable single-user mode
 echoRun "rvm install $RUBY_VERSION"      # Install Ruby 
 echoRun "rvm gemset create $GEMSET"      # Create this project's gemset
@@ -58,6 +60,8 @@ echoRun "rvm $RUBY_VERSION@$GEMSET"      # Activate this project's gemset
 
 # Install gems in the gemset.  Param --force disables dependency conflict detection.
 echoRun "gem install --force --version 3.5.0 jekyll"
+echoRun "gem uninstall --all --ignore-dependencies asciidoctor"  # Get rid of all versions
+echoRun "gem install --force --version 1.5.6.2 asciidoctor"
 echoRun "gem install --force --version 2.1.0 jekyll-asciidoc"
 echoRun "gem install --force --version 1.1.2 pygments.rb"
 

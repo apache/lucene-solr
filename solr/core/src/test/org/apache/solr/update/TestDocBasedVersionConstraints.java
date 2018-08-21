@@ -478,6 +478,50 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
       ExecutorUtil.shutdownAndAwaitTermination(runner);
     }
   }
+
+  public void testMissingVersionOnOldDocs() throws Exception {
+    String version = "2";
+
+    // Write one doc with version, one doc without version using the "no version" chain
+    updateJ(json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + version + "}]"),
+            params("update.chain", "no-external-version"));
+    updateJ(json("[{\"id\": \"b\", \"name\": \"b1\"}]"), params("update.chain", "no-external-version"));
+    assertU(commit());
+    assertJQ(req("q","*:*"), "/response/numFound==2");
+    assertJQ(req("q","id:a"), "/response/numFound==1");
+    assertJQ(req("q","id:b"), "/response/numFound==1");
+
+    // Try updating both with a new version and using the enforced version chain, expect id=b to fail bc old
+    // doc is missing the version field
+    version = "3";
+    updateJ(json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + version + "}]"),
+            params("update.chain", "external-version-constraint"));
+    try {
+      updateJ(json("[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": " + version + "}]"),
+              params("update.chain", "external-version-constraint"));
+      fail("Update to id=b should have failed because existing doc is missing version field");
+    } catch (final SolrException ex) {
+      // expected
+      assertEquals("Doc exists in index, but has null versionField: my_version_l", ex.getMessage());
+    }
+    assertU(commit());
+    assertJQ(req("q","*:*"), "/response/numFound==2");
+    assertJQ(req("qt","/get", "id", "a", "fl", "id,my_version_l"), "=={'doc':{'id':'a', 'my_version_l':3}}"); // version changed to 3
+    assertJQ(req("qt","/get", "id", "b", "fl", "id,my_version_l"), "=={'doc':{'id':'b'}}"); // no version, because update failed
+
+    // Try to update again using the external version enforcement, but allowing old docs to not have the version
+    // field. Expect id=a to fail because version is lower, expect id=b to succeed.
+    version = "1";
+    updateJ(json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + version + "}]"),
+            params("update.chain", "external-version-support-missing"));
+    System.out.println("send b");
+    updateJ(json("[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": " + version + "}]"),
+            params("update.chain", "external-version-support-missing"));
+    assertU(commit());
+    assertJQ(req("q","*:*"), "/response/numFound==2");
+    assertJQ(req("qt","/get", "id", "a", "fl", "id,my_version_l"), "=={'doc':{'id':'a', 'my_version_l':3}}");
+    assertJQ(req("qt","/get", "id", "b", "fl", "id,my_version_l"), "=={'doc':{'id':'b', 'my_version_l':1}}");
+  }
   
   private Callable<Object> delayedAdd(final String... fields) {
     return Executors.callable(() -> {

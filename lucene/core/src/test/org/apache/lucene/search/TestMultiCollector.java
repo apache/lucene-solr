@@ -27,7 +27,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -37,15 +39,15 @@ import org.apache.lucene.util.TestUtil;
 public class TestMultiCollector extends LuceneTestCase {
 
   private static class TerminateAfterCollector extends FilterCollector {
-    
+
     private int count = 0;
     private final int terminateAfter;
-    
+
     public TerminateAfterCollector(Collector in, int terminateAfter) {
       super(in);
       this.terminateAfter = terminateAfter;
     }
-    
+
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       if (count >= terminateAfter) {
@@ -63,7 +65,7 @@ public class TestMultiCollector extends LuceneTestCase {
         }
       };
     }
-    
+
   }
 
   private static class SetScorerCollector extends FilterCollector {
@@ -125,7 +127,7 @@ public class TestMultiCollector extends LuceneTestCase {
 
     AtomicBoolean setScorerCalled1 = new AtomicBoolean();
     collector1 = new SetScorerCollector(collector1, setScorerCalled1);
-    
+
     AtomicBoolean setScorerCalled2 = new AtomicBoolean();
     collector2 = new SetScorerCollector(collector2, setScorerCalled2);
 
@@ -163,4 +165,66 @@ public class TestMultiCollector extends LuceneTestCase {
     assertFalse(setScorerCalled2.get());
   }
 
+  public void testDisablesSetMinScore() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.addDocument(new Document());
+    IndexReader reader = DirectoryReader.open(w);
+    w.close();
+
+    Scorer scorer = new Scorer(null) {
+      @Override
+      public int docID() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public float score() throws IOException {
+        return 0;
+      }
+
+      @Override
+      public DocIdSetIterator iterator() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void setMinCompetitiveScore(float minScore) {
+        throw new AssertionError();
+      }
+    };
+
+    Collector collector = new SimpleCollector() {
+      private Scorer scorer;
+      float minScore = 0;
+
+      @Override
+      public ScoreMode scoreMode() {
+        return ScoreMode.TOP_SCORES;
+      }
+
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
+      }
+
+      @Override
+      public void collect(int doc) throws IOException {
+        minScore = Math.nextUp(minScore);
+        scorer.setMinCompetitiveScore(minScore);
+      }
+    };
+    Collector multiCollector = MultiCollector.wrap(collector, new TotalHitCountCollector());
+    LeafCollector leafCollector = multiCollector.getLeafCollector(reader.leaves().get(0));
+    leafCollector.setScorer(scorer);
+    leafCollector.collect(0); // no exception
+
+    reader.close();
+    dir.close();
+  }
 }

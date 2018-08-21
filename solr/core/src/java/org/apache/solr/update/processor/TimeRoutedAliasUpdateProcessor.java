@@ -30,11 +30,14 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.MaintainRoutedAliasCmd;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -46,6 +49,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -90,9 +94,11 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private final SolrCmdDistributor cmdDistrib;
   private final CollectionsHandler collHandler;
   private final SolrParams outParamsToLeader;
+  private final CloudDescriptor cloudDesc;
 
   private List<Map.Entry<Instant, String>> parsedCollectionsDesc; // k=timestamp (start), v=collection.  Sorted descending
   private Aliases parsedCollectionsAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
+  private SolrQueryRequest req;
 
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     //TODO get from "Collection property"
@@ -118,7 +124,9 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     super(next);
     assert aliasDistribPhase == DistribPhase.NONE;
     final SolrCore core = req.getCore();
-    this.thisCollection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+    cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
+    this.thisCollection = cloudDesc.getCollectionName();
+    this.req = req;
     CoreContainer cc = core.getCoreContainer();
     zkController = cc.getZkController();
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
@@ -157,7 +165,8 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    final Object routeValue = cmd.getSolrInputDocument().getFieldValue(timeRoutedAlias.getRouteField());
+    SolrInputDocument solrInputDocument = cmd.getSolrInputDocument();
+    final Object routeValue = solrInputDocument.getFieldValue(timeRoutedAlias.getRouteField());
     final Instant routeTimestamp = parseRouteKey(routeValue);
 
     updateParsedCollectionAliases();
@@ -216,7 +225,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       super.processAdd(cmd);
     } else {
       // send to the right collection
-      SolrCmdDistributor.Node targetLeaderNode = lookupShardLeaderOfCollection(targetCollection);
+      SolrCmdDistributor.Node targetLeaderNode = routeDocToSlice(targetCollection, solrInputDocument);
       cmdDistrib.distribAdd(cmd, Collections.singletonList(targetLeaderNode), new ModifiableSolrParams(outParamsToLeader));
     }
   }
@@ -357,6 +366,16 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
+  private SolrCmdDistributor.Node routeDocToSlice(String collection, SolrInputDocument doc) {
+    SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
+    // schema might not have key field...
+    String idFieldName = uniqueKeyField == null ? null : uniqueKeyField.getName();
+    String idValue = uniqueKeyField == null ? null : doc.getFieldValue(idFieldName).toString();
+    DocCollection coll = zkController.getClusterState().getCollection(collection);
+    Slice slice = coll.getRouter().getTargetSlice(idValue, doc, null, req.getParams(), coll);
+    return getLeaderNode(collection, slice);
+  }
+
   private List<SolrCmdDistributor.Node> lookupShardLeadersOfCollections() {
     final Aliases aliases = zkController.getZkStateReader().getAliases();
     List<String> collections = aliases.getCollectionAliasListMap().get(getAliasName());
@@ -367,12 +386,15 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private SolrCmdDistributor.Node lookupShardLeaderOfCollection(String collection) {
-    //TODO consider router to get the right slice.  Refactor common code in CloudSolrClient & DistributedUrp
     final Collection<Slice> activeSlices = zkController.getClusterState().getCollection(collection).getActiveSlices();
     if (activeSlices.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Cannot route to collection " + collection);
     }
     final Slice slice = activeSlices.iterator().next();
+    return getLeaderNode(collection, slice);
+  }
+
+  private SolrCmdDistributor.Node getLeaderNode(String collection, Slice slice) {
     //TODO when should we do StdNode vs RetryNode?
     final Replica leader = slice.getLeader();
     if (leader == null) {
@@ -380,7 +402,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
           "No 'leader' replica available for shard " + slice.getName() + " of collection " + collection);
     }
     return new SolrCmdDistributor.RetryNode(new ZkCoreNodeProps(leader), zkController.getZkStateReader(),
-        collection, null);
+        collection, slice.getName());
   }
 
 }

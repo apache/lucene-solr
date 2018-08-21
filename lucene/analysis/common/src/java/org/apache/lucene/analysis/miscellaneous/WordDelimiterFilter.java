@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
@@ -25,6 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
@@ -164,7 +164,12 @@ public final class WordDelimiterFilter extends TokenFilter {
    * "O'Neil's" =&gt; "O", "Neil"
    */
   public static final int STEM_ENGLISH_POSSESSIVE = 256;
-  
+
+  /**
+   * Suppresses processing terms with {@link KeywordAttribute#isKeyword()}=true.
+   */
+  public static final int IGNORE_KEYWORDS = 512;
+
   /**
    * If not null is the set of tokens to protect from being delimited
    *
@@ -174,6 +179,7 @@ public final class WordDelimiterFilter extends TokenFilter {
   private final int flags;
     
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
+  private final KeywordAttribute keywordAttribute = addAttribute(KeywordAttribute.class);;
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
@@ -243,7 +249,9 @@ public final class WordDelimiterFilter extends TokenFilter {
         if (!input.incrementToken()) {
           return false;
         }
-
+        if (has(IGNORE_KEYWORDS) && keywordAttribute.isKeyword()) {
+            return true;
+        }
         int termLength = termAttribute.length();
         char[] termBuffer = termAttribute.buffer();
         
@@ -418,9 +426,9 @@ public final class WordDelimiterFilter extends TokenFilter {
   private void buffer() {
     if (bufferedLen == buffered.length) {
       int newSize = ArrayUtil.oversize(bufferedLen+1, 8);
-      buffered = Arrays.copyOf(buffered, newSize);
-      startOff = Arrays.copyOf(startOff, newSize);
-      posInc = Arrays.copyOf(posInc, newSize);
+      buffered = ArrayUtil.growExact(buffered, newSize);
+      startOff = ArrayUtil.growExact(startOff, newSize);
+      posInc = ArrayUtil.growExact(posInc, newSize);
     }
     startOff[bufferedLen] = offsetAttribute.startOffset();
     posInc[bufferedLen] = posIncAttribute.getPositionIncrement();

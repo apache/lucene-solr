@@ -50,7 +50,7 @@ import java.util.regex.Pattern;
  * SolrExporter
  */
 public class SolrExporter {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String[] ARG_PORT_FLAGS = { "-p", "--port" };
   private static final String ARG_PORT_METAVAR = "PORT";
@@ -243,9 +243,9 @@ public class SolrExporter {
 
       SolrExporter solrExporter = new SolrExporter(port, connStr, configPath, numThreads);
       solrExporter.start();
-      logger.info("Start server");
+      log.info("Start server");
     } catch (ParserConfigurationException | SAXException | IOException e) {
-      logger.error("Start server failed: " + e.toString());
+      log.error("Start server failed: " + e.toString());
     } catch (ArgumentParserException e) {
       parser.handleError(e);
     }

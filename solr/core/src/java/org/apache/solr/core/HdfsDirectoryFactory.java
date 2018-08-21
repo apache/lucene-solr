@@ -461,7 +461,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
     synchronized (HdfsDirectoryFactory.class) {
       if (kerberosInit == null) {
-        kerberosInit = new Boolean(true);
+        kerberosInit = Boolean.TRUE;
         final Configuration conf = getConf();
         final String authVal = conf.get(HADOOP_SECURITY_AUTHENTICATION);
         final String kerberos = "kerberos";

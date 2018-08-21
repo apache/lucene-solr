@@ -187,8 +187,8 @@ public class SolrParamTest extends LuceneTestCase {
     
     final String  pstr = "string";
     final Boolean pbool = Boolean.TRUE;
-    final Integer pint = new Integer( 100 );
-    final Float   pfloat = new Float( 10.6f );
+    final Integer pint = 100;
+    final Float   pfloat = 10.6f;
     
     // Make sure they parse ok
     assertEquals( pstr   , params.get(      "str"      ) );
@@ -285,7 +285,7 @@ public class SolrParamTest extends LuceneTestCase {
     assertEquals( pstr                  , defaults.get( "str"      ) );
     // in default, not in params
     assertEquals( "default"             , defaults.get( "dstr"      ) );
-    assertEquals( new Integer(123)      , defaults.getInt(  "dint"     ) );
+    assertEquals(Integer.valueOf(123), defaults.getInt(  "dint"     ) );
     // in params, overriding defaults
     assertEquals( pint                  , defaults.getInt(   "int"      ) );
     // in neither params nor defaults

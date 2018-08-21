@@ -195,10 +195,12 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     @Override
     public void collect(int doc) throws IOException {
       totalHits++;
-      if (scorer instanceof SloppyPhraseScorer)
-        max = Math.max(max, ((SloppyPhraseScorer)scorer).freq());
-      else
-        max = Math.max(max, ((ExactPhraseScorer)scorer).freq());
+      PhraseScorer ps = (PhraseScorer) scorer;
+      float freq = ps.matcher.sloppyWeight();
+      while (ps.matcher.nextMatch()) {
+        freq += ps.matcher.sloppyWeight();
+      }
+      max = Math.max(max, freq);
     }
     
     @Override
@@ -207,7 +209,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     }
   }
   
-  /** checks that no scores or freqs are infinite */
+  /** checks that no scores are infinite */
   private void assertSaneScoring(PhraseQuery pq, IndexSearcher searcher) throws Exception {
     searcher.search(pq, new SimpleCollector() {
       Scorer scorer;
@@ -222,7 +224,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       
       @Override
       public void collect(int doc) throws IOException {
-        assertFalse(Float.isInfinite(((SloppyPhraseScorer)scorer).freq()));
         assertFalse(Float.isInfinite(scorer.score()));
       }
       
@@ -260,13 +261,13 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     builder.add(new Term("lyrics", "drug"), 4);
     PhraseQuery pq = builder.build();
     // "drug the drug"~1
-    assertEquals(1, is.search(pq, 4).totalHits);
+    assertEquals(1, is.search(pq, 4).totalHits.value);
     builder.setSlop(1);
     pq = builder.build();
-    assertEquals(3, is.search(pq, 4).totalHits);
+    assertEquals(3, is.search(pq, 4).totalHits.value);
     builder.setSlop(2);
     pq = builder.build();
-    assertEquals(4, is.search(pq, 4).totalHits);
+    assertEquals(4, is.search(pq, 4).totalHits.value);
     ir.close();
     dir.close();
   }

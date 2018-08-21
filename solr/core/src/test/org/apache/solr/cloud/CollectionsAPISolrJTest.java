@@ -27,15 +27,19 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -49,6 +53,10 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_DEF;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.NUM_SHARDS_PROP;
 
 @LuceneTestCase.Slow
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
@@ -89,6 +97,49 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(4, nodesStatus.size());
 
     waitForState("Expected " + collectionName + " to disappear from cluster state", collectionName, (n, c) -> c == null);
+  }
+
+  @Test
+  public void testCreateCollWithDefaultClusterProperties() throws Exception {
+    String COLL_NAME = "CollWithDefaultClusterProperties";
+    try {
+      V2Response rsp = new V2Request.Builder("/cluster")
+          .withMethod(SolrRequest.METHOD.POST)
+          .withPayload("{set-obj-property:{collectionDefaults:{numShards : 2 , nrtReplicas : 2}}}")
+          .build()
+          .process(cluster.getSolrClient());
+
+      for (int i = 0; i < 10; i++) {
+        Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
+        if (m != null) break;
+        Thread.sleep(10);
+      }
+      Object clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP), null);
+      assertEquals("2", String.valueOf(clusterProperty));
+      clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(COLLECTION_DEF, NRT_REPLICAS), null);
+      assertEquals("2", String.valueOf(clusterProperty));
+      CollectionAdminResponse response = CollectionAdminRequest
+          .createCollection(COLL_NAME, "conf", null, null, null, null)
+          .process(cluster.getSolrClient());
+      assertEquals(0, response.getStatus());
+      assertTrue(response.isSuccess());
+
+      DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(COLL_NAME);
+      Map<String, Slice> slices = coll.getSlicesMap();
+      assertEquals(2, slices.size());
+      for (Slice slice : slices.values()) {
+        assertEquals(2, slice.getReplicas().size());
+      }
+      CollectionAdminRequest.deleteCollection(COLL_NAME).process(cluster.getSolrClient());
+    } finally {
+      V2Response rsp = new V2Request.Builder("/cluster")
+          .withMethod(SolrRequest.METHOD.POST)
+          .withPayload("{set-obj-property:{collectionDefaults: null}}")
+          .build()
+          .process(cluster.getSolrClient());
+
+    }
+
   }
 
   @Test
@@ -441,5 +492,53 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       return true;
     });
 
+  }
+
+  @Test
+  public void testModifyCollectionAttribute() throws IOException, SolrServerException {
+    final String collection = "testAddAndDeleteCollectionAttribute";
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+
+    CollectionAdminRequest.modifyCollection(collection, null)
+        .setAttribute("replicationFactor", 25)
+        .process(cluster.getSolrClient());
+
+    waitForState("Expecting attribute 'replicationFactor' to be 25", collection,
+        (n, c) -> 25 == c.getReplicationFactor());
+
+    CollectionAdminRequest.modifyCollection(collection, null)
+        .unsetAttribute("maxShardsPerNode")
+        .process(cluster.getSolrClient());
+
+    waitForState("Expecting attribute 'maxShardsPerNode' to be deleted", collection,
+        (n, c) -> null == c.get("maxShardsPerNode"));
+
+    try {
+      CollectionAdminRequest.modifyCollection(collection, null)
+          .setAttribute("non_existent_attr", 25)
+          .process(cluster.getSolrClient());
+      fail("An attempt to set unknown collection attribute should have failed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
+    try {
+      CollectionAdminRequest.modifyCollection(collection, null)
+          .setAttribute("non_existent_attr", null)
+          .process(cluster.getSolrClient());
+      fail("An attempt to set null value should have failed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
+    try {
+      CollectionAdminRequest.modifyCollection(collection, null)
+          .unsetAttribute("non_existent_attr")
+          .process(cluster.getSolrClient());
+      fail("An attempt to unset unknown collection attribute should have failed");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
   }
 }

@@ -121,6 +121,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
   
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
@@ -214,7 +215,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
   
   @SuppressWarnings("unchecked")
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
@@ -303,7 +304,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
+  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testKillLeader() throws Exception {
     doTestNoLeader(false);
   }

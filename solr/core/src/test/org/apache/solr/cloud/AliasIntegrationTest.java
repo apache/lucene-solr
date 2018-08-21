@@ -83,17 +83,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     super.tearDown();
     IOUtils.close(solrClient, httpClient);
 
-    // make sure all aliases created are removed for the next test method
-    Map<String, String> aliases = new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases();
-    for (String alias : aliases.keySet()) {
-      CollectionAdminRequest.deleteAlias(alias).process(cluster.getSolrClient());
-    }
-
-    cluster.deleteAllCollections();
+    cluster.deleteAllCollections(); // note: deletes aliases too
   }
 
   @Test
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testProperties() throws Exception {
     CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1).process(cluster.getSolrClient());
@@ -104,10 +97,9 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     List<String> aliases = zkStateReader.getAliases().resolveAliases("meta1");
     assertEquals(1, aliases.size());
     assertEquals("meta1", aliases.get(0));
-    UnaryOperator<Aliases> op6 = a -> a.cloneWithCollectionAlias("meta1", "collection1meta,collection2meta");
     final ZkStateReader.AliasesManager aliasesManager = zkStateReader.aliasesManager;
 
-    aliasesManager.applyModificationAndExportToZk(op6);
+    aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias("meta1", "collection1meta,collection2meta"));
     aliases = zkStateReader.getAliases().resolveAliases("meta1");
     assertEquals(2, aliases.size());
     assertEquals("collection1meta", aliases.get(0));
@@ -186,35 +178,28 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     // now check that an independently constructed ZkStateReader can see what we've done.
     // i.e. the data is really in zookeeper
-    String zkAddress = cluster.getZkServer().getZkAddress();
-    boolean createdZKSR = false;
-    try(SolrZkClient zkClient = new SolrZkClient(zkAddress, 30000)) {
-
+    try (SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(), 30000)) {
       ZkController.createClusterZkNodes(zkClient);
+      try (ZkStateReader zkStateReader2 = new ZkStateReader(zkClient)) {
+        zkStateReader2.createClusterStateWatchersAndUpdate();
 
-      zkStateReader = new ZkStateReader(zkClient);
-      createdZKSR = true;
-      zkStateReader.createClusterStateWatchersAndUpdate();
+        meta = zkStateReader2.getAliases().getCollectionAliasProperties("meta1");
+        assertNotNull(meta);
 
-      meta = zkStateReader.getAliases().getCollectionAliasProperties("meta1");
-      assertNotNull(meta);
+        // verify key was removed in independent view
+        assertFalse(meta.containsKey("foo"));
 
-      // verify key was removed in independent view
-      assertFalse(meta.containsKey("foo"));
-
-      // but only the specified key was removed
-      assertTrue(meta.containsKey("foobar"));
-      assertEquals("bazbam", meta.get("foobar"));
-
-      Aliases a = zkStateReader.getAliases();
-      Aliases clone = a.cloneWithCollectionAlias("meta1", null);
-      meta = clone.getCollectionAliasProperties("meta1");
-      assertEquals(0,meta.size());
-    } finally {
-      if (createdZKSR) {
-        zkStateReader.close();
+        // but only the specified key was removed
+        assertTrue(meta.containsKey("foobar"));
+        assertEquals("bazbam", meta.get("foobar"));
       }
     }
+
+    // check removal leaves no props behind
+    assertEquals(0, zkStateReader.getAliases()
+        .cloneWithCollectionAlias("meta1", null) // not persisted to zk on purpose
+        .getCollectionAliasProperties("meta1")
+        .size());
   }
 
   @Test
@@ -239,7 +224,6 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testModifyPropertiesV1() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getTestName();
@@ -255,7 +239,6 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testModifyPropertiesCAR() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
     final String aliasName = getTestName();
@@ -497,7 +480,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     ///////////////
     CollectionAdminRequest.createAlias("testalias1", "collection1").process(cluster.getSolrClient());
-    sleepToAllowZkPropagation();
+
     // ensure that the alias has been registered
     assertEquals("collection1",
         new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases().get("testalias1"));

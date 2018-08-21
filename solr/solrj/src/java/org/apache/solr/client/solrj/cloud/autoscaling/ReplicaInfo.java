@@ -92,10 +92,12 @@ public class ReplicaInfo implements MapWriter {
     });
   }
 
+  /** Replica "coreNode" name. */
   public String getName() {
     return name;
   }
 
+  /** SolrCore name. */
   public String getCore() {
     return core;
   }

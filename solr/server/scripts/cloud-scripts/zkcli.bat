@@ -10,9 +10,9 @@ set SDIR=%~dp0
 if "%SDIR:~-1%"=="\" set SDIR=%SDIR:~0,-1%
 
 if defined LOG4J_PROPS (
-  set "LOG4J_CONFIG=file:%LOG4J_PROPS%"
+  set "LOG4J_CONFIG=file:///%LOG4J_PROPS%"
 ) else (
-  set "LOG4J_CONFIG=file:%SDIR%\log4j2.xml"
+  set "LOG4J_CONFIG=file:///%SDIR%\..\..\resources\log4j2-console.xml"
 )
 
 REM Settings for ZK ACL

@@ -100,7 +100,7 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
     }
     BooleanQuery query = queryBuilder.build();
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
-    assertEquals(numDocs, topDocs.totalHits);
+    assertEquals(numDocs, topDocs.totalHits.value);
     Map<String, String[]> fieldToSnippets =
         highlighter.highlightFields(fields.toArray(new String[numTvFields]), query, topDocs);
     String[] expectedSnippetsByDoc = new String[numDocs];

@@ -33,8 +33,10 @@ import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ReferenceManager;
@@ -321,4 +323,28 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     IOUtils.close(mgr, tw, taxoDir, indexDir);
   }
 
+  public void testExceptionDuringRefresh() throws Exception {
+
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+
+    IndexWriter w = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
+    DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
+    w.commit();
+    tw.commit();
+
+    SearcherTaxonomyManager mgr = new SearcherTaxonomyManager(indexDir, taxoDir, null);
+
+    tw.addCategory(new FacetLabel("a", "b"));
+    w.addDocument(new Document());
+
+    tw.commit();
+    w.commit();
+
+    // intentionally corrupt the taxo index:
+    SegmentInfos infos = SegmentInfos.readLatestCommit(taxoDir);
+    taxoDir.deleteFile(infos.getSegmentsFileName());
+    expectThrows(IndexNotFoundException.class, mgr::maybeRefreshBlocking);
+    IOUtils.close(w, tw, mgr, indexDir, taxoDir);
+  }
 }

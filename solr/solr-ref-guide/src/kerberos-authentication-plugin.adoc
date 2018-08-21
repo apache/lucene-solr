@@ -55,7 +55,7 @@ Since a Solr cluster requires internode communication, each node must also be ab
 
 When setting up a kerberized SolrCloud cluster, it is recommended to enable Kerberos security for ZooKeeper as well.
 
-In such a setup, the client principal used to authenticate requests with ZooKeeper can be shared for internode communication as well. This has the benefit of not needing to renew the ticket granting tickets (TGTs) separately, since the Zookeeper client used by Solr takes care of this. To achieve this, a single JAAS configuration (with the app name as Client) can be used for the Kerberos plugin as well as for the Zookeeper client.
+In such a setup, the client principal used to authenticate requests with ZooKeeper can be shared for internode communication as well. This has the benefit of not needing to renew the ticket granting tickets (TGTs) separately, since the ZooKeeper client used by Solr takes care of this. To achieve this, a single JAAS configuration (with the app name as Client) can be used for the Kerberos plugin as well as for the ZooKeeper client.
 
 See the <<ZooKeeper Configuration>> section below for an example of starting ZooKeeper in Kerberos mode.
 
@@ -298,6 +298,8 @@ Once the configuration is complete, you can start Solr with the `bin/solr` scrip
 bin/solr -c -z server1:2181,server2:2181,server3:2181/solr
 ----
 
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+
 === Test the Configuration
 
 . Do a `kinit` with your username. For example, `kinit \user@EXAMPLE.COM`.
@@ -372,7 +374,7 @@ To create a `CloudSolrClient` that uses delegation tokens:
 [source,java]
 ----
 CloudSolrClient client = new CloudSolrClient.Builder()
-                .withZkHost("http://localhost:2181")
+                .withZkHost("localhost:2181")
                 .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
                     .withResponseParser(client.getParser())
                     .withHttpSolrClientBuilder(

@@ -66,6 +66,7 @@ import org.junit.Test;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class StreamDecoratorTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
@@ -105,6 +106,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testUniqueStream() throws Exception {
 
     new UpdateRequest()
@@ -655,6 +657,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelHavingStream() throws Exception {
 
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -865,6 +868,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelFetchStream() throws Exception {
 
     new UpdateRequest()
@@ -1376,6 +1380,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -1508,6 +1513,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelMergeStream() throws Exception {
 
     new UpdateRequest()
@@ -1942,6 +1948,82 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       solrClientCache.close();
     }
   }
+  
+  @Test
+  public void testHashJoinStreamWithKnownConflict() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "1", "type_s","left", "bbid_s", "MG!!00TNH1", "ykey_s", "Mtge")
+        .add(id, "2", "type_s","right", "bbid_s", "MG!!00TNGP", "ykey_s", "Mtge")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("hashJoin", HashJoinStream.class);
+    try {
+      // Basic test
+      expression = StreamExpressionParser.parse("hashJoin("
+          + "  search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:left\", sort=\"bbid_s asc, ykey_s asc\"),"
+          + "  hashed=search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:right\", sort=\"bbid_s asc, ykey_s asc\"),"
+          + "  on=\"bbid_s,ykey_s\""
+          + ")");
+      stream = new HashJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      
+      assertEquals(0, tuples.size());
+    
+    
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testOuterHashJoinStreamWithKnownConflict() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "1", "type_s","left", "bbid_s", "MG!!00TNH1", "ykey_s", "Mtge")
+        .add(id, "2", "type_s","right", "bbid_s", "MG!!00TNGP", "ykey_s", "Mtge", "extra_s", "foo")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
+    try {
+      // Basic test
+      expression = StreamExpressionParser.parse("outerHashJoin("
+          + "  search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:left\", sort=\"bbid_s asc, ykey_s asc\"),"
+          + "  hashed=search(collection1, q=*:*, fl=\"bbid_s,ykey_s,extra_s\", fq=\"type_s:right\", sort=\"bbid_s asc, ykey_s asc\"),"
+          + "  on=\"bbid_s,ykey_s\""
+          + ")");
+      stream = new OuterHashJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      
+      assertEquals(1, tuples.size());
+      assertFalse(tuples.get(0).fields.containsKey("extra_s"));
+    
+    } finally {
+      solrClientCache.close();
+    }
+  }
 
   @Test
   public void testOuterHashJoinStream() throws Exception {
@@ -2238,6 +2320,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelPriorityStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -2407,6 +2490,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -2506,6 +2590,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelDaemonUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3211,6 +3296,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testClassifyStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -3405,6 +3491,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("workQueue", cluster.getSolrClient().getZkStateReader(),
@@ -3474,6 +3561,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1).processAndWait(cluster.getSolrClient(),DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("workQueue1", cluster.getSolrClient().getZkStateReader(),

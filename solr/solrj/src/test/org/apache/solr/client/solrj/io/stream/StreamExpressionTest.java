@@ -474,7 +474,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     UpdateRequest update = new UpdateRequest();
     for(int idx = 0; idx < 1000; ++idx){
-      String idxString = new Integer(idx).toString();
+      String idxString = Integer.toString(idx);
       update.add(id,idxString, "a_s", "hello" + idxString, "a_i", idxString, "a_f", idxString);
     }
     update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
@@ -1551,6 +1551,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelTopicStream() throws Exception {
 
     Assume.assumeTrue(!useAlias);

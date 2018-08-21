@@ -454,7 +454,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //2018-03-10
+  // Removed BadApple on 2018-05-21
   public void testOnlyLeaderIndexes() throws Exception {
     createAndWaitForCollection(1, 0, 2, 0);
     
@@ -522,7 +522,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
   
   @SuppressWarnings("unchecked")
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testRecovery() throws Exception {
     boolean useKill = random().nextBoolean();
     createAndWaitForCollection(1, 0, 2, 0);
@@ -593,14 +592,26 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
     ChaosMonkey.start(solrRunner);
     waitingForReplay.acquire();
+    // If I add the doc immediately, the leader fails to communicate with the follower with broken pipe.
+    // Options are, wait or retry...
+    for (int i = 0; i < 3; i++) {
+      UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "8"));
+      ureq.setParam("collection", collectionName);
+      ureq.setParam(UpdateRequest.MIN_REPFACT, "2");
+      NamedList<Object> response = cloudClient.request(ureq);
+      if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
+        break;
+      }
+      LOG.info("Min RF not achieved yet. retrying");
+    }
     new UpdateRequest()
-        .add(sdoc("id", "8"))
         .add(sdoc("id", "9"))
+        .add(sdoc("id", "10"))
         .process(cloudClient, collectionName);
     waitingForBufferUpdates.release();
     RecoveryStrategy.testing_beforeReplayBufferingUpdates = null;
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
-    checkRTG(3,9, cluster.getJettySolrRunners());
+    checkRTG(3,10, cluster.getJettySolrRunners());
     for (SolrCore solrCore : getSolrCore(false)) {
       RefCounted<IndexWriter> iwRef = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
       assertFalse("IndexWriter at replicas must not see updates ", iwRef.get().hasUncommittedChanges());

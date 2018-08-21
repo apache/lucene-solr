@@ -134,7 +134,7 @@ public final class BitUtil {
   }
 
   /**
-   * Deinterleaves long value back to two concatenated 32bit values
+   * Extract just the even-bits value as a long from the bit-interleaved value
    */
   public static long deinterleave(long b) {
     b &= MAGIC[0];

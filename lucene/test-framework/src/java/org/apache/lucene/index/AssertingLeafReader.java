@@ -18,12 +18,12 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
@@ -211,12 +211,12 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    public ImpactsEnum impacts(int flags) throws IOException {
       assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
       assert (flags & PostingsEnum.FREQS) != 0 : "Freqs should be requested on impacts";
 
-      return new AssertingImpactsEnum(super.impacts(scorer, flags));
+      return new AssertingImpactsEnum(super.impacts(flags));
     }
 
     // TODO: we should separately track if we are 'at the end' ?
@@ -454,7 +454,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     private final AssertingPostingsEnum assertingPostings;
     private final ImpactsEnum in;
-    private int lastShallowTarget;
+    private int lastShallowTarget = -1;
 
     AssertingImpactsEnum(ImpactsEnum impacts) {
       in = impacts;
@@ -463,20 +463,19 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int advanceShallow(int target) throws IOException {
+    public void advanceShallow(int target) throws IOException {
       assert target >= lastShallowTarget : "called on decreasing targets: target = " + target + " < last target = " + lastShallowTarget;
       assert target >= docID() : "target = " + target + " < docID = " + docID();
-      int upTo = in.advanceShallow(target);
-      assert upTo >= target : "upTo = " + upTo + " < target = " + target;
       lastShallowTarget = target;
-      return upTo;
+      in.advanceShallow(target);
     }
 
     @Override
-    public float getMaxScore(int upTo) throws IOException {
-      assert upTo >= lastShallowTarget : "uTo = " + upTo + " < last shallow target = " + lastShallowTarget;
-      float maxScore = in.getMaxScore(upTo);
-      return maxScore;
+    public Impacts getImpacts() throws IOException {
+      assert docID() >= 0 || lastShallowTarget >= 0 : "Cannot get impacts until the iterator is positioned or advanceShallow has been called";
+      Impacts impacts = in.getImpacts();
+      CheckIndex.checkImpacts(impacts, Math.max(docID(), lastShallowTarget));
+      return new AssertingImpacts(impacts, this);
     }
 
     @Override
@@ -525,6 +524,38 @@ public class AssertingLeafReader extends FilterLeafReader {
     public long cost() {
       return assertingPostings.cost();
     }
+  }
+
+  static class AssertingImpacts extends Impacts {
+
+    private final Impacts in;
+    private final AssertingImpactsEnum impactsEnum;
+    private final int validFor;
+
+    AssertingImpacts(Impacts in, AssertingImpactsEnum impactsEnum) {
+      this.in = in;
+      this.impactsEnum = impactsEnum;
+      validFor = Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget);
+    }
+
+    @Override
+    public int numLevels() {
+      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget) : "Cannot reuse impacts after advancing the iterator";
+      return in.numLevels();
+    }
+
+    @Override
+    public int getDocIdUpTo(int level) {
+      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget) : "Cannot reuse impacts after advancing the iterator";
+      return in.getDocIdUpTo(level);
+    }
+
+    @Override
+    public List<Impact> getImpacts(int level) {
+      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget) : "Cannot reuse impacts after advancing the iterator";
+      return in.getImpacts(level);
+    }
+
   }
 
   /** Wraps a NumericDocValues but with additional asserts */

@@ -89,7 +89,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     final DocValuesFormat fast = TestUtil.getDefaultDocValuesFormat();
-    final DocValuesFormat slow = DocValuesFormat.forName("Memory");
+    final DocValuesFormat slow = DocValuesFormat.forName("Direct");
     iwc.setCodec(new AssertingCodec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
@@ -114,10 +114,10 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = newSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       int hitDocID = hits.scoreDocs[i].doc;

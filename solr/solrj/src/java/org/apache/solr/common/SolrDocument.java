@@ -388,7 +388,6 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
      }
    }
 
-   /** Returns the list of child documents, or null if none. */
    @Override
    public List<SolrDocument> getChildDocuments() {
      return _childDocuments;

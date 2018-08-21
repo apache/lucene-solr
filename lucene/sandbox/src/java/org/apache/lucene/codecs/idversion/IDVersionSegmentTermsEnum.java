@@ -25,7 +25,6 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -1009,10 +1008,10 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
   }
 
   @Override
-  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+  public ImpactsEnum impacts(int flags) throws IOException {
     // Only one posting, the slow impl is fine
     // We could make this throw UOE but then CheckIndex is angry
-    return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1));
+    return new SlowImpactsEnum(postings(null, flags));
   }
 
   @Override

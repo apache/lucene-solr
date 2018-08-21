@@ -35,7 +35,10 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
-import static org.mockito.Mockito.*;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
@@ -45,7 +48,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     Map<String, PublicKey> remoteKeys = new HashMap<>();
 
     public MockPKIAuthenticationPlugin(CoreContainer cores, String node) {
-      super(cores, node);
+      super(cores, node, new PublicKeyHandler());
     }
 
     @Override

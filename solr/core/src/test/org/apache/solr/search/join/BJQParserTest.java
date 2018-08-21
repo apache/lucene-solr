@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.join;
 
-import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,13 +25,21 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.xml.xpath.XPathConstants;
+
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.BaseTestHarness;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -77,15 +84,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     }
     assertU(commit());
     assertQ(req("q", "*:*"), "//*[@numFound='" + i + "']");
-    /*
-     * dump docs well System.out.println(h.query(req("q","*:*",
-     * "sort","_docid_ asc", "fl",
-     * "parent_s,child_s,parentchild_s,grand_s,grand_child_s,grand_parentchild_s"
-     * , "wt","csv", "rows","1000"))); /
-     */
   }
 
-  private static int id=0;
   private static List<List<String[]>> createBlocks() {
     List<List<String[]>> blocks = new ArrayList<>();
     for (String parent : abcdef) {
@@ -290,11 +290,10 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   @Test
   public void testCacheHit() throws IOException {
 
-    MetricsMap parentFilterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
+    MetricsMap parentFilterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)h.getCore().getCoreMetricManager().getRegistry()
         .getMetrics().get("CACHE.searcher.perSegFilter")).getGauge();
-    MetricsMap filterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
+    MetricsMap filterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)h.getCore().getCoreMetricManager().getRegistry()
         .getMetrics().get("CACHE.searcher.filterCache")).getGauge();
-
 
     Map<String,Object> parentsBefore = parentFilterCache.getValue();
 
@@ -389,8 +388,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   private final static String elChild[] = new String[]{"//*[@numFound='1']",
-      "//doc[" +
-          "arr[@name=\"child_s\"]/str='l' and child::arr[@name=\"childparent_s\"]/str='e']"};
+      "//doc[" + 
+          "arr[@name=\"child_s\"]/str='l' and arr[@name=\"childparent_s\"]/str='e']"};
 
 
   @Test
@@ -441,10 +440,44 @@ public class BJQParserTest extends SolrTestCaseJ4 {
        "child.fq", "{!tag=secondTag}child_s:l", // 6 ls remains
        "gchq", "{!tag=top}childparent_s:e"), "//*[@numFound='6']");
     
-    assertQ(req("q", // top and filter are excluded, got zero result, but is it right? 
+    assertQ(req("q", // top and filter are excluded, got all results
         "{!filters excludeTags=bot,secondTag,top v=$gchq}" ,
          "child.fq", "{!tag=secondTag}child_s:l",
          "gchq", "{!tag=top}childparent_s:e"), "//*[@numFound='42']");
+  }
+  
+  @Test
+  public void testFiltersCache() throws SyntaxError, IOException {
+    final String [] elFilterQuery = new String[] {"q", "{!filters param=$child.fq v=$gchq}",
+        "child.fq", "childparent_s:e",
+        "child.fq", "child_s:l",
+        "gchq", "child_s:[* TO *]"};
+    assertQ("precondition: single doc match", 
+         req(elFilterQuery), elChild);
+    final Query query;
+    try(final SolrQueryRequest req = req(elFilterQuery)) {
+      QParser parser = QParser.getParser(req.getParams().get("q"), null, req);
+      query = parser.getQuery();
+      final TopDocs topDocs = req.getSearcher().search(query, 10);
+      assertEquals(1, topDocs.totalHits.value);
+    }
+    assertU(adoc("id", "12275", 
+        "child_s", "l", "childparent_s", "e"));
+    assertU(commit());
+
+    assertQ("here we rely on autowarming for cathing cache leak",  //cache=false
+          req(elFilterQuery), "//*[@numFound='2']");
+
+    try(final SolrQueryRequest req = req()) {
+        final int count = req.getSearcher().count(query);
+        assertEquals("expecting new doc is visible to old query", 2, count);
+    }
+  }
+
+  @After
+  public void cleanAfterTestFiltersCache(){
+    assertU("should be noop", delI("12275"));
+    assertU("most of the time", commit());
   }
 }
 

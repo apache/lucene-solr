@@ -84,16 +84,14 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   /** One client per node */
   private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
 
-  public TestCloudJSONFacetJoinDomain() {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
-  }
-  
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
     // sanity check constants
     assertTrue("bad test constants: some suffixes will never be tested",
                (STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) && (INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
+    
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     
     // multi replicas should not matter...
     final int repFactor = usually() ? 1 : 2;
@@ -261,7 +259,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       TermFacet top = new TermFacet(strfield(9), new JoinDomain(strfield(5), strfield(9), strfield(9)+":[* TO *]"));
       top.subFacets.put("sub", new TermFacet(strfield(11), new JoinDomain(strfield(8), strfield(8), null)));
       facets.put("empty_top", top);
-      assertFacetCountsAreCorrect(facets, strfield(7) + ":bogus");
+      final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS);
+      assertFacetCountsAreCorrect(maxBuckets, facets, strfield(7) + ":bogus");
+      assertEquals("Empty search result shouldn't have found a single bucket",
+                   UNIQUE_FIELD_VALS, maxBuckets.get());
     }
     
     { // sanity check our test methods can handle a query where a facet filter prevents any doc from having terms
@@ -269,7 +270,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       TermFacet top = new TermFacet(strfield(9), new JoinDomain(null, null, "-*:*"));
       top.subFacets.put("sub", new TermFacet(strfield(11), new JoinDomain(strfield(8), strfield(8), null)));
       facets.put("filtered_top", top);
-      assertFacetCountsAreCorrect(facets, "*:*");
+      final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS);
+      assertFacetCountsAreCorrect(maxBuckets, facets, "*:*");
+      assertEquals("Empty join filter shouldn't have found a single bucket",
+                   UNIQUE_FIELD_VALS, maxBuckets.get());
     }
     
     { // sanity check our test methods can handle a query where a facet filter prevents any doc from having sub-terms
@@ -277,7 +281,9 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       TermFacet top = new TermFacet(strfield(9), new JoinDomain(strfield(8), strfield(8), null));
       top.subFacets.put("sub", new TermFacet(strfield(11), new JoinDomain(null, null, "-*:*")));
       facets.put("filtered_top", top);
-      assertFacetCountsAreCorrect(facets, "*:*");
+      final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS);
+      assertFacetCountsAreCorrect(maxBuckets, facets, "*:*");
+      assertTrue("Didn't check a single bucket???", maxBuckets.get() < UNIQUE_FIELD_VALS);
     }
   
     { // strings
@@ -285,14 +291,18 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       TermFacet top = new TermFacet(strfield(9), new JoinDomain(strfield(5), strfield(9), strfield(9)+":[* TO *]"));
       top.subFacets.put("facet_5", new TermFacet(strfield(11), new JoinDomain(strfield(8), strfield(8), null)));
       facets.put("facet_4", top);
-      assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS * UNIQUE_FIELD_VALS);
+      assertFacetCountsAreCorrect(maxBuckets, facets, "("+strfield(7)+":16 OR "+strfield(9)+":16 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      assertTrue("Didn't check a single bucket???", maxBuckets.get() < UNIQUE_FIELD_VALS * UNIQUE_FIELD_VALS);
     }
 
     { // ints
       Map<String,TermFacet> facets = new LinkedHashMap<>();
       TermFacet top = new TermFacet(intfield(9), new JoinDomain(intfield(5), intfield(9), null));
       facets.put("top", top);
-      assertFacetCountsAreCorrect(facets, "("+intfield(7)+":6 OR "+intfield(3)+":3)");
+      final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS * UNIQUE_FIELD_VALS);
+      assertFacetCountsAreCorrect(maxBuckets, facets, "("+intfield(7)+":16 OR "+intfield(3)+":13)");
+      assertTrue("Didn't check a single bucket???", maxBuckets.get() < UNIQUE_FIELD_VALS * UNIQUE_FIELD_VALS);
     }
 
     { // some domains with filter only, no actual join
@@ -300,7 +310,9 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       TermFacet top = new TermFacet(strfield(9), new JoinDomain(null, null, strfield(9)+":[* TO *]"));
       top.subFacets.put("facet_5", new TermFacet(strfield(11), new JoinDomain(null, null, strfield(3)+":[* TO 5]")));
       facets.put("top", top);
-      assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS * UNIQUE_FIELD_VALS);
+      assertFacetCountsAreCorrect(maxBuckets, facets, "("+strfield(7)+":16 OR "+strfield(9)+":16 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      assertTrue("Didn't check a single bucket???", maxBuckets.get() < UNIQUE_FIELD_VALS * UNIQUE_FIELD_VALS);
 
     }
 
@@ -313,7 +325,9 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                                                  new JoinDomain(strfield(8), strfield(8), null),
                                                  10, 0, true));
       facets.put("facet_4", top);
-      assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      final AtomicInteger maxBuckets = new AtomicInteger(5 * 10);
+      assertFacetCountsAreCorrect(maxBuckets, facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      assertTrue("Didn't check a single bucket???", maxBuckets.get() < 5 * 10);
     }
     
     { // low limit, high overrequest
@@ -325,7 +339,9 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                                                  new JoinDomain(strfield(8), strfield(8), null),
                                                  10, UNIQUE_FIELD_VALS + 10, false));
       facets.put("facet_4", top);
-      assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      final AtomicInteger maxBuckets = new AtomicInteger(5 * 10);
+      assertFacetCountsAreCorrect(maxBuckets, facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      assertTrue("Didn't check a single bucket???", maxBuckets.get() < 5 * 10);
     }
     
     { // low limit, low overrequest, explicit refinement
@@ -337,7 +353,9 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                                                  new JoinDomain(strfield(8), strfield(8), null),
                                                  10, 7, true));
       facets.put("facet_4", top);
-      assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      final AtomicInteger maxBuckets = new AtomicInteger(5 * 10);
+      assertFacetCountsAreCorrect(maxBuckets, facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+      assertTrue("Didn't check a single bucket???", maxBuckets.get() < 5 * 10);
     }
     
   }
@@ -365,10 +383,20 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   public void testRandom() throws Exception {
 
-    final int numIters = atLeast(10);
-    for (int iter = 0; iter < numIters; iter++) {
-      assertFacetCountsAreCorrect(TermFacet.buildRandomFacets(), buildRandomQuery());
+    // we put a safety valve in place on the maximum number of buckets that we are willing to verify
+    // across *all* the queries that we do.
+    // that way if the randomized queries we build all have relatively small facets, so be it, but if
+    // we get a really big one early on, we can test as much as possible, skip other iterations.
+    //
+    // (deeply nested facets may contain more buckets then the max, but we won't *check* all of them)
+    final int maxBucketsAllowed = atLeast(2000);
+    final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
+    
+    final int numIters = atLeast(20);
+    for (int iter = 0; iter < numIters && 0 < maxBucketsToCheck.get(); iter++) {
+      assertFacetCountsAreCorrect(maxBucketsToCheck, TermFacet.buildRandomFacets(), buildRandomQuery());
     }
+    assertTrue("Didn't check a single bucket???", maxBucketsToCheck.get() < maxBucketsAllowed);
   }
 
   /**
@@ -396,7 +424,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * the actual counts returned when executing that query with those facets match the expected results
    * of filtering on the equivilent facet terms+domain
    */
-  private void assertFacetCountsAreCorrect(Map<String,TermFacet> expected,
+  private void assertFacetCountsAreCorrect(final AtomicInteger maxBucketsToCheck,
+                                           Map<String,TermFacet> expected,
                                            final String query) throws SolrServerException, IOException {
 
     final SolrParams baseParams = params("q", query, "rows","0");
@@ -426,7 +455,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         // when the query matches nothing, we should expect no top level facets
         expected = Collections.emptyMap();
       }
-      assertFacetCountsAreCorrect(expected, baseParams, facetResponse);
+      assertFacetCountsAreCorrect(maxBucketsToCheck, expected, baseParams, facetResponse);
     } catch (AssertionError e) {
       throw new AssertionError(initParams + " ===> " + topNamedList + " --> " + e.getMessage(), e);
     } finally {
@@ -438,9 +467,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * Recursive Helper method that walks the actual facet response, comparing the counts to the expected output 
    * based on the equivilent filters generated from the original TermFacet.
    */
-  private void assertFacetCountsAreCorrect(Map<String,TermFacet> expected,
-                                           SolrParams baseParams,
-                                           NamedList actualFacetResponse) throws SolrServerException, IOException {
+  private void assertFacetCountsAreCorrect(final AtomicInteger maxBucketsToCheck,
+                                           final Map<String,TermFacet> expected,
+                                           final SolrParams baseParams,
+                                           final NamedList actualFacetResponse) throws SolrServerException, IOException {
 
     for (Map.Entry<String,TermFacet> entry : expected.entrySet()) {
       final String facetKey = entry.getKey();
@@ -449,6 +479,15 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       assertNotNull(facetKey + " key missing from: " + actualFacetResponse, results);
       final List<NamedList> buckets = (List<NamedList>) results.get("buckets");
       assertNotNull(facetKey + " has null buckets: " + actualFacetResponse, buckets);
+
+      if (buckets.isEmpty()) {
+        // should only happen if the baseParams query does not match any docs with our field X
+        final long docsWithField = getRandClient(random()).query
+          (facet.applyValueConstraintAndDomain(baseParams, facetKey, "[* TO *]")).getResults().getNumFound();
+        assertEquals(facetKey + " has no buckets, but docs in query exist with field: " + facet.field,
+                     0, docsWithField);
+      }
+      
       for (NamedList bucket : buckets) {
         final long count = ((Number) bucket.get("count")).longValue();
         final String fieldVal = bucket.get("val").toString(); // int or stringified int
@@ -460,10 +499,13 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         assertEquals(facetKey + ": " + verifyParams,
                      count, getRandClient(random()).query(verifyParams).getResults().getNumFound());
 
+        if (maxBucketsToCheck.decrementAndGet() <= 0) {
+          return;
+        }
+        
         // recursively check subFacets
         if (! facet.subFacets.isEmpty()) {
-          assertFacetCountsAreCorrect(facet.subFacets,
-                                      verifyParams, bucket);
+          assertFacetCountsAreCorrect(maxBucketsToCheck, facet.subFacets, verifyParams, bucket);
         }
       }
     }
@@ -586,7 +628,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * @see #UNIQUE_FIELD_VALS
      */
     public static Integer randomLimitParam(Random r) {
-      final int limit = r.nextInt(UNIQUE_FIELD_VALS * 2);
+      final int limit = 1 + r.nextInt(UNIQUE_FIELD_VALS * 2);
       if (limit >= UNIQUE_FIELD_VALS && r.nextBoolean()) {
         return -1; // unlimited
       } else if (limit == DEFAULT_LIMIT && r.nextBoolean()) { 

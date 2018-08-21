@@ -53,7 +53,7 @@ public class TestBooleanOr extends LuceneTestCase {
 
   private long search(Query q) throws IOException {
     QueryUtils.check(random(), q,searcher);
-    return searcher.search(q, 1000).totalHits;
+    return searcher.search(q, 1000).totalHits.value;
   }
 
   public void testElements() throws IOException {

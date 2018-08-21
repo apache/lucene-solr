@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,8 +43,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
 *  Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
@@ -53,8 +50,6 @@ import org.slf4j.LoggerFactory;
 **/
 
 public class SolrStream extends TupleStream {
-
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long serialVersionUID = 1;
 

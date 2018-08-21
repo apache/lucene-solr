@@ -20,6 +20,7 @@ package org.apache.lucene.search.intervals;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -54,13 +55,13 @@ public class TestIntervals extends LuceneTestCase {
       "Where Alph the sacred river ran through caverns measureless to man",
       "Down to a sunless sea",
       "So thrice five miles of fertile ground",
-      "With walls and towers were girdled round",
-      "Which was nice"
+      "Pease hot porridge porridge",
+      "Pease porridge porridge hot"
   };
 
   private static Directory directory;
   private static IndexSearcher searcher;
-  private static Analyzer analyzer = new StandardAnalyzer();
+  private static Analyzer analyzer = new StandardAnalyzer(CharArraySet.EMPTY_SET);
 
   @BeforeClass
   public static void setupIndex() throws IOException {
@@ -101,12 +102,12 @@ public class TestIntervals extends LuceneTestCase {
           assertEquals(-1, intervals.end());
           while ((pos = intervals.nextInterval()) != IntervalIterator.NO_MORE_INTERVALS) {
             //System.out.println(doc + ": " + intervals);
-            assertEquals(expected[id][i], pos);
-            assertEquals(expected[id][i], intervals.start());
-            assertEquals(expected[id][i + 1], intervals.end());
+            assertEquals("Wrong start value", expected[id][i], pos);
+            assertEquals("start() != pos returned from nextInterval()", expected[id][i], intervals.start());
+            assertEquals("Wrong end value", expected[id][i + 1], intervals.end());
             i += 2;
           }
-          assertEquals(expected[id].length, i);
+          assertEquals("Wrong number of endpoints", expected[id].length, i);
           if (i > 0)
             matchedDocs++;
         }
@@ -172,7 +173,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testIntervalDisjunction() throws IOException {
-    checkIntervals(Intervals.or(Intervals.term("pease"), Intervals.term("hot")), "field1", 4, new int[][]{
+    checkIntervals(Intervals.or(Intervals.term("pease"), Intervals.term("hot"), Intervals.term("notMatching")), "field1", 4, new int[][]{
         {},
         { 0, 0, 2, 2, 3, 3, 6, 6, 17, 17},
         { 0, 0, 3, 3, 5, 5, 6, 6, 21, 21},
@@ -192,6 +193,60 @@ public class TestIntervals extends LuceneTestCase {
         { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
         {}
     });
+  }
+
+  public void testNesting2() throws IOException {
+    checkIntervals(
+        Intervals.unordered(
+            Intervals.ordered(
+                Intervals.term("like"),
+                Intervals.term("it"),
+                Intervals.term("cold")
+            ),
+            Intervals.term("pease")
+        ),
+        "field1", 2, new int[][]{
+            {},
+            {6, 21},
+            {6, 17},
+            {},
+            {},
+            {}
+        });
+  }
+
+  public void testUnorderedDistinct() throws IOException {
+    checkIntervals(Intervals.unordered(false, Intervals.term("pease"), Intervals.term("pease")),
+        "field1", 3, new int[][]{
+            {},
+            { 0, 3, 3, 6 },
+            { 0, 3, 3, 6 },
+            {},
+            { 0, 3, 3, 6 },
+            {}
+        });
+    checkIntervals(Intervals.unordered(false,
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"), Intervals.term("hot")),
+        Intervals.term("porridge")),
+        "field1", 3, new int[][]{
+            {},
+            { 1, 4, 4, 17 },
+            { 1, 5, 4, 7 },
+            {},
+            { 1, 4, 4, 17 },
+            {}
+        });
+    checkIntervals(Intervals.unordered(false,
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"), Intervals.term("hot")),
+        Intervals.term("porridge")),
+        "field2", 1, new int[][]{
+            {},
+            {},
+            {},
+            {},
+            { 0, 3 },
+            {}
+        });
   }
 
 }

@@ -18,7 +18,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.util.ArrayUtil;
@@ -116,12 +115,12 @@ public final class HeapPointWriter implements PointWriter {
     if (docIDs.length == nextWrite) {
       int nextSize = Math.min(maxSize, ArrayUtil.oversize(nextWrite+1, Integer.BYTES));
       assert nextSize > nextWrite: "nextSize=" + nextSize + " vs nextWrite=" + nextWrite;
-      docIDs = Arrays.copyOf(docIDs, nextSize);
+      docIDs = ArrayUtil.growExact(docIDs, nextSize);
       if (singleValuePerDoc == false) {
         if (ordsLong != null) {
-          ordsLong = Arrays.copyOf(ordsLong, nextSize);
+          ordsLong = ArrayUtil.growExact(ordsLong, nextSize);
         } else {
-          ords = Arrays.copyOf(ords, nextSize);
+          ords = ArrayUtil.growExact(ords, nextSize);
         }
       }
     }

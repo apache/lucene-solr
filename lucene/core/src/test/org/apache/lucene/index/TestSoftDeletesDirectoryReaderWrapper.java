@@ -104,7 +104,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
   }
 
   private boolean isWrapped(LeafReader reader) {
-    return reader instanceof SoftDeletesDirectoryReaderWrapper.SoftDeletesFilterLeafReader;
+    return reader instanceof SoftDeletesDirectoryReaderWrapper.SoftDeletesFilterLeafReader
+        || reader instanceof SoftDeletesDirectoryReaderWrapper.SoftDeletesFilterCodecReader;
   }
 
   public void testMixSoftAndHardDeletes() throws IOException {
@@ -133,7 +134,7 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     assertEquals(uniqueDocs.size(), reader.numDocs());
     IndexSearcher searcher = new IndexSearcher(reader);
     for (Integer docId : uniqueDocs) {
-      assertEquals(1, searcher.search(new TermQuery(new Term("id", docId.toString())), 1).totalHits);
+      assertEquals(1, searcher.count(new TermQuery(new Term("id", docId.toString()))));
     }
 
     IOUtils.close(reader, dir);

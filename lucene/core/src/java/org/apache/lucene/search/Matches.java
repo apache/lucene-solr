@@ -26,6 +26,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.apache.lucene.util.IOSupplier;
+
 /**
  * Reports the positions and optionally offsets of all matching terms in a query
  * for a single document
@@ -97,18 +99,9 @@ public interface Matches extends Iterable<String> {
   }
 
   /**
-   * A functional interface that supplies a {@link MatchesIterator}
-   */
-  @FunctionalInterface
-  interface MatchesIteratorSupplier {
-    /** Return a new {@link MatchesIterator} */
-    MatchesIterator get() throws IOException;
-  }
-
-  /**
    * Create a Matches for a single field
    */
-  static Matches forField(String field, MatchesIteratorSupplier mis) throws IOException {
+  static Matches forField(String field, IOSupplier<MatchesIterator> mis) throws IOException {
 
     // The indirection here, using a Supplier object rather than a MatchesIterator
     // directly, is to allow for multiple calls to Matches.getMatches() to return
