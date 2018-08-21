@@ -24,6 +24,7 @@ import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import javax.servlet.Filter;
@@ -73,27 +74,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
   private final HttpRequestInterceptor interceptor = new HttpRequestInterceptor() {
     @Override
     public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-      SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
-      String usr;
-      if (reqInfo != null) {
-        Principal principal = reqInfo.getReq().getUserPrincipal();
-        if (principal == null) {
-          //this had a request but not authenticated
-          //so we don't not need to set a principal
-          return;
-        } else {
-          usr = principal.getName();
-        }
-      } else {
-        if (!isSolrThread()) {
-          //if this is not running inside a Solr threadpool (as in testcases)
-          // then no need to add any header
-          return;
-        }
-        //this request seems to be originated from Solr itself
-        usr = "$"; //special name to denote the user is the node itself
-      }
-      httpRequest.setHeader(INTERNAL_REQUEST_HEADER, usr);
+      getPrincipal().ifPresent(usr -> httpRequest.setHeader(INTERNAL_REQUEST_HEADER, usr));
     }
   };
 
@@ -139,10 +120,40 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
     }
   }
 
+  private Optional<String> getPrincipal() {
+    SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
+    String usr;
+    if (reqInfo != null) {
+      Principal principal = reqInfo.getReq().getUserPrincipal();
+      if (principal == null) {
+        //this had a request but not authenticated
+        //so we don't not need to set a principal
+        return Optional.empty();
+      } else {
+        usr = principal.getName();
+      }
+    } else {
+      if (!isSolrThread()) {
+        //if this is not running inside a Solr threadpool (as in testcases)
+        // then no need to add any header
+        return Optional.empty();
+      }
+      //this request seems to be originated from Solr itself
+      usr = "$"; //special name to denote the user is the node itself
+    }
+    return Optional.of(usr);
+  }
+
   @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     HttpClientUtil.addRequestInterceptor(interceptor);
-    return super.getHttpClientBuilder(builder);
+    builder = super.getHttpClientBuilder(builder);
+    builder.setHttp2Configurator(client -> {
+      client.setBeginListener(request -> {
+        getPrincipal().ifPresent(usr -> request.header(INTERNAL_REQUEST_HEADER, usr));
+      });
+    });
+    return builder;
   }
 
   @Override

@@ -398,8 +398,10 @@ public class CoreContainer {
   private void setupHttpClientForAuthPlugin(Object authcPlugin) {
     if (authcPlugin instanceof HttpClientBuilderPlugin) {
       // Setup HttpClient for internode communication
-      SolrHttpClientBuilder builder = ((HttpClientBuilderPlugin) authcPlugin).getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
-      
+      HttpClientBuilderPlugin builderPlugin = ((HttpClientBuilderPlugin) authcPlugin);
+      SolrHttpClientBuilder builder = builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
+      shardHandlerFactory.setSecurityBuilder(builder);
+
       // The default http client of the core container's shardHandlerFactory has already been created and
       // configured using the default httpclient configurer. We need to reconfigure it using the plugin's
       // http client configurer to set it up for internode communication.

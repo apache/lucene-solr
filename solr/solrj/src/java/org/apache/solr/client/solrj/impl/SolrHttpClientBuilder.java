@@ -49,10 +49,15 @@ public class SolrHttpClientBuilder {
   public interface CookieSpecRegistryProvider {
     Lookup<CookieSpecProvider> getCookieSpecRegistry();
   }
+
+  public interface Http2Configurator {
+    void setup(Http2SolrClient http2SolrClient);
+  }
   
   private CookieSpecRegistryProvider cookieSpecRegistryProvider;
   private AuthSchemeRegistryProvider authSchemeRegistryProvider;
   private CredentialsProviderProvider credentialsProviderProvider;
+  private Http2Configurator configurator;
 
   protected SolrHttpClientBuilder() {
     super();
@@ -76,6 +81,13 @@ public class SolrHttpClientBuilder {
     return this;
   }
 
+  //I know this is a horrible design, but as soon as we remove the usage of apache httpclient, things will be much cleaner
+  public final SolrHttpClientBuilder setHttp2Configurator (
+      final Http2Configurator configurator) {
+    this.configurator = configurator;
+    return this;
+  }
+
   public AuthSchemeRegistryProvider getAuthSchemeRegistryProvider() {
     return authSchemeRegistryProvider;
   }
@@ -86,6 +98,10 @@ public class SolrHttpClientBuilder {
 
   public CredentialsProviderProvider getCredentialsProviderProvider() {
     return credentialsProviderProvider;
+  }
+
+  public void applyHttp2Configurator(Http2SolrClient client) {
+    if (configurator != null) configurator.setup(client);
   }
 
 }

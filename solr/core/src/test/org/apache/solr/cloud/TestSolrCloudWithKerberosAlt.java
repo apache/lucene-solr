@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,10 +44,7 @@ import org.slf4j.LoggerFactory;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadZookeeperThreadsFilter.class // Zookeeper login leaks TGT renewal threads
 })
-
 @LuceneTestCase.Slow
-//TODO nocommit
-@Ignore
 public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

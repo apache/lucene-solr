@@ -61,6 +61,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -118,7 +119,7 @@ public class Http2SolrClient extends SolrClient {
     }
   };
 
-  private Request.BeginListener beginListener = req -> {
+  private volatile Request.BeginListener beginListener = req -> {
 
   };
 
@@ -171,6 +172,14 @@ public class Http2SolrClient extends SolrClient {
     }
 
     assert ObjectReleaseTracker.track(this);
+  }
+
+  public void setBeginListener(Request.BeginListener beginListener) {
+    this.beginListener = beginListener;
+  }
+
+  public ProtocolHandlers getProtocolHandlers() {
+    return httpClient.getProtocolHandlers();
   }
 
   private HttpClient createHttpClient(Builder builder) {
@@ -243,9 +252,14 @@ public class Http2SolrClient extends SolrClient {
                                       OnComplete onComplete,
                                       boolean returnStream) throws IOException, SolrServerException {
     Request req = makeRequest(solrRequest, collection);
+
+    if (beginListener != null) {
+      // By calling listener here, we will make sure that SolrRequestInfo can be get from the same thread
+      beginListener.onBegin(req);
+    }
     try {
       if (onComplete != null) {
-        req.onRequestBegin(beginListener).onRequestQueued(requestQueuedListener)
+        req.onRequestQueued(requestQueuedListener)
             .onComplete(requestCompleteListener).send(new BufferingResponseListener() {
 
           @Override
@@ -275,13 +289,13 @@ public class Http2SolrClient extends SolrClient {
         Http2ClientResponse arsp = new Http2ClientResponse();
         if (returnStream) {
           InputStreamResponseListener listener = new InputStreamResponseListener();
-          req.onRequestBegin(beginListener).send(listener);
+          req.send(listener);
           // Wait for the response headers to arrive
           listener.get(idleTimeout, TimeUnit.SECONDS);
           // TODO: process response
           arsp.stream = listener.getInputStream();
         } else {
-          ContentResponse response = req.onRequestBegin(beginListener).send();
+          ContentResponse response = req.send();
           ByteArrayInputStream is = new ByteArrayInputStream(response.getContent());
           arsp.response = processErrorsAndResponse(response, parser,
               is, response.getEncoding(), isV2ApiRequest(solrRequest));

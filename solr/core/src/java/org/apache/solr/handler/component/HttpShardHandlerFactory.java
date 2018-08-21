@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -214,6 +215,13 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
     this.defaultClient = new Http2SolrClient.Builder().connectionTimeout(connectionTimeout).idleTimeout(soTimeout).build();
     this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+  }
+
+  @Override
+  public void setSecurityBuilder(SolrHttpClientBuilder securityBuilder) {
+    if (securityBuilder != null) {
+      securityBuilder.applyHttp2Configurator(defaultClient);
+    }
   }
 
   protected ModifiableSolrParams getClientParams() {

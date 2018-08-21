@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,7 +46,6 @@ import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_ADDRESS_PARAM;
@@ -114,6 +114,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
     JettySolrRunner runner = miniCluster.getJettySolrRunners().get(0);
     solrClient = new HttpSolrClient.Builder(runner.getBaseUrl().toString()).build();
+    //TODO nocommit, remove this
+    Locale.setDefault(Locale.US);
   }
 
   /**
@@ -314,8 +316,6 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore
-  //TODO nocommit
   public void testForwarding() throws Exception {
     String collectionName = "forwardingCollection";
     miniCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");

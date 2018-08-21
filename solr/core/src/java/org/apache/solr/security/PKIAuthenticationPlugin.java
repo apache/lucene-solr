@@ -28,6 +28,7 @@ import java.security.Principal;
 import java.security.PublicKey;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.http.HttpEntity;
@@ -224,7 +225,44 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     HttpClientUtil.addRequestInterceptor(interceptor);
+    builder.setHttp2Configurator(client -> {
+      client.setBeginListener(request -> {
+        generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
+      });
+    });
     return builder;
+  }
+
+  private Optional<String> generateToken() {
+    if (disabled()) return Optional.empty();
+
+    SolrRequestInfo reqInfo = getRequestInfo();
+    String usr;
+    if (reqInfo != null) {
+      Principal principal = reqInfo.getReq().getUserPrincipal();
+      if (principal == null) {
+        //this had a request but not authenticated
+        //so we don't not need to set a principal
+        return Optional.empty();
+      } else {
+        usr = principal.getName();
+      }
+    } else {
+      if (!isSolrThread()) {
+        //if this is not running inside a Solr threadpool (as in testcases)
+        // then no need to add any header
+        return Optional.empty();
+      }
+      //this request seems to be originated from Solr itself
+      usr = "$"; //special name to denote the user is the node itself
+    }
+
+    String s = usr + " " + System.currentTimeMillis();
+
+    byte[] payload = s.getBytes(UTF_8);
+    byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
+    String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
+    return Optional.of(base64Cipher);
   }
 
   public boolean needsAuthorization(HttpServletRequest req) {
@@ -238,8 +276,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
     @Override
     public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-      if (disabled()) return;
-      setHeader(httpRequest);
+      generateToken().ifPresent(s -> httpRequest.setHeader(HEADER, myNodeName + " " + s));
     }
   }
 
