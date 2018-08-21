@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -147,7 +146,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
-        "testNodeLost", CloudTestUtils.clusterShape(1, 2));
+        "testNodeLost", CloudTestUtils.clusterShape(1, 2, false, true));
 
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
     log.debug("-- cluster state: {}", clusterState);
@@ -210,7 +209,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
-        "testNodeWithMultipleReplicasLost", CloudTestUtils.clusterShape(2, 3));
+        "testNodeWithMultipleReplicasLost", CloudTestUtils.clusterShape(2, 3, false, true));
 
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
     log.debug("-- cluster state: {}", clusterState);
@@ -254,7 +253,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
+  //17-Aug-2018 commented @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void testNodeAdded() throws Exception {
     AssertingTriggerAction.expectedNode = null;
     SolrClient solrClient = cluster.simGetSolrClient();

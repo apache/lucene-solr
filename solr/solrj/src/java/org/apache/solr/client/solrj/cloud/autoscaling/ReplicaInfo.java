@@ -20,14 +20,18 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.BiPredicate;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 
+import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
+import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 
 
@@ -87,23 +91,15 @@ public class ReplicaInfo implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
+    BiPredicate<String, Object> p = dedupeKeyPredicate(new HashSet<>())
+        .and(NON_NULL_VAL);
     ew.put(name, (MapWriter) ew1 -> {
-      for (Map.Entry<String, Object> e : variables.entrySet()) {
-        ew1.put(e.getKey(), e.getValue());
-      }
-      if (core != null && !variables.containsKey(ZkStateReader.CORE_NAME_PROP)) {
-        ew1.put(ZkStateReader.CORE_NAME_PROP, core);
-      }
-      if (shard != null && !variables.containsKey(ZkStateReader.SHARD_ID_PROP)) {
-        ew1.put(ZkStateReader.SHARD_ID_PROP, shard);
-      }
-      if (collection != null && !variables.containsKey(ZkStateReader.COLLECTION_PROP)) {
-        ew1.put(ZkStateReader.COLLECTION_PROP, collection);
-      }
-      if (node != null && !variables.containsKey(ZkStateReader.NODE_NAME_PROP)) {
-        ew1.put(ZkStateReader.NODE_NAME_PROP, node);
-      }
-      if (type != null) ew1.put(ZkStateReader.REPLICA_TYPE, type.toString());
+      ew1.put(ZkStateReader.CORE_NAME_PROP, core, p)
+          .put(ZkStateReader.SHARD_ID_PROP, shard, p)
+          .put(ZkStateReader.COLLECTION_PROP, collection, p)
+          .put(ZkStateReader.NODE_NAME_PROP, node, p)
+          .put(ZkStateReader.REPLICA_TYPE, type.toString(), p);
+      for (Map.Entry<String, Object> e : variables.entrySet()) ew1.put(e.getKey(), e.getValue(), p);
     });
   }
 

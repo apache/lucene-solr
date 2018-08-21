@@ -56,7 +56,7 @@ layout: default
 <!-- Adds nav links on each page -->
     {% assign scrollnav = site.data.scrollnav[page_id] %}
     {% if scrollnav %}
-    <div class="scrollnav">
+    <div class="scrollnav row">
       {% if scrollnav.prev %}
       <a class="btn btn-primary prev" href="{{ scrollnav.prev.url }}">{{ scrollnav.prev.title }}</a>
       {% endif %}

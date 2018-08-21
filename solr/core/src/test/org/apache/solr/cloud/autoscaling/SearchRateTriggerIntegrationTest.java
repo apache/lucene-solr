@@ -235,9 +235,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     Map<String, Double> nodeRates = (Map<String, Double>) ev.event.getProperties().get(SearchRateTrigger.HOT_NODES);
     assertNotNull("nodeRates", nodeRates);
-    assertTrue(nodeRates.toString(), nodeRates.size() > 0);
-    AtomicDouble totalNodeRate = new AtomicDouble();
-    nodeRates.forEach((n, r) -> totalNodeRate.addAndGet(r));
+    // no node violations because node rates weren't set in the config
+    assertTrue(nodeRates.toString(), nodeRates.isEmpty());
     List<ReplicaInfo> replicaRates = (List<ReplicaInfo>) ev.event.getProperties().get(SearchRateTrigger.HOT_REPLICAS);
     assertNotNull("replicaRates", replicaRates);
     assertTrue(replicaRates.toString(), replicaRates.size() > 0);
@@ -260,8 +259,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     Double collectionRate = collectionRates.get(COLL1);
     assertNotNull(collectionRate);
     assertTrue(collectionRate > 5.0);
-    assertEquals(collectionRate, totalNodeRate.get(), 5.0);
-    assertEquals(collectionRate, totalShardRate.get(), 5.0);
+    // two replicas - the trigger calculates average over all searchable replicas
+    assertEquals(collectionRate / 2, totalShardRate.get(), 5.0);
     assertEquals(collectionRate, totalReplicaRate.get(), 5.0);
 
     // check operations
@@ -274,7 +273,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  //17-Aug-2018 commented  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testBelowSearchRate() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "belowRate_collection";
@@ -302,7 +301,11 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : false," +
         "'collections' : '" + COLL1 + "'," +
         "'aboveRate' : 1.0," +
-        "'belowRate' : 0.1," +
+        // RecoveryStrategy calls /admin/ping, which calls /select so this may not be zero
+        // even when no external requests were made
+        "'belowRate' : 0.3," +
+        "'aboveNodeRate' : 1.0," +
+        "'belowNodeRate' : 0.3," +
         // do nothing but generate an op
         "'belowNodeOp' : 'none'," +
         "'actions' : [" +
@@ -383,7 +386,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    timeSource.sleep(5000);
+    timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
 
     List<CapturedEvent> events = listenerEvents.get("srt");
     assertEquals(events.toString(), 3, events.size());
@@ -442,12 +445,18 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(ev.toString(), "compute", ev.actionName);
     ops = (List<TriggerEvent.Op>)ev.event.getProperty(TriggerEvent.REQUESTED_OPS);
     assertNotNull("there should be some requestedOps: " + ev.toString(), ops);
-    assertEquals(ops.toString(), 1, ops.size());
+    assertEquals(ops.toString(), 2, ops.size());
     assertEquals(ops.toString(), CollectionParams.CollectionAction.NONE, ops.get(0).getAction());
+    assertEquals(ops.toString(), CollectionParams.CollectionAction.NONE, ops.get(1).getAction());
+
+    // wait for waitFor to elapse for all types of violations
+    timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds * 2, TimeUnit.SECONDS));
 
     listenerEvents.clear();
     finished = new CountDownLatch(1);
     started = new CountDownLatch(1);
+
+    log.info("## test single replicas.");
 
     // now allow single replicas
     setTriggerCommand = "{" +
@@ -458,7 +467,9 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'collections' : '" + COLL1 + "'," +
         "'aboveRate' : 1.0," +
-        "'belowRate' : 0.1," +
+        "'belowRate' : 0.3," +
+        "'aboveNodeRate' : 1.0," +
+        "'belowNodeRate' : 0.3," +
         "'minReplicas' : 1," +
         "'belowNodeOp' : 'none'," +
         "'actions' : [" +
@@ -491,21 +502,20 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(ev.toString(), "compute", ev.actionName);
     ops = (List<TriggerEvent.Op>)ev.event.getProperty(TriggerEvent.REQUESTED_OPS);
     assertNotNull("there should be some requestedOps: " + ev.toString(), ops);
-    assertEquals(ops.toString(), 2, ops.size());
+
+    assertTrue(ops.toString(), ops.size() > 0);
     AtomicInteger coldNodes2 = new AtomicInteger();
-    AtomicInteger coldReplicas2 = new AtomicInteger();
     ops.forEach(op -> {
       if (op.getAction().equals(CollectionParams.CollectionAction.NONE)) {
         coldNodes2.incrementAndGet();
       } else if (op.getAction().equals(CollectionParams.CollectionAction.DELETEREPLICA)) {
-        coldReplicas2.incrementAndGet();
+        // ignore
       } else {
         fail("unexpected op: " + op);
       }
     });
 
-    assertEquals("coldNodes", 1, coldNodes2.get());
-    assertEquals("colReplicas", 1, coldReplicas2.get());
+    assertEquals("coldNodes: " +ops.toString(), 2, coldNodes2.get());
 
     // now the collection should be at RF == 1, with one additional PULL replica
     CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
@@ -543,6 +553,9 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'collections' : '" + COLL1 + "'," +
         "'aboveRate' : 1.0," +
         "'belowRate' : 0.1," +
+        // set limits to node rates
+        "'aboveNodeRate' : 1.0," +
+        "'belowNodeRate' : 0.1," +
         // allow deleting all spare replicas
         "'minReplicas' : 1," +
         // allow requesting all deletions in one event

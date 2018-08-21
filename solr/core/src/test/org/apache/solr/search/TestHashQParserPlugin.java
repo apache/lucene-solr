@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -55,6 +56,36 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testManyHashPartitions() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random())+"}");
+    params.add("partitionKeys", "a_i,a_s,a_i,a_s");
+    params.add("wt", "xml");
+    String response = h.query(req(params));
+    h.validateXPath(response, "//*[@numFound='0']");
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random())+"}");
+    params.add("partitionKeys", "a_i,a_s,a_i,a_s,a_i");
+    params.add("wt", "xml");
+    ModifiableSolrParams finalParams = params;
+    expectThrows(SolrException.class, () -> h.query(req(finalParams)));
+  }
+
+  @Test
+  public void testLessWorkers() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!hash worker=0 workers=1 cost="+getCost(random())+"}");
+    params.add("partitionKeys", "a_i");
+    params.add("wt", "xml");
+    ModifiableSolrParams finalParams = params;
+    expectThrows(SolrException.class, () -> h.query(req(finalParams)));
+  }
+
+  @Test
   public void testHashPartitionWithEmptyValues() throws Exception {
 
     assertU(adoc("id", "1", "a_s", "one", "a_i" , "1"));
@@ -66,7 +97,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     //Test with string hash
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
-    params.add("fq", "{!hash worker=0 workers=1 cost="+getCost(random())+"}");
+    params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random())+"}");
     params.add("partitionKeys", "a_s");
     params.add("wt", "xml");
     String response = h.query(req(params));
@@ -75,7 +106,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     //Test with int hash
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
-    params.add("fq", "{!hash worker=0 workers=1 cost="+getCost(random())+"}");
+    params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random())+"}");
     params.add("partitionKeys", "a_i");
     params.add("wt", "xml");
     response = h.query(req(params));
