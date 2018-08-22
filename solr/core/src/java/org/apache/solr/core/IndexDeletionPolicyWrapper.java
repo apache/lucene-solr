@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
 public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final IndexDeletionPolicy deletionPolicy;
   private volatile Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<>();
@@ -94,7 +94,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
       // this is the common success case: the older time didn't exist, or
       // came before the new time.
       if (previousTime == null || previousTime <= timeToSet) {
-        LOG.debug("Commit point reservation for generation {} set to {} (requested reserve time of {})",
+        log.debug("Commit point reservation for generation {} set to {} (requested reserve time of {})",
             indexGen, timeToSet, reserveTime);
         break;
       }

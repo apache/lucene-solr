@@ -57,7 +57,7 @@ import static org.apache.solr.common.cloud.Replica.State.DOWN;
 
 public class DeleteReplicaTest extends SolrCloudTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -253,7 +253,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         if (times.incrementAndGet() > 1) {
           return false;
         }
-        LOG.info("Running delete core {}",cd);
+        log.info("Running delete core {}",cd);
 
         try {
           ZkNodeProps m = new ZkNodeProps(
@@ -371,7 +371,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
           try {
             cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", String.valueOf(doc++)));
           } catch (Exception e) {
-            LOG.error("Failed on adding document to {}", collectionName, e);
+            log.error("Failed on adding document to {}", collectionName, e);
           }
         }
       });
@@ -389,7 +389,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     try {
       cluster.getSolrClient().waitForState(collectionName, 20, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
     } catch (TimeoutException e) {
-      LOG.info("Timeout wait for state {}", getCollectionState(collectionName));
+      log.info("Timeout wait for state {}", getCollectionState(collectionName));
       throw e;
     }
 

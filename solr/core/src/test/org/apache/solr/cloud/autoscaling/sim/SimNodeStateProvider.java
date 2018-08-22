@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * to setup core-level metrics use {@link SimClusterStateProvider#simSetCollectionValue(String, String, Object, boolean, boolean)}.
  */
 public class SimNodeStateProvider implements NodeStateProvider {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, Map<String, Object>> nodeValues = new ConcurrentHashMap<>();
   private final SimClusterStateProvider clusterStateProvider;
@@ -164,7 +164,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @param node node id
    */
   public void simRemoveNodeValues(String node) throws InterruptedException {
-    LOG.debug("--removing value for " + node);
+    log.debug("--removing value for " + node);
     lock.lockInterruptibly();
     try {
       Map<String, Object> values = nodeValues.remove(node);
@@ -187,7 +187,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     try {
       AtomicBoolean updateRoles = new AtomicBoolean(false);
       myNodes.forEach(n -> {
-        LOG.debug("- removing dead node values: " + n);
+        log.debug("- removing dead node values: " + n);
         Map<String, Object> vals = nodeValues.remove(n);
         if (vals.containsKey("nodeRole")) {
           updateRoles.set(true);
@@ -253,7 +253,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     for (String tag : tags) {
       String[] parts = tag.split(":");
       if (parts.length < 3 || !parts[0].equals("metrics")) {
-        LOG.warn("Invalid metrics: tag: " + tag);
+        log.warn("Invalid metrics: tag: " + tag);
         continue;
       }
       if (!parts[1].startsWith("solr.core.")) {
@@ -263,7 +263,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
       Matcher m = REGISTRY_PATTERN.matcher(parts[1]);
 
       if (!m.matches()) {
-        LOG.warn("Invalid registry name: " + parts[1]);
+        log.warn("Invalid registry name: " + parts[1]);
         continue;
       }
       String collection = m.group(1);
@@ -291,7 +291,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
 
   @Override
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-    LOG.trace("-- requested values for " + node + ": " + tags);
+    log.trace("-- requested values for " + node + ": " + tags);
     if (!liveNodesSet.contains(node)) {
       throw new RuntimeException("non-live node " + node);
     }

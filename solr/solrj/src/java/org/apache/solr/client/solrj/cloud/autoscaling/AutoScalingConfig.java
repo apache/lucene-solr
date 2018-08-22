@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.toList;
  * lazily.
  */
 public class AutoScalingConfig implements MapWriter {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, Object> jsonMap;
   private final boolean empty;
@@ -81,7 +81,7 @@ public class AutoScalingConfig implements MapWriter {
           TriggerEventProcessorStage stage = TriggerEventProcessorStage.valueOf(String.valueOf(stageName).toUpperCase(Locale.ROOT));
           stages.add(stage);
         } catch (Exception e) {
-          LOG.warn("Invalid stage name '" + name + "' in listener config, skipping: " + properties);
+          log.warn("Invalid stage name '" + name + "' in listener config, skipping: " + properties);
         }
       }
       listenerClass = (String)this.properties.get(AutoScalingParams.CLASS);
