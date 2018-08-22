@@ -36,6 +36,7 @@ public class TestSnowballVocab extends LuceneTestCase {
    * Run all languages against their snowball vocabulary tests.
    */
   public void testStemmers() throws IOException {
+    assertCorrectOutput("Arabic", "arabic");
     assertCorrectOutput("Danish", "danish");
     assertCorrectOutput("Dutch", "dutch");
     assertCorrectOutput("English", "english");
@@ -56,7 +57,7 @@ public class TestSnowballVocab extends LuceneTestCase {
     assertCorrectOutput("Swedish", "swedish");
     assertCorrectOutput("Turkish", "turkish");
   }
-    
+
   /**
    * For the supplied language, run the stemmer against all strings in voc.txt
    * The output should be the same as the string in output.txt
@@ -64,16 +65,16 @@ public class TestSnowballVocab extends LuceneTestCase {
   private void assertCorrectOutput(final String snowballLanguage, String dataDirectory)
       throws IOException {
     if (VERBOSE) System.out.println("checking snowball language: " + snowballLanguage);
-    
+
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer t = new KeywordTokenizer();
         return new TokenStreamComponents(t, new SnowballFilter(t, snowballLanguage));
-      }  
+      }
     };
-    
-    assertVocabulary(a, getDataPath("TestSnowballVocabData.zip"), 
+
+    assertVocabulary(a, getDataPath("TestSnowballVocabData.zip"),
         dataDirectory + "/voc.txt", dataDirectory + "/output.txt");
     a.close();
   }
