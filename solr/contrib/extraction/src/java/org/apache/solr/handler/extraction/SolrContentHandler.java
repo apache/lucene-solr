@@ -59,8 +59,6 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   protected final SolrInputDocument document;
 
-  protected final Collection<String> dateFormats;
-
   protected final Metadata metadata;
   protected final SolrParams params;
   protected final StringBuilder catchAllBuilder = new StringBuilder(2048);
@@ -77,19 +75,14 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   private final boolean literalsOverride;
   
   private Set<String> literalFieldNames = null;
-  
+
+
   public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
-    this(metadata, params, schema, ExtractionDateUtil.DEFAULT_DATE_FORMATS);
-  }
-
-
-  public SolrContentHandler(Metadata metadata, SolrParams params,
-                            IndexSchema schema, Collection<String> dateFormats) {
     this.document = new SolrInputDocument();
     this.metadata = metadata;
     this.params = params;
     this.schema = schema;
-    this.dateFormats = dateFormats;
+    // this.dateFormats = dateFormats;
 
     this.lowerNames = params.getBool(LOWERNAMES, false);
     this.captureAttribs = params.getBool(CAPTURE_ATTRIBUTES, false);
