@@ -105,7 +105,7 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
  * Simulated {@link SolrCloudManager}.
  */
 public class SimCloudManager implements SolrCloudManager {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SimDistribStateManager stateManager;
   private final SimClusterStateProvider clusterStateProvider;
@@ -395,7 +395,7 @@ public class SimCloudManager implements SolrCloudManager {
     String nodeId = (String)values.get(ImplicitSnitch.NODE);
     nodeStateProvider.simSetNodeValues(nodeId, values);
     clusterStateProvider.simAddNode(nodeId);
-    LOG.trace("-- added node " + nodeId);
+    log.trace("-- added node " + nodeId);
     // initialize history handler if this is the first node
     if (metricsHistoryHandler == null && liveNodesSet.size() == 1) {
       metricsHandler = new MetricsHandler(metricManager);
@@ -428,7 +428,7 @@ public class SimCloudManager implements SolrCloudManager {
         metricsHandler = null;
       }
     }
-    LOG.trace("-- removed node " + nodeId);
+    log.trace("-- removed node " + nodeId);
   }
 
   /**
@@ -517,7 +517,7 @@ public class SimCloudManager implements SolrCloudManager {
    * @param killNodeId optional nodeId to kill. If null then don't kill any node, just restart the thread
    */
   public void simRestartOverseer(String killNodeId) throws Exception {
-    LOG.info("=== Restarting OverseerTriggerThread and clearing object cache...");
+    log.info("=== Restarting OverseerTriggerThread and clearing object cache...");
     triggerThread.interrupt();
     IOUtils.closeQuietly(triggerThread);
     if (killNodeId != null) {
@@ -648,7 +648,7 @@ public class SimCloudManager implements SolrCloudManager {
     // pay the penalty for remote request, at least 5 ms
     timeSource.sleep(5);
 
-    LOG.trace("--- got SolrRequest: " + req.getMethod() + " " + req.getPath() +
+    log.trace("--- got SolrRequest: " + req.getMethod() + " " + req.getPath() +
         (req.getParams() != null ? " " + req.getParams().toQueryString() : ""));
     if (req.getPath() != null) {
       if (req.getPath().startsWith("/admin/autoscaling") ||
@@ -674,7 +674,7 @@ public class SimCloudManager implements SolrCloudManager {
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
           cw.write(baos);
           String payload = baos.toString("UTF-8");
-          LOG.trace("-- payload: {}", payload);
+          log.trace("-- payload: {}", payload);
           queryRequest.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(payload)));
         }
         queryRequest.getContext().put("httpMethod", req.getMethod().toString());
@@ -698,12 +698,12 @@ public class SimCloudManager implements SolrCloudManager {
           }
         }
         if (queryResponse.getException() != null) {
-          LOG.debug("-- exception handling request", queryResponse.getException());
+          log.debug("-- exception handling request", queryResponse.getException());
           throw new IOException(queryResponse.getException());
         }
         SolrResponse rsp = new SolrResponseBase();
         rsp.setResponse(queryResponse.getValues());
-        LOG.trace("-- response: {}", rsp);
+        log.trace("-- response: {}", rsp);
         return rsp;
       }
     }
@@ -736,7 +736,7 @@ public class SimCloudManager implements SolrCloudManager {
       if (action == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
-      LOG.trace("Invoking Collection Action :{} with params {}", action.toLower(), req.getParams().toQueryString());
+      log.trace("Invoking Collection Action :{} with params {}", action.toLower(), req.getParams().toQueryString());
       NamedList results = new NamedList();
       rsp.setResponse(results);
       incrementCount(action.name());

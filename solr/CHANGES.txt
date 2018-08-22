@@ -289,6 +289,8 @@ Other Changes
 
 * SOLR-12625: Combine SolrDocumentFetcher and RetrieveFieldsOptimizer (Erick Erickson)
 
+* SOLR-12690: Regularize LoggerFactory declarations (Erick Erickson)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

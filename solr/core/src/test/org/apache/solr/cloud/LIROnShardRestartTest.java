@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 @Deprecated
 public class LIROnShardRestartTest extends SolrCloudTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -166,7 +166,7 @@ public class LIROnShardRestartTest extends SolrCloudTestCase {
     } catch (Throwable th) {
       String electionPath = "/collections/allReplicasInLIR/leader_elect/shard1/election/";
       List<String> children = zkClient().getChildren(electionPath, null, true);
-      LOG.info("Election queue {}", children);
+      log.info("Election queue {}", children);
       throw th;
     }
 

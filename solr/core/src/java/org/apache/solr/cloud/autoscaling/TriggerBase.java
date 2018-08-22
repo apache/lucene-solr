@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * It handles state snapshot / restore in ZK.
  */
 public abstract class TriggerBase implements AutoScaling.Trigger {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final String name;
   protected SolrCloudManager cloudManager;
@@ -128,7 +128,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyExistsException e) {
       // ignore
     } catch (InterruptedException | KeeperException | IOException e) {
-      LOG.warn("Exception checking ZK path " + ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
+      log.warn("Exception checking ZK path " + ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
       throw e;
     }
     for (TriggerAction action : actions) {
@@ -240,7 +240,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
       }
       lastState = state;
     } catch (InterruptedException | BadVersionException | AlreadyExistsException | IOException | KeeperException e) {
-      LOG.warn("Exception updating trigger state '" + path + "'", e);
+      log.warn("Exception updating trigger state '" + path + "'", e);
     }
   }
 
@@ -254,7 +254,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
         data = versionedData.getData();
       }
     } catch (Exception e) {
-      LOG.warn("Exception getting trigger state '" + path + "'", e);
+      log.warn("Exception getting trigger state '" + path + "'", e);
     }
     if (data != null) {
       Map<String, Object> restoredState = (Map<String, Object>)Utils.fromJSON(data);

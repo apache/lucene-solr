@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * This test compares a ZK-based {@link DistribStateManager} to the simulated one.
  */
 public class TestDistribStateManager extends SolrTestCaseJ4 {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private DistribStateManager stateManager;
   private ZkTestServer zkTestServer;
@@ -80,7 +80,7 @@ public class TestDistribStateManager extends SolrTestCaseJ4 {
       solrZkClient = new SolrZkClient(zkTestServer.getZkHost(), 30000);
       stateManager = new ZkDistribStateManager(solrZkClient);
     }
-    LOG.info("Using " + stateManager.getClass().getName());
+    log.info("Using " + stateManager.getClass().getName());
   }
 
   private DistribStateManager createDistribStateManager() {
