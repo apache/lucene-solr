@@ -30,7 +30,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml","schema.xml"); // *not* the "nest" schema version
   }
 
   @After
@@ -81,8 +81,8 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     String test3[] = new String[] {
         "//*[@numFound='1']",
-        "/response/result/doc[1]/doc[1]/str[@name='id']='3'" ,
-        "/response/result/doc[1]/doc[2]/str[@name='id']='5'" };
+        "/response/result/doc[1]/doc[1]/str[@name='id']='5'" ,
+        "/response/result/doc[1]/doc[2]/str[@name='id']='7'" };
 
 
 
@@ -203,8 +203,8 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     };
 
     String[] test3 = new String[] {
-        "/response/docs/[0]/_childDocuments_/[0]/id=='3'",
-        "/response/docs/[0]/_childDocuments_/[1]/id=='5'"
+        "/response/docs/[0]/_childDocuments_/[0]/id=='5'",
+        "/response/docs/[0]/_childDocuments_/[1]/id=='7'"
     };
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
@@ -338,7 +338,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     assertJQ(req("q", "*:*", 
                  "sort", "id asc",
                  "fq", "subject:\"parentDocument\" ",
-                 "fl", "id,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"), 
+                 "fl", "id,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"),
              tests);
 
   }
@@ -397,7 +397,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", 
                 "sort", "id asc",
                 "fq", "subject:\"parentDocument\" ",
-                "fl", "id,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"), 
+                "fl", "id,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"),
             tests);
   }
 
