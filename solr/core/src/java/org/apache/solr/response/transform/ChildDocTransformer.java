@@ -84,6 +84,12 @@ class ChildDocTransformer extends DocTransformer {
       final int segBaseId = leafReaderContext.docBase;
       final int segRootId = rootDocId - segBaseId;
       final BitSet segParentsBitSet = parentsFilter.getBitSet(leafReaderContext);
+
+      if(!segParentsBitSet.get(segRootId)) {
+        // dpc does not match parent filter, return fast
+        return;
+      }
+
       final int segPrevRootId = segRootId==0? -1: segParentsBitSet.prevSetBit(segRootId - 1); // can return -1 and that's okay
 
       if(segPrevRootId == (segRootId - 1)) {
@@ -99,6 +105,7 @@ class ChildDocTransformer extends DocTransformer {
       Map<String, Multimap<String, SolrDocument>> pendingParentPathsToChildren = new HashMap<>();
 
       SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
+      boolean addedChildDocs = false;
       final int lastChildId = segBaseId + segPrevRootId + 1;
       // Loop each child ID up to the parent (exclusive).
       for (int docId = calcDocIdToIterateFrom(lastChildId, rootDocId); docId < rootDocId; ++docId) {
@@ -113,6 +120,8 @@ class ChildDocTransformer extends DocTransformer {
         if (isAncestor || childDocSet == null || childDocSet.exists(docId)) {
           // load the doc
           SolrDocument doc = docFetcher.solrDoc(docId, childReturnFields);
+          // found childDocs
+          addedChildDocs = true;
 
           if (isAncestor) {
             // if this path has pending child docs, add them.
@@ -131,6 +140,11 @@ class ChildDocTransformer extends DocTransformer {
           pendingParentPathsToChildren.computeIfAbsent(parentDocPath, x -> ArrayListMultimap.create())
               .put(trimLastPoundIfArray(lastPath), doc); // multimap add (won't replace)
         }
+      }
+
+      if(!addedChildDocs) {
+        // no child docs matched the child filter, return fast.
+        return;
       }
 
       // only children of parent remain
