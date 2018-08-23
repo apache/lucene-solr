@@ -339,6 +339,9 @@ Other Changes
 
 * SOLR-12690: Regularize LoggerFactory declarations (Erick Erickson)
 
+* SOLR-12590: Improve Solr resource loader coverage in the ref guide.
+  (Steve Rowe, Cassandra Targett, Christine Poerschke)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
