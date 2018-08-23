@@ -29,7 +29,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -54,7 +53,7 @@ import org.junit.Test;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+//commented 23-AUG-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistributedZkTest {
 
   private static MiniDFSCluster dfsCluster;
