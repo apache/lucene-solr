@@ -37,14 +37,24 @@ class StringFieldWriter extends FieldWriter {
     this.fieldType = fieldType;
   }
 
-  public boolean write(int docId, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
-    SortedDocValues vals = DocValues.getSorted(reader, this.field);
-    if (vals.advance(docId) != docId) {
-      return false;
+  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+    BytesRef ref;
+    SortValue sortValue = sortDoc.getSortValue(this.field);
+    if (sortValue != null) {
+      if (sortValue.isPresent()) {
+        ref = (BytesRef) sortValue.getCurrentValue();
+      } else { //empty-value
+        return false;
+      }
+    } else {
+      // field is not part of 'sort' param, but part of 'fl' param
+      SortedDocValues vals = DocValues.getSorted(reader, this.field);
+      if (vals.advance(sortDoc.docId) != sortDoc.docId) {
+        return false;
+      }
+      int ord = vals.ordValue();
+      ref = vals.lookupOrd(ord);
     }
-    int ord = vals.ordValue();
-
-    BytesRef ref = vals.lookupOrd(ord);
     fieldType.indexedToReadable(ref, cref);
     ew.put(this.field, cref.toString());
     return true;

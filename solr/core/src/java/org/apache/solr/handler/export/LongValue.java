@@ -30,11 +30,22 @@ public class LongValue implements SortValue {
   protected long currentValue;
   protected LongComp comp;
   private int lastDocID;
+  private boolean present;
 
   public LongValue(String field, LongComp comp) {
     this.field = field;
     this.comp = comp;
     this.currentValue = comp.resetValue();
+    this.present = false;
+  }
+
+  public Object getCurrentValue() {
+    assert present == true;
+    return currentValue;
+  }
+
+  public String getField() {
+    return field;
   }
 
   public LongValue copy() {
@@ -56,15 +67,23 @@ public class LongValue implements SortValue {
       curDocID = vals.advance(docId);
     }
     if (docId == curDocID) {
+      present = true;
       currentValue = vals.longValue();
     } else {
+      present = false;
       currentValue = 0;
     }
+  }
+
+  @Override
+  public boolean isPresent() {
+    return present;
   }
 
   public void setCurrentValue(SortValue sv) {
     LongValue lv = (LongValue)sv;
     this.currentValue = lv.currentValue;
+    this.present = lv.present;
   }
 
   public int compareTo(SortValue o) {
@@ -74,5 +93,6 @@ public class LongValue implements SortValue {
 
   public void reset() {
     this.currentValue = comp.resetValue();
+    this.present = false;
   }
 }

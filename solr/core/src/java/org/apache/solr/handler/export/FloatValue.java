@@ -30,11 +30,22 @@ class FloatValue implements SortValue {
   protected float currentValue;
   protected FloatComp comp;
   private int lastDocID;
+  private boolean present;
 
   public FloatValue(String field, FloatComp comp) {
     this.field = field;
     this.comp = comp;
     this.currentValue = comp.resetValue();
+    this.present = false;
+  }
+
+  public Object getCurrentValue() {
+    assert present == true;
+    return currentValue;
+  }
+
+  public String getField() {
+    return field;
   }
 
   public FloatValue copy() {
@@ -56,19 +67,28 @@ class FloatValue implements SortValue {
       curDocID = vals.advance(docId);
     }
     if (docId == curDocID) {
+      present = true;
       currentValue = Float.intBitsToFloat((int)vals.longValue());
     } else {
+      present = false;
       currentValue = 0f;
     }
+  }
+
+  @Override
+  public boolean isPresent() {
+    return present;
   }
 
   public void setCurrentValue(SortValue sv) {
     FloatValue fv = (FloatValue)sv;
     this.currentValue = fv.currentValue;
+    this.present = fv.present;
   }
 
   public void reset() {
     this.currentValue = comp.resetValue();
+    this.present = false;
   }
 
   public int compareTo(SortValue o) {

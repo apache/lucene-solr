@@ -25,6 +25,15 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
 
   protected SortValue value2;
 
+  public SortValue getSortValue(String field) {
+    if (value1.getField().equals(field)) {
+      return value1;
+    } else if (value2.getField().equals(field)) {
+      return value2;
+    }
+    return null;
+  }
+
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;
