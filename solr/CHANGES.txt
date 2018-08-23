@@ -280,6 +280,10 @@ Optimizations
 * SOLR-12616: Optimize Export writer upto 4 sort fields to get better performance.
   This was removed in SOLR-11598 but brought back in the same version (Amrit Sarkar, Varun Thacker)
 
+* SOLR-12572: While exporting documents using the export writer, if a field is specified as a sort parameter and also
+  in the fl (field list) parameter, we save on one doc-value lookup. This can bring performance improvements of 15%
+  and upwards depending on how many fields are in common. (Amrit Sarkar, Varun Thacker)
+
 Other Changes
 ----------------------
 

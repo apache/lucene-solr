@@ -25,6 +25,17 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
 
   protected SortValue value3;
 
+  public SortValue getSortValue(String field) {
+    if (value1.getField().equals(field)) {
+      return value1;
+    } else if (value2.getField().equals(field)) {
+      return value2;
+    } else if (value3.getField().equals(field)) {
+      return value3;
+    }
+    return null;
+  }
+
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;
