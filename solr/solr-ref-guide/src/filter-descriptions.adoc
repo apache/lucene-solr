@@ -471,7 +471,7 @@ Note that for this filter to work properly, the upstream tokenizer must not remo
 
 This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
-To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`. For more information about adding jars, see the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in Solrconfig>>.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
 
 *Factory class:* `solr.ICUFoldingFilterFactory`
 
@@ -543,7 +543,7 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 
 For detailed information about these normalization forms, see http://unicode.org/reports/tr15/[Unicode Normalization Forms].
 
-To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
 
 == ICU Transform Filter
 
@@ -567,7 +567,7 @@ This filter applies http://userguide.icu-project.org/transforms/general[ICU Tran
 
 For detailed information about ICU Transforms, see http://userguide.icu-project.org/transforms/general.
 
-To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
 
 == Keep Word Filter
 
@@ -1501,7 +1501,7 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 
 *Arguments:*
 
-`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of absolute paths, or paths relative to the Solr config directory.
+`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-and-plugin-loading.adoc#resource-and-plugin-loading,Resource and Plugin Loading>> for more information.
 +
 There are two ways to specify synonym mappings:
 +
