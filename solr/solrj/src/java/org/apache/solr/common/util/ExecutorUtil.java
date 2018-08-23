@@ -108,15 +108,6 @@ public class ExecutorUtil {
         new LinkedBlockingQueue<>(),
         threadFactory);
   }
-  /**
-   * See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}
-   */
-  public static ExecutorService newMDCAwareSingleThreadExecutor(ThreadFactory threadFactory, RejectedExecutionHandler handler, BlockingQueue<Runnable> workQueue) {
-    return new MDCAwareThreadPoolExecutor(1, 1,
-        0L, TimeUnit.MILLISECONDS,
-        workQueue,
-        threadFactory, handler);
-  }
 
   /**
    * Create a cached thread pool using a named thread factory

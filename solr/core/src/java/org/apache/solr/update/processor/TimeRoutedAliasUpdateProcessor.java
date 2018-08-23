@@ -26,12 +26,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.CloudDescriptor;
@@ -104,7 +99,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private Aliases parsedCollectionsAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
   private SolrQueryRequest req;
   private ExecutorService preemptiveCreationExecutor;
-  private final Object execLock = new Object();
 
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, UpdateRequestProcessor next) {
     //TODO get from "Collection property"
@@ -176,6 +170,13 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     final Instant docTimestampToRoute = parseRouteKey(routeValue);
     updateParsedCollectionAliases();
     String candidateCollection = findCandidateCollectionGivenTimestamp(docTimestampToRoute, cmd.getPrintableId());
+    final Instant maxFutureTime = Instant.now().plusMillis(timeRoutedAlias.getMaxFutureMs());
+    // TODO: maybe in some cases the user would want to ignore/warn instead?
+    if (docTimestampToRoute.isAfter(maxFutureTime)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "The document's time routed key of " + docTimestampToRoute + " is too far in the future given " +
+              TimeRoutedAlias.ROUTER_MAX_FUTURE + "=" + timeRoutedAlias.getMaxFutureMs());
+    }
     String targetCollection = createCollectionsIfRequired(docTimestampToRoute, candidateCollection, cmd.getPrintableId());
     if (thisCollection.equals(targetCollection)) {
       // pass on through; we've reached the right collection
@@ -187,33 +188,36 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
+
   private String createCollectionsIfRequired(Instant docTimestamp, String targetCollection, String printableId) {
+    // Even though it is possible that multiple requests hit this code in the 1-2 sec that
+    // it takes to create a collection, it's an established anti-pattern to feed data with a very large number
+    // of client connections. This in mind, we only guard against spamming the overseer within a batch of
+    // updates. We are intentionally tolerating a low level of redundant requests in favor of simpler code. Most
+    // super-sized installations with many update clients will likely be multi-tenant and multiple tenants
+    // probably don't write to the same alias. As such, we have deferred any solution to the "many clients causing
+    // collection creation simultaneously" problem until such time as someone actually has that problem in a
+    // real world use case that isn't just an anti-pattern.
     try {
       CreationType creationType = requiresCreateCollection(docTimestamp, timeRoutedAlias.getPreemptiveCreateWindow());
       switch (creationType) {
         case SYNCHRONOUS:
           // This next line blocks until all collections required by the current document have been created
-          return maintain(targetCollection, docTimestamp, printableId);
+          return maintain(targetCollection, docTimestamp, printableId, false);
         case ASYNC_PREEMPTIVE:
-          // Note: creating an executor is slightly expensive, but only likely to happen once per hour/day/week
-          // (depending on time slice size for the TRA). Executor is used to ensure we pick up the MDC logging stuff
-          // from ExecutorUtil. Even though it is possible that multiple requests hit this code in the 1-2 sec that
-          // it takes to create a collection, it's an established anti-pattern to feed data with a very large number
-          // of client connections. This in mind, we only guard against spamming the overseer within a batch of
-          // updates, intentionally tolerating a low level of redundant requests in favor of simpler code. Most
-          // super-sized installations with many update clients will likely be multi-tenant and multiple tenants
-          // probably don't write to the same alias. As such, we have deferred any solution the "many clients causing
-          // collection creation simultaneously" problem until such time as someone actually has that problem in a
-          // real world use case that isn't just an anti-pattern.
-          synchronized (execLock) {
-            if (preemptiveCreationExecutor == null) {
-              preemptiveCreationExecutor = preemptiveCreationExecutor();
-            }
+          // Note: creating an executor and throwing it away is slightly expensive, but this is only likely to happen
+          // once per hour/day/week (depending on time slice size for the TRA). If the executor were retained, it
+          // would need to be shut down in a close hook to avoid test failures due to thread leaks which is slightly
+          // more complicated from a code maintenance and readability stand point. An executor must used instead of a
+          // thread to ensure we pick up the proper MDC logging stuff from ExecutorUtil. T
+          if (preemptiveCreationExecutor == null) {
+            DefaultSolrThreadFactory threadFactory = new DefaultSolrThreadFactory("TRA-preemptive-creation");
+            preemptiveCreationExecutor = newMDCAwareSingleThreadExecutor(threadFactory);
             preemptiveCreationExecutor.execute(() -> {
-              maintain(targetCollection, docTimestamp, printableId);
+              maintain(targetCollection, docTimestamp, printableId, true);
+              preemptiveCreationExecutor.shutdown();
               preemptiveCreationExecutor = null;
             });
-            preemptiveCreationExecutor.shutdown(); // shutdown immediately to ensure no new requests accepted
           }
           return targetCollection;
         case NONE:
@@ -230,29 +234,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   }
 
   /**
-   * Create an executor that can only handle one task at a time. Additional tasks are rejected silently.
-   * If we receive a batch update with hundreds of docs, that could queue up hundreds of calls to maintain().
-   * Such a situation will typically create the required collection on the first document and then uselessly
-   * spend time calculating that we don't need to create anything for subsequent documents. Therefore we simply
-   * want to silently discard any additional attempts to maintain this alias until the one in progress has completed.
-   */
-  private ExecutorService preemptiveCreationExecutor() {
-
-    ThreadPoolExecutor.DiscardPolicy discardPolicy = new ThreadPoolExecutor.DiscardPolicy(); // exception never thrown
-    ArrayBlockingQueue<Runnable> oneAtATime = new ArrayBlockingQueue<>(1);
-    DefaultSolrThreadFactory threadFactory = new DefaultSolrThreadFactory("TRA-preemptive-creation");
-
-    // Note: There is an interesting case that could crop up when the pre-create interval is longer than
-    // a single time slice in the alias. With that configuration it is possible that a doc that should
-    // cause several collections to be created is preceded by one that only creates a single collection. In that
-    // case we might be too conservative in our pre-creation, and only create one collection. Dealing with that
-    // presumably rare case adds complexity and is intentionally ignored at this time. If this shows itself to
-    // be a frequent or otherwise important use case this decision can be revisited.
-
-    return newMDCAwareSingleThreadExecutor(threadFactory, discardPolicy, oneAtATime);
-  }
-
-  /**
    * Determine if the a new collection will be required based on the document timestamp. Passing null for
    * preemptiveCreateInterval tells you if the document is beyond all existing collections with a response of
    * {@link CreationType#NONE} or {@link CreationType#SYNCHRONOUS}, and passing a valid date math for
@@ -265,29 +246,34 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
    * @return a {@code CreationType} indicating if and how to create a collection
    */
   private CreationType requiresCreateCollection(Instant routeTimestamp,  String preemptiveCreateMath) {
-    // Create a new collection?
     final Instant mostRecentCollTimestamp = parsedCollectionsDesc.get(0).getKey();
     final Instant nextCollTimestamp = timeRoutedAlias.computeNextCollTimestamp(mostRecentCollTimestamp);
+    if (!routeTimestamp.isBefore(nextCollTimestamp)) {
+      // current document is destined for a collection that doesn't exist, must create the destination
+      // to proceed with this add command
+      return SYNCHRONOUS;
+    }
+
     if (isBlank(preemptiveCreateMath)) {
-      return !routeTimestamp.isBefore(nextCollTimestamp) ? SYNCHRONOUS : NONE;
+      return NONE;
+    }
+
+    Instant preemptNextColCreateTime = calcPreemptNextColCreateTime(preemptiveCreateMath, nextCollTimestamp);
+    if (routeTimestamp.isBefore(preemptNextColCreateTime)) {
+      return NONE;
     } else {
-      DateMathParser dateMathParser = new DateMathParser();
-      dateMathParser.setNow(Date.from(nextCollTimestamp));
-      try {
-        Instant preemptNextColCreateTime = dateMathParser.parseMath(preemptiveCreateMath).toInstant();
-        if (!routeTimestamp.isBefore(preemptNextColCreateTime)) {
-          if (!routeTimestamp.isBefore(nextCollTimestamp)) {
-            return SYNCHRONOUS;
-          } else  {
-            return ASYNC_PREEMPTIVE;
-          }
-        } else {
-          return NONE;
-        }
-      } catch (ParseException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Invalid Preemptive Create Window Math:'" + preemptiveCreateMath + '\'', e);
-      }
+      return ASYNC_PREEMPTIVE;
+    }
+  }
+
+  private Instant calcPreemptNextColCreateTime(String preemptiveCreateMath, Instant nextCollTimestamp) {
+    DateMathParser dateMathParser = new DateMathParser();
+    dateMathParser.setNow(Date.from(nextCollTimestamp));
+    try {
+      return dateMathParser.parseMath(preemptiveCreateMath).toInstant();
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid Preemptive Create Window Math:'" + preemptiveCreateMath + '\'', e);
     }
   }
 
@@ -463,7 +449,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
    * @param printableId an identifier for the add command used in error messages
    * @return The latest collection, including collections created during maintenance
    */
-  public String maintain(String targetCollection, Instant docTimestamp, String printableId) {
+  public String maintain(String targetCollection, Instant docTimestamp, String printableId, boolean asyncSinglePassOnly) {
     do { // typically we don't loop; it's only when we need to create a collection
 
       // Note: This code no longer short circuits immediately when it sees that the expected latest
@@ -472,19 +458,15 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       // preemptive window is larger than our TRA's time slices
 
       // Check the doc isn't too far in the future
-      // TODO: Instant.now() here seems wrong...
-      final Instant maxFutureTime = Instant.now().plusMillis(timeRoutedAlias.getMaxFutureMs());
-      if (docTimestamp.isAfter(maxFutureTime)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "The document's time routed key of " + docTimestamp + " is too far in the future given " +
-                TimeRoutedAlias.ROUTER_MAX_FUTURE + "=" + timeRoutedAlias.getMaxFutureMs());
-      }
 
       if (NONE == requiresCreateCollection(docTimestamp, timeRoutedAlias.getPreemptiveCreateWindow()))
         return targetCollection; // thus we don't need another collection
 
       final String mostRecentCollName = parsedCollectionsDesc.get(0).getValue();
       createCollectionAfter(mostRecentCollName); // *should* throw if fails for some reason but...
+      if (asyncSinglePassOnly) {
+        return null; // async case ignores return value anyway, created collection is not target of current document.
+      }
       final boolean updated = updateParsedCollectionAliases();
       if (!updated) { // thus we didn't make progress...
         // this is not expected, even in known failure cases, but we check just in case
