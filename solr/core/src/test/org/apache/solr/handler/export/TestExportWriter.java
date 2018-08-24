@@ -618,7 +618,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(delQ("*:*"));
     assertU(commit());
 
-    int numDocs = 1000*40;
+    int numDocs = 1000;
 
     //10 unique values
     String[] str_vals = new String[10];
