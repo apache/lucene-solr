@@ -58,6 +58,29 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void testSortingOnFieldWithNoValues() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    assertU(adoc("id","1"));
+    assertU(commit());
+
+    // 10 fields
+    List<String> fieldNames = new ArrayList<>(Arrays.asList("floatdv", "intdv", "stringdv", "longdv", "doubledv",
+        "datedv", "booleandv", "field1_s_dv", "field2_i_p", "field3_l_p"));
+    for (String sortField : fieldNames) {
+      String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id," + sortField, "sort", sortField + " desc"));
+      assertJsonEquals(resp, "{\n" +
+          "  \"responseHeader\":{\"status\":0},\n" +
+          "  \"response\":{\n" +
+          "    \"numFound\":1,\n" +
+          "    \"docs\":[{\n" +
+          "        \"id\":\"1\"}]}}");
+    }
+
+  }
+
   public static void createIndex() {
     assertU(adoc("id","1",
                  "floatdv","2.1",

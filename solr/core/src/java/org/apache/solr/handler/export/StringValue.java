@@ -77,10 +77,10 @@ class StringValue implements SortValue {
   }
 
   public void setNextReader(LeafReaderContext context) throws IOException {
-    if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
+    if (ordinalMap != null) {
       toGlobal = ordinalMap.getGlobalOrds(context.ord);
-      docValues = DocValues.getSorted(context.reader(), field);
     }
+    docValues = DocValues.getSorted(context.reader(), field);
     lastDocID = 0;
   }
 
