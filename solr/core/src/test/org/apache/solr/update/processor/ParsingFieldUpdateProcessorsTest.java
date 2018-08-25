@@ -1011,6 +1011,10 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertParsedDate("Fri Oct 7 13:14:15 2005" , Date.from(inst20051007131415()), "parse-date-patterns-default-config");
   }
 
+  public void testRfc2616Leniency() throws Exception {
+    assertParsedDate("Fri Oct 07 13:14:15 2005" , Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+  }
+
   public void testParseQuotedDate() throws IOException {
     // also using 2 digit day
     assertParsedDate("'Fri, 14 Oct 2005 13:14:15 GMT'",
