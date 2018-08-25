@@ -20,8 +20,6 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 
-import java.util.Collection;
-
 
 /**
  *

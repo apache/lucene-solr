@@ -18,7 +18,6 @@ package org.apache.solr.handler.extraction;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
