@@ -59,13 +59,13 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
-import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
+import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
+import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
 
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
@@ -89,9 +89,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       false
   );
 
-  protected InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
   protected Http2SolrClient defaultClient;
-  protected InstrumentedHttpRequestExecutor httpRequestExecutor;
+  protected InstrumentedHttpListenerFactory httpListenerFactory;
   private LBHttp2SolrClient loadbalancer;
   //default values:
   int soTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
@@ -108,7 +107,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   private String scheme = null;
 
-  private HttpClientMetricNameStrategy metricNameStrategy;
+  private InstrumentedHttpListenerFactory.NameStrategy metricNameStrategy;
 
   private String metricTag;
 
@@ -210,10 +209,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         new DefaultSolrThreadFactory("httpShardExecutor")
     );
 
-    //TODO no commit, replace all metrics
-    httpRequestExecutor = new InstrumentedHttpRequestExecutor(this.metricNameStrategy);
-    clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
+    this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
     this.defaultClient = new Http2SolrClient.Builder().connectionTimeout(connectionTimeout).idleTimeout(soTimeout).build();
+    this.defaultClient.setListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBHttp2SolrClient(defaultClient);
   }
 
@@ -254,9 +252,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       } finally { 
         if (defaultClient != null) {
           IOUtils.closeQuietly(defaultClient);
-        }
-        if (clientConnectionManager != null)  {
-          clientConnectionManager.close();
         }
       }
     }
@@ -469,8 +464,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
     this.metricTag = tag;
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    clientConnectionManager.initializeMetrics(manager, registry, tag, expandedScope);
-    httpRequestExecutor.initializeMetrics(manager, registry, tag, expandedScope);
+    httpListenerFactory.initializeMetrics(manager, registry, tag, expandedScope);
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,
         manager.registry(registry),
         SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));

@@ -39,6 +39,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
+import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.apache.solr.util.stats.MetricUtils;
@@ -70,11 +71,11 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   
   private final CloseableHttpClient defaultClient;
 
-  private final InstrumentedPoolingHttpClientConnectionManager updateOnlyConnectionManager;
-  
   private final InstrumentedPoolingHttpClientConnectionManager defaultConnectionManager;
 
   private final InstrumentedHttpRequestExecutor httpRequestExecutor;
+
+  private final InstrumentedHttpListenerFactory updateHttpListenerFactory;
 
 
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
@@ -84,11 +85,8 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   private int connectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    updateOnlyConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
     defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
     if (cfg != null ) {
-      updateOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-      updateOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       defaultConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
     }
@@ -100,23 +98,18 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
       socketTimeout = cfg.getDistributedSocketTimeout();
       connectionTimeout = cfg.getDistributedConnectionTimeout();
     }
-    HttpClientMetricNameStrategy metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
-    if (cfg != null)  {
-      metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
-      if (metricNameStrategy == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
-      }
-    }
 
+    httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
+    updateHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
 
-    httpRequestExecutor = new InstrumentedHttpRequestExecutor(metricNameStrategy);
     Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
       updateOnlyClientBuilder.connectionTimeout(cfg.getDistributedConnectionTimeout())
           .idleTimeout(cfg.getDistributedSocketTimeout());
     }
     updateOnlyClient = updateOnlyClientBuilder.build();
+    updateOnlyClient.setListenerFactory(updateHttpListenerFactory);
+
     defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
     // following is done only for logging complete configuration.
@@ -138,6 +131,32 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     }
   }
 
+  private HttpClientMetricNameStrategy getMetricNameStrategy(UpdateShardHandlerConfig cfg) {
+    HttpClientMetricNameStrategy metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
+    if (cfg != null)  {
+      metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
+      if (metricNameStrategy == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+      }
+    }
+    return metricNameStrategy;
+  }
+
+  private InstrumentedHttpListenerFactory.NameStrategy getNameStrategy(UpdateShardHandlerConfig cfg) {
+    InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
+        InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
+
+    if (cfg != null)  {
+      nameStrategy = InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
+      if (nameStrategy == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+      }
+    }
+    return nameStrategy;
+  }
+
   @Override
   public String getName() {
     return this.getClass().getName();
@@ -147,8 +166,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
     registry = manager.registry(registryName);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    //TODO nocommit, replace all the metrics
-    updateOnlyConnectionManager.initializeMetrics(manager, registryName, tag, expandedScope);
+    updateHttpListenerFactory.initializeMetrics(manager, registryName, tag, expandedScope);
     defaultConnectionManager.initializeMetrics(manager, registryName, tag, expandedScope);
     updateExecutor = MetricUtils.instrumentedExecutorService(updateExecutor, this, registry,
         SolrMetricManager.mkName("updateOnlyExecutor", expandedScope, "threadPool"));
@@ -218,7 +236,6 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     } finally {
       IOUtils.closeQuietly(updateOnlyClient);
       HttpClientUtil.close(defaultClient);
-      updateOnlyConnectionManager.close();
       defaultConnectionManager.close();
     }
   }

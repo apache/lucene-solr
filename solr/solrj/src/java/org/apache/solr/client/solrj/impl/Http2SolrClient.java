@@ -105,6 +105,7 @@ public class Http2SolrClient extends SolrClient {
 
   private ResponseParser parser = new BinaryResponseParser();
   private volatile RequestWriter requestWriter = new BinaryRequestWriter();
+  private volatile HttpListenerFactory listenerFactory;
 
   private Request.QueuedListener requestQueuedListener = new Request.QueuedListener() {
 
@@ -252,6 +253,11 @@ public class Http2SolrClient extends SolrClient {
                                       OnComplete onComplete,
                                       boolean returnStream) throws IOException, SolrServerException {
     Request req = makeRequest(solrRequest, collection);
+    if (listenerFactory != null) {
+      HttpListenerFactory.RequestResponseListener listener = listenerFactory.get();
+      req.onRequestBegin(listener);
+      req.onComplete(listener);
+    }
 
     if (beginListener != null) {
       // By calling listener here, we will make sure that SolrRequestInfo can be get from the same thread
@@ -323,6 +329,10 @@ public class Http2SolrClient extends SolrClient {
       }
       throw new SolrServerException(cause.getMessage(), cause);
     }
+  }
+
+  public void setListenerFactory(HttpListenerFactory listenerFactory) {
+    this.listenerFactory = listenerFactory;
   }
 
   private Request makeRequest(SolrRequest solrRequest, String collection)
