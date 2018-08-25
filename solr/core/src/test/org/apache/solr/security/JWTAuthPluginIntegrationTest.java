@@ -16,17 +16,16 @@
  */
 package org.apache.solr.security;
 
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
-import org.apache.http.message.BasicHeader;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.stream.Collectors;
+
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.Pair;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jws.AlgorithmIdentifiers;
@@ -40,26 +39,29 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final int NUM_SHARDS = 2;
   protected static final int REPLICATION_FACTOR = 1;
-  private static Header tokenHeader;
-  private static String jwkJSON = "{\n" +
-      "  \"kty\": \"RSA\",\n" +
-      "  \"d\": \"i6pyv2z3o-MlYytWsOr3IE1olu2RXZBzjPRBNgWAP1TlLNaphHEvH5aHhe_CtBAastgFFMuP29CFhaL3_tGczkvWJkSveZQN2AHWHgRShKgoSVMspkhOt3Ghha4CvpnZ9BnQzVHnaBnHDTTTfVgXz7P1ZNBhQY4URG61DKIF-JSSClyh1xKuMoJX0lILXDYGGcjVTZL_hci4IXPPTpOJHV51-pxuO7WU5M9252UYoiYyCJ56ai8N49aKIMsqhdGuO4aWUwsGIW4oQpjtce5eEojCprYl-9rDhTwLAFoBtjy6LvkqlR2Ae5dKZYpStljBjK8PJrBvWZjXAEMDdQ8PuQ\",\n" +
-      "  \"e\": \"AQAB\",\n" +
-      "  \"use\": \"sig\",\n" +
-      "  \"kid\": \"test\",\n" +
-      "  \"alg\": \"RS256\",\n" +
-      "  \"n\": \"jeyrvOaZrmKWjyNXt0myAc_pJ1hNt3aRupExJEx1ewPaL9J9HFgSCjMrYxCB1ETO1NDyZ3nSgjZis-jHHDqBxBjRdq_t1E2rkGFaYbxAyKt220Pwgme_SFTB9MXVrFQGkKyjmQeVmOmV6zM3KK8uMdKQJ4aoKmwBcF5Zg7EZdDcKOFgpgva1Jq-FlEsaJ2xrYDYo3KnGcOHIt9_0NQeLsqZbeWYLxYni7uROFncXYV5FhSJCeR4A_rrbwlaCydGxE0ToC_9HNYibUHlkJjqyUhAgORCbNS8JLCJH8NUi5sDdIawK9GTSyvsJXZ-QHqo4cMUuxWV5AJtaRGghuMUfqQ\"\n" +
-      "}";
-  private static PublicJsonWebKey jwk;
-  
+  private static String jwtTestToken;
+  private static String baseUrl;
+
   @BeforeClass
   public static void setupClass() throws Exception {
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json"))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+    String hostport = cluster.getSolrClient().getClusterStateProvider().getLiveNodes().iterator().next().split("_")[0];
+    baseUrl = "http://" + hostport + "/solr/";
+
+    String jwkJSON = "{\n" +
+        "  \"kty\": \"RSA\",\n" +
+        "  \"d\": \"i6pyv2z3o-MlYytWsOr3IE1olu2RXZBzjPRBNgWAP1TlLNaphHEvH5aHhe_CtBAastgFFMuP29CFhaL3_tGczkvWJkSveZQN2AHWHgRShKgoSVMspkhOt3Ghha4CvpnZ9BnQzVHnaBnHDTTTfVgXz7P1ZNBhQY4URG61DKIF-JSSClyh1xKuMoJX0lILXDYGGcjVTZL_hci4IXPPTpOJHV51-pxuO7WU5M9252UYoiYyCJ56ai8N49aKIMsqhdGuO4aWUwsGIW4oQpjtce5eEojCprYl-9rDhTwLAFoBtjy6LvkqlR2Ae5dKZYpStljBjK8PJrBvWZjXAEMDdQ8PuQ\",\n" +
+        "  \"e\": \"AQAB\",\n" +
+        "  \"use\": \"sig\",\n" +
+        "  \"kid\": \"test\",\n" +
+        "  \"alg\": \"RS256\",\n" +
+        "  \"n\": \"jeyrvOaZrmKWjyNXt0myAc_pJ1hNt3aRupExJEx1ewPaL9J9HFgSCjMrYxCB1ETO1NDyZ3nSgjZis-jHHDqBxBjRdq_t1E2rkGFaYbxAyKt220Pwgme_SFTB9MXVrFQGkKyjmQeVmOmV6zM3KK8uMdKQJ4aoKmwBcF5Zg7EZdDcKOFgpgva1Jq-FlEsaJ2xrYDYo3KnGcOHIt9_0NQeLsqZbeWYLxYni7uROFncXYV5FhSJCeR4A_rrbwlaCydGxE0ToC_9HNYibUHlkJjqyUhAgORCbNS8JLCJH8NUi5sDdIawK9GTSyvsJXZ-QHqo4cMUuxWV5AJtaRGghuMUfqQ\"\n" +
+        "}";
     
-    jwk = RsaJsonWebKey.Factory.newPublicJwk(jwkJSON);
+    PublicJsonWebKey jwk = RsaJsonWebKey.Factory.newPublicJwk(jwkJSON);
     JwtClaims claims = JWTAuthPluginTest.generateClaims();
     JsonWebSignature jws = new JsonWebSignature();
     jws.setPayload(claims.toJson());
@@ -67,56 +69,127 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     jws.setKeyIdHeaderValue(jwk.getKeyId());
     jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
 
-    String testJwt = jws.getCompactSerialization();
-    tokenHeader = new BasicHeader(HttpHeaders.AUTHORIZATION, "Bearer " + testJwt);
+    jwtTestToken = jws.getCompactSerialization(); 
   }
 
   @AfterClass
   public static void tearDownClass() throws Exception {
     System.clearProperty("java.security.auth.login.config");
+    shutdownCluster();
   }
 
-  @Test(expected = HttpSolrClient.RemoteSolrException.class)
-  public void testWithoutToken() throws Exception {
-    testCollectionCreateSearchDelete();
-    // sometimes run a second test e.g. to test collection create-delete-create scenario
-    if (random().nextBoolean()) testCollectionCreateSearchDelete();
+  @Test(expected = IOException.class)
+  public void infoRequestWithoutToken() throws Exception {
+    get(baseUrl + "admin/info/system", null);
   }
 
   @Test
-  public void testWithToken() throws Exception {
-    enableToken();
-    testCollectionCreateSearchDelete();
-    // sometimes run a second test e.g. to test collection create-delete-create scenario
-    if (random().nextBoolean()) testCollectionCreateSearchDelete();
+  public void infoRequestWithToken() throws IOException {
+    Pair<String,Integer> result = get(baseUrl + "admin/info/system", jwtTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
   }
 
-  private void enableToken() {
+  @Test
+  public void createCollectionAndQueryDistributed() throws Exception {
+    // Admin request will use PKI inter-node auth from Overseer, and succeed
+    assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2", jwtTestToken).second().intValue());
     
+    // Now do a distributed query, using JWTAUth for inter-node
+    Pair<String,Integer> result = get(baseUrl + "mycoll/query?q=*:*", jwtTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
   }
 
-  protected void testCollectionCreateSearchDelete() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
-    String collectionName = "jwtAuthTestColl";
+  
+  
+// NOCOMMIT: Test using SolrJ as client
+//  private void testCollectionCreateSearchDelete(boolean enableJwt) throws Exception {
+//    if (enableJwt) {
+//      HttpClientUtil.setHttpClientBuilder(getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder(), testJwt));
+//    } else {
+//      HttpClientUtil.resetHttpClientBuilder();
+//    }
+
+//    ClusterStateProvider csProv = cluster.getSolrClient().getClusterStateProvider();
+//    CloudSolrClientBuilder builder = new CloudSolrClientBuilder(csProv);
+//    CloudSolrClient solrClient = builder.build();
+
+//    CloudSolrClient solrClient = cluster.getSolrClient();
+
+//    URL solrurl = new URL(baseUrl + "admin/info/system");
+//    HttpURLConnection conn = (HttpURLConnection) solrurl.openConnection();
+//    conn.setRequestProperty("Authorization", "Bearer " + testJwt);
+//    conn.connect();
+//    BufferedReader br = new BufferedReader(new InputStreamReader((InputStream) conn.getContent()));
+//    br.lines().forEach(l -> {
+//      System.out.println(l);
+//    });
+//    conn.disconnect();
+
+
+//    Pair<String,Integer> result;
+//    
+//    result = get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2");
+//    System.out.println(result.first());                                       
+//    assertEquals(Integer.valueOf(200), result.second());
+//    
+//    result = get(baseUrl + "mycoll/query?q=*:*");
+//    System.out.println(result.first());                                       
+//    assertEquals(Integer.valueOf(200), result.second());
+    
+    
+//    String collectionName = "jwtAuthTestColl";
 
     // create collection
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1",
-        NUM_SHARDS, REPLICATION_FACTOR);
-    create.process(solrClient);
+//    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1",
+//        NUM_SHARDS, REPLICATION_FACTOR);
+//    create.process(solrClient);
+//
+//    solrClient.add(collectionName, new SolrInputDocument("id", "1"));
+//    solrClient.add(collectionName, new SolrInputDocument("id", "2"));
+//    solrClient.commit(collectionName);
+//
+//    SolrQuery query = new SolrQuery();
+//    query.setQuery("*:*");
+//    QueryResponse rsp = solrClient.query(collectionName, query);
+//    assertEquals(2, rsp.getResults().getNumFound());
+//
+//    CollectionAdminRequest.Delete deleteReq = CollectionAdminRequest.deleteCollection(collectionName);
+//    deleteReq.process(solrClient);
+//    AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
+//        solrClient.getZkStateReader(), true, true, 330);
+//    solrClient.close();
+//  }
 
-    solrClient.add(collectionName, new SolrInputDocument("id", "1"));
-    solrClient.add(collectionName, new SolrInputDocument("id", "2"));
-    solrClient.commit(collectionName);
-
-    SolrQuery query = new SolrQuery();
-    query.setQuery("*:*");
-    QueryResponse rsp = solrClient.query(collectionName, query);
-    assertEquals(2, rsp.getResults().getNumFound());
-
-    CollectionAdminRequest.Delete deleteReq = CollectionAdminRequest.deleteCollection(collectionName);
-    deleteReq.process(solrClient);
-    AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
-        solrClient.getZkStateReader(), true, true, 330);
+  private Pair<String, Integer> get(String url, String token) throws IOException {
+    URL createUrl = new URL(url);
+    HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
+    if (token != null)
+      createConn.setRequestProperty("Authorization", "Bearer " + token);
+    createConn.connect();
+    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) createConn.getContent()));
+    String result = br2.lines().collect(Collectors.joining("\n"));
+    int code = createConn.getResponseCode(); 
+    createConn.disconnect();
+    return new Pair<>(result, code);
   }
+
+//  SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder, String token) {
+//    if (builder == null) {
+//      builder = SolrHttpClientBuilder.create();
+//    }
+//    builder.setAuthSchemeRegistryProvider(() -> {
+//      Lookup<AuthSchemeProvider> authProviders = RegistryBuilder.<AuthSchemeProvider>create()
+//          .register("Bearer", new JWTAuthPlugin.JwtBearerAuthschemeProvider())
+//          .build();
+//      return authProviders;
+//    });
+//    builder.setDefaultCredentialsProvider(() -> {
+//      CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//      credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(token, null));
+//      return credentialsProvider;
+//    });
+//    return builder;
+//  }
+  
 
 }

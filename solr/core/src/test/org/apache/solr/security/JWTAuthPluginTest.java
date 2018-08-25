@@ -46,12 +46,10 @@ import static org.apache.solr.security.JWTAuthPlugin.AuthenticationResponse.Auth
 
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static String testHeader;
-  private static String slimJwt;
   private static String slimHeader;
   private JWTAuthPlugin plugin;
   private HashMap<String, Object> testJwk;
   private static RsaJsonWebKey rsaJsonWebKey;
-  private static String testJwt;
   private HashMap<String, Object> testConfig;
 
   
@@ -68,21 +66,18 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
     jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
 
-    testJwt = jws.getCompactSerialization();
+    String testJwt = jws.getCompactSerialization();
     testHeader = "Bearer" + " " + testJwt;
-
-    System.out.println("Header:\n" + testHeader);
-    System.out.println("JWK:\n" + rsaJsonWebKey.toJson());
     
     claims.unsetClaim("iss");
     claims.unsetClaim("aud");
     claims.unsetClaim("exp");
     jws.setPayload(claims.toJson());
-    slimJwt = jws.getCompactSerialization();
+    String slimJwt = jws.getCompactSerialization();
     slimHeader = "Bearer" + " " + slimJwt;
   }
 
-  protected static JwtClaims generateClaims() {
+  static JwtClaims generateClaims() {
     JwtClaims claims = new JwtClaims();
     claims.setIssuer("IDServer");  // who creates the token and signs it
     claims.setAudience("Solr"); // to whom the token is intended to be sent
@@ -105,7 +100,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     // Create an auth plugin
-    plugin = new JWTAuthPlugin();
+    plugin = new JWTAuthPlugin(null);
 
     // Create a JWK config for security.json
     testJwk = new HashMap<>();
@@ -130,9 +125,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void initWithoutRequired() throws Exception {
-    HashMap<String, Object> authConf = new HashMap<String, Object>();
-    plugin = new JWTAuthPlugin();
+  public void initWithoutRequired() {
+    HashMap<String, Object> authConf = new HashMap<>();
     plugin.init(authConf);
     assertEquals(AUTZ_HEADER_PROBLEM, plugin.authenticate("foo").getAuthCode());
   }
@@ -160,18 +154,18 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void initWithJwk() throws Exception {
-    HashMap<String, Object> authConf = new HashMap<String, Object>();
+  public void initWithJwk() {
+    HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwk", testJwk);
-    plugin = new JWTAuthPlugin();
+    plugin = new JWTAuthPlugin(null);
     plugin.init(authConf);
   }
 
   @Test
-  public void initWithJwkUrl() throws Exception {
-    HashMap<String, Object> authConf = new HashMap<String, Object>();
+  public void initWithJwkUrl() {
+    HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwk_url", "https://127.0.0.1:9999/foo.jwk");
-    plugin = new JWTAuthPlugin();
+    plugin = new JWTAuthPlugin(null);
     plugin.init(authConf);
   }
 
@@ -187,14 +181,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void authenticateOk() throws Exception {
+  public void authenticateOk() {
     AuthenticationResponse resp = plugin.authenticate(testHeader);
     assertTrue(resp.isAuthenticated());
     assertEquals("solruser", resp.getPrincipal().getName());
   }
 
   @Test
-  public void authFailedMissingSubject() throws Exception {
+  public void authFailedMissingSubject() {
     testConfig.put("iss", "NA");
     plugin.init(testConfig);
     AuthenticationResponse resp = plugin.authenticate(testHeader);
@@ -208,7 +202,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void authFailedMissingAudience() throws Exception {
+  public void authFailedMissingAudience() {
     testConfig.put("aud", "NA");
     plugin.init(testConfig);
     AuthenticationResponse resp = plugin.authenticate(testHeader);
@@ -222,7 +216,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void authFailedMissingPrincipal() throws Exception {
+  public void authFailedMissingPrincipal() {
     testConfig.put("principal_claim", "customPrincipal");
     plugin.init(testConfig);
     AuthenticationResponse resp = plugin.authenticate(testHeader);
@@ -236,7 +230,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void claimMatch() throws Exception {
+  public void claimMatch() {
     // all custom claims match regex
     Map<String, String> shouldMatch = new HashMap<>();
     shouldMatch.put("claim1", "foo");
@@ -262,7 +256,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void missingIssAudExp() throws Exception {
+  public void missingIssAudExp() {
     testConfig.put("require_exp", "false");
     testConfig.put("require_sub", "false");
     plugin.init(testConfig);
@@ -283,7 +277,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void algWhitelist() throws Exception {
+  public void algWhitelist() {
     testConfig.put("alg_whitelist", Arrays.asList("PS384", "PS512"));
     plugin.init(testConfig);
     AuthenticationResponse resp = plugin.authenticate(testHeader);
@@ -292,7 +286,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void roles() throws Exception {
+  public void roles() {
     testConfig.put("roles_claim", "groups");
     plugin.init(testConfig);
     AuthenticationResponse resp = plugin.authenticate(testHeader);
@@ -312,7 +306,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void noHeaderBlockUnknown() throws Exception {
+  public void noHeaderBlockUnknown() {
     testConfig.put("block_unknown", true);
     plugin.init(testConfig);
     AuthenticationResponse resp = plugin.authenticate(null);
@@ -320,12 +314,10 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void noHeaderNotBlockUnknown() throws Exception {
+  public void noHeaderNotBlockUnknown() {
     testConfig.put("block_unknown", false);
     plugin.init(testConfig);
     AuthenticationResponse resp = plugin.authenticate(null);
     assertEquals(AuthenticationResponse.AuthCode.PASS_THROUGH, resp.getAuthCode());
   }
-
-  // TODO: Add inter-node request tests
 }
