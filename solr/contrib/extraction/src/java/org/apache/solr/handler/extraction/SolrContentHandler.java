@@ -81,7 +81,6 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     this.metadata = metadata;
     this.params = params;
     this.schema = schema;
-    // this.dateFormats = dateFormats;
 
     this.lowerNames = params.getBool(LOWERNAMES, false);
     this.captureAttribs = params.getBool(CAPTURE_ATTRIBUTES, false);
