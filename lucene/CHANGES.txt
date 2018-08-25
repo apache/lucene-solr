@@ -217,6 +217,9 @@ Bug Fixes:
 * LUCENE-8441: IndexWriter now checks doc value type for index sort fields
   and fails the document if they are not compatible. (Jim Ferenczi, Mike McCandless)
 
+* LUCENE-8458: Adjust initialization condition of PendingSoftDeletes and ensures
+  it is initialized before accepting deletes (Simon Willnauer, Nhat Nguyen)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing

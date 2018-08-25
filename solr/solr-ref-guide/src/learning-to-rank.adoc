@@ -533,7 +533,7 @@ Assuming that you consider to use a large model placed at `/path/to/models/myMod
 }
 ----
 
-First, add the directory to Solr's resource paths by <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives>>:
+First, add the directory to Solr's resource paths with a <<resource-and-plugin-loading.adoc#lib-directives-in-solrconfig,`<lib/>` directive>>:
 
 [source,xml]
 ----

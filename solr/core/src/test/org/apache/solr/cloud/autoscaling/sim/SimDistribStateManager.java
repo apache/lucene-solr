@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
  * invoked.
  */
 public class SimDistribStateManager implements DistribStateManager {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final class Node {
     ReentrantLock dataLock = new ReentrantLock();

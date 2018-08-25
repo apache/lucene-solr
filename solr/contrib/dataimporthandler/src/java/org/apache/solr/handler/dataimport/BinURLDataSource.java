@@ -36,7 +36,7 @@ import java.util.Properties;
  * @since solr 3.1
  */
 public class BinURLDataSource extends DataSource<InputStream>{
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String baseUrl;
   private int connectionTimeout = CONNECTION_TIMEOUT;
@@ -61,14 +61,14 @@ public class BinURLDataSource extends DataSource<InputStream>{
       try {
         connectionTimeout = Integer.parseInt(cTimeout);
       } catch (NumberFormatException e) {
-        LOG.warn("Invalid connection timeout: " + cTimeout);
+        log.warn("Invalid connection timeout: " + cTimeout);
       }
     }
     if (rTimeout != null) {
       try {
         readTimeout = Integer.parseInt(rTimeout);
       } catch (NumberFormatException e) {
-        LOG.warn("Invalid read timeout: " + rTimeout);
+        log.warn("Invalid read timeout: " + rTimeout);
       }
     }
   }
@@ -79,13 +79,13 @@ public class BinURLDataSource extends DataSource<InputStream>{
     try {
       if (URIMETHOD.matcher(query).find()) url = new URL(query);
       else url = new URL(baseUrl + query);
-      LOG.debug("Accessing URL: " + url.toString());
+      log.debug("Accessing URL: " + url.toString());
       URLConnection conn = url.openConnection();
       conn.setConnectTimeout(connectionTimeout);
       conn.setReadTimeout(readTimeout);
       return conn.getInputStream();
     } catch (Exception e) {
-      LOG.error("Exception thrown while getting data", e);
+      log.error("Exception thrown while getting data", e);
       wrapAndThrow (SEVERE, e, "Exception in invoking url " + url);
       return null;//unreachable
     }

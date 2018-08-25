@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * This is inefficient!  But the API on this class is kind of muddy..
  */
 public class OverseerTaskQueue extends ZkDistributedQueue {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final String RESPONSE_PREFIX = "qnr-" ;
 
@@ -70,7 +70,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
-              LOG.debug("Looking for {}, found {}", message.get(requestIdKey), requestId);
+              log.debug("Looking for {}, found {}", message.get(requestIdKey), requestId);
               if(message.get(requestIdKey).equals(requestId)) return true;
             }
           }
@@ -96,7 +96,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       if (zookeeper.exists(responsePath, true)) {
         zookeeper.setData(responsePath, event.getBytes(), true);
       } else {
-        LOG.info("Response ZK path: " + responsePath + " doesn't exist."
+        log.info("Response ZK path: " + responsePath + " doesn't exist."
             + "  Requestor may have disconnected from ZooKeeper");
       }
       try {
@@ -136,7 +136,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         return;
       }
       // If latchEventType is not null, only fire if the type matches
-      LOG.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
+      log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
       if (latchEventType == null || event.getType() == latchEventType) {
         lock.lock();
         try {
@@ -234,7 +234,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       throws KeeperException, InterruptedException {
     ArrayList<QueueEvent> topN = new ArrayList<>();
 
-    LOG.debug("Peeking for top {} elements. ExcludeSet: {}", n, excludeSet);
+    log.debug("Peeking for top {} elements. ExcludeSet: {}", n, excludeSet);
     Timer.Context time;
     if (waitMillis == Long.MAX_VALUE) time = stats.time(dir + "_peekTopN_wait_forever");
     else time = stats.time(dir + "_peekTopN_wait" + waitMillis);
@@ -252,13 +252,13 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   }
 
   private static void printQueueEventsListElementIds(ArrayList<QueueEvent> topN) {
-    if (LOG.isDebugEnabled() && !topN.isEmpty()) {
+    if (log.isDebugEnabled() && !topN.isEmpty()) {
       StringBuilder sb = new StringBuilder("[");
       for (QueueEvent queueEvent : topN) {
         sb.append(queueEvent.getId()).append(", ");
       }
       sb.append("]");
-      LOG.debug("Returning topN elements: {}", sb.toString());
+      log.debug("Returning topN elements: {}", sb.toString());
     }
   }
 

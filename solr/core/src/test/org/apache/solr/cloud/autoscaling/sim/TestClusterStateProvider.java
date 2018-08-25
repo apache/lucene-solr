@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * This test compares the cluster state of a real cluster and a simulated one.
  */
 public class TestClusterStateProvider extends SolrCloudTestCase {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static int NODE_COUNT = 3;
   private static boolean simulated;
@@ -72,7 +72,7 @@ public class TestClusterStateProvider extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     simulated = random().nextBoolean();
-    LOG.info("####### Using simulated components? " + simulated);
+    log.info("####### Using simulated components? " + simulated);
 
     configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))

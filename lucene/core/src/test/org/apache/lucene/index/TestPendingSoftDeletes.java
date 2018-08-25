@@ -65,7 +65,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     writer.softUpdateDocument(new Term("id", "2"), doc,
         new NumericDocValuesField("_soft_deletes", 1));
     writer.commit();
-    DirectoryReader reader = writer.getReader();
+    DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
     SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
@@ -105,7 +105,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     writer.softUpdateDocument(new Term("id", "2"), doc,
         new NumericDocValuesField("_soft_deletes", 1));
     writer.commit();
-    DirectoryReader reader = writer.getReader();
+    DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
     SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
@@ -222,7 +222,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     writer.softUpdateDocument(new Term("id", "2"), doc,
         new NumericDocValuesField("_soft_deletes", 1));
     writer.commit();
-    DirectoryReader reader = writer.getReader();
+    DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
     SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
@@ -270,7 +270,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     writer.softUpdateDocument(new Term("id", "2"), doc,
         new NumericDocValuesField("_soft_deletes", 1));
     writer.commit();
-    DirectoryReader reader = writer.getReader();
+    DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
     SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();

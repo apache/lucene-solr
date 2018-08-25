@@ -63,7 +63,7 @@ public class SolrShardReporter extends SolrCoreReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
-    add("TLOG.*");
+    add("Tlog.*");
     add("CORE\\.fs.*");
     add("REPLICATION.*");
     add("INDEX\\.flush.*");

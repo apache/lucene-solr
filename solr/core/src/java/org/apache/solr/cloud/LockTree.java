@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * but internally it is synchronized so that only one thread can perform any operation.
  */
 public class LockTree {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Node root = new Node(null, LockLevel.CLUSTER, null);
 
   public void clear() {
@@ -141,7 +141,7 @@ public class LockTree {
     void unlock(LockImpl lockObject) {
       if (myLock == lockObject) myLock = null;
       else {
-        LOG.info("Unlocked multiple times : {}", lockObject.toString());
+        log.info("Unlocked multiple times : {}", lockObject.toString());
       }
     }
 
@@ -171,7 +171,7 @@ public class LockTree {
 
     void clear() {
       if (myLock != null) {
-        LOG.warn("lock_is_leaked at" + constructPath(new LinkedList<>()));
+        log.warn("lock_is_leaked at" + constructPath(new LinkedList<>()));
         myLock = null;
       }
       for (Node node : children.values()) node.clear();

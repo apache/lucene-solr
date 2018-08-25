@@ -32,13 +32,23 @@ class DateFieldWriter extends FieldWriter {
     this.field = field;
   }
 
-  public boolean write(int docId, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
-    NumericDocValues vals = DocValues.getNumeric(reader, this.field);
-    long val;
-    if (vals.advance(docId) == docId) {
-      val = vals.longValue();
+  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+    Long val;
+    SortValue sortValue = sortDoc.getSortValue(this.field);
+    if (sortValue != null) {
+      if (sortValue.isPresent()) {
+        val = (long) sortValue.getCurrentValue();
+      } else { //empty-value
+        return false;
+      }
     } else {
-      return false;
+      // field is not part of 'sort' param, but part of 'fl' param
+      NumericDocValues vals = DocValues.getNumeric(reader, this.field);
+      if (vals.advance(sortDoc.docId) == sortDoc.docId) {
+        val = vals.longValue();
+      } else {
+        return false;
+      }
     }
     ew.put(this.field, new Date(val));
     return true;

@@ -32,11 +32,22 @@ class DoubleValue implements SortValue {
   protected DoubleComp comp;
   private int lastDocID;
   private LeafReader reader;
+  private boolean present;
 
   public DoubleValue(String field, DoubleComp comp) {
     this.field = field;
     this.comp = comp;
     this.currentValue = comp.resetValue();
+    this.present = false;
+  }
+
+  public Object getCurrentValue() {
+    assert present == true;
+    return currentValue;
+  }
+
+  public String getField() {
+    return field;
   }
 
   public DoubleValue copy() {
@@ -59,19 +70,28 @@ class DoubleValue implements SortValue {
       curDocID = vals.advance(docId);
     }
     if (docId == curDocID) {
+      present = true;
       currentValue = Double.longBitsToDouble(vals.longValue());
     } else {
+      present = false;
       currentValue = 0f;
     }
+  }
+
+  @Override
+  public boolean isPresent() {
+    return present;
   }
 
   public void setCurrentValue(SortValue sv) {
     DoubleValue dv = (DoubleValue)sv;
     this.currentValue = dv.currentValue;
+    this.present = dv.present;
   }
 
   public void reset() {
     this.currentValue = comp.resetValue();
+    this.present = false;
   }
 
   public int compareTo(SortValue o) {

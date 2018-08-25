@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 public class SpellCheckCollator {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private int maxCollations = 1;
   private int maxCollationTries = 0;
   private int maxCollationEvaluations = 10000;
@@ -73,7 +73,7 @@ public class SpellCheckCollator {
       verifyCandidateWithQuery = false;
     }
     if (queryComponent == null && verifyCandidateWithQuery) {
-      LOG.info("Could not find an instance of QueryComponent.  Disabling collation verification against the index.");
+      log.info("Could not find an instance of QueryComponent.  Disabling collation verification against the index.");
       maxTries = 1;
       verifyCandidateWithQuery = false;
     }
@@ -174,7 +174,7 @@ public class SpellCheckCollator {
                            / (float)etce.getNumberScanned() );
           }
         } catch (Exception e) {
-          LOG.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
+          log.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
         } finally {
           checkResponse.req.close();  
         }
@@ -193,8 +193,8 @@ public class SpellCheckCollator {
         collation.setMisspellingsAndCorrections(misspellingsAndCorrections);
         collations.add(collation);
       }
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Collation: " + collationQueryStr + (verifyCandidateWithQuery ? (" will return " + hits + " hits.") : ""));
+      if (log.isDebugEnabled()) {
+        log.debug("Collation: " + collationQueryStr + (verifyCandidateWithQuery ? (" will return " + hits + " hits.") : ""));
       }
     }
     return collations;

@@ -64,10 +64,10 @@ import org.slf4j.LoggerFactory;
  */
 public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
   
-  private static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
+  public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
   private static final String SPNEGO_OID = "1.3.6.1.5.5.2";
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static Configuration jaasConfig = new SolrJaasConfiguration();
 
   public Krb5HttpClientBuilder() {
@@ -101,7 +101,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
       String configValue = System.getProperty(LOGIN_CONFIG_PROP);
 
       if (configValue != null) {
-        logger.info("Setting up SPNego auth with config: " + configValue);
+        log.info("Setting up SPNego auth with config: " + configValue);
         final String useSubjectCredsProp = "javax.security.auth.useSubjectCredsOnly";
         String useSubjectCredsVal = System.getProperty(useSubjectCredsProp);
 
@@ -112,7 +112,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
         } else if (!useSubjectCredsVal.toLowerCase(Locale.ROOT).equals("false")) {
           // Don't overwrite the prop value if it's already been written to something else,
           // but log because it is likely the Credentials won't be loaded correctly.
-          logger.warn("System Property: " + useSubjectCredsProp + " set to: " + useSubjectCredsVal
+          log.warn("System Property: " + useSubjectCredsProp + " set to: " + useSubjectCredsVal
               + " not false.  SPNego authentication may not be successful.");
         }
 
@@ -195,8 +195,8 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
                   if (sentToken.get()) return;
 
                   final String tokenstr = java.util.Base64.getEncoder().encodeToString(token);
-                  if (logger.isDebugEnabled()) {
-                    logger.info("Sending response '" + tokenstr + "' back to the auth server");
+                  if (log.isDebugEnabled()) {
+                    log.info("Sending response '" + tokenstr + "' back to the auth server");
                   }
                   request.header(headerInfo.getHeader().asString(), "Negotiate "+tokenstr);
                 }
@@ -217,7 +217,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
         });
       }
     } else {
-      logger.warn("{} is configured without specifying system property '{}'",
+      log.warn("{} is configured without specifying system property '{}'",
           getClass().getName(), LOGIN_CONFIG_PROP);
     }
 
@@ -254,11 +254,11 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     public AppConfigurationEntry[] getAppConfigurationEntry(String appName) {
       if (baseConfig == null) return null;
 
-      logger.debug("Login prop: "+System.getProperty(LOGIN_CONFIG_PROP));
+      log.debug("Login prop: "+System.getProperty(LOGIN_CONFIG_PROP));
 
       String clientAppName = System.getProperty("solr.kerberos.jaas.appname", "Client");
       if (initiateAppNames.contains(appName)) {
-        logger.debug("Using AppConfigurationEntry for appName '"+clientAppName+"' instead of: " + appName);
+        log.debug("Using AppConfigurationEntry for appName '"+clientAppName+"' instead of: " + appName);
         return baseConfig.getAppConfigurationEntry(clientAppName);
       }
       return baseConfig.getAppConfigurationEntry(appName);

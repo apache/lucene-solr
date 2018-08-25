@@ -58,7 +58,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   
   private final static int REPLICATION_TIMEOUT_SECS = 10;
   
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static Map<URI, SocketProxy> proxies;
   private static Map<URI, JettySolrRunner> jettys;
 
@@ -83,7 +83,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jetty);//TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
       proxy.open(jetty.getBaseUrl().toURI());
-      LOG.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
+      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
       proxies.put(proxy.getUrl(), proxy);
       jettys.put(proxy.getUrl(), jetty);
     }
@@ -124,9 +124,9 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   @Override
   public void tearDown() throws Exception {
     if (cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName) != null) {
-      LOG.info("tearDown deleting collection");
+      log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-      LOG.info("Collection deleted");
+      log.info("Collection deleted");
       waitForDeletion(collectionName);
     }
     collectionName = null;
@@ -198,7 +198,7 @@ public void testCantConnectToPullReplica() throws Exception {
       }
       assertNumDocs(10, cluster.getSolrClient());
     } finally {
-      LOG.info("Opening leader node");
+      log.info("Opening leader node");
       proxy.reopen();
     }
 //     Back to normal
@@ -304,7 +304,7 @@ public void testCantConnectToPullReplica() throws Exception {
   private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
-      LOG.info("Collection not yet deleted");
+      log.info("Collection not yet deleted");
       try {
         Thread.sleep(100);
         if (t.hasTimedOut()) {

@@ -69,7 +69,7 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_
  *
  */
 public class Policy implements MapWriter {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String POLICY = "policy";
   public static final String EACH = "#EACH";
@@ -281,7 +281,7 @@ public class Policy implements MapWriter {
             return p.compare(r1, r2, false);
           });
         } catch (Exception e) {
-          LOG.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, matrix = {}",
+          log.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, matrix = {}",
               clusterPreferences,
               lastComparison[0],
               lastComparison[1],
@@ -498,9 +498,9 @@ public class Policy implements MapWriter {
       this.nodeStateProvider = cloudManager.getNodeStateProvider();
       try {
         state = cloudManager.getClusterStateProvider().getClusterState();
-        LOG.trace("-- session created with cluster state: {}", state);
+        log.trace("-- session created with cluster state: {}", state);
       } catch (Exception e) {
-        LOG.trace("-- session created, can't obtain cluster state", e);
+        log.trace("-- session created, can't obtain cluster state", e);
       }
       this.znodeVersion = state != null ? state.getZNodeVersion() : -1;
       this.nodes = new ArrayList<>(cloudManager.getClusterStateProvider().getLiveNodes());

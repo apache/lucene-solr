@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int NODE_COUNT = 4;
 
   private static Map<JettySolrRunner, SocketProxy> proxies;
@@ -70,7 +70,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jetty);//TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
       proxy.open(jetty.getBaseUrl().toURI());
-      LOG.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
+      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
       proxies.put(jetty, proxy);
       jettys.put(proxy.getUrl(), jetty);
     }
@@ -202,7 +202,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     } catch (Exception e) {
       List<String> children = zkClient().getChildren("/collections/"+collectionName+"/leader_elect/shard1/election",
           null, true);
-      LOG.info("{} election nodes:{}", collectionName, children);
+      log.info("{} election nodes:{}", collectionName, children);
       throw e;
     }
     cluster.getJettySolrRunner(0).start();

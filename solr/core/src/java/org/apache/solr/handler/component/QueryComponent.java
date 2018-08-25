@@ -122,7 +122,7 @@ import org.slf4j.LoggerFactory;
 public class QueryComponent extends SearchComponent
 {
   public static final String COMPONENT_NAME = "query";
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
@@ -299,7 +299,7 @@ public class QueryComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException
   {
-    LOG.debug("process: {}", rb.req.getParams());
+    log.debug("process: {}", rb.req.getParams());
   
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();

@@ -175,6 +175,7 @@ public class TestWithCollection extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testDeleteWithCollection() throws IOException, SolrServerException, InterruptedException {
     String prefix = "testDeleteWithCollection";
     String xyz = prefix + "_xyz";
@@ -346,6 +347,7 @@ public class TestWithCollection extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testMoveReplicaWithCollection() throws Exception {
     String prefix = "testMoveReplicaWithCollection";
     String xyz = prefix + "_xyz";

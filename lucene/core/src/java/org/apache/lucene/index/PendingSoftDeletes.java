@@ -37,7 +37,7 @@ final class PendingSoftDeletes extends PendingDeletes {
   private final PendingDeletes hardDeletes;
 
   PendingSoftDeletes(String field, SegmentCommitInfo info)  {
-    super(info);
+    super(info, null, info.getDelCount(true) == 0);
     this.field = field;
     hardDeletes = new PendingDeletes(info);
   }
@@ -228,6 +228,11 @@ final class PendingSoftDeletes extends PendingDeletes {
   @Override
   Bits getHardLiveDocs() {
     return hardDeletes.getLiveDocs();
+  }
+
+  @Override
+  boolean mustInitOnDelete() {
+    return liveDocsInitialized == false;
   }
 
   static int countSoftDeletes(DocIdSetIterator softDeletedDocs, Bits hardDeletes) throws IOException {
