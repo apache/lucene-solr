@@ -19,13 +19,20 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
+import java.util.TreeSet;
+import java.util.function.Supplier;
 
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -78,8 +85,10 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   public abstract int freq() throws IOException;
 
   /**
-   * The term at this position; usually always the same.
+   * The term at this position.
    * This BytesRef is safe to continue to refer to, even after we move to the next position.
+   *
+   * @see {@link Passage#getMatchTerms()}.
    */
   public abstract BytesRef getTerm() throws IOException;
 
@@ -168,9 +177,10 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   public static class OfMatchesIteratorWithSubs extends OffsetsEnum {
     //Either CachedOE impls (which are the submatches) or OfMatchesIterator impls
     private final PriorityQueue<OffsetsEnum> pendingQueue = new PriorityQueue<>();
+    private final HashMap<Query,BytesRef> queryToTermMap = new HashMap<>();
 
     public OfMatchesIteratorWithSubs(MatchesIterator matchesIterator) {
-      pendingQueue.add(new OfMatchesIterator(matchesIterator));
+      pendingQueue.add(new OfMatchesIterator(matchesIterator, () -> queryToTerm(matchesIterator.getQuery())));
     }
 
     @Override
@@ -224,11 +234,44 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
         while (thisMI.next()) {
           if (false == enqueueCachedMatches(thisMI.getSubMatches())) { // recursion
             // if no sub-matches then add ourselves
-            pendingQueue.add(new CachedOE(thisMI.startOffset(), thisMI.endOffset()));
+            pendingQueue.add(new CachedOE(queryToTerm(thisMI.getQuery()), thisMI.startOffset(), thisMI.endOffset()));
           }
         }
         return true;
       }
+    }
+
+    /** Maps a Query from {@link MatchesIterator#getQuery()} to {@link OffsetsEnum#getTerm()}.
+     * See {@link Passage#getMatchTerms()}. */
+    private BytesRef queryToTerm(Query query) {
+      // compute an approximate BytesRef term of a Query.  We cache this since we're likely to see the same query again.
+      // Our approach is to call extractTerms and visit each term in order, concatenating them with an adjoining space.
+      //  If we don't have any (perhaps due to an MTQ like a wildcard) then we fall back on the toString() of the query.
+      return queryToTermMap.computeIfAbsent(query, (Query q) -> {
+        try {
+          BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
+          UnifiedHighlighter.EMPTY_INDEXSEARCHER
+              .createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1f)
+              .extractTerms(new TreeSet<Term>() {
+            @Override
+            public boolean add(Term term) {
+              if (bytesRefBuilder.length() > 0) {
+                bytesRefBuilder.append((byte) ' ');
+              }
+              bytesRefBuilder.append(term.bytes());
+              return true;
+            }
+          });
+          if (bytesRefBuilder.length() > 0) {
+            return bytesRefBuilder.get();
+          }
+        } catch (IOException e) {//ignore
+          // go to fallback...
+        }
+
+        // fallback:  (likely a MultiTermQuery)
+        return new BytesRef(q.toString());
+      });
     }
 
     @Override
@@ -252,10 +295,12 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
     }
 
     private static class CachedOE extends OffsetsEnum {
+      final BytesRef term;
       final int startOffset;
       final int endOffset;
 
-      private CachedOE(int startOffset, int endOffset) {
+      private CachedOE(BytesRef term, int startOffset, int endOffset) {
+        this.term = term;
         this.startOffset = startOffset;
         this.endOffset = endOffset;
       }
@@ -267,12 +312,12 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
 
       @Override
       public int freq() throws IOException {
-        return 1; // nocommit terrible
+        return 1; // documented short-coming of MatchesIterator based UnifiedHighlighter
       }
 
       @Override
       public BytesRef getTerm() throws IOException {
-        return new BytesRef(); // nocommit terrible
+        return term;
       }
 
       @Override
@@ -290,9 +335,11 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   /** Based on a {@link MatchesIterator}; does not look at submatches. */
   public static class OfMatchesIterator extends OffsetsEnum {
     private final MatchesIterator matchesIterator;
+    private final Supplier<BytesRef> termSupplier;
 
-    public OfMatchesIterator(MatchesIterator matchesIterator) {
+    public OfMatchesIterator(MatchesIterator matchesIterator, Supplier<BytesRef> termSupplier) {
       this.matchesIterator = matchesIterator;
+      this.termSupplier = termSupplier;
     }
 
     @Override
@@ -302,12 +349,12 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
 
     @Override
     public int freq() throws IOException {
-      return 1; // nocommit terrible
+      return 1; // documented short-coming of MatchesIterator based UnifiedHighlighter
     }
 
     @Override
     public BytesRef getTerm() throws IOException {
-      return new BytesRef(); // nocommit terrible
+      return termSupplier.get();
     }
 
     @Override
