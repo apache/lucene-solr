@@ -86,7 +86,7 @@ class ChildDocTransformer extends DocTransformer {
       final BitSet segParentsBitSet = parentsFilter.getBitSet(leafReaderContext);
 
       if(!segParentsBitSet.get(segRootId)) {
-        // dpc does not match parent filter, return fast
+        // doc does not match parent filter, return fast
         return;
       }
 
@@ -105,7 +105,6 @@ class ChildDocTransformer extends DocTransformer {
       Map<String, Multimap<String, SolrDocument>> pendingParentPathsToChildren = new HashMap<>();
 
       SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
-      boolean addedChildDocs = false;
       final int lastChildId = segBaseId + segPrevRootId + 1;
       // Loop each child ID up to the parent (exclusive).
       for (int docId = calcDocIdToIterateFrom(lastChildId, rootDocId); docId < rootDocId; ++docId) {
@@ -120,8 +119,6 @@ class ChildDocTransformer extends DocTransformer {
         if (isAncestor || childDocSet == null || childDocSet.exists(docId)) {
           // load the doc
           SolrDocument doc = docFetcher.solrDoc(docId, childReturnFields);
-          // found childDocs
-          addedChildDocs = true;
 
           if (isAncestor) {
             // if this path has pending child docs, add them.
@@ -142,7 +139,7 @@ class ChildDocTransformer extends DocTransformer {
         }
       }
 
-      if(!addedChildDocs) {
+      if(pendingParentPathsToChildren.size() == 0) {
         // no child docs matched the child filter, return fast.
         return;
       }
@@ -150,7 +147,8 @@ class ChildDocTransformer extends DocTransformer {
       // only children of parent remain
       assert pendingParentPathsToChildren.keySet().size() == 1;
 
-      addChildrenToParent(rootDoc, pendingParentPathsToChildren.remove(null));
+      // size == 1, so get the last remaining entry
+      addChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
 
     } catch (IOException e) {
       //TODO DWS: reconsider this unusual error handling approach; shouldn't we rethrow?
@@ -248,12 +246,11 @@ class ChildDocTransformer extends DocTransformer {
       return Math.max(lowestChildDocId, RootDocId - limit);
     }
     int currentId = RootDocId - 1;
-    for(int matches = 0; matches < limit; --currentId) {
-      if (currentId <= lowestChildDocId) {
-        break;
-      }
-      if (childDocSet.exists(currentId)) {
-        ++matches;
+    for(int matches = 0; currentId > lowestChildDocId; --currentId) {
+      if(childDocSet.exists(currentId)) {
+        if(++matches == limit) {
+          break;
+        }
       }
     }
     return currentId;
