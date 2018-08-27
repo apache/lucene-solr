@@ -109,7 +109,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   public void testParentFilterLimitJSON() throws Exception {
     indexSampleData(numberOfDocsPerNestedTest);
 
-    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child limit=1]",
+    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:\"toppings/\"' limit=1]",
         "fq", fqToExcludeNonTestedDocs)) {
       BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
       Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
@@ -236,6 +236,17 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
         "fl", "*,[child childFilter='lonely/lonelyGrandChild/test2_s:secondTest']",
         "fq", fqToExcludeNonTestedDocs),
         tests);
+  }
+
+  @Test
+  public void testNonRootChildren() throws Exception {
+    indexSampleData(numberOfDocsPerNestedTest);
+    assertJQ(req("q", "test_s:testing",
+        "sort", "id asc",
+        "fl", "*,[child childFilter='lonely/lonelyGrandChild/test2_s:secondTest' parentFilter='_nest_path_:\"lonely/\"']",
+        "fq", fqToExcludeNonTestedDocs),
+        "/response/docs/[0]/test_s==testing",
+        "/response/docs/[0]/lonelyGrandChild/test2_s==secondTest");
   }
 
   @Test
