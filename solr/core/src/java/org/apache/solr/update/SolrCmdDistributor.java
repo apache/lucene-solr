@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.Diagnostics;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
@@ -278,6 +279,8 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   private void submit(final Req req, boolean isCommit) {
+    // Copy user principal from the original request to the new update request, for later authentication interceptor use
+    req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
     if (req.synchronous) {
       blockAndDoRetries();
 

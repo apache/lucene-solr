@@ -23,8 +23,17 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.apache.http.Header;
+import org.apache.http.HttpException;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.entity.ContentType;
+import org.apache.http.protocol.HttpContext;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Pair;
 import org.jose4j.jwk.PublicJsonWebKey;
@@ -33,6 +42,7 @@ import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,6 +52,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   protected static final int REPLICATION_FACTOR = 1;
   private static String jwtTestToken;
   private static String baseUrl;
+  private static AtomicInteger jwtInterceptCount = new AtomicInteger();
+  private static AtomicInteger pkiInterceptCount = new AtomicInteger();
+  private static final CountInterceptor interceptor = new CountInterceptor();
 
   @BeforeClass
   public static void setupClass() throws Exception {
@@ -71,6 +84,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
 
     jwtTestToken = jws.getCompactSerialization(); 
+
+    HttpClientUtil.removeRequestInterceptor(interceptor);
+    HttpClientUtil.addRequestInterceptor(interceptor);
   }
 
   @AfterClass
@@ -79,6 +95,12 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     shutdownCluster();
   }
 
+  @Before
+  public void before() {
+    jwtInterceptCount.set(0);
+    pkiInterceptCount.set(0);
+  }
+  
   @Test(expected = IOException.class)
   public void infoRequestWithoutToken() throws Exception {
     get(baseUrl + "admin/info/system", null);
@@ -88,6 +110,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   public void infoRequestWithToken() throws IOException {
     Pair<String,Integer> result = get(baseUrl + "admin/info/system", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
+    verifyInterRequestHeaderCounts(0,0);
   }
 
   @Test
@@ -101,6 +124,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     
     // Delete
     assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=mycoll", jwtTestToken).second().intValue());
+    verifyInterRequestHeaderCounts(2,2);
   }
 
   @Test
@@ -109,37 +133,14 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2", jwtTestToken).second().intValue());
     
     // Now update two documents
-    Pair<String,Integer> result = post(baseUrl + "mycoll/update", "{\"id\" : \"1\"}", jwtTestToken);
-    assertEquals(Integer.valueOf(200), result.second());
-    result = post(baseUrl + "mycoll/update", "{\"id\" : \"2\"}", jwtTestToken);
-    assertEquals(Integer.valueOf(200), result.second());
-    result = post(baseUrl + "mycoll/update", "{\"id\" : \"3\"}", jwtTestToken);
+    Pair<String,Integer> result = post(baseUrl + "mycoll/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
 
     // Delete
     assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=mycoll", jwtTestToken).second().intValue());
+    verifyInterRequestHeaderCounts(2,2);
   }
 
-  private Pair<String, Integer> post(String url, String json, String token) throws IOException {
-    URL createUrl = new URL(url);
-    HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
-    con.setRequestMethod("POST");
-    if (token != null)
-      con.setRequestProperty("Authorization", "Bearer " + token);
-
-    con.setDoOutput(true);
-    OutputStream os = con.getOutputStream();
-    os.write(json.getBytes());
-    os.flush();
-    os.close();
-    		
-    con.connect();
-    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) con.getContent()));
-    String result = br2.lines().collect(Collectors.joining("\n"));
-    int code = con.getResponseCode(); 
-    con.disconnect();
-    return new Pair<>(result, code);
-  }
 
 
 // NOCOMMIT: Test using SolrJ as client
@@ -201,6 +202,11 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
 //    solrClient.close();
 //  }
 
+  private void verifyInterRequestHeaderCounts(int jwt, int pki) {
+    assertEquals(jwt, jwtInterceptCount.get());
+    assertEquals(pki, jwtInterceptCount.get());
+  }
+
   private Pair<String, Integer> get(String url, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
@@ -214,6 +220,28 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     return new Pair<>(result, code);
   }
 
+  private Pair<String, Integer> post(String url, String json, String token) throws IOException {
+    URL createUrl = new URL(url);
+    HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
+    con.setRequestMethod("POST");
+    con.setRequestProperty(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
+    if (token != null)
+      con.setRequestProperty("Authorization", "Bearer " + token);
+
+    con.setDoOutput(true);
+    OutputStream os = con.getOutputStream();
+    os.write(json.getBytes());
+    os.flush();
+    os.close();
+    		
+    con.connect();
+    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) con.getContent()));
+    String result = br2.lines().collect(Collectors.joining("\n"));
+    int code = con.getResponseCode(); 
+    con.disconnect();
+    return new Pair<>(result, code);
+  }
+  
 //  SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder, String token) {
 //    if (builder == null) {
 //      builder = SolrHttpClientBuilder.create();
@@ -232,5 +260,16 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
 //    return builder;
 //  }
   
-
+  private static class CountInterceptor implements HttpRequestInterceptor {
+    @Override
+    public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+      Header ah = request.getFirstHeader(HttpHeaders.AUTHORIZATION);
+      if (ah != null && ah.getValue().startsWith("Bearer"))
+        jwtInterceptCount.addAndGet(1);
+      
+      Header ph = request.getFirstHeader(PKIAuthenticationPlugin.HEADER);
+      if (ph != null)
+        pkiInterceptCount.addAndGet(1);
+    }          
+  }
 }
