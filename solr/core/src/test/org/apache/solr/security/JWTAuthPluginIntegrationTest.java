@@ -36,6 +36,7 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.util.LogLevel;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jws.AlgorithmIdentifiers;
@@ -114,13 +115,21 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LogLevel("org.apache.solr.security=DEBUG")
   public void createCollectionAndQueryDistributed() throws Exception {
     // Admin request will use PKI inter-node auth from Overseer, and succeed
     assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2", jwtTestToken).second().intValue());
+    verifyInterRequestHeaderCounts(0,0);
     
-    // Now do a distributed query, using JWTAUth for inter-node
-    Pair<String,Integer> result = get(baseUrl + "mycoll/query?q=*:*", jwtTestToken);
+    // First a non distributed query
+    Pair<String,Integer> result = get(baseUrl + "mycoll/query?q=*:*&distrib=false", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
+    verifyInterRequestHeaderCounts(0,0);
+
+    // Now do a distributed query, using JWTAUth for inter-node
+    result = get(baseUrl + "mycoll/query?q=*:*", jwtTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
+    verifyInterRequestHeaderCounts(2,2);
     
     // Delete
     assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=mycoll", jwtTestToken).second().intValue());
