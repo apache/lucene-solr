@@ -1112,11 +1112,23 @@ public class UnifiedHighlighter {
    * Flags for controlling highlighting behavior.
    */
   public enum HighlightFlag {
+    /** @see UnifiedHighlighter#setHighlightPhrasesStrictly(boolean) */
     PHRASES,
+
+    /** @see UnifiedHighlighter#setHandleMultiTermQuery(boolean) */
     MULTI_TERM_QUERY,
+
+    /** Passage relevancy is more important than speed.  True by default. */
     PASSAGE_RELEVANCY_OVER_SPEED,
+
+    /**
+     * Internally use the {@link Weight#matches(LeafReaderContext, int)} API for highlighting.
+     * It's more accurate to the query, though might not calculate passage relevancy as well.
+     * Use of this flag requires {@link #MULTI_TERM_QUERY} and {@link #PHRASES}.
+     * {@link #PASSAGE_RELEVANCY_OVER_SPEED} will be ignored.  False by default.
+     */
     WEIGHT_MATCHES
-    // TODO: ignoreQueryFields
+
     // TODO: useQueryBoosts
   }
 }
