@@ -196,7 +196,7 @@ public class FieldTermStack {
     // this is a circular list, so with no syns, just points to itself
     private TermInfo next;
 
-    public TermInfo( String text, int startOffset, int endOffset, int position, float weight ){
+    TermInfo(String text, int startOffset, int endOffset, int position, float weight){
       this.text = text;
       this.startOffset = startOffset;
       this.endOffset = endOffset;
@@ -219,9 +219,7 @@ public class FieldTermStack {
     
     @Override
     public String toString(){
-      StringBuilder sb = new StringBuilder();
-      sb.append( text ).append( '(' ).append(startOffset).append( ',' ).append( endOffset ).append( ',' ).append( position ).append( ')' );
-      return sb.toString();
+      return text + '(' + startOffset + ',' + endOffset + ',' + position + ')';
     }
 
     @Override
@@ -248,10 +246,7 @@ public class FieldTermStack {
         return false;
       }
       TermInfo other = (TermInfo) obj;
-      if (position != other.position) {
-        return false;
-      }
-      return true;
+      return position == other.position;
     }
   }
 }

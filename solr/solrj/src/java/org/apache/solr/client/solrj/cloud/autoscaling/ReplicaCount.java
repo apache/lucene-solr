@@ -33,9 +33,9 @@ class ReplicaCount  implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    ew.put(Replica.Type.NRT.name(), nrt);
-    ew.put(Replica.Type.PULL.name(), pull);
-    ew.put(Replica.Type.TLOG.name(), tlog);
+    if (nrt > 0) ew.put(Replica.Type.NRT.name(), nrt);
+    if (pull > 0) ew.put(Replica.Type.PULL.name(), pull);
+    if (tlog > 0) ew.put(Replica.Type.TLOG.name(), tlog);
     ew.put("count", total());
   }
 

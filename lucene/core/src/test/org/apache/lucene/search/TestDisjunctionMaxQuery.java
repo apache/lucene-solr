@@ -16,18 +16,22 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
+import java.io.StringReader;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -521,6 +525,77 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     assertEquals(bq.clauses().size(), 2);
     assertEquals(bq.clauses().get(0), new BooleanClause(sub1, BooleanClause.Occur.SHOULD));
     assertEquals(bq.clauses().get(1), new BooleanClause(sub2, BooleanClause.Occur.SHOULD));
+  }
+
+  public void testRandomTopDocs() throws Exception {
+    doTestRandomTopDocs(2, 0.05f, 0.05f);
+    doTestRandomTopDocs(2, 1.0f, 0.05f);
+    doTestRandomTopDocs(3, 1.0f, 0.5f, 0.05f);
+    doTestRandomTopDocs(4, 1.0f, 0.5f, 0.05f, 0f);
+    doTestRandomTopDocs(4, 1.0f, 0.5f, 0.05f, 0f);
+  }
+
+  private void doTestRandomTopDocs(int numFields, double... freqs) throws IOException {
+    assert numFields == freqs.length;
+    Directory dir = newDirectory();
+    IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
+    IndexWriter w = new IndexWriter(dir, config);
+
+    int numDocs = atLeast(1000); // make sure some terms have skip data
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      for (int j = 0; j < numFields; j++) {
+        StringBuilder builder = new StringBuilder();
+        int numAs = random().nextDouble() < freqs[j] ? 0 : 1 + random().nextInt(5);
+        for (int k = 0; k < numAs; k++) {
+          if (builder.length() > 0) {
+            builder.append(' ');
+          }
+          builder.append('a');
+        }
+        if (random().nextBoolean()) {
+          doc.add(new StringField("field", "c", Field.Store.NO));
+        }
+        int numOthers = random().nextBoolean() ? 0 : 1 + random().nextInt(5);
+        for (int k = 0; k < numOthers; k++) {
+          if (builder.length() > 0) {
+            builder.append(' ');
+          }
+          builder.append(Integer.toString(random().nextInt()));
+        }
+        doc.add(new TextField(Integer.toString(j), new StringReader(builder.toString())));
+      }
+      w.addDocument(doc);
+    }
+    IndexReader reader = DirectoryReader.open(w);
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+    for (int i = 0; i < 4; i++) {
+      List<Query> clauses = new ArrayList<>();
+      for (int j = 0; j < numFields; j++) {
+        if (i % 2 == 1) {
+          clauses.add(tq(Integer.toString(j), "a"));
+        } else {
+          float boost = random().nextBoolean() ? 0 : random().nextFloat();
+          if (boost > 0) {
+            clauses.add(tq(Integer.toString(j), "a", boost));
+          } else {
+            clauses.add(tq(Integer.toString(j), "a"));
+          }
+        }
+      }
+      float tieBreaker = random().nextFloat();
+      Query query = new DisjunctionMaxQuery(clauses, tieBreaker);
+      CheckHits.checkTopScores(random(), query, searcher);
+
+      query = new BooleanQuery.Builder()
+          .add(new DisjunctionMaxQuery(clauses, tieBreaker), BooleanClause.Occur.MUST)
+          .add(tq("field", "c"), BooleanClause.Occur.FILTER)
+          .build();
+      CheckHits.checkTopScores(random(), query, searcher);
+    }
+    reader.close();
+    dir.close();
   }
   
   /** macro */

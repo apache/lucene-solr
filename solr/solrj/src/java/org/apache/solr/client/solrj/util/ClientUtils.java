@@ -72,7 +72,9 @@ public class ClientUtils
       for( Object v : field ) {
         String update = null;
 
-        if (v instanceof Map) {
+        if(v instanceof SolrInputDocument) {
+          writeVal(writer, name, v , null);
+        } else if (v instanceof Map) {
           // currently only supports a single value
           for (Entry<Object,Object> entry : ((Map<Object,Object>)v).entrySet()) {
             update = entry.getKey().toString();
@@ -112,19 +114,27 @@ public class ClientUtils
       v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
     }
 
+    XML.Writable valWriter = null;
+    if(v instanceof SolrInputDocument) {
+      final SolrInputDocument solrDoc = (SolrInputDocument) v;
+      valWriter = (writer1) -> writeXML(solrDoc, writer1);
+    } else if(v != null) {
+      final Object val = v;
+      valWriter = (writer1) -> XML.escapeCharData(val.toString(), writer1);
+    }
+
     if (update == null) {
       if (v != null) {
-        XML.writeXML(writer, "field", v.toString(), "name", name );
+        XML.writeXML(writer, "field", valWriter, "name", name);
       }
     } else {
       if (v == null)  {
-        XML.writeXML(writer, "field", null, "name", name, "update", update, "null", true);
+        XML.writeXML(writer, "field", (XML.Writable) null, "name", name, "update", update, "null", true);
       } else  {
-        XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
+        XML.writeXML(writer, "field", valWriter, "name", name, "update", update);
       }
     }
   }
-
 
   public static String toXML( SolrInputDocument doc )
   {

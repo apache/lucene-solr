@@ -309,7 +309,7 @@ final class BooleanWeight extends Weight {
     } else {
       Scorer prohibitedScorer = prohibited.size() == 1
           ? prohibited.get(0)
-          : new DisjunctionSumScorer(this, prohibited, false);
+          : new DisjunctionSumScorer(this, prohibited, ScoreMode.COMPLETE_NO_SCORES);
       if (prohibitedScorer.twoPhaseIterator() != null) {
         // ReqExclBulkScorer can't deal efficiently with two-phased prohibited clauses
         return null;

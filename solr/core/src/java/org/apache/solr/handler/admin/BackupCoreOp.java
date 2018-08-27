@@ -60,7 +60,9 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
       //  file system. Otherwise, perhaps the FS location isn't shared -- we want an error.
       if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation());
+            "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation() + ". " +
+            "Note that Backup/Restore of a SolrCloud collection " +
+            "requires a shared file system mounted at the same path on all nodes!");
       }
       snapShooter.validateCreateSnapshot();
       snapShooter.createSnapshot();

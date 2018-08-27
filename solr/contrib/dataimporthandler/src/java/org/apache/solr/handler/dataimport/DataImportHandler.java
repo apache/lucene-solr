@@ -68,7 +68,7 @@ import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
 public class DataImportHandler extends RequestHandlerBase implements
         SolrCoreAware {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private DataImporter importer;
 
@@ -107,7 +107,7 @@ public class DataImportHandler extends RequestHandlerBase implements
       debugEnabled = StrUtils.parseBool((String)initArgs.get(ENABLE_DEBUG), true);
       importer = new DataImporter(core, myName);         
     } catch (Exception e) {
-      LOG.error( DataImporter.MSG.LOAD_EXP, e);
+      log.error( DataImporter.MSG.LOAD_EXP, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, DataImporter.MSG.LOAD_EXP, e);
     }
   }
@@ -257,7 +257,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           try {
             return super.upload(document);
           } catch (RuntimeException e) {
-            LOG.error("Exception while adding: " + document, e);
+            log.error("Exception while adding: " + document, e);
             return false;
           }
         }

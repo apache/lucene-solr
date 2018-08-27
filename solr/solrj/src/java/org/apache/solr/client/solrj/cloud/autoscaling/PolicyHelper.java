@@ -19,21 +19,27 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.common.ConditionalMapWriter;
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
@@ -49,8 +55,10 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
+import static org.apache.solr.common.util.Utils.handleExp;
 import static org.apache.solr.common.util.Utils.time;
 import static org.apache.solr.common.util.Utils.timeElapsed;
 
@@ -160,8 +168,14 @@ public class PolicyHelper {
             }
             SolrRequest op = suggester.getSuggestion();
             if (op == null) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules " +
-                  Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true)));
+              String errorId = "AutoScaling.error.diagnostics." + System.nanoTime();
+              Policy.Session sessionCopy = suggester.session;
+              log.error("errorId : " + errorId + "  " +
+                  handleExp(log, "", () -> Utils.writeJson(getDiagnostics(sessionCopy), new StringWriter(), true).toString()));
+
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " No node can satisfy the rules " +
+                  Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true) + " More details from logs in node : "
+                      + Utils.getMDCNode() + ", errorId : " + errorId));
             }
             session = suggester.getSession();
             positions.add(new ReplicaPosition(shardName, ++idx, e.getKey(), op.getParams().get(NODE)));
@@ -182,33 +196,30 @@ public class PolicyHelper {
 
   public static MapWriter getDiagnostics(Policy policy, SolrCloudManager cloudManager) {
     Policy.Session session = policy.createSession(cloudManager);
+    return getDiagnostics(session);
+  }
+
+  public static MapWriter getDiagnostics(Policy.Session session) {
     List<Row> sorted = session.getSortedNodes();
-    List<Violation> violations = session.getViolations();
+    Set<String> alreadyWritten = new HashSet<>();
+    BiPredicate<String, Object> p = dedupeKeyPredicate(alreadyWritten)
+        .and(ConditionalMapWriter.NON_NULL_VAL)
+        .and((s, o) -> !(o instanceof Map) || !((Map) o).isEmpty());
 
-    List<Preference> clusterPreferences = policy.getClusterPreferences();
-
-    List<Map<String, Object>> sortedNodes = new ArrayList<>(sorted.size());
-    for (Row row : sorted) {
-      Map<String, Object> map = Utils.makeMap("node", row.node);
-      map.put("isLive", row.isLive);
-      for (Cell cell : row.getCells()) {
-        for (Preference clusterPreference : clusterPreferences) {
-          Policy.SortParam name = clusterPreference.getName();
-          if (cell.getName().equalsIgnoreCase(name.name())) {
-            map.put(name.name(), cell.getValue());
-            break;
-          }
-        }
+    return ew -> ew.put("sortedNodes", (IteratorWriter) iw -> {
+      for (Row row : sorted) {
+        iw.add((MapWriter) ew1 -> {
+          alreadyWritten.clear();
+          ew1.put("node", row.node, p).
+              put("isLive", row.isLive, p);
+          for (Cell cell : row.getCells())
+            ew1.put(cell.name, cell.val, p);
+          ew1.put("replicas", row.collectionVsShardVsReplicas);
+        });
       }
-      sortedNodes.add(map);
-    }
-
-    return ew -> {
-      ew.put("sortedNodes", sortedNodes);
-      ew.put("violations", violations);
-    };
-
-
+    }).put("liveNodes", session.cloudManager.getClusterStateProvider().getLiveNodes())
+        .put("violations", session.getViolations())
+        .put("config", session.getPolicy());
   }
 
   public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf, SolrCloudManager cloudManager) {
@@ -324,6 +335,7 @@ public class PolicyHelper {
       TimeSource timeSource = cloudManager.getTimeSource();
       synchronized (lockObj) {
         if (sessionWrapper.status == Status.NULL ||
+            sessionWrapper.zkVersion != cloudManager.getDistribStateManager().getAutoScalingConfig().getZkVersion() ||
             TimeUnit.SECONDS.convert(timeSource.getTimeNs() - sessionWrapper.lastUpdateTime, TimeUnit.NANOSECONDS) > SESSION_EXPIRY) {
           //no session available or the session is expired
           return createSession(cloudManager);
@@ -416,6 +428,7 @@ public class PolicyHelper {
     public Status status;
     private final SessionRef ref;
     private AtomicInteger refCount = new AtomicInteger();
+    public final long zkVersion;
 
     public long getCreateTime() {
       return createTime;
@@ -432,6 +445,9 @@ public class PolicyHelper {
       this.session = session;
       this.status = Status.UNUSED;
       this.ref = ref;
+      this.zkVersion = session == null ?
+          0 :
+          session.getPolicy().zkVersion;
     }
 
     public Policy.Session get() {

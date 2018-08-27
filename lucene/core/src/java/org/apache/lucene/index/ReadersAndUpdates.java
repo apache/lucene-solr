@@ -184,6 +184,9 @@ final class ReadersAndUpdates {
   }
 
   public synchronized boolean delete(int docID) throws IOException {
+    if (reader == null && pendingDeletes.mustInitOnDelete()) {
+      getReader(IOContext.READ).decRef(); // pass a reader to initialize the pending deletes
+    }
     return pendingDeletes.delete(docID);
   }
 

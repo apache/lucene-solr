@@ -502,7 +502,7 @@
   </fieldType>
   <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
-  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" required="false" docValues="${solr.tests.id.docValues:false}"/>
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="signatureField" type="string" indexed="true" stored="false"/>

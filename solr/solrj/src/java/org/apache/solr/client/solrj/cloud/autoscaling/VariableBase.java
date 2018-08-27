@@ -107,6 +107,7 @@ public class VariableBase implements Variable {
       val = condition.op.readRuleValue(condition);
       if (val != condition.val) return val;
     }
+    if (!isRuleVal && "".equals(val) && this.varType.type != String.class) val = -1;
     if (name == null) name = this.varType.tagName;
     if (varType.type == Double.class) {
       Double num = Clause.parseDouble(name, val);

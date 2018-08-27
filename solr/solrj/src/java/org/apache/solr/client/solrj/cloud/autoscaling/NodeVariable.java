@@ -33,13 +33,12 @@ public class NodeVariable extends VariableBase {
     if (ctx.violation.replicaCountDelta > 0) {//there are more replicas than necessary
       for (int i = 0; i < Math.abs(ctx.violation.replicaCountDelta); i++) {
         Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
+            .forceOperation(true)
             .hint(Suggester.Hint.SRC_NODE, ctx.violation.node)
             .hint(ctx.violation.shard.equals(ANY) ? Suggester.Hint.COLL : Suggester.Hint.COLL_SHARD,
                 ctx.violation.shard.equals(ANY) ? ctx.violation.coll : new Pair<>(ctx.violation.coll, ctx.violation.shard));
-        ctx.addSuggestion(suggester);
+        if(ctx.addSuggestion(suggester) == null) break;
       }
     }
-
   }
-
 }

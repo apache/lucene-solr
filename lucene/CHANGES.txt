@@ -134,6 +134,15 @@ Optimizations
   or phrase queries as sub queries, which know how to leverage this information
   to run faster. (Adrien Grand)
 
+* LUCENE-8439: Disjunction max queries can skip blocks to select the top documents
+  if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
+
+* LUCENE-8204: Boolean queries with a mix of required and optional clauses are
+  now faster if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
+
+* LUCENE-8448: Boolean queries now propagates the mininum score to their sub-scorers.
+  (Jim Ferenczi, Adrien Grand)
+
 ======================= Lucene 7.5.0 =======================
 
 API Changes:
@@ -208,6 +217,9 @@ Bug Fixes:
 * LUCENE-8441: IndexWriter now checks doc value type for index sort fields
   and fails the document if they are not compatible. (Jim Ferenczi, Mike McCandless)
 
+* LUCENE-8458: Adjust initialization condition of PendingSoftDeletes and ensures
+  it is initialized before accepting deletes (Simon Willnauer, Nhat Nguyen)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
@@ -218,6 +230,8 @@ Changes in Runtime Behavior:
   used by deleted documents. (Adrien Grand)
 
 Improvements
+
+* LUCENE-8447: Add DISJOINT and WITHIN support to LatLonShape queries. (Nick Knize)
 
 * LUCENE-8440: Add support for indexing and searching Line and Point shapes using LatLonShape encoding (Nick Knize)
 
@@ -235,6 +249,9 @@ Improvements
 
 * LUCENE-8414: Make segmentInfos private in IndexWriter (Simon Willnauer, Nhat Nguyen)
 
+* LUCENE-8446: The UnifiedHighlighter's DefaultPassageFormatter now treats overlapping matches in
+  the passage as merged (as if one larger match).  (David Smiley)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
@@ -245,6 +262,13 @@ Other:
 
 * LUCENE-8420: Upgrade OpenNLP to 1.9.0 so OpenNLP tool can read the new model format which 1.8.x
   cannot read. 1.9.0 can read the old format. (Koji Sekiguchi)
+
+* LUCENE-8453: Add documentation to analysis factories of Korean (Nori) analyzer
+  module.  (Tomoko Uchida via Uwe Schindler)
+
+* LUCENE-8455: Upgrade ECJ compiler to 4.6.1 in lucene/common-build.xml (Erick Erickson)
+
+* LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
 
 ======================= Lucene 7.4.1 =======================
 

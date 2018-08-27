@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
@@ -41,17 +42,22 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Validator getValidator() {
+  protected Validator getValidator(QueryRelation relation) {
+    VALIDATOR.setRelation(relation);
     return VALIDATOR;
   }
 
-  protected class PointValidator implements Validator {
+  protected class PointValidator extends Validator {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Point p = (Point)shape;
       double lat = decodeLatitude(encodeLatitude(p.lat));
       double lon = decodeLongitude(encodeLongitude(p.lon));
-      return (lat < minLat || lat > maxLat || lon < minLon || lon > maxLon) == false;
+      boolean isDisjoint = lat < minLat || lat > maxLat || lon < minLon || lon > maxLon;
+      if (queryRelation == QueryRelation.DISJOINT) {
+        return isDisjoint;
+      }
+      return isDisjoint == false;
     }
 
     @Override
@@ -60,7 +66,13 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
       double lat = decodeLatitude(encodeLatitude(p.lat));
       double lon = decodeLongitude(encodeLongitude(p.lon));
       // for consistency w/ the query we test the point as a triangle
-      return poly2d.relateTriangle(lon, lat, lon, lat, lon, lat) != Relation.CELL_OUTSIDE_QUERY;
+      Relation r = poly2d.relateTriangle(lon, lat, lon, lat, lon, lat);
+      if (queryRelation == QueryRelation.WITHIN) {
+        return r == Relation.CELL_INSIDE_QUERY;
+      } else if (queryRelation == QueryRelation.DISJOINT) {
+        return r == Relation.CELL_OUTSIDE_QUERY;
+      }
+      return r != Relation.CELL_OUTSIDE_QUERY;
     }
   }
 

@@ -47,6 +47,8 @@ class GeoNorthRectangle extends GeoBaseBBox {
   protected final SidedPlane leftPlane;
   /** Right-side plane */
   protected final SidedPlane rightPlane;
+  /** Backing plane (for narrow angles) */
+  protected final SidedPlane backingPlane;
   /** Bottom plane notable points */
   protected final GeoPoint[] bottomPlanePoints;
   /** Left plane notable points */
@@ -113,11 +115,22 @@ class GeoNorthRectangle extends GeoBaseBBox {
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
 
+    assert(bottomPlane.isWithin(centerPoint));
+    assert(leftPlane.isWithin(centerPoint));
+    assert(rightPlane.isWithin(centerPoint));
+    
+    // Compute the backing plane
+    // The normal for this plane is a unit vector through the origin that goes through the middle lon.  The plane's D is 0,
+    // because it goes through the origin.
+    this.backingPlane = new SidedPlane(this.centerPoint, cosMiddleLon, sinMiddleLon, 0.0, 0.0);
+    
     this.bottomPlanePoints = new GeoPoint[]{LLHC, LRHC};
     this.leftPlanePoints = new GeoPoint[]{planetModel.NORTH_POLE, LLHC};
     this.rightPlanePoints = new GeoPoint[]{planetModel.NORTH_POLE, LRHC};
 
     this.edgePoints = new GeoPoint[]{planetModel.NORTH_POLE};
+    
+    //System.out.println("LLHC = "+LLHC+" LRHC = "+LRHC);
   }
 
   /**
@@ -156,7 +169,8 @@ class GeoNorthRectangle extends GeoBaseBBox {
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return
-        bottomPlane.isWithin(x, y, z) &&
+        backingPlane.isWithin(x, y, z) &&
+            bottomPlane.isWithin(x, y, z) &&
             leftPlane.isWithin(x, y, z) &&
             rightPlane.isWithin(x, y, z);
   }
@@ -209,7 +223,7 @@ class GeoNorthRectangle extends GeoBaseBBox {
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, bottomPlane, rightPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, bottomPlane, leftPlane)
-      .addIntersection(planetModel, rightPlane, leftPlane, bottomPlane)
+      //.addIntersection(planetModel, rightPlane, leftPlane, bottomPlane)
       .addPoint(LLHC).addPoint(LRHC).addPoint(planetModel.NORTH_POLE);
   }
 

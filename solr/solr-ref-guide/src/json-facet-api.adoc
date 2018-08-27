@@ -99,7 +99,7 @@ In this guide, we will often just present the **facet command block**:
 [source,java]
 ----
 {
-  x : "average(mul(price,popularity))"
+  x: "average(mul(price,popularity))"
 }
 ----
 
@@ -109,7 +109,7 @@ To execute a facet command block such as this, you'll need to use the `json.face
 ----
 curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&json.facet=
 {
-  x : "avg(mul(price,popularity))"
+  x: "avg(mul(price,popularity))"
 }
 '
 ----
@@ -120,10 +120,10 @@ Another option is to use the JSON Request API to provide the entire request in J
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
 {
-  query : "*:*",                        // this is the base query
-  filter : [ "inStock:true" ],          // a list of filters
-  facet : {
-    x : "avg(mul(price,popularity))"    // and our funky metric of average of price * popularity
+  query: "*:*",                        // this is the base query
+  filter: [ "inStock:true" ],          // a list of filters
+  facet: {
+    x: "avg(mul(price,popularity))"    // and our funky metric of average of price * popularity
  }
 }
 '
@@ -207,7 +207,7 @@ An example of the simplest form of the query facet is `"query":"query string"`.
 [source,java]
 ----
 {
-  high_popularity : { query : "popularity:[8 TO 10]" }
+  high_popularity: {query: "popularity:[8 TO 10]" }
 }
 ----
 
@@ -405,7 +405,7 @@ An expanded form allows for <<local-parameters-in-queries.adoc#local-parameters-
 
 == Nested Facets
 
-Nested facets, or **sub-facets**, allow one to nest facet commands under any facet command that partitions the domain into buckets (ie: `terms`, `range`, `query`).  These sub-facets are then evaluated against the domains defined by the set of all documents in each bucket of their parent.
+Nested facets, or **sub-facets**, allow one to nest facet commands under any facet command that partitions the domain into buckets (i.e., `terms`, `range`, `query`).  These sub-facets are then evaluated against the domains defined by the set of all documents in each bucket of their parent.
 
 The syntax is identical to top-level facets - just add a `facet` command to the facet command block of the parent facet.  Technically, every facet command is actually a sub-facet since we start off with a single facet bucket with a domain defined by the main query and filters.
 
@@ -497,14 +497,14 @@ The default sort for a field or terms facet is by bucket count descending. We ca
 }
 ----
 
-== Changing The Domain
+== Changing the Domain
 
 As discussed above, facets compute buckets or statistics based on a "domain" which is typically implicit:
 
  * By default, facets use the set of all documents matching the main query as their domain.
  * Nested "sub-facets" are computed for every bucket of their parent facet, using a domain containing all documents in that bucket.
 
-But users can also override the "domain" of a facet that partitions data, using an explicit `domain` attribute whose value is a JSON Object that can support various options for restricting, expanding, or completley changing the original domain before the buckets are computed for the associated facet.
+But users can also override the "domain" of a facet that partitions data, using an explicit `domain` attribute whose value is a JSON Object that can support various options for restricting, expanding, or completely changing the original domain before the buckets are computed for the associated facet.
 
 [NOTE]
 ====
@@ -516,16 +516,16 @@ A `\*:*` query facet with a `domain` change can be used to group multiple sub-fa
 
 === Adding Domain Filters
 
-The simplest example of a domain change is to specify an additional filter which will be applied to the existing domain.  This can be done via the `filter` keyword in the `domain` block of the facet.
+The simplest example of a domain change is to specify an additional filter which will be applied to the existing domain. This can be done via the `filter` keyword in the `domain` block of the facet.
 
 Example:
-[source,java]
+[source,json]
 ----
 {
-  categories : {
-     type : terms,
-     field : cat,
-     domain : { filter : "popularity:[5 TO 10]" }
+  categories: {
+     type: terms,
+     field: cat,
+     domain: {filter: "popularity:[5 TO 10]" }
    }
 }
 ----
@@ -558,22 +558,22 @@ Example:
 
 The value of `excludeTags` can be a single string tag, array of string tags or comma-separated tags in the single string.
 
-When an `excludeTags` option is combined with other `domain` changing options, it expands the domain _before_ any other domain changes take place. 
+When an `excludeTags` option is combined with other `domain` changing options, it expands the domain _before_ any other domain changes take place.
 
 See also the section on <<faceting.adoc#tagging-and-excluding-filters,multi-select faceting>>.
 
 === Arbitrary Domain Query
 
-A `query` domain can be specified when you wish to compute a facet against an arbitrary set of documents, regardless of the original domain.  The most common use case would be to compute a top level facet against a specific subset of the collection, regardless of the main query.  But it can also be useful on nested facets when building <<Semantic Knowledge Graphs>>. 
+A `query` domain can be specified when you wish to compute a facet against an arbitrary set of documents, regardless of the original domain.  The most common use case would be to compute a top level facet against a specific subset of the collection, regardless of the main query.  But it can also be useful on nested facets when building <<Semantic Knowledge Graphs>>.
 
 Example:
 [source,json]
 ----
 {
-  "categories" : {
-     "type" : "terms",
-     "field" : "cat",
-     "domain" : { "query" : "*:*" }
+  "categories": {
+     "type": "terms",
+     "field": "cat",
+     "domain": {"query": "*:*" }
    }
 }
 ----
@@ -581,38 +581,35 @@ Example:
 The value of `query` can be a single query, or a JSON list of queries.  Each query can be:
 
 * a string containing a query in Solr query syntax
-* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
+* a reference to a request parameter containing Solr query syntax, of the form: `{param: <request_param_name>}`
 
-NOTE: While a `query` domain can be comibined with an additional domain `filter`, It is not possible to also use `excludeTags`, because the tags would be meaningless: The `query` domain already completely ignores the top-level query and all previous filters.
+NOTE: While a `query` domain can be combined with an additional domain `filter`, It is not possible to also use `excludeTags`, because the tags would be meaningless: The `query` domain already completely ignores the top-level query and all previous filters.
 
 === Block Join Domain Changes
 
 When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` or `blockParent` domain options can be used transform an existing domain containing one type of document, into a domain containing the documents with the specified relationship (child or parent of) to the documents from the original domain.
 
-Both of these options work similar to the corrisponding <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> by taking in a single String query that exclusively matches all parent documents in the collection.  If `blockParent` is used, then the resulting domain will contain all parent documents of the children from the original domain.  If If `blockChildren` is used, then the resulting domain will contain all child documents of the parents from the original domain.
+Both of these options work similar to the corresponding <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> by taking in a single String query that exclusively matches all parent documents in the collection.  If `blockParent` is used, then the resulting domain will contain all parent documents of the children from the original domain.  If If `blockChildren` is used, then the resulting domain will contain all child documents of the parents from the original domain.
 
 Example:
 [source,json,subs="verbatim,callouts"]]
 ----
 {
-  "colors" : {                         // <1>
-    "type" : "terms",
-    "field" : "sku_color",             // <2>
+  "colors": {                         // <1>
+    "type": "terms",
+    "field": "sku_color",             // <2>
     "facet" : {
       "brands" : {
-        "type" : "terms",
-        "field" : "product_brand",     // <3>
-        "domain" : {
-          "blockParent" : "doc_type:product"
+        "type": "terms",
+        "field": "product_brand",     // <3>
+        "domain": {
+          "blockParent": "doc_type:product"
         }
-      }
-    }
-  }
-}
+      }}}}
 ----
-<1> This example assumes we parent documents corrisponding to Products, with child documents corrisponding to individual SKUs with unique colors, and that our original query was against SKU documents.
+<1> This example assumes we parent documents corresponding to Products, with child documents corresponding to individual SKUs with unique colors, and that our original query was against SKU documents.
 <2> The `colors` facet will be computed against all of the original SKU documents matching our search.
-<3> For each bucket in the `colors` facet, the set of all matching SKU documents will be transformed into the set of corrisponding parent Product documents.  The resulting `brands` sub-facet will count how many Product documents (that have SKUs with the associated color) exist for each Brand.
+<3> For each bucket in the `colors` facet, the set of all matching SKU documents will be transformed into the set of corresponding parent Product documents.  The resulting `brands` sub-facet will count how many Product documents (that have SKUs with the associated color) exist for each Brand.
 
 === Join Query Domain Changes
 
@@ -624,19 +621,19 @@ Example:
 [source,json]
 ----
 {
-  "colors" : {
-    "type" : "terms",
-    "field" : "sku_color",
-    "facet" : {
-      "brands" : {
-        "type" : "terms",
-        "field" : "product_brand",
+  "colors": {
+    "type": "terms",
+    "field": "sku_color",
+    "facet": {
+      "brands": {
+        "type": "terms",
+        "field": "product_brand",
         "domain" : {
           "join" : {
-            "from" : "product_id_of_this_sku",         
-            "to" : "id"
+            "from": "product_id_of_this_sku",
+            "to": "id"
           },
-          "filter" : "doc_type:product"
+          "filter": "doc_type:product"
         }
       }
     }
@@ -649,20 +646,20 @@ Example:
 
 A `graph` domain change option works similarly to the `join` domain option, but can do traversal multiple hops `from` the existing domain `to` other documents.
 
-This works very similar to the <<other-parsers.adoc#graph-query-parser,Graph Query Parser>>, supporting all of it's optional paramaters, and has the same limitations when dealing with multi-shard collections.
+This works very similar to the <<other-parsers.adoc#graph-query-parser,Graph Query Parser>>, supporting all of it's optional parameters, and has the same limitations when dealing with multi-shard collections.
 
 Example:
 [source,json]
 ----
 {
-  "related_brands" : {
-    "type" : "terms",
-    "field" : "brand",
-    "domain" : {
-      "graph" : {
-        "from" : "related_product_ids",         
-        "to" : "id",
-        "maxDepth" : 3
+  "related_brands": {
+    "type": "terms",
+    "field": "brand",
+    "domain": {
+      "graph": {
+        "from": "related_product_ids",
+        "to": "id",
+        "maxDepth": 3
       }
     }
   }
@@ -671,13 +668,13 @@ Example:
 
 == Block Join Counts
 
-When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` and `blockParent` domain changes mentioned above can be useful when searching for parent documents and you want to compute stats against all of the affected children documents (or vice versa).  But in the situation where the _count_ of all the blocks that exist in the current domain is sufficient, a more effecient option is the `uniqueBlock()` aggregate function.
+When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` and `blockParent` domain changes mentioned above can be useful when searching for parent documents and you want to compute stats against all of the affected children documents (or vice versa).  But in the situation where the _count_ of all the blocks that exist in the current domain is sufficient, a more efficient option is the `uniqueBlock()` aggregate function.
 
 === Block Join Counts Example
 
 Suppose we have products with multiple SKUs, and we want to count products for each color.
 
-[source,java]
+[source,json]
 ----
 {
   "id": "1", "type": "product", "name": "Solr T-Shirt",
@@ -742,11 +739,11 @@ Unlike most aggregation functions, the `relatedness(...)` function is aware of w
 NOTE: While it's very common to define the Background Set as `\*:*`, or some other super-set of the Foreground Query, it is not strictly required.  The `relatedness(...)` function can be used to compare the statistical relatedness of sets of documents to orthogonal foreground/background queries.
 
 [[relatedness-options]]
-=== `relatedness()` Options
+=== relatedness() Options
 
 When using the extended `type:func` syntax for specifying a `relatedness()` aggregation, an opional `min_popularity` (float) option can be used to specify a lower bound on the `foreground_popularity` and `background_popularity` values, that must be met in order for the `relatedness` score to be valid -- If this `min_popularity` is not met, then the `relatedness` score will be `-Infinity`.
 
-[source,javascript]
+[source,json]
 ----
 { "type": "func",
   "func": "relatedness($fore,$back)",
@@ -814,7 +811,7 @@ curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:
 <4> In both calls to the `relatedness(...)` function, we use <<local-parameters-in-queries.adoc#parameter-dereferencing,Parameter Variables>> to refer to the previously defined `fore` and `back` queries.
 
 .The Facet Response
-[source,javascript,subs="verbatim,callouts"]
+[source,json,subs="verbatim,callouts"]
 ----
 "facets":{
   "count":16,
@@ -860,8 +857,6 @@ curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:
 <6> The number documents matching `age:[35 TO *]` _and_ `hobbies:golf` _and_ `state:AZ` is 18.75% of the total number of documents in the Background Set
 <7> 50% of the documents in the Background Set match `state:AZ`
 
-
-[[References]]
 == References
 
 This documentation was originally adapted largely from the following blog pages:

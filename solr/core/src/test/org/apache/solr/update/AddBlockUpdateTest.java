@@ -502,6 +502,154 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testXMLMultiLevelLabeledChildren() throws IOException, XMLStreamException {
+    String xml_doc1 =
+        "<doc >" +
+            "  <field name=\"id\">1</field>" +
+            "  <field name=\"empty_s\"></field>" +
+            "  <field name=\"parent_s\">X</field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >2</field>" +
+            "      <field name=\"child_s\">y</field>" +
+            "    </doc>" +
+            "    <doc>  " +
+            "      <field name=\"id\" >3</field>" +
+            "      <field name=\"child_s\">z</field>" +
+            "    </doc>" +
+            "  </field> " +
+            "</doc>";
+
+    String xml_doc2 =
+        "<doc >" +
+            "  <field name=\"id\">4</field>" +
+            "  <field name=\"parent_s\">A</field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >5</field>" +
+            "      <field name=\"child_s\">b</field>" +
+            "      <field name=\"grandChild\">" +
+            "        <doc>  " +
+            "          <field name=\"id\" >7</field>" +
+            "          <field name=\"child_s\">d</field>" +
+            "        </doc>" +
+            "      </field>" +
+            "    </doc>" +
+            "  </field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >6</field>" +
+            "      <field name=\"child_s\">c</field>" +
+            "    </doc>" +
+            "  </field> " +
+            "</doc>";
+
+    XMLStreamReader parser =
+        inputFactory.createXMLStreamReader(new StringReader(xml_doc1));
+    parser.next(); // read the START document...
+    //null for the processor is all right here
+    XMLLoader loader = new XMLLoader();
+    SolrInputDocument document1 = loader.readDoc(parser);
+
+    XMLStreamReader parser2 =
+        inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
+    parser2.next(); // read the START document...
+    //null for the processor is all right here
+    //XMLLoader loader = new XMLLoader();
+    SolrInputDocument document2 = loader.readDoc(parser2);
+
+    assertFalse(document1.hasChildDocuments());
+    assertEquals(document1.toString(), sdoc("id", "1", "empty_s", "", "parent_s", "X", "test",
+        sdocs(sdoc("id", "2", "child_s", "y"), sdoc("id", "3", "child_s", "z"))).toString());
+
+    assertFalse(document2.hasChildDocuments());
+    assertEquals(document2.toString(), sdoc("id", "4", "parent_s", "A", "test",
+        sdocs(sdoc("id", "5", "child_s", "b", "grandChild", Collections.singleton(sdoc("id", "7", "child_s", "d"))),
+            sdoc("id", "6", "child_s", "c"))).toString());
+  }
+
+  @Test
+  public void testXMLLabeledChildren() throws IOException, XMLStreamException {
+    UpdateRequest req = new UpdateRequest();
+
+    List<SolrInputDocument> docs = new ArrayList<>();
+
+    String xml_doc1 =
+        "<doc >" +
+            "  <field name=\"id\">1</field>" +
+            "  <field name=\"empty_s\"></field>" +
+            "  <field name=\"parent_s\">X</field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >2</field>" +
+            "      <field name=\"child_s\">y</field>" +
+            "    </doc>"+
+            "    <doc>  " +
+            "      <field name=\"id\" >3</field>" +
+            "      <field name=\"child_s\">z</field>" +
+            "    </doc>" +
+            "  </field> " +
+            "</doc>";
+
+    String xml_doc2 =
+        "<doc >" +
+            "  <field name=\"id\">4</field>" +
+            "  <field name=\"parent_s\">A</field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >5</field>" +
+            "      <field name=\"child_s\">b</field>" +
+            "    </doc>"+
+            "  </field>" +
+            "  <field name=\"test\">" +
+            "    <doc>  " +
+            "      <field name=\"id\" >6</field>" +
+            "      <field name=\"child_s\">c</field>" +
+            "    </doc>" +
+            "  </field> " +
+            "</doc>";
+
+    XMLStreamReader parser =
+        inputFactory.createXMLStreamReader( new StringReader( xml_doc1 ) );
+    parser.next(); // read the START document...
+    //null for the processor is all right here
+    XMLLoader loader = new XMLLoader();
+    SolrInputDocument document1 = loader.readDoc( parser );
+
+    XMLStreamReader parser2 =
+        inputFactory.createXMLStreamReader( new StringReader( xml_doc2 ) );
+    parser2.next(); // read the START document...
+    //null for the processor is all right here
+    //XMLLoader loader = new XMLLoader();
+    SolrInputDocument document2 = loader.readDoc( parser2 );
+
+    assertFalse(document1.hasChildDocuments());
+    assertEquals(document1.toString(), sdoc("id", "1", "empty_s", "", "parent_s", "X", "test",
+        sdocs(sdoc("id", "2", "child_s", "y"), sdoc("id", "3", "child_s", "z"))).toString());
+
+    assertFalse(document2.hasChildDocuments());
+    assertEquals(document2.toString(), sdoc("id", "4", "parent_s", "A", "test",
+        sdocs(sdoc("id", "5", "child_s", "b"), sdoc("id", "6", "child_s", "c"))).toString());
+
+    docs.add(document1);
+    docs.add(document2);
+
+    Collections.shuffle(docs, random());
+    req.add(docs);
+
+    RequestWriter requestWriter = new RequestWriter();
+    OutputStream os = new ByteArrayOutputStream();
+    requestWriter.write(req, os);
+    assertBlockU(os.toString());
+    assertU(commit());
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertSingleParentOf(searcher, one("yz"), "X");
+    assertSingleParentOf(searcher, one("bc"), "A");
+
+  }
+
+  @Test
   public void testJavaBinCodecNestedRelation() throws IOException {
     SolrInputDocument topDocument = new SolrInputDocument();
     topDocument.addField("parent_f1", "v1");

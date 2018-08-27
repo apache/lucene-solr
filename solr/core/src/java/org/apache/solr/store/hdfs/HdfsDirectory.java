@@ -41,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HdfsDirectory extends BaseDirectory {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final int DEFAULT_BUFFER_SIZE = 4096;
   
   private static final String LF_EXT = ".lf";
@@ -69,7 +69,7 @@ public class HdfsDirectory extends BaseDirectory {
     if (fileSystem instanceof DistributedFileSystem) {
       // Make sure dfs is not in safe mode
       while (((DistributedFileSystem) fileSystem).setSafeMode(SafeModeAction.SAFEMODE_GET, true)) {
-        LOG.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
+        log.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
         try {
           Thread.sleep(5000);
         } catch (InterruptedException e) {
@@ -94,7 +94,7 @@ public class HdfsDirectory extends BaseDirectory {
   
   @Override
   public void close() throws IOException {
-    LOG.info("Closing hdfs directory {}", hdfsDirPath);
+    log.info("Closing hdfs directory {}", hdfsDirPath);
     fileSystem.close();
     isOpen = false;
   }
@@ -143,7 +143,7 @@ public class HdfsDirectory extends BaseDirectory {
   @Override
   public void deleteFile(String name) throws IOException {
     Path path = new Path(hdfsDirPath, name);
-    LOG.debug("Deleting {}", path);
+    log.debug("Deleting {}", path);
     getFileSystem().delete(path, false);
   }
   
@@ -197,7 +197,7 @@ public class HdfsDirectory extends BaseDirectory {
   }
   
   public static class HdfsIndexInput extends CustomBufferedIndexInput {
-    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     
     private final Path path;
     private final FSDataInputStream inputStream;
@@ -208,7 +208,7 @@ public class HdfsDirectory extends BaseDirectory {
         int bufferSize) throws IOException {
       super(name, bufferSize);
       this.path = path;
-      LOG.debug("Opening normal index input on {}", path);
+      log.debug("Opening normal index input on {}", path);
       FileStatus fileStatus = fileSystem.getFileStatus(path);
       length = fileStatus.getLen();
       inputStream = fileSystem.open(path, bufferSize);
@@ -227,7 +227,7 @@ public class HdfsDirectory extends BaseDirectory {
     
     @Override
     protected void closeInternal() throws IOException {
-      LOG.debug("Closing normal index input on {}", path);
+      log.debug("Closing normal index input on {}", path);
       if (!clone) {
         inputStream.close();
       }
@@ -248,7 +248,7 @@ public class HdfsDirectory extends BaseDirectory {
   
   @Override
   public void sync(Collection<String> names) throws IOException {
-    LOG.debug("Sync called on {}", Arrays.toString(names.toArray()));
+    log.debug("Sync called on {}", Arrays.toString(names.toArray()));
   }
   
   @Override

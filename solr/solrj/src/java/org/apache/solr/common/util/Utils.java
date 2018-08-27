@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,6 +57,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkOperation;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -64,6 +67,7 @@ import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
@@ -138,14 +142,19 @@ public class Utils {
     return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
   }
 
-  public static void toJSON(Object o, OutputStream os, boolean indent) throws IOException {
-    OutputStreamWriter writer = new OutputStreamWriter(os, UTF_8);
+  public static void writeJson(Object o, OutputStream os, boolean indent) throws IOException {
+    writeJson(o, new OutputStreamWriter(os, UTF_8), indent)
+        .flush();
+  }
+
+  public static Writer writeJson(Object o, Writer writer, boolean indent) throws IOException {
     new SolrJSONWriter(writer)
         .setIndent(indent)
         .writeObj(o)
         .close();
-    writer.flush();
+    return writer;
   }
+
 
   public static byte[] toJSON(Object o) {
     if(o == null) return new byte[0];
@@ -530,5 +539,24 @@ public class Utils {
 
   public static long timeElapsed(TimeSource timeSource, long start, TimeUnit unit) {
     return unit.convert(timeSource.getTimeNs() - NANOSECONDS.convert(start, unit), NANOSECONDS);
+  }
+
+  public static String getMDCNode() {
+    String s = MDC.get(ZkStateReader.NODE_NAME_PROP);
+    if (s == null) return null;
+    if (s.startsWith("n:")) {
+      return s.substring(2);
+    } else {
+      return null;
+    }
+  }
+
+  public static <T> T handleExp(Logger logger, T def, Callable<T> c) {
+    try {
+      return c.call();
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+    }
+    return def;
   }
 }

@@ -131,12 +131,12 @@ public class LatLonShape {
    *  note: does not currently support dateline crossing boxes
    * todo split dateline crossing boxes into two queries like {@link LatLonPoint#newBoxQuery}
    **/
-  public static Query newBoxQuery(String field, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
-    return new LatLonShapeBoundingBoxQuery(field, minLatitude, maxLatitude, minLongitude, maxLongitude);
+  public static Query newBoxQuery(String field, QueryRelation queryRelation, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
+    return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
 
-  public static Query newPolygonQuery(String field, Polygon... polygons) {
-    return new LatLonShapePolygonQuery(field, polygons);
+  public static Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
+    return new LatLonShapePolygonQuery(field, queryRelation, polygons);
   }
 
   /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}
@@ -166,5 +166,10 @@ public class LatLonShape {
       NumericUtils.intToSortableBytes(cY, bytes, BYTES * 4);
       NumericUtils.intToSortableBytes(cX, bytes, BYTES * 5);
     }
+  }
+
+  /** Query Relation Types **/
+  public enum QueryRelation {
+    INTERSECTS, WITHIN, DISJOINT
   }
 }

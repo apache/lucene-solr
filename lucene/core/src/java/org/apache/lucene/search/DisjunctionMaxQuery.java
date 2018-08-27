@@ -148,7 +148,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
         // only one sub-scorer in this segment
         return scorers.get(0);
       } else {
-        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, scoreMode.needsScores());
+        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, scoreMode);
       }
     }
 

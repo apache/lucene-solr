@@ -77,7 +77,7 @@ import org.slf4j.LoggerFactory;
 @Slow
 public class TestTlogReplica extends SolrCloudTestCase {
   
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private String collectionName = null;
   private final static int REPLICATION_TIMEOUT_SECS = 10;
@@ -93,7 +93,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal-inplace-updates"))
         .configure();
     Boolean useLegacyCloud = rarely();
-    LOG.info("Using legacyCloud?: {}", useLegacyCloud);
+    log.info("Using legacyCloud?: {}", useLegacyCloud);
     CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
     CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
@@ -115,12 +115,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
   public void tearDown() throws Exception {
     for (JettySolrRunner jetty:cluster.getJettySolrRunners()) {
       if (!jetty.isRunning()) {
-        LOG.warn("Jetty {} not running, probably some bad test. Starting it", jetty.getLocalPort());
+        log.warn("Jetty {} not running, probably some bad test. Starting it", jetty.getLocalPort());
         ChaosMonkey.start(jetty);
       }
     }
     if (cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName) != null) {
-      LOG.info("tearDown deleting collection");
+      log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       waitForDeletion(collectionName);
     }
@@ -148,6 +148,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
   
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
@@ -560,7 +561,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
         break;
       }
-      LOG.info("Min RF not achieved yet. retrying");
+      log.info("Min RF not achieved yet. retrying");
     }
     checkRTG(3,7, cluster.getJettySolrRunners());
     DirectUpdateHandler2.commitOnClose = false;
@@ -602,7 +603,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
         break;
       }
-      LOG.info("Min RF not achieved yet. retrying");
+      log.info("Min RF not achieved yet. retrying");
     }
     new UpdateRequest()
         .add(sdoc("id", "9"))

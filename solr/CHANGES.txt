@@ -44,10 +44,20 @@ Upgrade Notes
   MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
   switch to "Direct" instead. (Dawid Weiss)
 
+* SOLR-12586: The date format patterns used by ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
+  are now interpreted by Java 8's java.time.DateTimeFormatter instead of Joda Time.  The pattern language is very
+  similar but not the same.  Typically, simply update the pattern by changing an uppercase 'Z' to lowercase 'z' and
+  that's it.  For the current recommended set of patterns in schemaless mode, see "Schemaless Mode" in the ref guide.
+  (David Smiley, Bar Rotstein)
+
 Other Changes
 ----------------------
 
 * SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
+
+* SOLR-12586, SOLR-12591: Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") to use Java 8's
+  java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
+  (David Smiley, Bar Rotstein)
 
 ==================  7.5.0 ==================
 
@@ -130,6 +140,8 @@ New Features
 
 * SOLR-8207: Add "Nodes" view to the Admin UI "Cloud" tab, listing nodes and key metrics (janhoy)
 
+* SOLR-7767: "ZK Status" sub menu under "Cloud" tab to see status of zookeeper ensemble (janhoy)
+
 * SOLR-11990: Make it possible to co-locate replicas of multiple collections together in a node. A collection may be
   co-located with another collection during collection creation time by specifying a 'withCollection' parameter. It can
   also be co-located afterwards by using the modify collection API. The co-location guarantee is enforced regardless of
@@ -139,6 +151,12 @@ New Features
 * SOLR-12402: Factor out SolrDefaultStreamFactory class. (Christine Poerschke)
 
 * SOLR-12592: support #EQUAL function, range operator, decimal and percentage in cores in autoscaling policies (noble)
+
+* SOLR-12485: Uploading docs in XML now supports child documents as field values, thus providing a label to the
+  relationship instead of the current "anonymous" relationship. (Moshe Bla, David Smiley)
+
+* SOLR-12655: Add Korean morphological analyzer ("nori") to default distribution. This also adds examples
+  for configuration in Solr's schema.  (Uwe Schindler)
 
 Bug Fixes
 ----------------------
@@ -194,7 +212,7 @@ Bug Fixes
 
 * SOLR-12477: An update would return a client error(400) if it hit a AlreadyClosedException.
   We now return the error as a server error(500) instead (Jeffery via Varun Thacker)
-  
+
 * SOLR-12606: Fix InfixSuggestersTest.testShutdownDuringBuild() failures. (Steve Rowe)
 
 * SOLR-12607: Fixed two separate bugs in shard splits which can cause data loss. The first case is when using TLOG
@@ -211,6 +229,30 @@ Bug Fixes
   with empty values. All documents with empty values ( string , numeric ) will be processed by worker=0
   This would fix the NPE when using the search stream with partitionKeys. (Varun Thacker)
 
+* SOLR-11770: NPE in tvrh if no field is specified and document doesn't contain any fields with term vectors
+
+* SOLR-12541: Metrics handler throws an error if there are transient cores. (ab)
+
+* SOLR-12470: Search Rate Trigger multiple bug fixes, improvements and documentation updates. (ab)
+
+* SOLR-12665: Autoscaling policy not being refreshed due to caching (noble)
+
+* SOLR-12649: CloudSolrClient retries requests unnecessarily exception from server (noble, shalin)
+
+* SOLR-12670: RecoveryStrategy logs wrong wait time when retrying recovery. (shalin)
+
+* SOLR-12668: Autoscaling trigger listeners should be executed in the order of their creation. (ab)
+
+* SOLR-12475: Fix MaxSizeAutoCommitTest failures (Rupa Shankar, Anshum Gupta)
+
+* SOLR-12674: RollupStream should not use the HashQueryParser for 1 worker. (Varun Thacker)
+
+* SOLR-12679: MiniSolrCloudCluster internal jetty list should never have duplicates (shalin)
+
+* SOLR-12598: Do not fetch non-stored fields (Nikolay Khitrin, Erick Erickson)
+
+* SOLR-12683: HashQuery will throw an exception if more than 4 partitionKeys is specified.
+  Earlier after the 4th partitionKey the keys would be silently ignored. (Varun Thacker)
 
 Optimizations
 ----------------------
@@ -233,6 +275,15 @@ Optimizations
   introduced (splitMethod=link) which uses hard-linking of index files when possible, resulting in
   significant speedups and reduced CPU / IO load on shard leader. (ab)
 
+* SOLR-11881: Retry update requests sent by leaders to it's followers (Varun Thacker, Mark Miller, Tomás Fernández Löbbe)
+
+* SOLR-12616: Optimize Export writer upto 4 sort fields to get better performance.
+  This was removed in SOLR-11598 but brought back in the same version (Amrit Sarkar, Varun Thacker)
+
+* SOLR-12572: While exporting documents using the export writer, if a field is specified as a sort parameter and also
+  in the fl (field list) parameter, we save on one doc-value lookup. This can bring performance improvements of 15%
+  and upwards depending on how many fields are in common. (Amrit Sarkar, Varun Thacker)
+
 Other Changes
 ----------------------
 
@@ -243,6 +294,8 @@ Other Changes
   AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
 
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
+
+* SOLR-12523: Improve error reporting and docs regarding Collection backup feature shared-fs requirement (janhoy)
 
 * SOLR-12468: Upgrade Jetty to 9.4.11.v20180605 (Michael Braun, shalin)
 
@@ -260,7 +313,34 @@ Other Changes
 
 * SOLR-12164: Improve Ref Guide main landing page. (Cassandra Targett)
 
+* SOLR-10984: Clean up web.xml, removing old redirects and outdated comments (Varun Thacker, janhoy)
+
 * SOLR-12617: Remove Commons BeanUtils as a dependency (Varun Thacker)
+
+* SOLR-11008: Use a lighter config for MetricsHandlerTest and ensure the core is up before the test starts (Varun Thacker)
+
+* SOLR-11766: Move Streaming Expressions section in Ref Guide to be a top-level section. (Cassandra Targett)
+
+* SOLR-12656: ShardSplitTest should extend AbstractFullDistribZkTestBase instead of BasicDistributedZkTest. (shalin)
+
+* LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
+
+* SOLR-12014: Cryptic error message when creating a collection with sharding that violates autoscaling policies (noble)
+
+* SOLR-12680: Fix ClassCastException and AIOOBE in TestSolrConfigHandlerConcurrent. (shalin)
+
+* SOLR-12675: Make LeaderVoteWaitTimeoutTest more resilient against side effects of test methods. (shalin)
+
+* SOLR-12130: CdcrReplicationDistributedZkTest is broken into two test classes, CdcrOpsAndBoundariesTest which does
+  not require node restarts and CdcrWithNodesRestartsTest which does. The tests themselves are made faster and more
+  resilient to spurious failures. (Varun Thacker, Amrit Sarkar via shalin)
+
+* SOLR-12625: Combine SolrDocumentFetcher and RetrieveFieldsOptimizer (Erick Erickson)
+
+* SOLR-12690: Regularize LoggerFactory declarations (Erick Erickson)
+
+* SOLR-12590: Improve Solr resource loader coverage in the ref guide.
+  (Steve Rowe, Cassandra Targett, Christine Poerschke)
 
 ==================  7.4.0 ==================
 

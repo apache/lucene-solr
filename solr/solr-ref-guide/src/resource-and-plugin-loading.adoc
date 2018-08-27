@@ -1,0 +1,86 @@
+= Resource and Plugin Loading
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr components can be configured using *resources*: data stored in external files that may be referred to in a location-independent fashion. Examples include: files needed by schema components, e.g. a stopword list for <<filter-descriptions.adoc#stop-filter,Stop Filter>>; and machine-learned models for <<learning-to-rank.adoc#learning-to-rank,Learning to Rank>>.
+  
+Solr *plugins*, which can be configured in `solrconfig.xml`, are Java classes that are normally packaged in `.jar` files along with supporting classes and data. Solr ships with a number of built-in plugins, and can also be configured to use custom plugins.  Example plugins are the <<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Data Import Handler>> and custom search components.
+
+Resources and plugins may be stored:
+
+* in ZooKeeper under a collection's configset node (SolrCloud only);
+* on a filesystem accessible to Solr nodes; or
+* in Solr's <<blob-store-api.adoc#blob-store-api,Blob Store>> (SolrCloud only).
+  
+NOTE: Schema components may not be stored as plugins in the Blob Store, and cannot access resources stored in the Blob Store.  
+
+== Resource and Plugin Loading Sequence 
+
+Under SolrCloud, resources and plugins to be loaded are first looked up in ZooKeeper under the collection's configset znode.  If the resource or plugin is not found there, Solr will fall back to loading <<Resources and Plugins on the Filesystem,from the filesystem>>.
+
+Note that by default, Solr will not attempt to load resources and plugins from the Blob Store.  To enable this, see the section <<blob-store-api.adoc#use-a-blob-in-a-handler-or-component,Use a Blob in a Handler or Component>>.  When loading from the Blob Store is enabled for a component, lookups occur only in the Blob Store, and never in ZooKeeper or on the filesystem.  
+
+== Resources and Plugins in ConfigSets on ZooKeeper
+
+Resources and plugins may be uploaded to ZooKeeper as part of a configset, either via the <<configsets-api.adoc#configsets-api,Configsets API>> or <<solr-control-script-reference.adoc#upload-a-configuration-set,`bin/solr zk upload`>>.
+
+To upload a plugin or resource to a configset already stored on ZooKeeper, you can use <<solr-control-script-reference.adoc#copy-between-local-files-and-zookeeper-znodes,`bin/solr zk cp`>>.   
+
+CAUTION: By default, ZooKeeper's file size limit is 1MB. If your files are larger than this, you'll need to either <<setting-up-an-external-zookeeper-ensemble.adoc#increasing-the-file-size-limit,increase the ZooKeeper file size limit>> or store them instead <<Resources and Plugins on the Filesystem,on the filesystem>>.
+      
+== Resources and Plugins on the Filesystem 
+
+Under standalone Solr, when looking up a plugin or resource to be loaded, Solr's resource loader will first look under the `<instanceDir>/conf/` directory.  If the plugin or resource is not found, the configured plugin and resource file paths are searched - see the section <<Lib Directives in SolrConfig>> below.
+
+On core load, Solr's resource loader constructs a list of paths (subdirectories and jars), first under <<solr_home-lib,`solr_home/lib`>>, and then under directories pointed to by <<Lib Directives in SolrConfig,`<lib/>` directives in SolrConfig>>.
+  
+When looking up a resource or plugin to be loaded, the paths on the list are searched in the order they were added.
+
+NOTE: Under SolrCloud, each node hosting a collection replica will need its own copy of plugins and resources to be loaded.
+
+To get Solr's resource loader to find resources either under subdirectories or in jar files that were created after Solr's resource path list was constructed, reload the collection (SolrCloud) or the core (standalone Solr).  Restarting all affected Solr nodes also works.
+
+WARNING: Resource files *will not be loaded* if they are located directly under either `solr_home/lib` or a directory given by the `dir` attribute on a `<lib/>` directive in SolrConfig.  Resources are only searched for under subdirectories or in jar files found in those locations.
+
+=== solr_home/lib
+
+Each Solr node can have a directory named `lib/` under the <<taking-solr-to-production.adoc#solr-home-directory,Solr home directory>>.  In order to use this directory to host resources or plugins, it must first be manually created. 
+
+=== Lib Directives in SolrConfig
+
+Plugin and resource file paths are configurable via `<lib/>` directives in `solrconfig.xml`.
+
+Loading occurs in the order `<lib/>` directives appear in `solrconfig.xml`. If there are dependencies, list the lowest level dependency jar first.
+
+A regular expression supplied in the `<lib/>` element's `regex` attribute value can be used to restrict which subdirectories and/or jar files are added to the Solr resource loader's list of search locations.  If no regular expression is given, all direct subdirectory and jar children are included in the resource path list.  All directories are resolved as relative to the Solr core's `instanceDir`.
+
+From an example SolrConfig: 
+
+[source,xml]
+----
+<lib dir="../../../contrib/extraction/lib" regex=".*\.jar" />
+<lib dir="../../../dist/" regex="solr-cell-\d.*\.jar" />
+
+<lib dir="../../../contrib/clustering/lib/" regex=".*\.jar" />
+<lib dir="../../../dist/" regex="solr-clustering-\d.*\.jar" />
+
+<lib dir="../../../contrib/langid/lib/" regex=".*\.jar" />
+<lib dir="../../../dist/" regex="solr-langid-\d.*\.jar" />
+
+<lib dir="../../../contrib/velocity/lib" regex=".*\.jar" />
+<lib dir="../../../dist/" regex="solr-velocity-\d.*\.jar" />
+----
