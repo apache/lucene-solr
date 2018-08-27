@@ -76,7 +76,7 @@ import static org.apache.solr.cloud.autoscaling.ScheduledTriggers.DEFAULT_SCHEDU
  * An end-to-end integration test for triggers
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
-public class TestTriggerIntegration extends SimSolrCloudTestCase {
+public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final int SPEED = 50;
@@ -205,7 +205,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
 
     // reset shared state
     lastActionExecutedAt.set(0);
-    TestTriggerIntegration.actionInitCalled = new CountDownLatch(2);
+    TestSimTriggerIntegration.actionInitCalled = new CountDownLatch(2);
     triggerFiredLatch = new CountDownLatch(2);
 
     setTriggerCommand = "{" +
@@ -289,7 +289,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testNodeLostTriggerRestoreState() throws Exception {
     // for this test we want to update the trigger so we must assert that the actions were created twice
-    TestTriggerIntegration.actionInitCalled = new CountDownLatch(2);
+    TestSimTriggerIntegration.actionInitCalled = new CountDownLatch(2);
 
     // start a new node
     String nodeName = cluster.simAddNode();
@@ -350,7 +350,7 @@ public class TestTriggerIntegration extends SimSolrCloudTestCase {
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testNodeAddedTriggerRestoreState() throws Exception {
     // for this test we want to update the trigger so we must assert that the actions were created twice
-    TestTriggerIntegration.actionInitCalled = new CountDownLatch(2);
+    TestSimTriggerIntegration.actionInitCalled = new CountDownLatch(2);
 
     SolrClient solrClient = cluster.simGetSolrClient();
     waitForSeconds = 5;
