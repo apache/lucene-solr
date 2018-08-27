@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.stream.Collectors;
@@ -97,10 +98,50 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     // Now do a distributed query, using JWTAUth for inter-node
     Pair<String,Integer> result = get(baseUrl + "mycoll/query?q=*:*", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
+    
+    // Delete
+    assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=mycoll", jwtTestToken).second().intValue());
   }
 
-  
-  
+  @Test
+  public void createCollectionAndUpdateDistributed() throws Exception {
+    // Admin request will use PKI inter-node auth from Overseer, and succeed
+    assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2", jwtTestToken).second().intValue());
+    
+    // Now update two documents
+    Pair<String,Integer> result = post(baseUrl + "mycoll/update", "{\"id\" : \"1\"}", jwtTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
+    result = post(baseUrl + "mycoll/update", "{\"id\" : \"2\"}", jwtTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
+    result = post(baseUrl + "mycoll/update", "{\"id\" : \"3\"}", jwtTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
+
+    // Delete
+    assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=mycoll", jwtTestToken).second().intValue());
+  }
+
+  private Pair<String, Integer> post(String url, String json, String token) throws IOException {
+    URL createUrl = new URL(url);
+    HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
+    con.setRequestMethod("POST");
+    if (token != null)
+      con.setRequestProperty("Authorization", "Bearer " + token);
+
+    con.setDoOutput(true);
+    OutputStream os = con.getOutputStream();
+    os.write(json.getBytes());
+    os.flush();
+    os.close();
+    		
+    con.connect();
+    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) con.getContent()));
+    String result = br2.lines().collect(Collectors.joining("\n"));
+    int code = con.getResponseCode(); 
+    con.disconnect();
+    return new Pair<>(result, code);
+  }
+
+
 // NOCOMMIT: Test using SolrJ as client
 //  private void testCollectionCreateSearchDelete(boolean enableJwt) throws Exception {
 //    if (enableJwt) {
