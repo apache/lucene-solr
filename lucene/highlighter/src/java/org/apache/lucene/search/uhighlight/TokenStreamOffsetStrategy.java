@@ -46,7 +46,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
             convertTermsToAutomata(components.getTerms(), components.getAutomata()),
             components.getHighlightFlags()),
         indexAnalyzer);
-    assert phraseHelper.hasPositionSensitivity() == false;
+    assert components.getPhraseHelper().hasPositionSensitivity() == false;
   }
 
   private static CharacterRunAutomaton[] convertTermsToAutomata(BytesRef[] terms, CharacterRunAutomaton[] automata) {
@@ -67,7 +67,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
   @Override
   public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
-    return new TokenStreamOffsetsEnum(tokenStream(content), automata);
+    return new TokenStreamOffsetsEnum(tokenStream(content), components.getAutomata());
   }
 
   private static class TokenStreamOffsetsEnum extends OffsetsEnum {

@@ -1283,7 +1283,8 @@ public class TestUnifiedHighlighter extends LuceneTestCase {
       if (highlighterFieldMatch.getFlags("text").contains(HighlightFlag.WEIGHT_MATCHES)) {
         assertEquals("<b>This is</b> the text field. <b>You can put some text</b> if you want.", snippets[0]);
       } else {
-        //nocommit why does this highlight the first "text"?
+        // note: odd that the first "text" is highlighted.  Apparently WSTE converts PhraseQuery to a SpanNearQuery with
+        //   with inorder=false when non-0 slop.  Probably a bug.
         assertEquals("<b>This</b> <b>is</b> the <b>text</b> field. <b>You</b> <b>can</b> <b>put</b> some <b>text</b> if you want.", snippets[0]);
       }
 

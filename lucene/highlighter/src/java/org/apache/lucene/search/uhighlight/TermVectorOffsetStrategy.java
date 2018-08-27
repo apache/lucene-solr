@@ -40,17 +40,17 @@ public class TermVectorOffsetStrategy extends FieldOffsetStrategy {
 
   @Override
   public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
-    Terms tvTerms = reader.getTermVector(docId, field);
+    Terms tvTerms = reader.getTermVector(docId, getField());
     if (tvTerms == null) {
       return OffsetsEnum.EMPTY;
     }
 
-    LeafReader singleDocReader = new TermVectorLeafReader(field, tvTerms);
+    LeafReader singleDocReader = new TermVectorLeafReader(getField(), tvTerms);
     return createOffsetsEnumFromReader(
         new OverlaySingleDocTermsLeafReader(
             reader,
             singleDocReader,
-            field,
+            getField(),
             docId),
         docId);
   }

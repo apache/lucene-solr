@@ -42,22 +42,13 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 public abstract class FieldOffsetStrategy {
 
   protected final UHComponents components;
-  //nocommit remove these?:
-  protected final String field;
-  protected final PhraseHelper phraseHelper; // Query: position-sensitive information
-  protected final BytesRef[] terms; // Query: all terms we extracted (some may be position sensitive)
-  protected final CharacterRunAutomaton[] automata; // Query: wildcards (i.e. multi-term query), not position sensitive
 
   public FieldOffsetStrategy(UHComponents components) {
     this.components = components;
-    this.field = components.getField();
-    this.terms = components.getTerms();
-    this.phraseHelper = components.getPhraseHelper();
-    this.automata = components.getAutomata();
   }
 
   public String getField() {
-    return field;
+    return components.getField();
   }
 
   public abstract UnifiedHighlighter.OffsetSource getOffsetSource();
@@ -70,7 +61,7 @@ public abstract class FieldOffsetStrategy {
   public abstract OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException;
 
   protected OffsetsEnum createOffsetsEnumFromReader(LeafReader leafReader, int doc) throws IOException {
-    final Terms termsIndex = leafReader.terms(field);
+    final Terms termsIndex = leafReader.terms(getField());
     if (termsIndex == null) {
       return OffsetsEnum.EMPTY;
     }
@@ -86,6 +77,8 @@ public abstract class FieldOffsetStrategy {
 
       // Handle position insensitive terms (a subset of this.terms field):
       final BytesRef[] insensitiveTerms;
+      final PhraseHelper phraseHelper = components.getPhraseHelper();
+      final BytesRef[] terms = components.getTerms();
       if (phraseHelper.hasPositionSensitivity()) {
         insensitiveTerms = phraseHelper.getAllPositionInsensitiveTerms();
         assert insensitiveTerms.length <= terms.length : "insensitive terms should be smaller set of all terms";
@@ -102,7 +95,7 @@ public abstract class FieldOffsetStrategy {
       }
 
       // Handle automata
-      if (automata.length > 0) {
+      if (components.getAutomata().length > 0) {
         createOffsetsEnumsForAutomata(termsIndex, doc, offsetsEnums);
       }
     }
@@ -163,7 +156,7 @@ public abstract class FieldOffsetStrategy {
         PostingsEnum postingsEnum = termsEnum.postings(null, PostingsEnum.OFFSETS);
         if (postingsEnum == null) {
           // no offsets or positions available
-          throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
+          throw new IllegalArgumentException("field '" + getField() + "' was indexed without offsets, cannot highlight");
         }
         if (doc == postingsEnum.advance(doc)) { // now it's positioned, although may be exhausted
           results.add(new OffsetsEnum.OfPostings(term, postingsEnum));
@@ -173,6 +166,7 @@ public abstract class FieldOffsetStrategy {
   }
 
   protected void createOffsetsEnumsForAutomata(Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {
+    final CharacterRunAutomaton[] automata = components.getAutomata();
     List<List<PostingsEnum>> automataPostings = new ArrayList<>(automata.length);
     for (int i = 0; i < automata.length; i++) {
       automataPostings.add(new ArrayList<>());

@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.FilteringTokenFilter;
@@ -33,7 +32,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -56,25 +54,22 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
     memIndexLeafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader(); // appears to be re-usable
     // preFilter for MemoryIndex
-    preMemIndexFilterAutomaton = buildCombinedAutomaton(components.getFieldMatcher(), terms, this.automata, components.getPhraseHelper(), multiTermQueryRewrite);
+    preMemIndexFilterAutomaton = buildCombinedAutomaton(components, multiTermQueryRewrite);
   }
 
   /**
    * Build one {@link CharacterRunAutomaton} matching any term the query might match.
    */
-  private static CharacterRunAutomaton buildCombinedAutomaton(Predicate<String> fieldMatcher,
-                                                              BytesRef[] terms,
-                                                              CharacterRunAutomaton[] automata,
-                                                              PhraseHelper strictPhrases,
+  private static CharacterRunAutomaton buildCombinedAutomaton(UHComponents components,
                                                               Function<Query, Collection<Query>> multiTermQueryRewrite) {
     List<CharacterRunAutomaton> allAutomata = new ArrayList<>();
-    if (terms.length > 0) {
-      allAutomata.add(new CharacterRunAutomaton(Automata.makeStringUnion(Arrays.asList(terms))));
+    if (components.getTerms().length > 0) {
+      allAutomata.add(new CharacterRunAutomaton(Automata.makeStringUnion(Arrays.asList(components.getTerms()))));
     }
-    Collections.addAll(allAutomata, automata);
-    for (SpanQuery spanQuery : strictPhrases.getSpanQueries()) {
+    Collections.addAll(allAutomata, components.getAutomata());
+    for (SpanQuery spanQuery : components.getPhraseHelper().getSpanQueries()) {
       Collections.addAll(allAutomata,
-          MultiTermHighlighting.extractAutomata(spanQuery, fieldMatcher, true, multiTermQueryRewrite));//true==lookInSpan
+          MultiTermHighlighting.extractAutomata(spanQuery, components.getFieldMatcher(), true, multiTermQueryRewrite));//true==lookInSpan
     }
 
     if (allAutomata.size() == 1) {
@@ -105,7 +100,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     // Filter the tokenStream to applicable terms
     tokenStream = newKeepWordFilter(tokenStream, preMemIndexFilterAutomaton);
     memoryIndex.reset();
-    memoryIndex.addField(field, tokenStream);//note: calls tokenStream.reset() & close()
+    memoryIndex.addField(getField(), tokenStream);//note: calls tokenStream.reset() & close()
 
     if (reader == null) {
       return createOffsetsEnumFromReader(memIndexLeafReader, 0);
@@ -114,7 +109,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
           new OverlaySingleDocTermsLeafReader(
               reader,
               memIndexLeafReader,
-              field,
+              getField(),
               docId),
           docId);
     }

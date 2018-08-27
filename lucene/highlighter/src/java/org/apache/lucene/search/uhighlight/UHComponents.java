@@ -33,9 +33,9 @@ public class UHComponents {
   private final String field;
   private final Predicate<String> fieldMatcher;
   private final Query query;
-  private final BytesRef[] terms;
-  private final PhraseHelper phraseHelper;
-  private final CharacterRunAutomaton[] automata;
+  private final BytesRef[] terms; // Query: all terms we extracted (some may be position sensitive)
+  private final PhraseHelper phraseHelper; // Query: position-sensitive information
+  private final CharacterRunAutomaton[] automata; // Query: wildcards (i.e. multi-term query), not position sensitive
   private final Set<UnifiedHighlighter.HighlightFlag> highlightFlags;
 
   public UHComponents(String field, Predicate<String> fieldMatcher, Query query,

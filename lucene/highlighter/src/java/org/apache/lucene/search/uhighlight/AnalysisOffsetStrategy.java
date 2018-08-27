@@ -38,9 +38,9 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
   public AnalysisOffsetStrategy(UHComponents components, Analyzer analyzer) {
     super(components);
     this.analyzer = analyzer;
-    if (analyzer.getOffsetGap(field) != 1) { // note: 1 is the default. It is RARELY changed.
+    if (analyzer.getOffsetGap(getField()) != 1) { // note: 1 is the default. It is RARELY changed.
       throw new IllegalArgumentException(
-          "offset gap of the provided analyzer should be 1 (field " + field + ")");
+          "offset gap of the provided analyzer should be 1 (field " + getField() + ")");
     }
   }
 
@@ -53,12 +53,12 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
     // If there is no splitChar in content then we needn't wrap:
     int splitCharIdx = content.indexOf(UnifiedHighlighter.MULTIVAL_SEP_CHAR);
     if (splitCharIdx == -1) {
-      return analyzer.tokenStream(field, content);
+      return analyzer.tokenStream(getField(), content);
     }
 
-    TokenStream subTokenStream = analyzer.tokenStream(field, content.substring(0, splitCharIdx));
+    TokenStream subTokenStream = analyzer.tokenStream(getField(), content.substring(0, splitCharIdx));
 
-    return new MultiValueTokenStream(subTokenStream, field, analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR, splitCharIdx);
+    return new MultiValueTokenStream(subTokenStream, getField(), analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR, splitCharIdx);
   }
 
   /**

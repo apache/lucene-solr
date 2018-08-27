@@ -34,11 +34,11 @@ public class PostingsWithTermVectorsOffsetStrategy extends FieldOffsetStrategy {
 
   @Override
   public OffsetsEnum getOffsetsEnum(LeafReader leafReader, int docId, String content) throws IOException {
-    Terms docTerms = leafReader.getTermVector(docId, field);
+    Terms docTerms = leafReader.getTermVector(docId, getField());
     if (docTerms == null) {
       return OffsetsEnum.EMPTY;
     }
-    leafReader = new TermVectorFilteredLeafReader(leafReader, docTerms, field);
+    leafReader = new TermVectorFilteredLeafReader(leafReader, docTerms, getField());
 
     return createOffsetsEnumFromReader(leafReader, docId);
   }

@@ -88,7 +88,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
    * The term at this position.
    * This BytesRef is safe to continue to refer to, even after we move to the next position.
    *
-   * @see {@link Passage#getMatchTerms()}.
+   * @see Passage#getMatchTerms()
    */
   public abstract BytesRef getTerm() throws IOException;
 
