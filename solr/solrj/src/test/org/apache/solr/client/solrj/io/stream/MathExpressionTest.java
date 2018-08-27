@@ -1327,7 +1327,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testStandardize() throws Exception {
-    String cexpr = "let(echo=true, a=standardize(matrix(array(1,2,3), array(4,5,6))), b=standardize(array(4,5,6)))";
+    String cexpr = "let(echo=true, a=standardize(matrix(array(1,2,3), array(4,5,6))), b=standardize(array(4,5,6)),  c=zscores(array(4,5,6)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -1353,9 +1353,15 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     List<Number> array3 = (List<Number>)tuples.get(0).get("b");
     assertEquals(array3.size(), 3);
-    assertEquals(array2.get(0).doubleValue(), -1, 0.0);
-    assertEquals(array2.get(1).doubleValue(), 0, 0.0);
-    assertEquals(array2.get(2).doubleValue(), 1, 0.0);
+    assertEquals(array3.get(0).doubleValue(), -1, 0.0);
+    assertEquals(array3.get(1).doubleValue(), 0, 0.0);
+    assertEquals(array3.get(2).doubleValue(), 1, 0.0);
+
+    List<Number> array4 = (List<Number>)tuples.get(0).get("c");
+    assertEquals(array4.size(), 3);
+    assertEquals(array4.get(0).doubleValue(), -1, 0.0);
+    assertEquals(array4.get(1).doubleValue(), 0, 0.0);
+    assertEquals(array4.get(2).doubleValue(), 1, 0.0);
   }
 
   @Test
