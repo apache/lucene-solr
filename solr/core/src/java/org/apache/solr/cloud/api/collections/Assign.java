@@ -31,12 +31,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
@@ -402,7 +402,7 @@ public class Assign {
           nodesList);
       return replicaPositions;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting replica locations", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting replica locations : " + e.getMessage(), e);
     } finally {
       if (log.isTraceEnabled()) {
         if (replicaPositions != null)

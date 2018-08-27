@@ -53,8 +53,8 @@ import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.codecs.lucene70.Lucene70Codec;
 import org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat;
+import org.apache.lucene.codecs.lucene80.Lucene80Codec;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -914,7 +914,7 @@ public final class TestUtil {
    * This may be different than {@link Codec#getDefault()} because that is randomized. 
    */
   public static Codec getDefaultCodec() {
-    return new Lucene70Codec();
+    return new Lucene80Codec();
   }
   
   /** 

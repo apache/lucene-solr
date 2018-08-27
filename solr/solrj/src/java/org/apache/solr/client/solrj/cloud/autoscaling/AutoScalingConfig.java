@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.toList;
  * lazily.
  */
 public class AutoScalingConfig implements MapWriter {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, Object> jsonMap;
   private final boolean empty;
@@ -72,7 +72,7 @@ public class AutoScalingConfig implements MapWriter {
       if (properties == null) {
         this.properties = Collections.emptyMap();
       } else {
-        this.properties = Collections.unmodifiableMap(new HashMap<>(properties));
+        this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(properties));
       }
       trigger = (String)this.properties.get(AutoScalingParams.TRIGGER);
       List<Object> stageNames = getList(AutoScalingParams.STAGE, this.properties);
@@ -81,14 +81,14 @@ public class AutoScalingConfig implements MapWriter {
           TriggerEventProcessorStage stage = TriggerEventProcessorStage.valueOf(String.valueOf(stageName).toUpperCase(Locale.ROOT));
           stages.add(stage);
         } catch (Exception e) {
-          LOG.warn("Invalid stage name '" + name + "' in listener config, skipping: " + properties);
+          log.warn("Invalid stage name '" + name + "' in listener config, skipping: " + properties);
         }
       }
       listenerClass = (String)this.properties.get(AutoScalingParams.CLASS);
-      Set<String> bActions = new HashSet<>();
+      Set<String> bActions = new LinkedHashSet<>();
       getList(AutoScalingParams.BEFORE_ACTION, this.properties).forEach(o -> bActions.add(String.valueOf(o)));
       beforeActions = Collections.unmodifiableSet(bActions);
-      Set<String> aActions = new HashSet<>();
+      Set<String> aActions = new LinkedHashSet<>();
       getList(AutoScalingParams.AFTER_ACTION, this.properties).forEach(o -> aActions.add(String.valueOf(o)));
       afterActions = Collections.unmodifiableSet(aActions);
     }
@@ -161,7 +161,7 @@ public class AutoScalingConfig implements MapWriter {
     public TriggerConfig(String name, Map<String, Object> properties) {
       this.name = name;
       if (properties != null) {
-        this.properties = Collections.unmodifiableMap(new HashMap<>(properties));
+        this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(properties));
       } else {
         this.properties = Collections.emptyMap();
       }
@@ -196,7 +196,7 @@ public class AutoScalingConfig implements MapWriter {
      * @return modified copy of the configuration
      */
     public TriggerConfig withEnabled(boolean enabled) {
-      Map<String, Object> props = new HashMap<>(properties);
+      Map<String, Object> props = new LinkedHashMap<>(properties);
       props.put(AutoScalingParams.ENABLED, String.valueOf(enabled));
       return new TriggerConfig(name, props);
     }
@@ -208,7 +208,7 @@ public class AutoScalingConfig implements MapWriter {
      * @return modified copy of the configuration
      */
     public TriggerConfig withProperty(String key, Object value) {
-      Map<String, Object> props = new HashMap<>(properties);
+      Map<String, Object> props = new LinkedHashMap<>(properties);
       props.put(key, String.valueOf(value));
       return new TriggerConfig(name, props);
     }
@@ -264,7 +264,7 @@ public class AutoScalingConfig implements MapWriter {
      */
     public ActionConfig(Map<String, Object> properties) {
       if (properties != null) {
-        this.properties = Collections.unmodifiableMap(new HashMap<>(properties));
+        this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(properties));
       } else {
         this.properties = Collections.emptyMap();
       }
@@ -327,10 +327,10 @@ public class AutoScalingConfig implements MapWriter {
   private AutoScalingConfig(Policy policy, Map<String, TriggerConfig> triggerConfigs, Map<String,
       TriggerListenerConfig> listenerConfigs, Map<String, Object> properties, int zkVersion) {
     this.policy = policy;
-    this.triggers = triggerConfigs != null ? Collections.unmodifiableMap(triggerConfigs) : null;
-    this.listeners = listenerConfigs != null ? Collections.unmodifiableMap(listenerConfigs) : null;
+    this.triggers = triggerConfigs != null ? Collections.unmodifiableMap(new LinkedHashMap<>(triggerConfigs)) : null;
+    this.listeners = listenerConfigs != null ? Collections.unmodifiableMap(new LinkedHashMap<>(listenerConfigs)) : null;
     this.jsonMap = null;
-    this.properties = properties != null ? Collections.unmodifiableMap(properties) : null;
+    this.properties = properties != null ? Collections.unmodifiableMap(new LinkedHashMap<>(properties)) : null;
     this.zkVersion = zkVersion;
     this.empty = policy == null &&
         (triggerConfigs == null || triggerConfigs.isEmpty()) &&
@@ -350,7 +350,7 @@ public class AutoScalingConfig implements MapWriter {
   public Policy getPolicy() {
     if (policy == null) {
       if (jsonMap != null) {
-        policy = new Policy(jsonMap);
+        policy = new Policy(jsonMap, zkVersion);
       } else {
         policy = new Policy();
       }
@@ -368,7 +368,7 @@ public class AutoScalingConfig implements MapWriter {
         if (trigMap == null) {
           triggers = Collections.emptyMap();
         } else {
-          HashMap<String, TriggerConfig> newTriggers = new HashMap<>(trigMap.size());
+          Map<String, TriggerConfig> newTriggers = new LinkedHashMap<>(trigMap.size());
           for (Map.Entry<String, Object> entry : trigMap.entrySet()) {
             newTriggers.put(entry.getKey(), new TriggerConfig(entry.getKey(), (Map<String, Object>)entry.getValue()));
           }
@@ -411,7 +411,7 @@ public class AutoScalingConfig implements MapWriter {
         if (map == null) {
           listeners = Collections.emptyMap();
         } else {
-          HashMap<String, TriggerListenerConfig> newListeners = new HashMap<>(map.size());
+          Map<String, TriggerListenerConfig> newListeners = new LinkedHashMap<>(map.size());
           for (Map.Entry<String, Object> entry : map.entrySet()) {
             newListeners.put(entry.getKey(), new TriggerListenerConfig(entry.getKey(), (Map<String, Object>)entry.getValue()));
           }
@@ -431,7 +431,7 @@ public class AutoScalingConfig implements MapWriter {
         if (map == null) {
           this.properties = Collections.emptyMap();
         } else  {
-          this.properties = new HashMap<>(map);
+          this.properties = new LinkedHashMap<>(map);
         }
       } else  {
         this.properties = Collections.emptyMap();
@@ -473,7 +473,7 @@ public class AutoScalingConfig implements MapWriter {
    * @return modified copy of the configuration
    */
   public AutoScalingConfig withTriggerConfig(TriggerConfig config) {
-    Map<String, TriggerConfig> configs = new HashMap<>(getTriggerConfigs());
+    Map<String, TriggerConfig> configs = new LinkedHashMap<>(getTriggerConfigs());
     configs.put(config.name, config);
     return withTriggerConfigs(configs);
   }
@@ -484,7 +484,7 @@ public class AutoScalingConfig implements MapWriter {
    * @return modified copy of the configuration, even if the specified config name didn't exist.
    */
   public AutoScalingConfig withoutTriggerConfig(String name) {
-    Map<String, TriggerConfig> configs = new HashMap<>(getTriggerConfigs());
+    Map<String, TriggerConfig> configs = new LinkedHashMap<>(getTriggerConfigs());
     configs.remove(name);
     return withTriggerConfigs(configs);
   }
@@ -504,7 +504,7 @@ public class AutoScalingConfig implements MapWriter {
    * @return modified copy of the configuration
    */
   public AutoScalingConfig withTriggerListenerConfig(TriggerListenerConfig config) {
-    Map<String, TriggerListenerConfig> configs = new HashMap<>(getTriggerListenerConfigs());
+    Map<String, TriggerListenerConfig> configs = new LinkedHashMap<>(getTriggerListenerConfigs());
     configs.put(config.name, config);
     return withTriggerListenerConfigs(configs);
   }
@@ -515,7 +515,7 @@ public class AutoScalingConfig implements MapWriter {
    * @return modified copy of the configuration, even if the specified config name didn't exist.
    */
   public AutoScalingConfig withoutTriggerListenerConfig(String name) {
-    Map<String, TriggerListenerConfig> configs = new HashMap<>(getTriggerListenerConfigs());
+    Map<String, TriggerListenerConfig> configs = new LinkedHashMap<>(getTriggerListenerConfigs());
     configs.remove(name);
     return withTriggerListenerConfigs(configs);
   }

@@ -249,7 +249,11 @@ public class Lang {
         .withFunctionName("knnRegress", KnnRegressionEvaluator.class)
         .withFunctionName("gaussfit", GaussFitEvaluator.class)
         .withFunctionName("outliers", OutliersEvaluator.class)
-
+        .withFunctionName("stream", GetStream.class)
+        .withFunctionName("putCache", PutCacheEvaluator.class)
+        .withFunctionName("getCache", GetCacheEvaluator.class)
+        .withFunctionName("removeCache", RemoveCacheEvaluator.class)
+        .withFunctionName("listCache", ListCacheEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)

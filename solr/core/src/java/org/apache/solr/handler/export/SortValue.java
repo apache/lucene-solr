@@ -27,4 +27,12 @@ public interface SortValue extends Comparable<SortValue> {
   public void setCurrentValue(SortValue value);
   public void reset();
   public SortValue copy();
+  public Object getCurrentValue() throws IOException;
+  public String getField();
+
+  /**
+   *
+   * @return true if document has a value for the specified field
+   */
+  public boolean isPresent();
 }

@@ -140,6 +140,9 @@ Optimizations
 * LUCENE-8204: Boolean queries with a mix of required and optional clauses are
   now faster if the total hit count is not required. (Jim Ferenczi, Adrien Grand)
 
+* LUCENE-8448: Boolean queries now propagates the mininum score to their sub-scorers.
+  (Jim Ferenczi, Adrien Grand)
+
 ======================= Lucene 7.5.0 =======================
 
 API Changes:
@@ -214,6 +217,9 @@ Bug Fixes:
 * LUCENE-8441: IndexWriter now checks doc value type for index sort fields
   and fails the document if they are not compatible. (Jim Ferenczi, Mike McCandless)
 
+* LUCENE-8458: Adjust initialization condition of PendingSoftDeletes and ensures
+  it is initialized before accepting deletes (Simon Willnauer, Nhat Nguyen)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
@@ -259,6 +265,10 @@ Other:
 
 * LUCENE-8453: Add documentation to analysis factories of Korean (Nori) analyzer
   module.  (Tomoko Uchida via Uwe Schindler)
+
+* LUCENE-8455: Upgrade ECJ compiler to 4.6.1 in lucene/common-build.xml (Erick Erickson)
+
+* LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
 
 ======================= Lucene 7.4.1 =======================
 

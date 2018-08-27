@@ -221,6 +221,6 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
 
-    ocmh.processResponses(results, shardHandler, true, "Could not backup all replicas", asyncId, requestMap);
+    ocmh.processResponses(results, shardHandler, true, "Could not backup all shards", asyncId, requestMap);
   }
 }

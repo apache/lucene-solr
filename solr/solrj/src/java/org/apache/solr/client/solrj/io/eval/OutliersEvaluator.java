@@ -93,16 +93,14 @@ public class OutliersEvaluator extends RecursiveObjectEvaluator implements ManyV
 
         double cumProb = d.cumulativeProbability(n.intValue());
         if(low >= 0 && cumProb <= low) {
-          t.put("lowOutlier", true);
-          t.put("lowOutlierValue", n);
-          t.put("cumulativeProbablity", cumProb);
+          t.put("lowOutlierValue_d", n);
+          t.put("cumulativeProbablity_d", cumProb);
           outliers.add(t);
         }
 
         if(hi >= 0 && cumProb >= hi) {
-          t.put("highOutlier", true);
-          t.put("highOutlierValue", n);
-          t.put("cumulativeProbablity", cumProb);
+          t.put("highOutlierValue_d", n);
+          t.put("cumulativeProbablity_d", cumProb);
           outliers.add(t);
         }
       }
@@ -119,17 +117,15 @@ public class OutliersEvaluator extends RecursiveObjectEvaluator implements ManyV
 
         double cumProb = d.cumulativeProbability(n.doubleValue());
         if(low >= 0 && cumProb <= low) {
-          t.put("lowOutlier", true);
-          t.put("lowOutlierValue", n);
-          t.put("cumulativeProbablity", cumProb);
+          t.put("lowOutlierValue_d", n);
+          t.put("cumulativeProbablity_d", cumProb);
           outliers.add(t);
 
         }
 
         if(hi >= 0 && cumProb >= hi) {
-          t.put("highOutlier", true);
-          t.put("highOutlierValue", n);
-          t.put("cumulativeProbablity", cumProb);
+          t.put("highOutlierValue_d", n);
+          t.put("cumulativeProbablity_d", cumProb);
           outliers.add(t);
         }
       }

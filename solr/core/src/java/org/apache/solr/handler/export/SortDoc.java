@@ -32,7 +32,17 @@ class SortDoc {
   public SortDoc(SortValue[] sortValues) {
     this.sortValues = sortValues;
   }
+
   public SortDoc() {
+  }
+
+  public SortValue getSortValue(String field) {
+    for (SortValue value : sortValues) {
+      if (value.getField().equals(field)) {
+        return value;
+      }
+    }
+    return null;
   }
 
   public void setNextReader(LeafReaderContext context) throws IOException {

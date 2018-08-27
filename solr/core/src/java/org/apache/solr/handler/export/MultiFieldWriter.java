@@ -54,10 +54,10 @@ class MultiFieldWriter extends FieldWriter {
     }
   }
 
-  public boolean write(int docId, LeafReader reader, MapWriter.EntryWriter out, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter out, int fieldIndex) throws IOException {
     if (this.fieldType.isPointField()) {
       SortedNumericDocValues vals = DocValues.getSortedNumeric(reader, this.field);
-      if (!vals.advanceExact(docId)) return false;
+      if (!vals.advanceExact(sortDoc.docId)) return false;
       out.put(this.field,
           (IteratorWriter) w -> {
             for (int i = 0; i < vals.docValueCount(); i++) {
@@ -67,7 +67,7 @@ class MultiFieldWriter extends FieldWriter {
       return true;
     } else {
       SortedSetDocValues vals = DocValues.getSortedSet(reader, this.field);
-      if (vals.advance(docId) != docId) return false;
+      if (vals.advance(sortDoc.docId) != sortDoc.docId) return false;
       out.put(this.field,
           (IteratorWriter) w -> {
             long o;

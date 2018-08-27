@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class TriggerEventQueue {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ENQUEUE_TIME = "_enqueue_time_";
   public static final String DEQUEUE_TIME = "_dequeue_time_";
@@ -58,7 +58,7 @@ public class TriggerEventQueue {
       delegate.offer(data);
       return true;
     } catch (Exception e) {
-      LOG.warn("Exception adding event " + event + " to queue " + triggerName, e);
+      log.warn("Exception adding event " + event + " to queue " + triggerName, e);
       return false;
     }
   }
@@ -68,19 +68,19 @@ public class TriggerEventQueue {
     try {
       while ((data = delegate.peek()) != null) {
         if (data.length == 0) {
-          LOG.warn("ignoring empty data...");
+          log.warn("ignoring empty data...");
           continue;
         }
         try {
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
-          LOG.warn("Invalid event data, ignoring: " + new String(data, StandardCharsets.UTF_8));
+          log.warn("Invalid event data, ignoring: " + new String(data, StandardCharsets.UTF_8));
           continue;
         }
       }
     } catch (Exception e) {
-      LOG.warn("Exception peeking queue of trigger " + triggerName, e);
+      log.warn("Exception peeking queue of trigger " + triggerName, e);
     }
     return null;
   }
@@ -90,19 +90,19 @@ public class TriggerEventQueue {
     try {
       while ((data = delegate.poll()) != null) {
         if (data.length == 0) {
-          LOG.warn("ignoring empty data...");
+          log.warn("ignoring empty data...");
           continue;
         }
         try {
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
-          LOG.warn("Invalid event data, ignoring: " + new String(data, StandardCharsets.UTF_8));
+          log.warn("Invalid event data, ignoring: " + new String(data, StandardCharsets.UTF_8));
           continue;
         }
       }
     } catch (Exception e) {
-      LOG.warn("Exception polling queue of trigger " + triggerName, e);
+      log.warn("Exception polling queue of trigger " + triggerName, e);
     }
     return null;
   }

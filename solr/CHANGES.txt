@@ -55,8 +55,8 @@ Other Changes
 
 * SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
 
-* SOLR-12586: Remove Joda Time dependency.  Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
-  to use Java 8's java.time.DateTimeFormatter instead (see upgrade notes).
+* SOLR-12586, SOLR-12591: Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") to use Java 8's
+  java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
 
 ==================  7.5.0 ==================
@@ -233,6 +233,27 @@ Bug Fixes
 
 * SOLR-12541: Metrics handler throws an error if there are transient cores. (ab)
 
+* SOLR-12470: Search Rate Trigger multiple bug fixes, improvements and documentation updates. (ab)
+
+* SOLR-12665: Autoscaling policy not being refreshed due to caching (noble)
+
+* SOLR-12649: CloudSolrClient retries requests unnecessarily exception from server (noble, shalin)
+
+* SOLR-12670: RecoveryStrategy logs wrong wait time when retrying recovery. (shalin)
+
+* SOLR-12668: Autoscaling trigger listeners should be executed in the order of their creation. (ab)
+
+* SOLR-12475: Fix MaxSizeAutoCommitTest failures (Rupa Shankar, Anshum Gupta)
+
+* SOLR-12674: RollupStream should not use the HashQueryParser for 1 worker. (Varun Thacker)
+
+* SOLR-12679: MiniSolrCloudCluster internal jetty list should never have duplicates (shalin)
+
+* SOLR-12598: Do not fetch non-stored fields (Nikolay Khitrin, Erick Erickson)
+
+* SOLR-12683: HashQuery will throw an exception if more than 4 partitionKeys is specified.
+  Earlier after the 4th partitionKey the keys would be silently ignored. (Varun Thacker)
+
 Optimizations
 ----------------------
 
@@ -259,6 +280,10 @@ Optimizations
 * SOLR-12616: Optimize Export writer upto 4 sort fields to get better performance.
   This was removed in SOLR-11598 but brought back in the same version (Amrit Sarkar, Varun Thacker)
 
+* SOLR-12572: While exporting documents using the export writer, if a field is specified as a sort parameter and also
+  in the fl (field list) parameter, we save on one doc-value lookup. This can bring performance improvements of 15%
+  and upwards depending on how many fields are in common. (Amrit Sarkar, Varun Thacker)
+
 Other Changes
 ----------------------
 
@@ -269,6 +294,8 @@ Other Changes
   AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
 
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
+
+* SOLR-12523: Improve error reporting and docs regarding Collection backup feature shared-fs requirement (janhoy)
 
 * SOLR-12468: Upgrade Jetty to 9.4.11.v20180605 (Michael Braun, shalin)
 
@@ -293,6 +320,27 @@ Other Changes
 * SOLR-11008: Use a lighter config for MetricsHandlerTest and ensure the core is up before the test starts (Varun Thacker)
 
 * SOLR-11766: Move Streaming Expressions section in Ref Guide to be a top-level section. (Cassandra Targett)
+
+* SOLR-12656: ShardSplitTest should extend AbstractFullDistribZkTestBase instead of BasicDistributedZkTest. (shalin)
+
+* LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
+
+* SOLR-12014: Cryptic error message when creating a collection with sharding that violates autoscaling policies (noble)
+
+* SOLR-12680: Fix ClassCastException and AIOOBE in TestSolrConfigHandlerConcurrent. (shalin)
+
+* SOLR-12675: Make LeaderVoteWaitTimeoutTest more resilient against side effects of test methods. (shalin)
+
+* SOLR-12130: CdcrReplicationDistributedZkTest is broken into two test classes, CdcrOpsAndBoundariesTest which does
+  not require node restarts and CdcrWithNodesRestartsTest which does. The tests themselves are made faster and more
+  resilient to spurious failures. (Varun Thacker, Amrit Sarkar via shalin)
+
+* SOLR-12625: Combine SolrDocumentFetcher and RetrieveFieldsOptimizer (Erick Erickson)
+
+* SOLR-12690: Regularize LoggerFactory declarations (Erick Erickson)
+
+* SOLR-12590: Improve Solr resource loader coverage in the ref guide.
+  (Steve Rowe, Cassandra Targett, Christine Poerschke)
 
 ==================  7.4.0 ==================
 

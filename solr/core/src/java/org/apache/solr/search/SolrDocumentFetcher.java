@@ -30,7 +30,9 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
@@ -53,8 +55,11 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentBase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.response.DocsStreamer;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.AbstractEnumField;
@@ -145,6 +150,8 @@ public class SolrDocumentFetcher {
     this.allStored = Collections.unmodifiableSet(allStoreds);
   }
 
+  // Does this field have both stored=true and docValues=true and is otherwise
+  // eligible for getting the field's value from DV?
   private boolean canSubstituteDvForStored(FieldInfo fieldInfo, SchemaField schemaField) {
     if (!schemaField.hasDocValues() || !schemaField.stored()) return false;
     if (schemaField.multiValued()) return false;
@@ -226,6 +233,43 @@ public class SolrDocumentFetcher {
     }
 
     return d;
+  }
+
+  /**
+   * This is an optimized version for populating a SolrDocument that:
+   *
+   * 1. fetches all fields from docValues if possible. If no decompression of the stored
+   * data is necessary, we can avoid a disk seek and decompression cycle.
+   * This step is only used if all requested fields are
+   * {code docValues=true stored=false multiValued=false}.
+   * This last restriction because multiValued docValues fields do not faithfully reflect
+   * the input order in all cases. the values are returned and no decompression is necessary.
+   *
+   * 2. if 1 is impossible, try to fetch all requested fields from the stored values. If
+   * the stored data has to be decompressed anyway, it's more efficient to
+   * just get all field values from the stored values. If we got all the requested fields, return.
+   *
+   * 3. add fields where docValues=true stored=false thus could not be fetched in step 2
+   *
+   * @param luceneDocId       The Lucene doc ID
+   * @param solrReturnFields  the structure holding the fields to be returned.
+   *                          The first time this method is called for a particular
+   *                          document list, it will be modified by adding a
+   *                          RetrieveFieldsOptimizer for use in future calls.
+   *
+   * @return The SolrDocument with values requested.
+   * <p>
+   * This method is designed to be as simple as possible to use, just call it. e.g.
+   * {code SolrDocument sdoc = docFetcher.solrDoc(id, solrReturnFields);}
+   * then process the resulting SolrDocument as usual. Subsequent calls with the same
+   * solrReturnFields will re-use the optimizer created the first time.
+   *
+   * NOTE: DO NOT re-use the same SolrReturnFields object if the fields requested change.
+   */
+
+  public SolrDocument solrDoc(int luceneDocId, SolrReturnFields solrReturnFields) {
+    Supplier<RetrieveFieldsOptimizer> rfoSupplier = () -> new RetrieveFieldsOptimizer(solrReturnFields);
+    return solrReturnFields.getFetchOptimizer(rfoSupplier).getSolrDoc(luceneDocId);
   }
 
   /** {@link StoredFieldVisitor} which loads the specified fields eagerly (or all if null).
@@ -352,6 +396,7 @@ public class SolrDocumentFetcher {
     public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
       return analyzer.tokenStream(name(), stringValue()); // or we could throw unsupported exception?
     }
+
     /** (for tests) */
     synchronized boolean hasBeenLoaded() {
       return cachedBytes != null;
@@ -373,6 +418,7 @@ public class SolrDocumentFetcher {
         BytesRef bytesRef = new BytesRef();
         searcher.getIndexReader().document(docId, new StoredFieldVisitor() {
           boolean done = false;
+
           @Override
           public Status needsField(FieldInfo fieldInfo) throws IOException {
             if (done) {
@@ -497,8 +543,7 @@ public class SolrDocumentFetcher {
             // normally never true but LatLonPointSpatialField uses SORTED_NUMERIC even when single valued
             else if (schemaField.multiValued() == false) {
               return value;
-            }
-            else {
+            } else {
               outValues.add(value);
             }
           }
@@ -529,7 +574,7 @@ public class SolrDocumentFetcher {
     if (schemaField.getType() instanceof LatLonPointSpatialField) {
       return LatLonPointSpatialField.decodeDocValueToString(value);
     }
-    
+
     if (schemaField.getType().getNumberType() == null) {
       log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
           schemaField.getName(), schemaField);
@@ -592,4 +637,151 @@ public class SolrDocumentFetcher {
     return nonStoredDVsWithoutCopyTargets;
   }
 
+
+  /**
+   * Moved as a private class here, we consider it an impelmentation detail. It should not
+   * be exposed outside of this class.
+   * <p>
+   * This class is in charge of insuring that SolrDocuments can have their fields populated
+   * during a request in the most efficient way possible. See the comments at
+   * {@link #solrDoc(int docId, SolrReturnFields solrReturnFields)}
+   */
+
+  class RetrieveFieldsOptimizer {
+    // null means get all available stored fields
+    private final Set<String> storedFields;
+    // always non null
+    private final Set<String> dvFields;
+
+    private final SolrReturnFields solrReturnFields;
+
+    RetrieveFieldsOptimizer(SolrReturnFields solrReturnFields) {
+      this.storedFields = calcStoredFieldsForReturn(solrReturnFields);
+      this.dvFields = calcDocValueFieldsForReturn(solrReturnFields);
+      this.solrReturnFields = solrReturnFields;
+
+      if (storedFields != null && dvsCanSubstituteStored.containsAll(storedFields)) {
+        dvFields.addAll(storedFields);
+        storedFields.clear();
+      }
+    }
+
+    /**
+     * Sometimes we could fetch a field value from either the stored document or docValues.
+     * Such fields have both and are single-valued.
+     * If choosing docValues allows us to avoid accessing the stored document altogether
+     * for all fields to be returned then we do it,
+     * otherwise we prefer the stored value when we have a choice.
+     */
+    private boolean returnStoredFields() {
+      return !(storedFields != null && storedFields.isEmpty());
+    }
+
+    private boolean returnDVFields() {
+      return CollectionUtils.isNotEmpty(dvFields);
+    }
+
+    private Set<String> getStoredFields() {
+      return storedFields;
+    }
+
+    private Set<String> getDvFields() {
+      return dvFields;
+    }
+
+    //who uses all of these?
+    private ReturnFields getReturnFields() {
+      return solrReturnFields;
+    }
+
+    private Set<String> calcStoredFieldsForReturn(ReturnFields returnFields) {
+      final Set<String> storedFields = new HashSet<>();
+      Set<String> fnames = returnFields.getLuceneFieldNames();
+      if (returnFields.wantsAllFields()) {
+        return null;
+      } else if (returnFields.hasPatternMatching()) {
+        for (String s : getAllStored()) {
+          if (returnFields.wantsField(s)) {
+            storedFields.add(s);
+          }
+        }
+      } else if (fnames != null) {
+        storedFields.addAll(fnames);
+        storedFields.removeIf((String name) -> {
+          SchemaField schemaField = searcher.getSchema().getFieldOrNull(name);
+          if (schemaField == null) return false; // Get it from the stored fields if, for some reasonm, we can't get the schema.
+          if (schemaField.stored() && schemaField.multiValued()) return false; // must return multivalued fields from stored data if possible.
+          if (schemaField.stored() == false) return true; // if it's not stored, no choice but to return from DV.
+          return false;
+        });
+      }
+      storedFields.remove(SolrReturnFields.SCORE);
+      return storedFields;
+    }
+
+    private Set<String> calcDocValueFieldsForReturn(ReturnFields returnFields) {
+      // always return not null
+      final Set<String> result = new HashSet<>();
+      if (returnFields.wantsAllFields()) {
+        result.addAll(getNonStoredDVs(true));
+        // check whether there are no additional fields
+        Set<String> fieldNames = returnFields.getLuceneFieldNames(true);
+        if (fieldNames != null) {
+          // add all requested fields that may be useDocValuesAsStored=false
+          for (String fl : fieldNames) {
+            if (getNonStoredDVs(false).contains(fl)) {
+              result.add(fl);
+            }
+          }
+        }
+      } else if (returnFields.hasPatternMatching()) {
+        for (String s : getNonStoredDVs(true)) {
+          if (returnFields.wantsField(s)) {
+            result.add(s);
+          }
+        }
+      } else {
+        Set<String> fnames = returnFields.getLuceneFieldNames();
+        if (fnames != null) {
+          result.addAll(fnames);
+          // here we get all non-stored dv fields because even if a user has set
+          // useDocValuesAsStored=false in schema, he may have requested a field
+          // explicitly using the fl parameter
+          result.retainAll(getNonStoredDVs(false));
+        }
+      }
+      return result;
+    }
+
+    private SolrDocument getSolrDoc(int luceneDocId) {
+
+      SolrDocument sdoc = null;
+      try {
+        if (returnStoredFields()) {
+          Document doc = doc(luceneDocId, getStoredFields());
+          // make sure to use the schema from the searcher and not the request (cross-core)
+          sdoc = DocsStreamer.convertLuceneDocToSolrDoc(doc, searcher.getSchema(), getReturnFields());
+          if (returnDVFields() == false) {
+            solrReturnFields.setFieldSources(SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED);
+            return sdoc;
+          } else {
+            solrReturnFields.setFieldSources(SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES);
+          }
+        } else {
+          // no need to get stored fields of the document, see SOLR-5968
+          sdoc = new SolrDocument();
+          solrReturnFields.setFieldSources(SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV);
+        }
+
+        // decorate the document with non-stored docValues fields
+        if (returnDVFields()) {
+          decorateDocValueFields(sdoc, luceneDocId, getDvFields());
+        }
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading document with docId " + luceneDocId, e);
+      }
+      return sdoc;
+    }
+  }
 }
+

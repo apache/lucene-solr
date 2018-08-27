@@ -165,7 +165,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         .setShardName("shard1");
     split1.process(solrClient);
     CloudTestUtils.waitForState(cloudManager, "failed to split " + collection1, collection1,
-        CloudTestUtils.clusterShape(3, 1, true));
+        CloudTestUtils.clusterShape(3, 1, true, true));
 
     String setListenerCommand = "{" +
         "'set-listener' : " +

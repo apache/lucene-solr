@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
@@ -103,7 +103,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         try {
           o = DocsStreamer.getValue(sf, f);
         } catch (Exception e) {
-          LOG.warn("Error reading a field : " + o, e);
+          log.warn("Error reading a field : " + o, e);
         }
       }
       return o;

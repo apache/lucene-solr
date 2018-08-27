@@ -193,6 +193,7 @@ final class WANDScorer extends Scorer {
     long scaledMinScore = scaleMinScore(minScore, scalingFactor);
     assert scaledMinScore >= minCompetitiveScore;
     minCompetitiveScore = scaledMinScore;
+    maxScorePropagator.setMinCompetitiveScore(minScore);
   }
 
   @Override

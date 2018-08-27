@@ -31,15 +31,26 @@ class FloatFieldWriter extends FieldWriter {
     this.field = field;
   }
 
-  public boolean write(int docId, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
-    NumericDocValues vals = DocValues.getNumeric(reader, this.field);
-    int val;
-    if (vals.advance(docId) == docId) {
-      val = (int)vals.longValue();
+  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+    SortValue sortValue = sortDoc.getSortValue(this.field);
+    if (sortValue != null) {
+      if (sortValue.isPresent()) {
+        float val = (float) sortValue.getCurrentValue();
+        ew.put(this.field, val);
+        return true;
+      } else { //empty-value
+        return false;
+      }
     } else {
-      return false;
+      // field is not part of 'sort' param, but part of 'fl' param
+      NumericDocValues vals = DocValues.getNumeric(reader, this.field);
+      if (vals.advance(sortDoc.docId) == sortDoc.docId) {
+        int val = (int) vals.longValue();
+        ew.put(this.field, Float.intBitsToFloat(val));
+        return true;
+      } else {
+        return false;
+      }
     }
-    ew.put(this.field, Float.intBitsToFloat(val));
-    return true;
   }
 }

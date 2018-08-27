@@ -38,6 +38,7 @@ class StringValue implements SortValue {
   protected int currentOrd;
   protected IntComp comp;
   protected int lastDocID;
+  private boolean present;
 
   public StringValue(SortedDocValues globalDocValues, String field, IntComp comp)  {
     this.globalDocValues = globalDocValues;
@@ -48,6 +49,7 @@ class StringValue implements SortValue {
     this.field = field;
     this.comp = comp;
     this.currentOrd = comp.resetValue();
+    this.present = false;
   }
 
   public StringValue copy() {
@@ -65,27 +67,45 @@ class StringValue implements SortValue {
       docValues.advance(docId);
     }
     if (docId == docValues.docID()) {
+      present = true;
       currentOrd = (int) toGlobal.get(docValues.ordValue());
     } else {
+      present = false;
       currentOrd = -1;
     }
+  }
+
+  @Override
+  public boolean isPresent() {
+    return present;
   }
 
   public void setCurrentValue(SortValue sv) {
     StringValue v = (StringValue)sv;
     this.currentOrd = v.currentOrd;
+    this.present = v.present;
+  }
+
+  public Object getCurrentValue() throws IOException {
+    assert present == true;
+    return docValues.lookupOrd(currentOrd);
+  }
+
+  public String getField() {
+    return field;
   }
 
   public void setNextReader(LeafReaderContext context) throws IOException {
-    if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
+    if (ordinalMap != null) {
       toGlobal = ordinalMap.getGlobalOrds(context.ord);
-      docValues = DocValues.getSorted(context.reader(), field);
     }
+    docValues = DocValues.getSorted(context.reader(), field);
     lastDocID = 0;
   }
 
   public void reset() {
     this.currentOrd = comp.resetValue();
+    this.present = false;
   }
 
   public int compareTo(SortValue o) {
