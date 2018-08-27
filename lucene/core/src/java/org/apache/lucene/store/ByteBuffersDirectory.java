@@ -21,6 +21,17 @@ import java.util.zip.CRC32;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.BitUtil;
 
+/**
+ * A {@link ByteBuffer}-based {@link Directory} implementation that
+ * can be used to store index files on the heap.
+ *
+ * <p>Important: Note that {@link MMapDirectory} is nearly always a better choice as
+ * it uses OS caches more effectively (through memory-mapped buffers).
+ * A heap-based directory like this one can have the advantage in case of ephemeral, small,
+ * short-lived indexes when disk syncs provide an additional overhead.</p>
+ *
+ * @lucene.experimental
+ */
 public final class ByteBuffersDirectory extends BaseDirectory {
   public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_MANY_BUFFERS = 
       (fileName, output) -> {
