@@ -100,8 +100,11 @@ public abstract class FieldOffsetStrategy {
       }
     }
 
-    //TODO if only one OE then return it; don't wrap in Multi.  If none, return NONE
-    return new OffsetsEnum.MultiOffsetsEnum(offsetsEnums);
+    switch (offsetsEnums.size()) {
+      case 0: return OffsetsEnum.EMPTY;
+      case 1: return offsetsEnums.get(0);
+      default: return new OffsetsEnum.MultiOffsetsEnum(offsetsEnums);
+    }
   }
 
   protected void createOffsetsEnumsWeightMatcher(LeafReader _leafReader, int docId, List<OffsetsEnum> results) throws IOException {
