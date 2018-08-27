@@ -64,7 +64,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
  * Test for {@link ComputePlanAction}
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG;")
-public class TestComputePlanAction extends SimSolrCloudTestCase {
+public class TestSimComputePlanAction extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final AtomicBoolean fired = new AtomicBoolean(false);
@@ -135,7 +135,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
         "'waitFor' : '7s'," +
         "'enabled' : true," +
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
-        "{'name':'test','class':'" + TestComputePlanAction.AssertingTriggerAction.class.getName() + "'}]" +
+        "{'name':'test','class':'" + TestSimComputePlanAction.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
@@ -264,7 +264,7 @@ public class TestComputePlanAction extends SimSolrCloudTestCase {
         "'waitFor' : '1s'," +
         "'enabled' : true," +
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
-        "{'name':'test','class':'" + TestComputePlanAction.AssertingTriggerAction.class.getName() + "'}]" +
+        "{'name':'test','class':'" + TestSimComputePlanAction.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
