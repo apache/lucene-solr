@@ -706,11 +706,24 @@ final class FrozenBufferedUpdates {
         final Scorer scorer = weight.scorer(readerContext);
         if (scorer != null) {
           final DocIdSetIterator it = scorer.iterator();
-
-          int docID;
-          while ((docID = it.nextDoc()) < limit)  {
-            if (segState.rld.delete(docID)) {
-              delCount++;
+          if (segState.rld.sortMap != null && limit != Integer.MAX_VALUE) {
+            assert privateSegment != null;
+            // This segment was sorted on flush; we must apply seg-private deletes carefully in this case:
+            int docID;
+            while ((docID = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              // The limit is in the pre-sorted doc space:
+              if (segState.rld.sortMap.newToOld(docID) < limit) {
+                if (segState.rld.delete(docID)) {
+                  delCount++;
+                }
+              }
+            }
+          } else {
+            int docID;
+            while ((docID = it.nextDoc()) < limit) {
+              if (segState.rld.delete(docID)) {
+                delCount++;
+              }
             }
           }
         }

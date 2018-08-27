@@ -76,6 +76,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
@@ -2517,5 +2518,64 @@ public class TestIndexSorting extends LuceneTestCase {
       }
     }
     IOUtils.close(dir);
+  }
+
+  public void testDeleteByTermOrQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig();
+    config.setIndexSort(new Sort(new SortField("numeric", SortField.Type.LONG)));
+    IndexWriter w = new IndexWriter(dir, config);
+    Document doc = new Document();
+    int numDocs = random().nextInt(2000) + 5;
+    long[] expectedValues = new long[numDocs];
+
+    for (int i = 0; i < numDocs; i++) {
+      expectedValues[i] = random().nextInt(Integer.MAX_VALUE);
+      doc.clear();
+      doc.add(new StringField("id", Integer.toString(i), Store.YES));
+      doc.add(new NumericDocValuesField("numeric", expectedValues[i]));
+      w.addDocument(doc);
+    }
+    int numDeleted = random().nextInt(numDocs) + 1;
+    for (int i = 0; i < numDeleted; i++) {
+      int idToDelete = random().nextInt(numDocs);
+      if (random().nextBoolean()) {
+        w.deleteDocuments(new TermQuery(new Term("id", Integer.toString(idToDelete))));
+      } else {
+        w.deleteDocuments(new Term("id", Integer.toString(idToDelete)));
+      }
+
+      expectedValues[idToDelete] = -random().nextInt(Integer.MAX_VALUE); // force a reordering
+      doc.clear();
+      doc.add(new StringField("id", Integer.toString(idToDelete), Store.YES));
+      doc.add(new NumericDocValuesField("numeric", expectedValues[idToDelete]));
+      w.addDocument(doc);
+    }
+
+    int docCount = 0;
+    try (IndexReader reader = DirectoryReader.open(w)) {
+      for (LeafReaderContext leafCtx : reader.leaves()) {
+        final Bits liveDocs = leafCtx.reader().getLiveDocs();
+        final NumericDocValues values = leafCtx.reader().getNumericDocValues("numeric");
+        if (values == null) {
+          continue;
+        }
+        for (int id = 0; id < leafCtx.reader().maxDoc(); id++) {
+          if (liveDocs != null && liveDocs.get(id) == false) {
+            continue;
+          }
+          if (values.advanceExact(id) == false) {
+            continue;
+          }
+          int globalId = Integer.parseInt(leafCtx.reader().document(id).getField("id").stringValue());
+          assertTrue(values.advanceExact(id));
+          assertEquals(expectedValues[globalId], values.longValue());
+          docCount ++;
+        }
+      }
+      assertEquals(docCount, numDocs);
+    }
+    w.close();
+    dir.close();
   }
 }

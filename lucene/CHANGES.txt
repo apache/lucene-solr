@@ -82,6 +82,9 @@ Bug Fixes:
 * LUCENE-8458: Adjust initialization condition of PendingSoftDeletes and ensures
   it is initialized before accepting deletes (Simon Willnauer, Nhat Nguyen)
 
+* LUCENE-8466: IndexWriter.deleteDocs(Query... query) incorrectly applies deletes on flush
+  if the index is sorted. (Adrien Grand, Jim Ferenczi)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
