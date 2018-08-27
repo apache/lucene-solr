@@ -25,9 +25,6 @@ import static org.apache.lucene.store.RAMOutputStream.BUFFER_SIZE;
 /** 
  * A memory-resident {@link IndexInput} implementation. 
  *
- * @see ByteBuffersDataInput
- * @see ByteBuffersIndexInput
- *
  * @lucene.internal 
  * @deprecated This class uses inefficient synchronization and is discouraged
  * in favor of {@link MMapDirectory}. It will be removed in future versions 

@@ -99,3 +99,10 @@ IndexSearcher's search and searchAfter methods were changed to only count hits
 accurately up to 1,000, and Topdocs.totalHits was changed from a long to an
 object that says whether the hit count is accurate or a lower bound of the
 actual hit count.
+
+## RAMDirectory, RAMFile, RAMInputStream, RAMOutputStream are deprecated ##
+
+This RAM-based directory implementation is an old piece of code that uses inefficient
+thread synchronization primitives and can be confused as "faster" than the NIO-based
+MMapDirectory. It is deprecated and scheduled for removal in future versions of 
+Lucene.

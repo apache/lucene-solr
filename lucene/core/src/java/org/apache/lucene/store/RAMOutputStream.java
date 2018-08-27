@@ -29,9 +29,6 @@ import org.apache.lucene.util.Accountables;
 /**
  * A memory-resident {@link IndexOutput} implementation.
  *
- * @see ByteBuffersDataOutput
- * @see ByteBuffersIndexOutput
- * 
  * @lucene.internal
  * @deprecated This class uses inefficient synchronization and is discouraged
  * in favor of {@link MMapDirectory}. It will be removed in future versions 
