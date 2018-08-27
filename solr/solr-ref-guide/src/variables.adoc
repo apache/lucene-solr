@@ -145,3 +145,186 @@ responds with:
   }
 }
 ----
+
+== Caching Variables
+
+Variables can be cached in-memory on the Solr node where the math expression
+was run. A cached variable can then be used in future expressions. Any object
+that can be set to a variable, including data structures and mathematical models can
+be cached in-memory for future use.
+
+The `putCache` function adds a variable to the cache.
+
+In the example below an array is cached in the *workspace* workspace1
+and bound to the *key* key1. The workspace allows different users to cache
+objects in their own workspace. The`putCache` function returns
+the variable that was added to the cache.
+
+[source,text]
+----
+let(a=array(1, 2, 3),
+    b=array(10, 20, 30),
+    c=ebeAdd(a, b),
+    d=putCache(workspace1, key1, c))
+----
+
+When this expression is sent to the /stream handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          11,
+          22,
+          33
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 11
+      }
+    ]
+  }
+}
+----
+
+The `getCache` function retrieves an object from the
+cache by its workspace and key.
+
+In the example below the `getCache` function retrieves
+the array the was cached above and assigns it to variable *a*.
+
+
+[source,text]
+----
+let(a=getCache(workspace1, key1))
+----
+
+When this expression is sent to the /stream handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          11,
+          22,
+          33
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 11
+      }
+    ]
+  }
+}
+----
+
+The `listCache` function can be used to list the workspaces or the
+keys in a specific workspace.
+
+In the example below `listCache` returns all the workspaces in the cache
+as an array of strings.
+
+[source,text]
+----
+let(a=listCache())
+----
+
+When this expression is sent to the /stream handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "a": [
+          "workspace1"
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+
+In the example below all the keys in a specific workspace are listed:
+
+
+[source,text]
+----
+let(a=listCache(workspace1))
+----
+
+When this expression is sent to the /stream handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "a": [
+          "key1"
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+The `removeCache` function can be used to remove a a key from a specific
+workspace. This `removeCache` function removes the key from the cache
+and returns the object that was removed.
+
+In the example below the array that was cached above is removed from the
+cache.
+
+
+[source,text]
+----
+let(a=removeCache(workspace1, key1))
+----
+
+When this expression is sent to the /stream handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "a": [
+          11,
+          22,
+          33
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
