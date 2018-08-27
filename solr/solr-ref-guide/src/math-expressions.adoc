@@ -34,7 +34,7 @@ record in your Solr Cloud cluster computable.
 
 *<<vector-math.adoc#vector-math,Vector Math>>*: Vector math expressions and vector manipulation.
 
-*<<variables.adoc#variables,Variables>>*: Assigning and using variable.
+*<<variables.adoc#variables,Variables and Caching>>*: Assigning and caching variables.
 
 *<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix creation, manipulation, and matrix math.
 
