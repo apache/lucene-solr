@@ -98,7 +98,8 @@ class ChildDocTransformer extends DocTransformer {
       final SortedDocValues segPathDocValues = DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME);
       // passing a different SortedDocValues obj since the child documents which come after are of smaller docIDs,
       // and the iterator can not be reversed.
-      final String transformedDocPath = getPathByDocId(segRootId, DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME));
+      // The root doc is the input document to be transformed, and is not necessarily the root doc of the block of docs.
+      final String rootDocPath = getPathByDocId(segRootId, DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME));
 
       // the key in the Map is the document's ancestors key(one above the parent), while the key in the intermediate
       // MultiMap is the direct child document's key(of the parent document)
@@ -112,9 +113,9 @@ class ChildDocTransformer extends DocTransformer {
         // get the path.  (note will default to ANON_CHILD_KEY if schema is not nested or empty string if blank)
         String fullDocPath = getPathByDocId(docId - segBaseId, segPathDocValues);
 
-        if(isNestedSchema && !fullDocPath.contains(transformedDocPath)) {
+        if(isNestedSchema && !fullDocPath.startsWith(rootDocPath)) {
           // is not a descendant of the transformed doc, return fast.
-          return;
+          continue;
         }
 
         // Is this doc a direct ancestor of another doc we've seen?
