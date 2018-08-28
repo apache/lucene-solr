@@ -84,6 +84,9 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       }
       parentsFilter = new QueryBitSetProducer(rootFilter);
     } else {
+      if(buildHierarchy) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Parent filter should not be sent when the schema is nested");
+      }
       parentsFilter = new QueryBitSetProducer(parseQuery(parentFilterStr, req,  "parentFilter"));
     }
 
@@ -105,7 +108,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
 
     int limit = params.getInt( "limit", 10 );
 
-    return new ChildDocTransformer(field, parentsFilter, childDocSet, limit);
+    return new ChildDocTransformer(field, parentsFilter, childDocSet, buildHierarchy, limit);
   }
 
   private static Query parseQuery(String qstr, SolrQueryRequest req, String param) {

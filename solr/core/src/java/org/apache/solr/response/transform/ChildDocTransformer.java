@@ -54,15 +54,17 @@ class ChildDocTransformer extends DocTransformer {
   private final BitSetProducer parentsFilter;
   private final DocSet childDocSet;
   private final int limit;
+  private final boolean isNestedSchema;
 
   private final SolrReturnFields childReturnFields = new SolrReturnFields();
 
   ChildDocTransformer(String name, BitSetProducer parentsFilter,
-                      DocSet childDocSet, int limit) {
+                      DocSet childDocSet, boolean isNestedSchema, int limit) {
     this.name = name;
     this.parentsFilter = parentsFilter;
     this.childDocSet = childDocSet;
     this.limit = limit;
+    this.isNestedSchema = isNestedSchema;
   }
 
   @Override
@@ -85,11 +87,6 @@ class ChildDocTransformer extends DocTransformer {
       final int segRootId = rootDocId - segBaseId;
       final BitSet segParentsBitSet = parentsFilter.getBitSet(leafReaderContext);
 
-      if(!segParentsBitSet.get(segRootId)) {
-        // doc does not match parent filter, return fast
-        return;
-      }
-
       final int segPrevRootId = segRootId==0? -1: segParentsBitSet.prevSetBit(segRootId - 1); // can return -1 and that's okay
 
       if(segPrevRootId == (segRootId - 1)) {
@@ -99,6 +96,9 @@ class ChildDocTransformer extends DocTransformer {
 
       // we'll need this soon...
       final SortedDocValues segPathDocValues = DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME);
+      // passing a different SortedDocValues obj since the child documents which come after are of smaller docIDs,
+      // and the iterator can not be reversed.
+      final String transformedDocPath = getPathByDocId(segRootId, DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME));
 
       // the key in the Map is the document's ancestors key(one above the parent), while the key in the intermediate
       // MultiMap is the direct child document's key(of the parent document)
@@ -109,8 +109,13 @@ class ChildDocTransformer extends DocTransformer {
       // Loop each child ID up to the parent (exclusive).
       for (int docId = calcDocIdToIterateFrom(lastChildId, rootDocId); docId < rootDocId; ++docId) {
 
-        // get the path.  (note will default to ANON_CHILD_KEY if not in schema or oddly blank)
+        // get the path.  (note will default to ANON_CHILD_KEY if schema is not nested or empty string if blank)
         String fullDocPath = getPathByDocId(docId - segBaseId, segPathDocValues);
+
+        if(isNestedSchema && !fullDocPath.contains(transformedDocPath)) {
+          // is not a descendant of the transformed doc, return fast.
+          return;
+        }
 
         // Is this doc a direct ancestor of another doc we've seen?
         boolean isAncestor = pendingParentPathsToChildren.containsKey(fullDocPath);
@@ -220,12 +225,15 @@ class ChildDocTransformer extends DocTransformer {
   }
 
   /** Looks up the nest path.  If there is none, returns {@link #ANON_CHILD_KEY}. */
-  private static String getPathByDocId(int segDocId, SortedDocValues segPathDocValues) throws IOException {
+  private String getPathByDocId(int segDocId, SortedDocValues segPathDocValues) throws IOException {
+    if (!isNestedSchema) {
+      return ANON_CHILD_KEY;
+    }
     int numToAdvance = segPathDocValues.docID() == -1 ? segDocId : segDocId - (segPathDocValues.docID());
     assert numToAdvance >= 0;
     boolean advanced = segPathDocValues.advanceExact(segDocId);
     if (!advanced) {
-      return ANON_CHILD_KEY;
+      return "";
     }
     return segPathDocValues.binaryValue().utf8ToString();
   }
