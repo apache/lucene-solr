@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
 
 API Changes:
 
+* LUCENE-8467: RAMDirectory, RAMFile, RAMInputStream, RAMOutputStream are deprecated
+  (Dawid Weiss)
+
 * LUCENE-8356: StandardFilter is deprecated (Alan Woodward)
 
 * LUCENE-8373: ENGLISH_STOP_WORD_SET on StandardAnalyzer is deprecated.  Instead
