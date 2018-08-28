@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.AccessDeniedException;
@@ -151,7 +150,7 @@ public final class ByteBuffersDirectory extends BaseDirectory {
     ensureOpen();
     FileEntry removed = files.remove(name);
     if (removed == null) {
-      throw new FileNotFoundException(name);
+      throw new NoSuchFileException(name);
     }
   }
 
@@ -160,7 +159,7 @@ public final class ByteBuffersDirectory extends BaseDirectory {
     ensureOpen();
     FileEntry file = files.get(name);
     if (file == null) {
-      throw new FileNotFoundException(name);
+      throw new NoSuchFileException(name);
     }
     return file.length();
   }
@@ -193,7 +192,7 @@ public final class ByteBuffersDirectory extends BaseDirectory {
 
     FileEntry file = files.get(source);
     if (file == null) {
-      throw new FileNotFoundException(source);
+      throw new NoSuchFileException(source);
     }
     if (files.putIfAbsent(dest, file) != null) {
       throw new FileAlreadyExistsException(dest);
