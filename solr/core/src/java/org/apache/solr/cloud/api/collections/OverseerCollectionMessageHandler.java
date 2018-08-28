@@ -189,6 +189,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       COLOCATED_WITH, null));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String FAILURE_FIELD = "failure";
+  public static final String SUCCESS_FIELD = "success";
 
   Overseer overseer;
   HttpShardHandlerFactory shardHandlerFactory;
@@ -909,8 +911,14 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     for (String k:requestMap.keySet()) {
       log.debug("I am Waiting for :{}/{}", k, requestMap.get(k));
       NamedList reqResult = waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k));
+      /*
+       * backward compatibility reasons, add the response with the async ID as top level.
+       * This can be removed in Solr 9
+       */
+      results.add(requestMap.get(k), reqResult);
       log.debug("Async response for {}: {}",  k, reqResult);
-      if (reqResult.get("STATUS").equals("failed")) {
+      if ("failed".equalsIgnoreCase(((String)reqResult.get("STATUS")))) {
+        log.error("Error from shard {}: {}", k,  reqResult);
         addFailure(results, k, reqResult);
       } else {
         addSuccess(results, k, reqResult);

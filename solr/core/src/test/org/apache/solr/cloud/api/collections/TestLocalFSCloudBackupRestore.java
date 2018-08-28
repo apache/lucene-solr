@@ -33,6 +33,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
   public static void setupClass() throws Exception {
     configureCluster(NUM_SHARDS)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal-faulty").resolve("conf"))
         .configure();
 
     boolean whitespacesInPath = random().nextBoolean();
@@ -44,7 +45,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
   }
 
   @Override
-  public String getCollectionName() {
+  public String getCollectionNamePrefix() {
     return "backuprestore";
   }
 
