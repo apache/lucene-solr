@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -33,25 +34,25 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
-import org.apache.http.Header;
+import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
-import org.apache.http.auth.AuthSchemeProvider;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.config.Lookup;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.message.BasicHeader;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.Args;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.JWTAuthPlugin.AuthenticationResponse.AuthCode;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
@@ -74,7 +75,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin, SpecProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
   private static final String PARAM_BLOCK_UNKNOWN = "block_unknown";
   private static final String PARAM_JWK_URL = "jwk_url";
   private static final String PARAM_JWK = "jwk";
@@ -89,38 +89,43 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private static final String PARAM_CLAIMS_MATCH = "claims_match";
   private static final String AUTH_REALM = "solr";
 
-  private String jwk_url;
-  private Map<String, Object> jwk;
+  private final PkiDelegationInterceptor interceptor = new PkiDelegationInterceptor();
+
   private JwtConsumer jwtConsumer;
   private String iss;
   private String aud;
   private boolean requireSubject;
   private boolean requireExpirationTime;
   private List<String> algWhitelist;
-  private HttpsJwks httpsJkws;
-  private long jwkCacheDuration;
-  VerificationKeyResolver verificationKeyResolver;
-  private JsonWebKeySet jwks;
+  private VerificationKeyResolver verificationKeyResolver;
   private String principalClaim;
   private String rolesClaim;
-  private Map<String, String> claimsMatch;
   private HashMap<String, Pattern> claimsMatchCompiled;
   private boolean blockUnknown;
+  private CoreContainer coreContainer;
+
+  /**
+   * Initialize plugin with core container, this method is chosen by reflection at create time
+   * @param coreContainer instance of core container
+   */
+  public JWTAuthPlugin(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
+  }
 
   @Override
   public void init(Map<String, Object> pluginConfig) {
     blockUnknown = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, false)));
-    jwk_url = (String) pluginConfig.get(PARAM_JWK_URL);
-    jwk = (Map<String, Object>) pluginConfig.get(PARAM_JWK);
+    String jwk_url = (String) pluginConfig.get(PARAM_JWK_URL);
+    Map<String, Object> jwk = (Map<String, Object>) pluginConfig.get(PARAM_JWK);
     iss = (String) pluginConfig.get(PARAM_ISSUER);
     aud = (String) pluginConfig.get(PARAM_AUDIENCE);
     requireSubject = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_SUBJECT, "true")));
     requireExpirationTime = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_EXPIRATIONTIME, "true")));
     algWhitelist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
-    jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
+    long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
     principalClaim = (String) pluginConfig.getOrDefault(PARAM_PRINCIPAL_CLAIM, "sub");
     rolesClaim = (String) pluginConfig.get(PARAM_ROLES_CLAIM);
-    claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
+    Map<String, String> claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
     claimsMatchCompiled = new HashMap<>();
     if (claimsMatch != null) {
       for (Map.Entry<String, String> entry : claimsMatch.entrySet()) {
@@ -139,13 +144,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jwk_url must be a valid https URL");
       }
-      httpsJkws = new HttpsJwks(jwk_url);
+      HttpsJwks httpsJkws = new HttpsJwks(jwk_url);
       httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
       verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
       initConsumer();
     } else if (jwk != null) {
       try {
-        jwks = parseJwkSet(jwk);
+        JsonWebKeySet jwks = parseJwkSet(jwk);
         verificationKeyResolver = new JwksVerificationKeyResolver(jwks.getJsonWebKeys());
         initConsumer();
       } catch (JoseException e) {
@@ -156,7 +161,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     }
   }
 
-  protected JsonWebKeySet parseJwkSet(Map<String, Object> jwkObj) throws JoseException {
+  JsonWebKeySet parseJwkSet(Map<String, Object> jwkObj) throws JoseException {
     JsonWebKeySet webKeySet = new JsonWebKeySet();
     if (jwkObj.containsKey("keys")) {
       List<Object> jwkList = (List<Object>) jwkObj.get("keys");
@@ -169,6 +174,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     return webKeySet;
   }
 
+  /**
+   * Main authentication method that looks for correct JWT token in the Authorization header
+   */
   @Override
   public boolean doAuthenticate(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws Exception {
     HttpServletRequest request = (HttpServletRequest) servletRequest;
@@ -187,10 +195,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin not correctly configured");
     }
 
-    if (header != null) {
-      // Put the header on the thread for later use in inter-node request
-      authHeader.set(new BasicHeader(HttpHeaders.AUTHORIZATION, header));
-    }
     AuthenticationResponse authResponse = authenticate(header);
     switch(authResponse.authCode) {
       case AUTHENTICATED:
@@ -200,6 +204,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
             return authResponse.getPrincipal();
           }
         };
+        if (!(authResponse.getPrincipal() instanceof JWTPrincipal)) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
+        }
         if (log.isDebugEnabled())
           log.debug("Authentication SUCCESS");
         filterChain.doFilter(wrapper, response);
@@ -282,9 +289,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
                   roles = new HashSet<>(jwtClaims.getStringListClaimValue(rolesClaim));
                 }
                 // Pass roles with principal to signal to any Authorization plugins that user has some verified role claims
-                return new AuthenticationResponse(AuthCode.AUTHENTICATED, new PrincipalWithUserRoles(principal, roles));
+                return new AuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipalWithUserRoles(principal, jwtCompact, jwtClaims.getClaimsMap(), roles));
               } else {
-                return new AuthenticationResponse(AuthCode.AUTHENTICATED, new BasicUserPrincipal(principal));
+                return new AuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
               }
             } catch (InvalidJwtException e) {
               // Whether or not the JWT has expired being one common reason for invalidity
@@ -336,16 +343,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
   @Override
   public void close() throws IOException {
-
-  }
-
-  @Override
-  public void closeRequest() {
-    authHeader.remove();
+    HttpClientUtil.removeRequestInterceptor(interceptor);
   }
 
   /**
-   * Gets a client builder for inter-node requests
+   * Register an interceptor to be able to add our header to inter-node requests
    * @param builder any existing builder or null to create a new one
    * @return Returns an instance of a SolrHttpClientBuilder to be used for configuring the
    * HttpClients for use with SolrJ clients.
@@ -353,26 +355,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
    */
   @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
-    if (builder == null) {
-      builder = SolrHttpClientBuilder.create();
-    }
-    builder.setAuthSchemeRegistryProvider(() -> {
-      Lookup<AuthSchemeProvider> authProviders = RegistryBuilder.<AuthSchemeProvider>create()
-          .register("Bearer", new BearerAuthSchemeProvider())
-          .build();
-      return authProviders;
-    });
-    builder.setDefaultCredentialsProvider(() -> {
-      CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-      // Pull the authorization bearer header from ThreadLocal
-      if (authHeader.get() == null) {
-        log.warn("Cannot find Authorization header on request thread");
-      } else {
-        // TODO: Limit AuthScope?
-        credentialsProvider.setCredentials(AuthScope.ANY, new TokenCredentials(authHeader.get().getValue()));
-      }
-      return credentialsProvider;
-    });
+    // Register interceptor for inter-node requests, that delegates to PKI if JWTPrincipal is not found on http context
+    HttpClientUtil.addRequestInterceptor(interceptor);
     return builder;
   }
 
@@ -408,7 +392,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     private String errorMessage;
     private AuthCode authCode;
     private InvalidJwtException jwtException;
-    
+
     enum AuthCode {
       PASS_THROUGH("No user, pass through"),             // Returned when no user authentication but block_unknown=false 
       AUTHENTICATED("Authenticated"),                    // Returned when authentication OK 
@@ -471,4 +455,137 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     }
   }
 
+  /**
+   * Principal object that carries JWT token and claims for authenticated user.
+   */
+  public static class JWTPrincipal implements Principal, Serializable {
+    private static final long serialVersionUID = 4144666467522831388L;
+    final String username;
+    String token;
+    Map<String,Object> claims;
+  
+    /**
+     * User principal with user name as well as one or more roles that he/she belong to
+     * @param username string with user name for user
+     * @param token compact string representation of JWT token
+     * @param claims list of verified JWT claims as a map
+     */
+    public JWTPrincipal(final String username, String token, Map<String,Object> claims) {
+      super();
+      Args.notNull(username, "User name");
+      Args.notNull(token, "JWT token");
+      Args.notNull(claims, "JWT claims");
+      this.token = token;
+      this.claims = claims;
+      this.username = username;
+    }
+  
+    @Override
+    public String getName() {
+      return this.username;
+    }
+
+    public String getToken() {
+      return token;
+    }
+
+    public Map<String, Object> getClaims() {
+      return claims;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      JWTPrincipal that = (JWTPrincipal) o;
+      return Objects.equals(username, that.username) &&
+          Objects.equals(token, that.token) &&
+          Objects.equals(claims, that.claims);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(username, token, claims);
+    }
+
+    @Override
+    public String toString() {
+      return "JWTPrincipal{" +
+          "username='" + username + '\'' +
+          ", token='" + token + '\'' +
+          ", claims=" + claims +
+          '}';
+    }
+  }
+  
+  /**
+   * JWT principal that contains username, token, claims and a list of roles the user has, 
+   * so one can keep track of user-role mappings in an Identity Server external to Solr and 
+   * pass the information to Solr in a signed JWT token. The role information can then be used to authorize
+   * requests without the need to maintain or lookup what roles each user belongs to.</p>
+   */ 
+   public static class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedUserRoles {
+    private final Set<String> roles;
+
+    public JWTPrincipalWithUserRoles(final String username, String token, Map<String,Object> claims, Set<String> roles) {
+      super(username, token, claims);
+      Args.notNull(roles, "User roles");
+      this.roles = roles;
+    }
+    
+    /**
+     * Gets the list of roles
+     */
+    @Override
+    public Set<String> getVerifiedRoles() {
+      return roles;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof JWTPrincipalWithUserRoles))
+        return false;
+      JWTPrincipalWithUserRoles that = (JWTPrincipalWithUserRoles) o;
+      return super.equals(o) && roles.equals(that.roles);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(username, token, claims, roles);
+    }
+    
+    @Override
+    public String toString() {
+      return "JWTPrincipalWithUserRoles{" +
+          "username='" + username + '\'' +
+          ", token='" + token + '\'' +
+          ", claims=" + claims +
+          ", roles=" + roles +
+          '}';
+    }
+  }
+
+  // The interceptor class that adds correct header or delegates to PKI
+  private class PkiDelegationInterceptor implements HttpRequestInterceptor {
+    @Override
+    public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+      if (context instanceof HttpClientContext) {
+        HttpClientContext httpClientContext = (HttpClientContext) context;
+        if (httpClientContext.getUserToken() instanceof JWTPrincipal) {
+          JWTPrincipal jwtPrincipal = (JWTPrincipal) httpClientContext.getUserToken();
+          request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.token);
+          log.debug("Set JWT header on inter-node request");
+          return;
+        }
+      }
+
+      if (coreContainer.getPkiAuthenticationPlugin() != null) {
+        log.debug("Inter-node request delegated from JWTAuthPlugin to PKIAuthenticationPlugin");
+        coreContainer.getPkiAuthenticationPlugin().setHeader(request);
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+            "JWTAuthPlugin wants to delegate inter-node request to PKI, but PKI plugin was not initialized");
+      }
+    }
+  }
 }
