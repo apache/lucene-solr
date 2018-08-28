@@ -16,14 +16,9 @@
  */
 package org.apache.solr.response.transform;
 
-import java.util.Iterator;
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -86,6 +81,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     String test3[] = new String[] {
         "//*[@numFound='1']",
+        "count(/response/result/doc[1]/doc)=2",
         "/response/result/doc[1]/doc[1]/str[@name='id']='5'" ,
         "/response/result/doc[1]/doc[2]/str[@name='id']='7'" };
 
@@ -96,18 +92,6 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:foo\"]"), test2);
-
-    try(SolrQueryRequest req = req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]")) {
-      BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
-      Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
-      while (docsStreamer.hasNext()) {
-        SolrDocument doc = docsStreamer.next();
-        assertTrue("root doc should have anonymous child docs", doc.hasChildDocuments());
-        assertEquals("should only have 2 child docs", 2, doc.getChildDocumentCount());
-      }
-    }
-
 
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
