@@ -205,7 +205,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     final CloudSolrClient client = cluster.getSolrClient();
 
     assertNotNull(cluster.getZkServer());
-    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
+    List<JettySolrRunner> jettys = new ArrayList<>(cluster.getJettySolrRunners()); // make a copy
     assertEquals(nodeCount, jettys.size());
     for (JettySolrRunner jetty : jettys) {
       assertTrue(jetty.isRunning());

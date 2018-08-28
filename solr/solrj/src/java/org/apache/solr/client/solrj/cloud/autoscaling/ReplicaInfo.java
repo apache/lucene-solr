@@ -20,14 +20,18 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.BiPredicate;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 
+import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
+import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 
 
@@ -53,7 +57,7 @@ public class ReplicaInfo implements MapWriter {
   }
 
   public ReplicaInfo(String name, String core, String coll, String shard, Replica.Type type, String node, Map<String, Object> vals) {
-    if(vals==null) vals = Collections.emptyMap();
+    if (vals == null) vals = Collections.emptyMap();
     this.name = name;
     if (vals != null) {
       this.variables.putAll(vals);
@@ -66,29 +70,36 @@ public class ReplicaInfo implements MapWriter {
     this.node = node;
   }
 
+  ReplicaInfo(Map<String, Object> map) {
+    this.name = map.keySet().iterator().next();
+    Map details = (Map) map.get(name);
+    details = Utils.getDeepCopy(details, 4);
+    this.collection = (String) details.remove("collection");
+    this.shard = (String) details.remove("shard");
+    this.core = (String) details.remove("core");
+    this.node = (String) details.remove("node_name");
+    this.isLeader = Boolean.parseBoolean((String) details.getOrDefault("leader", "false"));
+    details.remove("leader");
+    type = Replica.Type.valueOf((String) details.getOrDefault("type", "NRT"));
+    details.remove("type");
+    this.variables.putAll(details);
+  }
+
   public Object clone() {
     return new ReplicaInfo(name, core, collection, shard, type, node, variables);
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
+    BiPredicate<String, Object> p = dedupeKeyPredicate(new HashSet<>())
+        .and(NON_NULL_VAL);
     ew.put(name, (MapWriter) ew1 -> {
-      for (Map.Entry<String, Object> e : variables.entrySet()) {
-        ew1.put(e.getKey(), e.getValue());
-      }
-      if (core != null && !variables.containsKey(ZkStateReader.CORE_NAME_PROP)) {
-        ew1.put(ZkStateReader.CORE_NAME_PROP, core);
-      }
-      if (shard != null && !variables.containsKey(ZkStateReader.SHARD_ID_PROP)) {
-        ew1.put(ZkStateReader.SHARD_ID_PROP, shard);
-      }
-      if (collection != null && !variables.containsKey(ZkStateReader.COLLECTION_PROP)) {
-        ew1.put(ZkStateReader.COLLECTION_PROP, collection);
-      }
-      if (node != null && !variables.containsKey(ZkStateReader.NODE_NAME_PROP)) {
-        ew1.put(ZkStateReader.NODE_NAME_PROP, node);
-      }
-      if (type != null) ew1.put(ZkStateReader.REPLICA_TYPE, type.toString());
+      ew1.put(ZkStateReader.CORE_NAME_PROP, core, p)
+          .put(ZkStateReader.SHARD_ID_PROP, shard, p)
+          .put(ZkStateReader.COLLECTION_PROP, collection, p)
+          .put(ZkStateReader.NODE_NAME_PROP, node, p)
+          .put(ZkStateReader.REPLICA_TYPE, type.toString(), p);
+      for (Map.Entry<String, Object> e : variables.entrySet()) ew1.put(e.getKey(), e.getValue(), p);
     });
   }
 

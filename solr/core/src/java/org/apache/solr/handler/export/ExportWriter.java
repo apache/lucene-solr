@@ -290,7 +290,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     LeafReaderContext context = leaves.get(ord);
     int fieldIndex = 0;
     for (FieldWriter fieldWriter : fieldWriters) {
-      if (fieldWriter.write(sortDoc.docId, context.reader(), ew, fieldIndex)) {
+      if (fieldWriter.write(sortDoc, context.reader(), ew, fieldIndex)) {
         ++fieldIndex;
       }
     }
@@ -431,7 +431,18 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         throw new IOException("Sort fields must be one of the following types: int,float,long,double,string,date,boolean");
       }
     }
-
+    //SingleValueSortDoc etc are specialized classes which don't have array lookups. On benchmarking large datasets
+    //This is faster than the using an array in SortDoc . So upto 4 sort fields we still want to keep specialized classes.
+    //SOLR-12616 has more details
+    if (sortValues.length == 1) {
+      return new SingleValueSortDoc(sortValues[0]);
+    } else if (sortValues.length == 2) {
+      return new DoubleValueSortDoc(sortValues[0], sortValues[1]);
+    } else if (sortValues.length == 3) {
+      return new TripleValueSortDoc(sortValues[0], sortValues[1], sortValues[2]);
+    } else if (sortValues.length == 4) {
+      return new QuadValueSortDoc(sortValues[0], sortValues[1], sortValues[2], sortValues[3]);
+    }
     return new SortDoc(sortValues);
   }
 

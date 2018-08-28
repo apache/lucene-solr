@@ -16,15 +16,11 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
-
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
 /** random bounding box and polygon query tests for random generated {@link Line} types */
 public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
@@ -42,17 +38,25 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Validator getValidator() {
+  protected Validator getValidator(QueryRelation queryRelation) {
+    VALIDATOR.setRelation(queryRelation);
     return VALIDATOR;
   }
 
-  protected class LineValidator implements Validator {
+  protected class LineValidator extends Validator {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
+      Line l = (Line)shape;
+      if (queryRelation == QueryRelation.WITHIN) {
+        // within: bounding box of shape should be within query box
+        return minLat <= quantizeLat(l.minLat) && maxLat >= quantizeLat(l.maxLat)
+            && minLon <= quantizeLon(l.minLon) && maxLon >= quantizeLon(l.maxLon);
+      }
+
       // to keep it simple we convert the bbox into a polygon and use poly2d
       Polygon2D p = Polygon2D.create(new Polygon[] {new Polygon(new double[] {minLat, minLat, maxLat, maxLat, minLat},
           new double[] {minLon, maxLon, maxLon, minLon, minLon})});
-      return testLine(p, (Line)shape);
+      return testLine(p, l);
     }
 
     @Override
@@ -62,11 +66,12 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
 
     private boolean testLine(Polygon2D queryPoly, Line line) {
       double ax, ay, bx, by, temp;
+      Relation r;
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        ay = decodeLatitude(encodeLatitude(line.getLat(i)));
-        ax = decodeLongitude(encodeLongitude(line.getLon(i)));
-        by = decodeLatitude(encodeLatitude(line.getLat(j)));
-        bx = decodeLongitude(encodeLongitude(line.getLon(j)));
+        ay = quantizeLat(line.getLat(i));
+        ax = quantizeLon(line.getLon(i));
+        by = quantizeLat(line.getLat(j));
+        bx = quantizeLon(line.getLon(j));
         if (ay > by) {
           temp = ay;
           ay = by;
@@ -84,11 +89,16 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
             bx = temp;
           }
         }
-        if (queryPoly.relateTriangle(ax, ay, bx, by, ax, ay) != Relation.CELL_OUTSIDE_QUERY) {
-          return true;
+        r = queryPoly.relateTriangle(ax, ay, bx, by, ax, ay);
+        if (queryRelation == QueryRelation.DISJOINT) {
+          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
+        } else if (queryRelation == QueryRelation.WITHIN) {
+          if (r != Relation.CELL_INSIDE_QUERY) return false;
+        } else {
+          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
         }
       }
-      return false;
+      return queryRelation == QueryRelation.INTERSECTS ? false : true;
     }
   }
 }

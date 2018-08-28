@@ -44,7 +44,6 @@
     <dependency org="org.ow2.asm" name="asm-commons" rev="${/org.ow2.asm/asm-commons}" conf="compile"/>
     <dependency org="org.restlet.jee" name="org.restlet" rev="${/org.restlet.jee/org.restlet}" conf="compile"/>
     <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile"/>
-    <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile"/>
     <dependency org="dom4j" name="dom4j" rev="${/dom4j/dom4j}" conf="compile"/>
     <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile"/>
 

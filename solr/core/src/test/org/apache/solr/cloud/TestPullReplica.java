@@ -69,7 +69,7 @@ import com.carrotsearch.randomizedtesting.annotations.Repeat;
 @Slow
 public class TestPullReplica extends SolrCloudTestCase {
   
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private String collectionName = null;
   private final static int REPLICATION_TIMEOUT_SECS = 10;
@@ -85,7 +85,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     Boolean useLegacyCloud = rarely();
-    LOG.info("Using legacyCloud?: {}", useLegacyCloud);
+    log.info("Using legacyCloud?: {}", useLegacyCloud);
     CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
     CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
@@ -107,14 +107,14 @@ public class TestPullReplica extends SolrCloudTestCase {
   public void tearDown() throws Exception {
     for (JettySolrRunner jetty:cluster.getJettySolrRunners()) {
       if (!jetty.isRunning()) {
-        LOG.warn("Jetty {} not running, probably some bad test. Starting it", jetty.getLocalPort());
+        log.warn("Jetty {} not running, probably some bad test. Starting it", jetty.getLocalPort());
         ChaosMonkey.start(jetty);
       }
     }
     if (cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName) != null) {
-      LOG.info("tearDown deleting collection");
+      log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-      LOG.info("Collection deleted");
+      log.info("Collection deleted");
       waitForDeletion(collectionName);
     }
     super.tearDown();
@@ -321,18 +321,18 @@ public class TestPullReplica extends SolrCloudTestCase {
     List<Replica.State> statesSeen = new ArrayList<>(3);
     cluster.getSolrClient().registerCollectionStateWatcher(collectionName, (liveNodes, collectionState) -> {
       Replica r = collectionState.getSlice("shard1").getReplica("core_node2");
-      LOG.info("CollectionStateWatcher state change: {}", r);
+      log.info("CollectionStateWatcher state change: {}", r);
       if (r == null) {
         return false;
       }
       statesSeen.add(r.getState());
-      LOG.info("CollectionStateWatcher saw state: {}", r.getState());
+      log.info("CollectionStateWatcher saw state: {}", r.getState());
       return r.getState() == Replica.State.ACTIVE;
     });
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL).process(cluster.getSolrClient());
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
     zkClient().printLayoutToStdOut();
-    LOG.info("Saw states: " + Arrays.toString(statesSeen.toArray()));
+    log.info("Saw states: " + Arrays.toString(statesSeen.toArray()));
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), 3, statesSeen.size());
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.DOWN, statesSeen.get(0));
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.RECOVERING, statesSeen.get(0));
@@ -557,7 +557,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
-      LOG.info("Collection not yet deleted");
+      log.info("Collection not yet deleted");
       try {
         Thread.sleep(100);
         if (t.hasTimedOut()) {

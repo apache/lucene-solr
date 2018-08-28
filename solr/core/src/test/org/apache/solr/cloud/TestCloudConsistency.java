@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 
 public class TestCloudConsistency extends SolrCloudTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static Map<JettySolrRunner, SocketProxy> proxies;
   private static Map<URI, JettySolrRunner> jettys;
@@ -70,7 +70,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jetty);//TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
       proxy.open(jetty.getBaseUrl().toURI());
-      LOG.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
+      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
       proxies.put(jetty, proxy);
       jettys.put(proxy.getUrl(), jetty);
     }

@@ -54,6 +54,7 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -125,6 +126,7 @@ public class Overseer implements SolrCloseable {
 
     @Override
     public void run() {
+      MDCLoggingContext.setNode(zkController.getNodeName() );
 
       LeaderStatus isLeader = amILeader();
       while (isLeader == LeaderStatus.DONT_KNOW) {
@@ -523,6 +525,9 @@ public class Overseer implements SolrCloseable {
   }
 
   public synchronized void start(String id) {
+    MDCLoggingContext.setNode(zkController == null ?
+        null :
+        zkController.getNodeName());
     this.id = id;
     closed = false;
     doClose();

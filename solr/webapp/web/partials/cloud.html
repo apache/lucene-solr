@@ -18,6 +18,65 @@ limitations under the License.
 
   <div id="frame">
 
+    <div id="zk-status-content" class="content clearfix" ng-show="showZkStatus">
+      <div id="zk-controls">
+        <a class="reload" ng-click="initZookeeper()"><span>Refresh</span></a>
+        <a class="details-button" ng-click="toggleDetails()" ng-class="{on:showDetails}">
+          <span>Toggle details</span>
+        </a>
+      </div>
+
+      <div class="zookeeper-status">Status: <span class="zkstatus-{{zkState.status}}">{{zkState.status}}</span></div>
+      <div class="zookeeper-errors" ng-show="zkState.errors">
+        Errors:
+        <ul>
+          <li ng-repeat="error in zkState.errors">{{error}}</li>
+        </ul>
+      </div>
+      <div>ZK connection string: {{zkState.zkHost}}</div>
+      <div>Ensemble size: {{zkState.ensembleSize}}</div>
+      <div>Ensemble mode: {{zkState.mode}}</div>
+      
+      <table id="zk-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th ng-repeat="host in zkState.details">{{host.host}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="key in mainKeys">
+            <td>{{key}}</td>
+            <td ng-repeat="host in zkState.details" ng-style="key === 'zk_server_state' && host[key] === 'leader' ? {'font-weight': 'bold'} : {'font-weight': 'normal'}">
+              {{key === 'zk_version' ? host[key].split("-")[0] : host[key]}}
+            </td>
+          </tr>
+          <tr ng-repeat="key in ensembleMainKeys" ng-show="zkState.mode === 'ensemble'">
+            <td>{{key}}</td>
+            <td ng-repeat="host in zkState.details">
+              {{host[key]}}
+            </td>
+          </tr>
+          <tr id="detail-divider" ng-show="showDetails" >
+            <td ng-class="details"></td>
+            <td ng-repeat="host in zkState.details" ng-class="details"></td>
+          </tr>
+          <tr ng-repeat="key in detailKeys" ng-show="showDetails">
+            <td>{{key}}</td>
+            <td ng-repeat="host in zkState.details">
+              {{host[key]}}
+            </td>
+          </tr>
+          <tr ng-repeat="key in ensembleDetailKeys" ng-show="showDetails && zkState.mode === 'ensemble'">
+            <td>{{key}}</td>
+            <td ng-repeat="host in zkState.details">
+              {{host[key]}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div id="tree-content" class="content clearfix" ng-show="showTree">
     <jstree class="tree" on-select="showTreeLink(url)" id="tree" data="tree"></jstree>
 

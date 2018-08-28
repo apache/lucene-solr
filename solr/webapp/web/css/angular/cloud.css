@@ -536,7 +536,8 @@ limitations under the License.
 }
 
 /* Styling of reload and details buttons */
-#content #cloud #controls
+#content #cloud #controls,
+#content #cloud #frame #zk-status-content #zk-controls
 {
   display: block;
   height: 30px;
@@ -641,4 +642,70 @@ limitations under the License.
     border-radius: 4px;
     background-color: rgba(0,0,0,.5);
     -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+}
+#content #cloud #zk-table td,
+#content #cloud #zk-table th 
+{
+  border: 0px solid #ddd;
+  border-bottom: 0.50px solid #eee;
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+#content #cloud #zk-table th 
+{
+  border-bottom: 1px solid #ddd;
+  border-top: 1px solid #ddd;
+  font-weight: bolder;
+  font-stretch: extra-expanded;
+  background: #F8F8F8;
+}
+
+#content #cloud #zk-table
+{
+  border-top: 1px solid #c0c0c0;
+  margin-top: 10px;
+  border-collapse: collapse;
+
+  font-weight: bold;
+}
+
+#content #cloud #zk-table #detail-divider 
+{
+  background-color: #f8f8f8;
+  height: 10px;
+}
+
+.zookeeper-status
+{
+  font-size: large;
+}
+
+.zookeeper-errors
+{
+  background-color: lightpink;
+  padding: 10px;
+  border: 1px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.zookeeper-errors li::before 
+{
+  content: "- ";
+}
+
+.zkstatus-green
+{
+  color: darkgreen;
+}
+
+.zkstatus-yellow
+{
+  color: orange;
+}
+
+.zkstatus-red
+{
+  color: red;
 }

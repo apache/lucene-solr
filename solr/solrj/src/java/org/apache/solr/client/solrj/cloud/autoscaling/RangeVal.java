@@ -35,8 +35,12 @@ class RangeVal implements MapWriter {
         Double.compare(testVal.doubleValue(), max.doubleValue()) <= 0;
   }
 
+  public Double realDelta(double v) {
+    if (actual != null) return v - actual.doubleValue();
+    else return delta(v);
+  }
+
   public Double delta(double v) {
-//      if (actual != null) return v - actual.doubleValue();
     if (v >= max.doubleValue()) return v - max.doubleValue();
     if (v <= min.doubleValue()) return v - min.doubleValue();
     return 0d;
@@ -49,6 +53,8 @@ class RangeVal implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    ew.put("min", min).put("max", max).putIfNotNull("actual", actual);
+    ew.put("min", min)
+        .put("max", max)
+        .putIfNotNull("actual", actual);
   }
 }

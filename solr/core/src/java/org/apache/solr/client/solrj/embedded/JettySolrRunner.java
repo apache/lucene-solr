@@ -89,17 +89,17 @@ public class JettySolrRunner {
   private final JettyConfig config;
   private final String solrHome;
   private final Properties nodeProperties;
-  
+
   private volatile boolean startedBefore = false;
 
   private LinkedList<FilterHolder> extraFilters;
 
   private static final String excludePatterns = "/css/.+,/js/.+,/img/.+,/tpl/.+";
-  
+
   private int proxyPort = -1;
 
   public static class DebugFilter implements Filter {
-    public final static Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private AtomicLong nRequests = new AtomicLong();
     

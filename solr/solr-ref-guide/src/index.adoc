@@ -1,5 +1,5 @@
 = Apache Solr Reference Guide
-:page-children: about-this-guide, getting-started, deployment-and-operations, using-the-solr-administration-user-interface, documents-fields-and-schema-design, understanding-analyzers-tokenizers-and-filters, indexing-and-basic-data-operations, searching, solrcloud, legacy-scaling-and-distribution, the-well-configured-solr-instance, monitoring-solr, securing-solr, client-apis, further-assistance, solr-glossary, errata, how-to-contribute
+:page-children: about-this-guide, getting-started, deployment-and-operations, using-the-solr-administration-user-interface, documents-fields-and-schema-design, understanding-analyzers-tokenizers-and-filters, indexing-and-basic-data-operations, searching, streaming-expressions, solrcloud, legacy-scaling-and-distribution, the-well-configured-solr-instance, monitoring-solr, securing-solr, client-apis, further-assistance, solr-glossary, errata, how-to-contribute
 :page-notitle:
 :page-toc: false
 :page-layout: home
@@ -31,7 +31,7 @@ This Reference Guide is the official Solr documentation, written and published b
 
 ifdef::backend-html5[]
 ++++
-<p><a class="btn btn-primary btn-lg noCrossRef" href="https://lucene.apache.org/solr/mirrors-solr-latest-redir.html" role="button">Download Solr</a></p>
+<p><a class="btn btn-home btn-lg noCrossRef" href="https://lucene.apache.org/solr/mirrors-solr-latest-redir.html" role="button">Download Solr</a></p>
 ++++
 endif::[]
 --
@@ -68,22 +68,25 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 
 [.row.match-my-cols]
 --
-.Indexing & Searching Documents
+.Indexing Documents
 [sidebar.col-sm-6.col-md-4]
 ****
 *<<indexing-and-basic-data-operations.adoc#indexing-and-basic-data-operations,Indexing and Basic Data Operations>>*: This section describes the indexing process and basic index operations, such as commit, optimize, and rollback.
 
-*<<searching.adoc#searching,Searching>>*: This section presents an overview of the search process in Solr. It describes the main components used in searches, including request handlers, query parsers, and response writers. It lists the query parameters that can be passed to Solr, and it describes features such as boosting and faceting, which can be used to fine-tune search results.
-
-*<<client-apis.adoc#client-apis,Client APIs>>*: This section tells you how to access Solr through various client APIs, including JavaScript, JSON, and Ruby.
-****
-
-.Designing Fields
-[sidebar.col-sm-6.col-md-4]
-****
 *<<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>*: This section describes how Solr organizes data in the index. It explains how a Solr schema defines the fields and field types which Solr uses to organize data within the document files it indexes.
 
 *<<understanding-analyzers-tokenizers-and-filters.adoc#understanding-analyzers-tokenizers-and-filters,Understanding Analyzers, Tokenizers, and Filters>>*: This section explains how Solr prepares text for indexing and searching. Analyzers parse text and produce a stream of tokens, lexical units used for indexing and searching. Tokenizers break field data down into tokens. Filters perform other transformational or selective work on token streams.
+****
+
+.Searching Documents
+[sidebar.col-sm-6.col-md-4]
+****
+
+*<<searching.adoc#searching,Searching>>*: This section presents an overview of the search process in Solr. It describes the main components used in searches, including request handlers, query parsers, and response writers. It lists the query parameters that can be passed to Solr, and it describes features such as boosting and faceting, which can be used to fine-tune search results.
+
+*<<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>*: A stream processing language for Solr, with a suite of functions to perform many types of queries and parallel execution tasks.
+
+*<<client-apis.adoc#client-apis,Client APIs>>*: This section tells you how to access Solr through various client APIs, including JavaScript, JSON, and Ruby.
 ****
 --
 

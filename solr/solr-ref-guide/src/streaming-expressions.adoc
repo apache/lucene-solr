@@ -1,5 +1,5 @@
 = Streaming Expressions
-:page-children: stream-source-reference, stream-decorator-reference, stream-evaluator-reference, statistical-programming, math-expressions, graph-traversal
+:page-children: stream-source-reference, stream-decorator-reference, stream-evaluator-reference, math-expressions, graph-traversal
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
