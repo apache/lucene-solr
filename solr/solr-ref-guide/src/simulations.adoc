@@ -46,11 +46,11 @@ The Monte Carlo simulation below performs the following steps:
 
 * A normal distribution with a mean of 2.2 and a standard deviation of .0195 is created to model the length of componentA.
 * A normal distribution with a mean of 2.71 and a standard deviation of .0198 is created to model the length of componentB.
-* The `monteCarlo` function is used to simulate component pairs. The `monteCarlo` function
-  calls the *add(sample(componentA), sample(componentB))* function 100000 times and collects the results in an array. Each
-  time the function is called a random sample is drawn from the componentA
-  and componentB length distributions. The `add` function adds the two samples to calculate the combined length.
-  The result of each function run is collected in an array and assigned to the *simresults* variable.
+* The `monteCarlo` function samples from the componentA and componentB distributions and sets the values to variables sampleA and sampleB. It then
+  calls the *add(sampleA, sampleB)* function to find the combined lengths of the samples. The `monteCarlo` function runs a set number of times, 100000 in the example below, and collects the results in an array. Each
+  time the function is called new samples are drawn from the componentA
+  and componentB distributions. On each run, the `add` function adds the two samples to calculate the combined length.
+  The result of each run is collected in an array and assigned to the *simresults* variable.
 * An `empiricalDistribution` function is then created from the *simresults* array to model the distribution of the
   simulation results.
 * Finally, the `cumulativeProbability` function is called on the *simmodel* to determine the cumulative probability
@@ -62,7 +62,10 @@ be 5 or less.
 ----
 let(componentA=normalDistribution(2.2,  .0195),
     componentB=normalDistribution(2.71, .0198),
-    simresults=monteCarlo(add(sample(componentA), sample(componentB)), 100000),
+    simresults=monteCarlo(sampleA=sample(componentA),
+                          sampleB=sample(componentB),
+                          add(sampleA, sampleB),
+                          100000),
     simmodel=empiricalDistribution(simresults),
     prob=cumulativeProbability(simmodel,  5))
 ----
