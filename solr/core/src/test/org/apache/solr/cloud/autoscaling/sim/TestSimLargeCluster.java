@@ -77,7 +77,7 @@ import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAut
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @ThreadLeakLingering(linger = 20000) // ComputePlanAction may take significant time to complete
 //05-Jul-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12075")
-public class TestLargeCluster extends SimSolrCloudTestCase {
+public class TestSimLargeCluster extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final int SPEED = 50;

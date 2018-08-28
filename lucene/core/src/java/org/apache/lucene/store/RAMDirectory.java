@@ -52,9 +52,7 @@ import org.apache.lucene.util.Accountables;
  * 
  * @deprecated This class uses inefficient synchronization and is discouraged
  * in favor of {@link MMapDirectory}. It will be removed in future versions 
- * of Lucene. See {@link ByteBuffersDirectory} for an efficient 
- * in-memory directory implementation, noting that in 99% of cases 
- * {@link MMapDirectory} will be a better choice.
+ * of Lucene.
  */
 @Deprecated
 public class RAMDirectory extends BaseDirectory implements Accountable {

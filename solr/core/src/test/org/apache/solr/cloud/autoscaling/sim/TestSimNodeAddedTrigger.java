@@ -20,7 +20,6 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.AutoScaling;
-import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
+import org.apache.solr.cloud.autoscaling.NodeAddedTrigger;
 import org.apache.solr.cloud.autoscaling.TriggerAction;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerValidationException;
@@ -42,9 +41,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test for {@link NodeLostTrigger}
+ * Test for {@link NodeAddedTrigger}
  */
-public class TestNodeLostTrigger extends SimSolrCloudTestCase {
+public class TestSimNodeAddedTrigger extends SimSolrCloudTestCase {
   private static AtomicBoolean actionConstructorCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionCloseCalled = new AtomicBoolean(false);
@@ -54,15 +53,16 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     return true;
   };
 
-  private static final int SPEED = 50;
-  // use the same time source as the trigger
-  private static TimeSource timeSource;
+  private static int SPEED = 50;
+
   // currentTimeMillis is not as precise so to avoid false positives while comparing time of fire, we add some delta
-  private static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(5);
+  private static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(2);
+
+  private static TimeSource timeSource;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(5, TimeSource.get("simTime:" + SPEED));
+    configureCluster(1, TimeSource.get("simTime:" + SPEED));
     timeSource = cluster.getTimeSource();
   }
 
@@ -78,17 +78,14 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     long waitForSeconds = 1 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
 
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger")) {
+    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger")) {
       trigger.configure(cluster.getLoader(), cluster, props);
+      trigger.init();
       trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
-      Iterator<String> it = cluster.getLiveNodesSet().get().iterator();
-      String lostNodeName1 = it.next();
-      String lostNodeName2 = it.next();
-      cluster.simRemoveNode(lostNodeName1, false);
-      cluster.simRemoveNode(lostNodeName2, false);
-      timeSource.sleep(1000);
 
+      String newNode1 = cluster.simAddNode();
+      String newNode2 = cluster.simAddNode();
       AtomicBoolean fired = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       trigger.setProcessor(event -> {
@@ -98,10 +95,10 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
-            fail("NodeLostListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
+            fail("NodeAddedListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
           }
         } else {
-          fail("NodeLostListener was fired more than once!");
+          fail("NodeAddedTrigger was fired more than once!");
         }
         return true;
       });
@@ -110,56 +107,45 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
         trigger.run();
         timeSource.sleep(1000);
         if (counter++ > 10) {
-          fail("Lost node was not discovered by trigger even after 10 seconds");
+          fail("Newly added node was not discovered by trigger even after 10 seconds");
         }
       } while (!fired.get());
 
-      TriggerEvent nodeLostEvent = eventRef.get();
-      assertNotNull(nodeLostEvent);
-      List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
-      assertTrue(nodeNames + " doesn't contain " + lostNodeName1, nodeNames.contains(lostNodeName1));
-      assertTrue(nodeNames + " doesn't contain " + lostNodeName2, nodeNames.contains(lostNodeName2));
-
+      TriggerEvent nodeAddedEvent = eventRef.get();
+      assertNotNull(nodeAddedEvent);
+      List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
+      assertTrue(nodeNames.contains(newNode1));
+      assertTrue(nodeNames.contains(newNode2));
     }
 
-    // remove a node but add it back before the waitFor period expires
+    // add a new node but remove it before the waitFor period expires
     // and assert that the trigger doesn't fire at all
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger")) {
+    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger")) {
       trigger.configure(cluster.getLoader(), cluster, props);
+      trigger.init();
       final long waitTime = 2;
       props.put("waitFor", waitTime);
       trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
 
-      String lostNode = cluster.getSimClusterStateProvider().simGetRandomNode(random());
-      cluster.simRemoveNode(lostNode, false);
+      String newNode = cluster.simAddNode();
       AtomicBoolean fired = new AtomicBoolean(false);
       trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
           long currentTimeNanos = timeSource.getTimeNs();
           long eventTimeNanos = event.getEventTime();
-          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
+          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
-            fail("NodeLostListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
+            fail("NodeAddedListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
           }
         } else {
-          fail("NodeLostListener was fired more than once!");
+          fail("NodeAddedTrigger was fired more than once!");
         }
         return true;
       });
-      trigger.run(); // first run should detect the lost node
+      trigger.run(); // first run should detect the new node
+      cluster.simRemoveNode(newNode, false);
       int counter = 0;
-      do {
-        if (cluster.getLiveNodesSet().get().size() == 2) {
-          break;
-        }
-        timeSource.sleep(100);
-        if (counter++ > 20) {
-          fail("Live nodes not updated!");
-        }
-      } while (true);
-      counter = 0;
-      cluster.getSimClusterStateProvider().simRestoreNode(lostNode);
       do {
         trigger.run();
         timeSource.sleep(1000);
@@ -178,9 +164,9 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     List<Map<String, String>> actions = (List<Map<String, String>>) props.get("actions");
     Map<String, String> action = new HashMap<>(2);
     action.put("name", "testActionInit");
-    action.put("class", AssertInitTriggerAction.class.getName());
+    action.put("class", TestSimNodeAddedTrigger.AssertInitTriggerAction.class.getName());
     actions.add(action);
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_added_trigger")) {
+    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger")) {
       trigger.configure(cluster.getLoader(), cluster, props);
       assertEquals(true, actionConstructorCalled.get());
       assertEquals(false, actionInitCalled.get());
@@ -221,22 +207,18 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     public void close() throws IOException {
       actionCloseCalled.compareAndSet(false, true);
     }
-  }
+ }
 
   @Test
   public void testListenerAcceptance() throws Exception {
     Map<String, Object> props = createTriggerProps(0);
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_added_trigger")) {
+    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger")) {
       trigger.configure(cluster.getLoader(), cluster, props);
+      trigger.init();
       trigger.setProcessor(noFirstRunProcessor);
-
-      String newNode = cluster.simAddNode();
-
       trigger.run(); // starts tracking live nodes
 
-      // stop the newly created node
-      cluster.simRemoveNode(newNode, false);
-
+      String newNode = cluster.simAddNode();
       AtomicInteger callCount = new AtomicInteger(0);
       AtomicBoolean fired = new AtomicBoolean(false);
 
@@ -249,7 +231,7 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
         }
       });
 
-      trigger.run(); // first run should detect the lost node and fire immediately but listener isn't ready
+      trigger.run(); // first run should detect the new node and fire immediately but listener isn't ready
       assertEquals(1, callCount.get());
       assertFalse(fired.get());
       trigger.run(); // second run should again fire
@@ -265,24 +247,21 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
     long waitForSeconds = 1 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
 
-    String newNode = cluster.simAddNode();
-
-    // remove a node but update the trigger before the waitFor period expires
+    // add a new node but update the trigger before the waitFor period expires
     // and assert that the new trigger still fires
-
-    NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger");
+    NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger");
     trigger.configure(cluster.getLoader(), cluster, props);
+    trigger.init();
     trigger.setProcessor(noFirstRunProcessor);
     trigger.run();
 
-    // stop the newly created node
-    cluster.simRemoveNode(newNode, false);
-
-    trigger.run(); // this run should detect the lost node
+    String newNode = cluster.simAddNode();
+    trigger.run(); // this run should detect the new node
     trigger.close(); // close the old trigger
 
-    try (NodeLostTrigger newTrigger = new NodeLostTrigger("some_different_name"))  {
+    try (NodeAddedTrigger newTrigger = new NodeAddedTrigger("some_different_name"))  {
       newTrigger.configure(cluster.getLoader(), cluster, props);
+      trigger.init();
       try {
         newTrigger.restoreState(trigger);
         fail("Trigger should only be able to restore state from an old trigger of the same name");
@@ -291,8 +270,9 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
       }
     }
 
-    try (NodeLostTrigger newTrigger = new NodeLostTrigger("node_lost_trigger")) {
+    try (NodeAddedTrigger newTrigger = new NodeAddedTrigger("node_added_trigger"))  {
       newTrigger.configure(cluster.getLoader(), cluster, props);
+      newTrigger.init();
       AtomicBoolean fired = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       newTrigger.setProcessor(event -> {
@@ -302,10 +282,10 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
-            fail("NodeLostListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" + eventTimeNanos + ",waitForNanos=" + waitForNanos);
+            fail("NodeAddedListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
           }
         } else {
-          fail("NodeLostListener was fired more than once!");
+          fail("NodeAddedTrigger was fired more than once!");
         }
         return true;
       });
@@ -315,14 +295,15 @@ public class TestNodeLostTrigger extends SimSolrCloudTestCase {
         newTrigger.run();
         timeSource.sleep(1000);
         if (counter++ > 10) {
-          fail("Lost node was not discovered by trigger even after 10 seconds");
+          fail("Newly added node was not discovered by trigger even after 10 seconds");
         }
       } while (!fired.get());
 
-      TriggerEvent nodeLostEvent = eventRef.get();
-      assertNotNull(nodeLostEvent);
-      List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
-      assertTrue(nodeNames.contains(newNode));
+      // ensure the event was fired
+      assertTrue(fired.get());
+      TriggerEvent nodeAddedEvent = eventRef.get();
+      assertNotNull(nodeAddedEvent);
+      //TODO assertEquals("", newNode.getNodeName(), nodeAddedEvent.getProperty(NodeAddedTrigger.NodeAddedEvent.NODE_NAME));
     }
   }
 

@@ -105,4 +105,4 @@ actual hit count.
 This RAM-based directory implementation is an old piece of code that uses inefficient
 thread synchronization primitives and can be confused as "faster" than the NIO-based
 MMapDirectory. It is deprecated and scheduled for removal in future versions of 
-Lucene.
+Lucene. (LUCENE-8467, LUCENE-8438)
