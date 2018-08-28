@@ -93,7 +93,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean()) {
+    if (random().nextBoolean() || true) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -152,7 +152,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     long waitForSeconds = 3 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
-    try (IndexSizeTrigger trigger = new IndexSizeTrigger("index_size_trigger")) {
+    try (IndexSizeTrigger trigger = new IndexSizeTrigger("index_size_trigger1")) {
       trigger.configure(loader, cloudManager, props);
       trigger.init();
       trigger.setProcessor(noFirstRunProcessor);
@@ -249,14 +249,15 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         CloudTestUtils.clusterShape(2, 2, false, true));
 
     long waitForSeconds = 3 + random().nextInt(5);
+    // add disabled trigger
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
-        "'name' : 'index_size_trigger'," +
+        "'name' : 'index_size_trigger2'," +
         "'event' : 'indexSize'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'aboveDocs' : 10," +
         "'belowDocs' : 4," +
-        "'enabled' : true," +
+        "'enabled' : false," +
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
@@ -267,8 +268,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'capturing'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'name' : 'capturing2'," +
+        "'trigger' : 'index_size_trigger2'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
         "'afterAction' : ['compute_plan','execute_plan']," +
@@ -283,7 +284,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'finished'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'trigger' : 'index_size_trigger2'," +
         "'stage' : ['SUCCEEDED']," +
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
@@ -293,11 +294,21 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
 
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < 50; i++) {
       SolrInputDocument doc = new SolrInputDocument("id", "id-" + i);
       solrClient.add(collectionName, doc);
     }
     solrClient.commit(collectionName);
+
+    // enable the trigger
+    String resumeTriggerCommand = "{" +
+        "'resume-trigger' : {" +
+        "'name' : 'index_size_trigger2'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
 
     timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
 
@@ -305,8 +316,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertTrue("did not finish processing in time", await);
     CloudTestUtils.waitForState(cloudManager, collectionName, 20, TimeUnit.SECONDS, CloudTestUtils.clusterShape(6, 2, true, true));
     assertEquals(1, listenerEvents.size());
-    List<CapturedEvent> events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    List<CapturedEvent> events = listenerEvents.get("capturing2");
+    assertNotNull("'capturing2' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
@@ -359,12 +370,12 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     long waitForSeconds = 3 + random().nextInt(5);
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
-        "'name' : 'index_size_trigger'," +
+        "'name' : 'index_size_trigger3'," +
         "'event' : 'indexSize'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'aboveDocs' : 40," +
         "'belowDocs' : 4," +
-        "'enabled' : true," +
+        "'enabled' : false," +
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
@@ -375,8 +386,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'capturing'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'name' : 'capturing3'," +
+        "'trigger' : 'index_size_trigger3'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
         "'afterAction' : ['compute_plan','execute_plan']," +
@@ -391,7 +402,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'finished'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'trigger' : 'index_size_trigger3'," +
         "'stage' : ['SUCCEEDED']," +
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
@@ -406,13 +417,23 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     }
     solrClient.commit(collectionName);
 
+    // enable the trigger
+    String resumeTriggerCommand = "{" +
+        "'resume-trigger' : {" +
+        "'name' : 'index_size_trigger3'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
     timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
 
-    boolean await = finished.await(60000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
-    List<CapturedEvent> events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    List<CapturedEvent> events = listenerEvents.get("capturing3");
+    assertNotNull("'capturing3' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
@@ -488,7 +509,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     // and have them capture all events once the trigger is enabled
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
-        "'name' : 'index_size_trigger'," +
+        "'name' : 'index_size_trigger4'," +
         "'event' : 'indexSize'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         // don't hit this limit when indexing
@@ -510,8 +531,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'capturing'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'name' : 'capturing4'," +
+        "'trigger' : 'index_size_trigger4'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
         "'afterAction' : ['compute_plan','execute_plan']," +
@@ -526,7 +547,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'set-listener' : " +
         "{" +
         "'name' : 'finished'," +
-        "'trigger' : 'index_size_trigger'," +
+        "'trigger' : 'index_size_trigger4'," +
         "'stage' : ['SUCCEEDED']," +
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
@@ -538,7 +559,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     // now enable the trigger
     String resumeTriggerCommand = "{" +
         "'resume-trigger' : {" +
-        "'name' : 'index_size_trigger'" +
+        "'name' : 'index_size_trigger4'" +
         "}" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
@@ -550,8 +571,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
-    List<CapturedEvent> events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    List<CapturedEvent> events = listenerEvents.get("capturing4");
+    assertNotNull("'capturing4' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
@@ -595,7 +616,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     // suspend the trigger first so that we can safely delete all docs
     String suspendTriggerCommand = "{" +
         "'suspend-trigger' : {" +
-        "'name' : 'index_size_trigger'" +
+        "'name' : 'index_size_trigger4'" +
         "}" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
@@ -630,8 +651,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
-    events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    events = listenerEvents.get("capturing4");
+    assertNotNull("'capturing4' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);

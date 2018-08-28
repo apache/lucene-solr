@@ -21,7 +21,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +30,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.IdUtils;
 
@@ -42,8 +44,9 @@ public class TriggerEvent implements MapWriter {
   public static final String NODE_NAMES = "nodeNames";
   public static final String EVENT_TIMES = "eventTimes";
   public static final String REQUESTED_OPS = "requestedOps";
+  public static final String UNSUPPORTED_OPS = "unsupportedOps";
 
-  public static final class Op {
+  public static final class Op implements MapWriter {
     private final CollectionParams.CollectionAction action;
     private final EnumMap<Suggester.Hint, Object> hints = new EnumMap<>(Suggester.Hint.class);
 
@@ -60,7 +63,7 @@ public class TriggerEvent implements MapWriter {
       hint.validator.accept(value);
       if (hint.multiValued) {
         Collection<?> values = value instanceof Collection ? (Collection) value : Collections.singletonList(value);
-        ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
+        ((Set) hints.computeIfAbsent(hint, h -> new LinkedHashSet<>())).addAll(values);
       } else {
         hints.put(hint, value == null ? null : String.valueOf(value));
       }
@@ -72,6 +75,50 @@ public class TriggerEvent implements MapWriter {
 
     public EnumMap<Suggester.Hint, Object> getHints() {
       return hints;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put("action", action);
+      ew.put("hints", hints);
+    }
+
+    public static Op fromMap(Map<String, Object> map) {
+      if (!map.containsKey("action")) {
+        return null;
+      }
+      CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(String.valueOf(map.get("action")));
+      if (action == null) {
+        return null;
+      }
+      Op op = new Op(action);
+      Map<Object, Object> hints = (Map<Object, Object>)map.get("hints");
+      if (hints != null && !hints.isEmpty()) {
+        hints.forEach((k, v) ->  {
+          Suggester.Hint h = Suggester.Hint.get(k.toString());
+          if (h == null) {
+            return;
+          }
+          if (!(v instanceof Collection)) {
+            v = Collections.singletonList(v);
+          }
+          ((Collection)v).forEach(vv -> {
+            if (vv instanceof Map) {
+              // maybe it's a Pair?
+              Map<String, Object> m = (Map<String, Object>)vv;
+              if (m.containsKey("first") && m.containsKey("second")) {
+                Pair p = Pair.parse(m);
+                if (p != null) {
+                  op.addHint(h, p);
+                  return;
+                }
+              }
+            }
+            op.addHint(h, vv);
+          });
+        });
+      }
+      return op;
     }
 
     @Override
@@ -230,5 +277,33 @@ public class TriggerEvent implements MapWriter {
   @Override
   public String toString() {
     return Utils.toJSONString(this);
+  }
+
+  public static TriggerEvent fromMap(Map<String, Object> map) {
+    String id = (String)map.get("id");
+    String source = (String)map.get("source");
+    long eventTime = ((Number)map.get("eventTime")).longValue();
+    TriggerEventType eventType = TriggerEventType.valueOf((String)map.get("eventType"));
+    Map<String, Object> properties = (Map<String, Object>)map.get("properties");
+    // properly deserialize some well-known complex properties
+    fixOps(TriggerEvent.REQUESTED_OPS, properties);
+    fixOps(TriggerEvent.UNSUPPORTED_OPS, properties);
+    TriggerEvent res = new TriggerEvent(id, eventType, source, eventTime, properties);
+    return res;
+  }
+
+  public static void fixOps(String type, Map<String, Object> properties) {
+    List<Object> ops = (List<Object>)properties.get(type);
+    if (ops != null && !ops.isEmpty()) {
+      for (int i = 0; i < ops.size(); i++) {
+        Object o = ops.get(i);
+        if (o instanceof Map) {
+          TriggerEvent.Op op = TriggerEvent.Op.fromMap((Map)o);
+          if (op != null) {
+            ops.set(i, op);
+          }
+        }
+      }
+    }
   }
 }
