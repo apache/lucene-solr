@@ -132,6 +132,8 @@ Improvements
 * LUCENE-8446: The UnifiedHighlighter's DefaultPassageFormatter now treats overlapping matches in
   the passage as merged (as if one larger match).  (David Smiley)
 
+* LUCENE-8460: Better argument validation in StoredField. (Namgyu Kim)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
