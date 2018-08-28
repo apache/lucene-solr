@@ -219,7 +219,7 @@ public class ComputePlanAction extends TriggerActionBase {
         TriggerEvent.Op op = ops.get(start);
         suggester = session.getSuggester(op.getAction());
         if (suggester instanceof UnsupportedSuggester) {
-          List<TriggerEvent.Op> unsupportedOps = (List<TriggerEvent.Op>)context.getProperties().computeIfAbsent("unsupportedOps", k -> new ArrayList<TriggerEvent.Op>());
+          List<TriggerEvent.Op> unsupportedOps = (List<TriggerEvent.Op>)context.getProperties().computeIfAbsent(TriggerEvent.UNSUPPORTED_OPS, k -> new ArrayList<TriggerEvent.Op>());
           unsupportedOps.add(op);
         }
         for (Map.Entry<Suggester.Hint, Object> e : op.getHints().entrySet()) {
