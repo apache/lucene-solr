@@ -21,9 +21,15 @@ import static org.junit.Assert.*;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+<<<<<<< HEAD
 import java.util.Arrays;
 import java.util.List;
 
+=======
+import java.util.List;
+
+import org.apache.lucene.util.ArrayUtil;
+>>>>>>> master
 import org.apache.lucene.util.IOUtils.IOConsumer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -155,7 +161,11 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
       }
   
       byte [] array = dst.toArrayCopy();
+<<<<<<< HEAD
       array = Arrays.copyOfRange(array, prefix.length, array.length);
+=======
+      array = ArrayUtil.copyOfSubArray(array, prefix.length, array.length);
+>>>>>>> master
       for (int i = 0; i < 1000; i++) {
         int offs = randomIntBetween(0, array.length - 1);
         in.seek(offs);

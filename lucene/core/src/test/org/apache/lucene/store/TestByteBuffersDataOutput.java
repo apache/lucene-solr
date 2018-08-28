@@ -20,10 +20,17 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+<<<<<<< HEAD
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+=======
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.lucene.util.ArrayUtil;
+>>>>>>> master
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -116,7 +123,11 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     src.limit(offset + len);
     o.writeBytes(src);
     assertEquals(len, o.size());
+<<<<<<< HEAD
     Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArrayCopy());
+=======
+    Assert.assertArrayEquals(ArrayUtil.copyOfSubArray(bytes, offset, offset + len), o.toArrayCopy());
+>>>>>>> master
   }
 
   @Test
@@ -128,7 +139,11 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     int len = bytes.length - offset;
     o.writeBytes(bytes, offset, len);
     assertEquals(len, o.size());
+<<<<<<< HEAD
     Assert.assertArrayEquals(Arrays.copyOfRange(bytes, offset, offset + len), o.toArrayCopy());
+=======
+    Assert.assertArrayEquals(ArrayUtil.copyOfSubArray(bytes, offset, offset + len), o.toArrayCopy());
+>>>>>>> master
   }
 
   @Test
@@ -143,10 +158,22 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   @Test
   public void testToWriteableBufferListReturnsOriginalBuffers() throws Exception {
     ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
+<<<<<<< HEAD
     dst.writeBytes(new byte [100]);
     for (ByteBuffer bb : dst.toWriteableBufferList()) {
       assertTrue(!bb.isReadOnly());
       assertTrue(!bb.hasArray()); // heap-based by default, so array should be there.
+=======
+    for (ByteBuffer bb : dst.toWriteableBufferList()) {
+      assertTrue(!bb.isReadOnly());
+      assertTrue(bb.hasArray()); // even the empty buffer should have a backing array.
+    }
+
+    dst.writeBytes(new byte [100]);
+    for (ByteBuffer bb : dst.toWriteableBufferList()) {
+      assertTrue(!bb.isReadOnly());
+      assertTrue(bb.hasArray()); // heap-based by default, so array should be there.
+>>>>>>> master
     }
   }
 }

@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.lucene.store;
 
 import java.io.IOException;
@@ -20,6 +36,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
+/**
+ * A {@link DataOutput} storing data in a list of {@link ByteBuffer}s.
+ */
 public final class ByteBuffersDataOutput extends DataOutput implements Accountable {
   private final static ByteBuffer EMPTY = ByteBuffer.allocate(0);
   private final static byte [] EMPTY_BYTE_ARRAY = {};
@@ -33,6 +52,11 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     throw new RuntimeException("reset() is not allowed on this buffer.");
   };
 
+  /**
+   * An implementation of a {@link ByteBuffer} allocation and recycling policy.
+   * The blocks are recycled if exactly the same size is requested, otherwise
+   * they're released to be GCed.
+   */
   public final static class ByteBufferRecycler {
     private final ArrayDeque<ByteBuffer> reuse = new ArrayDeque<>();
     private final IntFunction<ByteBuffer> delegate;
@@ -177,16 +201,16 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * current content written to the output.
    */
   public ArrayList<ByteBuffer> toBufferList() {
+    ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
     if (blocks.isEmpty()) {
-      return new ArrayList<>();
+      result.add(EMPTY);
     } else {
-      ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
       for (ByteBuffer bb : blocks) {
         bb = (ByteBuffer) bb.asReadOnlyBuffer().flip(); // cast for jdk8 (covariant in jdk9+) 
         result.add(bb);
       }
-      return result;
     }
+    return result;
   }
 
   /**
@@ -202,16 +226,16 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * (which sometimes may be required to avoid double copying).
    */
   public ArrayList<ByteBuffer> toWriteableBufferList() {
+    ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
     if (blocks.isEmpty()) {
-      return new ArrayList<>();
+      result.add(EMPTY);
     } else {
-      ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
       for (ByteBuffer bb : blocks) {
         bb = (ByteBuffer) bb.duplicate().flip(); // cast for jdk8 (covariant in jdk9+) 
         result.add(bb);
       }
-      return result;
     }
+    return result;
   }
 
   /**

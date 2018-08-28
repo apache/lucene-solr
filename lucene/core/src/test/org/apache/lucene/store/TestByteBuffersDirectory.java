@@ -45,7 +45,11 @@ public class TestByteBuffersDirectory extends BaseDirectoryTestCase {
   protected Directory getDirectory(Path path) throws IOException {
     return implSupplier.get();
   }
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> master
   @Test
   public void testBuildIndex() throws IOException {
     try (Directory dir = getDirectory(null);
