@@ -53,7 +53,7 @@ public class KerberosTestServices {
 
   public void start() throws Exception {
     //TODO nocommit, since some language may contains unicode character their week days, therefore hpack can't encrypt it
-    if (brokenLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage()))
+//    if (brokenLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage()))
       Locale.setDefault(Locale.US);
 
     if (kdc != null) kdc.start();
