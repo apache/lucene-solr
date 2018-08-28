@@ -99,6 +99,8 @@ Changes in Runtime Behavior:
 
 Improvements
 
+* LUCENE-8468: A ByteBuffer based Directory implementation. (Dawid Weiss)
+
 * LUCENE-8447: Add DISJOINT and WITHIN support to LatLonShape queries. (Nick Knize)
 
 * LUCENE-8440: Add support for indexing and searching Line and Point shapes using LatLonShape encoding (Nick Knize)

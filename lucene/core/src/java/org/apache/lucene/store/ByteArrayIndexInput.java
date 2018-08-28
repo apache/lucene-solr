@@ -14,55 +14,56 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.store;
 
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Locale;
 
-/** 
- * DataInput backed by a byte array.
- * <b>WARNING:</b> This class omits all low-level checks.
- * @lucene.experimental 
+/**
+ * A {@link IndexInput} backed by a byte array.
+ * 
+ * @lucene.experimental
  */
-public final class ByteArrayIndexInput extends IndexInput {
-
+public final class ByteArrayIndexInput extends IndexInput implements RandomAccessInput {
   private byte[] bytes;
 
+  private final int offset;
+  private final int length;
+
   private int pos;
-  private int limit;
 
   public ByteArrayIndexInput(String description, byte[] bytes) {
+    this(description, bytes, 0, bytes.length);
+  }
+  
+  public ByteArrayIndexInput(String description, byte[] bytes, int offs, int length) {
     super(description);
+    this.offset = offs;
     this.bytes = bytes;
-    this.limit = bytes.length;
+    this.length = length;
+    this.pos = offs;
   }
 
   public long getFilePointer() {
-    return pos;
+    return pos - offset;
   }
   
-  public void seek(long pos) {
-    this.pos = (int) pos;
-  }
-
-  public void reset(byte[] bytes, int offset, int len) {
-    this.bytes = bytes;
-    pos = offset;
-    limit = offset + len;
+  public void seek(long pos) throws EOFException {
+    int newPos = Math.toIntExact(pos + offset);
+    try {
+      if (pos < 0 || pos > length) {
+        throw new EOFException();
+      }
+    } finally {
+      this.pos = newPos;
+    }
   }
 
   @Override
   public long length() {
-    return limit;
-  }
-
-  public boolean eof() {
-    return pos == limit;
-  }
-
-  @Override
-  public void skipBytes(long count) {
-    pos += count;
+    return length;
   }
 
   @Override
@@ -153,9 +154,55 @@ public final class ByteArrayIndexInput extends IndexInput {
 
   @Override
   public void close() {
+    bytes = null;
   }
 
-  public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
-    throw new UnsupportedOperationException();
+  @Override
+  public IndexInput clone() {
+    ByteArrayIndexInput slice = slice("(cloned)" + toString(), 0, length());
+    try {
+      slice.seek(getFilePointer());
+    } catch (EOFException e) {
+      throw new UncheckedIOException(e);
+    }
+    return slice;
+  }
+
+  public ByteArrayIndexInput slice(String sliceDescription, long offset, long length) {
+    if (offset < 0 || length < 0 || offset + length > this.length) {
+      throw new IllegalArgumentException(String.format(Locale.ROOT,
+          "slice(offset=%s, length=%s) is out of bounds: %s",
+          offset, length, this));
+    }
+
+    return new ByteArrayIndexInput(sliceDescription, this.bytes, Math.toIntExact(this.offset + offset), 
+        Math.toIntExact(length));
+  }
+
+  @Override
+  public byte readByte(long pos) throws IOException {
+    return bytes[Math.toIntExact(offset + pos)];
+  }
+
+  @Override
+  public short readShort(long pos) throws IOException {
+    int i = Math.toIntExact(offset + pos);
+    return (short) (((bytes[i]     & 0xFF) << 8) |
+                     (bytes[i + 1] & 0xFF));
+  }
+
+  @Override
+  public int readInt(long pos) throws IOException {
+    int i = Math.toIntExact(offset + pos);
+    return ((bytes[i]     & 0xFF) << 24) | 
+           ((bytes[i + 1] & 0xFF) << 16) | 
+           ((bytes[i + 2] & 0xFF) <<  8) | 
+            (bytes[i + 3] & 0xFF);
+  }
+
+  @Override
+  public long readLong(long pos) throws IOException {
+    return (((long) readInt(pos)) << 32) | 
+             (readInt(pos + 4) & 0xFFFFFFFFL);
   }
 }
