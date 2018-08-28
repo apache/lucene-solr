@@ -77,7 +77,7 @@ import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAut
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @ThreadLeakLingering(linger = 20000) // ComputePlanAction may take significant time to complete
 //05-Jul-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12075")
-public class TestLargeCluster extends SimSolrCloudTestCase {
+public class TestSimLargeCluster extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final int SPEED = 50;
@@ -691,7 +691,8 @@ public class TestLargeCluster extends SimSolrCloudTestCase {
     boolean await = triggerFinishedLatch.await(waitForSeconds * 20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(2000);
+    cluster.getTimeSource().sleep(5000);
+    assertNotNull(listenerEvents.toString(), listenerEvents.get("srt"));
     assertEquals(listenerEvents.toString(), 1, listenerEvents.get("srt").size());
     CapturedEvent ev = listenerEvents.get("srt").get(0);
     assertEquals(TriggerEventType.SEARCHRATE, ev.event.getEventType());

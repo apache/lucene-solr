@@ -39,6 +39,8 @@ public class CapturedEvent {
                        TriggerEvent event, String message) {
     if (context != null) {
       context.toMap(this.context);
+      TriggerEvent.fixOps("properties." + TriggerEvent.REQUESTED_OPS, this.context);
+      TriggerEvent.fixOps("properties." + TriggerEvent.UNSUPPORTED_OPS, this.context);
     }
     this.config = config;
     this.stage = stage;

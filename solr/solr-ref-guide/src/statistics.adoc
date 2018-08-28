@@ -573,3 +573,41 @@ When this expression is sent to the /stream handler it responds with:
   }
 }
 ----
+
+== Z-scores
+
+The `zscores` function converts a numeric array to an array of z-scores. The z-score
+is the number of standard deviations a number is from the mean.
+
+The example below computes the z-scores for the values in an array.
+
+
+[source,text]
+----
+let(a=array(1,2,3),
+    b=zscores(a))
+----
+
+When this expression is sent to the /stream handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          -1,
+          0,
+          1
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 27
+      }
+    ]
+  }
+}
+----
+

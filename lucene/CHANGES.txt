@@ -147,6 +147,9 @@ Optimizations
 
 API Changes:
 
+* LUCENE-8467: RAMDirectory, RAMFile, RAMInputStream, RAMOutputStream are deprecated
+  (Dawid Weiss)
+
 * LUCENE-8356: StandardFilter is deprecated (Alan Woodward)
 
 * LUCENE-8373: ENGLISH_STOP_WORD_SET on StandardAnalyzer is deprecated.  Instead
@@ -220,6 +223,9 @@ Bug Fixes:
 * LUCENE-8458: Adjust initialization condition of PendingSoftDeletes and ensures
   it is initialized before accepting deletes (Simon Willnauer, Nhat Nguyen)
 
+* LUCENE-8466: IndexWriter.deleteDocs(Query... query) incorrectly applies deletes on flush
+  if the index is sorted. (Adrien Grand, Jim Ferenczi, Vish Ramachandran)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
@@ -230,6 +236,8 @@ Changes in Runtime Behavior:
   used by deleted documents. (Adrien Grand)
 
 Improvements
+
+* LUCENE-8468: A ByteBuffer based Directory implementation. (Dawid Weiss)
 
 * LUCENE-8447: Add DISJOINT and WITHIN support to LatLonShape queries. (Nick Knize)
 

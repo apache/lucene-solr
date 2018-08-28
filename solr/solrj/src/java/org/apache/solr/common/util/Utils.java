@@ -155,6 +155,22 @@ public class Utils {
     return writer;
   }
 
+  private static class MapWriterJSONWriter extends JSONWriter {
+
+    public MapWriterJSONWriter(CharArr out, int indentSize) {
+      super(out, indentSize);
+    }
+
+    @Override
+    public void handleUnknownClass(Object o) {
+      if (o instanceof MapWriter) {
+        Map m = ((MapWriter)o).toMap(new LinkedHashMap<>());
+        write(m);
+      } else {
+        super.handleUnknownClass(o);
+      }
+    }
+  }
 
   public static byte[] toJSON(Object o) {
     if(o == null) return new byte[0];
@@ -166,7 +182,7 @@ public class Utils {
         o = ((IteratorWriter)o).toList(new ArrayList<>());
       }
     }
-    new JSONWriter(out, 2).write(o); // indentation by default
+    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }
 

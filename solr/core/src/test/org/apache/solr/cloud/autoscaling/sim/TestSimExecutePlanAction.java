@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * Test for {@link ExecutePlanAction}
  */
 @LogLevel("org.apache.solr.cloud=DEBUG")
-public class TestExecutePlanAction extends SimSolrCloudTestCase {
+public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int NODE_COUNT = 2;

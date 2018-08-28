@@ -254,6 +254,8 @@ Bug Fixes
 * SOLR-12683: HashQuery will throw an exception if more than 4 partitionKeys is specified.
   Earlier after the 4th partitionKey the keys would be silently ignored. (Varun Thacker)
 
+* SOLR-10028: Fix and improvements to SegmentsInfoRequestHandlerTest (Christine Poerschke, Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 
@@ -8146,6 +8148,9 @@ Bug Fixes
 
 * SOLR-6693: bin\solr.cmd doesn't support 32-bit JRE/JDK running on Windows due to
   parenthesis in JAVA_HOME. (Timothy Potter, Christopher Hewitt, Jan Høydahl)
+  
+* SOLR-12662: Reproducing TestPolicy failures: NPE and NoClassDefFoundError. 
+  (Steve Rowe)
 
 Optimizations
 ----------------------
