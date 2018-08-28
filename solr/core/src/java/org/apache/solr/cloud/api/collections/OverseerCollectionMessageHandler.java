@@ -156,6 +156,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       COLOCATED_WITH, null));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String FAILURE_FIELD = "failure";
+  public static final String SUCCESS_FIELD = "success";
 
   Overseer overseer;
   ShardHandlerFactory shardHandlerFactory;
@@ -837,6 +839,15 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     processResponse(results, e, nodeName, solrResponse, shard, okayExceptions);
   }
 
+  private SimpleOrderedMap getOrCreateMap(NamedList results, String key) {
+    SimpleOrderedMap map = (SimpleOrderedMap) results.get(key);
+    if (map == null) {
+      map = new SimpleOrderedMap();
+      results.add(key, map);
+    }
+    return map;
+  }
+
   @SuppressWarnings("unchecked")
   private void processResponse(NamedList results, Throwable e, String nodeName, SolrResponse solrResponse, String shard, Set<String> okayExceptions) {
     String rootThrowable = null;
@@ -847,21 +858,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
       log.error("Error from shard: " + shard, e);
 
-      SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
-      if (failure == null) {
-        failure = new SimpleOrderedMap();
-        results.add("failure", failure);
-      }
+      SimpleOrderedMap failure = getOrCreateMap(results, FAILURE_FIELD);
 
       failure.add(nodeName, e.getClass().getName() + ":" + e.getMessage());
 
     } else {
 
-      SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
-      if (success == null) {
-        success = new SimpleOrderedMap();
-        results.add("success", success);
-      }
+      SimpleOrderedMap success = getOrCreateMap(results, SUCCESS_FIELD);
 
       success.add(nodeName, solrResponse.getResponse());
     }
@@ -871,7 +874,15 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private void waitForAsyncCallsToComplete(Map<String, String> requestMap, NamedList results) {
     for (String k:requestMap.keySet()) {
       log.debug("I am Waiting for :{}/{}", k, requestMap.get(k));
-      results.add(requestMap.get(k), waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k)));
+      NamedList response = waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k));
+      results.add(requestMap.get(k), response); // backward compatibility reasons
+      String msg = (String)response.get("Response");
+      if ("failed".equalsIgnoreCase(((String)response.get("STATUS")))) {
+        log.error("Error from shard " + k + ": " + msg);
+        getOrCreateMap(results, FAILURE_FIELD).add(k, msg);
+      } else {
+        getOrCreateMap(results, SUCCESS_FIELD).add(k, msg);
+      }
     }
   }
 

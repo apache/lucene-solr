@@ -194,8 +194,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
               removeTask("running", taskObject.taskId);
               if (exceptionCaught) {
                 addTask("failed", taskObject, true);
-              } else
+              } else {
                 addTask("completed", taskObject, true);
+              }
             }
           });
         } finally {

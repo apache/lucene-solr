@@ -71,6 +71,8 @@ Other Changes
   java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
 
+* SOLR-12708: Fix async collection admin operations to report downstream failures (Mano Kovacs)
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -462,7 +464,7 @@ Other Changes
 
 * SOLR-8742: In HdfsDirectoryTest replace RAMDirectory usages with ByteBuffersDirectory.
   (hossman, Mark Miller, Andrzej Bialecki, Steve Rowe)
-  
+
 * SOLR-12771: Improve Autoscaling Policy and Preferences documentation. (hossman, Steve Rowe)
 
 ==================  7.4.0 ==================
