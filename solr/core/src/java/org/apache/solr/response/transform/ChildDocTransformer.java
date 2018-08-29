@@ -125,13 +125,16 @@ class ChildDocTransformer extends DocTransformer {
         // Do we need to do anything with this doc (either ancestor or matched the child query)
         if (isAncestor || childDocSet == null || childDocSet.exists(docId)) {
 
+          // add all child docs if limit is -1
           if(limit != -1) {
-            if(!isAncestor) {
-              if(matches == limit) {
+            if(matches == limit) {
+              // we have reached the limit, only add ancestors
+              if(!isAncestor) {
                 continue;
               }
-              ++matches;
             }
+            // limit has not been reached, increment counter
+            ++matches;
           }
 
           // load the doc
