@@ -189,7 +189,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
     switch (method) {
       case UNIFIED:
-        if (solrConfigHighlighter instanceof UnifiedSolrHighlighter) {
+        if (solrConfigHighlighter.getClass() == UnifiedSolrHighlighter.class) {
           return solrConfigHighlighter;
         }
         return new UnifiedSolrHighlighter(); // TODO cache one?
