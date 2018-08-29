@@ -124,10 +124,11 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
     assertJQ(req("q", "type_s:donut",
         "sort", "id asc",
-        "fl", "id, type_s, toppings, _nest_path_, [child limit=1]",
+        "fl", "id, type_s, lonely, lonelyGrandChild, test_s, test2_s, _nest_path_, [child limit=1]",
         "fq", fqToExcludeNonTestedDocs),
         "/response/docs/[0]/type_s==donut",
-        "/response/docs/[0]/toppings/[0]/type_s==Chocolate");
+        "/response/docs/[0]/lonely/test_s==testing",
+        "/response/docs/[0]/lonely/lonelyGrandChild/test2_s==secondTest");
   }
 
   @Test

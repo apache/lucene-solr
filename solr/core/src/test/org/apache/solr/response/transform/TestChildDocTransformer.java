@@ -82,8 +82,8 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     String test3[] = new String[] {
         "//*[@numFound='1']",
         "count(/response/result/doc[1]/doc)=2",
-        "/response/result/doc[1]/doc[1]/str[@name='id']='5'" ,
-        "/response/result/doc[1]/doc[2]/str[@name='id']='7'" };
+        "/response/result/doc[1]/doc[1]/str[@name='id']='3'" ,
+        "/response/result/doc[1]/doc[2]/str[@name='id']='5'"};
 
 
 
@@ -204,8 +204,8 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     };
 
     String[] test3 = new String[] {
-        "/response/docs/[0]/_childDocuments_/[0]/id=='5'",
-        "/response/docs/[0]/_childDocuments_/[1]/id=='7'"
+        "/response/docs/[0]/_childDocuments_/[0]/id=='3'",
+        "/response/docs/[0]/_childDocuments_/[1]/id=='5'"
     };
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
@@ -215,7 +215,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:foo\"]"), test2);
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
+        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=3]"), test3);
   }
 
   private void testChildDocNonStoredDVFields() throws Exception {
