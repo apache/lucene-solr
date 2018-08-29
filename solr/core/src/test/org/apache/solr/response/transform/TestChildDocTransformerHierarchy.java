@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,14 +44,14 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   private static final String[] fieldsToRemove = {"_nest_parent_", "_nest_path_", "_root_"};
   private static final int sumOfDocsPerNestedDocument = 8;
   private static final int numberOfDocsPerNestedTest = 10;
-  private static int firstTestedDocId = 0;
-  private static String fqToExcludeNonTestedDocs; // filter documents that were created for random segments to ensure the transformer works with multiple segments.
+  private static final String fqToExcludeNonTestedDocs = "{!frange l=0}id_i"; // filter documents that were created for random segments to ensure the transformer works with multiple segments.
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema-nest.xml"); // use "nest" schema
-    final boolean useSegments = random().nextBoolean();
-    if(useSegments) {
+
+    if(random().nextBoolean()) {
+      idCounter.set(-100); // start docIDs at -100 for these random docs we don't care about (all less than 0)
       // create random segments
       final int numOfDocs = 10;
       for(int i = 0; i < numOfDocs; ++i) {
@@ -60,18 +61,18 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
         }
       }
       assertU(commit());
-      fqToExcludeNonTestedDocs = "{!frange l=" + firstTestedDocId + " incl=false}id_i";
-    } else {
-      fqToExcludeNonTestedDocs = "*:*";
     }
-    firstTestedDocId = idCounter.get();
+  }
+
+  @Before
+  public void before() {
+    idCounter.set(0); // reset idCounter
   }
 
   @After
   public void after() throws Exception {
     assertU(delQ(fqToExcludeNonTestedDocs));
     assertU(commit());
-    idCounter.set(firstTestedDocId); // reset idCounter
   }
 
   @Test
@@ -333,7 +334,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   private static String grandChildDocTemplate(int id) {
-    final int docNum = (id - firstTestedDocId) / sumOfDocsPerNestedDocument; // the index of docs sent to solr in the AddUpdateCommand. e.g. first doc is 0
+    final int docNum = id / sumOfDocsPerNestedDocument; // the index of docs sent to solr in the AddUpdateCommand. e.g. first doc is 0
     return
         "SolrDocument{id="+ id + ", type_s=" + types[docNum % types.length] + ", name_s=" + names[docNum % names.length] + ", " +
           "toppings=[" +
@@ -344,7 +345,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   private static String fullNestedDocTemplate(int id) {
-    final int docNum = (id - firstTestedDocId) / sumOfDocsPerNestedDocument; // the index of docs sent to solr in the AddUpdateCommand. e.g. first doc is 0
+    final int docNum = id / sumOfDocsPerNestedDocument; // the index of docs sent to solr in the AddUpdateCommand. e.g. first doc is 0
     boolean doubleIngredient = docNum % 2 == 0;
     String currIngredient = doubleIngredient ? ingredients[1]: ingredientsCycler.next();
     return
@@ -358,16 +359,16 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
               "ingredients=[SolrDocument{id=" + (id + 6) + ", name_s=cocoa}, SolrDocument{id=" + (id + 7) + ", name_s=cocoa}]}]}";
   }
 
-  private static String generateDocHierarchy(int i) {
-    boolean doubleIngredient = i % 2 == 0;
+  private static String generateDocHierarchy(int sequence) {
+    boolean doubleIngredient = sequence % 2 == 0;
     String currIngredient = doubleIngredient ? ingredients[1]: ingredientsCycler.next();
     return "{\n" +
               "\"add\": {\n" +
                 "\"doc\": {\n" +
                   "\"id\": " + id() + ", \n" +
-                  "\"type_s\": \"" + types[i % types.length] + "\", \n" +
+                  "\"type_s\": \"" + types[sequence % types.length] + "\", \n" +
                   "\"lonely\": {\"id\": " + id() + ", \"test_s\": \"testing\", \"lonelyGrandChild\": {\"id\": " + id() + ", \"test2_s\": \"secondTest\"}}, \n" +
-                  "\"name_s\": " + names[i % names.length] +
+                  "\"name_s\": " + names[sequence % names.length] +
                   "\"toppings\": [ \n" +
                     "{\"id\": " + id() + ", \"type_s\":\"Regular\"," +
                       "\"ingredients\": [{\"id\": " + id() + "," +
