@@ -158,6 +158,10 @@ New Features
 * SOLR-12655: Add Korean morphological analyzer ("nori") to default distribution. This also adds examples
   for configuration in Solr's schema.  (Uwe Schindler)
 
+* SOLR-12519: The [child] transformer now returns a nested child doc structure (attached as fields if provided this way)
+  provided the schema is enabled for nested documents.  This is part of a broader enhancement of nested docs.
+  (Moshe Bla, David Smiley)
+
 Bug Fixes
 ----------------------
 
