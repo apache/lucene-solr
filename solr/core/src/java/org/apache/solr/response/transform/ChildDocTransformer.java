@@ -107,8 +107,9 @@ class ChildDocTransformer extends DocTransformer {
 
       SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
       final int lastChildId = segBaseId + segPrevRootId + 1;
+      int matches = 0;
       // Loop each child ID up to the parent (exclusive).
-      for (int docId = calcDocIdToIterateFrom(lastChildId, rootDocId); docId < rootDocId; ++docId) {
+      for (int docId = lastChildId; docId < rootDocId; ++docId) {
 
         // get the path.  (note will default to ANON_CHILD_KEY if schema is not nested or empty string if blank)
         String fullDocPath = getPathByDocId(docId - segBaseId, segPathDocValues);
@@ -123,6 +124,16 @@ class ChildDocTransformer extends DocTransformer {
 
         // Do we need to do anything with this doc (either ancestor or matched the child query)
         if (isAncestor || childDocSet == null || childDocSet.exists(docId)) {
+
+          if(limit != -1) {
+            if(!isAncestor) {
+              if(matches == limit) {
+                continue;
+              }
+              ++matches;
+            }
+          }
+
           // load the doc
           SolrDocument doc = docFetcher.solrDoc(docId, childReturnFields);
 
@@ -234,31 +245,5 @@ class ChildDocTransformer extends DocTransformer {
     assert numToAdvance >= 0;
     boolean advanced = segPathDocValues.advanceExact(segDocId);
     return advanced ? segPathDocValues.binaryValue().utf8ToString(): "";
-  }
-
-  /**
-   *
-   * @param RootDocId docID if the current root document
-   * @param lowestChildDocId lowest docID of the root document's descendant
-   * @return the docID to loop and not surpass limit of descendants to match specified by query
-   */
-  private int calcDocIdToIterateFrom(int lowestChildDocId, int RootDocId) {
-    assert lowestChildDocId < RootDocId; // first childDocId should be smaller then current RootId
-    if(limit == -1) {
-      return lowestChildDocId;
-    }
-    if(childDocSet == null) {
-      // do not pass bounds of previous root docID
-      return Math.max(lowestChildDocId, RootDocId - limit);
-    }
-    int currentId = RootDocId - 1;
-    for(int matches = 0; currentId > lowestChildDocId; --currentId) {
-      if(childDocSet.exists(currentId)) {
-        if(++matches == limit) {
-          break;
-        }
-      }
-    }
-    return currentId;
   }
 }
