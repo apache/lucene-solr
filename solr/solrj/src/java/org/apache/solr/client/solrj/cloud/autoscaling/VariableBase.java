@@ -77,7 +77,7 @@ public class VariableBase implements Variable {
   }
 
   public static Type getTagType(String name) {
-    Type info = validatetypes.get(name);
+    Type info = getValidatetypes().get(name);
     if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = Type.STRING;
     if (info == null && name.startsWith(Clause.METRICS_PREFIX)) info = Type.LAZY;
     return info;
@@ -196,11 +196,15 @@ public class VariableBase implements Variable {
 
   }
 
-  private static Map<String, Type> validatetypes;
+  private static Map<String, Type> validatetypes = null;
 
-  static {
-    validatetypes = new HashMap<>();
-    for (Type t : Type.values())
-      validatetypes.put(t.tagName, t);
+  /** SOLR-12662: Lazily init validatetypes to avoid Type.values() NPE due to static initializer ordering */
+  private static Map<String, Type> getValidatetypes() {
+    if (validatetypes == null) {
+      validatetypes = new HashMap<>();
+      for (Type t : Type.values())
+        validatetypes.put(t.tagName, t);
+    }
+    return validatetypes;
   }
 }
