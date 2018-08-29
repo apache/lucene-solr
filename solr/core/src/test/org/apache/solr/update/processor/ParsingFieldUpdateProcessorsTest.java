@@ -166,7 +166,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertEquals(Instant.parse("2010-08-09T07:00:00.000Z"), ((Date)d.getFieldValue("not_in_schema")).toInstant());
   }
   
-  public void testParseDateFormats() throws Exception {
+  public void testParseDateManyFormats() throws Exception {
     String[] formatExamples = { 
         "2010-01-15T00:00:00.000Z",
         "2010-01-15T00:00:00,000Z",
@@ -205,7 +205,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     for (int i = 0 ; i < formatExamples.length ; ++i) {
       String dateString = formatExamples[i];
       String id = "95" + i;
-      SolrInputDocument d = processAdd("parse-date-UTC-defaultTimeZone-no-run-processor", 
+      SolrInputDocument d = processAdd("parse-date-many-formats-no-run-processor",
                                        doc(f("id", id), f("dateUTC_dt", dateString)));
       assertNotNull(d);
       assertTrue("index: " + i + " date '" + dateString + "' is not mutated to a Date",
@@ -913,7 +913,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     for(String notInFormatDateString: dateStrings) {
       IndexSchema schema = h.getCore().getLatestSchema();
       assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
-      SolrInputDocument d = processAdd("parse-date-patterns-from-extract-contrib", doc(f("id", id), f("date_dt", notInFormatDateString)));
+      SolrInputDocument d = processAdd("parse-date-patterns-default-config", doc(f("id", id), f("date_dt", notInFormatDateString)));
       assertNotNull(d);
       assertTrue("Date string: " + notInFormatDateString + " was not parsed as a date", d.getFieldValue("date_dt") instanceof Date);
       assertEquals(notInFormatDateString, ((Date) d.getField("date_dt").getFirstValue()).toInstant().toString());
@@ -936,7 +936,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       String expectedString = lenientDateStrings[++i];
       IndexSchema schema = h.getCore().getLatestSchema();
       assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
-      SolrInputDocument d = processAdd("parse-date-patterns-from-extract-contrib", doc(f("id", id), f("date_dt", lenientDateString)));
+      SolrInputDocument d = processAdd("parse-date-patterns-default-config", doc(f("id", id), f("date_dt", lenientDateString)));
       assertNotNull(d);
       assertTrue("Date string: " + lenientDateString + " was not parsed as a date",
           d.getFieldValue("date_dt") instanceof Date);
@@ -947,55 +947,65 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
 
   // this test has had problems when the JDK timezone is Americas/Metlakatla
   public void testAKSTZone() throws IOException {
-    final String inputString = "Thu Nov 13 04:35:51 AKST 2008"; // "Ansi C" + timezone
+    final String dateFormat = "EEE MMM d HH:mm:ss z yyyy";
+    final String inputString = "Thu Nov 13 04:35:51 AKST 2008"; // asctime + timezone1
 
     final long expectTs = 1226583351000L;
     assertEquals(expectTs,
-        DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss z yyyy", Locale.ENGLISH)
+        DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
             .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli());
 
-    assertParsedDate(inputString, Date.from(Instant.ofEpochMilli(expectTs)), "parse-date-patterns-from-extract-contrib");
+    // ensure english locale and root locale return the same date
+    assertEquals(expectTs, DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
+            .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli(),
+        DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
+            .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli());
+
+    assertParsedDate(inputString, Date.from(Instant.ofEpochMilli(expectTs)), "parse-date-patterns-default-config");
 
     // We might also test AKDT, but a bug in Java 9 (not in 8) causes this to fail
-    //assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib"); // with timezone (not ANSI C) in DST
+    //assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-patterns-default-config"); // with timezone (not asctime) in DST
     // see https://bugs.openjdk.java.net/browse/JDK-8189784
   }
 
   public void testEDTZone() throws IOException {
     //EDT is GMT-4
-    assertParsedDate("Fri Oct 7 09:14:15 EDT 2005", // Ansi C + timezone
-        Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
+    assertParsedDate("Fri Oct 7 09:14:15 EDT 2005", // asctime + timezone
+        Date.from(inst20051007131415()), "parse-date-patterns-default-config");
   }
 
   public void testNoTime() throws IOException {
     Instant instant = instant(2005, 10, 7, 0, 0, 0);
     String inputString = "2005-10-07";
-    assertParsedDate(inputString, Date.from(instant), "parse-date-patterns-from-extract-contrib");
+    assertParsedDate(inputString, Date.from(instant), "parse-date-patterns-default-config");
   }
 
   public void testRfc1123() throws IOException {
-    assertParsedDate("Fri, 07 Oct 2005 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
+    assertParsedDate("Fri, 07 Oct 2005 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-default-config");
   }
 
   public void testRfc1036() throws IOException {
-    assertParsedDate("Friday, 07-Oct-05 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
+    assertParsedDate("Friday, 07-Oct-05 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-default-config");
   }
 
-  public void testAnsiC() throws IOException {
-    assertParsedDate(
-        "Fri Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
+  public void testAsctime() throws Exception {
+    assertParsedDate("Fri Oct 7 13:14:15 2005" , Date.from(inst20051007131415()), "parse-date-patterns-default-config");
     // also see testEDTZone
   }
 
-  public void testLenient() throws IOException {
-    /// the Ansi C format, but input here has longer day of week
-    assertParsedDate("Friday Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-patterns-from-extract-contrib");
+  public void testAsctimeLeniency() throws Exception {
+    // test double digit day
+    assertParsedDate("Fri Oct 07 13:14:15 2005" , Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+    // test 2 spaces left of a single digit day
+    assertParsedDate("Fri Oct  7 13:14:15 2005" , Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+    // longer day of week
+    assertParsedDate("Friday Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-patterns-default-config");
   }
 
   public void testParseQuotedDate() throws IOException {
     // also using 2 digit day
     assertParsedDate("'Fri, 14 Oct 2005 13:14:15 GMT'",
-        Date.from(instant(2005, 10, 14, 13, 14, 15)), "parse-date-patterns-from-extract-contrib");
+        Date.from(instant(2005, 10, 14, 13, 14, 15)), "parse-date-patterns-default-config");
   }
 
   private static Instant instant(final int year, final int month, final int day, int hour, int minute, int second) {
