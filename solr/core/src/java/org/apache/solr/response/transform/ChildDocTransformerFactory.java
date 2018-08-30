@@ -17,6 +17,8 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -29,6 +31,8 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
@@ -108,7 +112,16 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     }
 
     String childReturnFields = params.get("fl");
-    SolrReturnFields childSolrReturnFields = childReturnFields==null? new SolrReturnFields(req): new SolrReturnFields(childReturnFields, req);
+    SolrReturnFields childSolrReturnFields;
+    String[] topLevelFieldsArr = null;
+    if(childReturnFields == null) {
+      List<String> topLevelFields = StrUtils.splitSmart(req.getOriginalParams().get("fl", "*"), ',').stream().filter(x -> (!(x.trim().startsWith("[")))).collect(Collectors.toList());
+      topLevelFieldsArr = new String[topLevelFields.size()];
+      topLevelFields.toArray(topLevelFieldsArr);
+      childSolrReturnFields = new SolrReturnFields(topLevelFieldsArr, req);
+    } else {
+      childSolrReturnFields = new SolrReturnFields(childReturnFields, req);
+    }
 
     int limit = params.getInt( "limit", 10 );
 
@@ -122,6 +135,16 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Failed to parse '" + param + "' param.");
     }
   }
+
+//  private static computeChildReturnFields(SolrParams childDocTransFormerParams, SolrQueryRequest req) {
+//    String childReturnFields = childDocTransFormerParams.get("fl");
+//    if(childReturnFields == null) {
+//      List<String> topLevelFls = StrUtils.splitSmart(req.getParams().get("fl"), '[');
+//      if(topLevelFls) {
+//
+//      }
+//    }
+//  }
 
   // NOTE: THIS FEATURE IS PRESENTLY EXPERIMENTAL; WAIT TO SEE IT IN THE REF GUIDE.  FINAL SYNTAX IS TBD.
   protected static String processPathHierarchyQueryString(String queryString) {
