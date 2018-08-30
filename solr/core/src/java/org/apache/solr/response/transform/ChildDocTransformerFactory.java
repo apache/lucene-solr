@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
 
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
@@ -106,9 +107,12 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       }
     }
 
+    String childReturnFields = params.get("fl");
+    SolrReturnFields childSolrReturnFields = childReturnFields==null? new SolrReturnFields(): new SolrReturnFields(childReturnFields ,req);
+
     int limit = params.getInt( "limit", 10 );
 
-    return new ChildDocTransformer(field, parentsFilter, childDocSet, buildHierarchy, limit);
+    return new ChildDocTransformer(field, parentsFilter, childDocSet, childSolrReturnFields, buildHierarchy, limit);
   }
 
   private static Query parseQuery(String qstr, SolrQueryRequest req, String param) {

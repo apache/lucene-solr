@@ -54,17 +54,16 @@ class ChildDocTransformer extends DocTransformer {
   private final DocSet childDocSet;
   private final int limit;
   private final boolean isNestedSchema;
+  private final SolrReturnFields childReturnFields;
 
-  //TODO ought to be provided/configurable
-  private final SolrReturnFields childReturnFields = new SolrReturnFields();
-
-  ChildDocTransformer(String name, BitSetProducer parentsFilter,
-                      DocSet childDocSet, boolean isNestedSchema, int limit) {
+  ChildDocTransformer(String name, BitSetProducer parentsFilter, DocSet childDocSet,
+                      SolrReturnFields returnFields, boolean isNestedSchema, int limit) {
     this.name = name;
     this.parentsFilter = parentsFilter;
     this.childDocSet = childDocSet;
     this.limit = limit;
     this.isNestedSchema = isNestedSchema;
+    this.childReturnFields = returnFields!=null? returnFields: new SolrReturnFields();
   }
 
   @Override
