@@ -172,6 +172,21 @@ New Features
   provided the schema is enabled for nested documents.  This is part of a broader enhancement of nested docs.
   (Moshe Bla, David Smiley)
 
+* SOLR-11863: Add knnRegress Stream Evaluator to support nearest neighbor regression (Joel Bernstein)
+
+* SOLR-12702: Add zscores Stream Evaluator (Joel Bernstein)
+
+* SOLR-12687: Add functions to cache data structures and mathematical models (Joel Bernstein)
+
+* SOLR-12671: Add robust flag to knnRegress Stream Evaluator (Joel Bernstein)
+
+* SOLR-12660: Add outliers Stream Evaluator to support outlier detection with probability distributions
+  (Joel Bernstein)
+
+* SOLR-12634: Add gaussfit Stream Evaluator (Joel Bernstein)
+
+* SOLR-12629: The predict evaluator should work with the polyfit function (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
@@ -269,6 +284,8 @@ Bug Fixes
   Earlier after the 4th partitionKey the keys would be silently ignored. (Varun Thacker)
 
 * SOLR-10028: Fix and improvements to SegmentsInfoRequestHandlerTest (Christine Poerschke, Tomás Fernández Löbbe)
+
+* SOLR-11585: Solr SQL does not work with point numeric fields (Joel Bernstein, Kiran Chitturi)
 
 Optimizations
 ----------------------
