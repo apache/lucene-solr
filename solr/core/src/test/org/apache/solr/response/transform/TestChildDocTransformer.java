@@ -16,9 +16,15 @@
  */
 package org.apache.solr.response.transform;
 
+import java.util.Collection;
+import java.util.Iterator;
+
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,6 +67,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     testSubQueryJSON();
 
     testChildDocNonStoredDVFields();
+    testChildReturnFields();
   }
 
   private void testChildDoctransformerXML() throws Exception {
@@ -248,6 +255,32 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
 
+  }
+
+  private void testChildReturnFields() throws Exception {
+
+    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,[child parentFilter=\"subject:parentDocument\" fl=\"intDvoDefault\"]"),
+        "/response/docs/[0]/intDefault==42",
+        "/response/docs/[0]/_childDocuments_/[0]/intDvoDefault==42");
+
+    try(SolrQueryRequest req = req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "intDefault,[child parentFilter=\"subject:parentDocument\" fl=\"intDvoDefault\"]")) {
+      BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
+      Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
+      while (docsStreamer.hasNext()) {
+        SolrDocument doc = docsStreamer.next();
+        assertFalse("root docs should not contain fields specified in child return fields", doc.containsKey("intDvoDefault"));
+        assertTrue("root docs should contain fields specified in query return fields", doc.containsKey("intDefault"));
+        Collection<SolrDocument> childDocs = doc.getChildDocuments();
+        for(SolrDocument childDoc: childDocs) {
+          assertEquals("child doc should only have 1 key", 1, childDoc.keySet().size());
+          assertTrue("child docs should contain fields specified in child return fields", childDoc.containsKey("intDvoDefault"));
+          assertEquals("child docs should contain fields specified in child return fields",
+              42, childDoc.getFieldValue("intDvoDefault"));
+        }
+      }
+    }
   }
 
   private void createSimpleIndex() {

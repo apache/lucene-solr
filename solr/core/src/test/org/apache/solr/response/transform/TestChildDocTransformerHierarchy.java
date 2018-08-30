@@ -297,35 +297,6 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
         "/response/docs/[0]/type_s==cake");
   }
 
-  @Test
-  public void testChildReturnFields() throws Exception {
-    indexSampleData(numberOfDocsPerNestedTest);
-
-    assertJQ(req("q", "test_s:testing",
-        "sort", "id asc",
-        "fl", "*, [child childFilter='lonely/lonelyGrandChild/test2_s:secondTest' fl='*, _nest_path_']",
-        "fq", fqToExcludeNonTestedDocs),
-        "/response/docs/[0]/test_s==testing",
-        "/response/docs/[0]/lonelyGrandChild/test2_s==secondTest",
-        "/response/docs/[0]/lonelyGrandChild/_nest_path_=='lonely#/lonelyGrandChild#'");
-
-    try(SolrQueryRequest req = req("q", "test_s:testing", "sort", "id asc",
-        "fl", "id, [child childFilter='lonely/lonelyGrandChild/test2_s:secondTest' fl='_nest_path_']",
-        "fq", fqToExcludeNonTestedDocs)) {
-      BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
-      Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
-      while (docsStreamer.hasNext()) {
-        SolrDocument doc = docsStreamer.next();
-        assertFalse("root docs should not contain fields specified in child return fields", doc.containsKey("_nest_path_"));
-        SolrDocument childDoc = (SolrDocument) doc.getFieldValue("lonelyGrandChild");
-        assertEquals("child doc should only have 1 key", 1, childDoc.keySet().size());
-        assertTrue("child docs should contain fields specified in child return fields", childDoc.containsKey("_nest_path_"));
-        assertEquals("child docs should contain fields specified in child return fields",
-            "lonely#/lonelyGrandChild#", childDoc.getFieldValue("_nest_path_"));
-      }
-    }
-  }
-
   private void indexSampleData(int numDocs) throws Exception {
     for(int i = 0; i < numDocs; ++i) {
       updateJ(generateDocHierarchy(i), params("update.chain", "nested"));
