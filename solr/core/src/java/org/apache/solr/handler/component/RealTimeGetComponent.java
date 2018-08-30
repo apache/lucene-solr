@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Sets;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesType;
@@ -50,6 +51,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -62,10 +64,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -629,7 +633,8 @@ public class RealTimeGetComponent extends SearchComponent
         }
 
         // SolrCore.verbose("RealTimeGet using searcher ", searcher);
-        SchemaField idField = core.getLatestSchema().getUniqueKeyField();
+        final IndexSchema schema = core.getLatestSchema();
+        SchemaField idField = schema.getUniqueKeyField();
 
         int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
         if (docid < 0) return null;
@@ -646,6 +651,24 @@ public class RealTimeGetComponent extends SearchComponent
         } else {
           docFetcher.decorateDocValueFields(sid, docid, docFetcher.getNonStoredDVsWithoutCopyTargets());
         }
+
+        SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
+        final boolean isBlockUpdate = schema.isUsableForChildDocs() && (rootField != null);
+        if(isBlockUpdate) {
+          // doc is part of a nested structure
+          ModifiableSolrParams params = new ModifiableSolrParams()
+              .set("q", core.getLatestSchema().getUniqueKeyField().getName()+ ":" +rootField.getFirstValue());
+          SolrQueryRequest blockReq = new LocalSolrQueryRequest(core, params);
+          final int rootDocId = searcher.getFirstMatch(new Term(idField.getName(), new BytesRef(rootField.getFirstValue().toString().getBytes())));
+          final DocTransformer childDocTransformer = TransformerFactory.defaultFactories.get("child").create("child", params, blockReq);
+          final ResultContext resultContext = new RTGResultContext(new SolrReturnFields(blockReq), searcher, blockReq);
+          childDocTransformer.setContext(resultContext);
+          final SolrDocument blockDoc = toSolrDoc(sid, schema);
+          childDocTransformer.transform(blockDoc, rootDocId);
+          docFetcher.decorateDocValueFields(toSolrDoc(searcher.doc(docid), schema), docid, Sets.newHashSet(IndexSchema.NEST_PATH_FIELD_NAME));
+          sid = toSolrInputDocument(blockDoc, schema);
+        }
+
       }
     } finally {
       if (searcherHolder != null) {
