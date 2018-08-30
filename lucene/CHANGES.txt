@@ -186,6 +186,13 @@ API Changes:
 * LUCENE-8437: CheckIndex.Status.cantOpenSegments and missingSegmentVersion
   have been removed as they were not computed correctly. (Adrien Grand)
 
+* LUCENE-8286: The UnifiedHighlighter has a new HighlightFlag.WEIGHT_MATCHES flag that
+  will tell this highlighter to use the new MatchesIterator API as the underlying
+  approach to navigate matching hits for a query.  This mode will highlight more
+  accurately than any other highlighter, and can mark up phrases as one span instead of
+  word-by-word.  The UH's public internal APIs changed a bit in the process.
+  (David Smiley)
+
 Bug Fixes:
 
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
