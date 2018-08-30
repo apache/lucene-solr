@@ -81,7 +81,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     DocumentsWriter docsWriter = writer.getDocsWriter();
     assertNotNull(docsWriter);
     DocumentsWriterFlushControl flushControl = docsWriter.flushControl;
-    assertEquals(" bytes must be 0 after init", 0, flushControl.flushBytes());
+    assertEquals(" bytes must be 0 after init", 0, writer.getFlushingBytes());
 
     IndexThread[] threads = new IndexThread[numThreads];
     for (int x = 0; x < threads.length; x++) {
@@ -95,7 +95,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     }
     final long maxRAMBytes = (long) (iwc.getRAMBufferSizeMB() * 1024. * 1024.);
     assertEquals(" all flushes must be due numThreads=" + numThreads, 0,
-        flushControl.flushBytes());
+        writer.getFlushingBytes());
     assertEquals(numDocumentsToIndex, writer.numDocs());
     assertEquals(numDocumentsToIndex, writer.maxDoc());
     assertTrue("peak bytes without flush exceeded watermark",
@@ -136,7 +136,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       DocumentsWriter docsWriter = writer.getDocsWriter();
       assertNotNull(docsWriter);
       DocumentsWriterFlushControl flushControl = docsWriter.flushControl;
-      assertEquals(" bytes must be 0 after init", 0, flushControl.flushBytes());
+      assertEquals(" bytes must be 0 after init", 0, writer.getFlushingBytes());
 
       IndexThread[] threads = new IndexThread[numThreads[i]];
       for (int x = 0; x < threads.length; x++) {
@@ -150,7 +150,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       }
 
       assertEquals(" all flushes must be due numThreads=" + numThreads[i], 0,
-          flushControl.flushBytes());
+          writer.getFlushingBytes());
       assertEquals(numDocumentsToIndex, writer.numDocs());
       assertEquals(numDocumentsToIndex, writer.maxDoc());
       assertTrue("peak bytes without flush exceeded watermark",
@@ -182,7 +182,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     assertNotNull(docsWriter);
     DocumentsWriterFlushControl flushControl = docsWriter.flushControl;
 
-    assertEquals(" bytes must be 0 after init", 0, flushControl.flushBytes());
+    assertEquals(" bytes must be 0 after init", 0, writer.getFlushingBytes());
 
     IndexThread[] threads = new IndexThread[numThreads];
     for (int x = 0; x < threads.length; x++) {
@@ -194,7 +194,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     for (int x = 0; x < threads.length; x++) {
       threads[x].join();
     }
-    assertEquals(" all flushes must be due", 0, flushControl.flushBytes());
+    assertEquals(" all flushes must be due", 0, writer.getFlushingBytes());
     assertEquals(numDocumentsToIndex, writer.numDocs());
     assertEquals(numDocumentsToIndex, writer.maxDoc());
     if (flushPolicy.flushOnRAM() && !flushPolicy.flushOnDocCount()) {
@@ -255,7 +255,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       DocumentsWriter docsWriter = writer.getDocsWriter();
       assertNotNull(docsWriter);
       DocumentsWriterFlushControl flushControl = docsWriter.flushControl;
-      assertEquals(" all flushes must be due", 0, flushControl.flushBytes());
+      assertEquals(" all flushes must be due", 0, writer.getFlushingBytes());
       assertEquals(numDocumentsToIndex, writer.numDocs());
       assertEquals(numDocumentsToIndex, writer.maxDoc());
       if (numThreads[i] == 1) {

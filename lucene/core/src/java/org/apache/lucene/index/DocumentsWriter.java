@@ -762,4 +762,11 @@ final class DocumentsWriter implements Closeable, Accountable {
   public long ramBytesUsed() {
     return flushControl.ramBytesUsed();
   }
+
+  /**
+   * Returns the number of bytes currently being flushed
+   */
+  public long getFlushingBytes() {
+    return flushControl.getFlushingBytes();
+  }
 }

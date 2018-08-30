@@ -55,6 +55,9 @@ API Changes:
   word-by-word.  The UH's public internal APIs changed a bit in the process.
   (David Smiley)
 
+* LUCENE-8471: IndexWriter.getFlushingBytes() returns how many bytes are currently
+  being flushed to disk. (Alan Woodward)
+
 Bug Fixes:
 
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
