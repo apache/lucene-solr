@@ -146,8 +146,8 @@ public class TimeRoutedAlias {
     //optional:
     maxFutureMs = params.getLong(ROUTER_MAX_FUTURE, TimeUnit.MINUTES.toMillis(10));
     // the date math configured is an interval to be subtracted from the most recent collection's time stamp
-    preemptiveCreateMath = params.get(ROUTER_PREEMPTIVE_CREATE_MATH) != null ?
-        "-" + params.get(ROUTER_PREEMPTIVE_CREATE_MATH) : null;
+    String pcmTmp = params.get(ROUTER_PREEMPTIVE_CREATE_MATH);
+    preemptiveCreateMath = pcmTmp != null ? (pcmTmp.startsWith("-") ? pcmTmp : "-" + pcmTmp) : null;
     autoDeleteAgeMath = params.get(ROUTER_AUTO_DELETE_AGE); // no default
     timeZone = TimeZoneUtils.parseTimezone(aliasMetadata.get(CommonParams.TZ));
 

@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.MaintainRoutedAliasCmd;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
@@ -58,7 +57,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.solr.common.util.ExecutorUtil.newMDCAwareSingleThreadExecutor;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -78,27 +77,29 @@ import static org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor.Cr
  * @since 7.2.0
  */
 public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
-  //TODO do we make this more generic to others who want to partition collections using something else?
+  //TODO do we make this more generic to others who want to partition collections using something else besides time?
 
   private static final String ALIAS_DISTRIB_UPDATE_PARAM = "alias." + DISTRIB_UPDATE_PARAM; // param
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final String thisCollection;
-
-  private final TimeRoutedAlias timeRoutedAlias;
-
-  private final ZkController zkController;
+  // refs to std infrastructure
+  private final SolrQueryRequest req;
   private final SolrCmdDistributor cmdDistrib;
   private final CollectionsHandler collHandler;
-  private final SolrParams outParamsToLeader;
-  @SuppressWarnings("FieldCanBeLocal")
-  private final CloudDescriptor cloudDesc;
+  private final ZkController zkController;
 
+  // Stuff specific to this class
+  private final String thisCollection;
+  private final TimeRoutedAlias timeRoutedAlias;
+  private final SolrParams outParamsToLeader;
+
+  // These two fields may be updated within the calling thread during processing but should
+  // never be updated by any async creation thread.
   private List<Map.Entry<Instant, String>> parsedCollectionsDesc; // k=timestamp (start), v=collection.  Sorted descending
   private Aliases parsedCollectionsAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
-  private SolrQueryRequest req;
-  private ExecutorService preemptiveCreationExecutor;
+
+  // This will be updated out in async creation threads see preemptiveAsync(Runnable r) for details
+  private volatile ExecutorService preemptiveCreationExecutor;
 
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, UpdateRequestProcessor next) {
     //TODO get from "Collection property"
@@ -124,8 +125,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     super(next);
     assert aliasDistribPhase == DistribPhase.NONE;
     final SolrCore core = req.getCore();
-    cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
-    this.thisCollection = cloudDesc.getCollectionName();
+    this.thisCollection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
     this.req = req;
     CoreContainer cc = core.getCoreContainer();
     zkController = cc.getZkController();
@@ -165,31 +165,42 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    SolrInputDocument solrInputDocument = cmd.getSolrInputDocument();
-    final Object routeValue = solrInputDocument.getFieldValue(timeRoutedAlias.getRouteField());
-    final Instant docTimestampToRoute = parseRouteKey(routeValue);
-    updateParsedCollectionAliases();
-    String candidateCollection = findCandidateCollectionGivenTimestamp(docTimestampToRoute, cmd.getPrintableId());
-    final Instant maxFutureTime = Instant.now().plusMillis(timeRoutedAlias.getMaxFutureMs());
+    final Instant docTimestamp =
+        parseRouteKey(cmd.getSolrInputDocument().getFieldValue(timeRoutedAlias.getRouteField()));
+
     // TODO: maybe in some cases the user would want to ignore/warn instead?
-    if (docTimestampToRoute.isAfter(maxFutureTime)) {
+    if (docTimestamp.isAfter(Instant.now().plusMillis(timeRoutedAlias.getMaxFutureMs()))) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "The document's time routed key of " + docTimestampToRoute + " is too far in the future given " +
+          "The document's time routed key of " + docTimestamp + " is too far in the future given " +
               TimeRoutedAlias.ROUTER_MAX_FUTURE + "=" + timeRoutedAlias.getMaxFutureMs());
     }
-    String targetCollection = createCollectionsIfRequired(docTimestampToRoute, candidateCollection, cmd.getPrintableId());
+
+    // to avoid potential for race conditions, this next method should not get called again unless
+    // we have created a collection synchronously
+    updateParsedCollectionAliases();
+
+    String targetCollection = createCollectionsIfRequired(docTimestamp, cmd.getPrintableId(), cmd);
+
     if (thisCollection.equals(targetCollection)) {
       // pass on through; we've reached the right collection
       super.processAdd(cmd);
     } else {
       // send to the right collection
-      SolrCmdDistributor.Node targetLeaderNode = routeDocToSlice(targetCollection, solrInputDocument);
+      SolrCmdDistributor.Node targetLeaderNode = routeDocToSlice(targetCollection, cmd.getSolrInputDocument());
       cmdDistrib.distribAdd(cmd, Collections.singletonList(targetLeaderNode), new ModifiableSolrParams(outParamsToLeader));
     }
   }
 
-
-  private String createCollectionsIfRequired(Instant docTimestamp, String targetCollection, String printableId) {
+  /**
+   * Create any required collections and return the name of the collection to which the current document should be sent.
+   *
+   * @param docTimestamp the date for the document taken from the field specified in the TRA config
+   * @param printableId A printable id for the document (used in error message only)
+   * @param cmd The initial calculated destination collection.
+   * @return The name of the proper destination collection for the document which may or may not be a
+   *         newly created collection
+   */
+  private String createCollectionsIfRequired(Instant docTimestamp, String printableId, AddUpdateCommand cmd) {
     // Even though it is possible that multiple requests hit this code in the 1-2 sec that
     // it takes to create a collection, it's an established anti-pattern to feed data with a very large number
     // of client connections. This in mind, we only guard against spamming the overseer within a batch of
@@ -198,32 +209,32 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     // probably don't write to the same alias. As such, we have deferred any solution to the "many clients causing
     // collection creation simultaneously" problem until such time as someone actually has that problem in a
     // real world use case that isn't just an anti-pattern.
+    Map.Entry<Instant, String> candidateCollectionDesc = findCandidateGivenTimestamp(docTimestamp, cmd.getPrintableId());
+    String candidateCollectionName = candidateCollectionDesc.getValue();
     try {
-      CreationType creationType = requiresCreateCollection(docTimestamp, timeRoutedAlias.getPreemptiveCreateWindow());
-      switch (creationType) {
+      switch (typeOfCreationRequired(docTimestamp, candidateCollectionDesc.getKey())) {
         case SYNCHRONOUS:
           // This next line blocks until all collections required by the current document have been created
-          return maintain(targetCollection, docTimestamp, printableId, false);
+          return createAllRequiredCollections(docTimestamp, printableId, candidateCollectionDesc);
         case ASYNC_PREEMPTIVE:
-          // Note: creating an executor and throwing it away is slightly expensive, but this is only likely to happen
-          // once per hour/day/week (depending on time slice size for the TRA). If the executor were retained, it
-          // would need to be shut down in a close hook to avoid test failures due to thread leaks which is slightly
-          // more complicated from a code maintenance and readability stand point. An executor must used instead of a
-          // thread to ensure we pick up the proper MDC logging stuff from ExecutorUtil. T
           if (preemptiveCreationExecutor == null) {
-            DefaultSolrThreadFactory threadFactory = new DefaultSolrThreadFactory("TRA-preemptive-creation");
-            preemptiveCreationExecutor = newMDCAwareSingleThreadExecutor(threadFactory);
-            preemptiveCreationExecutor.execute(() -> {
-              maintain(targetCollection, docTimestamp, printableId, true);
-              preemptiveCreationExecutor.shutdown();
-              preemptiveCreationExecutor = null;
-            });
+            // It's important not to add code between here and the prior call to findCandidateGivenTimestamp()
+            // in processAdd() that invokes updateParsedCollectionAliases(). Doing so would update parsedCollectionsDesc
+            // and create a race condition. We are relying on the fact that get(0) is returning the head of the parsed
+            // collections that existed when candidateCollectionDesc was created. If this class updates it's notion of
+            // parsedCollectionsDesc since candidateCollectionDesc was chosen, we could create collection n+2
+            // instead of collection n+1.
+
+            // This line does not block and the document can be added immediately
+            preemptiveAsync(() -> createNextCollection(this.parsedCollectionsDesc.get(0).getValue()));
           }
-          return targetCollection;
+          return candidateCollectionName;
         case NONE:
-          return targetCollection; // just for clarity...
+          return candidateCollectionName; // could use fall through, but fall through is fiddly for later editors.
         default:
-          return targetCollection; // could use fall through, but fall through is fiddly for later editors.
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown creation type while adding " +
+              "document to a Time Routed Alias! This is a bug caused when a creation type has been added but " +
+              "not all code has been updated to handle it.");
       }
       // do nothing if creationType == NONE
     } catch (SolrException e) {
@@ -231,6 +242,21 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
+  }
+
+  private void preemptiveAsync(Runnable r) {
+    // Note: creating an executor and throwing it away is slightly expensive, but this is only likely to happen
+    // once per hour/day/week (depending on time slice size for the TRA). If the executor were retained, it
+    // would need to be shut down in a close hook to avoid test failures due to thread leaks in tests which is slightly
+    // more complicated from a code maintenance and readability stand point. An executor must used instead of a
+    // thread to ensure we pick up the proper MDC logging stuff from ExecutorUtil.
+    DefaultSolrThreadFactory threadFactory = new DefaultSolrThreadFactory("TRA-preemptive-creation");
+    preemptiveCreationExecutor = newMDCAwareSingleThreadExecutor(threadFactory);
+    preemptiveCreationExecutor.execute(() -> {
+      r.run();
+      preemptiveCreationExecutor.shutdown();
+      preemptiveCreationExecutor = null;
+    });
   }
 
   /**
@@ -241,29 +267,28 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
    * the TRA to trigger preemptive creation but not beyond all existing collections with a value of
    * {@link CreationType#ASYNC_PREEMPTIVE}.
    *
-   * @param routeTimestamp The timestamp from the document
-   * @param preemptiveCreateMath The date math indicating the {@link TimeRoutedAlias#preemptiveCreateMath}
+   * @param docTimeStamp The timestamp from the document
+   * @param targetCollectionTimestamp The timestamp for the presently selected destination collection
    * @return a {@code CreationType} indicating if and how to create a collection
    */
-  private CreationType requiresCreateCollection(Instant routeTimestamp,  String preemptiveCreateMath) {
-    final Instant mostRecentCollTimestamp = parsedCollectionsDesc.get(0).getKey();
-    final Instant nextCollTimestamp = timeRoutedAlias.computeNextCollTimestamp(mostRecentCollTimestamp);
-    if (!routeTimestamp.isBefore(nextCollTimestamp)) {
+  private CreationType typeOfCreationRequired(Instant docTimeStamp, Instant targetCollectionTimestamp) {
+    final Instant nextCollTimestamp = timeRoutedAlias.computeNextCollTimestamp(targetCollectionTimestamp);
+
+    if (!docTimeStamp.isBefore(nextCollTimestamp)) {
       // current document is destined for a collection that doesn't exist, must create the destination
       // to proceed with this add command
       return SYNCHRONOUS;
     }
 
-    if (isBlank(preemptiveCreateMath)) {
-      return NONE;
+    if (isNotBlank(timeRoutedAlias.getPreemptiveCreateWindow())) {
+      Instant preemptNextColCreateTime =
+          calcPreemptNextColCreateTime(timeRoutedAlias.getPreemptiveCreateWindow(), nextCollTimestamp);
+      if (!docTimeStamp.isBefore(preemptNextColCreateTime)) {
+        return ASYNC_PREEMPTIVE;
+      }
     }
 
-    Instant preemptNextColCreateTime = calcPreemptNextColCreateTime(preemptiveCreateMath, nextCollTimestamp);
-    if (routeTimestamp.isBefore(preemptNextColCreateTime)) {
-      return NONE;
-    } else {
-      return ASYNC_PREEMPTIVE;
-    }
+    return NONE;
   }
 
   private Instant calcPreemptNextColCreateTime(String preemptiveCreateMath, Instant nextCollTimestamp) {
@@ -316,38 +341,37 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
    *
    * @throws SolrException if the doc is too old to be stored in the TRA
    */
-  private String findCandidateCollectionGivenTimestamp(Instant docTimestamp, String id) {
+  private Map.Entry<Instant, String> findCandidateGivenTimestamp(Instant docTimestamp, String id) {
     // Lookup targetCollection given route key.  Iterates in reverse chronological order.
     //    We're O(N) here but N should be small, the loop is fast, and usually looking for 1st.
     for (Map.Entry<Instant, String> entry : parsedCollectionsDesc) {
       Instant colStartTime = entry.getKey();
       if (!docTimestamp.isBefore(colStartTime)) {  // i.e. docTimeStamp is >= the colStartTime
-        return entry.getValue(); //found it
+        return entry; //found it
       }
     }
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
         "Doc " + id + " couldn't be routed with " + timeRoutedAlias.getRouteField() + "=" + docTimestamp);
   }
 
-  private void createCollectionAfter(String mostRecentCollName) {
+  private void createNextCollection(String mostRecentCollName) {
     // Invoke ROUTEDALIAS_CREATECOLL (in the Overseer, locked by alias name).  It will create the collection
     //   and update the alias contingent on the most recent collection name being the same as
     //   what we think so here, otherwise it will return (without error).
+    try {
+      MaintainRoutedAliasCmd.remoteInvoke(collHandler, getAliasName(), mostRecentCollName);
+      // we don't care about the response.  It's possible no collection was created because
+      //  of a race and that's okay... we'll ultimately retry any way.
 
-      try {
-        MaintainRoutedAliasCmd.remoteInvoke(collHandler, getAliasName(), mostRecentCollName);
-        // we don't care about the response.  It's possible no collection was created because
-        //  of a race and that's okay... we'll ultimately retry any way.
-
-        // Ensure our view of the aliases has updated. If we didn't do this, our zkStateReader might
-        //  not yet know about the new alias (thus won't see the newly added collection to it), and we might think
-        //  we failed.
-        zkController.getZkStateReader().aliasesManager.update();
-      } catch (RuntimeException e) {
-        throw e;
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
+      // Ensure our view of the aliases has updated. If we didn't do this, our zkStateReader might
+      //  not yet know about the new alias (thus won't see the newly added collection to it), and we might think
+      //  we failed.
+      zkController.getZkStateReader().aliasesManager.update();
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   private SolrException newAliasMustExistException() {
@@ -437,45 +461,46 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
 
   /**
-   * Create as many collections as required. This method loops to allow for the possibility that the routeTimestamp
+   * Create as many collections as required. This method loops to allow for the possibility that the docTimestamp
    * requires more than one collection to be created. Since multiple threads may be invoking maintain on separate
    * requests to the same alias, we must pass in the name of the collection that this thread believes to be the most
    * recent collection. This assumption is checked when the command is executed in the overseer. When this method
    * finds that all collections required have been created it returns the (possibly new) most recent collection.
    * The return value is ignored by the calling code in the async preemptive case.
    *
-   * @param targetCollection the initial notion of the latest collection available.
    * @param docTimestamp the timestamp from the document that determines routing
    * @param printableId an identifier for the add command used in error messages
+   * @param targetCollectionDesc the descriptor for the presently selected collection which should also be
+   *                             the most recent collection in all cases where this method is invoked.
    * @return The latest collection, including collections created during maintenance
    */
-  public String maintain(String targetCollection, Instant docTimestamp, String printableId, boolean asyncSinglePassOnly) {
-    do { // typically we don't loop; it's only when we need to create a collection
+  private String createAllRequiredCollections( Instant docTimestamp, String printableId,
+                                               Map.Entry<Instant, String> targetCollectionDesc) {
+    do {
+      switch(typeOfCreationRequired(docTimestamp, targetCollectionDesc.getKey())) {
+        case NONE:
+          return targetCollectionDesc.getValue(); // we don't need another collection
+        case ASYNC_PREEMPTIVE:
+          // can happen when preemptive interval is longer than one time slice
+          preemptiveAsync(() -> createNextCollection(this.parsedCollectionsDesc.get(0).getValue()));
+          return targetCollectionDesc.getValue();
+        case SYNCHRONOUS:
+          createNextCollection(targetCollectionDesc.getValue()); // *should* throw if fails for some reason but...
+          if (!updateParsedCollectionAliases()) { // thus we didn't make progress...
+            // this is not expected, even in known failure cases, but we check just in case
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "We need to create a new time routed collection but for unknown reasons were unable to do so.");
+          }
+          // then retry the loop ... have to do find again in case other requests also added collections
+          // that were made visible when we called updateParsedCollectionAliases()
+          targetCollectionDesc = findCandidateGivenTimestamp(docTimestamp, printableId);
+          break;
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown creation type while adding " +
+              "document to a Time Routed Alias! This is a bug caused when a creation type has been added but " +
+              "not all code has been updated to handle it.");
 
-      // Note: This code no longer short circuits immediately when it sees that the expected latest
-      // collection is the current latest collection. With the advent of preemptive collection creation
-      // we always need to do the time based checks. Otherwise, we cannot handle the case where the
-      // preemptive window is larger than our TRA's time slices
-
-      // Check the doc isn't too far in the future
-
-      if (NONE == requiresCreateCollection(docTimestamp, timeRoutedAlias.getPreemptiveCreateWindow()))
-        return targetCollection; // thus we don't need another collection
-
-      final String mostRecentCollName = parsedCollectionsDesc.get(0).getValue();
-      createCollectionAfter(mostRecentCollName); // *should* throw if fails for some reason but...
-      if (asyncSinglePassOnly) {
-        return null; // async case ignores return value anyway, created collection is not target of current document.
       }
-      final boolean updated = updateParsedCollectionAliases();
-      if (!updated) { // thus we didn't make progress...
-        // this is not expected, even in known failure cases, but we check just in case
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "We need to create a new time routed collection but for unknown reasons were unable to do so.");
-      }
-      // then retry the loop ...
-      targetCollection = findCandidateCollectionGivenTimestamp(docTimestamp, printableId);
-
     } while (true);
   }
 
@@ -484,5 +509,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     ASYNC_PREEMPTIVE,
     SYNCHRONOUS
   }
+
 
 }

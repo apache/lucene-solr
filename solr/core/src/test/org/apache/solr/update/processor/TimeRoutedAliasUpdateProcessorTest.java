@@ -461,6 +461,31 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         "rows", "0"));
     assertEquals(12, resp.getResults().getNumFound());
 
+    // Sych creation with an interval longer than the time slice for the alias..
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "13", "timestamp_dt", "2017-10-30T23:03:00Z")), // lucky?
+        params));
+    assertUpdateResponse(solrClient.commit(alias));
+    waitCol("2017-10-30", numShards);
+    waitCol("2017-10-31", numShards); // spooky! async case arising in middle of sync creation!!
+
+    cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertEquals(9,cols.size());
+    assertNumDocs("2017-10-23", 1);
+    assertNumDocs("2017-10-24", 1);
+    assertNumDocs("2017-10-25", 6);
+    assertNumDocs("2017-10-26", 0);
+    assertNumDocs("2017-10-27", 1);
+    assertNumDocs("2017-10-28", 3); // should get through even though preemptive creation ignored it.
+    assertNumDocs("2017-10-29", 0);
+    assertNumDocs("2017-10-30", 1);
+    assertNumDocs("2017-10-31", 0);
+
+    resp = solrClient.query(alias, params(
+        "q", "*:*",
+        "rows", "0"));
+    assertEquals(13, resp.getResults().getNumFound());
+
   }
 
   private void assertNumDocs(final String datePart, int expected) throws SolrServerException, IOException {
