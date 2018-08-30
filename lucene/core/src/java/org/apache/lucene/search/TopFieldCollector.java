@@ -122,13 +122,16 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       final LeafFieldComparator[] comparators = queue.getComparators(context);
       final int[] reverseMul = queue.getReverseMul();
       final Sort indexSort = context.reader().getMetaData().getSort();
+      final boolean canEarlyStopComparing = indexSort != null &&
+          canEarlyTerminate(sort, indexSort);
       final boolean canEarlyTerminate = trackTotalHits == false &&
           trackMaxScore == false &&
-          indexSort != null &&
-          canEarlyTerminate(sort, indexSort);
+          canEarlyStopComparing;
       final int initialTotalHits = totalHits;
 
       return new MultiComparatorLeafCollector(comparators, reverseMul, mayNeedScoresTwice) {
+
+        boolean collectedAllCompetitiveHits = false;
 
         @Override
         public void collect(int doc) throws IOException {
@@ -142,16 +145,25 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
           ++totalHits;
           if (queueFull) {
+            if (collectedAllCompetitiveHits) {
+              return;
+            }
+
             if (reverseMul * comparator.compareBottom(doc) <= 0) {
               // since docs are visited in doc Id order, if compare is 0, it means
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
-              if (canEarlyTerminate) {
-                // scale totalHits linearly based on the number of docs
-                // and terminate collection
-                totalHits += estimateRemainingHits(totalHits - initialTotalHits, doc, context.reader().maxDoc());
-                earlyTerminated = true;
-                throw new CollectionTerminatedException();
+              if (canEarlyStopComparing) {
+                if (canEarlyTerminate) {
+                  // scale totalHits linearly based on the number of docs
+                  // and terminate collection
+                  totalHits += estimateRemainingHits(totalHits - initialTotalHits, doc, context.reader().maxDoc());
+                  earlyTerminated = true;
+                  throw new CollectionTerminatedException();
+                } else {
+                  collectedAllCompetitiveHits = true;
+                  return;
+                }
               } else {
                 // just move to the next doc
                 return;
@@ -232,12 +244,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       docBase = context.docBase;
       final int afterDoc = after.doc - docBase;
       final Sort indexSort = context.reader().getMetaData().getSort();
+      final boolean canEarlyStopComparing = indexSort != null &&
+          canEarlyTerminate(sort, indexSort);
       final boolean canEarlyTerminate = trackTotalHits == false &&
           trackMaxScore == false &&
-          indexSort != null &&
-          canEarlyTerminate(sort, indexSort);
+          canEarlyStopComparing;
       final int initialTotalHits = totalHits;
       return new MultiComparatorLeafCollector(queue.getComparators(context), queue.getReverseMul(), mayNeedScoresTwice) {
+
+        boolean collectedAllCompetitiveHits = false;
 
         @Override
         public void collect(int doc) throws IOException {
@@ -254,17 +269,26 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           }
 
           if (queueFull) {
+            if (collectedAllCompetitiveHits) {
+              return;
+            }
+
             // Fastmatch: return if this hit is no better than
             // the worst hit currently in the queue:
             final int cmp = reverseMul * comparator.compareBottom(doc);
             if (cmp <= 0) {
               // not competitive since documents are visited in doc id order
-              if (canEarlyTerminate) {
-                // scale totalHits linearly based on the number of docs
-                // and terminate collection
-                totalHits += estimateRemainingHits(totalHits - initialTotalHits, doc, context.reader().maxDoc());
-                earlyTerminated = true;
-                throw new CollectionTerminatedException();
+              if (canEarlyStopComparing) {
+                if (canEarlyTerminate) {
+                  // scale totalHits linearly based on the number of docs
+                  // and terminate collection
+                  totalHits += estimateRemainingHits(totalHits - initialTotalHits, doc, context.reader().maxDoc());
+                  earlyTerminated = true;
+                  throw new CollectionTerminatedException();
+                } else {
+                  collectedAllCompetitiveHits = true;
+                  return;
+                }
               } else {
                 // just move to the next doc
                 return;

@@ -134,6 +134,10 @@ Improvements
 
 * LUCENE-8460: Better argument validation in StoredField. (Namgyu Kim)
 
+* LUCENE-8432: TopFieldComparator stops comparing documents if the index is
+  sorted, even if hits still need to be visited to compute the hit count.
+  (Nikolay Khitrin)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
