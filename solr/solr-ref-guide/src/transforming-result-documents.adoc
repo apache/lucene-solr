@@ -137,7 +137,7 @@ When using this transformer, the `parentFilter` parameter must be specified, and
 
 * `childFilter` - query to filter which child documents should be included, this can be particularly useful when you have multiple levels of hierarchical documents (default: all children)
 * `limit` - the maximum number of child documents to be returned per parent document (default: 10)
-* `fl` - the field list which the transformer is to return.
+* `fl` - the field list which the transformer is to return (default: top level "fl"). There is a further limitation in which the fields here should be a subset of those specified by the top level fl param
 
 
 === [shard] - ShardAugmenterFactory

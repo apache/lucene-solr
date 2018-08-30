@@ -108,7 +108,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     }
 
     String childReturnFields = params.get("fl");
-    SolrReturnFields childSolrReturnFields = childReturnFields==null? new SolrReturnFields(): new SolrReturnFields(childReturnFields ,req);
+    SolrReturnFields childSolrReturnFields = childReturnFields==null? new SolrReturnFields(req): new SolrReturnFields(childReturnFields, req);
 
     int limit = params.getInt( "limit", 10 );
 
