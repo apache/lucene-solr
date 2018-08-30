@@ -290,6 +290,8 @@ Other:
 
 * LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
 
+* LUCENE-765: Improved org.apache.lucene.index javadocs. (Mike Sokolov)
+
 ======================= Lucene 7.4.1 =======================
 
 Bug Fixes:
