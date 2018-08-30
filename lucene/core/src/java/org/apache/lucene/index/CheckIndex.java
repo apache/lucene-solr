@@ -25,10 +25,8 @@ import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1117,73 +1115,6 @@ public final class CheckIndex implements Closeable {
     return intersectTermCount != normalTermCount;
   }
 
-  /** Make an effort to visit "fake" (e.g. auto-prefix) terms.  We do this by running term range intersections across an initially wide
-   *  interval of terms, at different boundaries, and then gradually decrease the interval.  This is not guaranteed to hit all non-real
-   *  terms (doing that in general is non-trivial), but it should hit many of them, and validate their postings against the postings for the
-   *  real terms. */
-  private static void checkTermRanges(String field, int maxDoc, Terms terms, long numTerms) throws IOException {
-
-    // We'll target this many terms in our interval for the current level:
-    double currentInterval = numTerms;
-
-    FixedBitSet normalDocs = new FixedBitSet(maxDoc);
-    FixedBitSet intersectDocs = new FixedBitSet(maxDoc);
-
-    //System.out.println("CI.checkTermRanges field=" + field + " numTerms=" + numTerms);
-
-    while (currentInterval >= 10.0) {
-      //System.out.println("  cycle interval=" + currentInterval);
-
-      // We iterate this terms enum to locate min/max term for each sliding/overlapping interval we test at the current level:
-      TermsEnum termsEnum = terms.iterator();
-
-      long termCount = 0;
-
-      Deque<BytesRef> termBounds = new LinkedList<>();
-
-      long lastTermAdded = Long.MIN_VALUE;
-
-      BytesRefBuilder lastTerm = null;
-
-      while (true) {
-        BytesRef term = termsEnum.next();
-        if (term == null) {
-          break;
-        }
-        //System.out.println("  top: term=" + term.utf8ToString());
-        if (termCount >= lastTermAdded + currentInterval/4) {
-          termBounds.add(BytesRef.deepCopyOf(term));
-          lastTermAdded = termCount;
-          if (termBounds.size() == 5) {
-            BytesRef minTerm = termBounds.removeFirst();
-            BytesRef maxTerm = termBounds.getLast();
-            checkSingleTermRange(field, maxDoc, terms, minTerm, maxTerm, normalDocs, intersectDocs);
-          }
-        }
-        termCount++;
-
-        if (lastTerm == null) {
-          lastTerm = new BytesRefBuilder();
-          lastTerm.copyBytes(term);
-        } else {
-          if (lastTerm.get().compareTo(term) >= 0) {
-            throw new RuntimeException("terms out of order: lastTerm=" + lastTerm.get() + " term=" + term);
-          }
-          lastTerm.copyBytes(term);
-        }
-      }
-      //System.out.println("    count=" + termCount);
-
-      if (lastTerm != null && termBounds.isEmpty() == false) {
-        BytesRef minTerm = termBounds.removeFirst();
-        BytesRef maxTerm = lastTerm.get();
-        checkSingleTermRange(field, maxDoc, terms, minTerm, maxTerm, normalDocs, intersectDocs);
-      }
-
-      currentInterval *= .75;
-    }
-  }
-
   /**
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
@@ -1702,12 +1633,6 @@ public final class CheckIndex implements Closeable {
       } else {
 
         long fieldTermCount = (status.delTermCount+status.termCount)-termCountStart;
-
-        // LUCENE-5879: this is just too slow for now:
-        if (false && hasFreqs == false) {
-          // For DOCS_ONLY fields we recursively test term ranges:
-          checkTermRanges(field, maxDoc, fieldTerms, fieldTermCount);
-        }
 
         final Object stats = fieldTerms.getStats();
         assert stats != null;

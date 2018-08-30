@@ -42,10 +42,7 @@ import org.apache.lucene.util.fst.Outputs;
  *  the terms.  It does not use the terms index at all: on init, it
  *  loads the root block, and scans its way to the initial term.
  *  Likewise, in next it scans until it finds a term that matches the
- *  current automaton transition.  If the index has auto-prefix terms
- *  (only for DOCS_ONLY fields currently) it will visit these terms
- *  when possible and then skip the real terms that auto-prefix term
- *  matched. */
+ *  current automaton transition. */
 
 final class IntersectTermsEnum extends TermsEnum {
 
@@ -69,29 +66,19 @@ final class IntersectTermsEnum extends TermsEnum {
 
   private final FST.BytesReader fstReader;
 
-  private final boolean allowAutoPrefixTerms;
-
   final FieldReader fr;
 
-  /** Which state in the automaton accepts all possible suffixes. */
-  private final int sinkState;
-
   private BytesRef savedStartTerm;
-      
-  /** True if we did return the current auto-prefix term */
-  private boolean useAutoPrefixTerm;
 
   // TODO: in some cases we can filter by length?  eg
   // regexp foo*bar must be at least length 6 bytes
-  public IntersectTermsEnum(FieldReader fr, Automaton automaton, RunAutomaton runAutomaton, BytesRef commonSuffix, BytesRef startTerm, int sinkState) throws IOException {
+  public IntersectTermsEnum(FieldReader fr, Automaton automaton, RunAutomaton runAutomaton, BytesRef commonSuffix, BytesRef startTerm) throws IOException {
     this.fr = fr;
-    this.sinkState = sinkState;
 
     assert automaton != null;
     assert runAutomaton != null;
 
     this.runAutomaton = runAutomaton;
-    this.allowAutoPrefixTerms = sinkState != -1;
     this.automaton = automaton;
     this.commonSuffix = commonSuffix;
 
@@ -269,7 +256,6 @@ final class IntersectTermsEnum extends TermsEnum {
         final int saveSuffix = currentFrame.suffix;
         final long saveLastSubFP = currentFrame.lastSubFP;
         final int saveTermBlockOrd = currentFrame.termState.termBlockOrd;
-        final boolean saveIsAutoPrefixTerm = currentFrame.isAutoPrefixTerm;
 
         final boolean isSubBlock = currentFrame.next();
 
@@ -297,11 +283,8 @@ final class IntersectTermsEnum extends TermsEnum {
             }
             continue;
           } else if (cmp == 0) {
-            if (allowAutoPrefixTerms == false && currentFrame.isAutoPrefixTerm) {
-              continue;
-            }
             return;
-          } else if (allowAutoPrefixTerms || currentFrame.isAutoPrefixTerm == false) {
+          } else {
             // Fallback to prior entry: the semantics of
             // this method is that the first call to
             // next() will return the term after the
@@ -312,7 +295,6 @@ final class IntersectTermsEnum extends TermsEnum {
             currentFrame.suffix = saveSuffix;
             currentFrame.suffixesReader.setPosition(savePos);
             currentFrame.termState.termBlockOrd = saveTermBlockOrd;
-            currentFrame.isAutoPrefixTerm = saveIsAutoPrefixTerm;
             System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
             term.length = currentFrame.prefix + currentFrame.suffix;
             // If the last entry was a block we don't
@@ -349,139 +331,6 @@ final class IntersectTermsEnum extends TermsEnum {
     return currentFrame.next();
   }
 
-  private boolean skipPastLastAutoPrefixTerm() throws IOException {
-    assert currentFrame.isAutoPrefixTerm;
-    useAutoPrefixTerm = false;
-
-    // If we last returned an auto-prefix term, we must now skip all
-    // actual terms sharing that prefix.  At most, that skipping
-    // requires popping one frame, but it can also require simply
-    // scanning ahead within the current frame.  This scanning will
-    // skip sub-blocks that contain many terms, which is why the
-    // optimization "works":
-    int floorSuffixLeadEnd = currentFrame.floorSuffixLeadEnd;
-
-    boolean isSubBlock;
-
-    if (floorSuffixLeadEnd == -1) {
-      // An ordinary prefix, e.g. foo*
-      int prefix = currentFrame.prefix;
-      int suffix = currentFrame.suffix;
-      if (suffix == 0) {
-
-        // Easy case: the prefix term's suffix is the empty string,
-        // meaning the prefix corresponds to all terms in the
-        // current block, so we just pop this entire block:
-        if (currentFrame.ord == 0) {
-          throw NoMoreTermsException.INSTANCE;
-        }
-        currentFrame = stack[currentFrame.ord-1];
-        currentTransition = currentFrame.transition;
-
-        return popPushNext();
-
-      } else {
-
-        // Just next() until we hit an entry that doesn't share this
-        // prefix.  The first next should be a sub-block sharing the
-        // same prefix, because if there are enough terms matching a
-        // given prefix to warrant an auto-prefix term, then there
-        // must also be enough to make a sub-block (assuming
-        // minItemsInPrefix > minItemsInBlock):
-        scanPrefix:
-        while (true) {
-          if (currentFrame.nextEnt == currentFrame.entCount) {
-            if (currentFrame.isLastInFloor == false) {
-              currentFrame.loadNextFloorBlock();
-            } else if (currentFrame.ord == 0) {
-              throw NoMoreTermsException.INSTANCE;
-            } else {
-              // Pop frame, which also means we've moved beyond this
-              // auto-prefix term:
-              currentFrame = stack[currentFrame.ord-1];
-              currentTransition = currentFrame.transition;
-
-              return popPushNext();
-            }
-          }
-          isSubBlock = currentFrame.next();
-          for(int i=0;i<suffix;i++) {
-            if (term.bytes[prefix+i] != currentFrame.suffixBytes[currentFrame.startBytePos+i]) {
-              break scanPrefix;
-            }
-          }
-        }
-      }
-    } else {
-      // Floor'd auto-prefix term; in this case we must skip all
-      // terms e.g. matching foo[a-m]*.  We are currently "on" fooa,
-      // which the automaton accepted (fooa* through foom*), and
-      // floorSuffixLeadEnd is m, so we must now scan to foon:
-      int prefix = currentFrame.prefix;
-      int suffix = currentFrame.suffix;
-
-      if (currentFrame.floorSuffixLeadStart == -1) {
-        suffix++;
-      }
-
-      if (suffix == 0) {
-
-        // This means current frame is fooa*, so we have to first
-        // pop the current frame, then scan in parent frame:
-        if (currentFrame.ord == 0) {
-          throw NoMoreTermsException.INSTANCE;
-        }
-        currentFrame = stack[currentFrame.ord-1];
-        currentTransition = currentFrame.transition;
-
-        // Current (parent) frame is now foo*, so now we just scan
-        // until the lead suffix byte is > floorSuffixLeadEnd
-        //assert currentFrame.prefix == prefix-1;
-        //prefix = currentFrame.prefix;
-
-        // In case when we pop, and the parent block is not just prefix-1, e.g. in block 417* on
-        // its first term = floor prefix term 41[7-9], popping to block 4*:
-        prefix = currentFrame.prefix;
-
-        suffix = term.length - currentFrame.prefix;
-      } else {
-        // No need to pop; just scan in currentFrame:
-      }
-
-      // Now we scan until the lead suffix byte is > floorSuffixLeadEnd
-      scanFloor:
-      while (true) {
-        if (currentFrame.nextEnt == currentFrame.entCount) {
-          if (currentFrame.isLastInFloor == false) {
-            currentFrame.loadNextFloorBlock();
-          } else if (currentFrame.ord == 0) {
-            throw NoMoreTermsException.INSTANCE;
-          } else {
-            // Pop frame, which also means we've moved beyond this
-            // auto-prefix term:
-            currentFrame = stack[currentFrame.ord-1];
-            currentTransition = currentFrame.transition;
-
-            return popPushNext();
-          }
-        }
-        isSubBlock = currentFrame.next();
-        for(int i=0;i<suffix-1;i++) {
-          if (term.bytes[prefix+i] != currentFrame.suffixBytes[currentFrame.startBytePos+i]) {
-            break scanFloor;
-          }
-        }
-        if (currentFrame.suffix >= suffix && (currentFrame.suffixBytes[currentFrame.startBytePos+suffix-1]&0xff) > floorSuffixLeadEnd) {
-          // Done scanning: we are now on the first term after all
-          // terms matched by this auto-prefix term
-          break;
-        }
-      }
-    }
-
-    return isSubBlock;
-  }
-
   // Only used internally when there are no more terms in next():
   private static final class NoMoreTermsException extends RuntimeException {
 
@@ -511,15 +360,7 @@ final class IntersectTermsEnum extends TermsEnum {
 
   private BytesRef _next() throws IOException {
 
-    boolean isSubBlock;
-
-    if (useAutoPrefixTerm) {
-      // If the current term was an auto-prefix term, we have to skip past it:
-      isSubBlock = skipPastLastAutoPrefixTerm();
-      assert useAutoPrefixTerm == false;
-    } else {
-      isSubBlock = popPushNext();
-    }
+    boolean isSubBlock = popPushNext();
 
     nextTerm:
 
@@ -669,41 +510,6 @@ final class IntersectTermsEnum extends TermsEnum {
         currentFrame = pushFrame(state);
         currentTransition = currentFrame.transition;
         currentFrame.lastState = lastState;
-      } else if (currentFrame.isAutoPrefixTerm) {
-        // We are on an auto-prefix term, meaning this term was compiled
-        // at indexing time, matching all terms sharing this prefix (or,
-        // a floor'd subset of them if that count was too high).  A
-        // prefix term represents a range of terms, so we now need to
-        // test whether, from the current state in the automaton, it
-        // accepts all terms in that range.  As long as it does, we can
-        // use this term and then later skip ahead past all terms in
-        // this range:
-        if (allowAutoPrefixTerms) {
-
-          if (currentFrame.floorSuffixLeadEnd == -1) {
-            // Simple prefix case
-            useAutoPrefixTerm = state == sinkState;
-          } else {
-            if (currentFrame.floorSuffixLeadStart == -1) {
-              // Must also accept the empty string in this case
-              if (automaton.isAccept(state)) {
-                useAutoPrefixTerm = acceptsSuffixRange(state, 0, currentFrame.floorSuffixLeadEnd);
-              }
-            } else {
-              useAutoPrefixTerm = acceptsSuffixRange(lastState, currentFrame.floorSuffixLeadStart, currentFrame.floorSuffixLeadEnd);
-            }
-          }
-
-          if (useAutoPrefixTerm) {
-            // All suffixes of this auto-prefix term are accepted by the automaton, so we can use it:
-            copyTerm();
-            return term;
-          } else {
-            // We move onto the next term
-          }
-        } else {
-          // We are not allowed to use auto-prefix terms, so we just skip it
-        }
       } else if (runAutomaton.isAccept(state)) {
         copyTerm();
         assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
@@ -714,24 +520,6 @@ final class IntersectTermsEnum extends TermsEnum {
 
       isSubBlock = popPushNext();
     }
-  }
-
-  private final Transition scratchTransition = new Transition();
-
-  /** Returns true if, from this state, the automaton accepts any suffix
-   *  starting with a label between start and end, inclusive.  We just
-   *  look for a transition, matching this range, to the sink state.  */
-  private boolean acceptsSuffixRange(int state, int start, int end) {
-
-    int count = automaton.initTransition(state, scratchTransition);
-    for(int i=0;i<count;i++) {
-      automaton.getNextTransition(scratchTransition);
-      if (start >= scratchTransition.min && end <= scratchTransition.max && scratchTransition.dest == sinkState) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   // for debugging
