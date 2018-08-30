@@ -7,6 +7,8 @@ http://s.apache.org/luceneversions
 
 API Changes
 
+* LUCENE-8469: Deprecated StringHelper.compare has been removed. (Dawid Weiss)
+
 * LUCENE-8039: Introduce a "delta distance" method set to GeoDistance.  This
   allows distance calculations, especially for paths, to take into account an
   "excursion" to include the specified point.

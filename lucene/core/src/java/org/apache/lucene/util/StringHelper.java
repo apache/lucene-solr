@@ -351,15 +351,4 @@ public abstract class StringHelper {
 
     return new BytesRef(bytes);
   }
-
-  /** Compares a fixed length slice of two byte arrays interpreted as
-   *  big-endian unsigned values.  Returns positive int if a &gt; b,
-   *  negative int if a &lt; b and 0 if a == b 
-   *  
-   * @deprecated Use FutureArrays.compareUnsigned instead.
-   */
-  @Deprecated
-  public static int compare(int count, byte[] a, int aOffset, byte[] b, int bOffset) {
-    return FutureArrays.compareUnsigned(a, aOffset, aOffset + count, b, bOffset, bOffset + count);
-  }
 }

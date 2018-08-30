@@ -38,10 +38,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Rethrow;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -589,10 +589,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           System.arraycopy(docValues[ord][dim], 0, expectedMaxValues[dim], 0, numBytesPerDim);
         } else {
           // TODO: it's cheating that we use StringHelper.compare for "truth": what if it's buggy?
-          if (StringHelper.compare(numBytesPerDim, docValues[ord][dim], 0, expectedMinValues[dim], 0) < 0) {
+          if (FutureArrays.compareUnsigned(docValues[ord][dim], 0, numBytesPerDim, expectedMinValues[dim], 0, numBytesPerDim) < 0) {
             System.arraycopy(docValues[ord][dim], 0, expectedMinValues[dim], 0, numBytesPerDim);
           }
-          if (StringHelper.compare(numBytesPerDim, docValues[ord][dim], 0, expectedMaxValues[dim], 0) > 0) {
+          if (FutureArrays.compareUnsigned(docValues[ord][dim], 0, numBytesPerDim, expectedMaxValues[dim], 0, numBytesPerDim) > 0) {
             System.arraycopy(docValues[ord][dim], 0, expectedMaxValues[dim], 0, numBytesPerDim);
           }
         }
@@ -745,10 +745,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         byte[] leafMinValues = dimValues.getMinPackedValue();
         byte[] leafMaxValues = dimValues.getMaxPackedValue();
         for(int dim=0;dim<numDims;dim++) {
-          if (StringHelper.compare(numBytesPerDim, leafMinValues, dim*numBytesPerDim, minValues, dim*numBytesPerDim) < 0) {
+          if (FutureArrays.compareUnsigned(leafMinValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, minValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim) < 0) {
             System.arraycopy(leafMinValues, dim*numBytesPerDim, minValues, dim*numBytesPerDim, numBytesPerDim);
           }
-          if (StringHelper.compare(numBytesPerDim, leafMaxValues, dim*numBytesPerDim, maxValues, dim*numBytesPerDim) > 0) {
+          if (FutureArrays.compareUnsigned(leafMaxValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, maxValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim) > 0) {
             System.arraycopy(leafMaxValues, dim*numBytesPerDim, maxValues, dim*numBytesPerDim, numBytesPerDim);
           }
         }
@@ -778,7 +778,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           random().nextBytes(queryMin[dim]);
           queryMax[dim] = new byte[numBytesPerDim];
           random().nextBytes(queryMax[dim]);
-          if (StringHelper.compare(numBytesPerDim, queryMin[dim], 0, queryMax[dim], 0) > 0) {
+          if (FutureArrays.compareUnsigned(queryMin[dim], 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
             byte[] x = queryMin[dim];
             queryMin[dim] = queryMax[dim];
             queryMax[dim] = x;
@@ -818,8 +818,8 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
                 for(int dim=0;dim<numDims;dim++) {
                   //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
-                  if (StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
-                      StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
+                  if (FutureArrays.compareUnsigned(packedValue, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
+                      FutureArrays.compareUnsigned(packedValue, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
                     //System.out.println("  no");
                     return;
                   }
@@ -834,12 +834,12 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
                 boolean crosses = false;
                 //System.out.println("compare");
                 for(int dim=0;dim<numDims;dim++) {
-                  if (StringHelper.compare(numBytesPerDim, maxPacked, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
-                      StringHelper.compare(numBytesPerDim, minPacked, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
+                  if (FutureArrays.compareUnsigned(maxPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
+                      FutureArrays.compareUnsigned(minPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
                     //System.out.println("  query_outside_cell");
                     return Relation.CELL_OUTSIDE_QUERY;
-                  } else if (StringHelper.compare(numBytesPerDim, minPacked, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
-                             StringHelper.compare(numBytesPerDim, maxPacked, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
+                  } else if (FutureArrays.compareUnsigned(minPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
+                             FutureArrays.compareUnsigned(maxPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
                     crosses = true;
                   }
                 }
@@ -860,8 +860,8 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           boolean matches = true;
           for(int dim=0;dim<numDims;dim++) {
             byte[] x = docValues[ord][dim];
-            if (StringHelper.compare(numBytesPerDim, x, 0, queryMin[dim], 0) < 0 ||
-                StringHelper.compare(numBytesPerDim, x, 0, queryMax[dim], 0) > 0) {
+            if (FutureArrays.compareUnsigned(x, 0, numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
+                FutureArrays.compareUnsigned(x, 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
               matches = false;
               break;
             }
