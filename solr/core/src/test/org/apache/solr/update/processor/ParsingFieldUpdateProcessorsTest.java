@@ -963,9 +963,14 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
 
     assertParsedDate(inputString, Date.from(Instant.ofEpochMilli(expectTs)), "parse-date-patterns-default-config");
 
-    // We might also test AKDT, but a bug in Java 9 (not in 8) causes this to fail
-    //assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-patterns-default-config"); // with timezone (not asctime) in DST
+    // A bug in Java 9 (not in 8) causes this to fail!  (not fixed yet?!)
     // see https://bugs.openjdk.java.net/browse/JDK-8189784
+    if (System.getProperty("java.version").startsWith("1.8.")) {
+      // with daylight savings time timezone
+      assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+    } else {
+      System.err.println("Didn't test AKDT because only Java 1.8 does this right!  This Java version is: " + System.getProperty("java.version"));
+    }
   }
 
   public void testEDTZone() throws IOException {

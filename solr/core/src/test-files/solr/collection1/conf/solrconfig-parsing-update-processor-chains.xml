@@ -64,7 +64,6 @@
   <updateRequestProcessorChain name="parse-date-non-UTC-defaultTimeZone">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="defaultTimeZone">America/New_York</str>
-      <str name="locale">en_US</str>
       <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSS[z]</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
@@ -81,8 +80,6 @@
 
   <updateRequestProcessorChain name="parse-date-many-formats-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
-      <str name="defaultTimeZone">UTC</str>
-      <str name="locale">en_US</str>
       <arr name="format">
         <str>yyyy-MM-dd'T'HH:mm[:ss[.SSS]][z</str>
         <str>yyyy-MM-dd'T'HH:mm[:ss[,SSS]][z</str>

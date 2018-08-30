@@ -57,7 +57,8 @@ New Features
 
 SOLR-12591: Expand the set of recognized date format patterns of schemaless mode to subsume those handled by the
   "extract" contrib (Solr Cell / Tika).  This is primarily a change in configuration of the default configSet for more
-  patterns, but also included enabling "lenient" parsing in ParseDateFieldUpdateProcessorFactory.
+  patterns, but also included enabling "lenient" parsing in ParseDateFieldUpdateProcessorFactory.  The default
+  locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
 
 Other Changes
