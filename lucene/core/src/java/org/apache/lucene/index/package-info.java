@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,34 +17,130 @@
 
 /**
  * Code to maintain and access indices.
- * <!-- TODO: add IndexWriter, IndexWriterConfig, DocValues, etc etc -->
  * <h2>Table Of Contents</h2>
- *     <ol>
- *         <li><a href="#postings">Postings APIs</a>
- *             <ul>
- *                 <li><a href="#fields">Fields</a></li>
- *                 <li><a href="#terms">Terms</a></li>
- *                 <li><a href="#documents">Documents</a></li>
- *                 <li><a href="#positions">Positions</a></li>
- *             </ul>
- *         </li>
- *         <li><a href="#stats">Index Statistics</a>
- *             <ul>
- *                 <li><a href="#termstats">Term-level</a></li>
- *                 <li><a href="#fieldstats">Field-level</a></li>
- *                 <li><a href="#segmentstats">Segment-level</a></li>
- *                 <li><a href="#documentstats">Document-level</a></li>
- *             </ul>
- *         </li>
- *     </ol>
+ *   <ol>
+ *     <li><a href="#index">Index APIs</a>
+ *       <ul>
+ *         <li><a href="#writer">IndexWriter</a></li>
+ *         <li><a href="#reader">IndexReader</a></li>
+ *         <li><a href="#segments">Segments and docids</a></li>
+ *       </ul>
+ *     </li>
+ *     <li><a href="#field_types">Field types</a>
+ *       <ul>
+ *         <li><a href="#postings-desc">Postings</a></li>
+ *         <li><a href="#stored-fields">Stored Fields</a></li>
+ *         <li><a href="#docvalues">DocValues</a></li>
+ *         <li><a href="#points">Points</a></li>
+ *       </ul>
+ *     </li>
+ *     <li><a href="#postings">Postings APIs</a>
+ *       <ul>
+ *         <li><a href="#fields">Fields</a></li>
+ *         <li><a href="#terms">Terms</a></li>
+ *         <li><a href="#documents">Documents</a></li>
+ *         <li><a href="#positions">Positions</a></li>
+ *       </ul>
+ *     </li>
+ *     <li><a href="#stats">Index Statistics</a>
+ *       <ul>
+ *         <li><a href="#termstats">Term-level</a></li>
+ *         <li><a href="#fieldstats">Field-level</a></li>
+ *         <li><a href="#segmentstats">Segment-level</a></li>
+ *         <li><a href="#documentstats">Document-level</a></li>
+ *       </ul>
+ *     </li>
+ *   </ol>
+ * <a name="index"></a>
+ * <h2>Index APIs</h2>
+
+ * <a name="writer"></a>
+ * <h3>IndexWriter</h3>
+
+ * <p>{@link org.apache.lucene.index.IndexWriter} is used to create an index, and to add, update and
+ * delete documents. The IndexWriter class is thread safe, and enforces a single instance per
+ * index. Creating an IndexWriter creates a new index or opens an existing index for writing, in a
+ * {@link org.apache.lucene.store.Directory}, depending on the configuration in {@link
+ * org.apache.lucene.index.IndexWriterConfig}. A Directory is an abstraction that typically
+ * represents a local file-system directory (see various implementations of {@link
+ * org.apache.lucene.store.FSDirectory}), but it may also stand for some other storage, such as
+ * RAM.</p>
+
+ * <a name="reader"></a>
+ * <h3>IndexReader</h3>
+
+ * <p>{@link org.apache.lucene.index.IndexReader} is used to read data from the index, and supports
+ * searching. Many thread-safe readers may be {@link org.apache.lucene.index.DirectoryReader#open}
+ * concurrently with a single (or no) writer. Each reader maintains a consistent "point in time"
+ * view of an index and must be explicitly refreshed (see {@link
+ * org.apache.lucene.index.DirectoryReader#openIfChanged}) in order to incorporate writes that may
+ * occur after it is opened.</p>
+
+ * <a name="segments"></a>
+ * <h3>Segments and docids</h3>
+
+ * <p>Lucene's index is composed of segments, each of which contains a subset of all the documents
+ * in the index, and is a complete searchable index in itself, over that subset. As documents are
+ * written to the index, new segments are created and flushed to directory storage. Segments are
+ * immutable; updates and deletions may only create new segments and do not modify existing
+ * ones. Over time, the writer merges groups of smaller segments into single larger ones in order to
+ * maintain an index that is efficient to search, and to reclaim dead space left behind by deleted
+ * (and updated) documents.</p>
+
+ * <p>Each document is identified by a 32-bit number, its "docid," and is composed of a collection
+ * of Field values of diverse types (postings, stored fields, doc values, and points). Docids come
+ * in two flavors: global and per-segment. A document's global docid is just the sum of its
+ * per-segment docid and that segment's base docid offset. External, high-level APIs only handle
+ * global docids, but internal APIs that reference a {@link org.apache.lucene.index.LeafReader},
+ * which is a reader for a single segment, deal in per-segment docids.</p>
+ *
+ * <p>Docids are assigned sequentially within each segment (starting at 0). Thus the number of
+ * documents in a segment is the same as its maximum docid; some may be deleted, but their docids
+ * are retained until the segment is merged. When segments merge, their documents are assigned new
+ * sequential docids. Accordingly, docid values must always be treated as internal implementation,
+ * not exposed as part of an application, nor stored or referenced outside of Lucene's internal
+ * APIs.</p>
+
+ * <a name="field_types"></a>
+ * <h2>Field Types</h2>
+ *
+ * <a name="postings-desc"></a>
+ *
+ * <p>Lucene supports a variety of different document field data structures. Lucene's core, the
+ * inverted index, is comprised of "postings." The postings, with their term dictionary, can be
+ * thought of as a map that provides efficient lookup given a {@link org.apache.lucene.index.Term}
+ * (roughly, a word or token), to (the ordered list of) {@link org.apache.lucene.document.Document}s
+ * containing that Term.  Postings do not provide any way of retrieving terms given a document,
+ * short of scanning the entire index.</p>
+ *
+ * <a name="stored-fields"></a>
+ * <p>Stored fields are essentially the opposite of postings, providing efficient retrieval of field
+ * values given a docid.  All stored field values for a document are stored together in a
+ * block. Different types of stored field provide high-level datatypes such as strings and numbers
+ * on top of the underlying bytes. Stored field values are usually retrieved by the searcher using
+ * an implementation of {@link org.apache.lucene.index.StoredFieldVisitor}.</p>
+
+ * <a name="docvalues"></a>
+ * <p>{@link org.apache.lucene.index.DocValues} fields are what are sometimes referred to as
+ * columnar, or column-stride fields, by analogy to relational database terminology, in which
+ * documents are considered as rows, and fields, columns. DocValues fields store values per-field: a
+ * value for every document is held in a single data structure, providing for rapid, sequential
+ * lookup of a field-value given a docid. These fields are used for efficient value-based sorting,
+ * and for faceting, but they are not useful for filtering.</p>
+
+ * <a name="points"></a>
+ * <p>{@link org.apache.lucene.index.PointValues} represent numeric values using a kd-tree data
+ * structure. Efficient 1- and higher dimensional implementations make these the choice for numeric
+ * range and interval queries, and geo-spatial queries.</p>
+
  * <a name="postings"></a>
  * <h2>Postings APIs</h2>
  * <a name="fields"></a>
  * <h3>
- *     Fields
+ *   Fields
  * </h3>
  * <p>
- * {@link org.apache.lucene.index.Fields} is the initial entry point into the 
+ * {@link org.apache.lucene.index.Fields} is the initial entry point into the
  * postings APIs, this can be obtained in several ways:
  * <pre class="prettyprint">
  * // access indexed fields for an index segment
@@ -63,7 +159,7 @@
  * </pre>
  * <a name="terms"></a>
  * <h3>
- *     Terms
+ *   Terms
  * </h3>
  * <p>
  * {@link org.apache.lucene.index.Terms} represents the collection of terms
@@ -128,10 +224,10 @@
  *   System.out.println(docid);
  *   int freq = postings.freq();
  *   for (int i = 0; i &lt; freq; i++) {
- *      System.out.println(postings.nextPosition());
- *      System.out.println(postings.startOffset());
- *      System.out.println(postings.endOffset());
- *      System.out.println(postings.getPayload());
+ *    System.out.println(postings.nextPosition());
+ *    System.out.println(postings.startOffset());
+ *    System.out.println(postings.endOffset());
+ *    System.out.println(postings.getPayload());
  *   }
  * }
  * </pre>
@@ -139,7 +235,7 @@
  * <h2>Index Statistics</h2>
  * <a name="termstats"></a>
  * <h3>
- *     Term statistics
+ *   Term statistics
  * </h3>
  *     <ul>
  *        <li>{@link org.apache.lucene.index.TermsEnum#docFreq}: Returns the number of 
@@ -157,7 +253,7 @@
  *     </ul>
  * <a name="fieldstats"></a>
  * <h3>
- *     Field statistics
+ *   Field statistics
  * </h3>
  *     <ul>
  *        <li>{@link org.apache.lucene.index.Terms#size}: Returns the number of 
@@ -187,53 +283,53 @@
  *     </ul>
  * <a name="segmentstats"></a>
  * <h3>
- *     Segment statistics
+ *   Segment statistics
  * </h3>
- *     <ul>
- *        <li>{@link org.apache.lucene.index.IndexReader#maxDoc}: Returns the number of 
- *            documents (including deleted documents) in the index. 
- *        <li>{@link org.apache.lucene.index.IndexReader#numDocs}: Returns the number 
- *            of live documents (excluding deleted documents) in the index.
- *        <li>{@link org.apache.lucene.index.IndexReader#numDeletedDocs}: Returns the
- *            number of deleted documents in the index.
- *        <li>{@link org.apache.lucene.index.Fields#size}: Returns the number of indexed
- *            fields.
- *     </ul>
+ *   <ul>
+ *    <li>{@link org.apache.lucene.index.IndexReader#maxDoc}: Returns the number of
+ *      documents (including deleted documents) in the index.
+ *    <li>{@link org.apache.lucene.index.IndexReader#numDocs}: Returns the number
+ *      of live documents (excluding deleted documents) in the index.
+ *    <li>{@link org.apache.lucene.index.IndexReader#numDeletedDocs}: Returns the
+ *      number of deleted documents in the index.
+ *    <li>{@link org.apache.lucene.index.Fields#size}: Returns the number of indexed
+ *      fields.
+ *   </ul>
  * <a name="documentstats"></a>
  * <h3>
- *     Document statistics
+ *   Document statistics
  * </h3>
  * <p>
  * Document statistics are available during the indexing process for an indexed field: typically
  * a {@link org.apache.lucene.search.similarities.Similarity} implementation will store some
  * of these values (possibly in a lossy way), into the normalization value for the document in
  * its {@link org.apache.lucene.search.similarities.Similarity#computeNorm} method.
- *     <ul>
- *        <li>{@link org.apache.lucene.index.FieldInvertState#getLength}: Returns the number of 
- *            tokens for this field in the document. Note that this is just the number
- *            of times that {@link org.apache.lucene.analysis.TokenStream#incrementToken} returned
- *            true, and is unrelated to the values in 
- *            {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute}.
- *        <li>{@link org.apache.lucene.index.FieldInvertState#getNumOverlap}: Returns the number
- *            of tokens for this field in the document that had a position increment of zero. This
- *            can be used to compute a document length that discounts artificial tokens
- *            such as synonyms.
- *        <li>{@link org.apache.lucene.index.FieldInvertState#getPosition}: Returns the accumulated
- *            position value for this field in the document: computed from the values of
- *            {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute} and including
- *            {@link org.apache.lucene.analysis.Analyzer#getPositionIncrementGap}s across multivalued
- *            fields.
- *        <li>{@link org.apache.lucene.index.FieldInvertState#getOffset}: Returns the total
- *            character offset value for this field in the document: computed from the values of
- *            {@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute} returned by 
- *            {@link org.apache.lucene.analysis.TokenStream#end}, and including
- *            {@link org.apache.lucene.analysis.Analyzer#getOffsetGap}s across multivalued
- *            fields.
- *        <li>{@link org.apache.lucene.index.FieldInvertState#getUniqueTermCount}: Returns the number
- *            of unique terms encountered for this field in the document.
- *        <li>{@link org.apache.lucene.index.FieldInvertState#getMaxTermFrequency}: Returns the maximum
- *            frequency across all unique terms encountered for this field in the document. 
- *     </ul>
+ *   <ul>
+ *    <li>{@link org.apache.lucene.index.FieldInvertState#getLength}: Returns the number of
+ *      tokens for this field in the document. Note that this is just the number
+ *      of times that {@link org.apache.lucene.analysis.TokenStream#incrementToken} returned
+ *      true, and is unrelated to the values in
+ *      {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute}.
+ *    <li>{@link org.apache.lucene.index.FieldInvertState#getNumOverlap}: Returns the number
+ *      of tokens for this field in the document that had a position increment of zero. This
+ *      can be used to compute a document length that discounts artificial tokens
+ *      such as synonyms.
+ *    <li>{@link org.apache.lucene.index.FieldInvertState#getPosition}: Returns the accumulated
+ *      position value for this field in the document: computed from the values of
+ *      {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute} and including
+ *      {@link org.apache.lucene.analysis.Analyzer#getPositionIncrementGap}s across multivalued
+ *      fields.
+ *    <li>{@link org.apache.lucene.index.FieldInvertState#getOffset}: Returns the total
+ *      character offset value for this field in the document: computed from the values of
+ *      {@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute} returned by
+ *      {@link org.apache.lucene.analysis.TokenStream#end}, and including
+ *      {@link org.apache.lucene.analysis.Analyzer#getOffsetGap}s across multivalued
+ *      fields.
+ *    <li>{@link org.apache.lucene.index.FieldInvertState#getUniqueTermCount}: Returns the number
+ *      of unique terms encountered for this field in the document.
+ *    <li>{@link org.apache.lucene.index.FieldInvertState#getMaxTermFrequency}: Returns the maximum
+ *      frequency across all unique terms encountered for this field in the document.
+ *   </ul>
  * <p>
  * Additional user-supplied statistics can be added to the document as DocValues fields and
  * accessed via {@link org.apache.lucene.index.LeafReader#getNumericDocValues}.
