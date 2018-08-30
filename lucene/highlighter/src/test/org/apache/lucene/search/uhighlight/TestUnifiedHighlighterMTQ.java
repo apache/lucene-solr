@@ -153,7 +153,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
 
   private UnifiedHighlighter randomUnifiedHighlighter(IndexSearcher searcher, Analyzer indexAnalyzer) {
     return TestUnifiedHighlighter.randomUnifiedHighlighter(searcher, indexAnalyzer,
-        EnumSet.of(HighlightFlag.MULTI_TERM_QUERY));
+        EnumSet.of(HighlightFlag.MULTI_TERM_QUERY), null);
   }
 
   public void testOnePrefix() throws Exception {
@@ -1011,7 +1011,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     int docId = searcher.search(new TermQuery(new Term("id", "id")), 1).scoreDocs[0].doc;
 
     WildcardQuery wildcardQuery = new WildcardQuery(new Term("body", "foxtr*"));
-    SpanMultiTermQueryWrapper wildcardQueryWrapper = new SpanMultiTermQueryWrapper<>(wildcardQuery);
+    SpanMultiTermQueryWrapper<WildcardQuery> wildcardQueryWrapper = new SpanMultiTermQueryWrapper<>(wildcardQuery);
 
     SpanQuery wrappedQuery = new MyWrapperSpanQuery(wildcardQueryWrapper);
 
