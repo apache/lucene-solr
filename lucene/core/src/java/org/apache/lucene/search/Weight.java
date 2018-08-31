@@ -74,7 +74,7 @@ public abstract class Weight implements SegmentCacheable {
    * does not match the parent query
    *
    * A query match that contains no position information (for example, a Point or
-   * DocValues query) will return {@link Matches#MATCH_WITH_NO_TERMS}
+   * DocValues query) will return {@link MatchesUtils#MATCH_WITH_NO_TERMS}
    *
    * @param context the reader's context to create the {@link Matches} for
    * @param doc     the document's id relative to the given context's reader
@@ -96,7 +96,7 @@ public abstract class Weight implements SegmentCacheable {
         return null;
       }
     }
-    return Matches.MATCH_WITH_NO_TERMS;
+    return MatchesUtils.MATCH_WITH_NO_TERMS;
   }
 
   /**

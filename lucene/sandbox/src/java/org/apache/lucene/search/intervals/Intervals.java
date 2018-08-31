@@ -92,7 +92,7 @@ public final class Intervals {
    * @param subSources  an ordered set of {@link IntervalsSource} objects
    */
   public static IntervalsSource ordered(IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
+    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
   }
 
   /**
@@ -115,7 +115,7 @@ public final class Intervals {
    * @param allowOverlaps whether or not the sources should be allowed to overlap in a hit
    */
   public static IntervalsSource unordered(boolean allowOverlaps, IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources),
+    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources),
         allowOverlaps ? IntervalFunction.UNORDERED : IntervalFunction.UNORDERED_NO_OVERLAP);
   }
 

@@ -124,7 +124,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
           mis.add(mi);
         }
       }
-      return Matches.fromSubMatches(mis);
+      return MatchesUtils.fromSubMatches(mis);
     }
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */

@@ -146,7 +146,7 @@ final class BooleanWeight extends Weight {
     if (shouldMatchCount < minShouldMatch) {
       return null;
     }
-    return Matches.fromSubMatches(matches);
+    return MatchesUtils.fromSubMatches(matches);
   }
 
   static BulkScorer disableScoring(final BulkScorer scorer) {

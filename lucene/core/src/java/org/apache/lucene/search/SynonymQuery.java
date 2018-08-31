@@ -164,7 +164,7 @@ public final class SynonymQuery extends Query {
       if (terms == null || terms.hasPositions() == false) {
         return super.matches(context, doc);
       }
-      return Matches.forField(field, () -> DisjunctionMatchesIterator.fromTerms(context, doc, getQuery(), field, Arrays.asList(SynonymQuery.this.terms)));
+      return MatchesUtils.forField(field, () -> DisjunctionMatchesIterator.fromTerms(context, doc, getQuery(), field, Arrays.asList(SynonymQuery.this.terms)));
     }
 
     @Override

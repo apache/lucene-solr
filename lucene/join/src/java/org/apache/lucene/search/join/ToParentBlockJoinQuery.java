@@ -29,6 +29,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
@@ -172,7 +173,7 @@ public class ToParentBlockJoinQuery extends Query {
           return null;
         }
       }
-      return Matches.MATCH_WITH_NO_TERMS;
+      return MatchesUtils.MATCH_WITH_NO_TERMS;
     }
   }
 
