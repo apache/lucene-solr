@@ -177,8 +177,16 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
       }
 
-      List<ReplicaPosition> replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, message,
-          nodeList, shardNames, sessionWrapper);
+      List<ReplicaPosition> replicaPositions = null;
+      try {
+        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, message,
+            nodeList, shardNames, sessionWrapper);
+      } catch (Assign.AssignmentException e) {
+        ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
+        new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
+        // unwrap the exception
+        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e.getCause());
+      }
 
       if (nodeList.isEmpty()) {
         log.debug("Finished create command for collection: {}", collectionName);
@@ -327,7 +335,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
                                                             ZkNodeProps message,
                                                             List<String> nodeList, List<String> shardNames,
-                                                            AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException {
+                                                            AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException, Assign.AssignmentException {
     final String collectionName = message.getStr(NAME);
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
