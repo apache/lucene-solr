@@ -179,7 +179,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     // we have created a collection synchronously
     updateParsedCollectionAliases();
 
-    String targetCollection = createCollectionsIfRequired(docTimestamp, cmd.getPrintableId(), cmd);
+    String targetCollection = createCollectionsIfRequired(docTimestamp, cmd);
 
     if (thisCollection.equals(targetCollection)) {
       // pass on through; we've reached the right collection
@@ -195,12 +195,11 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
    * Create any required collections and return the name of the collection to which the current document should be sent.
    *
    * @param docTimestamp the date for the document taken from the field specified in the TRA config
-   * @param printableId A printable id for the document (used in error message only)
    * @param cmd The initial calculated destination collection.
    * @return The name of the proper destination collection for the document which may or may not be a
    *         newly created collection
    */
-  private String createCollectionsIfRequired(Instant docTimestamp, String printableId, AddUpdateCommand cmd) {
+  private String createCollectionsIfRequired(Instant docTimestamp, AddUpdateCommand cmd) {
     // Even though it is possible that multiple requests hit this code in the 1-2 sec that
     // it takes to create a collection, it's an established anti-pattern to feed data with a very large number
     // of client connections. This in mind, we only guard against spamming the overseer within a batch of
@@ -215,7 +214,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       switch (typeOfCreationRequired(docTimestamp, candidateCollectionDesc.getKey())) {
         case SYNCHRONOUS:
           // This next line blocks until all collections required by the current document have been created
-          return createAllRequiredCollections(docTimestamp, printableId, candidateCollectionDesc);
+          return createAllRequiredCollections(docTimestamp, cmd.getPrintableId(), candidateCollectionDesc);
         case ASYNC_PREEMPTIVE:
           if (preemptiveCreationExecutor == null) {
             // It's important not to add code between here and the prior call to findCandidateGivenTimestamp()
@@ -224,17 +223,16 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
             // collections that existed when candidateCollectionDesc was created. If this class updates it's notion of
             // parsedCollectionsDesc since candidateCollectionDesc was chosen, we could create collection n+2
             // instead of collection n+1.
+            String mostRecentCollName = this.parsedCollectionsDesc.get(0).getValue();
 
             // This line does not block and the document can be added immediately
-            preemptiveAsync(() -> createNextCollection(this.parsedCollectionsDesc.get(0).getValue()));
+            preemptiveAsync(() -> createNextCollection(mostRecentCollName));
           }
           return candidateCollectionName;
         case NONE:
           return candidateCollectionName; // could use fall through, but fall through is fiddly for later editors.
         default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown creation type while adding " +
-              "document to a Time Routed Alias! This is a bug caused when a creation type has been added but " +
-              "not all code has been updated to handle it.");
+          throw unknownCreateType();
       }
       // do nothing if creationType == NONE
     } catch (SolrException e) {
@@ -341,7 +339,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
    *
    * @throws SolrException if the doc is too old to be stored in the TRA
    */
-  private Map.Entry<Instant, String> findCandidateGivenTimestamp(Instant docTimestamp, String id) {
+  private Map.Entry<Instant, String> findCandidateGivenTimestamp(Instant docTimestamp, String printableId) {
     // Lookup targetCollection given route key.  Iterates in reverse chronological order.
     //    We're O(N) here but N should be small, the loop is fast, and usually looking for 1st.
     for (Map.Entry<Instant, String> entry : parsedCollectionsDesc) {
@@ -351,7 +349,7 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       }
     }
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-        "Doc " + id + " couldn't be routed with " + timeRoutedAlias.getRouteField() + "=" + docTimestamp);
+        "Doc " + printableId + " couldn't be routed with " + timeRoutedAlias.getRouteField() + "=" + docTimestamp);
   }
 
   private void createNextCollection(String mostRecentCollName) {
@@ -482,7 +480,8 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
           return targetCollectionDesc.getValue(); // we don't need another collection
         case ASYNC_PREEMPTIVE:
           // can happen when preemptive interval is longer than one time slice
-          preemptiveAsync(() -> createNextCollection(this.parsedCollectionsDesc.get(0).getValue()));
+          String mostRecentCollName = this.parsedCollectionsDesc.get(0).getValue();
+          preemptiveAsync(() -> createNextCollection(mostRecentCollName));
           return targetCollectionDesc.getValue();
         case SYNCHRONOUS:
           createNextCollection(targetCollectionDesc.getValue()); // *should* throw if fails for some reason but...
@@ -496,12 +495,16 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
           targetCollectionDesc = findCandidateGivenTimestamp(docTimestamp, printableId);
           break;
         default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown creation type while adding " +
-              "document to a Time Routed Alias! This is a bug caused when a creation type has been added but " +
-              "not all code has been updated to handle it.");
+          throw unknownCreateType();
 
       }
     } while (true);
+  }
+
+  private SolrException unknownCreateType() {
+    return new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown creation type while adding " +
+        "document to a Time Routed Alias! This is a bug caused when a creation type has been added but " +
+        "not all code has been updated to handle it.");
   }
 
   enum CreationType {
