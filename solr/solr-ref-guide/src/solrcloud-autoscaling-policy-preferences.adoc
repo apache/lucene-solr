@@ -22,6 +22,8 @@ The autoscaling policy and preferences are a set of rules and sorting preference
 
 Solr consults the configured policy and preferences when performing <<Commands That Use Autoscaling Policy and Preferences,Collections API commands>> in all contexts: manual, e.g., using `bin/solr`; semi-automatic, via the <<solrcloud-autoscaling-api.adoc#suggestions-api,Suggestions API>> or the Admin UI's <<suggestions-screen.adoc#suggestions-screen,Suggestions Screen>>; or fully automatic, via configured <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,Triggers>>.
 
+See the section <<Manual Collection Creation with a Policy>> for an example of how policy and preferences affect replica placement.
+
 == Cluster Preferences Specification
 
 A preference is a hint to Solr on how to sort nodes based on their utilization. The default cluster preference is to sort by the total number of Solr cores (or replicas) hosted by a node. Therefore, by default, when selecting a node to which to add a replica, Solr can apply the preferences and choose the node with the fewest cores.
@@ -370,6 +372,37 @@ It is possible to override conditions specified in the cluster policy using coll
 Also, if `maxShardsPerNode` is specified during the time of collection creation, then both `maxShardsPerNode` and the policy rules must be satisfied.
 
 Some attributes such as `cores` can only be used in the cluster policy. See the section <<Policy Rule Attributes>> for details.
+
+== Manual Collection Creation with a Policy 
+
+The starting state for this example is a Solr cluster with 3 nodes: "nodeA", "nodeB", and "nodeC".  An existing 2-shard `FirstCollection` with a `replicationFactor` of 1 has one replica on "nodeB" and one on "nodeC".  The default Autoscaling preferences are in effect:
+
+[source,json]
+[ {"minimize": "cores"} ]
+
+The configured policy rule allows at most 1 core per node:
+
+[source,json]    
+[ {"cores": "<2", "node": "#ANY"} ]
+    
+We now issue a CREATE command for a `SecondCollection` with two shards and a `replicationFactor` of 1:
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATE&name=SecondCollection&numShards=2&replicationFactor=1
+----
+
+For each of the two replicas to be created, each Solr node is tested, in order from least to most loaded: would all policy rules be satisfied if a replica were placed there using an ADDREPLICA sub-command?
+ 
+* ADDREPLICA for `shard1`: According to the Autoscaling preferences, the least loaded node is the one with the fewest cores: "nodeA", because it hosts no cores, while the other two nodes each host one core. The test to place a replica here succeeds, because doing so causes no policy violations, since the core count after adding the replica would not exceed the configured maximum of 1.  Because "nodeA" can host the first shard's replica, Solr skips testing of the other two nodes.
+* ADDREPLICA for `shard2`: After placing the `shard1` replica, all nodes would be equally loaded, since each would have one core. The test to place the `shard2` replica fails on each node, because placement would push the node over its maximum core count. Since there is no node that can host this replica, the CREATE command fails.
+
+Let's try again after increasing the maximum core count on all nodes to 2: 
+
+[source,json]    
+[ {"cores": "<3", "node": "#ANY"} ]
+
+After re-issuing the `SecondCollection` CREATE command, the replica for `shard1` will be placed on "nodeA": it's least loaded, so is tested first, and no policy violation will result from placement there.  The `shard2` replica could be placed on any of the 3 nodes, since they're all equally loaded, and the chosen node will remain below its maximum core count after placement.  The CREATE command succeeds. 
 
 == Commands That Use Autoscaling Policy and Preferences
 
