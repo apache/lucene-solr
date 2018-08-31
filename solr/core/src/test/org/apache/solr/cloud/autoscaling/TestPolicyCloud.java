@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -54,7 +55,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -95,7 +98,22 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     assertTrue(exp.getMessage().contains("No node can satisfy the rules"));
     assertTrue(exp.getMessage().contains("AutoScaling.error.diagnostics"));
-    CollectionAdminRequest.deleteCollection(collectionName).processAndWait(cluster.getSolrClient(), 60);
+
+    // wait for a while until we don't see the collection
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
+    boolean removed = false;
+    while (! timeout.hasTimedOut()) {
+      timeout.sleep(100);
+      removed = !cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collectionName);
+      if (removed) {
+        timeout.sleep(500); // just a bit of time so it's more likely other
+        // readers see on return
+        break;
+      }
+    }
+    if (!removed) {
+      fail("Collection should have been deleted from cluster state but still exists: " + collectionName);
+    }
 
     commands =  "{ set-cluster-policy: [ {cores: '<2', node: '#ANY'} ] }";
     cluster.getSolrClient().request(createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
