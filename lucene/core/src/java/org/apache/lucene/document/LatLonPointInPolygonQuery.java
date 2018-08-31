@@ -36,8 +36,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.StringHelper;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -140,10 +140,10 @@ final class LatLonPointInPolygonQuery extends Query {
 
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             if (StringHelper.compare(Integer.BYTES, minPackedValue, 0, maxLat, 0) > 0 ||
-                                 StringHelper.compare(Integer.BYTES, maxPackedValue, 0, minLat, 0) < 0 ||
-                                 StringHelper.compare(Integer.BYTES, minPackedValue, Integer.BYTES, maxLon, 0) > 0 ||
-                                 StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon, 0) < 0) {
+                             if (FutureArrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
+                                 FutureArrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0 ||
+                                 FutureArrays.compareUnsigned(minPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
+                                 FutureArrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0) {
                                // outside of global bounding box range
                                return Relation.CELL_OUTSIDE_QUERY;
                              }

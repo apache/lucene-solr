@@ -39,13 +39,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefComparator;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.MSBRadixSorter;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDWriter;
 import org.apache.lucene.util.bkd.HeapPointWriter;
 import org.apache.lucene.util.bkd.MutablePointsReaderUtils;
@@ -288,10 +288,10 @@ final class SimpleTextBKDWriter implements Closeable {
     } else {
       for(int dim=0;dim<numDims;dim++) {
         int offset = dim*bytesPerDim;
-        if (StringHelper.compare(bytesPerDim, packedValue, offset, minPackedValue, offset) < 0) {
+        if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, minPackedValue, offset, offset + bytesPerDim) < 0) {
           System.arraycopy(packedValue, offset, minPackedValue, offset, bytesPerDim);
         }
-        if (StringHelper.compare(bytesPerDim, packedValue, offset, maxPackedValue, offset) > 0) {
+        if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
           System.arraycopy(packedValue, offset, maxPackedValue, offset, bytesPerDim);
         }
       }
@@ -415,7 +415,7 @@ final class SimpleTextBKDWriter implements Closeable {
     public boolean lessThan(MergeReader a, MergeReader b) {
       assert a != b;
 
-      int cmp = StringHelper.compare(bytesPerDim, a.state.scratchPackedValue, 0, b.state.scratchPackedValue, 0);
+      int cmp = FutureArrays.compareUnsigned(a.state.scratchPackedValue, 0, bytesPerDim, b.state.scratchPackedValue, 0, bytesPerDim);
       if (cmp < 0) {
         return true;
       } else if (cmp > 0) {
@@ -478,10 +478,10 @@ final class SimpleTextBKDWriter implements Closeable {
       values.getValue(i, scratchBytesRef1);
       for(int dim=0;dim<numDims;dim++) {
         int offset = dim*bytesPerDim;
-        if (StringHelper.compare(bytesPerDim, scratchBytesRef1.bytes, scratchBytesRef1.offset + offset, minPackedValue, offset) < 0) {
+        if (FutureArrays.compareUnsigned(scratchBytesRef1.bytes, scratchBytesRef1.offset + offset, scratchBytesRef1.offset + offset + bytesPerDim, minPackedValue, offset, offset + bytesPerDim) < 0) {
           System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + offset, minPackedValue, offset, bytesPerDim);
         }
-        if (StringHelper.compare(bytesPerDim, scratchBytesRef1.bytes, scratchBytesRef1.offset + offset, maxPackedValue, offset) > 0) {
+        if (FutureArrays.compareUnsigned(scratchBytesRef1.bytes, scratchBytesRef1.offset + offset, scratchBytesRef1.offset + offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
           System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + offset, maxPackedValue, offset, bytesPerDim);
         }
       }
@@ -1217,10 +1217,10 @@ final class SimpleTextBKDWriter implements Closeable {
   private boolean valueInBounds(BytesRef packedValue, byte[] minPackedValue, byte[] maxPackedValue) {
     for(int dim=0;dim<numDims;dim++) {
       int offset = bytesPerDim*dim;
-      if (StringHelper.compare(bytesPerDim, packedValue.bytes, packedValue.offset + offset, minPackedValue, offset) < 0) {
+      if (FutureArrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDim, minPackedValue, offset, offset + bytesPerDim) < 0) {
         return false;
       }
-      if (StringHelper.compare(bytesPerDim, packedValue.bytes, packedValue.offset + offset, maxPackedValue, offset) > 0) {
+      if (FutureArrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
         return false;
       }
     }
@@ -1233,7 +1233,7 @@ final class SimpleTextBKDWriter implements Closeable {
     int splitDim = -1;
     for(int dim=0;dim<numDims;dim++) {
       NumericUtils.subtract(bytesPerDim, dim, maxPackedValue, minPackedValue, scratchDiff);
-      if (splitDim == -1 || StringHelper.compare(bytesPerDim, scratchDiff, 0, scratch1, 0) > 0) {
+      if (splitDim == -1 || FutureArrays.compareUnsigned(scratchDiff, 0, bytesPerDim, scratch1, 0, bytesPerDim) > 0) {
         System.arraycopy(scratchDiff, 0, scratch1, 0, bytesPerDim);
         splitDim = dim;
       }
@@ -1616,7 +1616,7 @@ final class SimpleTextBKDWriter implements Closeable {
       int doc, int lastDoc) {
     int dimOffset = sortedDim * bytesPerDim;
     if (ord > 0) {
-      int cmp = StringHelper.compare(bytesPerDim, lastPackedValue, dimOffset, packedValue, packedValueOffset + dimOffset);
+      int cmp = FutureArrays.compareUnsigned(lastPackedValue, dimOffset, dimOffset + bytesPerDim, packedValue, packedValueOffset + dimOffset, packedValueOffset + dimOffset + bytesPerDim);
       if (cmp > 0) {
         throw new AssertionError("values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue, packedValueOffset, packedBytesLength) + " ord=" + ord);
       }

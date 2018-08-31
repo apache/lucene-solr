@@ -38,8 +38,8 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.StringHelper;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -198,15 +198,15 @@ final class LatLonPointDistanceQuery extends Query {
           @Override
           public void visit(int docID, byte[] packedValue) {
             // bounding box check
-            if (StringHelper.compare(Integer.BYTES, packedValue, 0, maxLat, 0) > 0 ||
-                StringHelper.compare(Integer.BYTES, packedValue, 0, minLat, 0) < 0) {
+            if (FutureArrays.compareUnsigned(packedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
+                FutureArrays.compareUnsigned(packedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0) {
               // latitude out of bounding box range
               return;
             }
 
-            if ((StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, maxLon, 0) > 0 ||
-                StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon, 0) < 0)
-                && StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon2, 0) < 0) {
+            if ((FutureArrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
+                FutureArrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0)
+                && FutureArrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon2, 0, Integer.BYTES) < 0) {
               // longitude out of bounding box range
               return;
             }
@@ -225,15 +225,15 @@ final class LatLonPointDistanceQuery extends Query {
           // 4. recurse naively (subtrees crossing over circle edge)
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            if (StringHelper.compare(Integer.BYTES, minPackedValue, 0, maxLat, 0) > 0 ||
-                StringHelper.compare(Integer.BYTES, maxPackedValue, 0, minLat, 0) < 0) {
+            if (FutureArrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
+                FutureArrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0) {
               // latitude out of bounding box range
               return Relation.CELL_OUTSIDE_QUERY;
             }
 
-            if ((StringHelper.compare(Integer.BYTES, minPackedValue, Integer.BYTES, maxLon, 0) > 0 ||
-                StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon, 0) < 0)
-                && StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon2, 0) < 0) {
+            if ((FutureArrays.compareUnsigned(minPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
+                FutureArrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0)
+                && FutureArrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon2, 0, Integer.BYTES) < 0) {
               // longitude out of bounding box range
               return Relation.CELL_OUTSIDE_QUERY;
             }
@@ -263,17 +263,17 @@ final class LatLonPointDistanceQuery extends Query {
           @Override
           public void visit(int docID, byte[] packedValue) {
             // bounding box check
-            if (StringHelper.compare(Integer.BYTES, packedValue, 0, maxLat, 0) > 0 ||
-                StringHelper.compare(Integer.BYTES, packedValue, 0, minLat, 0) < 0) {
+            if (FutureArrays.compareUnsigned(packedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
+                FutureArrays.compareUnsigned(packedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0) {
               // latitude out of bounding box range
               result.clear(docID);
               cost[0]--;
               return;
             }
 
-            if ((StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, maxLon, 0) > 0 ||
-                StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon, 0) < 0)
-                && StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon2, 0) < 0) {
+            if ((FutureArrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
+                FutureArrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0)
+                && FutureArrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon2, 0, Integer.BYTES) < 0) {
               // longitude out of bounding box range
               result.clear(docID);
               cost[0]--;
@@ -290,15 +290,15 @@ final class LatLonPointDistanceQuery extends Query {
 
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            if (StringHelper.compare(Integer.BYTES, minPackedValue, 0, maxLat, 0) > 0 ||
-                StringHelper.compare(Integer.BYTES, maxPackedValue, 0, minLat, 0) < 0) {
+            if (FutureArrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
+                FutureArrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0) {
               // latitude out of bounding box range
               return Relation.CELL_INSIDE_QUERY;
             }
 
-            if ((StringHelper.compare(Integer.BYTES, minPackedValue, Integer.BYTES, maxLon, 0) > 0 ||
-                StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon, 0) < 0)
-                && StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon2, 0) < 0) {
+            if ((FutureArrays.compareUnsigned(minPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
+                FutureArrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0)
+                && FutureArrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon2, 0, Integer.BYTES) < 0) {
               // latitude out of bounding box range
               return Relation.CELL_INSIDE_QUERY;
             }

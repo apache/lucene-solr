@@ -18,12 +18,12 @@ package org.apache.lucene.util.bkd;
 
 import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IntroSelector;
 import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.MSBRadixSorter;
 import org.apache.lucene.util.RadixSelector;
 import org.apache.lucene.util.Selector;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.PackedInts;
 
 /** Utility APIs for sorting and partitioning buffered points.
@@ -77,7 +77,7 @@ public final class MutablePointsReaderUtils {
           protected int comparePivot(int j) {
             if (k < packedBytesLength) {
               reader.getValue(j, scratch);
-              int cmp = StringHelper.compare(packedBytesLength - k, pivot.bytes, pivot.offset + k, scratch.bytes, scratch.offset + k);
+              int cmp = FutureArrays.compareUnsigned(pivot.bytes, pivot.offset + k, pivot.offset + k + packedBytesLength - k, scratch.bytes, scratch.offset + k, scratch.offset + k + packedBytesLength - k);
               if (cmp != 0) {
                 return cmp;
               }
@@ -118,7 +118,7 @@ public final class MutablePointsReaderUtils {
       @Override
       protected int comparePivot(int j) {
         reader.getValue(j, scratch2);
-        int cmp = StringHelper.compare(numBytesToCompare, pivot.bytes, pivot.offset + offset, scratch2.bytes, scratch2.offset + offset);
+        int cmp = FutureArrays.compareUnsigned(pivot.bytes, pivot.offset + offset, pivot.offset + offset + numBytesToCompare, scratch2.bytes, scratch2.offset + offset, scratch2.offset + offset + numBytesToCompare);
         if (cmp == 0) {
           cmp = pivotDoc - reader.getDocID(j);
         }
@@ -160,7 +160,7 @@ public final class MutablePointsReaderUtils {
           protected int comparePivot(int j) {
             if (k < cmpBytes) {
               reader.getValue(j, scratch2);
-              int cmp = StringHelper.compare(cmpBytes - k, pivot.bytes, pivot.offset + offset + k, scratch2.bytes, scratch2.offset + offset + k);
+              int cmp = FutureArrays.compareUnsigned(pivot.bytes, pivot.offset + offset + k, pivot.offset + offset + k + cmpBytes - k, scratch2.bytes, scratch2.offset + offset + k, scratch2.offset + offset + k + cmpBytes - k);
               if (cmp != 0) {
                 return cmp;
               }
