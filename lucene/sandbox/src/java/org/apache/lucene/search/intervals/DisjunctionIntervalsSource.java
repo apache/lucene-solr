@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.util.PriorityQueue;
 
 class DisjunctionIntervalsSource extends IntervalsSource {
@@ -49,6 +51,18 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     if (subIterators.size() == 0)
       return null;
     return new DisjunctionIntervalIterator(subIterators);
+  }
+
+  @Override
+  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    List<MatchesIterator> subMatches = new ArrayList<>();
+    for (IntervalsSource subSource : subSources) {
+      MatchesIterator mi = subSource.matches(field, ctx, doc);
+      if (mi != null) {
+        subMatches.add(mi);
+      }
+    }
+    return MatchesUtils.disjunction(subMatches);
   }
 
   @Override

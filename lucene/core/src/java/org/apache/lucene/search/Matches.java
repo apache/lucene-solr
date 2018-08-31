@@ -18,15 +18,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import org.apache.lucene.util.IOSupplier;
 
 /**
  * Reports the positions and optionally offsets of all matching terms in a query
@@ -45,92 +36,5 @@ public interface Matches extends Iterable<String> {
    * or {@code null} if there are no matches in that field.
    */
   MatchesIterator getMatches(String field) throws IOException;
-
-  /**
-   * Indicates a match with no term positions, for example on a Point or DocValues field,
-   * or a field indexed as docs and freqs only
-   */
-  Matches MATCH_WITH_NO_TERMS = new Matches() {
-    @Override
-    public Iterator<String> iterator() {
-      return Collections.emptyIterator();
-    }
-
-    @Override
-    public MatchesIterator getMatches(String field) {
-      return null;
-    }
-  };
-
-  /**
-   * Amalgamate a collection of {@link Matches} into a single object
-   */
-  static Matches fromSubMatches(List<Matches> subMatches) {
-    if (subMatches == null || subMatches.size() == 0) {
-      return null;
-    }
-    List<Matches> sm = subMatches.stream().filter(m -> m != MATCH_WITH_NO_TERMS).collect(Collectors.toList());
-    if (sm.size() == 0) {
-      return MATCH_WITH_NO_TERMS;
-    }
-    if (sm.size() == 1) {
-      return sm.get(0);
-    }
-
-    return new Matches() {
-      @Override
-      public MatchesIterator getMatches(String field) throws IOException {
-        List<MatchesIterator> subIterators = new ArrayList<>(sm.size());
-        for (Matches m : sm) {
-          MatchesIterator it = m.getMatches(field);
-          if (it != null) {
-            subIterators.add(it);
-          }
-        }
-        return DisjunctionMatchesIterator.fromSubIterators(subIterators);
-      }
-
-      @Override
-      public Iterator<String> iterator() {
-        // for each sub-match, iterate its fields (it's an Iterable of the fields), and return the distinct set
-        return sm.stream().flatMap(m -> StreamSupport.stream(m.spliterator(), false)).distinct().iterator();
-      }
-    };
-  }
-
-  /**
-   * Create a Matches for a single field
-   */
-  static Matches forField(String field, IOSupplier<MatchesIterator> mis) throws IOException {
-
-    // The indirection here, using a Supplier object rather than a MatchesIterator
-    // directly, is to allow for multiple calls to Matches.getMatches() to return
-    // new iterators.  We still need to call MatchesIteratorSupplier.get() eagerly
-    // to work out if we have a hit or not.
-
-    MatchesIterator mi = mis.get();
-    if (mi == null) {
-      return null;
-    }
-    return new Matches() {
-      boolean cached = true;
-      @Override
-      public MatchesIterator getMatches(String f) throws IOException {
-        if (Objects.equals(field, f) == false) {
-          return null;
-        }
-        if (cached == false) {
-          return mis.get();
-        }
-        cached = false;
-        return mi;
-      }
-
-      @Override
-      public Iterator<String> iterator() {
-        return Collections.singleton(field).iterator();
-      }
-    };
-  }
 
 }

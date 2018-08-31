@@ -155,7 +155,7 @@ public final class CoveringQuery extends Query {
       if (matchCount < minimumNumberMatch) {
         return null;
       }
-      return Matches.fromSubMatches(subMatches);
+      return MatchesUtils.fromSubMatches(subMatches);
     }
 
     @Override
