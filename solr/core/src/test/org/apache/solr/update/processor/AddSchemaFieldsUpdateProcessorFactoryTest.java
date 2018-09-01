@@ -58,6 +58,21 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     initCore(SOLRCONFIG_XML, SCHEMA_XML, tmpSolrHome.getPath());
   }
 
+  public void testEmptyValue() {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    final String fieldName = "newFieldABC";
+    assertNull(schema.getFieldOrNull(fieldName));
+    //UpdateProcessorTestBase#doc doesn't deal with nulls
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "1");
+    doc.addField(fieldName, null);
+
+    SolrInputDocument finalDoc = doc;
+    expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", finalDoc));
+
+    expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", new SolrInputDocument(null , null)));
+  }
+
   public void testSingleField() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     final String fieldName = "newfield1";
