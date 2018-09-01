@@ -27,13 +27,13 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="org.apache.zookeeper" level="WARN"/>
-    <Logger name="org.apache.hadoop" level="WARN"/>
-    <Logger name="org.apache.directory" level="WARN"/>
-    <Logger name="org.apache.solr.hadoop" level="INFO"/>
+    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+    <AsyncLogger name="org.apache.hadoop" level="WARN"/>
+    <AsyncLogger name="org.apache.directory" level="WARN"/>
+    <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
 
-    <Root level="INFO">
+    <AsyncRoot level="INFO">
       <AppenderRef ref="STDERR"/>
-    </Root>
+    </AsyncRoot>
   </Loggers>
 </Configuration>
