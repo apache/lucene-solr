@@ -42,7 +42,7 @@ Upgrade Notes
 
 * LUCENE-8267: Memory codecs have been removed from the codebase (MemoryPostings,
   MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
-  switch to "Direct" instead. (Dawid Weiss)
+  then either remove it to use the default or experiment with one of the others. (Dawid Weiss)
 
 * SOLR-12586: The date format patterns used by ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
   are now interpreted by Java 8's java.time.DateTimeFormatter instead of Joda Time.  The pattern language is very
