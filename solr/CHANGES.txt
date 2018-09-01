@@ -274,6 +274,10 @@ Optimizations
   in the fl (field list) parameter, we save on one doc-value lookup. This can bring performance improvements of 15%
   and upwards depending on how many fields are in common. (Amrit Sarkar, Varun Thacker)
 
+* SOLR-10697: HttpShardHandler now uses a default of 100k as maxConnections (10k previously) and default
+  maxConnectionsPerHost as 100k (20 previously). They are now consisent with the UpdateShardHandler defaults.
+  (Varun Thacker)
+
 Other Changes
 ----------------------
 
