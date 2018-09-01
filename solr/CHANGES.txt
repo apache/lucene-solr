@@ -52,6 +52,12 @@ Upgrade Notes
   expanded from before to subsume those patterns previously handled by the "extract" contrib (Solr Cell / Tika).
   (David Smiley, Bar Rotstein)
 
+* SOLR-12055: Enable async logging by default. This change improves throughput for logging. This opens
+  up a small window where log messages could possibly be lost. If this is unacceptable, switching back to synchronous
+  logging can be done by changing the log4j2.xml files, no internal Solr code changed to make async logging the default.
+  (Erick Erickson)
+
+
 New Features
 ----------------------
 

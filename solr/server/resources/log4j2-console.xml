@@ -29,11 +29,11 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="org.apache.zookeeper" level="WARN"/>
-    <Logger name="org.apache.hadoop" level="WARN"/>
+    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+    <AsyncLogger name="org.apache.hadoop" level="WARN"/>
 
-    <Root level="INFO">
+    <AsyncRoot level="INFO">
       <AppenderRef ref="STDERR"/>
-    </Root>
+    </AsyncRoot>
   </Loggers>
 </Configuration>
