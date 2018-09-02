@@ -17,8 +17,6 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -31,8 +29,6 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
@@ -62,12 +58,34 @@ public class ChildDocTransformerFactory extends TransformerFactory {
 
   static final char PATH_SEP_CHAR = '/';
   static final char NUM_SEP_CHAR = '#';
+  private static final ThreadLocal<Boolean> transformerInitialized = new ThreadLocal<Boolean>(){
+    @Override
+    protected Boolean initialValue() {
+      this.set(false);
+      return false;
+    }
+  };
   private static final BooleanQuery rootFilter = new BooleanQuery.Builder()
       .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
       .add(new BooleanClause(new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME), BooleanClause.Occur.MUST_NOT)).build();
 
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+    if(transformerInitialized.get()) {
+      // this is a recursive call by SolrReturnFields see #createChildDocTransformer
+      return new DocTransformer.NoopFieldTransformer();
+    } else {
+      try {
+        // transformer is yet to be initialized in this thread, create it
+        transformerInitialized.set(true);
+        return createChildDocTransformer(field, params, req);
+      } finally {
+        transformerInitialized.remove();
+      }
+    }
+  }
+
+  private DocTransformer createChildDocTransformer(String field, SolrParams params, SolrQueryRequest req) {
     SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
     if (uniqueKeyField == null) {
       throw new SolrException( ErrorCode.BAD_REQUEST,
@@ -112,16 +130,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     }
 
     String childReturnFields = params.get("fl");
-    SolrReturnFields childSolrReturnFields;
-    String[] topLevelFieldsArr = null;
-    if(childReturnFields == null) {
-      List<String> topLevelFields = StrUtils.splitSmart(req.getOriginalParams().get("fl", "*"), ',').stream().filter(x -> (!(x.trim().startsWith("[")))).collect(Collectors.toList());
-      topLevelFieldsArr = new String[topLevelFields.size()];
-      topLevelFields.toArray(topLevelFieldsArr);
-      childSolrReturnFields = new SolrReturnFields(topLevelFieldsArr, req);
-    } else {
-      childSolrReturnFields = new SolrReturnFields(childReturnFields, req);
-    }
+    SolrReturnFields childSolrReturnFields = childReturnFields==null? new SolrReturnFields(req): new SolrReturnFields(childReturnFields, req);
 
     int limit = params.getInt( "limit", 10 );
 
@@ -135,16 +144,6 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Failed to parse '" + param + "' param.");
     }
   }
-
-//  private static computeChildReturnFields(SolrParams childDocTransFormerParams, SolrQueryRequest req) {
-//    String childReturnFields = childDocTransFormerParams.get("fl");
-//    if(childReturnFields == null) {
-//      List<String> topLevelFls = StrUtils.splitSmart(req.getParams().get("fl"), '[');
-//      if(topLevelFls) {
-//
-//      }
-//    }
-//  }
 
   // NOTE: THIS FEATURE IS PRESENTLY EXPERIMENTAL; WAIT TO SEE IT IN THE REF GUIDE.  FINAL SYNTAX IS TBD.
   protected static String processPathHierarchyQueryString(String queryString) {
