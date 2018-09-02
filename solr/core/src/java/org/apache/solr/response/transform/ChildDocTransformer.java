@@ -72,6 +72,9 @@ class ChildDocTransformer extends DocTransformer {
   }
 
   @Override
+  public boolean needsSolrIndexSearcher() { return true; }
+
+  @Override
   public void transform(SolrDocument rootDoc, int rootDocId) {
     // note: this algorithm works if both if we have have _nest_path_  and also if we don't!
 
