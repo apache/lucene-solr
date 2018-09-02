@@ -21,10 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -60,7 +56,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   protected ParseContextConfig parseContextConfig;
 
 
-  protected Collection<String> dateFormats = ExtractionDateUtil.DEFAULT_DATE_FORMATS;
   protected SolrContentHandlerFactory factory;
 
 
@@ -99,17 +94,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
-
-      NamedList configDateFormats = (NamedList) initArgs.get(DATE_FORMATS);
-      if (configDateFormats != null && configDateFormats.size() > 0) {
-        dateFormats = new HashSet<>();
-        Iterator<Map.Entry> it = configDateFormats.iterator();
-        while (it.hasNext()) {
-          String format = (String) it.next().getValue();
-          log.info("Adding Date Format: " + format);
-          dateFormats.add(format);
-        }
-      }
     }
     if (config == null) {
       try (InputStream is = core.getResourceLoader().getClassLoader().getResourceAsStream("solr-default-tika-config.xml")){
@@ -125,7 +109,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   }
 
   protected SolrContentHandlerFactory createFactory() {
-    return new SolrContentHandlerFactory(dateFormats);
+    return new SolrContentHandlerFactory();
   }
 
 
