@@ -131,6 +131,12 @@ class ChildDocTransformer extends DocTransformer {
 
           // load the doc
           SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, childReturnFields);
+          if(childReturnFields.getTransformer() != null) {
+            if(childReturnFields.getTransformer().context != this.context) {
+              childReturnFields.getTransformer().setContext(context);
+            }
+            childReturnFields.getTransformer().transform(doc, docId);
+          }
 
           if (isAncestor) {
             // if this path has pending child docs, add them.

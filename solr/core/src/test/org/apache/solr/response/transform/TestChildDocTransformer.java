@@ -260,12 +260,13 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
   private void testChildReturnFields() throws Exception {
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "*,[child parentFilter=\"subject:parentDocument\" fl=\"intDvoDefault\"]"),
+        "fl", "*,[child parentFilter=\"subject:parentDocument\" fl=\"intDvoDefault,child_fl:[value v='child_fl_test']\"]"),
         "/response/docs/[0]/intDefault==42",
-        "/response/docs/[0]/_childDocuments_/[0]/intDvoDefault==42");
+        "/response/docs/[0]/_childDocuments_/[0]/intDvoDefault==42",
+        "/response/docs/[0]/_childDocuments_/[0]/child_fl=='child_fl_test'");
 
     try(SolrQueryRequest req = req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "intDefault,[child parentFilter=\"subject:parentDocument\" fl=\"intDvoDefault\"]")) {
+        "fl", "intDefault,[child parentFilter=\"subject:parentDocument\" fl=\"intDvoDefault, [docid]\"]")) {
       BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
       Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
       while (docsStreamer.hasNext()) {
@@ -274,10 +275,11 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         assertTrue("root docs should contain fields specified in query return fields", doc.containsKey("intDefault"));
         Collection<SolrDocument> childDocs = doc.getChildDocuments();
         for(SolrDocument childDoc: childDocs) {
-          assertEquals("child doc should only have 1 key", 1, childDoc.keySet().size());
+          assertEquals("child doc should only have 2 keys", 2, childDoc.keySet().size());
           assertTrue("child docs should contain fields specified in child return fields", childDoc.containsKey("intDvoDefault"));
           assertEquals("child docs should contain fields specified in child return fields",
               42, childDoc.getFieldValue("intDvoDefault"));
+          assertTrue("child docs should contain fields specified in child return fields", childDoc.containsKey("[docid]"));
         }
       }
     }
