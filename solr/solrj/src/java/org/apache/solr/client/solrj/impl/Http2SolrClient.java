@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -44,6 +45,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
+import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -82,6 +84,8 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
@@ -90,7 +94,9 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  * @lucene.experimental
  */
 public class Http2SolrClient extends SolrClient {
-  private static volatile SslContextFactory defaultSslContextFactory = getDefaultSslContextFactory();
+  private static volatile SSLConfig defaultSSLConfig;
+
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int MAX_OUTSTANDING_REQUESTS = 1000;
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
@@ -191,13 +197,23 @@ public class Http2SolrClient extends SolrClient {
     httpClientExecutor.setDaemon(true);
 
     HttpClientTransport transport;
-    if (builder.useHttp1_1 || builder.sslContextFactory != null) {
+    boolean useHttps = serverBaseUrl != null && serverBaseUrl.startsWith("https");
+    SslContextFactory sslContextFactory = null;
+    if (useHttps && builder.sslConfig == null) {
+      LOG.info("SSLConfig is not provided, building SslContextFactory from System.properties");
+      sslContextFactory = getDefaultSslContextFactory();
+    }
+    if (builder.sslConfig != null) {
+      sslContextFactory = builder.sslConfig.createContextFactory();
+    }
+
+    if (builder.useHttp1_1 || sslContextFactory != null) {
       transport = new HttpClientTransportOverHTTP(2);
-      httpClient = new HttpClient(transport, builder.sslContextFactory);
+      httpClient = new HttpClient(transport, sslContextFactory);
     } else {
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);
-      httpClient = new HttpClient(transport, builder.sslContextFactory);
+      httpClient = new HttpClient(transport, null);
     }
     httpClient.setExecutor(httpClientExecutor);
     httpClient.setStrictEventOrdering(false);
@@ -638,7 +654,7 @@ public class Http2SolrClient extends SolrClient {
   public static class Builder {
 
     private HttpClient httpClient;
-    private SslContextFactory sslContextFactory;
+    private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout;
     private Integer connectionTimeout;
     private boolean useHttp1_1 = false;
@@ -646,12 +662,11 @@ public class Http2SolrClient extends SolrClient {
     private Request.BeginListener beginListener = request -> {};
 
     public Builder() {
-      this.sslContextFactory = defaultSslContextFactory;
+
     }
 
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
-      this.sslContextFactory = defaultSslContextFactory;
     }
 
     public Http2SolrClient build() {
@@ -663,8 +678,8 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    public Builder withSslContextFactory(SslContextFactory factory) {
-      this.sslContextFactory = factory;
+    public Builder withSSLConfig(SSLConfig sslConfig) {
+      this.sslConfig = sslConfig;
       return this;
     }
 
@@ -781,14 +796,13 @@ public class Http2SolrClient extends SolrClient {
     parser = processor;
   }
 
-  // public for testing, only used by tests
-  public static void setSslContextFactory(SslContextFactory sslContextFactory) {
-    Http2SolrClient.defaultSslContextFactory = sslContextFactory;
+  public static void setDefaultSSLConfig(SSLConfig sslConfig) {
+    Http2SolrClient.defaultSSLConfig = sslConfig;
   }
 
   // public for testing, only used by tests
   public static void resetSslContextFactory() {
-    Http2SolrClient.defaultSslContextFactory = getDefaultSslContextFactory();
+    Http2SolrClient.defaultSSLConfig = null;
   }
 
   private static SslContextFactory getDefaultSslContextFactory() {
@@ -813,7 +827,7 @@ public class Http2SolrClient extends SolrClient {
 
     String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
     boolean sslCheckPeerName = true;
-    if (checkPeerNameStr == null && "false".equalsIgnoreCase(checkPeerNameStr)) {
+    if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
       sslCheckPeerName = false;
     }
 

@@ -103,7 +103,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   public void testNoSsl() throws Exception {
     final SSLTestConfig sslConfig = new SSLTestConfig(false, false);
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
-    Http2SolrClient.setSslContextFactory(sslConfig.buildSslContextFactory());
+    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "http");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -114,7 +114,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     // options.
     final SSLTestConfig sslConfig = new SSLTestConfig(false, true);
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
-    Http2SolrClient.setSslContextFactory(sslConfig.buildSslContextFactory());
+    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "http");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -122,7 +122,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   public void testSslAndNoClientAuth() throws Exception {
     final SSLTestConfig sslConfig = new SSLTestConfig(true, false);
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
-    Http2SolrClient.setSslContextFactory(sslConfig.buildSslContextFactory());
+    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "https");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -133,7 +133,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     final SSLTestConfig sslConfig = new SSLTestConfig(true, true);
 
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
-    Http2SolrClient.setSslContextFactory(sslConfig.buildSslContextFactory());
+    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "https");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -142,7 +142,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   public void testSslWithCheckPeerName() throws Exception {
     final SSLTestConfig sslConfig = new SSLTestConfig(true, false, true);
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
-    Http2SolrClient.setSslContextFactory(sslConfig.buildSslContextFactory());
+    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "https");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -159,7 +159,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    */
   private void checkClusterWithNodeReplacement(SSLTestConfig sslConfig) throws Exception {
     
-    final JettyConfig config = JettyConfig.builder().withSSLConfig(sslConfig).build();
+    final JettyConfig config = JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), config);
     try {
       checkClusterWithCollectionCreations(cluster, sslConfig);
@@ -187,9 +187,9 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     // certs with a bogus hostname/ip and clients shouldn't care...
     final SSLTestConfig sslConfig = new SSLTestConfig(true, false, false);
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
-    Http2SolrClient.setSslContextFactory(sslConfig.buildSslContextFactory());
+    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "https");
-    final JettyConfig config = JettyConfig.builder().withSSLConfig(sslConfig).build();
+    final JettyConfig config = JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), config);
     try {
       checkClusterWithCollectionCreations(cluster, sslConfig);

@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /** 
- * Encapsulates settings related to SSL Configuration for an embedded Jetty Server.
+ * Encapsulates settings related to SSL Configuration.
  * NOTE: all other settings are ignored if {@link #isSSLMode} is false.
  * @see #setUseSSL
  */
