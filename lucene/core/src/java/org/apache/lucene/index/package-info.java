@@ -110,8 +110,10 @@
  * inverted index, is comprised of "postings." The postings, with their term dictionary, can be
  * thought of as a map that provides efficient lookup given a {@link org.apache.lucene.index.Term}
  * (roughly, a word or token), to (the ordered list of) {@link org.apache.lucene.document.Document}s
- * containing that Term.  Postings do not provide any way of retrieving terms given a document,
- * short of scanning the entire index.</p>
+ * containing that Term. Codecs may additionally record
+ * {@link org.apache.lucene.index.ImpactsEnum#getImpacts impacts} alongside postings in order to be
+ * able to skip over low-scoring documents at search time. Postings do not provide any way of
+ * retrieving terms given a document, short of scanning the entire index.</p>
  *
  * <a name="stored-fields"></a>
  * <p>Stored fields are essentially the opposite of postings, providing efficient retrieval of field

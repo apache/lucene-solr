@@ -35,7 +35,7 @@ to check if the results are what we expect):</p>
     // Store the index in memory:
     Directory directory = new RAMDirectory();
     // To store an index on disk, use this instead:
-    //Directory directory = FSDirectory.open("/tmp/testindex");
+    //Directory directory = FSDirectory.open(Paths.get("/tmp/testindex"));
     IndexWriterConfig config = new IndexWriterConfig(analyzer);
     IndexWriter iwriter = new IndexWriter(directory, config);
     Document doc = new Document();
@@ -50,7 +50,7 @@ to check if the results are what we expect):</p>
     // Parse a simple query that searches for "text":
     QueryParser parser = new QueryParser("fieldname", analyzer);
     Query query = parser.parse("text");
-    ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = isearcher.search(query, 10).scoreDocs;
     assertEquals(1, hits.length);
     // Iterate through the results:
     for (int i = 0; i < hits.length; i++) {
