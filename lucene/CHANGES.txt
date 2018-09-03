@@ -312,6 +312,8 @@ Bug Fixes:
  * LUCENE-8384: Fix missing advance docValues generation while handling docValues
    update in PendingSoftDeletes. (Simon Willnauer, Nhat Nguyen)
 
+ * LUCENE-8472: Always rewrite the soft-deletes merge retention query. (Adrien Grand, Nhat Nguyen)
+
 ======================= Lucene 7.4.0 =======================
 
 Upgrading
