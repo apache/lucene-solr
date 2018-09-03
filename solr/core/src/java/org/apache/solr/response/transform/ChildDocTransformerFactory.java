@@ -58,29 +58,23 @@ public class ChildDocTransformerFactory extends TransformerFactory {
 
   static final char PATH_SEP_CHAR = '/';
   static final char NUM_SEP_CHAR = '#';
-  private static final ThreadLocal<Boolean> transformerInitialized = new ThreadLocal<Boolean>(){
-    @Override
-    protected Boolean initialValue() {
-      this.set(false);
-      return false;
-    }
-  };
+  private static final ThreadLocal<Boolean> recursionCheckThreadLocal = ThreadLocal.withInitial(() -> Boolean.FALSE);
   private static final BooleanQuery rootFilter = new BooleanQuery.Builder()
       .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
       .add(new BooleanClause(new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME), BooleanClause.Occur.MUST_NOT)).build();
 
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
-    if(transformerInitialized.get()) {
-      // this is a recursive call by SolrReturnFields see #createChildDocTransformer
+    if(recursionCheckThreadLocal.get()) {
+      // this is a recursive call by SolrReturnFields, see ChildDocTransformerFactory#createChildDocTransformer
       return new DocTransformer.NoopFieldTransformer();
     } else {
       try {
         // transformer is yet to be initialized in this thread, create it
-        transformerInitialized.set(true);
+        recursionCheckThreadLocal.set(true);
         return createChildDocTransformer(field, params, req);
       } finally {
-        transformerInitialized.remove();
+        recursionCheckThreadLocal.set(false);
       }
     }
   }
@@ -130,7 +124,15 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     }
 
     String childReturnFields = params.get("fl");
-    SolrReturnFields childSolrReturnFields = childReturnFields==null? new SolrReturnFields(req): new SolrReturnFields(childReturnFields, req);
+    SolrReturnFields childSolrReturnFields;
+    if(childReturnFields != null) {
+      childSolrReturnFields = new SolrReturnFields(childReturnFields, req);
+    } else if(req.getSchema().getDefaultLuceneMatchVersion().major < 8) {
+      // ensure backwards for versions prior to SOLR 8
+      childSolrReturnFields = new SolrReturnFields();
+    } else {
+      childSolrReturnFields = new SolrReturnFields(req);
+    }
 
     int limit = params.getInt( "limit", 10 );
 
