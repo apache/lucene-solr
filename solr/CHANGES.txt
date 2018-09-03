@@ -243,6 +243,8 @@ Bug Fixes
 * SOLR-12704: Guard AddSchemaFieldsUpdateProcessorFactory against null field names and field values.
   (Steve Rowe, Varun Thacker)
 
+* SOLR-12728: RequestLoggingTest fails on occasion, not reproducible (Erick Erickson)
+
 Optimizations
 ----------------------
 
