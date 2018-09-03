@@ -53,7 +53,6 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
 
       // Loop to give the logger time to process the async message and notify the new watcher.
       boolean foundMsg = false;
-      long last = -1;
       // In local testing this loop usually succeeds 1-2 tries.
       for (int msgIdx = 0; msgIdx < 100; ++msgIdx) {
         // Returns an empty (but non-null) list even if there are no messages yet.
