@@ -49,7 +49,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     final LeafFieldComparator comparator;
     final int reverseMul;
-    Scorer scorer;
+    Scorable scorer;
 
     MultiComparatorLeafCollector(LeafFieldComparator[] comparators, int[] reverseMul) {
       if (comparators.length == 1) {
@@ -62,7 +62,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       comparator.setScorer(scorer);
       this.scorer = scorer;
     }

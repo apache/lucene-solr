@@ -56,7 +56,7 @@ final class FakeScorer extends Scorer {
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
+  public Collection<ChildScorable> getChildren() {
     throw new UnsupportedOperationException();
   }
 }

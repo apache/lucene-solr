@@ -93,8 +93,8 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    return Collections.singleton(new ChildScorer(reqScorer, "MUST"));
+  public Collection<ChildScorable> getChildren() {
+    return Collections.singleton(new ChildScorable(reqScorer, "MUST"));
   }
 
   /**

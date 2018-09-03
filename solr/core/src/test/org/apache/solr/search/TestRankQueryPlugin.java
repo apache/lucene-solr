@@ -38,6 +38,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -474,7 +475,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       }
 
       @Override
-      public Collection<ChildScorer> getChildren() {
+      public Collection<ChildScorable> getChildren() {
         throw new UnsupportedOperationException();
       }
     }
@@ -691,7 +692,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return new LeafCollector() {
         
         @Override
-        public void setScorer(Scorer scorer) throws IOException {}
+        public void setScorer(Scorable scorer) throws IOException {}
         
         public void collect(int doc) throws IOException {
           long value;
@@ -754,10 +755,10 @@ public class TestRankQueryPlugin extends QParserPlugin {
       final int base = context.docBase;
       return new LeafCollector() {
         
-        Scorer scorer;
+        Scorable scorer;
         
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           this.scorer = scorer;
         }
         

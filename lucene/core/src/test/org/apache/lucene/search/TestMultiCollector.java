@@ -81,7 +81,7 @@ public class TestMultiCollector extends LuceneTestCase {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       return new FilterLeafCollector(super.getLeafCollector(context)) {
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
           setScorerCalled.set(true);
         }
@@ -200,7 +200,7 @@ public class TestMultiCollector extends LuceneTestCase {
     };
 
     Collector collector = new SimpleCollector() {
-      private Scorer scorer;
+      private Scorable scorer;
       float minScore = 0;
 
       @Override
@@ -209,7 +209,7 @@ public class TestMultiCollector extends LuceneTestCase {
       }
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.scorer = scorer;
       }
 

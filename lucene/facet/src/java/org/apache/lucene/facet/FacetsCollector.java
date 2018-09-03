@@ -27,9 +27,9 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
@@ -52,7 +52,7 @@ import org.apache.lucene.util.DocIdSetBuilder;
 public class FacetsCollector extends SimpleCollector implements Collector {
 
   private LeafReaderContext context;
-  private Scorer scorer;
+  private Scorable scorer;
   private int totalHits;
   private float[] scores;
   private final boolean keepScores;
@@ -137,7 +137,7 @@ public class FacetsCollector extends SimpleCollector implements Collector {
   }
 
   @Override
-  public final void setScorer(Scorer scorer) throws IOException {
+  public final void setScorer(Scorable scorer) throws IOException {
     this.scorer = scorer;
   }
     

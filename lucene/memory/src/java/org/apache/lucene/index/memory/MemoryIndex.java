@@ -38,8 +38,8 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.RAMDirectory;
@@ -687,7 +687,7 @@ public class MemoryIndex {
     try {
       final float[] scores = new float[1]; // inits to 0.0f (no match)
       searcher.search(query, new SimpleCollector() {
-        private Scorer scorer;
+        private Scorable scorer;
 
         @Override
         public void collect(int doc) throws IOException {
@@ -695,7 +695,7 @@ public class MemoryIndex {
         }
 
         @Override
-        public void setScorer(Scorer scorer) {
+        public void setScorer(Scorable scorer) {
           this.scorer = scorer;
         }
         

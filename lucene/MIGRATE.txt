@@ -106,3 +106,10 @@ This RAM-based directory implementation is an old piece of code that uses ineffi
 thread synchronization primitives and can be confused as "faster" than the NIO-based
 MMapDirectory. It is deprecated and scheduled for removal in future versions of 
 Lucene. (LUCENE-8467, LUCENE-8438)
+
+## LeafCollector.setScorer() now takes a Scorable rather than a Scorer ##
+
+Scorer has a number of methods that should never be called from Collectors, for example
+those that advance the underlying iterators.  To hide these, LeafCollector.setScorer()
+now takes a Scorable, an abstract class that Scorers can extend, with methods
+docId() and score() (LUCENE-6228)

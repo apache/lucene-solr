@@ -300,10 +300,10 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<>(2);
-    children.add(new ChildScorer(reqScorer, "MUST"));
-    children.add(new ChildScorer(optScorer, "SHOULD"));
+  public Collection<ChildScorable> getChildren() {
+    ArrayList<ChildScorable> children = new ArrayList<>(2);
+    children.add(new ChildScorable(reqScorer, "MUST"));
+    children.add(new ChildScorable(optScorer, "SHOULD"));
     return children;
   }
 }

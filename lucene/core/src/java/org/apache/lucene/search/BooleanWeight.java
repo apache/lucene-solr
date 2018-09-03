@@ -163,7 +163,7 @@ final class BooleanWeight extends Weight {
           FakeScorer fake = new FakeScorer();
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorable scorer) throws IOException {
             collector.setScorer(fake);
           }
 

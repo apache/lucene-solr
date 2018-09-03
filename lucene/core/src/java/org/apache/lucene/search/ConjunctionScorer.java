@@ -91,10 +91,10 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<>();
+  public Collection<ChildScorable> getChildren() {
+    ArrayList<ChildScorable> children = new ArrayList<>();
     for (Scorer scorer : required) {
-      children.add(new ChildScorer(scorer, "MUST"));
+      children.add(new ChildScorable(scorer, "MUST"));
     }
     return children;
   }

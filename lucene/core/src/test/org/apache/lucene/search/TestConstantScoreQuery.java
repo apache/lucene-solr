@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -56,14 +57,14 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   private void checkHits(IndexSearcher searcher, Query q, final float expectedScore, final Class<? extends Scorer> innerScorerClass) throws IOException {
     final int[] count = new int[1];
     searcher.search(q, new SimpleCollector() {
-      private Scorer scorer;
+      private Scorable scorer;
     
       @Override
-      public void setScorer(Scorer scorer) {
+      public void setScorer(Scorable scorer) {
         this.scorer = scorer;
         if (innerScorerClass != null) {
-          final FilterScorer innerScorer = (FilterScorer) scorer;
-          assertEquals("inner Scorer is implemented by wrong class", innerScorerClass, innerScorer.in.getClass());
+          Scorable innerScorer = rootScorer(scorer);
+          assertEquals("inner Scorer is implemented by wrong class", innerScorerClass, innerScorer.getClass());
         }
       }
       
@@ -79,6 +80,23 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       }
     });
     assertEquals("invalid number of results", 1, count[0]);
+  }
+
+  private Scorable rootScorer(Scorable s) {
+    while (true) {
+      try {
+        Collection<Scorable.ChildScorable> children = s.getChildren();
+        if (children.size() == 0)
+          return s;
+        s = children.stream().findFirst().get().child;
+      }
+      catch (Exception e) {
+        // If FakeScorer returns UnsupportedOperationException
+        // We catch Exception here to deal with the (impossible) IOException too
+        return s;
+      }
+
+    }
   }
   
   public void testWrapped2Times() throws Exception {

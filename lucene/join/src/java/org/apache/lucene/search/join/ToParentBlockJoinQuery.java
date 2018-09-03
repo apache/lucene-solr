@@ -280,8 +280,8 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public Collection<ChildScorer> getChildren() {
-      return Collections.singleton(new ChildScorer(childScorer, "BLOCK_JOIN"));
+    public Collection<ChildScorable> getChildren() {
+      return Collections.singleton(new ChildScorable(childScorer, "BLOCK_JOIN"));
     }
 
     @Override

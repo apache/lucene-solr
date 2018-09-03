@@ -151,11 +151,11 @@ public class MultiCollector implements Collector {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       if (cacheScores) {
         scorer = new ScoreCachingWrappingScorer(scorer);
       }
-      scorer = new FilterScorer(scorer) {
+      scorer = new FilterScorable(scorer) {
         @Override
         public void setMinCompetitiveScore(float minScore) {
           // Ignore calls to setMinCompetitiveScore so that if we wrap two
@@ -164,10 +164,7 @@ public class MultiCollector implements Collector {
           // min scores and take the maximum min score across collectors, but
           // this is very unlikely to be helpful in practice.
         }
-        @Override
-        public float getMaxScore(int upTo) throws IOException {
-          return in.getMaxScore(upTo);
-        }
+
       };
       for (int i = 0; i < numCollectors; ++i) {
         final LeafCollector c = collectors[i];

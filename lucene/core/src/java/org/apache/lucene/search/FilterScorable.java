@@ -14,37 +14,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
-import org.apache.lucene.index.LeafReaderContext;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
- * Base {@link Collector} implementation that is used to collect all contexts.
+ * Filter a {@link Scorable}, intercepting methods and optionally changing
+ * their return values
  *
- * @lucene.experimental
+ * The default implementation simply passes all calls to its delegate, with
+ * the exception of {@link #setMinCompetitiveScore(float)} which defaults
+ * to a no-op.
  */
-public abstract class SimpleCollector implements Collector, LeafCollector {
+public class FilterScorable extends Scorable {
 
-  @Override
-  public final LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-    doSetNextReader(context);
-    return this;
+  protected final Scorable in;
+
+  /**
+   * Filter a scorer
+   * @param in  the scorer to filter
+   */
+  public FilterScorable(Scorable in) {
+    this.in = in;
   }
 
-  /** This method is called before collecting <code>context</code>. */
-  protected void doSetNextReader(LeafReaderContext context) throws IOException {}
-
   @Override
-  public void setScorer(Scorable scorer) throws IOException {
-    // no-op by default
+  public float score() throws IOException {
+    return in.score();
   }
 
-  // redeclare methods so that javadocs are inherited on sub-classes
+  @Override
+  public int docID() {
+    return in.docID();
+  }
 
   @Override
-  public abstract void collect(int doc) throws IOException;
-
+  public Collection<ChildScorable> getChildren() throws IOException {
+    return Collections.singletonList(new ChildScorable(in, "FILTER"));
+  }
 }

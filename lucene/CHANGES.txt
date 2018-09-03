@@ -69,6 +69,10 @@ API Changes
   need to be set on top hits via TopFieldCollector#populateScores instead.
   (Adrien Grand)
 
+* LUCENE-6228: A new Scorable abstract class has been added, containing only those
+  methods from Scorer that should be called from Collectors.  LeafCollector.setScorer()
+  now takes a Scorable rather than a Scorer. (Alan Woodward, Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

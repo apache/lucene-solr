@@ -1497,7 +1497,7 @@ public class QueryComponent extends SearchComponent
     }
 
     @Override
-    public Collection<ChildScorer> getChildren() {
+    public Collection<ChildScorable> getChildren() {
       throw new UnsupportedOperationException();
     }
   }

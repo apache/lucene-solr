@@ -325,7 +325,7 @@ public abstract class LongValuesSource implements SegmentCacheable {
         }
 
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           holder.values = producer.getValues(ctx, DoubleValuesSource.fromScorer(scorer));
         }
       };

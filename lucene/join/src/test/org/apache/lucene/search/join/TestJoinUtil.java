@@ -1426,7 +1426,7 @@ public class TestJoinUtil extends LuceneTestCase {
       if (multipleValuesPerDocument) {
         searcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
 
-          private Scorer scorer;
+          private Scorable scorer;
           private SortedSetDocValues docTermOrds;
 
           @Override
@@ -1453,7 +1453,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
             this.scorer = scorer;
           }
 
@@ -1465,7 +1465,7 @@ public class TestJoinUtil extends LuceneTestCase {
       } else {
         searcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
 
-          private Scorer scorer;
+          private Scorable scorer;
           private BinaryDocValues terms;
 
           @Override
@@ -1494,7 +1494,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
             this.scorer = scorer;
           }
 
@@ -1557,7 +1557,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
           }
 
           @Override
