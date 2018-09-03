@@ -197,20 +197,18 @@ public class Http2SolrClient extends SolrClient {
     httpClientExecutor.setDaemon(true);
 
     HttpClientTransport transport;
-    boolean useHttps = serverBaseUrl != null && serverBaseUrl.startsWith("https");
-    SslContextFactory sslContextFactory = null;
-    if (useHttps && builder.sslConfig == null) {
-      LOG.info("SSLConfig is not provided, building SslContextFactory from System.properties");
-      sslContextFactory = getDefaultSslContextFactory();
-    }
-    if (builder.sslConfig != null) {
-      sslContextFactory = builder.sslConfig.createContextFactory();
-    }
-
-    if (builder.useHttp1_1 || sslContextFactory != null) {
+    if (builder.useHttp1_1 || builder.sslConfig != null) {
       transport = new HttpClientTransportOverHTTP(2);
+
+      SslContextFactory sslContextFactory;
+      if (builder.sslConfig == null) {
+        sslContextFactory = getDefaultSslContextFactory();
+      } else {
+        sslContextFactory = builder.sslConfig.createContextFactory();
+      }
       httpClient = new HttpClient(transport, sslContextFactory);
     } else {
+      //TODO adding https support for HTTP2 when use JDK 9
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new HttpClient(transport, null);
