@@ -64,12 +64,12 @@ def runAndSendGPGPassword(command, password):
     print(msg)
     raise RuntimeError(msg)
 
-def load(urlString):
+def load(urlString, encoding="utf-8"):
   try:
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    content = urllib.request.urlopen(urlString).read().decode(encoding)
   except Exception as e:
     print('Retrying download of url %s after exception: %s' % (urlString, e))
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    content = urllib.request.urlopen(urlString).read().decode(encoding)
   return content
 
 def getGitRev():
@@ -218,12 +218,6 @@ def pushLocal(version, root, rev, rcNum, localDir):
   run('tar xjf "%s/solr/package/solr.tar.bz2"' % root)
   os.remove('%s/solr/package/solr.tar.bz2' % root)
 
-  print('  KEYS')
-  run('wget http://home.apache.org/keys/group/lucene.asc')
-  os.rename('lucene.asc', 'KEYS')
-  run('chmod a+r-w KEYS')
-  run('cp KEYS ../lucene')
-
   print('  chmod...')
   os.chdir('..')
   run('chmod -R a+rX-w .')
@@ -245,6 +239,8 @@ def parse_config():
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--no-prepare', dest='prepare', default=True, action='store_false',
                       help='Use the already built release in the provided checkout')
+  parser.add_argument('--local-keys', metavar='PATH',
+                      help='Uses local KEYS file to validate presence of RM\'s gpg key')
   parser.add_argument('--push-local', metavar='PATH',
                       help='Push the release to the local path')
   parser.add_argument('--sign', metavar='KEYID',
@@ -263,6 +259,8 @@ def parse_config():
     parser.error('Release Candidate number must be a positive integer')
   if not os.path.isdir(config.root):
     parser.error('Root path "%s" is not a directory' % config.root)
+  if config.local_keys is not None and not os.path.exists(config.local_keys):
+    parser.error('Local KEYS file "%s" not found' % config.local_keys)
   cwd = os.getcwd()
   os.chdir(config.root)
   config.root = os.getcwd() # Absolutize root dir
@@ -298,11 +296,49 @@ def check_ant():
     return
   raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
   
+def check_key_in_keys(gpgKeyID, local_keys):
+  if gpgKeyID is not None:
+    print('  Verify your gpg key is in the main KEYS file')
+    if local_keys is not None:
+      print("    Using local KEYS file %s" % local_keys)
+      keysFileText = open(local_keys, encoding='iso-8859-1').read()
+      keysFileLocation = local_keys
+    else:
+      keysFileURL = "https://archive.apache.org/dist/lucene/KEYS"
+      keysFileLocation = keysFileURL
+      print("    Using online KEYS file %s" % keysFileURL)
+      keysFileText = load(keysFileURL, encoding='iso-8859-1')
+    if len(gpgKeyID) > 2 and gpgKeyID[0:2] == '0x':
+      gpgKeyID = gpgKeyID[2:]
+    if len(gpgKeyID) > 40:
+      gpgKeyID = gpgKeyID.replace(" ", "")
+    if len(gpgKeyID) == 8:
+      re_to_match = r"^pub\s+\d+[DR]/%s " % gpgKeyID
+    elif len(gpgKeyID) == 40:
+      gpgKeyID40Char = "%s %s %s %s %s  %s %s %s %s %s" % \
+                       (gpgKeyID[0:4], gpgKeyID[4:8], gpgKeyID[8:12], gpgKeyID[12:16], gpgKeyID[16:20],
+                       gpgKeyID[20:24], gpgKeyID[24:28], gpgKeyID[28:32], gpgKeyID[32:36], gpgKeyID[36:])
+      print("Generated id string %s" % gpgKeyID40Char)
+      re_to_match = r"^\s+Key fingerprint = %s$" % gpgKeyID40Char
+    else:
+      print('Invalid gpg key id format. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix.')
+      exit(2)
+    if re.search(re_to_match, keysFileText, re.MULTILINE):
+      print('    Found key %s in KEYS file at %s' % (gpgKeyID, keysFileLocation))
+    else:
+      print('    ERROR: Did not find your key %s in KEYS file at %s. Please add it and try again.' % (gpgKeyID, keysFileLocation))
+      if local_keys is not None:
+        print('           You are using a local KEYS file. Make sure it is up to date or validate against the online version')
+      exit(2)
+
+
 def main():
   check_cmdline_tools()
 
   c = parse_config()
 
+  check_key_in_keys(c.key_id, c.local_keys)
+  
   if c.prepare:
     rev = prepare(c.root, c.version, c.key_id, c.key_password)
   else:
