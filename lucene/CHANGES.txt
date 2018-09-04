@@ -73,6 +73,9 @@ API Changes
   methods from Scorer that should be called from Collectors.  LeafCollector.setScorer()
   now takes a Scorable rather than a Scorer. (Alan Woodward, Adrien Grand)
 
+* LUCENE-8475: Deprecated constants have been removed from RamUsageEstimator.
+  (Dimitrios Athanasiou)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

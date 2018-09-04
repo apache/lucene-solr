@@ -55,56 +55,7 @@ public final class RamUsageEstimator {
   /** No instantiation. */
   private RamUsageEstimator() {}
 
-  /** 
-   * Number of bytes used to represent a {@code boolean} in binary form
-   * @deprecated use {@code 1} instead.
-   */
-  @Deprecated
-  public final static int NUM_BYTES_BOOLEAN = 1;
-  /** 
-   * Number of bytes used to represent a {@code byte} in binary form
-   * @deprecated use {@code 1} instead.
-   */
-  @Deprecated
-  public final static int NUM_BYTES_BYTE = 1;
-  /** 
-   * Number of bytes used to represent a {@code char} in binary form
-   * @deprecated use {@link Character#BYTES} instead.
-   */
-  @Deprecated
-  public final static int NUM_BYTES_CHAR = Character.BYTES;
-  /** 
-   * Number of bytes used to represent a {@code short} in binary form
-   * @deprecated use {@link Short#BYTES} instead.
-   */
-  @Deprecated
-  public final static int NUM_BYTES_SHORT = Short.BYTES;
-  /** 
-   * Number of bytes used to represent an {@code int} in binary form
-   * @deprecated use {@link Integer#BYTES} instead.
-   */
-  @Deprecated
-  public final static int NUM_BYTES_INT = Integer.BYTES;
-  /** 
-   * Number of bytes used to represent a {@code float} in binary form
-   * @deprecated use {@link Float#BYTES} instead.
-   */
-  @Deprecated
-  public final static int NUM_BYTES_FLOAT = Float.BYTES;
-  /** 
-   * Number of bytes used to represent a {@code long} in binary form
-   * @deprecated use {@link Long#BYTES} instead.
-   */
-  @Deprecated
-  public final static int NUM_BYTES_LONG = Long.BYTES;
-  /** 
-   * Number of bytes used to represent a {@code double} in binary form
-   * @deprecated use {@link Double#BYTES} instead.
-   */
-  @Deprecated
-  public final static int NUM_BYTES_DOUBLE = Double.BYTES;
-
-  /** 
+  /**
    * True, iff compressed references (oops) are enabled by this JVM 
    */
   public final static boolean COMPRESSED_REFS_ENABLED;

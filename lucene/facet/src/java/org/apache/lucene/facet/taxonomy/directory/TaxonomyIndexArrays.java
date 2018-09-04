@@ -223,7 +223,7 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
 
   @Override
   public synchronized long ramBytesUsed() {
-    long ramBytesUsed = RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_BOOLEAN;
+    long ramBytesUsed = RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 1;
     ramBytesUsed += RamUsageEstimator.shallowSizeOf(parents);
     if (children != null) {
       ramBytesUsed += RamUsageEstimator.shallowSizeOf(children);
