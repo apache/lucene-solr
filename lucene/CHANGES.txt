@@ -163,6 +163,9 @@ Other:
 
 * LUCENE-765: Improved org.apache.lucene.index javadocs. (Mike Sokolov)
 
+* LUCENE-8476: Remove redundant nullity check and switch to optimized List.sort in the
+  Korean's user dictionary. (Namgyu Kim)
+
 ======================= Lucene 7.4.1 =======================
 
 Bug Fixes:
