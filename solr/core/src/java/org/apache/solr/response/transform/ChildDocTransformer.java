@@ -135,7 +135,7 @@ class ChildDocTransformer extends DocTransformer {
           // load the doc
           SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, childReturnFields);
           if(childReturnFields.getTransformer() != null) {
-            if(childReturnFields.getTransformer().context != this.context) {
+            if(childReturnFields.getTransformer().context == null) {
               childReturnFields.getTransformer().setContext(context);
             }
             childReturnFields.getTransformer().transform(doc, docId);
