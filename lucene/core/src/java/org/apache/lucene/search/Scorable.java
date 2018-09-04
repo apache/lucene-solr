@@ -45,7 +45,7 @@ public abstract class Scorable {
    * {@link ScoreMode#TOP_SCORES}, and successive calls may only set increasing
    * values of {@code minScore}.
    */
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     // no-op by default
   }
 

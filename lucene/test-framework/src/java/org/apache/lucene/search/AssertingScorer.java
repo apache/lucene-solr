@@ -66,7 +66,7 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float score) {
+  public void setMinCompetitiveScore(float score) throws IOException {
     assert scoreMode == ScoreMode.TOP_SCORES;
     assert Float.isNaN(score) == false;
     assert score >= minCompetitiveScore;

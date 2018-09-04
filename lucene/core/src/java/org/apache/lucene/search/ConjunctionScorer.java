@@ -83,7 +83,7 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     // This scorer is only used for TOP_SCORES when there is a single scoring clause
     if (scorers.length == 1) {
       scorers[0].setMinCompetitiveScore(minScore);

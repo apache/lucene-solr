@@ -62,7 +62,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       final int docBase = context.docBase;
       return new ScorerLeafCollector() {
 
-        private void updateMinCompetitiveScore() {
+        private void updateMinCompetitiveScore() throws IOException {
           // since we tie-break on doc id and collect in doc id order, we can require
           // the next float
           scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));

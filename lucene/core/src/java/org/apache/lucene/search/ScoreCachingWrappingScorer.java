@@ -55,7 +55,7 @@ public final class ScoreCachingWrappingScorer extends Scorable {
   }
 
   @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     in.setMinCompetitiveScore(minScore);
   }
 

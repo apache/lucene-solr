@@ -244,7 +244,7 @@ final class BlockMaxConjunctionScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float score) {
+  public void setMinCompetitiveScore(float score) throws IOException {
     minScore = score;
     maxScorePropagator.setMinCompetitiveScore(score);
   }

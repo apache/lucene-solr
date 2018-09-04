@@ -290,7 +290,7 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     this.minScore = minScore;
     // Potentially move to a conjunction
     if (reqMaxScore < minScore) {

@@ -186,7 +186,7 @@ final class WANDScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     // Let this disjunction know about the new min score so that it can skip
     // over clauses that produce low scores.
     assert minScore >= 0;

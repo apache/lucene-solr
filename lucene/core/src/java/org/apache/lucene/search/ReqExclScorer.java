@@ -87,7 +87,7 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float score) {
+  public void setMinCompetitiveScore(float score) throws IOException {
     // The score of this scorer is the same as the score of 'reqScorer'.
     reqScorer.setMinCompetitiveScore(score);
   }

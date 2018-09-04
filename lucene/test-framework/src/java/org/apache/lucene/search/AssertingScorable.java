@@ -39,7 +39,7 @@ public class AssertingScorable extends FilterScorable {
   }
 
   @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     in.setMinCompetitiveScore(minScore);
   }
 
