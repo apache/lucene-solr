@@ -283,6 +283,8 @@ Optimizations
   maxConnectionsPerHost as 100k (20 previously). They are now consisent with the UpdateShardHandler defaults.
   (Varun Thacker)
 
+* SOLR-12723: Reduce object creation in HashBasedRouter. (ab)
+
 Other Changes
 ----------------------
 
