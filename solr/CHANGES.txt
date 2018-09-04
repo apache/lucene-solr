@@ -140,6 +140,9 @@ New Features
 
 * SOLR-12629: The predict evaluator should work with the polyfit function (Joel Bernstein)
 
+* SOLR-12715: NodeAddedTrigger should support adding replicas to new nodes by setting preferredOperation=addreplica.
+  (shalin)
+
 Bug Fixes
 ----------------------
 
