@@ -113,3 +113,8 @@ Scorer has a number of methods that should never be called from Collectors, for 
 those that advance the underlying iterators.  To hide these, LeafCollector.setScorer()
 now takes a Scorable, an abstract class that Scorers can extend, with methods
 docId() and score() (LUCENE-6228)
+
+## Scorers must have non-null Weights ##
+
+If a custom Scorer implementation does not have an associated Weight, it can probably
+be replaced with a Scorable instead.

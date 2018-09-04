@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Expert: Common scoring functionality for different types of queries.
@@ -38,8 +39,8 @@ import java.io.IOException;
  * with these scores.
  */
 public abstract class Scorer extends Scorable {
-  /** the Scorer's parent Weight. in some cases this may be null */
-  // TODO can we clean this up?
+
+  /** the Scorer's parent Weight */
   protected final Weight weight;
 
   /**
@@ -47,7 +48,7 @@ public abstract class Scorer extends Scorable {
    * @param weight The scorers <code>Weight</code>.
    */
   protected Scorer(Weight weight) {
-    this.weight = weight;
+    this.weight = Objects.requireNonNull(weight);
   }
 
   /** returns parent Weight

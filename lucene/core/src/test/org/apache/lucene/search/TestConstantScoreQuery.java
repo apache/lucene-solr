@@ -54,7 +54,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     QueryUtils.checkUnequal(q1, new TermQuery(new Term("a", "b")));
   }
   
-  private void checkHits(IndexSearcher searcher, Query q, final float expectedScore, final Class<? extends Scorer> innerScorerClass) throws IOException {
+  private void checkHits(IndexSearcher searcher, Query q, final float expectedScore, final Class<? extends Scorable> innerScorerClass) throws IOException {
     final int[] count = new int[1];
     searcher.search(q, new SimpleCollector() {
       private Scorable scorer;
@@ -131,7 +131,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       checkHits(searcher, csq2, csq2.getBoost(), TermScorer.class);
       
       // for the combined BQ, the scorer should always be BooleanScorer's BucketScorer, because our scorer supports out-of order collection!
-      final Class<FakeScorer> bucketScorerClass = FakeScorer.class;
+      final Class<ScoreAndDoc> bucketScorerClass = ScoreAndDoc.class;
       checkHits(searcher, csqbq, csqbq.getBoost(), bucketScorerClass);
     } finally {
       IOUtils.close(reader, directory);

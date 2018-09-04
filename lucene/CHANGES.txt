@@ -76,6 +76,8 @@ API Changes
 * LUCENE-8475: Deprecated constants have been removed from RamUsageEstimator.
   (Dimitrios Athanasiou)
 
+* LUCENE-8483: Scorers may no longer take null as a Weight (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

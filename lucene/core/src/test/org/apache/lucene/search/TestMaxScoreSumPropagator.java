@@ -22,7 +22,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -30,13 +33,40 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 public class TestMaxScoreSumPropagator extends LuceneTestCase {
 
+  private static class FakeWeight extends Weight {
+
+    FakeWeight() {
+      super(new MatchNoDocsQuery());
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+      return null;
+    }
+
+    @Override
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      return null;
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+  }
+
   private static class FakeScorer extends Scorer {
 
     final float maxScore;
     float minCompetitiveScore;
 
-    FakeScorer(float maxScore) {
-      super(null);
+    FakeScorer(float maxScore) throws IOException {
+      super(new FakeWeight());
       this.maxScore = maxScore;
     }
 

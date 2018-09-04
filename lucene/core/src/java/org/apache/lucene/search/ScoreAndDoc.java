@@ -14,22 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.expressions;
+package org.apache.lucene.search;
 
 
-import java.io.IOException;
-
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Scorer;
-
-class FakeScorer extends Scorer {
-
+/** Used by {@link BulkScorer}s that need to pass a {@link
+ *  Scorable} to {@link LeafCollector#setScorer}. */
+final class ScoreAndDoc extends Scorable {
   float score;
   int doc = -1;
-
-  FakeScorer() {
-    super(null);
-  }
 
   @Override
   public int docID() {
@@ -37,17 +29,7 @@ class FakeScorer extends Scorer {
   }
 
   @Override
-  public DocIdSetIterator iterator() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public float score() throws IOException {
+  public float score() {
     return score;
-  }
-
-  @Override
-  public float getMaxScore(int upTo) throws IOException {
-    return Float.POSITIVE_INFINITY;
   }
 }

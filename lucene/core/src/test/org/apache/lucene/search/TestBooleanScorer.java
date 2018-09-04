@@ -105,7 +105,7 @@ public class TestBooleanScorer extends LuceneTestCase {
             @Override
             public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
               assert min == 0;
-              collector.setScorer(new FakeScorer());
+              collector.setScorer(new ScoreAndDoc());
               collector.collect(0);
               return DocIdSetIterator.NO_MORE_DOCS;
             }

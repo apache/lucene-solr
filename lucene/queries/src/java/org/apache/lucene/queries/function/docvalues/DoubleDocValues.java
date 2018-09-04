@@ -22,6 +22,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 
@@ -85,7 +86,7 @@ public abstract class DoubleDocValues extends FunctionValues {
   }
   
   @Override
-  public ValueSourceScorer getRangeScorer(LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+  public ValueSourceScorer getRangeScorer(Weight weight,  LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
     double lower,upper;
 
     if (lowerVal==null) {
@@ -105,7 +106,7 @@ public abstract class DoubleDocValues extends FunctionValues {
 
 
     if (includeLower && includeUpper) {
-      return new ValueSourceScorer(readerContext, this) {
+      return new ValueSourceScorer(weight, readerContext, this) {
         @Override
         public boolean matches(int doc) throws IOException {
           if (!exists(doc)) return false;
@@ -115,7 +116,7 @@ public abstract class DoubleDocValues extends FunctionValues {
       };
     }
     else if (includeLower && !includeUpper) {
-      return new ValueSourceScorer(readerContext, this) {
+      return new ValueSourceScorer(weight, readerContext, this) {
         @Override
         public boolean matches(int doc) throws IOException {
           if (!exists(doc)) return false;
@@ -125,7 +126,7 @@ public abstract class DoubleDocValues extends FunctionValues {
       };
     }
     else if (!includeLower && includeUpper) {
-      return new ValueSourceScorer(readerContext, this) {
+      return new ValueSourceScorer(weight, readerContext, this) {
         @Override
         public boolean matches(int doc) throws IOException {
           if (!exists(doc)) return false;
@@ -135,7 +136,7 @@ public abstract class DoubleDocValues extends FunctionValues {
       };
     }
     else {
-      return new ValueSourceScorer(readerContext, this) {
+      return new ValueSourceScorer(weight, readerContext, this) {
         @Override
         public boolean matches(int doc) throws IOException {
           if (!exists(doc)) return false;

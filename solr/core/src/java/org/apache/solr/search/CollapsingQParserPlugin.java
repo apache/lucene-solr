@@ -56,7 +56,6 @@ import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.ArrayUtil;
@@ -434,35 +433,17 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
 
-  private static class DummyScorer extends Scorer {
+  private static class ScoreAndDoc extends Scorable {
 
     public float score;
     public int docId;
-
-    public DummyScorer() {
-      super(null);
-    }
 
     public float score() {
       return score;
     }
 
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
-    }
-
-    public int freq() {
-      return 0;
-    }
-
     public int docID() {
       return docId;
-    }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException();
     }
   }
 
@@ -647,7 +628,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       int nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-      DummyScorer dummy = new DummyScorer();
+      ScoreAndDoc dummy = new ScoreAndDoc();
       leafDelegate.setScorer(dummy);
       DocIdSetIterator it = new BitSetIterator(collapsedSet, 0L); // cost is not useful here
       int docId = -1;
@@ -850,7 +831,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       collapseValues = DocValues.getNumeric(contexts[currentContext].reader(), this.field);
       int nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-      DummyScorer dummy = new DummyScorer();
+      ScoreAndDoc dummy = new ScoreAndDoc();
       leafDelegate.setScorer(dummy);
       DocIdSetIterator it = new BitSetIterator(collapsedSet, 0L); // cost is not useful here
       int globalDoc = -1;
@@ -1022,7 +1003,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       int nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-      DummyScorer dummy = new DummyScorer();
+      ScoreAndDoc dummy = new ScoreAndDoc();
       leafDelegate.setScorer(dummy);
       DocIdSetIterator it = new BitSetIterator(collapseStrategy.getCollapsedSet(), 0); // cost is not useful here
       int globalDoc = -1;
@@ -1181,7 +1162,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.collapseValues = DocValues.getNumeric(contexts[currentContext].reader(), this.collapseField);
       int nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-      DummyScorer dummy = new DummyScorer();
+      ScoreAndDoc dummy = new ScoreAndDoc();
       leafDelegate.setScorer(dummy);
       DocIdSetIterator it = new BitSetIterator(collapseStrategy.getCollapsedSet(), 0); // cost is not useful here
       int globalDoc = -1;
