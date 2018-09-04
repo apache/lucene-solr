@@ -7,6 +7,8 @@ http://s.apache.org/luceneversions
 
 API Changes
 
+* LUCENE-8469: Deprecated StringHelper.compare has been removed. (Dawid Weiss)
+
 * LUCENE-8039: Introduce a "delta distance" method set to GeoDistance.  This
   allows distance calculations, especially for paths, to take into account an
   "excursion" to include the specified point.
@@ -67,6 +69,13 @@ API Changes
   need to be set on top hits via TopFieldCollector#populateScores instead.
   (Adrien Grand)
 
+* LUCENE-6228: A new Scorable abstract class has been added, containing only those
+  methods from Scorer that should be called from Collectors.  LeafCollector.setScorer()
+  now takes a Scorable rather than a Scorer. (Alan Woodward, Adrien Grand)
+
+* LUCENE-8475: Deprecated constants have been removed from RamUsageEstimator.
+  (Dimitrios Athanasiou)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -99,6 +108,12 @@ Changes in Runtime Behavior
 * LUCENE-8060: IndexSearcher's search and searchAfter methods now only compute
   total hit counts accurately up to 1,000 in order to enable top-hits
   optimizations such as block-max WAND (LUCENE-8135). (Adrien Grand)
+
+New Features
+
+* LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
+  how close a value of a long field is from an configurable origin. This is
+  typically useful to boost by recency. (Adrien Grand)
 
 Improvements
 
@@ -186,6 +201,19 @@ API Changes:
 * LUCENE-8437: CheckIndex.Status.cantOpenSegments and missingSegmentVersion
   have been removed as they were not computed correctly. (Adrien Grand)
 
+* LUCENE-8286: The UnifiedHighlighter has a new HighlightFlag.WEIGHT_MATCHES flag that
+  will tell this highlighter to use the new MatchesIterator API as the underlying
+  approach to navigate matching hits for a query.  This mode will highlight more
+  accurately than any other highlighter, and can mark up phrases as one span instead of
+  word-by-word.  The UH's public internal APIs changed a bit in the process.
+  (David Smiley)
+
+* LUCENE-8471: IndexWriter.getFlushingBytes() returns how many bytes are currently
+  being flushed to disk. (Alan Woodward)
+
+* LUCENE-8422: Static helper functions for Matches and MatchesIterator implementations
+  have been moved from Matches to MatchesUtils (Alan Woodward)
+
 Bug Fixes:
 
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
@@ -260,6 +288,14 @@ Improvements
 * LUCENE-8446: The UnifiedHighlighter's DefaultPassageFormatter now treats overlapping matches in
   the passage as merged (as if one larger match).  (David Smiley)
 
+* LUCENE-8460: Better argument validation in StoredField. (Namgyu Kim)
+
+* LUCENE-8432: TopFieldComparator stops comparing documents if the index is
+  sorted, even if hits still need to be visited to compute the hit count.
+  (Nikolay Khitrin)
+
+* LUCENE-8422: IntervalQuery now returns useful Matches (Alan Woodward)
+
 Other:
 
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
@@ -278,6 +314,8 @@ Other:
 
 * LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
 
+* LUCENE-765: Improved org.apache.lucene.index javadocs. (Mike Sokolov)
+
 ======================= Lucene 7.4.1 =======================
 
 Bug Fixes:
@@ -291,6 +329,8 @@ Bug Fixes:
 
  * LUCENE-8384: Fix missing advance docValues generation while handling docValues
    update in PendingSoftDeletes. (Simon Willnauer, Nhat Nguyen)
+
+ * LUCENE-8472: Always rewrite the soft-deletes merge retention query. (Adrien Grand, Nhat Nguyen)
 
 ======================= Lucene 7.4.0 =======================
 

@@ -28,7 +28,7 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /** 
@@ -140,7 +140,7 @@ public abstract class PointValues {
         final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
-          if (StringHelper.compare(numBytesPerDimension, leafMinValue, offset, minValue, offset) < 0) {
+          if (FutureArrays.compareUnsigned(leafMinValue, offset, offset + numBytesPerDimension, minValue, offset, offset + numBytesPerDimension) < 0) {
             System.arraycopy(leafMinValue, offset, minValue, offset, numBytesPerDimension);
           }
         }
@@ -171,7 +171,7 @@ public abstract class PointValues {
         final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
-          if (StringHelper.compare(numBytesPerDimension, leafMaxValue, offset, maxValue, offset) > 0) {
+          if (FutureArrays.compareUnsigned(leafMaxValue, offset, offset + numBytesPerDimension, maxValue, offset, offset + numBytesPerDimension) > 0) {
             System.arraycopy(leafMaxValue, offset, maxValue, offset, numBytesPerDimension);
           }
         }

@@ -256,7 +256,7 @@ public abstract class CachingCollector extends FilterCollector {
 
   private class ScoreCachingLeafCollector extends NoScoreCachingLeafCollector {
 
-    Scorer scorer;
+    Scorable scorer;
     float[] scores;
 
     ScoreCachingLeafCollector(LeafCollector in, int maxDocsToCache) {
@@ -265,7 +265,7 @@ public abstract class CachingCollector extends FilterCollector {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;
       super.setScorer(scorer);
     }

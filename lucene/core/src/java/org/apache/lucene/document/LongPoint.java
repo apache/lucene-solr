@@ -20,9 +20,12 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
@@ -255,5 +258,28 @@ public final class LongPoint extends Field {
       unboxed[i] = boxed[i];
     }
     return newSetQuery(field, unboxed);
+  }
+
+  /**
+   * Given a field that indexes the same long values into a {@link LongPoint}
+   * and doc values (either {@link NumericDocValuesField} or
+   * {@link SortedNumericDocValuesField}), this returns a query that scores
+   * documents based on their distance to {@code origin}:
+   * {@code score = weight * pivotDistance / (pivotDistance + distance)}, ie.
+   * score is in the {@code [0, weight]} range, is equal to {@code weight} when
+   * the document's value is equal to {@code origin} and is equal to
+   * {@code weight/2}  when the document's value is distant of
+   * {@code pivotDistance} from {@code origin}.
+   * In case of multi-valued fields, only the closest point to {@code origin}
+   * will be considered.
+   * This query is typically useful to boost results based on recency by adding
+   * this query to a {@link Occur#SHOULD} clause of a {@link BooleanQuery}.
+   */
+  public static Query newDistanceFeatureQuery(String field, float weight, long origin, long pivotDistance) {
+    Query query = new LongDistanceFeatureQuery(field, origin, pivotDistance);
+    if (weight != 1f) {
+      query = new BoostQuery(query, weight);
+    }
+    return query;
   }
 }

@@ -65,7 +65,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
   private static final int DEFAULT_CACHE_VALUE = 4000;
 
   // NOTE: very coarse estimate!
-  private static final int BYTES_PER_CACHE_ENTRY = 4 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 4 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 8 * RamUsageEstimator.NUM_BYTES_CHAR;
+  private static final int BYTES_PER_CACHE_ENTRY = 4 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 4 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 8 * Character.BYTES;
   
   private final DirectoryTaxonomyWriter taxoWriter;
   private final long taxoEpoch; // used in doOpenIfChanged 

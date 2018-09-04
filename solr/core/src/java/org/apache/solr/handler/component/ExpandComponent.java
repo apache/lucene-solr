@@ -50,9 +50,9 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TopDocs;
@@ -565,7 +565,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return new LeafCollector() {
 
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
             c.value.setScorer(scorer);
           }
@@ -642,7 +642,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return new LeafCollector() {
 
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
             c.value.setScorer(scorer);
           }

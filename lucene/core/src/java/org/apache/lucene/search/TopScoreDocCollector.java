@@ -38,10 +38,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   abstract static class ScorerLeafCollector implements LeafCollector {
 
-    Scorer scorer;
+    Scorable scorer;
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;
     }
 
@@ -62,7 +62,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       final int docBase = context.docBase;
       return new ScorerLeafCollector() {
 
-        private void updateMinCompetitiveScore() {
+        private void updateMinCompetitiveScore() throws IOException {
           // since we tie-break on doc id and collect in doc id order, we can require
           // the next float
           scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));
@@ -70,7 +70,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
         }
 
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
           if (totalHits >= totalHitsThreshold
               && pqTop != null

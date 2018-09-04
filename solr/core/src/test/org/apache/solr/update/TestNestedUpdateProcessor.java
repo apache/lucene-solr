@@ -90,7 +90,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-update-processor-chains.xml", "schema15.xml");
+    initCore("solrconfig-update-processor-chains.xml", "schema-nest.xml");
   }
 
   @Before
@@ -107,8 +107,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     };
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":*/grandChild#*",
-        "fl","*",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":*/grandChild",
+        "fl","*, _nest_path_",
         "sort","id desc",
         "wt","json"),
         tests);
@@ -124,14 +124,14 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     };
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children#?",
-        "fl","*",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children/",
+        "fl","*, _nest_path_",
         "sort","id asc",
         "wt","json"),
         childrenTests);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":anotherChildList#?",
-        "fl","*",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":anotherChildList/",
+        "fl","*, _nest_path_",
         "sort","id asc",
         "wt","json"),
         "/response/docs/[0]/id=='4'",

@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -73,7 +74,8 @@ public class AtomicUpdateDocumentMerger {
   public static boolean isAtomicUpdate(final AddUpdateCommand cmd) {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     for (SolrInputField sif : sdoc.values()) {
-      if (sif.getValue() instanceof Map) {
+      Object val = sif.getValue();
+      if (val instanceof Map && !(val instanceof SolrDocumentBase)) {
         return true;
       }
     }

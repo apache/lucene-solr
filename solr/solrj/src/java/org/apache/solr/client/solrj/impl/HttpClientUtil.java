@@ -77,6 +77,8 @@ public class HttpClientUtil {
   
   public static final int DEFAULT_CONNECT_TIMEOUT = 60000;
   public static final int DEFAULT_SO_TIMEOUT = 600000;
+  public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
+  public static final int DEFAULT_MAXCONNECTIONS = 100000;
   
   private static final int VALIDATE_AFTER_INACTIVITY_DEFAULT = 3000;
   private static final int EVICT_IDLE_CONNECTIONS_DEFAULT = 50000;

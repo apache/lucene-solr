@@ -25,10 +25,8 @@ import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -61,6 +59,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.StringHelper;
@@ -1116,73 +1115,6 @@ public final class CheckIndex implements Closeable {
     return intersectTermCount != normalTermCount;
   }
 
-  /** Make an effort to visit "fake" (e.g. auto-prefix) terms.  We do this by running term range intersections across an initially wide
-   *  interval of terms, at different boundaries, and then gradually decrease the interval.  This is not guaranteed to hit all non-real
-   *  terms (doing that in general is non-trivial), but it should hit many of them, and validate their postings against the postings for the
-   *  real terms. */
-  private static void checkTermRanges(String field, int maxDoc, Terms terms, long numTerms) throws IOException {
-
-    // We'll target this many terms in our interval for the current level:
-    double currentInterval = numTerms;
-
-    FixedBitSet normalDocs = new FixedBitSet(maxDoc);
-    FixedBitSet intersectDocs = new FixedBitSet(maxDoc);
-
-    //System.out.println("CI.checkTermRanges field=" + field + " numTerms=" + numTerms);
-
-    while (currentInterval >= 10.0) {
-      //System.out.println("  cycle interval=" + currentInterval);
-
-      // We iterate this terms enum to locate min/max term for each sliding/overlapping interval we test at the current level:
-      TermsEnum termsEnum = terms.iterator();
-
-      long termCount = 0;
-
-      Deque<BytesRef> termBounds = new LinkedList<>();
-
-      long lastTermAdded = Long.MIN_VALUE;
-
-      BytesRefBuilder lastTerm = null;
-
-      while (true) {
-        BytesRef term = termsEnum.next();
-        if (term == null) {
-          break;
-        }
-        //System.out.println("  top: term=" + term.utf8ToString());
-        if (termCount >= lastTermAdded + currentInterval/4) {
-          termBounds.add(BytesRef.deepCopyOf(term));
-          lastTermAdded = termCount;
-          if (termBounds.size() == 5) {
-            BytesRef minTerm = termBounds.removeFirst();
-            BytesRef maxTerm = termBounds.getLast();
-            checkSingleTermRange(field, maxDoc, terms, minTerm, maxTerm, normalDocs, intersectDocs);
-          }
-        }
-        termCount++;
-
-        if (lastTerm == null) {
-          lastTerm = new BytesRefBuilder();
-          lastTerm.copyBytes(term);
-        } else {
-          if (lastTerm.get().compareTo(term) >= 0) {
-            throw new RuntimeException("terms out of order: lastTerm=" + lastTerm.get() + " term=" + term);
-          }
-          lastTerm.copyBytes(term);
-        }
-      }
-      //System.out.println("    count=" + termCount);
-
-      if (lastTerm != null && termBounds.isEmpty() == false) {
-        BytesRef minTerm = termBounds.removeFirst();
-        BytesRef maxTerm = lastTerm.get();
-        checkSingleTermRange(field, maxDoc, terms, minTerm, maxTerm, normalDocs, intersectDocs);
-      }
-
-      currentInterval *= .75;
-    }
-  }
-
   /**
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
@@ -1702,12 +1634,6 @@ public final class CheckIndex implements Closeable {
 
         long fieldTermCount = (status.delTermCount+status.termCount)-termCountStart;
 
-        // LUCENE-5879: this is just too slow for now:
-        if (false && hasFreqs == false) {
-          // For DOCS_ONLY fields we recursively test term ranges:
-          checkTermRanges(field, maxDoc, fieldTerms, fieldTermCount);
-        }
-
         final Object stats = fieldTerms.getStats();
         assert stats != null;
         if (status.blockTreeStats == null) {
@@ -2111,12 +2037,12 @@ public final class CheckIndex implements Closeable {
         int offset = bytesPerDim * dim;
 
         // Compare to last cell:
-        if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMinPackedValue, offset) < 0) {
+        if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lastMinPackedValue, offset, offset + bytesPerDim) < 0) {
           // This doc's point, in this dimension, is lower than the minimum value of the last cell checked:
           throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
         }
 
-        if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMaxPackedValue, offset) > 0) {
+        if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lastMaxPackedValue, offset, offset + bytesPerDim) > 0) {
           // This doc's point, in this dimension, is greater than the maximum value of the last cell checked:
           throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
         }
@@ -2125,7 +2051,7 @@ public final class CheckIndex implements Closeable {
       // In the 1D case, PointValues must make a single in-order sweep through all values, and tie-break by
       // increasing docID:
       if (numDims == 1) {
-        int cmp = StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0);
+        int cmp = FutureArrays.compareUnsigned(lastPackedValue, 0, bytesPerDim, packedValue, 0, bytesPerDim);
         if (cmp > 0) {
           throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
         } else if (cmp == 0) {
@@ -2148,27 +2074,27 @@ public final class CheckIndex implements Closeable {
       for(int dim=0;dim<numDims;dim++) {
         int offset = bytesPerDim * dim;
 
-        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, maxPackedValue, offset) > 0) {
+        if (FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
           throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
                                      " is out-of-bounds of the cell's maxPackedValue " + Arrays.toString(maxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }
 
         // Make sure this cell is not outside of the global min/max:
-        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMinPackedValue, offset) < 0) {
+        if (FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, globalMinPackedValue, offset, offset + bytesPerDim) < 0) {
           throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
                                      " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }
 
-        if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMinPackedValue, offset) < 0) {
+        if (FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, globalMinPackedValue, offset, offset + bytesPerDim) < 0) {
           throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
                                      " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }
 
-        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMaxPackedValue, offset) > 0) {
+        if (FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, globalMaxPackedValue, offset, offset + bytesPerDim) > 0) {
           throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
                                      " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }
-        if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMaxPackedValue, offset) > 0) {
+        if (FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, globalMaxPackedValue, offset, offset + bytesPerDim) > 0) {
           throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
                                      " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }

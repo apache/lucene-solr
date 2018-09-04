@@ -607,8 +607,8 @@ class DrillSidewaysScorer extends BulkScorer {
     }
 
     @Override
-    public Collection<ChildScorer> getChildren() {
-      return Collections.singletonList(new ChildScorer(baseScorer, "MUST"));
+    public Collection<ChildScorable> getChildren() {
+      return Collections.singletonList(new ChildScorable(baseScorer, "MUST"));
     }
 
     @Override

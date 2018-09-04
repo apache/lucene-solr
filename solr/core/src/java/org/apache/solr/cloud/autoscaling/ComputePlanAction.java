@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,9 +38,11 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.UnsupportedSuggester;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
@@ -89,8 +92,7 @@ public class ComputePlanAction extends TriggerActionBase {
         log.trace("-- state: {}", clusterState);
       }
       try {
-        Suggester initialSuggester = getSuggester(session, event, context, cloudManager);
-        Suggester suggester = initialSuggester;
+        Suggester suggester = getSuggester(session, event, context, cloudManager);
         int maxOperations = getMaxNumOps(event, autoScalingConf, clusterState);
         int requestedOperations = getRequestedNumOps(event);
         if (requestedOperations > maxOperations) {
@@ -197,12 +199,11 @@ public class ComputePlanAction extends TriggerActionBase {
 
   private static final String START = "__start__";
 
-  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, ActionContext context, SolrCloudManager cloudManager) {
+  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, ActionContext context, SolrCloudManager cloudManager) throws IOException {
     Suggester suggester;
     switch (event.getEventType()) {
       case NODEADDED:
-        suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
-            .hint(Suggester.Hint.TARGET_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
+        suggester = getNodeAddedSuggester(cloudManager, session, event);
         break;
       case NODELOST:
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
@@ -236,6 +237,39 @@ public class ComputePlanAction extends TriggerActionBase {
         break;
       default:
         throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate, metric and indexSize. Received: " + event.getEventType());
+    }
+    return suggester;
+  }
+
+  private Suggester getNodeAddedSuggester(SolrCloudManager cloudManager, Policy.Session session, TriggerEvent event) throws IOException {
+    String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+    CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+
+    Suggester suggester = session.getSuggester(action)
+        .hint(Suggester.Hint.TARGET_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
+    switch (action) {
+      case ADDREPLICA:
+        // add all collection/shard pairs and let policy engine figure out which one
+        // to place on the target node
+        // todo in future we can prune ineligible collection/shard pairs
+        ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
+        Set<Pair<String, String>> collShards = new HashSet<>();
+        clusterState.getCollectionStates().forEach((collectionName, collectionRef) -> {
+          DocCollection docCollection = collectionRef.get();
+          if (docCollection != null)  {
+            docCollection.getActiveSlices().stream()
+                .map(slice -> new Pair<>(collectionName, slice.getName()))
+                .forEach(collShards::add);
+          }
+        });
+        suggester.hint(Suggester.Hint.COLL_SHARD, collShards);
+        break;
+      case MOVEREPLICA:
+      case NONE:
+        break;
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unsupported preferredOperation=" + preferredOp + " for node added event");
     }
     return suggester;
   }

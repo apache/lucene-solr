@@ -42,12 +42,24 @@ Upgrade Notes
 
 * LUCENE-8267: Memory codecs have been removed from the codebase (MemoryPostings,
   MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory"
-  switch to "Direct" instead. (Dawid Weiss)
+  then either remove it to use the default or experiment with one of the others. (Dawid Weiss)
 
 * SOLR-12586: The date format patterns used by ParseDateFieldUpdateProcessorFactory (present in "schemaless mode")
   are now interpreted by Java 8's java.time.DateTimeFormatter instead of Joda Time.  The pattern language is very
   similar but not the same.  Typically, simply update the pattern by changing an uppercase 'Z' to lowercase 'z' and
-  that's it.  For the current recommended set of patterns in schemaless mode, see "Schemaless Mode" in the ref guide.
+  that's it.  For the current recommended set of patterns in schemaless mode, see "Schemaless Mode" in the ref guide,
+  or simply examine the default configSet.  Also note that the set of patterns (formats) here have
+  expanded from before to subsume those patterns previously handled by the "extract" contrib (Solr Cell / Tika).
+  (David Smiley, Bar Rotstein)
+
+
+New Features
+----------------------
+
+SOLR-12591: Expand the set of recognized date format patterns of schemaless mode to subsume those handled by the
+  "extract" contrib (Solr Cell / Tika).  This is primarily a change in configuration of the default configSet for more
+  patterns, but also included enabling "lenient" parsing in ParseDateFieldUpdateProcessorFactory.  The default
+  locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
 
 Other Changes
@@ -55,7 +67,7 @@ Other Changes
 
 * SOLR-12614: Make "Nodes" view the default in AdminUI "Cloud" tab (janhoy)
 
-* SOLR-12586, SOLR-12591: Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") to use Java 8's
+* SOLR-12586: Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") to use Java 8's
   java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
 
@@ -87,6 +99,12 @@ Upgrade Notes
 * SOLR-12008: The configuration file for log4j2.xml is now in ../server/resources/log4j2.xml. All other copies have been removed.
   WINDOWS USERS: This JIRA corrects a bug in the start scripts that put example logs under ...\server, solr.log is
   now under ...\example. (Erick Erickson)
+
+* SOLR-12055: Enable async logging by default. This change improves throughput for logging. This opens
+  up a small window where log messages could possibly be lost. If this is unacceptable, switching back to synchronous
+  logging can be done by changing the log4j2.xml files, no internal Solr code changed to make async logging the default.
+  (Erick Erickson)
+
 
 New Features
 ----------------------
@@ -157,6 +175,28 @@ New Features
 
 * SOLR-12655: Add Korean morphological analyzer ("nori") to default distribution. This also adds examples
   for configuration in Solr's schema.  (Uwe Schindler)
+
+* SOLR-12519: The [child] transformer now returns a nested child doc structure (attached as fields if provided this way)
+  provided the schema is enabled for nested documents.  This is part of a broader enhancement of nested docs.
+  (Moshe Bla, David Smiley)
+
+* SOLR-11863: Add knnRegress Stream Evaluator to support nearest neighbor regression (Joel Bernstein)
+
+* SOLR-12702: Add zscores Stream Evaluator (Joel Bernstein)
+
+* SOLR-12687: Add functions to cache data structures and mathematical models (Joel Bernstein)
+
+* SOLR-12671: Add robust flag to knnRegress Stream Evaluator (Joel Bernstein)
+
+* SOLR-12660: Add outliers Stream Evaluator to support outlier detection with probability distributions
+  (Joel Bernstein)
+
+* SOLR-12634: Add gaussfit Stream Evaluator (Joel Bernstein)
+
+* SOLR-12629: The predict evaluator should work with the polyfit function (Joel Bernstein)
+
+* SOLR-12715: NodeAddedTrigger should support adding replicas to new nodes by setting preferredOperation=addreplica.
+  (shalin)
 
 Bug Fixes
 ----------------------
@@ -256,6 +296,13 @@ Bug Fixes
 
 * SOLR-10028: Fix and improvements to SegmentsInfoRequestHandlerTest (Christine Poerschke, Tomás Fernández Löbbe)
 
+* SOLR-11585: Solr SQL does not work with point numeric fields (Joel Bernstein, Kiran Chitturi)
+
+* SOLR-12704: Guard AddSchemaFieldsUpdateProcessorFactory against null field names and field values.
+  (Steve Rowe, Varun Thacker)
+
+* SOLR-12728: RequestLoggingTest fails on occasion, not reproducible (Erick Erickson)
+
 Optimizations
 ----------------------
 
@@ -285,6 +332,10 @@ Optimizations
 * SOLR-12572: While exporting documents using the export writer, if a field is specified as a sort parameter and also
   in the fl (field list) parameter, we save on one doc-value lookup. This can bring performance improvements of 15%
   and upwards depending on how many fields are in common. (Amrit Sarkar, Varun Thacker)
+
+* SOLR-10697: HttpShardHandler now uses a default of 100k as maxConnections (10k previously) and default
+  maxConnectionsPerHost as 100k (20 previously). They are now consisent with the UpdateShardHandler defaults.
+  (Varun Thacker)
 
 Other Changes
 ----------------------

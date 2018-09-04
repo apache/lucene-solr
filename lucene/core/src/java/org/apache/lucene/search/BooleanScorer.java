@@ -124,10 +124,10 @@ final class BooleanScorer extends BulkScorer {
   final long cost;
 
   final class OrCollector implements LeafCollector {
-    Scorer scorer;
+    Scorable scorer;
 
     @Override
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorable scorer) {
       this.scorer = scorer;
     }
 

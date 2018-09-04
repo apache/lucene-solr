@@ -24,6 +24,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
@@ -93,7 +94,7 @@ public class BlockGroupingCollector extends SimpleCollector {
   private int docBase;
   private int groupEndDocID;
   private DocIdSetIterator lastDocPerGroupBits;
-  private Scorer scorer;
+  private Scorable scorer;
   private final GroupQueue groupQueue;
   private boolean groupCompetes;
 
@@ -357,7 +358,7 @@ public class BlockGroupingCollector extends SimpleCollector {
   }
 
   @Override
-  public void setScorer(Scorer scorer) throws IOException {
+  public void setScorer(Scorable scorer) throws IOException {
     this.scorer = scorer;
     for (LeafFieldComparator comparator : leafComparators) {
       comparator.setScorer(scorer);

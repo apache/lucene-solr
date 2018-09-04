@@ -46,7 +46,7 @@ public class MultiCollectorTest extends LuceneTestCase {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       setScorerCalled = true;
     }
 
@@ -110,9 +110,9 @@ public class MultiCollectorTest extends LuceneTestCase {
         return new LeafCollector() {
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
-            while (expectedScorer.equals(scorer.getClass()) == false && scorer instanceof FilterScorer) {
-              scorer = ((FilterScorer) scorer).in;
+          public void setScorer(Scorable scorer) throws IOException {
+            while (expectedScorer.equals(scorer.getClass()) == false && scorer instanceof FilterScorable) {
+              scorer = ((FilterScorable) scorer).in;
             }
             assertEquals(expectedScorer, scorer.getClass());
           }

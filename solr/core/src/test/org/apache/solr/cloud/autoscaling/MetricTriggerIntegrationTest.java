@@ -179,11 +179,11 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
         "'event' : 'metric'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'enabled' : true," +
-        "'metric': '" + tag + "'" +
+        "'metric': '" + tag + "'," +
         "'above' : 100.0," +
-        "'collection': '" + collectionName + "'" +
-        "'shard':'" + shardId + "'" +
-        "'preferredOperation':'addreplica'" +
+        "'collection': '" + collectionName + "'," +
+        "'shard':'" + shardId + "'," +
+        "'preferredOperation':'addreplica'," +
         "'actions' : [" +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +

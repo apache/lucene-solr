@@ -27,8 +27,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FilterMatchesIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -134,6 +138,22 @@ public final class IntervalQuery extends Query {
         }
       }
       return Explanation.noMatch("no matching intervals");
+    }
+
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return MatchesUtils.forField(field, () -> {
+        MatchesIterator mi = intervalsSource.matches(field, context, doc);
+        if (mi == null) {
+          return null;
+        }
+        return new FilterMatchesIterator(mi) {
+          @Override
+          public Query getQuery() {
+            return new IntervalQuery(field, intervalsSource);
+          }
+        };
+      });
     }
 
     @Override

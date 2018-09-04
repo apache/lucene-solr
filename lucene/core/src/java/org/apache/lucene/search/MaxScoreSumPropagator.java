@@ -110,7 +110,7 @@ final class MaxScoreSumPropagator {
     return scoreSumUpperBound(maxScore);
   }
 
-  void setMinCompetitiveScore(float minScore) {
+  void setMinCompetitiveScore(float minScore) throws IOException {
     if (minScore == 0) {
       return ;
     }

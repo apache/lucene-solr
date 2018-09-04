@@ -55,12 +55,12 @@ ALWAYS_CACHE can be replaced by a UsageTrackingQueryCachingPolicy with an approp
 
 ## English stopwords are no longer removed by default in StandardAnalyzer (LUCENE_7444) ##
 
-To retain the old behaviour, pass StandardAnalyzer.ENGLISH_STOP_WORDS_SET as an argument
+To retain the old behaviour, pass EnglishAnalyzer.ENGLISH_STOP_WORDS_SET as an argument
 to the constructor
 
-## StandardAnalyzer.ENGLISH_STOP_WORD_SET has been moved ##
+## StandardAnalyzer.ENGLISH_STOP_WORDS_SET has been moved ##
 
-English stop words are now defined in EnglishAnalyzer#ENGLISH_STOP_WORD_SET in the
+English stop words are now defined in EnglishAnalyzer#ENGLISH_STOP_WORDS_SET in the
 analysis-common module
 
 ## TopDocs.maxScore removed ##
@@ -106,3 +106,10 @@ This RAM-based directory implementation is an old piece of code that uses ineffi
 thread synchronization primitives and can be confused as "faster" than the NIO-based
 MMapDirectory. It is deprecated and scheduled for removal in future versions of 
 Lucene. (LUCENE-8467, LUCENE-8438)
+
+## LeafCollector.setScorer() now takes a Scorable rather than a Scorer ##
+
+Scorer has a number of methods that should never be called from Collectors, for example
+those that advance the underlying iterators.  To hide these, LeafCollector.setScorer()
+now takes a Scorable, an abstract class that Scorers can extend, with methods
+docId() and score() (LUCENE-6228)

@@ -81,8 +81,10 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <p>
  * The locale to use when parsing field values using the specified formats may
- * optionally be specified.  If no locale is configured, then {@link Locale#ROOT}
- * will be used. The following configuration specifies the French/France locale and
+ * optionally be specified.  If no locale is configured, then {@code en_US}
+ * will be used since it's implied by some well-known formats.  Recent versions of Java
+ * have become sensitive to this.
+ * The following configuration specifies the French/France locale and
  * two date formats that will parse the strings "le mardi 8 janvier 2013" and 
  * "le 28 déc. 2010 à 15 h 30", respectively.  Note that either individual &lt;str&gt;
  * elements or &lt;arr&gt;-s of &lt;str&gt; elements may be used to specify the
@@ -102,6 +104,11 @@ import org.slf4j.LoggerFactory;
  * <p>
  * See {@link Locale} for a description of acceptable language, country (optional)
  * and variant (optional) values, joined with underscore(s).
+ * </p>
+ *
+ * <p>
+ * Tip: you can use multiple instances of this URP in your chain with different locales or
+ * default time zones if you wish to vary those settings for different format patterns.
  * </p>
  * @since 4.4.0
  */
@@ -156,11 +163,12 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   @Override
   public void init(NamedList args) {
     
-    Locale locale = Locale.ROOT;
-    
+    Locale locale;
     String localeParam = (String)args.remove(LOCALE_PARAM);
     if (null != localeParam) {
       locale = LocaleUtils.toLocale(localeParam);
+    } else {
+      locale = LocaleUtils.toLocale("en_US"); // because well-known patterns assume this
     }
 
     Object defaultTimeZoneParam = args.remove(DEFAULT_TIME_ZONE_PARAM);

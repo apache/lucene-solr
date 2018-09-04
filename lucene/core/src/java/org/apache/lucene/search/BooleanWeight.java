@@ -151,7 +151,7 @@ final class BooleanWeight extends Weight {
     if (shouldMatchCount < minShouldMatch) {
       return null;
     }
-    return Matches.fromSubMatches(matches);
+    return MatchesUtils.fromSubMatches(matches);
   }
 
   static BulkScorer disableScoring(final BulkScorer scorer) {
@@ -163,7 +163,7 @@ final class BooleanWeight extends Weight {
           FakeScorer fake = new FakeScorer();
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorable scorer) throws IOException {
             collector.setScorer(fake);
           }
 

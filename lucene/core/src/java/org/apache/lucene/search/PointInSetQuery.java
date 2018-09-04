@@ -35,7 +35,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.FutureArrays;
 
 /**
  * Abstract query class to find all documents whose single or multi-dimensional point values, previously indexed with e.g. {@link IntPoint},
@@ -284,12 +284,12 @@ public abstract class PointInSetQuery extends Query {
       for(int dim=0;dim<numDims;dim++) {
         int offset = dim*bytesPerDim;
 
-        int cmpMin = StringHelper.compare(bytesPerDim, minPackedValue, offset, pointBytes, offset);
+        int cmpMin = FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
         if (cmpMin > 0) {
           return Relation.CELL_OUTSIDE_QUERY;
         }
 
-        int cmpMax = StringHelper.compare(bytesPerDim, maxPackedValue, offset, pointBytes, offset);
+        int cmpMax = FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
         if (cmpMax < 0) {
           return Relation.CELL_OUTSIDE_QUERY;
         }

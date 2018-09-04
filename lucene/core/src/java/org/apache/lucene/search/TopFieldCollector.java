@@ -49,7 +49,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     final LeafFieldComparator comparator;
     final int reverseMul;
-    Scorer scorer;
+    Scorable scorer;
 
     MultiComparatorLeafCollector(LeafFieldComparator[] comparators, int[] reverseMul) {
       if (comparators.length == 1) {
@@ -62,7 +62,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       comparator.setScorer(scorer);
       this.scorer = scorer;
     }
@@ -107,21 +107,25 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
       return new MultiComparatorLeafCollector(comparators, reverseMul) {
 
+        boolean collectedAllCompetitiveHits = false;
+
         @Override
         public void collect(int doc) throws IOException {
           ++totalHits;
           if (queueFull) {
-            if (reverseMul * comparator.compareBottom(doc) <= 0) {
+            if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
               // since docs are visited in doc Id order, if compare is 0, it means
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
-              if (canEarlyTerminate && totalHits >= totalHitsThreshold) {
-                totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
-                throw new CollectionTerminatedException();
-              } else {
-                // just move to the next doc
-                return;
+              if (canEarlyTerminate) {
+                if (totalHits >= totalHitsThreshold) {
+                  totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+                  throw new CollectionTerminatedException();
+                } else {
+                  collectedAllCompetitiveHits = true;
+                }
               }
+              return;
             }
 
             // This hit is competitive - replace bottom element in queue & adjustTop
@@ -183,6 +187,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           canEarlyTerminate(sort, indexSort);
       return new MultiComparatorLeafCollector(queue.getComparators(context), queue.getReverseMul()) {
 
+        boolean collectedAllCompetitiveHits = false;
+
         @Override
         public void collect(int doc) throws IOException {
           //System.out.println("  collect doc=" + doc);
@@ -192,16 +198,19 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           if (queueFull) {
             // Fastmatch: return if this hit is no better than
             // the worst hit currently in the queue:
-            final int cmp = reverseMul * comparator.compareBottom(doc);
-            if (cmp <= 0) {
-              // not competitive since documents are visited in doc id order
-              if (canEarlyTerminate && totalHits >= totalHitsThreshold) {
-                totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
-                throw new CollectionTerminatedException();
-              } else {
-                // just move to the next doc
-                return;
+            if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
+              // since docs are visited in doc Id order, if compare is 0, it means
+              // this document is largest than anything else in the queue, and
+              // therefore not competitive.
+              if (canEarlyTerminate) {
+                if (totalHits >= totalHitsThreshold) {
+                  totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+                  throw new CollectionTerminatedException();
+                } else {
+                  collectedAllCompetitiveHits = true;
+                }
               }
+              return;
             }
           }
 
