@@ -51,16 +51,15 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
    */
   public static abstract class SubReaderWrapper {
 
-    private LeafReader[] wrap(List<? extends LeafReader> readers) {
-      List<LeafReader> wrapped = new ArrayList<>(readers.size());
+    protected LeafReader[] wrap(List<? extends LeafReader> readers) {
+      LeafReader[] wrapped = new LeafReader[readers.size()];
+      int i = 0;
       for (LeafReader reader : readers) {
         LeafReader wrap = wrap(reader);
         assert wrap != null;
-        if (wrap.numDocs() > 0) {
-          wrapped.add(wrap);
-        }
+        wrapped[i++] = wrap;
       }
-      return wrapped.toArray(new LeafReader[0]);
+      return wrapped;
     }
 
     /** Constructor */
