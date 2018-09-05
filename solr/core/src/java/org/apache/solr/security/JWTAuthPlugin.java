@@ -22,19 +22,22 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.Serializable;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.security.Principal;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
@@ -45,15 +48,15 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.Args;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.security.JWTAuthPlugin.AuthenticationResponse.AuthCode;
+import org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
@@ -82,14 +85,18 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private static final String PARAM_AUDIENCE = "aud";
   private static final String PARAM_REQUIRE_SUBJECT = "require_sub";
   private static final String PARAM_PRINCIPAL_CLAIM = "principal_claim";
-  private static final String PARAM_ROLES_CLAIM = "roles_claim";
   private static final String PARAM_REQUIRE_EXPIRATIONTIME = "require_exp";
   private static final String PARAM_ALG_WHITELIST = "alg_whitelist";
   private static final String PARAM_JWK_CACHE_DURATION = "jwk_cache_dur";
   private static final String PARAM_CLAIMS_MATCH = "claims_match";
-  private static final String AUTH_REALM = "solr";
+  private static final String PARAM_SCOPE = "scope";
+  private static final String PARAM_ADMIN_SCOPE = "admin_scope";
+  private static final String PARAM_CLIENT_ID = "client_id";
+  private static final String PARAM_WELL_KNOWN_URL = "well_known_url";
+  private static final String AUTH_REALM = "solr-jwt";
+  private static final String CLAIM_SCOPE = "scope";
 
-  private final PkiDelegationInterceptor interceptor = new PkiDelegationInterceptor();
+  private final JwtPkiDelegationInterceptor interceptor = new JwtPkiDelegationInterceptor();
 
   private JwtConsumer jwtConsumer;
   private String iss;
@@ -99,9 +106,16 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private List<String> algWhitelist;
   private VerificationKeyResolver verificationKeyResolver;
   private String principalClaim;
-  private String rolesClaim;
   private HashMap<String, Pattern> claimsMatchCompiled;
   private boolean blockUnknown;
+  private String adminScope;
+  private HashSet<String> requiredScopes = new HashSet<>();
+  private String clientId;
+  private long jwkCacheDuration;
+  private OidcDiscoveryConfig oidcDiscoveryConfig;
+  private String confIdpConfigUrl;
+  private Map<String, Object> pluginConfig;
+  private Instant lastInitTime = Instant.now();
   private CoreContainer coreContainer;
 
   /**
@@ -115,16 +129,41 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   @Override
   public void init(Map<String, Object> pluginConfig) {
     blockUnknown = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, false)));
-    String jwk_url = (String) pluginConfig.get(PARAM_JWK_URL);
-    Map<String, Object> jwk = (Map<String, Object>) pluginConfig.get(PARAM_JWK);
-    iss = (String) pluginConfig.get(PARAM_ISSUER);
-    aud = (String) pluginConfig.get(PARAM_AUDIENCE);
+    clientId = (String) pluginConfig.get(PARAM_CLIENT_ID);
     requireSubject = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_SUBJECT, "true")));
     requireExpirationTime = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_EXPIRATIONTIME, "true")));
-    algWhitelist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
-    long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
     principalClaim = (String) pluginConfig.getOrDefault(PARAM_PRINCIPAL_CLAIM, "sub");
-    rolesClaim = (String) pluginConfig.get(PARAM_ROLES_CLAIM);
+    confIdpConfigUrl = (String) pluginConfig.get(PARAM_WELL_KNOWN_URL);
+    
+    if (confIdpConfigUrl != null) {
+      log.debug("Initializing well-known oidc config from {}", confIdpConfigUrl);
+      oidcDiscoveryConfig = OidcDiscoveryConfig.parse(confIdpConfigUrl);
+      iss = oidcDiscoveryConfig.getIssuer();
+    }
+    
+    if (pluginConfig.containsKey(PARAM_ISSUER)) {
+      if (iss != null) {
+        log.debug("Explicitly setting required issuer instead of using issuer from well-known config");
+      }
+      iss = (String) pluginConfig.get(PARAM_ISSUER);
+    }
+    
+    if (pluginConfig.containsKey(PARAM_AUDIENCE)) {
+      if (clientId != null) {
+        log.debug("Explicitly setting required audience instead of using configured clientId");
+      }
+      aud = (String) pluginConfig.get(PARAM_AUDIENCE);
+    } else {
+      aud = clientId;
+    }
+    
+    algWhitelist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
+
+    String requiredScopesStr = (String) pluginConfig.get(PARAM_SCOPE);
+    if (!StringUtils.isEmpty(requiredScopesStr)) {
+      requiredScopes = new HashSet<>(Arrays.asList(requiredScopesStr.split("\\s+")));
+    }
+    adminScope = (String) pluginConfig.get(PARAM_ADMIN_SCOPE);
     Map<String, String> claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
     claimsMatchCompiled = new HashMap<>();
     if (claimsMatch != null) {
@@ -133,32 +172,58 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       }
     }
 
+    initJwk(pluginConfig);
+
+    lastInitTime = Instant.now();
+  }
+
+  private void initJwk(Map<String, Object> pluginConfig) {
+    this.pluginConfig = pluginConfig;
+    String confJwkUrl = (String) pluginConfig.get(PARAM_JWK_URL);
+    Map<String, Object> confJwk = (Map<String, Object>) pluginConfig.get(PARAM_JWK);
+    jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
+
     jwtConsumer = null;
-    if (jwk_url != null) {
-      // The HttpsJwks retrieves and caches keys from a the given HTTPS JWKS endpoint.
+    int jwkConfigured = confIdpConfigUrl != null ? 1 : 0;
+    jwkConfigured += confJwkUrl != null ? 1 : 0;
+    jwkConfigured += confJwk != null ? 1 : 0;
+    if (jwkConfigured > 1) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuthPlugin needs to configure exactly one of " +
+          PARAM_WELL_KNOWN_URL + ", " + PARAM_JWK_URL + " and " + PARAM_JWK);
+    }
+    if (jwkConfigured == 0) {
+      log.warn("Initialized JWTAuthPlugin without any JWK config. No requests will succeed");
+    }
+    if (oidcDiscoveryConfig != null) {
+      String jwkUrl = oidcDiscoveryConfig.getJwksUrl();
+      setupJwkUrl(jwkUrl);
+    } else if (confJwkUrl != null) {
+      setupJwkUrl(confJwkUrl);
+    } else if (confJwk != null) {
       try {
-        URL jwkUrl = new URL(jwk_url);
-        if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jwk_url must be an HTTPS url");
-        }
-      } catch (MalformedURLException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jwk_url must be a valid https URL");
-      }
-      HttpsJwks httpsJkws = new HttpsJwks(jwk_url);
-      httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
-      verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
-      initConsumer();
-    } else if (jwk != null) {
-      try {
-        JsonWebKeySet jwks = parseJwkSet(jwk);
+        JsonWebKeySet jwks = parseJwkSet(confJwk);
         verificationKeyResolver = new JwksVerificationKeyResolver(jwks.getJsonWebKeys());
-        initConsumer();
       } catch (JoseException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JWTAuthPlugin configuration, jwk field parse error", e);
       }
-    } else {
-      log.warn("JWTAuthPlugin needs to specify either 'jwk' or 'jwk_url' parameters.");
     }
+    initConsumer();
+    log.debug("JWK configured");
+  }
+
+  private void setupJwkUrl(String url) {
+    // The HttpsJwks retrieves and caches keys from a the given HTTPS JWKS endpoint.
+    try {
+      URL jwkUrl = new URL(url);
+      if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jwk_url must be an HTTPS url");
+      }
+    } catch (MalformedURLException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jwk_url must be a valid URL");
+    }
+    HttpsJwks httpsJkws = new HttpsJwks(url);
+    httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
+    verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
   }
 
   JsonWebKeySet parseJwkSet(Map<String, Object> jwkObj) throws JoseException {
@@ -185,18 +250,24 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
     if (jwtConsumer == null) {
-      //
       if (header == null && !blockUnknown) {
         log.info("JWTAuth not configured, but allowing anonymous access since blockUnknown==false");
         filterChain.doFilter(request, response);
         return true;
       }
-      log.warn("JWTAuth not configured");
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin not correctly configured");
+      // Retry config
+      if (lastInitTime.plusSeconds(10).isAfter(Instant.now())) {
+        log.info("Retrying JWTAuthPlugin initialization");
+        init(pluginConfig);
+      }
+      if (jwtConsumer == null) {
+        log.warn("JWTAuth not configured");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin not correctly configured");
+      }
     }
 
-    AuthenticationResponse authResponse = authenticate(header);
-    switch(authResponse.authCode) {
+    JWTAuthenticationResponse authResponse = authenticate(header);
+    switch(authResponse.getAuthCode()) {
       case AUTHENTICATED:
         HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
           @Override
@@ -219,8 +290,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
         return true;
 
       case AUTZ_HEADER_PROBLEM:
-        log.debug("Authentication failed with reason {}, message {}", authResponse.authCode, authResponse.errorMessage);
-        authenticationFailure(response, authResponse.getAuthCode().msg, HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
+        log.debug("Authentication failed with reason {}, message {}", authResponse.getAuthCode(), authResponse.getErrorMessage());
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         return false;
 
       case CLAIM_MISMATCH:
@@ -228,17 +299,22 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       case JWT_PARSE_ERROR:
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
-        log.debug("Authentication failed with reason {}, message {}", authResponse.authCode, authResponse.errorMessage);
+        log.debug("Authentication failed with reason {}, message {}", authResponse.getAuthCode(), authResponse.getErrorMessage());
         if (authResponse.getJwtException() != null) {
           log.warn("Exception: {}", authResponse.getJwtException().getMessage());
         }
-        authenticationFailure(response, authResponse.getAuthCode().msg, HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;
 
+      case SCOPE_MISSING:
+        log.debug("Authentication failed with reason {}, message {}", authResponse.getAuthCode(), authResponse.getErrorMessage());
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
+        return false;
+        
       case NO_AUTZ_HEADER:
       default:
-        log.debug("Authentication failed with reason {}, message {}", authResponse.authCode, authResponse.errorMessage);
-        authenticationFailure(response, authResponse.getAuthCode().msg);
+        log.debug("Authentication failed with reason {}, message {}", authResponse.getAuthCode(), authResponse.getErrorMessage());
+        authenticationFailure(response, authResponse.getAuthCode().getMsg());
         return false;
     }
   }
@@ -249,7 +325,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
    * @param authorizationHeader the http header "Authentication"
    * @return AuthenticationResponse object
    */
-  protected AuthenticationResponse authenticate(String authorizationHeader) {
+  protected JWTAuthenticationResponse authenticate(String authorizationHeader) {
     if (authorizationHeader != null) {
       StringTokenizer st = new StringTokenizer(authorizationHeader);
       if (st.hasMoreTokens()) {
@@ -261,61 +337,70 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
               JwtClaims jwtClaims = jwtConsumer.processToClaims(jwtCompact);
               String principal = jwtClaims.getStringClaimValue(principalClaim);
               if (principal == null || principal.isEmpty()) {
-                return new AuthenticationResponse(AuthCode.PRINCIPAL_MISSING, "Cannot identify principal from JWT. Required claim " + principalClaim + " missing. Cannot authenticate");
+                return new JWTAuthenticationResponse(AuthCode.PRINCIPAL_MISSING, "Cannot identify principal from JWT. Required claim " + principalClaim + " missing. Cannot authenticate");
               }
               if (claimsMatchCompiled != null) {
                 for (Map.Entry<String, Pattern> entry : claimsMatchCompiled.entrySet()) {
                   String claim = entry.getKey();
                   if (jwtClaims.hasClaim(claim)) {
                     if (!entry.getValue().matcher(jwtClaims.getStringClaimValue(claim)).matches()) {
-                      return new AuthenticationResponse(AuthCode.CLAIM_MISMATCH,
+                      return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH,
                           "Claim " + claim + "=" + jwtClaims.getStringClaimValue(claim)
                               + " does not match required regular expression " + entry.getValue().pattern());
                     }
                   } else {
-                    return new AuthenticationResponse(AuthCode.CLAIM_MISMATCH, "Claim " + claim + " is required but does not exist in JWT");
+                    return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH, "Claim " + claim + " is required but does not exist in JWT");
                   }
                 }
               }
-              Set<String> roles = Collections.emptySet();
-              if (rolesClaim != null) {
-                if (!jwtClaims.hasClaim(rolesClaim)) {
-                  return new AuthenticationResponse(AuthCode.CLAIM_MISMATCH, "Roles claim " + rolesClaim + " is required but does not exist in JWT");
+              if (!requiredScopes.isEmpty() && !jwtClaims.hasClaim(CLAIM_SCOPE)) {
+                // Fail if we require scopes but they don't exist
+                return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH, "Claim " + CLAIM_SCOPE + " is required but does not exist in JWT");
+              }
+              Set<String> scopes = Collections.emptySet();
+              Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
+              if (scopesObj != null) {
+                if (scopesObj instanceof String) {
+                  scopes = new HashSet<>(Arrays.asList(((String) scopesObj).split("\\s+")));
+                } else if (scopesObj instanceof List) {
+                  scopes = new HashSet<>(jwtClaims.getStringListClaimValue(CLAIM_SCOPE));
                 }
-                Object rolesObj = jwtClaims.getClaimValue(rolesClaim);
-                if (rolesObj instanceof String) {
-                  roles = Collections.singleton((String) rolesObj);
-                } else if (rolesObj instanceof List) {
-                  roles = new HashSet<>(jwtClaims.getStringListClaimValue(rolesClaim));
+                // Validate that at least one of the required scopes are present in the scope claim 
+                if (!requiredScopes.isEmpty()) {
+                  if (scopes.stream().noneMatch(requiredScopes::contains)) {
+                    return new JWTAuthenticationResponse(AuthCode.SCOPE_MISSING, "'scope' claim does not contain any of the required scopes: " + requiredScopes);
+                  }
                 }
-                // Pass roles with principal to signal to any Authorization plugins that user has some verified role claims
-                return new AuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipalWithUserRoles(principal, jwtCompact, jwtClaims.getClaimsMap(), roles));
+                final Set<String> roles = new HashSet<>(scopes);
+                roles.remove("openid"); // Remove standard claims
+                // Pass scopes with principal to signal to any Authorization plugins that user has some verified role claims
+                return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipalWithUserRoles(principal, jwtCompact, jwtClaims.getClaimsMap(), roles));
               } else {
-                return new AuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
+                return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
               }
             } catch (InvalidJwtException e) {
               // Whether or not the JWT has expired being one common reason for invalidity
               if (e.hasExpired()) {
-                return new AuthenticationResponse(AuthCode.JWT_EXPIRED, "Authentication failed due to expired JWT token. Expired at " + e.getJwtContext().getJwtClaims().getExpirationTime());
+                return new JWTAuthenticationResponse(AuthCode.JWT_EXPIRED, "Authentication failed due to expired JWT token. Expired at " + e.getJwtContext().getJwtClaims().getExpirationTime());
               }
-              return new AuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
+              return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
             }
           } catch (MalformedClaimException e) {
-            return new AuthenticationResponse(AuthCode.JWT_PARSE_ERROR, "Malformed claim, error was: " + e.getMessage());
+            return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, "Malformed claim, error was: " + e.getMessage());
           }
         } else {
-          return new AuthenticationResponse(AuthCode.AUTZ_HEADER_PROBLEM, "Authorization header is not in correct format");
+          return new JWTAuthenticationResponse(AuthCode.AUTZ_HEADER_PROBLEM, "Authorization header is not in correct format");
         }
       } else {
-        return new AuthenticationResponse(AuthCode.AUTZ_HEADER_PROBLEM, "Authorization header is not in correct format");
+        return new JWTAuthenticationResponse(AuthCode.AUTZ_HEADER_PROBLEM, "Authorization header is not in correct format");
       }
     } else {
       // No Authorization header
       if (blockUnknown) {
-        return new AuthenticationResponse(AuthCode.NO_AUTZ_HEADER, "Missing Authorization header");
+        return new JWTAuthenticationResponse(AuthCode.NO_AUTZ_HEADER, "Missing Authorization header");
       } else {
         log.debug("No user authenticated, but block_unknown=false, so letting request through");
-        return new AuthenticationResponse(AuthCode.PASS_THROUGH);
+        return new JWTAuthenticationResponse(AuthCode.PASS_THROUGH);
       }
     }
   }
@@ -387,12 +472,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   /**
    * Response for authentication attempt
    */
-  static class AuthenticationResponse {
+  static class JWTAuthenticationResponse {
     private final Principal principal;
     private String errorMessage;
     private AuthCode authCode;
     private InvalidJwtException jwtException;
-
+  
     enum AuthCode {
       PASS_THROUGH("No user, pass through"),             // Returned when no user authentication but block_unknown=false 
       AUTHENTICATED("Authenticated"),                    // Returned when authentication OK 
@@ -402,183 +487,130 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       NO_AUTZ_HEADER("Require authentication"),          // The Authorization header is missing 
       JWT_EXPIRED("JWT token expired"),                  // JWT token has expired 
       CLAIM_MISMATCH("Required JWT claim missing"),      // Some required claims are missing or wrong 
-      JWT_VALIDATION_EXCEPTION("JWT validation failed"); // The JWT parser failed validation. More details in exception
-
+      JWT_VALIDATION_EXCEPTION("JWT validation failed"), // The JWT parser failed validation. More details in exception
+      SCOPE_MISSING("Required scope missing in JWT");    // None of the required scopes were present in JWT
+  
+      public String getMsg() {
+        return msg;
+      }
+  
       private final String msg;
-
+  
       AuthCode(String msg) {
         this.msg = msg;
       }
     }
-
-    public AuthenticationResponse(AuthCode authCode, InvalidJwtException e) {
+  
+    JWTAuthenticationResponse(AuthCode authCode, InvalidJwtException e) {
       this.authCode = authCode;
       this.jwtException = e;
       principal = null;
       this.errorMessage = e.getMessage();
     }
     
-    public AuthenticationResponse(AuthCode authCode, String errorMessage) {
+    JWTAuthenticationResponse(AuthCode authCode, String errorMessage) {
       this.authCode = authCode;
       this.errorMessage = errorMessage;
       principal = null;
     }
-
-    public AuthenticationResponse(AuthCode authCode, Principal principal) {
+  
+    JWTAuthenticationResponse(AuthCode authCode, Principal principal) {
       this.authCode = authCode;
       this.principal = principal;
     }
     
-    public AuthenticationResponse(AuthCode authCode) {
+    JWTAuthenticationResponse(AuthCode authCode) {
       this.authCode = authCode;
       principal = null;
     }
-
-    public boolean isAuthenticated() {
+  
+    boolean isAuthenticated() {
       return authCode.equals(AuthCode.AUTHENTICATED);
     }
-
+  
     public Principal getPrincipal() {
       return principal;
     }
-
-    public String getErrorMessage() {
+  
+    String getErrorMessage() {
       return errorMessage;
     }
-
-    public InvalidJwtException getJwtException() {
+  
+    InvalidJwtException getJwtException() {
       return jwtException;
     }
-
-    public AuthCode getAuthCode() {
+  
+    AuthCode getAuthCode() {
       return authCode;
     }
   }
 
   /**
-   * Principal object that carries JWT token and claims for authenticated user.
+   * Config object for a OpenId Connect well-known config
+   * Typically exposed through /.well-known/openid-configuration endpoint 
    */
-  public static class JWTPrincipal implements Principal, Serializable {
-    private static final long serialVersionUID = 4144666467522831388L;
-    final String username;
-    String token;
-    Map<String,Object> claims;
+  public static class OidcDiscoveryConfig {
+    private static Map<String, Object> securityConf;
   
-    /**
-     * User principal with user name as well as one or more roles that he/she belong to
-     * @param username string with user name for user
-     * @param token compact string representation of JWT token
-     * @param claims list of verified JWT claims as a map
-     */
-    public JWTPrincipal(final String username, String token, Map<String,Object> claims) {
-      super();
-      Args.notNull(username, "User name");
-      Args.notNull(token, "JWT token");
-      Args.notNull(claims, "JWT claims");
-      this.token = token;
-      this.claims = claims;
-      this.username = username;
+    OidcDiscoveryConfig(Map<String, Object> securityConf) {
+      OidcDiscoveryConfig.securityConf = securityConf;
     }
   
-    @Override
-    public String getName() {
-      return this.username;
+    public static OidcDiscoveryConfig parse(String urlString) {
+      try {
+        URL url = new URL(urlString);
+        if (!Arrays.asList("https", "file").contains(url.getProtocol())) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be HTTPS or file");
+        }
+        return parse(url.openStream());
+      } catch (MalformedURLException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config URL " + urlString + " is malformed", e);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config could not be read from url " + urlString, e);
+      }
     }
-
-    public String getToken() {
-      return token;
+  
+    public static OidcDiscoveryConfig parse(String json, Charset charset) {
+      return parse(new ByteArrayInputStream(json.getBytes(charset)));
     }
-
-    public Map<String, Object> getClaims() {
-      return claims;
+  
+    public static OidcDiscoveryConfig parse(InputStream configStream) {
+      securityConf = (Map<String, Object>) Utils.fromJSON(configStream);
+      return new OidcDiscoveryConfig(securityConf);
     }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      JWTPrincipal that = (JWTPrincipal) o;
-      return Objects.equals(username, that.username) &&
-          Objects.equals(token, that.token) &&
-          Objects.equals(claims, that.claims);
+  
+    
+    public String getJwksUrl() {
+      return (String) securityConf.get("jwks_uri");
     }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(username, token, claims);
+  
+    public String getIssuer() {
+      return (String) securityConf.get("issuer");
     }
-
-    @Override
-    public String toString() {
-      return "JWTPrincipal{" +
-          "username='" + username + '\'' +
-          ", token='" + token + '\'' +
-          ", claims=" + claims +
-          '}';
+  
+    public String getAuthorizationEndpoint() {
+      return (String) securityConf.get("authorization_endpoint");
     }
   }
-  
+
   /**
-   * JWT principal that contains username, token, claims and a list of roles the user has, 
-   * so one can keep track of user-role mappings in an Identity Server external to Solr and 
-   * pass the information to Solr in a signed JWT token. The role information can then be used to authorize
-   * requests without the need to maintain or lookup what roles each user belongs to.</p>
-   */ 
-   public static class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedUserRoles {
-    private final Set<String> roles;
-
-    public JWTPrincipalWithUserRoles(final String username, String token, Map<String,Object> claims, Set<String> roles) {
-      super(username, token, claims);
-      Args.notNull(roles, "User roles");
-      this.roles = roles;
-    }
-    
-    /**
-     * Gets the list of roles
-     */
-    @Override
-    public Set<String> getVerifiedRoles() {
-      return roles;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (!(o instanceof JWTPrincipalWithUserRoles))
-        return false;
-      JWTPrincipalWithUserRoles that = (JWTPrincipalWithUserRoles) o;
-      return super.equals(o) && roles.equals(that.roles);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(username, token, claims, roles);
-    }
-    
-    @Override
-    public String toString() {
-      return "JWTPrincipalWithUserRoles{" +
-          "username='" + username + '\'' +
-          ", token='" + token + '\'' +
-          ", claims=" + claims +
-          ", roles=" + roles +
-          '}';
-    }
-  }
-
-  // The interceptor class that adds correct header or delegates to PKI
-  private class PkiDelegationInterceptor implements HttpRequestInterceptor {
+   * The interceptor class that adds correct header or delegates to PKI.
+   */
+  public class JwtPkiDelegationInterceptor implements HttpRequestInterceptor {
+    private final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
     @Override
     public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
       if (context instanceof HttpClientContext) {
         HttpClientContext httpClientContext = (HttpClientContext) context;
         if (httpClientContext.getUserToken() instanceof JWTPrincipal) {
           JWTPrincipal jwtPrincipal = (JWTPrincipal) httpClientContext.getUserToken();
-          request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.token);
+          request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
           log.debug("Set JWT header on inter-node request");
           return;
         }
       }
-
+  
       if (coreContainer.getPkiAuthenticationPlugin() != null) {
         log.debug("Inter-node request delegated from JWTAuthPlugin to PKIAuthenticationPlugin");
         coreContainer.getPkiAuthenticationPlugin().setHeader(request);

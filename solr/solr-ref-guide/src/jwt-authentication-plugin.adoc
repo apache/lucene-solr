@@ -50,7 +50,22 @@ To start enforcing authentication for all users, requiring a valid JWT token in 
 }
 ----
 
-A more complex configuration:
+The next example shows configuring using https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] with a well-konwn URI. 
+
+[source,json]
+----
+{
+  "authentication": {
+    "class": "solr.JWTAuthPlugin",
+    "block_unknown": true,
+    "well_known_url": "https://my.key.server/.well-known/openid-configuration"
+  }
+}
+---- 
+
+In this case, `jwk_url` and `iss` will be automatically configured from the fetched configuration.
+
+A more complex configuration with static JWK:
 
 [source,json]
 ----
@@ -64,27 +79,29 @@ A more complex configuration:
       "kty": "RSA",
       "n": "3ZF6wBGPMsLzsS1KLghxaVpZtXD3nTLzDm0c974i9-KNU_1rhhBeiVfS64VfEQmP8SA470jEy7yWcvnz9GvG-YAlm9iOwVF7jLl2awdws0ocFjdSPT3SjPQKzOeMO7G9XqNTkrvoFCn1YAi26fbhhcqkwZDoeTcHQdRN32frzccuPhZrwImApIedroKLlKWv2IvPDnz2Bpe2WWVc2HdoWYqEVD3p_BEy8f-RTSHK3_8kDDF9yAwI9jx7CK1_C-eYxXltm-6rpS5NGyFm0UNTZMxVU28Tl7LX8Vb6CikyCQ9YRCtk_CvpKWmEuKEp9I28KHQNmGkDYT90nt3vjbCXxw"
     },
-    "iss": "acme", <4>
-    "aud": "solr", <5>
-    "principal_claim": "solruid", <6>
-    "claims_match": { "roles" : "admin|search", "dept" : "IT" }, <7>
-    "roles_claim": "roles", <8>
-    "alg_whitelist" : [ "RS256", "RS384", "RS512" ] <9>
+    "client_id": "solr-client-12345", <4>
+    "iss": "https://example.com/idp", <5>
+    "aud": "https://example.com/solr", <6>
+    "principal_claim": "solruid", <7>
+    "claims_match": { "roles" : "admin|search", "dept" : "IT" }, <8>
+    "scope": "solr:read solr:write solr:admin", <9>
+    "alg_whitelist" : [ "RS256", "RS384", "RS512" ] <10>
   }
 }
 ----
 
-Let's comment on the config:
+Let's comment on this config:
 
 <1> Plugin class
 <2> Make sure to block anyone without a valid token
 <3> Here we pass the JWK inline instead of referring to a URL with `jwk_url`
-<4> The issuer claim must match "acme"
-<5> The audience claim must match "solr"
-<6> Fetch the user id from another claim than the default `sub`
-<7> Require that the `roles` claim is one of "admin" or "search" and that the `dept` claim is "IT"
-<8> Fetch user's roles from the "roles" claim and pass this on the request for use in Authorization
-<9> Only accept RSA algorithms for signatures
+<4> Set the client id registered with Identiy Provider
+<5> The issuer claim must match "https://example.com/idp"
+<6> The audience claim must match "https://example.com/solr"
+<7> Fetch the user id from another claim than the default `sub`
+<8> Require that the `roles` claim is one of "admin" or "search" and that the `dept` claim is "IT"
+<9> Require one of the scopes `solr:read`, `solr:write` or `solr:amin`
+<10> Only accept RSA algorithms for signatures
 
 == Configuration parameters
 
@@ -92,17 +109,19 @@ Let's comment on the config:
 |===
 Key              ; Description                                             ; Default
 block_unknown    ; Set to `false` in order to pass requests from unknown users without a token  ; `true`
-jwk_url          ; An https URL to a https://mkjwk.org[JWK] keys file      ;
-jwk              ; As an alternative to `jwk_url` you may provide a JSON object here containing the public key(s) of the issuer. See https://mkjwk.org for an online JWK generator ;
-iss              ; Validates that `iss` (issuer) equals this string        ; (`iss` not required)
-aud              ; Validates that `aud` (audience) equals this string      ; (`aud` not required)
+well_known_url   ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; 
+client_id        ; Client identifier for use with OpenID Connect           ;
+scope            ; Whitespace separate list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
+jwk_url          ; An https URL to a https://tools.ietf.org/html/rfc7517[JWK] keys file. Not required if `well_known_url` is provided ; Auto configured if `well_known_url` is provided
+jwk              ; As an alternative to `jwk_url` you may provide a JSON object here containing the public key(s) of the issuer.  ; Auto configured if `well_known_url` is provided
+iss              ; Validates that `iss` (issuer) equals this string        ; If `well_known_url` is provided, use `issuer` from there.
+aud              ; Validates that `aud` (audience) equals this string      ; If `client_id` is configured, require `aud` to match it
 require_sub      ; Makes `sub` (subject) mandatory                         ; `true`
 require_exp      ; Makes `exp` (expiry time) mandatory                     ; `true`
-alg_whitelist    ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; (any)
-jwk_cache_dur    ; Duration of JWK cache in seconds                        ; 3600 (1h)
+alg_whitelist    ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; 
+jwk_cache_dur    ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
 principal_claim  ; What claim id to pull principal from                    ; `sub`
-roles_claim      ; What claim id to pull roles from. If specified, all requests MUST supply this claim ;
-claims_match     ; JSON object of claims (key) that must match a regular expression (value).  ; (none)
+claims_match     ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "roles" : "A|B" }` will require the `roles` claim to be either "A" or "B". ; (none)
 |===
 
 
