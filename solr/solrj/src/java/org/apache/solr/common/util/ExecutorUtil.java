@@ -104,9 +104,9 @@ public class ExecutorUtil {
    */
   public static ExecutorService newMDCAwareSingleThreadExecutor(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(1, 1,
-            0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>(),
-            threadFactory);
+        0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<>(),
+        threadFactory);
   }
 
   /**
