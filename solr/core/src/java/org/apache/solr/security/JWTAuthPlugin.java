@@ -371,10 +371,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
                     return new JWTAuthenticationResponse(AuthCode.SCOPE_MISSING, "'scope' claim does not contain any of the required scopes: " + requiredScopes);
                   }
                 }
-                final Set<String> roles = new HashSet<>(scopes);
-                roles.remove("openid"); // Remove standard claims
+                final Set<String> finalScopes = new HashSet<>(scopes);
+                finalScopes.remove("openid"); // Remove standard scope
                 // Pass scopes with principal to signal to any Authorization plugins that user has some verified role claims
-                return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipalWithUserRoles(principal, jwtCompact, jwtClaims.getClaimsMap(), roles));
+                return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipalWithUserRoles(principal, jwtCompact, jwtClaims.getClaimsMap(), finalScopes));
               } else {
                 return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
               }

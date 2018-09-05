@@ -58,7 +58,7 @@ The next example shows configuring using https://openid.net/specs/openid-connect
   "authentication": {
     "class": "solr.JWTAuthPlugin",
     "block_unknown": true,
-    "well_known_url": "https://my.key.server/.well-known/openid-configuration"
+    "well_known_url": "https://idp.example.com/.well-known/openid-configuration"
   }
 }
 ---- 
@@ -121,7 +121,7 @@ require_exp      ; Makes `exp` (expiry time) mandatory                     ; `tr
 alg_whitelist    ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; 
 jwk_cache_dur    ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
 principal_claim  ; What claim id to pull principal from                    ; `sub`
-claims_match     ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "roles" : "A|B" }` will require the `roles` claim to be either "A" or "B". ; (none)
+claims_match     ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ; (none)
 |===
 
 

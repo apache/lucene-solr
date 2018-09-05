@@ -75,7 +75,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
         "  \"alg\": \"RS256\",\n" +
         "  \"n\": \"jeyrvOaZrmKWjyNXt0myAc_pJ1hNt3aRupExJEx1ewPaL9J9HFgSCjMrYxCB1ETO1NDyZ3nSgjZis-jHHDqBxBjRdq_t1E2rkGFaYbxAyKt220Pwgme_SFTB9MXVrFQGkKyjmQeVmOmV6zM3KK8uMdKQJ4aoKmwBcF5Zg7EZdDcKOFgpgva1Jq-FlEsaJ2xrYDYo3KnGcOHIt9_0NQeLsqZbeWYLxYni7uROFncXYV5FhSJCeR4A_rrbwlaCydGxE0ToC_9HNYibUHlkJjqyUhAgORCbNS8JLCJH8NUi5sDdIawK9GTSyvsJXZ-QHqo4cMUuxWV5AJtaRGghuMUfqQ\"\n" +
         "}";
-    
+
     PublicJsonWebKey jwk = RsaJsonWebKey.Factory.newPublicJwk(jwkJSON);
     JwtClaims claims = JWTAuthPluginTest.generateClaims();
     JsonWebSignature jws = new JsonWebSignature();
@@ -84,7 +84,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     jws.setKeyIdHeaderValue(jwk.getKeyId());
     jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
 
-    jwtTestToken = jws.getCompactSerialization(); 
+    jwtTestToken = jws.getCompactSerialization();
 
     HttpClientUtil.removeRequestInterceptor(interceptor);
     HttpClientUtil.addRequestInterceptor(interceptor);
@@ -101,7 +101,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     jwtInterceptCount.set(0);
     pkiInterceptCount.set(0);
   }
-  
+
   @Test(expected = IOException.class)
   public void infoRequestWithoutToken() throws Exception {
     get(baseUrl + "admin/info/system", null);
@@ -120,7 +120,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     // Admin request will use PKI inter-node auth from Overseer, and succeed
     assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2", jwtTestToken).second().intValue());
     verifyInterRequestHeaderCounts(0,0);
-    
+
     // First a non distributed query
     Pair<String,Integer> result = get(baseUrl + "mycoll/query?q=*:*&distrib=false", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
@@ -130,7 +130,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     result = get(baseUrl + "mycoll/query?q=*:*", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     verifyInterRequestHeaderCounts(2,2);
-    
+
     // Delete
     assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=mycoll", jwtTestToken).second().intValue());
     verifyInterRequestHeaderCounts(2,2);
@@ -140,7 +140,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   public void createCollectionAndUpdateDistributed() throws Exception {
     // Admin request will use PKI inter-node auth from Overseer, and succeed
     assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2", jwtTestToken).second().intValue());
-    
+
     // Now update two documents
     Pair<String,Integer> result = post(baseUrl + "mycoll/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
@@ -186,11 +186,11 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
 //    result = get(baseUrl + "mycoll/query?q=*:*");
 //    System.out.println(result.first());                                       
 //    assertEquals(Integer.valueOf(200), result.second());
-    
-    
+
+
 //    String collectionName = "jwtAuthTestColl";
 
-    // create collection
+  // create collection
 //    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1",
 //        NUM_SHARDS, REPLICATION_FACTOR);
 //    create.process(solrClient);
@@ -224,7 +224,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     createConn.connect();
     BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) createConn.getContent()));
     String result = br2.lines().collect(Collectors.joining("\n"));
-    int code = createConn.getResponseCode(); 
+    int code = createConn.getResponseCode();
     createConn.disconnect();
     return new Pair<>(result, code);
   }
@@ -242,15 +242,15 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     os.write(json.getBytes());
     os.flush();
     os.close();
-    		
+
     con.connect();
     BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) con.getContent()));
     String result = br2.lines().collect(Collectors.joining("\n"));
-    int code = con.getResponseCode(); 
+    int code = con.getResponseCode();
     con.disconnect();
     return new Pair<>(result, code);
   }
-  
+
 //  SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder, String token) {
 //    if (builder == null) {
 //      builder = SolrHttpClientBuilder.create();
@@ -268,17 +268,17 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
 //    });
 //    return builder;
 //  }
-  
+
   private static class CountInterceptor implements HttpRequestInterceptor {
     @Override
     public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
       Header ah = request.getFirstHeader(HttpHeaders.AUTHORIZATION);
       if (ah != null && ah.getValue().startsWith("Bearer"))
         jwtInterceptCount.addAndGet(1);
-      
+
       Header ph = request.getFirstHeader(PKIAuthenticationPlugin.HEADER);
       if (ph != null)
         pkiInterceptCount.addAndGet(1);
-    }          
+    }
   }
 }
