@@ -48,6 +48,8 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.autoscaling.TriggerEvent.NODE_NAMES;
+
 /**
  * This class is responsible for using the configured policy and preferences
  * with the hints provided by the trigger event to compute the required cluster operations.
@@ -206,8 +208,29 @@ public class ComputePlanAction extends TriggerActionBase {
         suggester = getNodeAddedSuggester(cloudManager, session, event);
         break;
       case NODELOST:
-        suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
-            .hint(Suggester.Hint.SRC_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
+        String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+        CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+        switch (action) {
+          case MOVEREPLICA:
+            suggester = session.getSuggester(action)
+                .hint(Suggester.Hint.SRC_NODE, event.getProperty(NODE_NAMES));
+            break;
+          case DELETENODE:
+            int start = (Integer)event.getProperty(START, 0);
+            List<String> srcNodes = (List<String>) event.getProperty(NODE_NAMES);
+            if (srcNodes.isEmpty() || start >= srcNodes.size()) {
+              return NoneSuggester.get(session);
+            }
+            String sourceNode = srcNodes.get(start);
+            suggester = session.getSuggester(action)
+                .hint(Suggester.Hint.SRC_NODE, Collections.singletonList(sourceNode));
+            event.getProperties().put(START, ++start);
+            break;
+          case NONE:
+            return NoneSuggester.get(session);
+          default:
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported preferredOperation: " + action.toLower() + " specified for node lost trigger");
+        }
         break;
       case SEARCHRATE:
       case METRIC:
@@ -227,16 +250,15 @@ public class ComputePlanAction extends TriggerActionBase {
           suggester = suggester.hint(e.getKey(), e.getValue());
         }
         suggester = suggester.forceOperation(true);
-        start++;
-        event.getProperties().put(START, start);
+        event.getProperties().put(START, ++start);
         break;
       case SCHEDULED:
-        String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
-        CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+        preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+        action = CollectionParams.CollectionAction.get(preferredOp);
         suggester = session.getSuggester(action);
         break;
       default:
-        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate, metric and indexSize. Received: " + event.getEventType());
+        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate, metric, scheduled and indexSize. Received: " + event.getEventType());
     }
     return suggester;
   }
@@ -246,7 +268,7 @@ public class ComputePlanAction extends TriggerActionBase {
     CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
 
     Suggester suggester = session.getSuggester(action)
-        .hint(Suggester.Hint.TARGET_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
+        .hint(Suggester.Hint.TARGET_NODE, event.getProperty(NODE_NAMES));
     switch (action) {
       case ADDREPLICA:
         // add all collection/shard pairs and let policy engine figure out which one

@@ -540,7 +540,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    // the default policy limits 1 replica per node, we need more right now
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<" + (1 + numCollections * numShards) + "', 'node':'#ANY'}," +
@@ -611,5 +610,67 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals(numCollections, affectedCollections.size());
     assertEquals(numShards, affectedShards.size());
     assertEquals(numCollections * numShards, affectedCollShards.size());
+  }
+
+  @Test
+  public void testNodeLostTriggerWithDeleteNodePreferredOp() throws Exception {
+    String collectionNamePrefix = "testNodeLostTriggerWithDeleteNodePreferredOp";
+    int numCollections = 1 + random().nextInt(3), numShards = 1 + random().nextInt(3);
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '1s'," +
+        "'enabled' : true," +
+        "'" + AutoScalingParams.PREFERRED_OP + "':'deletenode'," +
+        "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
+        "{'name':'execute_plan','class':'solr.ExecutePlanAction'}" +
+        "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<" + (1 + numCollections * numShards) + "', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    JettySolrRunner newNode = cluster.startJettySolrRunner();
+    // cache the node name because it won't be available once the node is shutdown
+    String newNodeName = newNode.getNodeName();
+
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
+        "conf", numShards, 2);
+    create.process(solrClient);
+
+    waitForState("Timed out waiting for replicas of new collection to be active",
+        collectionNamePrefix + "_0", (liveNodes, collectionState) ->
+            collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+
+    cluster.stopJettySolrRunner(newNode);
+    assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    assertTrue(fired.get());
+    Map actionContext = actionContextPropsRef.get();
+    List operations = (List) actionContext.get("operations");
+    assertNotNull(operations);
+    assertEquals(1, operations.size());
+    for (Object operation : operations) {
+      assertTrue(operation instanceof CollectionAdminRequest.DeleteNode);
+      CollectionAdminRequest.DeleteNode deleteNode = (CollectionAdminRequest.DeleteNode) operation;
+      SolrParams deleteNodeParams = deleteNode.getParams();
+      assertEquals(newNodeName, deleteNodeParams.get("node"));
+    }
+
+    waitForState("Timed out waiting for all shards to have only 1 replica",
+        collectionNamePrefix + "_0", clusterShape(numShards, 1));
   }
 }
