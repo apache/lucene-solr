@@ -16,11 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.BASE_CONFIGSET;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -99,6 +94,10 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
+
 /**
  * Simple ConfigSets API tests on user errors and simple success cases.
  */
@@ -136,9 +135,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     CreateNoErrorChecking create = new CreateNoErrorChecking();
     verifyException(solrClient, create, NAME);
 
-    // no base ConfigSet name
+    // set ConfigSet
     create.setConfigSetName("configSetName");
-    verifyException(solrClient, create, BASE_CONFIGSET);
 
     // ConfigSet already exists
     Create alreadyExists = new Create();
@@ -156,7 +154,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   @Test
   public void testCreate() throws Exception {
     // no old, no new
-    verifyCreate("baseConfigSet1", "configSet1", null, null);
+    verifyCreate(null, "configSet1", null, null);
 
     // no old, new
     verifyCreate("baseConfigSet2", "configSet2",

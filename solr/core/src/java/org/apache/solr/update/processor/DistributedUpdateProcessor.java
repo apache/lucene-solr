@@ -481,9 +481,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           for (Entry<String, RoutingRule> entry : routingRules.entrySet()) {
             String targetCollectionName = entry.getValue().getTargetCollectionName();
             final DocCollection docCollection = cstate.getCollectionOrNull(targetCollectionName);
-            if (docCollection != null && docCollection.getActiveSlices() != null && !docCollection.getActiveSlices().isEmpty()) {
-              final Collection<Slice> activeSlices = docCollection.getActiveSlices();
-              Slice any = activeSlices.iterator().next();
+            if (docCollection != null && docCollection.getActiveSlicesArr().length > 0) {
+              final Slice[] activeSlices = docCollection.getActiveSlicesArr();
+              Slice any = activeSlices[0];
               if (nodes == null) nodes = new ArrayList<>();
               nodes.add(new StdNode(new ZkCoreNodeProps(any.getLeader())));
             }

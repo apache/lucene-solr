@@ -298,6 +298,8 @@ Improvements
 
 Other:
 
+* LUCENE-8485: Update randomizedtesting to version 2.6.4. (Dawid Weiss)
+
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
   Extended_Pictographic property. (Robert Muir)
 
@@ -315,6 +317,9 @@ Other:
 * LUCENE-8456: Upgrade Apache Commons Compress to v1.18 (Steve Rowe)
 
 * LUCENE-765: Improved org.apache.lucene.index javadocs. (Mike Sokolov)
+
+* LUCENE-8476: Remove redundant nullity check and switch to optimized List.sort in the
+  Korean's user dictionary. (Namgyu Kim)
 
 ======================= Lucene 7.4.1 =======================
 

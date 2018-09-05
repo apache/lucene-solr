@@ -1148,7 +1148,6 @@
             <sysproperty key="java.io.tmpdir" value="./temp" />
 
             <!-- Restrict access to certain Java features and install security manager: -->
-            <sysproperty key="junit4.tempDir" file="@{workDir}/temp" />
             <sysproperty key="common.dir" file="${common.dir}" />
             <sysproperty key="clover.db.dir" file="${clover.db.dir}" />
             <syspropertyset>
@@ -2643,7 +2642,7 @@ The following arguments can be provided to ant to alter its behaviour and target
 
         <junit4:pickseed property="pitest.seed" />
 
-        <property name="pitest.sysprops" value="-Dversion=${version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${tests.policy},-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir},-Djunit4.tempDir=${tests.workDir}" />
+        <property name="pitest.sysprops" value="-Dversion=${version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${tests.policy},-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir}" />
 
         <pitest
             classPath="pitest.classpath"

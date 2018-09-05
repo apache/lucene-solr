@@ -198,6 +198,12 @@ New Features
 * SOLR-12715: NodeAddedTrigger should support adding replicas to new nodes by setting preferredOperation=addreplica.
   (shalin)
 
+* SOLR-11861: When creating a configSet via the API, the "baseConfigSet" parameter now defaults to "_default".
+  (Amrit Sarkar, David Smiley)
+
+* SOLR-12716: NodeLostTrigger should support deleting replicas from lost nodes by setting preferredOperation=deletenode.
+  (shalin)
+
 Bug Fixes
 ----------------------
 
@@ -336,6 +342,8 @@ Optimizations
 * SOLR-10697: HttpShardHandler now uses a default of 100k as maxConnections (10k previously) and default
   maxConnectionsPerHost as 100k (20 previously). They are now consisent with the UpdateShardHandler defaults.
   (Varun Thacker)
+
+* SOLR-12723: Reduce object creation in HashBasedRouter. (ab)
 
 Other Changes
 ----------------------

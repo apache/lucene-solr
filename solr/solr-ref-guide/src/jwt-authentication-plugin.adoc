@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr can support https://en.wikipedia.org/wiki/JSON_Web_Token[JSON Web Token] (JWT) based Bearer authentication for users with the use of the JWTAuthPlugin. This allows Solr to assert that a user is already authenticated with an external service by validating that the JWT  is digitally signed by the Identity service. One possible use case is for https://en.wikipedia.org/wiki/OpenID_Connect[OpenID Connect].
+Solr can support https://en.wikipedia.org/wiki/JSON_Web_Token[JSON Web Token] (JWT) based Bearer authentication with the use of the JWTAuthPlugin. This allows Solr to assert that a user is already authenticated with an external https://en.wikipedia.org/wiki/Identity_provider[Identity Provider] by validating that the JWT  is digitally signed by the Identity Provider. One possible use case is for https://en.wikipedia.org/wiki/OpenID_Connect[OpenID Connect] where a JWT formatted https://en.wikipedia.org/wiki/Access_token[access token] .
 
 == Enable JWT Authentication
 
