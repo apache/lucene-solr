@@ -111,6 +111,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         cluster.stopJettySolrRunner(i - 1);
       }
     }
+    cluster.waitForAllNodes(30);
   }
 
   private void deleteChildrenRecursively(String path) throws Exception {
