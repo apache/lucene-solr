@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -55,9 +54,6 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ocmh.checkRequired(message, "node");
     String node = message.getStr("node");
-    if (!state.liveNodesContain(node)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Source Node: " + node + " is not live");
-    }
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
     List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, state);
     if (!singleReplicas.isEmpty()) {

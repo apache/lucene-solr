@@ -146,6 +146,9 @@ New Features
 * SOLR-11861: When creating a configSet via the API, the "baseConfigSet" parameter now defaults to "_default".
   (Amrit Sarkar, David Smiley)
 
+* SOLR-12716: NodeLostTrigger should support deleting replicas from lost nodes by setting preferredOperation=deletenode.
+  (shalin)
+
 Bug Fixes
 ----------------------
 
