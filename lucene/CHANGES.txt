@@ -298,6 +298,8 @@ Improvements
 
 Other:
 
+* LUCENE-8485: Update randomizedtesting to version 2.6.4. (Dawid Weiss)
+
 * LUCENE-8366: Upgrade to ICU 62.1. Emoji handling now uses Unicode 11's
   Extended_Pictographic property. (Robert Muir)
 
