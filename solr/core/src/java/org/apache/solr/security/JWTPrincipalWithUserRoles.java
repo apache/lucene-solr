@@ -27,9 +27,9 @@ import org.apache.http.util.Args;
  * JWT principal that contains username, token, claims and a list of roles the user has, 
  * so one can keep track of user-role mappings in an Identity Server external to Solr and 
  * pass the information to Solr in a signed JWT token. The role information can then be used to authorize
- * requests without the need to maintain or lookup what roles each user belongs to.</p>
- */ 
- public class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedUserRoles {
+ * requests without the need to maintain or lookup what roles each user belongs to.
+ */
+public class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedUserRoles {
   private final Set<String> roles;
 
   public JWTPrincipalWithUserRoles(final String username, String token, Map<String,Object> claims, Set<String> roles) {
@@ -37,7 +37,7 @@ import org.apache.http.util.Args;
     Args.notNull(roles, "User roles");
     this.roles = roles;
   }
-  
+
   /**
    * Gets the list of roles
    */
@@ -58,7 +58,7 @@ import org.apache.http.util.Args;
   public int hashCode() {
     return Objects.hash(username, token, claims, roles);
   }
-  
+
   @Override
   public String toString() {
     return "JWTPrincipalWithUserRoles{" +
