@@ -86,6 +86,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     if(values.length == 4) {
       if(values[3] instanceof DistanceMeasure) {
         distanceMeasure = (DistanceMeasure) values[3];
+      } else {
         throw new IOException("The fourth parameter for knnRegress should be a distance measure. ");
       }
     }
@@ -100,6 +101,8 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     map.put("observations", observations.getRowCount());
     map.put("features", observations.getColumnCount());
     map.put("distance", distanceMeasure.getClass().getSimpleName());
+    map.put("robust", robust);
+    map.put("scale", scale);
 
     return new KnnRegressionTuple(observations, outcomeData, k, distanceMeasure, map, scale, robust);
   }
