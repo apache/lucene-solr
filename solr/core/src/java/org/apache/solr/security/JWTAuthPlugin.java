@@ -41,7 +41,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -53,6 +55,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
@@ -76,27 +79,32 @@ import org.slf4j.LoggerFactory;
 /**
  * Authenticaion plugin that finds logged in user by validating the signature of a JWT token
  */
-public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin, SpecProvider {
+public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin, SpecProvider, ConfigEditablePlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String PARAM_BLOCK_UNKNOWN = "block_unknown";
-  private static final String PARAM_JWK_URL = "jwk_url";
+  private static final String PARAM_BLOCK_UNKNOWN = "blockUnknown";
+  private static final String PARAM_JWK_URL = "jwkUrl";
   private static final String PARAM_JWK = "jwk";
   private static final String PARAM_ISSUER = "iss";
   private static final String PARAM_AUDIENCE = "aud";
-  private static final String PARAM_REQUIRE_SUBJECT = "require_sub";
-  private static final String PARAM_PRINCIPAL_CLAIM = "principal_claim";
-  private static final String PARAM_REQUIRE_EXPIRATIONTIME = "require_exp";
-  private static final String PARAM_ALG_WHITELIST = "alg_whitelist";
-  private static final String PARAM_JWK_CACHE_DURATION = "jwk_cache_dur";
-  private static final String PARAM_CLAIMS_MATCH = "claims_match";
+  private static final String PARAM_REQUIRE_SUBJECT = "requireSub";
+  private static final String PARAM_PRINCIPAL_CLAIM = "principalClaim";
+  private static final String PARAM_REQUIRE_EXPIRATIONTIME = "requireExp";
+  private static final String PARAM_ALG_WHITELIST = "algWhitelist";
+  private static final String PARAM_JWK_CACHE_DURATION = "jwkCacheDur";
+  private static final String PARAM_CLAIMS_MATCH = "claimsMatch";
   private static final String PARAM_SCOPE = "scope";
-  private static final String PARAM_ADMIN_SCOPE = "admin_scope";
-  private static final String PARAM_CLIENT_ID = "client_id";
-  private static final String PARAM_WELL_KNOWN_URL = "well_known_url";
+  private static final String PARAM_ADMIN_SCOPE = "adminScope";
+  private static final String PARAM_CLIENT_ID = "clientId";
+  private static final String PARAM_WELL_KNOWN_URL = "wellKnownUrl";
+
   private static final String AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
 
   private final JwtPkiDelegationInterceptor interceptor = new JwtPkiDelegationInterceptor();
+  static final Set<String> supported_ops = ImmutableSet.of("set-user", "delete-user");
+  private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN, PARAM_JWK_URL, PARAM_JWK, PARAM_ISSUER,
+      PARAM_AUDIENCE, PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
+      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_ADMIN_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL);
 
   private JwtConsumer jwtConsumer;
   private String iss;
@@ -118,6 +126,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private Instant lastInitTime = Instant.now();
   private CoreContainer coreContainer;
 
+  
   /**
    * Initialize plugin with core container, this method is chosen by reflection at create time
    * @param coreContainer instance of core container
@@ -128,6 +137,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
   @Override
   public void init(Map<String, Object> pluginConfig) {
+    List<String> unknownKeys = pluginConfig.keySet().stream().filter(k -> !PROPS.contains(k)).collect(Collectors.toList());
+    unknownKeys.remove("class");
+    if (!unknownKeys.isEmpty()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JwtAuth configuration parameter " + unknownKeys); 
+    }
+
     blockUnknown = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, false)));
     clientId = (String) pluginConfig.get(PARAM_CLIENT_ID);
     requireSubject = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_SUBJECT, "true")));
@@ -204,7 +219,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
         JsonWebKeySet jwks = parseJwkSet(confJwk);
         verificationKeyResolver = new JwksVerificationKeyResolver(jwks.getJsonWebKeys());
       } catch (JoseException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JWTAuthPlugin configuration, jwk field parse error", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JWTAuthPlugin configuration, " + PARAM_JWK + " parse error", e);
       }
     }
     initConsumer();
@@ -216,10 +231,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     try {
       URL jwkUrl = new URL(url);
       if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jwk_url must be an HTTPS url");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be an HTTPS url");
       }
     } catch (MalformedURLException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jwk_url must be a valid URL");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
     }
     HttpsJwks httpsJkws = new HttpsJwks(url);
     httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
@@ -251,7 +266,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
     if (jwtConsumer == null) {
       if (header == null && !blockUnknown) {
-        log.info("JWTAuth not configured, but allowing anonymous access since blockUnknown==false");
+        log.info("JWTAuth not configured, but allowing anonymous access since {}==false", PARAM_BLOCK_UNKNOWN);
         filterChain.doFilter(request, response);
         return true;
       }
@@ -285,7 +300,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
       case PASS_THROUGH:
         if (log.isDebugEnabled())
-          log.debug("Unknown user, but allow due to block_unknown=false");
+          log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
         filterChain.doFilter(request, response);
         return true;
 
@@ -368,7 +383,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
                 // Validate that at least one of the required scopes are present in the scope claim 
                 if (!requiredScopes.isEmpty()) {
                   if (scopes.stream().noneMatch(requiredScopes::contains)) {
-                    return new JWTAuthenticationResponse(AuthCode.SCOPE_MISSING, "'scope' claim does not contain any of the required scopes: " + requiredScopes);
+                    return new JWTAuthenticationResponse(AuthCode.SCOPE_MISSING, "Claim " + CLAIM_SCOPE + " does not contain any of the required scopes: " + requiredScopes);
                   }
                 }
                 final Set<String> finalScopes = new HashSet<>(scopes);
@@ -399,7 +414,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       if (blockUnknown) {
         return new JWTAuthenticationResponse(AuthCode.NO_AUTZ_HEADER, "Missing Authorization header");
       } else {
-        log.debug("No user authenticated, but block_unknown=false, so letting request through");
+        log.debug("No user authenticated, but blockUnknown=false, so letting request through");
         return new JWTAuthenticationResponse(AuthCode.PASS_THROUGH);
       }
     }
@@ -453,6 +468,34 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
   private void authenticationFailure(HttpServletResponse response, String message) throws IOException {
     authenticationFailure(response, message, HttpServletResponse.SC_UNAUTHORIZED, null);
+  }
+
+  /**
+   * Operate the commands on the latest conf and return a new conf object
+   * If there are errors in the commands , throw a SolrException. return a null
+   * if no changes are to be made as a result of this edit. It is the responsibility
+   * of the implementation to ensure that the returned config is valid . The framework
+   * does no validation of the data
+   *
+   * @param latestConf latest version of config
+   * @param commands the list of command operations to perform
+   */
+  @Override
+  public Map<String, Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands) {
+    for (CommandOperation command : commands) {
+      if (command.name.equals("set-property")) {
+        for (Map.Entry<String, Object> e : command.getDataMap().entrySet()) {
+          if (PROPS.contains(e.getKey())) {
+            latestConf.put(e.getKey(), e.getValue());
+            return latestConf;
+          } else {
+            command.addError("Unknown property " + e.getKey());
+          }
+        }
+      }
+    }
+    if (!CommandOperation.captureErrors(commands).isEmpty()) return null;
+    return latestConf;
   }
 
   private enum BearerWwwAuthErrorCode { invalid_request, invalid_token, insufficient_scope};

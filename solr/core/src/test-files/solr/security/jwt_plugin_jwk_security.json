@@ -1,7 +1,7 @@
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
-    "block_unknown": true,
+    "blockUnknown": true,
     "jwk": {
       "kty": "RSA",
       "e": "AQAB",

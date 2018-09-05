@@ -44,8 +44,8 @@ To start enforcing authentication for all users, requiring a valid JWT token in 
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
-    "block_unknown": true,
-    "jwk_url": "https://my.key.server/jwk.json"
+    "blockUnknown": true,
+    "jwkUrl": "https://my.key.server/jwk.json"
   }
 }
 ----
@@ -57,8 +57,8 @@ The next example shows configuring using https://openid.net/specs/openid-connect
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
-    "block_unknown": true,
-    "well_known_url": "https://idp.example.com/.well-known/openid-configuration"
+    "blockUnknown": true,
+    "wellKnownUrl": "https://idp.example.com/.well-known/openid-configuration"
   }
 }
 ---- 
@@ -72,20 +72,20 @@ A more complex configuration with static JWK:
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin", <1>
-    "block_unknown": true, <2>
+    "blockUnknown": true, <2>
     "jwk": { <3>
       "e": "AQAB",
       "kid": "k1",
       "kty": "RSA",
       "n": "3ZF6wBGPMsLzsS1KLghxaVpZtXD3nTLzDm0c974i9-KNU_1rhhBeiVfS64VfEQmP8SA470jEy7yWcvnz9GvG-YAlm9iOwVF7jLl2awdws0ocFjdSPT3SjPQKzOeMO7G9XqNTkrvoFCn1YAi26fbhhcqkwZDoeTcHQdRN32frzccuPhZrwImApIedroKLlKWv2IvPDnz2Bpe2WWVc2HdoWYqEVD3p_BEy8f-RTSHK3_8kDDF9yAwI9jx7CK1_C-eYxXltm-6rpS5NGyFm0UNTZMxVU28Tl7LX8Vb6CikyCQ9YRCtk_CvpKWmEuKEp9I28KHQNmGkDYT90nt3vjbCXxw"
     },
-    "client_id": "solr-client-12345", <4>
+    "clientId": "solr-client-12345", <4>
     "iss": "https://example.com/idp", <5>
     "aud": "https://example.com/solr", <6>
-    "principal_claim": "solruid", <7>
-    "claims_match": { "roles" : "admin|search", "dept" : "IT" }, <8>
+    "principalClaim": "solruid", <7>
+    "claimsMatch": { "foo" : "A|B", "dept" : "IT" }, <8>
     "scope": "solr:read solr:write solr:admin", <9>
-    "alg_whitelist" : [ "RS256", "RS384", "RS512" ] <10>
+    "algWhitelist" : [ "RS256", "RS384", "RS512" ] <10>
   }
 }
 ----
@@ -94,12 +94,12 @@ Let's comment on this config:
 
 <1> Plugin class
 <2> Make sure to block anyone without a valid token
-<3> Here we pass the JWK inline instead of referring to a URL with `jwk_url`
+<3> Here we pass the JWK inline instead of referring to a URL with `jwkUrl`
 <4> Set the client id registered with Identiy Provider
 <5> The issuer claim must match "https://example.com/idp"
 <6> The audience claim must match "https://example.com/solr"
 <7> Fetch the user id from another claim than the default `sub`
-<8> Require that the `roles` claim is one of "admin" or "search" and that the `dept` claim is "IT"
+<8> Require that the `roles` claim is one of "A" or "B" and that the `dept` claim is "IT"
 <9> Require one of the scopes `solr:read`, `solr:write` or `solr:amin`
 <10> Only accept RSA algorithms for signatures
 
@@ -108,33 +108,60 @@ Let's comment on this config:
 [%header,format=csv,separator=;]
 |===
 Key              ; Description                                             ; Default
-block_unknown    ; Set to `false` in order to pass requests from unknown users without a token  ; `true`
-well_known_url   ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; 
-client_id        ; Client identifier for use with OpenID Connect           ;
+blockUnknown    ; Set to `false` in order to pass requests from unknown users without a token  ; `true`
+wellKnownUrl   ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; 
+clientId        ; Client identifier for use with OpenID Connect           ;
 scope            ; Whitespace separate list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
-jwk_url          ; An https URL to a https://tools.ietf.org/html/rfc7517[JWK] keys file. Not required if `well_known_url` is provided ; Auto configured if `well_known_url` is provided
+jwkUrl          ; An https URL to a https://tools.ietf.org/html/rfc7517[JWK] keys file. Not required if `well_known_url` is provided ; Auto configured if `well_known_url` is provided
 jwk              ; As an alternative to `jwk_url` you may provide a JSON object here containing the public key(s) of the issuer.  ; Auto configured if `well_known_url` is provided
 iss              ; Validates that `iss` (issuer) equals this string        ; If `well_known_url` is provided, use `issuer` from there.
 aud              ; Validates that `aud` (audience) equals this string      ; If `client_id` is configured, require `aud` to match it
-require_sub      ; Makes `sub` (subject) mandatory                         ; `true`
-require_exp      ; Makes `exp` (expiry time) mandatory                     ; `true`
-alg_whitelist    ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; 
-jwk_cache_dur    ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
-principal_claim  ; What claim id to pull principal from                    ; `sub`
-claims_match     ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ; (none)
+requireSub      ; Makes `sub` (subject) mandatory                         ; `true`
+requireExp      ; Makes `exp` (expiry time) mandatory                     ; `true`
+algWhitelist    ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; 
+jwkCacheDur    ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
+principalClaim  ; What claim id to pull principal from                    ; `sub`
+claimsMatch     ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ; (none)
 |===
 
 
 == Editing Authentication Plugin Configuration
 
-**TODO: This plugin currently does not support edit API.**
+All properties mentioned above can be set or changed using the <<basic-authentication-plugin.adoc#editing-authentication-plugin-configuration,Config Edit API>>. You can thus start with a simple configuration with only `class` configured and then configure the rest using the API.
 
-=== Using JWT Auth with SolrJ
+=== Set a Property
 
-To use JWT Auth with SolrJ you must configure a `SolrHttpClientBuilder` that sets the `Authorization: Bearer` header. How to obtain a valid JWT token is up to the client application to choose.
+Set properties for the authentication plugin. Each of the configuration keys in the table above can be used as parameter keys for the `set-property` command.
 
-**TODO: Describe this **
+Example:
 
-=== Using the Solr Control Script with Basic Auth
+[.dynamic-tabs]
+--
+[example.tab-pane#v1set-property]
+====
+[.tab-label]*V1 API*
 
-The control scripts (`bin/solr`) do not currently support JWT Auth.
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
+----
+====
+
+[example.tab-pane#v2set-property]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
+----
+====
+--
+
+== Using JWT Auth with SolrJ
+
+SolrJ does not currently support setting JWT token per request. This is planned for a future release.
+
+== Using the Solr Control Script with Basic Auth
+
+The control script (`bin/solr`) does not currently support JWT Auth.
