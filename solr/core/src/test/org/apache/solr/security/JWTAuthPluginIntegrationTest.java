@@ -36,7 +36,6 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.util.LogLevel;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jws.AlgorithmIdentifiers;
@@ -47,6 +46,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * Validate that JWT token authentication works in a real cluster.
+ * TODO: Test also using SolrJ as client. But that requires a way to set Authorization header on request
+ */
 public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final int NUM_SHARDS = 2;
@@ -88,6 +91,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
 
     HttpClientUtil.removeRequestInterceptor(interceptor);
     HttpClientUtil.addRequestInterceptor(interceptor);
+    
+    cluster.waitForAllNodes(10);
   }
 
   @AfterClass
@@ -97,7 +102,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   }
 
   @Before
-  public void before() {
+  public void before() throws IOException, InterruptedException {
     jwtInterceptCount.set(0);
     pkiInterceptCount.set(0);
   }
@@ -115,101 +120,29 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  @LogLevel("org.apache.solr.security=DEBUG")
-  public void createCollectionAndQueryDistributed() throws Exception {
-    // Admin request will use PKI inter-node auth from Overseer, and succeed
-    assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2", jwtTestToken).second().intValue());
-    verifyInterRequestHeaderCounts(0,0);
-
-    // First a non distributed query
-    Pair<String,Integer> result = get(baseUrl + "mycoll/query?q=*:*&distrib=false", jwtTestToken);
-    assertEquals(Integer.valueOf(200), result.second());
-    verifyInterRequestHeaderCounts(0,0);
-
-    // Now do a distributed query, using JWTAUth for inter-node
-    result = get(baseUrl + "mycoll/query?q=*:*", jwtTestToken);
-    assertEquals(Integer.valueOf(200), result.second());
-    verifyInterRequestHeaderCounts(2,2);
-
-    // Delete
-    assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=mycoll", jwtTestToken).second().intValue());
-    verifyInterRequestHeaderCounts(2,2);
-  }
-
-  @Test
-  public void createCollectionAndUpdateDistributed() throws Exception {
+  public void createCollectionUpdateAndQueryDistributed() throws Exception {
     // Admin request will use PKI inter-node auth from Overseer, and succeed
     assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2", jwtTestToken).second().intValue());
 
     // Now update two documents
     Pair<String,Integer> result = post(baseUrl + "mycoll/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
+    verifyInterRequestHeaderCounts(2,2);
 
+    // First a non distributed query
+    result = get(baseUrl + "mycoll/query?q=*:*&distrib=false", jwtTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
+    verifyInterRequestHeaderCounts(2,2);
+
+    // Now do a distributed query, using JWTAUth for inter-node
+    result = get(baseUrl + "mycoll/query?q=*:*", jwtTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
+    verifyInterRequestHeaderCounts(6,6);
+    
     // Delete
     assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=mycoll", jwtTestToken).second().intValue());
-    verifyInterRequestHeaderCounts(2,2);
+    verifyInterRequestHeaderCounts(6,6);
   }
-
-
-
-// NOCOMMIT: Test using SolrJ as client
-//  private void testCollectionCreateSearchDelete(boolean enableJwt) throws Exception {
-//    if (enableJwt) {
-//      HttpClientUtil.setHttpClientBuilder(getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder(), testJwt));
-//    } else {
-//      HttpClientUtil.resetHttpClientBuilder();
-//    }
-
-//    ClusterStateProvider csProv = cluster.getSolrClient().getClusterStateProvider();
-//    CloudSolrClientBuilder builder = new CloudSolrClientBuilder(csProv);
-//    CloudSolrClient solrClient = builder.build();
-
-//    CloudSolrClient solrClient = cluster.getSolrClient();
-
-//    URL solrurl = new URL(baseUrl + "admin/info/system");
-//    HttpURLConnection conn = (HttpURLConnection) solrurl.openConnection();
-//    conn.setRequestProperty("Authorization", "Bearer " + testJwt);
-//    conn.connect();
-//    BufferedReader br = new BufferedReader(new InputStreamReader((InputStream) conn.getContent()));
-//    br.lines().forEach(l -> {
-//      System.out.println(l);
-//    });
-//    conn.disconnect();
-
-
-//    Pair<String,Integer> result;
-//    
-//    result = get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2");
-//    System.out.println(result.first());                                       
-//    assertEquals(Integer.valueOf(200), result.second());
-//    
-//    result = get(baseUrl + "mycoll/query?q=*:*");
-//    System.out.println(result.first());                                       
-//    assertEquals(Integer.valueOf(200), result.second());
-
-
-//    String collectionName = "jwtAuthTestColl";
-
-  // create collection
-//    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1",
-//        NUM_SHARDS, REPLICATION_FACTOR);
-//    create.process(solrClient);
-//
-//    solrClient.add(collectionName, new SolrInputDocument("id", "1"));
-//    solrClient.add(collectionName, new SolrInputDocument("id", "2"));
-//    solrClient.commit(collectionName);
-//
-//    SolrQuery query = new SolrQuery();
-//    query.setQuery("*:*");
-//    QueryResponse rsp = solrClient.query(collectionName, query);
-//    assertEquals(2, rsp.getResults().getNumFound());
-//
-//    CollectionAdminRequest.Delete deleteReq = CollectionAdminRequest.deleteCollection(collectionName);
-//    deleteReq.process(solrClient);
-//    AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
-//        solrClient.getZkStateReader(), true, true, 330);
-//    solrClient.close();
-//  }
 
   private void verifyInterRequestHeaderCounts(int jwt, int pki) {
     assertEquals(jwt, jwtInterceptCount.get());
@@ -221,7 +154,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
     if (token != null)
       createConn.setRequestProperty("Authorization", "Bearer " + token);
-    createConn.connect();
     BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) createConn.getContent()));
     String result = br2.lines().collect(Collectors.joining("\n"));
     int code = createConn.getResponseCode();
@@ -250,24 +182,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     con.disconnect();
     return new Pair<>(result, code);
   }
-
-//  SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder, String token) {
-//    if (builder == null) {
-//      builder = SolrHttpClientBuilder.create();
-//    }
-//    builder.setAuthSchemeRegistryProvider(() -> {
-//      Lookup<AuthSchemeProvider> authProviders = RegistryBuilder.<AuthSchemeProvider>create()
-//          .register("Bearer", new JWTAuthPlugin.JwtBearerAuthschemeProvider())
-//          .build();
-//      return authProviders;
-//    });
-//    builder.setDefaultCredentialsProvider(() -> {
-//      CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-//      credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(token, null));
-//      return credentialsProvider;
-//    });
-//    return builder;
-//  }
 
   private static class CountInterceptor implements HttpRequestInterceptor {
     @Override
