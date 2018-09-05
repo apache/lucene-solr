@@ -54,23 +54,25 @@ class ChildDocTransformer extends DocTransformer {
   private final DocSet childDocSet;
   private final int limit;
   private final boolean isNestedSchema;
+  private final SolrReturnFields childReturnFields;
 
-  //TODO ought to be provided/configurable
-  private final SolrReturnFields childReturnFields = new SolrReturnFields();
-
-  ChildDocTransformer(String name, BitSetProducer parentsFilter,
-                      DocSet childDocSet, boolean isNestedSchema, int limit) {
+  ChildDocTransformer(String name, BitSetProducer parentsFilter, DocSet childDocSet,
+                      SolrReturnFields returnFields, boolean isNestedSchema, int limit) {
     this.name = name;
     this.parentsFilter = parentsFilter;
     this.childDocSet = childDocSet;
     this.limit = limit;
     this.isNestedSchema = isNestedSchema;
+    this.childReturnFields = returnFields!=null? returnFields: new SolrReturnFields();
   }
 
   @Override
   public String getName()  {
     return name;
   }
+
+  @Override
+  public boolean needsSolrIndexSearcher() { return true; }
 
   @Override
   public void transform(SolrDocument rootDoc, int rootDocId) {
@@ -132,6 +134,12 @@ class ChildDocTransformer extends DocTransformer {
 
           // load the doc
           SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, childReturnFields);
+          if(childReturnFields.getTransformer() != null) {
+            if(childReturnFields.getTransformer().context == null) {
+              childReturnFields.getTransformer().setContext(context);
+            }
+            childReturnFields.getTransformer().transform(doc, docId);
+          }
 
           if (isAncestor) {
             // if this path has pending child docs, add them.

@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
 
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
@@ -57,12 +58,28 @@ public class ChildDocTransformerFactory extends TransformerFactory {
 
   static final char PATH_SEP_CHAR = '/';
   static final char NUM_SEP_CHAR = '#';
+  private static final ThreadLocal<Boolean> recursionCheckThreadLocal = ThreadLocal.withInitial(() -> Boolean.FALSE);
   private static final BooleanQuery rootFilter = new BooleanQuery.Builder()
       .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
       .add(new BooleanClause(new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME), BooleanClause.Occur.MUST_NOT)).build();
 
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+    if(recursionCheckThreadLocal.get()) {
+      // this is a recursive call by SolrReturnFields, see ChildDocTransformerFactory#createChildDocTransformer
+      return new DocTransformer.NoopFieldTransformer();
+    } else {
+      try {
+        // transformer is yet to be initialized in this thread, create it
+        recursionCheckThreadLocal.set(true);
+        return createChildDocTransformer(field, params, req);
+      } finally {
+        recursionCheckThreadLocal.set(false);
+      }
+    }
+  }
+
+  private DocTransformer createChildDocTransformer(String field, SolrParams params, SolrQueryRequest req) {
     SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
     if (uniqueKeyField == null) {
       throw new SolrException( ErrorCode.BAD_REQUEST,
@@ -106,9 +123,20 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       }
     }
 
+    String childReturnFields = params.get("fl");
+    SolrReturnFields childSolrReturnFields;
+    if(childReturnFields != null) {
+      childSolrReturnFields = new SolrReturnFields(childReturnFields, req);
+    } else if(req.getSchema().getDefaultLuceneMatchVersion().major < 8) {
+      // ensure backwards for versions prior to SOLR 8
+      childSolrReturnFields = new SolrReturnFields();
+    } else {
+      childSolrReturnFields = new SolrReturnFields(req);
+    }
+
     int limit = params.getInt( "limit", 10 );
 
-    return new ChildDocTransformer(field, parentsFilter, childDocSet, buildHierarchy, limit);
+    return new ChildDocTransformer(field, parentsFilter, childDocSet, childSolrReturnFields, buildHierarchy, limit);
   }
 
   private static Query parseQuery(String qstr, SolrQueryRequest req, String param) {

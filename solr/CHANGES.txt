@@ -204,6 +204,10 @@ New Features
 * SOLR-12716: NodeLostTrigger should support deleting replicas from lost nodes by setting preferredOperation=deletenode.
   (shalin)
 
+* SOLR-12722: The [child] transformer now takes an 'fl' param to specify which fields to return.  It will evaluate
+  doc transformers if present.  In 7.5 a missing 'fl' defaults to the current behavior of all fields, but in 8.0
+  defaults to the top/request "fl". (Moshe Bla, David Smiley)
+
 Bug Fixes
 ----------------------
 
