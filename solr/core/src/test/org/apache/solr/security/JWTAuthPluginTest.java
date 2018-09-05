@@ -372,7 +372,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   @Test
   public void wellKnownConfigFromInputstream() throws IOException {
     Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
-    JWTAuthPlugin.OidcDiscoveryConfig config = JWTAuthPlugin.OidcDiscoveryConfig.parse(Files.newInputStream(configJson));
+    JWTAuthPlugin.WellKnownDiscoveryConfig config = JWTAuthPlugin.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
   }
 
@@ -380,9 +380,11 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void wellKnownConfigFromString() throws IOException {
     Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
     String configString = StringUtils.join(Files.readAllLines(configJson), "\n");
-    JWTAuthPlugin.OidcDiscoveryConfig config = JWTAuthPlugin.OidcDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);
+    JWTAuthPlugin.WellKnownDiscoveryConfig config = JWTAuthPlugin.WellKnownDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
     assertEquals("http://acmepaymentscorp", config.getIssuer());
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", config.getAuthorizationEndpoint());
+    assertEquals(Arrays.asList("READ", "WRITE", "DELETE", "openid", "scope", "profile", "email", "address", "phone"), config.getScopesSupported());
+    assertEquals(Arrays.asList("code", "code id_token", "code token", "code id_token token", "token", "id_token", "id_token token"), config.getResponseTypesSupported());
   }
 }

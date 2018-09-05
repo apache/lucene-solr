@@ -112,7 +112,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private HashSet<String> requiredScopes = new HashSet<>();
   private String clientId;
   private long jwkCacheDuration;
-  private OidcDiscoveryConfig oidcDiscoveryConfig;
+  private WellKnownDiscoveryConfig oidcDiscoveryConfig;
   private String confIdpConfigUrl;
   private Map<String, Object> pluginConfig;
   private Instant lastInitTime = Instant.now();
@@ -137,7 +137,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     
     if (confIdpConfigUrl != null) {
       log.debug("Initializing well-known oidc config from {}", confIdpConfigUrl);
-      oidcDiscoveryConfig = OidcDiscoveryConfig.parse(confIdpConfigUrl);
+      oidcDiscoveryConfig = WellKnownDiscoveryConfig.parse(confIdpConfigUrl);
       iss = oidcDiscoveryConfig.getIssuer();
     }
     
@@ -549,14 +549,14 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
    * Config object for a OpenId Connect well-known config
    * Typically exposed through /.well-known/openid-configuration endpoint 
    */
-  public static class OidcDiscoveryConfig {
+  public static class WellKnownDiscoveryConfig {
     private static Map<String, Object> securityConf;
   
-    OidcDiscoveryConfig(Map<String, Object> securityConf) {
-      OidcDiscoveryConfig.securityConf = securityConf;
+    WellKnownDiscoveryConfig(Map<String, Object> securityConf) {
+      WellKnownDiscoveryConfig.securityConf = securityConf;
     }
   
-    public static OidcDiscoveryConfig parse(String urlString) {
+    public static WellKnownDiscoveryConfig parse(String urlString) {
       try {
         URL url = new URL(urlString);
         if (!Arrays.asList("https", "file").contains(url.getProtocol())) {
@@ -570,13 +570,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       }
     }
   
-    public static OidcDiscoveryConfig parse(String json, Charset charset) {
+    public static WellKnownDiscoveryConfig parse(String json, Charset charset) {
       return parse(new ByteArrayInputStream(json.getBytes(charset)));
     }
   
-    public static OidcDiscoveryConfig parse(InputStream configStream) {
+    public static WellKnownDiscoveryConfig parse(InputStream configStream) {
       securityConf = (Map<String, Object>) Utils.fromJSON(configStream);
-      return new OidcDiscoveryConfig(securityConf);
+      return new WellKnownDiscoveryConfig(securityConf);
     }
   
     
@@ -590,6 +590,22 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   
     public String getAuthorizationEndpoint() {
       return (String) securityConf.get("authorization_endpoint");
+    }
+    
+    public String getUserInfoEndpoint() {
+      return (String) securityConf.get("userinfo_endpoint");
+    }
+
+    public String getTokenEndpoint() {
+      return (String) securityConf.get("token_endpoint");
+    }
+
+    public List<String> getScopesSupported() {
+      return (List<String>) securityConf.get("scopes_supported");
+    }
+
+    public List<String> getResponseTypesSupported() {
+      return (List<String>) securityConf.get("response_types_supported");
     }
   }
 
