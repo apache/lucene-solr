@@ -723,9 +723,9 @@ The `knnRegress` function prepares the training set for use with the `predict` f
 
 Below is an example of the `knnRegress` function. In this example 10000 random samples
 are taken each containing the variables *filesize_d*, *service_d* and *response_d*. The pairs of
-*filesize_d* and *service_d* will be use to predict the value of *response_d*.
+*filesize_d* and *service_d* will be used to predict the value of *response_d*.
 
-Notice that `kknRegress` simply returns a tuple describing the regression inputs.
+Notice that `knnRegress` returns a tuple describing the regression inputs.
 
 [source,text]
 ----
@@ -765,7 +765,7 @@ This expression returns the following response:
 
 === Prediction and Residuals
 
-The output of knnRegress can be used with the `predict` function like other regression models.
+The output of `knnRegress` can be used with the `predict` function like other regression models.
 In the example below the `predict` function is used to predict results for the original training
 data. The sumSq of the residuals is then calculated.
 
@@ -808,6 +808,7 @@ will carry more weight in the distance calculation then the smaller features. Th
 impact the accuracy of the prediction. The `knnRegress` function has a *scale* parameter which
 can be set to *true* to automatically scale the features in the same range.
 
+The example below shows `knnRegress` with feature scaling turned on.
 Notice that when feature scaling is turned on the sumSqErr in the output is much lower.
 This shows how much more accurate the predictions are when feature scaling is turned on in
 this particular example. This is because the *filesize_d* feature is significantly larger then
@@ -856,7 +857,7 @@ This provides a regression prediction that is robust to outliers.
 
 === Setting the Distance Measure
 
-The distance measure can be changed for the k-nearest neighbor search by adding distance measure
+The distance measure can be changed for the k-nearest neighbor search by adding a distance measure
 function to the `knnRegress` parameters. Below is an example using manhattan distance.
 
 [source,text]
