@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,6 +50,11 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
    */
   public static abstract class SubReaderWrapper {
 
+    /**
+     * Wraps a list of LeafReaders
+     * @return an array of wrapped LeafReaders. The returned array might contain less elements compared to the given
+     * reader list if an entire reader is filtered out.
+     */
     protected LeafReader[] wrap(List<? extends LeafReader> readers) {
       LeafReader[] wrapped = new LeafReader[readers.size()];
       int i = 0;
