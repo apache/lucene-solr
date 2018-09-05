@@ -1147,7 +1147,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override public ScoreMode scoreMode() { return needsScores ? ScoreMode.COMPLETE : super.scoreMode(); }
 
-    public void setScorer(Scorer scorer) throws IOException {
+    @Override
+    public void setScorer(Scorable scorer) throws IOException {
       this.collapseStrategy.setScorer(scorer);
     }
 
@@ -2003,7 +2004,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   private static abstract class IntFieldValueStrategy {
     protected int nullPolicy;
     protected IntIntHashMap cmap;
-    protected Scorer scorer;
+    protected Scorable scorer;
     protected FloatArrayList nullScores;
     protected float nullScore;
     protected float[] scores;
@@ -2083,7 +2084,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return collapsedSet;
     }
 
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;
     }
 
@@ -2495,7 +2496,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void setScorer(Scorer s) throws IOException {
+    public void setScorer(Scorable s) throws IOException {
       super.setScorer(s);
       this.compareState.setScorer(s);
     }
