@@ -171,17 +171,21 @@ This expression returns the following response:
 }
 ----
 
-== Distance Measures
+== Distance and Distance Measures
 
-The `distance` function computes a distance measure for two
+The `distance` function computes the distance for two
 numeric arrays or a *distance matrix* for the columns of a matrix.
 
-There are four distance measures currently supported:
+There are four distance measure functions that return a function
+that performs the actual distance calculation:
 
-* euclidean (default)
-* manhattan
-* canberra
-* earthMovers
+* euclidean() (default)
+* manhattan()
+* canberra()
+* earthMovers()
+
+The distance measure functions can be used with all machine learning functions
+that support different distance measures.
 
 Below is an example for computing euclidean distance for
 two numeric arrays:
@@ -212,6 +216,35 @@ This expression returns the following response:
   }
 }
 ----
+
+Below the distance is calculated using *Manahattan* distance.
+
+[source,text]
+----
+let(a=array(20, 30, 40, 50),
+    b=array(21, 29, 41, 49),
+    c=distance(a, b, manhattan()))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": 4
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 1
+      }
+    ]
+  }
+}
+----
+
 
 Below is an example for computing a distance matrix for columns
 of a matrix:
@@ -603,13 +636,13 @@ This expression returns the following response:
 }
 ----
 
-== K-nearest Neighbor (knn)
+== K-nearest Neighbor (KNN)
 
 The `knn` function searches the rows of a matrix for the
 K-nearest neighbors of a search vector. The `knn` function
 returns a *matrix* of the K-nearest neighbors. The `knn` function
-has a *named parameter* called *distance* which specifies the distance measure.
-There are four distance measures currently supported:
+supports changing of the distance measure by providing one of the
+four distance measure functions as the fourth parameter:
 
 * euclidean (Default)
 * manhattan
@@ -678,3 +711,190 @@ This expression returns the following response:
   }
 }
 ----
+
+== KNN Regression
+
+KNN regression is a non-linear, multi-variate regression method. Knn regression is a lazy learning
+technique which means it does not fit a model to the training set in advance. Instead the
+entire training set of observations and outcomes are held in memory and predictions are made
+by averaging the outcomes of the k-nearest neighbors.
+
+The `knnRegress` function prepares the training set for use with the `predict` function.
+
+Below is an example of the `knnRegress` function. In this example 10000 random samples
+are taken each containing the variables *filesize_d*, *service_d* and *response_d*. The pairs of
+*filesize_d* and *service_d* will be used to predict the value of *response_d*.
+
+Notice that `knnRegress` returns a tuple describing the regression inputs.
+
+[source,text]
+----
+let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
+    filesizes=col(samples, filesize_d),
+    serviceLevels=col(samples, service_d),
+    outcomes=col(samples, response_d),
+    observations=transpose(matrix(filesizes, serviceLevels)),
+    lazyModel=knnRegress(observations, outcomes , 5))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "lazyModel": {
+          "features": 2,
+          "robust": false,
+          "distance": "EuclideanDistance",
+          "observations": 10000,
+          "scale": false,
+          "k": 5
+        }
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 170
+      }
+    ]
+  }
+}
+----
+
+=== Prediction and Residuals
+
+The output of `knnRegress` can be used with the `predict` function like other regression models.
+In the example below the `predict` function is used to predict results for the original training
+data. The sumSq of the residuals is then calculated.
+
+[source,text]
+----
+let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
+    filesizes=col(samples, filesize_d),
+    serviceLevels=col(samples, service_d),
+    outcomes=col(samples, response_d),
+    observations=transpose(matrix(filesizes, serviceLevels)),
+    lazyModel=knnRegress(observations, outcomes , 5),
+    predictions=predict(lazyModel, observations),
+    residuals=ebeSubtract(outcomes, predictions),
+    sumSqErr=sumSq(residuals))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "sumSqErr": 1920290.1204126712
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3796
+      }
+    ]
+  }
+}
+----
+
+=== Setting Feature Scaling
+
+If the features in the observation matrix are not in the same scale then the larger features
+will carry more weight in the distance calculation then the smaller features. This can greatly
+impact the accuracy of the prediction. The `knnRegress` function has a *scale* parameter which
+can be set to *true* to automatically scale the features in the same range.
+
+The example below shows `knnRegress` with feature scaling turned on.
+Notice that when feature scaling is turned on the sumSqErr in the output is much lower.
+This shows how much more accurate the predictions are when feature scaling is turned on in
+this particular example. This is because the *filesize_d* feature is significantly larger then
+the *service_d* feature.
+
+[source,text]
+----
+let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
+    filesizes=col(samples, filesize_d),
+    serviceLevels=col(samples, service_d),
+    outcomes=col(samples, response_d),
+    observations=transpose(matrix(filesizes, serviceLevels)),
+    lazyModel=knnRegress(observations, outcomes , 5, scale=true),
+    predictions=predict(lazyModel, observations),
+    residuals=ebeSubtract(outcomes, predictions),
+    sumSqErr=sumSq(residuals))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "sumSqErr": 4076.794951120683
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3790
+      }
+    ]
+  }
+}
+----
+
+
+=== Setting Robust Regression
+
+The default prediction approach is to take the *mean* of the outcomes of the k-nearest
+neighbors. If the outcomes contain outliers the *mean* value can be skewed. Setting
+the *robust* parameter to true will take the *median* outcome of the k-nearest neighbors.
+This provides a regression prediction that is robust to outliers.
+
+
+=== Setting the Distance Measure
+
+The distance measure can be changed for the k-nearest neighbor search by adding a distance measure
+function to the `knnRegress` parameters. Below is an example using manhattan distance.
+
+[source,text]
+----
+let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
+    filesizes=col(samples, filesize_d),
+    serviceLevels=col(samples, service_d),
+    outcomes=col(samples, response_d),
+    observations=transpose(matrix(filesizes, serviceLevels)),
+    lazyModel=knnRegress(observations, outcomes, 5, manhattan(), scale=true),
+    predictions=predict(lazyModel, observations),
+    residuals=ebeSubtract(outcomes, predictions),
+    sumSqErr=sumSq(residuals))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "sumSqErr": 4761.221942288098
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3571
+      }
+    ]
+  }
+}
+----
+
+
+
+
+
+
+

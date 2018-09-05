@@ -1831,7 +1831,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       
       q = new SolrQuery("q", "*:*", "indent", "true");
       q.setFilterQueries(parentFilter);
-      q.setFields("id,[child parentFilter=\"" + parentFilter +
+      q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
                   "\" limit=\"" + maxKidCount + "\"], name");
       resp = client.query(q);
@@ -1916,7 +1916,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         q = new SolrQuery("q", "name:" + name, "indent", "true");
       }
       q.setFilterQueries(parentFilter);
-      q.setFields("id,[child parentFilter=\"" + parentFilter +
+      q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
                   "\" limit=\"" + maxKidCount + "\"],name");
       resp = client.query(q);

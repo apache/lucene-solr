@@ -84,27 +84,9 @@ public class RawValueTransformerFactory extends TransformerFactory
     
     if (field.equals(display)) {
       // we have to ensure the field is returned
-      return new NoopFieldTransformer(field);
+      return new DocTransformer.NoopFieldTransformer(field);
     }
     return new RenameFieldTransformer( field, display, false );
-  }
-
-  /** 
-   * Trivial Impl that ensure that the specified field is requested as an "extra" field, 
-   * but then does nothing during the transformation phase. 
-   */
-  private static final class NoopFieldTransformer extends DocTransformer {
-    final String field;
-    public NoopFieldTransformer(String field ) {
-      this.field = field;
-    }
-    public String getName() { return "noop"; }
-    public String[] getExtraRequestFields() {
-      return new String[] { field };
-    }
-    public void transform(SolrDocument doc, int docid) {
-      // No-Op
-    }
   }
   
   static class RawTransformer extends DocTransformer
