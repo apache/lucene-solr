@@ -41,8 +41,8 @@ final class BooleanWeight extends Weight {
   final BooleanQuery query;
 
   private static class WeightedBooleanClause {
-    BooleanClause clause;
-    Weight weight;
+    final BooleanClause clause;
+    final Weight weight;
 
     WeightedBooleanClause(BooleanClause clause, Weight weight) {
       this.clause = clause;
