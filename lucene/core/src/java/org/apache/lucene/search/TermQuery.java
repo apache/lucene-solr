@@ -224,7 +224,7 @@ public class TermQuery extends Query {
     return perReaderTermState;
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
+  /** Returns true iff <code>other</code> is equal to <code>this</code>. */
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
