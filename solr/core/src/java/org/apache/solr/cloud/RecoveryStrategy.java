@@ -484,11 +484,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
         
         if (oldIdx > 0) {
-          log.info("####### Found new versions added after startup: num=[{}]", oldIdx);
-          log.info("###### currentVersions=[{}]",recentVersions);
+          log.info("Found new versions added after startup: num=[{}]", oldIdx);
+          log.info("currentVersions size={} range=[{} to {}]", recentVersions.size(), recentVersions.get(0), recentVersions.get(recentVersions.size()-1));
         }
-        
-        log.info("###### startupVersions=[{}]", startingVersions);
+
+        log.info("startupVersions size={} range=[{} to {}]", startingVersions.size(), startingVersions.get(0), startingVersions.get(startingVersions.size()-1));
       } catch (Exception e) {
         SolrException.log(log, "Error getting recent versions.", e);
         recentVersions = new ArrayList<>(0);
