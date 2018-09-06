@@ -164,7 +164,7 @@ curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentica
 ====
 --
 
-=== Using Basic Auth with SolrJ
+== Using Basic Auth with SolrJ
 
 In SolrJ, the basic authentication credentials need to be set for each request as in this example:
 
@@ -184,7 +184,7 @@ req.setBasicAuthCredentials(userName, password);
 QueryResponse rsp = req.process(solrClient);
 ----
 
-=== Using the Solr Control Script with Basic Auth
+== Using the Solr Control Script with Basic Auth
 
 Add the following line to the `solr.in.sh` or `solr.in.cmd` file. This example tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks":
 
