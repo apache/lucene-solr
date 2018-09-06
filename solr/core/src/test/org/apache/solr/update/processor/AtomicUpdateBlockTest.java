@@ -17,15 +17,24 @@
 
 package org.apache.solr.update.processor;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
-import org.apache.solr.SolrTestCaseJ4Test;
+import com.google.common.collect.ImmutableMap;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class AtomicUpdateBlockTest extends SolrTestCaseJ4Test {
+public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
+
+  private final static String VERSION = "_version_";
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -40,48 +49,110 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4Test {
   }
 
   @Test
-  public void testBlockRealTimeGet() throws Exception {
-
+  public void testMergeChildDoc() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField("cat_ss", new String[]{"aaa", "ccc"});
     doc.setField("child", Collections.singletonList(sdoc("id", "2", "cat_ss", "child")));
-    addDoc(adoc(doc), "nested");
+    addDoc(adoc(doc), "nested-rtg");
+
+    BytesRef rootDocId = new BytesRef("1");
+    SolrCore core = h.getCore();
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
+    // assert block doc has child docs
+    assertTrue(block.containsKey("child"));
 
     assertJQ(req("q","id:1")
         ,"/response/numFound==0"
     );
 
-    assertJQ(req("qt","/get","ids","1", "fl","id")
-        ,"=={" +
-            "  'response':{'numFound':1,'start':0,'docs':[" +
-            "      {" +
-            "        'id':'1'}]" +
-            "  }}}"
+    // commit the changes
+    assertU(commit());
+
+    SolrInputDocument addedDoc = new SolrInputDocument();
+    SolrInputDocument newChildDoc = sdoc("id", "3", "cat_ss", "child");
+    addedDoc.setField("id", "1");
+    addedDoc.setField("cat_ss", ImmutableMap.of("add", "bbb"));
+    addedDoc.setField("child", ImmutableMap.of("add", sdocs(newChildDoc)));
+    block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
+    block.removeField(VERSION);
+    SolrInputDocument preMergeDoc = new SolrInputDocument(block);
+    AtomicUpdateDocumentMerger docMerger = new AtomicUpdateDocumentMerger(req());
+    docMerger.merge(addedDoc, block);
+    assertEquals("merged document should have the same id", preMergeDoc.getFieldValue("id"), block.getFieldValue("id"));
+    assertDocContainsSubset(preMergeDoc, block);
+    assertDocContainsSubset(addedDoc, block);
+    assertDocContainsSubset(newChildDoc, (SolrInputDocument) ((List) block.getFieldValues("child")).get(1));
+    assertEquals(doc.getFieldValue("id"), block.getFieldValue("id"));
+  }
+
+  @Test
+  public void testBlockRealTimeGet() throws Exception {
+
+    SolrInputDocument doc = sdoc("id", "1",
+        "cat_ss", new String[] {"aaa", "ccc"},
+        "child", sdoc("id", "2", "cat_ss", "child")
+    );
+    json(doc);
+    addDoc(adoc(doc), "nested-rtg");
+
+    BytesRef rootDocId = new BytesRef("1");
+    SolrCore core = h.getCore();
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
+    // assert block doc has child docs
+    assertTrue(block.containsKey("child"));
+
+    assertJQ(req("q","id:1")
+        ,"/response/numFound==0"
     );
 
+    // commit the changes
     assertU(commit());
+
+    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
+    BytesRef childDocId = new BytesRef("2");
+    // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
+    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, true).toString());
 
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
     );
 
-    // a cut-n-paste of the first big query, but this time it will be retrieved from the index rather than the transaction log
-    assertJQ(req("qt","/get", "id","1", "fl","id, a_f,a_fd,a_fdS   a_fs,a_fds,a_fdsS,  a_d,a_dd,a_ddS,  a_ds,a_dds,a_ddsS,  a_i,a_id,a_idS   a_is,a_ids,a_idsS,   a_l,a_ld,a_ldS   a_ls,a_lds,a_ldsS")
-        ,"=={'doc':{'id':'1'" +
-            ", cat_ss:[\"aaa\",\"ccc\"], child:{\"id\":2,\"cat_ss\":[\"child\"]}" +
+    doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("cat_ss", ImmutableMap.of("add", "bbb"));
+    doc.setField("child2", ImmutableMap.of("add", sdoc("id", "3", "cat_ss", "child")));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+
+    // returns whole block since child is in fl and document is fetched from tlog.
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child")
+        ,"=={\"doc\":{'id':\"1\"" +
+            ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child:{\"id\":\"2\",\"cat_ss\":[\"child\"]}" +
             "       }}"
     );
 
-    assertJQ(req("qt","/get","id","1", "fl","id")
-        ,"=={'doc':{'id':'1'}}"
+    assertU(commit());
+
+    // a cut-n-paste of the first big query, but this time it will be retrieved from the index rather than the transaction log
+    // this requires ChildDocTransformer to get the whole block, since the document is retrieved using an index lookup
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child, [child]")
+        ,"=={'doc':{'id':'1'" +
+            ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child:{\"id\":\"2\",\"cat_ss\":[\"child\"]}" +
+            "       }}"
     );
-    assertJQ(req("qt","/get","ids","1", "fl","id")
-        ,"=={" +
-            "  'response':{'numFound':1,'start':0,'docs':[" +
-            "      {" +
-            "        'id':'1'}]" +
-            "  }}}"
-    );
+  }
+
+  private static void assertDocContainsSubset(SolrInputDocument subsetDoc, SolrInputDocument fullDoc) {
+    for(SolrInputField field: subsetDoc) {
+      String fieldName = field.getName();
+      assertTrue("doc should contain field: " + fieldName, fullDoc.containsKey(fieldName));
+      Object fullValue = fullDoc.getField(fieldName).getValue();
+      if(fullValue instanceof Collection) {
+        ((Collection) fullValue).containsAll(field.getValues());
+      } else {
+        assertEquals("docs should have the same value for field: " + fieldName, field.getValue(), fullValue);
+      }
+    }
   }
 }

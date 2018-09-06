@@ -30,6 +30,39 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
+  <updateHandler class="solr.DirectUpdateHandler2">
+
+    <autoCommit>
+      <maxTime>${solr.autoCommit.maxTime:-1}</maxTime>
+    </autoCommit>
+
+    <!-- autocommit pending docs if certain criteria are met
+    <autoCommit>
+      <maxDocs>10000</maxDocs>
+      <maxTime>3600000</maxTime>
+    </autoCommit>
+    -->
+
+    <updateLog enable="${enable.update.log:false}">
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
+
+    <commitWithin>
+      <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
+    </commitWithin>
+
+  </updateHandler>
+
+  <updateProcessor class="solr.NestedUpdateProcessorFactory" name="nested-processor"/>
+
+  <updateRequestProcessorChain name="nested-rtg" post-processor="nested-processor">
+    <!--<processor class="solr.AtomicUpdateProcessorFactory" />-->
+    <!--<processor class="solr.NestedUpdateProcessorFactory" />-->
+    <processor class="solr.DistributedUpdateProcessorFactory" />
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="nested">
     <processor class="solr.NestedUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />
