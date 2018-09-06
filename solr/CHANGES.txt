@@ -158,6 +158,9 @@ New Features
 
 * SOLR-11943: Add machine learning functions for location data (Joel Bernstein)
 
+* SOLR-12612: Cluster properties restriction of known keys only is relaxed, and now unknown properties starting with "ext."
+  will be allowed. This allows custom to plugins set their own cluster properties. (Jeffery Yuan via Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
