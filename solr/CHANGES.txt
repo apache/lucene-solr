@@ -211,6 +211,8 @@ New Features
 * SOLR-9418: Added a new (experimental) PhrasesIdentificationComponent for identifying potential phrases
   in query input based on overlapping shingles in the index. (Akash Mehta, Trey Grainger, hossman)
 
+* SOLR-11943: Add machine learning functions for location data (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
