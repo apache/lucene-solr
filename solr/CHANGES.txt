@@ -1,4 +1,4 @@
-                      Apache Solr Release Notes
+                              Apache Solr Release Notes
 
 Introduction
 ------------
@@ -152,6 +152,9 @@ New Features
 * SOLR-12722: The [child] transformer now takes an 'fl' param to specify which fields to return.  It will evaluate
   doc transformers if present.  In 7.5 a missing 'fl' defaults to the current behavior of all fields, but in 8.0
   defaults to the top/request "fl". (Moshe Bla, David Smiley)
+
+* SOLR-9418: Added a new (experimental) PhrasesIdentificationComponent for identifying potential phrases
+  in query input based on overlapping shingles in the index. (Akash Mehta, Trey Grainger, hossman)
 
 Bug Fixes
 ----------------------
