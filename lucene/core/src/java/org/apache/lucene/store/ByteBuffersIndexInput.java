@@ -63,7 +63,7 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
   public ByteBuffersIndexInput slice(String sliceDescription, long offset, long length) throws IOException {
     ensureOpen();
     return new ByteBuffersIndexInput(in.slice(offset, length), 
-        "(sliced) offset=" + offset + ", length=" + length + " " + toString());
+        "(sliced) offset=" + offset + ", length=" + length + " " + toString() + " [slice=" + sliceDescription + "]");
   }
 
   @Override
