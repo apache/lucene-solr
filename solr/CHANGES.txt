@@ -313,6 +313,8 @@ Bug Fixes
 
 * SOLR-12728: RequestLoggingTest fails on occasion, not reproducible (Erick Erickson)
 
+* SOLR-12733: SolrMetricReporterTest failure (Erick Erickson, David Smiley)
+
 Optimizations
 ----------------------
 
