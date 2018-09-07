@@ -18,8 +18,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Expert: Common scoring functionality for different types of queries.
@@ -39,7 +37,7 @@ import java.util.Collections;
  * TopScoreDocCollector}) will not properly collect hits
  * with these scores.
  */
-public abstract class Scorer {
+public abstract class Scorer extends Scorable {
   /** the Scorer's parent Weight. in some cases this may be null */
   // TODO can we clean this up?
   protected final Weight weight;
@@ -52,64 +50,11 @@ public abstract class Scorer {
     this.weight = weight;
   }
 
-  /**
-   * Returns the doc ID that is currently being scored.
-   * This will return {@code -1} if the {@link #iterator()} is not positioned
-   * or {@link DocIdSetIterator#NO_MORE_DOCS} if it has been entirely consumed.
-   * @see DocIdSetIterator#docID()
-   */
-  public abstract int docID();
-
-  /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link DocIdSetIterator#nextDoc()} or
-   * {@link DocIdSetIterator#advance(int)} is called on the {@link #iterator()}
-   * the first time, or when called from within {@link LeafCollector#collect}.
-   */
-  public abstract float score() throws IOException;
-
   /** returns parent Weight
    * @lucene.experimental
    */
   public Weight getWeight() {
     return weight;
-  }
-  
-  /**
-   * Returns child sub-scorers positioned on the current document
-   *
-   * Note that this method should not be called on Scorers passed to {@link LeafCollector#setScorer(Scorer)},
-   * as these may be synthetic Scorers produced by {@link BulkScorer} which will throw an Exception.
-   *
-   * @lucene.experimental
-   */
-  public Collection<ChildScorer> getChildren() throws IOException {
-    return Collections.emptyList();
-  }
-  
-  /** A child Scorer and its relationship to its parent.
-   * the meaning of the relationship depends upon the parent query. 
-   * @lucene.experimental */
-  public static class ChildScorer {
-    /**
-     * Child Scorer. (note this is typically a direct child, and may
-     * itself also have children).
-     */
-    public final Scorer child;
-    /**
-     * An arbitrary string relating this scorer to the parent.
-     */
-    public final String relationship;
-    
-    /**
-     * Creates a new ChildScorer node with the specified relationship.
-     * <p>
-     * The relationship can be any be any string that makes sense to 
-     * the parent Scorer. 
-     */
-    public ChildScorer(Scorer child, String relationship) {
-      this.child = child;
-      this.relationship = relationship;
-    }
   }
 
   /**
@@ -142,19 +87,6 @@ public abstract class Scorer {
    */
   public TwoPhaseIterator twoPhaseIterator() {
     return null;
-  }
-
-  /**
-   * Optional method: Tell the scorer that its iterator may safely ignore all
-   * documents whose score is less than the given {@code minScore}. This is a
-   * no-op by default.
-   *
-   * This method may only be called from collectors that use
-   * {@link ScoreMode#TOP_SCORES}, and successive calls may only set increasing
-   * values of {@code minScore}.
-   */
-  public void setMinCompetitiveScore(float minScore) {
-    // no-op by default
   }
 
   /**

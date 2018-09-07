@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -63,6 +64,7 @@ public class TimeRoutedAlias {
   public static final String ROUTER_START = ROUTER_PREFIX + "start";
   public static final String ROUTER_INTERVAL = ROUTER_PREFIX + "interval";
   public static final String ROUTER_MAX_FUTURE = ROUTER_PREFIX + "maxFutureMs";
+  public static final String ROUTER_PREEMPTIVE_CREATE_MATH = ROUTER_PREFIX + "preemptiveCreateMath";
   public static final String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
   public static final String CREATE_COLLECTION_PREFIX = "create-collection.";
   // plus TZ and NAME
@@ -84,6 +86,7 @@ public class TimeRoutedAlias {
   public static final List<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableList(Arrays.asList(
       ROUTER_MAX_FUTURE,
       ROUTER_AUTO_DELETE_AGE,
+      ROUTER_PREEMPTIVE_CREATE_MATH,
       TZ)); // kinda special
 
   static Predicate<String> PARAM_IS_PROP =
@@ -126,6 +129,7 @@ public class TimeRoutedAlias {
   private final String routeField;
   private final String intervalMath; // ex: +1DAY
   private final long maxFutureMs;
+  private final String preemptiveCreateMath;
   private final String autoDeleteAgeMath; // ex: /DAY-30DAYS  *optional*
   private final TimeZone timeZone;
 
@@ -141,6 +145,9 @@ public class TimeRoutedAlias {
 
     //optional:
     maxFutureMs = params.getLong(ROUTER_MAX_FUTURE, TimeUnit.MINUTES.toMillis(10));
+    // the date math configured is an interval to be subtracted from the most recent collection's time stamp
+    String pcmTmp = params.get(ROUTER_PREEMPTIVE_CREATE_MATH);
+    preemptiveCreateMath = pcmTmp != null ? (pcmTmp.startsWith("-") ? pcmTmp : "-" + pcmTmp) : null;
     autoDeleteAgeMath = params.get(ROUTER_AUTO_DELETE_AGE); // no default
     timeZone = TimeZoneUtils.parseTimezone(aliasMetadata.get(CommonParams.TZ));
 
@@ -167,6 +174,13 @@ public class TimeRoutedAlias {
         throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE + ", " + e, e);
       }
     }
+    if (preemptiveCreateMath != null) {
+      try {
+        new DateMathParser().parseMath(preemptiveCreateMath);
+      } catch (ParseException e) {
+        throw new SolrException(BAD_REQUEST, "Invalid date math for preemptiveCreateMath:" + preemptiveCreateMath);
+      }
+    }
 
     if (maxFutureMs < 0) {
       throw new SolrException(BAD_REQUEST, ROUTER_MAX_FUTURE + " must be >= 0");
@@ -189,6 +203,10 @@ public class TimeRoutedAlias {
     return maxFutureMs;
   }
 
+  public String getPreemptiveCreateWindow() {
+    return preemptiveCreateMath;
+  }
+
   public String getAutoDeleteAgeMath() {
     return autoDeleteAgeMath;
   }
@@ -204,6 +222,7 @@ public class TimeRoutedAlias {
         .add("routeField", routeField)
         .add("intervalMath", intervalMath)
         .add("maxFutureMs", maxFutureMs)
+        .add("preemptiveCreateMath", preemptiveCreateMath)
         .add("autoDeleteAgeMath", autoDeleteAgeMath)
         .add("timeZone", timeZone)
         .toString();

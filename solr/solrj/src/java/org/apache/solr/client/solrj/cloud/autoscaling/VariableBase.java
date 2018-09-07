@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.StrUtils;
@@ -77,7 +75,7 @@ public class VariableBase implements Variable {
   }
 
   public static Type getTagType(String name) {
-    Type info = validatetypes.get(name);
+    Type info = Type.get(name);
     if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = Type.STRING;
     if (info == null && name.startsWith(Clause.METRICS_PREFIX)) info = Type.LAZY;
     return info;
@@ -192,15 +190,5 @@ public class VariableBase implements Variable {
     public void getSuggestions(Suggestion.Ctx ctx) {
       perNodeSuggestions(ctx);
     }
-
-
-  }
-
-  private static Map<String, Type> validatetypes;
-
-  static {
-    validatetypes = new HashMap<>();
-    for (Type t : Type.values())
-      validatetypes.put(t.tagName, t);
   }
 }

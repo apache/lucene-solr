@@ -22,7 +22,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -30,6 +32,7 @@ import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableSet;
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * A Variable Type used in Autoscaling policy rules. Each variable type may have unique implementation
@@ -327,6 +330,18 @@ public interface Variable {
     @Override
     public boolean match(Object inputVal, Operand op, Object val, String name, Row row) {
       return impl.match(inputVal, op, val, name, row);
+    }
+
+    private static final Map<String, Type> typeByNameMap;
+    static {
+      HashMap<String, Type> m = new HashMap<>();
+      for (Type t : Type.values()) {
+        m.put(t.tagName, t);
+      }
+      typeByNameMap = unmodifiableMap(m);
+    }
+    static Type get(String name) {
+      return typeByNameMap.get(name);
     }
   }
 

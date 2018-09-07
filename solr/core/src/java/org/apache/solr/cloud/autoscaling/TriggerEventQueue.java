@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
@@ -108,12 +107,7 @@ public class TriggerEventQueue {
   }
 
   private TriggerEvent fromMap(Map<String, Object> map) {
-    String id = (String)map.get("id");
-    String source = (String)map.get("source");
-    long eventTime = ((Number)map.get("eventTime")).longValue();
-    TriggerEventType eventType = TriggerEventType.valueOf((String)map.get("eventType"));
-    Map<String, Object> properties = (Map<String, Object>)map.get("properties");
-    TriggerEvent res = new TriggerEvent(id, eventType, source, eventTime, properties);
+    TriggerEvent res = TriggerEvent.fromMap(map);
     res.getProperties().put(DEQUEUE_TIME, timeSource.getTimeNs());
     return res;
   }

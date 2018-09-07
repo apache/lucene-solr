@@ -774,7 +774,7 @@ public class PeerSync implements SolrMetricProducer {
       }
 
       if (updatesRequest.totalRequestedUpdates > nUpdates) {
-        log.info("{} Failing due to needing too many updates:{}", logPrefix, nUpdates);
+        log.info("{} PeerSync will fail because number of missed updates is more than:{}", logPrefix, nUpdates);
         return MissedUpdatesRequest.UNABLE_TO_SYNC;
       }
 

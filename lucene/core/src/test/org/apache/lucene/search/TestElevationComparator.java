@@ -193,7 +193,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
         }
 
         @Override
-        public void setScorer(Scorer scorer) {}
+        public void setScorer(Scorable scorer) {}
       };
     }
 

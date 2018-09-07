@@ -81,8 +81,8 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
-  private int socketTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
-  private int connectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
+  private int socketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+  private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
     defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());

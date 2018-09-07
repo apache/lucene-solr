@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,8 +33,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -44,9 +46,11 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
@@ -135,9 +139,15 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
 
+    reset();
+  }
+
+  private void reset() {
     fired.set(false);
     triggerFiredLatch = new CountDownLatch(1);
     actionContextPropsRef.set(null);
+    eventRef.set(null);
+    AssertingTriggerAction.expectedNode = null;
   }
 
   private void deleteChildrenRecursively(String path) throws Exception {
@@ -159,7 +169,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented 4-Sep-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testNodeLost() throws Exception  {
     // let's start a node so that we have at least two
     JettySolrRunner runner = cluster.startJettySolrRunner();
@@ -243,8 +253,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testNodeWithMultipleReplicasLost() throws Exception {
-    AssertingTriggerAction.expectedNode = null;
-
     // start 3 more nodes
     cluster.startJettySolrRunner();
     cluster.startJettySolrRunner();
@@ -318,7 +326,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
   @Test
   public void testNodeAdded() throws Exception {
-    AssertingTriggerAction.expectedNode = null;
     CloudSolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
@@ -421,8 +428,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testSelectedCollections() throws Exception {
     log.info("Found number of jetties: {}", cluster.getJettySolrRunners().size());
-    AssertingTriggerAction.expectedNode = null;
-
     // start 3 more nodes
     cluster.startJettySolrRunner();
     cluster.startJettySolrRunner();
@@ -499,5 +504,173 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     params = request.getParams();
     assertEquals("Expected MOVEREPLICA action after adding node", MOVEREPLICA, CollectionParams.CollectionAction.get(params.get("action")));
     assertFalse("not expected testSelected3", "testSelected3".equals(params.get("collection")));
+  }
+
+  @Test
+  public void testNodeAddedTriggerWithAddReplicaPreferredOp_1Shard() throws Exception {
+    String collectionNamePrefix = "testNodeAddedTriggerWithAddReplicaPreferredOp_1Shard";
+    int numShards = 1;
+    int numCollections = 5;
+
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections);
+  }
+
+  @Test
+  public void testNodeAddedTriggerWithAddReplicaPreferredOp_2Shard() throws Exception {
+    String collectionNamePrefix = "testNodeAddedTriggerWithAddReplicaPreferredOp_2Shard";
+    int numShards = 2;
+    int numCollections = 5;
+
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections);
+  }
+
+  private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections) throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_added_trigger'," +
+        "'event' : 'nodeAdded'," +
+        "'waitFor' : '1s'," +
+        "'enabled' : true," +
+        "'" + AutoScalingParams.PREFERRED_OP + "':'addreplica'," +
+        "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
+        "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<" + (1 + numCollections * numShards) + "', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
+        "conf", numShards, 1);
+    create.process(solrClient);
+
+    waitForState("Timed out waiting for replicas of new collection to be active",
+        collectionNamePrefix + "_0", (liveNodes, collectionState) ->
+            collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+
+    JettySolrRunner newNode = cluster.startJettySolrRunner();
+    assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    assertTrue(fired.get());
+    Map actionContext = actionContextPropsRef.get();
+    List operations = (List) actionContext.get("operations");
+    assertNotNull(operations);
+    assertEquals(numShards, operations.size());
+    Set<String> affectedShards = new HashSet<>(2);
+    for (Object operation : operations) {
+      assertTrue(operation instanceof CollectionAdminRequest.AddReplica);
+      CollectionAdminRequest.AddReplica addReplica = (CollectionAdminRequest.AddReplica) operation;
+      assertEquals(newNode.getNodeName(), addReplica.getNode());
+      assertEquals(collectionNamePrefix + "_0", addReplica.getCollection());
+      affectedShards.add(addReplica.getShard());
+    }
+    assertEquals(numShards, affectedShards.size());
+
+    for (int i = 1; i < numCollections; i++) {
+      create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_" + i,
+          "conf", numShards, 2);
+      create.process(solrClient);
+
+      waitForState("Timed out waiting for replicas of new collection to be active",
+          collectionNamePrefix + "_" + i, (liveNodes, collectionState) ->
+              collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+    }
+
+    reset();
+
+    newNode = cluster.startJettySolrRunner();
+    assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    assertTrue(fired.get());
+    actionContext = actionContextPropsRef.get();
+    operations = (List) actionContext.get("operations");
+    assertNotNull(operations);
+    assertEquals(numCollections * numShards, operations.size());
+    Set<String> affectedCollections = new HashSet<>(numCollections);
+    affectedShards = new HashSet<>(numShards);
+    Set<Pair<String, String>> affectedCollShards = new HashSet<>(numCollections * numShards);
+    for (Object operation : operations) {
+      assertTrue(operation instanceof CollectionAdminRequest.AddReplica);
+      CollectionAdminRequest.AddReplica addReplica = (CollectionAdminRequest.AddReplica) operation;
+      assertEquals(newNode.getNodeName(), addReplica.getNode());
+      affectedCollections.add(addReplica.getCollection());
+      affectedShards.add(addReplica.getShard());
+      affectedCollShards.add(new Pair<>(addReplica.getCollection(), addReplica.getShard()));
+    }
+    assertEquals(numCollections, affectedCollections.size());
+    assertEquals(numShards, affectedShards.size());
+    assertEquals(numCollections * numShards, affectedCollShards.size());
+  }
+
+  @Test
+  public void testNodeLostTriggerWithDeleteNodePreferredOp() throws Exception {
+    String collectionNamePrefix = "testNodeLostTriggerWithDeleteNodePreferredOp";
+    int numCollections = 1 + random().nextInt(3), numShards = 1 + random().nextInt(3);
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '1s'," +
+        "'enabled' : true," +
+        "'" + AutoScalingParams.PREFERRED_OP + "':'deletenode'," +
+        "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
+        "{'name':'execute_plan','class':'solr.ExecutePlanAction'}" +
+        "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<" + (1 + numCollections * numShards) + "', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    JettySolrRunner newNode = cluster.startJettySolrRunner();
+    // cache the node name because it won't be available once the node is shutdown
+    String newNodeName = newNode.getNodeName();
+
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
+        "conf", numShards, 2);
+    create.process(solrClient);
+
+    waitForState("Timed out waiting for replicas of new collection to be active",
+        collectionNamePrefix + "_0", (liveNodes, collectionState) ->
+            collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+
+    cluster.stopJettySolrRunner(newNode);
+    assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    assertTrue(fired.get());
+    Map actionContext = actionContextPropsRef.get();
+    List operations = (List) actionContext.get("operations");
+    assertNotNull(operations);
+    assertEquals(1, operations.size());
+    for (Object operation : operations) {
+      assertTrue(operation instanceof CollectionAdminRequest.DeleteNode);
+      CollectionAdminRequest.DeleteNode deleteNode = (CollectionAdminRequest.DeleteNode) operation;
+      SolrParams deleteNodeParams = deleteNode.getParams();
+      assertEquals(newNodeName, deleteNodeParams.get("node"));
+    }
+
+    waitForState("Timed out waiting for all shards to have only 1 replica",
+        collectionNamePrefix + "_0", clusterShape(numShards, 1));
   }
 }

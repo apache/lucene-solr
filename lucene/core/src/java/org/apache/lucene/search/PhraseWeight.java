@@ -85,7 +85,7 @@ abstract class PhraseWeight extends Weight {
 
   @Override
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
-    return Matches.forField(field, () -> {
+    return MatchesUtils.forField(field, () -> {
       PhraseMatcher matcher = getPhraseMatcher(context, true);
       if (matcher == null || matcher.approximation.advance(doc) != doc) {
         return null;

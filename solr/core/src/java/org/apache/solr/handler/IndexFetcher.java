@@ -1033,7 +1033,7 @@ public class IndexFetcher {
         }
         filesDownloaded.add(new HashMap<>(file));
       } else {
-        log.info("Skipping download for {} because it already exists", file.get(NAME));
+        log.debug("Skipping download for {} because it already exists", file.get(NAME));
       }
     }
     log.info("Bytes downloaded: {}, Bytes skipped downloading: {}", bytesDownloaded, bytesSkippedCopying);

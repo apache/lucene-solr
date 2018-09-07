@@ -19,17 +19,19 @@ package org.apache.lucene.search.uhighlight.visibility;
 
 import java.io.IOException;
 import java.text.BreakIterator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.uhighlight.FieldHighlighter;
@@ -40,6 +42,7 @@ import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.PhraseHelper;
 import org.apache.lucene.search.uhighlight.SplittingBreakIterator;
+import org.apache.lucene.search.uhighlight.UHComponents;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -58,17 +61,18 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
   @Test
   public void testFieldOffsetStrategyExtensibility() {
     final UnifiedHighlighter.OffsetSource offsetSource = UnifiedHighlighter.OffsetSource.NONE_NEEDED;
-    FieldOffsetStrategy strategy = new FieldOffsetStrategy("field",
-        new BytesRef[0],
+    FieldOffsetStrategy strategy = new FieldOffsetStrategy(new UHComponents("field",
+        (s) -> false,
+        new MatchAllDocsQuery(), new BytesRef[0],
         PhraseHelper.NONE,
-        new CharacterRunAutomaton[0]) {
+        new CharacterRunAutomaton[0], Collections.emptySet())) {
       @Override
       public UnifiedHighlighter.OffsetSource getOffsetSource() {
         return offsetSource;
       }
 
       @Override
-      public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
+      public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
         return OffsetsEnum.EMPTY;
       }
 
@@ -148,13 +152,25 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       @Override
       protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
         // THIS IS A COPY of the superclass impl; but use CustomFieldHighlighter
-        BytesRef[] terms = filterExtractedTerms(getFieldMatcher(field), allTerms);
+        Predicate<String> fieldMatcher = getFieldMatcher(field);
+        BytesRef[] terms = filterExtractedTerms(fieldMatcher, allTerms);
         Set<HighlightFlag> highlightFlags = getFlags(field);
         PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
         CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
         OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
+
+        UHComponents components = new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, highlightFlags);
+        // test all is accessible
+        components.getAutomata();
+        components.getPhraseHelper();
+        components.getTerms();
+        components.getField();
+        components.getHighlightFlags();
+        components.getQuery();
+        components.getFieldMatcher();
+
         return new CustomFieldHighlighter(field,
-            getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags),
+            getOffsetStrategy(offsetSource, components),
             new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
             getScorer(field),
             maxPassages,
@@ -163,8 +179,8 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       }
 
       @Override
-      protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Set<HighlightFlag> highlightFlags) {
-        return super.getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags);
+      protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, UHComponents components) {
+        return super.getOffsetStrategy(offsetSource, components);
       }
 
       @Override
@@ -207,7 +223,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
     }
 
     @Override
-    public Object highlightFieldForDoc(IndexReader reader, int docId, String content) throws IOException {
+    public Object highlightFieldForDoc(LeafReader reader, int docId, String content) throws IOException {
       return super.highlightFieldForDoc(reader, docId, content);
     }
 

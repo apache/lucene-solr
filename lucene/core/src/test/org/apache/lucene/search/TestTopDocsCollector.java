@@ -61,7 +61,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
         }
 
         @Override
-        public void setScorer(Scorer scorer) {
+        public void setScorer(Scorable scorer) {
           // Don't do anything. Assign scores in random
         }
       };

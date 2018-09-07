@@ -124,7 +124,7 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
   private static Scorer getScorer(Query query, CodecReader reader) throws IOException {
     IndexSearcher s = new IndexSearcher(reader);
     s.setQueryCache(null);
-    Weight weight = s.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
+    Weight weight = s.createWeight(s.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1.0f);
     return weight.scorer(reader.getContext());
   }
 

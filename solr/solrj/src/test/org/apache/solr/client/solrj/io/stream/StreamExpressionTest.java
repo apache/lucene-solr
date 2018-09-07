@@ -1551,7 +1551,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelTopicStream() throws Exception {
 
     Assume.assumeTrue(!useAlias);
@@ -1856,7 +1856,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     String expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
-        "end=\"2016-12-01T01:00:00.000Z\", " +
+        "end=\"2017-12-01T01:00:00.000Z\", " +
         "gap=\"+1YEAR\", " +
         "field=\"test_dt\", " +
         "count(*), sum(price_f), max(price_f), min(price_f))";
@@ -1870,7 +1870,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 4);
+    assertTrue(tuples.size() == 5);
 
     assertTrue(tuples.get(0).get("test_dt").equals("2013-01-01T01:00:00Z"));
     assertTrue(tuples.get(0).getLong("count(*)").equals(100L));
@@ -1895,6 +1895,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.get(3).getDouble("sum(price_f)").equals(20000D));
     assertTrue(tuples.get(3).getDouble("max(price_f)").equals(400D));
     assertTrue(tuples.get(3).getDouble("min(price_f)").equals(400D));
+
+    assertTrue(tuples.get(4).get("test_dt").equals("2017-01-01T01:00:00Z"));
+    assertEquals((long)tuples.get(4).getLong("count(*)"), 0L);
+    assertEquals(tuples.get(4).getDouble("sum(price_f)"), 0D, 0);
+    assertEquals(tuples.get(4).getDouble("max(price_f)"),0D, 0);
+    assertEquals(tuples.get(4).getDouble("min(price_f)"), 0D, 0);
 
 
     expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
@@ -1995,9 +2001,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 5);
     assertTrue(tuples.get(0).get("test_dt").equals("2012-01"));
     assertTrue(tuples.get(0).getLong("count(*)").equals(0L));
-    assertTrue(tuples.get(0).getDouble("sum(price_f)") == null);
-    assertTrue(tuples.get(0).getDouble("max(price_f)") == null);
-    assertTrue(tuples.get(0).getDouble("min(price_f)") == null);
+    assertTrue(tuples.get(0).getDouble("sum(price_f)") == 0);
+    assertTrue(tuples.get(0).getDouble("max(price_f)") == 0);
+    assertTrue(tuples.get(0).getDouble("min(price_f)") == 0);
 
     assertTrue(tuples.get(1).get("test_dt").equals("2013-01"));
     assertTrue(tuples.get(1).getLong("count(*)").equals(100L));

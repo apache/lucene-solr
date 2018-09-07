@@ -66,6 +66,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.DELETE;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.LIST;
+import static org.apache.solr.handler.admin.ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME;
 
 /**
  * A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests.
@@ -73,7 +74,7 @@ import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.LIST
 public class ConfigSetsHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
-  public static long DEFAULT_ZK_TIMEOUT = 300*1000;
+  public static long DEFAULT_ZK_TIMEOUT = 300 * 1000;
   private final ConfigSetsHandlerApi configSetsHandlerApi = new ConfigSetsHandlerApi(this);
 
   /**
@@ -90,11 +91,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     if (coreContainer == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Core container instance missing");
+          "Core container instance missing");
     }
 
     // Make sure that the core is ZKAware
-    if(!coreContainer.isZooKeeperAware()) {
+    if (!coreContainer.isZooKeeperAware()) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "Solr instance is not running in SolrCloud mode.");
     }
@@ -195,7 +196,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   }
 
   private void createZkNodeIfNotExistsAndSetData(SolrZkClient zkClient,
-      String filePathInZk, byte[] data) throws Exception {
+                                                 String filePathInZk, byte[] data) throws Exception {
     if (!zkClient.exists(filePathInZk, true)) {
       zkClient.create(filePathInZk, data, CreateMode.PERSISTENT, true);
     } else {
@@ -204,7 +205,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   }
 
   private void handleResponse(String operation, ZkNodeProps m,
-      SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
+                              SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
     long time = System.nanoTime();
 
     QueueEvent event = coreContainer.getZkController()
@@ -216,7 +217,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
       if (exp != null) {
         Integer code = (Integer) exp.get("rspCode");
-        rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String)exp.get("msg")));
+        rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String) exp.get("msg")));
       }
     } else {
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
@@ -236,7 +237,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   }
 
   private static Map<String, Object> copyPropertiesWithPrefix(SolrParams params, Map<String, Object> props, String prefix) {
-    Iterator<String> iter =  params.getParameterNamesIterator();
+    Iterator<String> iter = params.getParameterNamesIterator();
     while (iter.hasNext()) {
       String param = iter.next();
       if (param.startsWith(prefix)) {
@@ -254,6 +255,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   public String getDescription() {
     return "Manage SolrCloud ConfigSets";
   }
+
   @Override
   public Category getCategory() {
     return Category.ADMIN;
@@ -263,7 +265,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     CREATE_OP(CREATE) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
-        Map<String, Object> props = CollectionsHandler.copy(req.getParams().required(), null, NAME, BASE_CONFIGSET);
+        String baseConfigSetName = req.getParams().get(BASE_CONFIGSET, DEFAULT_CONFIGSET_NAME);
+        Map<String, Object> props = CollectionsHandler.copy(req.getParams().required(), null, NAME);
+        props.put(BASE_CONFIGSET, baseConfigSetName);
         return copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX + ".");
       }
     },

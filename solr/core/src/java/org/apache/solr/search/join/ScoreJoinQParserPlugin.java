@@ -302,7 +302,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     String fromReplica = null;
 
     String nodeName = zkController.getNodeName();
-    for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlices()) {
+    for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlicesArr()) {
       if (fromReplica != null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "SolrCloud join: multiple shards not yet supported " + fromIndex);

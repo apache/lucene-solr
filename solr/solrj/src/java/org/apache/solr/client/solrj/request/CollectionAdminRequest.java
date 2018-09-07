@@ -1508,6 +1508,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public static final String ROUTER_START = "router.start";
     public static final String ROUTER_INTERVAL = "router.interval";
     public static final String ROUTER_MAX_FUTURE = "router.maxFutureMs";
+    public static final String ROUTER_PREEMPTIVE_CREATE_WINDOW = "router.preemptiveCreateMath";
 
     private final String aliasName;
     private final String routerField;
@@ -1516,6 +1517,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     //Optional:
     private TimeZone tz;
     private Integer maxFutureMs;
+    private String preemptiveCreateMath;
 
     private final Create createCollTemplate;
 
@@ -1540,6 +1542,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public CreateTimeRoutedAlias setPreemptiveCreateWindow(String preemptiveCreateMath) {
+      this.preemptiveCreateMath = preemptiveCreateMath;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1553,6 +1560,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (maxFutureMs != null) {
         params.add(ROUTER_MAX_FUTURE, ""+maxFutureMs);
+      }
+      if (preemptiveCreateMath != null) {
+        params.add(ROUTER_PREEMPTIVE_CREATE_WINDOW, preemptiveCreateMath);
       }
 
       // merge the above with collectionParams.  Above takes precedence.
@@ -1706,6 +1716,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public AddReplica setUlogDir(String ulogDir) {
       this.ulogDir = ulogDir;
       return this;
+    }
+
+    public String getShard() {
+      return shard;
     }
 
     @Override

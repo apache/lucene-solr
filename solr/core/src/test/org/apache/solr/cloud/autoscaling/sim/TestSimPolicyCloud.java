@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.rules.ExpectedException;
@@ -52,7 +53,8 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
-public class TestPolicyCloud extends SimSolrCloudTestCase {
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @org.junit.Rule

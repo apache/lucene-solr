@@ -44,7 +44,7 @@ import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestSc
  * Subclasses should only override
  * {@link TopSuggestDocsCollector#collect(int, CharSequence, CharSequence, float)}.
  * <p>
- * NOTE: {@link #setScorer(org.apache.lucene.search.Scorer)} and
+ * NOTE: {@link #setScorer(org.apache.lucene.search.Scorable)} and
  * {@link #collect(int)} is not used
  *
  * @lucene.experimental

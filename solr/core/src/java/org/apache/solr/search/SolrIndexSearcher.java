@@ -1581,10 +1581,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         };
       } else {
         collector = new SimpleCollector() {
-          Scorer scorer;
+          Scorable scorer;
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
             this.scorer = scorer;
           }
 
@@ -1679,10 +1679,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         final Collector topScoreCollector = new SimpleCollector() {
 
-          Scorer scorer;
+          Scorable scorer;
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorable scorer) throws IOException {
             this.scorer = scorer;
           }
 

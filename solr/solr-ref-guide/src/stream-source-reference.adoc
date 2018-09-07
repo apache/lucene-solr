@@ -214,36 +214,34 @@ features(collection1,
 
 The `nodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
 
-== knn
+== knnSearch
 
-The `knn` function returns the K nearest neighbors for a document based on text similarity. Under the covers the `knn` function
+The `knnSearch` function returns the K nearest neighbors for a document based on text similarity. Under the covers the `knnSearch` function
 use the More Like This query parser plugin.
 
-=== knn Parameters
+=== knnSearch Parameters
 
 * `collection`: (Mandatory) The collection to perform the search in.
 * `id`: (Mandatory) The id of the source document to begin the knn search from.
 * `qf`: (Mandatory) The query field used to compare documents.
 * `k`: (Mandatory) The number of nearest neighbors to return.
 * `fl`: (Mandatory) The field list to return.
-* `mintf`: (Optional) The minimum numer of occurrences of the term in the source document to be inlcued in the search.
-* `maxtf`: (Optional) The maximum numer of occurrences of the term in the source document to be inlcued in the search.
-* `mindf`: (Optional) The minimum numer of occurrences in the corpus to be inlcued in the search.
-* `maxdf`: (Optional) The maximum numer of occurrences in the corpus to be inlcued in the search.
-* `minwl`: (Optional) The minimum world length of to be inlcued in the search.
-* `maxwl`: (Optional) The maximum world length of to be inlcued in the search.
+* `mindf`: (Optional) The minimum number of occurrences in the corpus to be included in the search.
+* `maxdf`: (Optional) The maximum number of occurrences in the corpus to be included in the search.
+* `minwl`: (Optional) The minimum world length of to be included in the search.
+* `maxwl`: (Optional) The maximum world length of to be included in the search.
 
-=== knn Syntax
+=== knnSearch Syntax
 
 [source,text]
 ----
-knn(collection1,
-    id="doc1",
-    qf="text_field",
-    k="10",
-    fl="id, title",
-    mintf="3",
-    maxdf="10000000")
+knnSearch(collection1,
+          id="doc1",
+          qf="text_field",
+          k="10",
+          fl="id, title",
+          mintf="3",
+          maxdf="10000000")
 ----
 
 == model

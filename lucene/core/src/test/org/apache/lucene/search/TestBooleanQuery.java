@@ -501,7 +501,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final AtomicBoolean matched = new AtomicBoolean();
     searcher.search(bq, new SimpleCollector() {
       int docBase;
-      Scorer scorer;
+      Scorable scorer;
 
       @Override
       protected void doSetNextReader(LeafReaderContext context)
@@ -516,7 +516,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       }
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.scorer = scorer;
       }
 

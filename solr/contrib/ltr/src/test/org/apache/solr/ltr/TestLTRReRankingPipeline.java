@@ -35,9 +35,9 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -280,7 +280,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     LTRScoringQuery.ModelWeight wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(1f);
-    for (final Scorer.ChildScorer feat : modelScr.getChildren()) {
+    for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
       assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }
 
@@ -296,7 +296,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(1f);
-    for (final Scorer.ChildScorer feat : modelScr.getChildren()) {
+    for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
       assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }
   }

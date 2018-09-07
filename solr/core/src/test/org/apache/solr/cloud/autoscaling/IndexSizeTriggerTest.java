@@ -93,7 +93,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean()) {
+    if (random().nextBoolean() || true) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -268,7 +268,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'capturing'," +
+        "'name' : 'capturing2'," +
         "'trigger' : 'index_size_trigger2'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
@@ -316,8 +316,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertTrue("did not finish processing in time", await);
     CloudTestUtils.waitForState(cloudManager, collectionName, 20, TimeUnit.SECONDS, CloudTestUtils.clusterShape(6, 2, true, true));
     assertEquals(1, listenerEvents.size());
-    List<CapturedEvent> events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    List<CapturedEvent> events = listenerEvents.get("capturing2");
+    assertNotNull("'capturing2' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
@@ -386,7 +386,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'capturing'," +
+        "'name' : 'capturing3'," +
         "'trigger' : 'index_size_trigger3'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
@@ -432,8 +432,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
-    List<CapturedEvent> events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    List<CapturedEvent> events = listenerEvents.get("capturing3");
+    assertNotNull("'capturing3' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
@@ -531,7 +531,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'capturing'," +
+        "'name' : 'capturing4'," +
         "'trigger' : 'index_size_trigger4'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
@@ -571,8 +571,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
-    List<CapturedEvent> events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    List<CapturedEvent> events = listenerEvents.get("capturing4");
+    assertNotNull("'capturing4' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
@@ -651,8 +651,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
-    events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    events = listenerEvents.get("capturing4");
+    assertNotNull("'capturing4' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);

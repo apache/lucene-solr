@@ -111,6 +111,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         cluster.stopJettySolrRunner(i - 1);
       }
     }
+    cluster.waitForAllNodes(30);
   }
 
   private void deleteChildrenRecursively(String path) throws Exception {
@@ -336,8 +337,9 @@ public class TestWithCollection extends SolrCloudTestCase {
     assertNull(collection.getReplicas(otherNode)); // sanity check
     assertNull(withCollection.getReplicas(otherNode)); // sanity check
 
-    new CollectionAdminRequest.MoveReplica(xyz, collection.getReplicas().iterator().next().getName(), otherNode)
-        .process(solrClient);
+    CollectionAdminRequest.MoveReplica moveReplica = new CollectionAdminRequest.MoveReplica(xyz, collection.getReplicas().iterator().next().getName(), otherNode);
+    moveReplica.setWaitForFinalState(true);
+    moveReplica.process(solrClient);
 //    zkClient().printLayoutToStdOut();
     collection = solrClient.getZkStateReader().getClusterState().getCollection(xyz); // refresh
     DocCollection withCollectionRefreshed = solrClient.getZkStateReader().getClusterState().getCollection(abc); // refresh
