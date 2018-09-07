@@ -128,7 +128,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig = JettyConfig.builder()
         .withServlet(new ServletHolder(TestServlet.class), "/cuss/*")
-        .withSSLConfig(sslConfig)
+        .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
     createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }

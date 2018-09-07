@@ -153,7 +153,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(BasicHttpSolrClientTest.RedirectServlet.class), "/redirect/*")
         .withServlet(new ServletHolder(BasicHttpSolrClientTest.SlowServlet.class), "/slow/*")
         .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
-        .withSSLConfig(sslConfig)
+        .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
     createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
