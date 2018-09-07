@@ -161,6 +161,9 @@ New Features
 * SOLR-12612: Cluster properties restriction of known keys only is relaxed, and now unknown properties starting with "ext."
   will be allowed. This allows custom to plugins set their own cluster properties. (Jeffery Yuan via Tomás Fernández Löbbe)
 
+* SOLR-12357: Time Routed Aliases now have a preemptiveCreateMath option to preemptively and asynchronously create the
+  next collection in advance as new data gets within this time window of the end. (Gus Heck, David Smiley)
+
 Bug Fixes
 ----------------------
 
