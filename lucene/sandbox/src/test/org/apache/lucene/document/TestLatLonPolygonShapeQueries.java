@@ -23,8 +23,10 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** random bounding box and polygon query tests for random indexed {@link Polygon} types */
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
 public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
   protected final PolygonValidator VALIDATOR = new PolygonValidator();

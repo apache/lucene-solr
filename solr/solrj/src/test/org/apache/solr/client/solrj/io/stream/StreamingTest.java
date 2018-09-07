@@ -1961,6 +1961,7 @@ public void testParallelRankStream() throws Exception {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testZeroParallelReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -2119,6 +2120,7 @@ public void testParallelRankStream() throws Exception {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testParallelMergeStream() throws Exception {
 
     new UpdateRequest()
