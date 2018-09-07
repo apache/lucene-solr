@@ -368,6 +368,9 @@ Other Changes
 
 * SOLR-12744: Improve logging messages and verbosity around recoveries (Cao Manh Dat, Varun Thacker)
 
+* SOLR-8742: In HdfsDirectoryTest replace RAMDirectory usages with ByteBuffersDirectory. 
+  (hossman, Mark Miller, Andrzej Bialecki, Steve Rowe)
+
 ==================  7.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
