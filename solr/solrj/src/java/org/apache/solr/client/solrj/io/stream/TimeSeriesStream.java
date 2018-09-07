@@ -397,6 +397,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
             } else {
               t.put(identifier, d.doubleValue());
             }
+          } else {
+            t.put(identifier, 0);
           }
           ++m;
         } else {
