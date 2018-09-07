@@ -169,7 +169,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented 4-Sep-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testNodeLost() throws Exception  {
     // let's start a node so that we have at least two
     JettySolrRunner runner = cluster.startJettySolrRunner();
