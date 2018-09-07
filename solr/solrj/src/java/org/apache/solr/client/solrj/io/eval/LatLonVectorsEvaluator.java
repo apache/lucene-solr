@@ -26,12 +26,22 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class LocationVectorsEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
+/**
+ * The LatLonVectorsEvaluator maps to the latlonVectors Math Expression. The latlonVectors expression
+ * takes a list of Tuples that contain a lat,lon point field and a named parameter called field
+ * as input. The field parameter specifies which field to parse the lat,lon vectors from in the Tuples.
+ *
+ * The latlonVectors function returns a matrix of lat,lon vectors. Each row in the matrix
+ * contains a single lat,lon pair.
+ *
+ **/
+
+public class LatLonVectorsEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
   private String field;
 
-  public LocationVectorsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public LatLonVectorsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -45,7 +55,7 @@ public class LocationVectorsEvaluator extends RecursiveObjectEvaluator implement
     }
 
     if(field == null) {
-      throw new IOException("The named parameter \"field\" must be set for the locationVectors function.");
+      throw new IOException("The named parameter \"field\" must be set for the latlonVectors function.");
     }
   }
 
@@ -55,13 +65,13 @@ public class LocationVectorsEvaluator extends RecursiveObjectEvaluator implement
     if (objects.length == 1) {
       //Just docs
       if(!(objects[0] instanceof List)) {
-        throw new IOException("The locationVectors function expects a list of Tuples as a parameter.");
+        throw new IOException("The latlonVectors function expects a list of Tuples as a parameter.");
       } else {
         List list = (List)objects[0];
         if(list.size() > 0) {
           Object o = list.get(0);
           if(!(o instanceof Tuple)) {
-            throw new IOException("The locationVectors function expects a list of Tuples as a parameter.");
+            throw new IOException("The latlonVectors function expects a list of Tuples as a parameter.");
           }
         } else {
           throw new IOException("Empty list was passed as a parameter to termVectors function.");
@@ -73,7 +83,7 @@ public class LocationVectorsEvaluator extends RecursiveObjectEvaluator implement
       double[][] locationVectors = new double[tuples.size()][2];
       List<String> features = new ArrayList();
       features.add("lat");
-      features.add("long");
+      features.add("lon");
 
       List<String> rowLabels = new ArrayList();
 
@@ -99,7 +109,7 @@ public class LocationVectorsEvaluator extends RecursiveObjectEvaluator implement
       matrix.setRowLabels(rowLabels);
       return matrix;
     } else {
-      throw new IOException("The termVectors function takes a single positional parameter.");
+      throw new IOException("The latlonVectors function takes a single positional parameter.");
     }
   }
 }
