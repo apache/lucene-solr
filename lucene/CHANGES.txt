@@ -298,6 +298,10 @@ Improvements
 
 * LUCENE-8422: IntervalQuery now returns useful Matches (Alan Woodward)
 
+* LUCENE-7862: Store the real bounds of the leaf cells in the BKD index when the
+  number of dimensions is bigger than 1. It improves performance when there is
+  correlation between the dimensions, for example ranges. (Ignacio Vera, Adrien Grand)
+
 Other:
 
 * LUCENE-8485: Update randomizedtesting to version 2.6.4. (Dawid Weiss)
