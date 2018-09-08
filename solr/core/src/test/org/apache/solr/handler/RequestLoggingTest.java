@@ -48,15 +48,17 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
   @Before
   public void setupAppender() {
     LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    LoggerConfig config = ctx.getConfiguration().getLoggerConfig("RequestLoggingTest");
 
     writer = new StringWriter();
     appender = WriterAppender.createAppender(
       PatternLayout
         .newBuilder()
         .withPattern("%-5p [%t]: %m%n")
-        .build(), 
+        .build(),
         null, writer, "RequestLoggingTest", false, true);
     appender.start();
+
   }
 
   @Test
@@ -73,7 +75,7 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
 
   public void testLogBeforeExecute(Logger logger) {
     Level level = logger.getLevel();
-    
+
     LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
     LoggerConfig config = ctx.getConfiguration().getLoggerConfig(logger.getName());
     config.setLevel(Level.DEBUG);
@@ -82,23 +84,10 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
 
     try {
       assertQ(req("q", "*:*"));
-      Matcher matcher = null;
-      boolean foundDebugMsg = false;
-      String output = "";
-      for (int msgIdx = 0; msgIdx < 100; ++msgIdx) {
-        output = writer.toString();
-        matcher = Pattern.compile("DEBUG.*q=\\*:\\*.*").matcher(output);
-        if (matcher.find()) {
-          foundDebugMsg = true;
-          break;
-        }
-        try {
-          Thread.sleep(10);
-        } catch (InterruptedException ie) {
-          ;
-        }
-      }
-      assertTrue("Should have found debug-level message. Found " + output, foundDebugMsg);
+
+      String output = writer.toString();
+      Matcher matcher = Pattern.compile("DEBUG.*q=\\*:\\*.*").matcher(output);
+      assertTrue(matcher.find());
       final String group = matcher.group();
       final String msg = "Should not have post query information";
       assertFalse(msg, group.contains("hits"));
