@@ -239,8 +239,12 @@ public class JettySolrRunner {
         connector = new ServerConnector(server, new SslConnectionFactory(sslcontext, "http/1.1"),
             new HttpConnectionFactory(configuration));
       } else {
-        connector = new ServerConnector(server, new HttpConnectionFactory(configuration),
-            new HTTP2CServerConnectionFactory(configuration));
+        if (config.useOnlyHttp1) {
+          connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
+        } else {
+          connector = new ServerConnector(server, new HttpConnectionFactory(configuration),
+              new HTTP2CServerConnectionFactory(configuration));
+        }
       }
 
       connector.setReuseAddress(true);

@@ -25,6 +25,8 @@ import java.util.TreeMap;
 
 public class JettyConfig {
 
+  public final boolean useOnlyHttp1;
+
   public final int port;
 
   public final String context;
@@ -39,8 +41,9 @@ public class JettyConfig {
 
   public final SSLConfig sslConfig;
 
-  private JettyConfig(int port, String context, boolean stopAtShutdown, Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
+  private JettyConfig(boolean useOnlyHttp1, int port, String context, boolean stopAtShutdown, Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
                       Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig) {
+    this.useOnlyHttp1 = useOnlyHttp1;
     this.port = port;
     this.context = context;
     this.stopAtShutdown = stopAtShutdown;
@@ -67,6 +70,7 @@ public class JettyConfig {
 
   public static class Builder {
 
+    boolean useOnlyHttp1 = false;
     int port = 0;
     String context = "/solr";
     boolean stopAtShutdown = true;
@@ -74,6 +78,11 @@ public class JettyConfig {
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
     Map<Class<? extends Filter>, String> extraFilters = new LinkedHashMap<>();
     SSLConfig sslConfig = null;
+
+    public Builder useOnlyHttp1(boolean useOnlyHttp1) {
+      this.useOnlyHttp1 = useOnlyHttp1;
+      return this;
+    }
 
     public Builder setPort(int port) {
       this.port = port;
@@ -123,7 +132,7 @@ public class JettyConfig {
     }
 
     public JettyConfig build() {
-      return new JettyConfig(port, context, stopAtShutdown, waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig);
+      return new JettyConfig(useOnlyHttp1, port, context, stopAtShutdown, waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig);
     }
 
   }

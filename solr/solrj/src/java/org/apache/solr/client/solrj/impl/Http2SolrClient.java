@@ -198,6 +198,7 @@ public class Http2SolrClient extends SolrClient {
 
     HttpClientTransport transport;
     if (builder.useHttp1_1 || builder.sslConfig != null) {
+      LOG.info("Create Http2SolrClient with HTTP/1.1 transport");
       transport = new HttpClientTransportOverHTTP(2);
 
       SslContextFactory sslContextFactory;
@@ -208,6 +209,7 @@ public class Http2SolrClient extends SolrClient {
       }
       httpClient = new HttpClient(transport, sslContextFactory);
     } else {
+      LOG.info("Create Http2SolrClient with HTTP/2 transport");
       //TODO adding https support for HTTP2 when use JDK 9
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);
@@ -655,7 +657,7 @@ public class Http2SolrClient extends SolrClient {
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout;
     private Integer connectionTimeout;
-    private boolean useHttp1_1 = false;
+    private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
     private Request.BeginListener beginListener = request -> {};
 
