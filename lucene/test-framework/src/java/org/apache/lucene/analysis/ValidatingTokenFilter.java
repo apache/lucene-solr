@@ -62,6 +62,9 @@ public final class ValidatingTokenFilter extends TokenFilter {
 
   @Override
   public boolean incrementToken() throws IOException {
+
+    // System.out.println(name + ": incrementToken()");
+
     if (!input.incrementToken()) {
       return false;
     }
@@ -69,15 +72,15 @@ public final class ValidatingTokenFilter extends TokenFilter {
     int startOffset = 0;
     int endOffset = 0;
     int posLen = 0;
+
+    // System.out.println(name + ": " + this);
     
     if (posIncAtt != null) {
       pos += posIncAtt.getPositionIncrement();
       if (pos == -1) {
-        throw new IllegalStateException("first posInc must be > 0");
+        throw new IllegalStateException(name + ": first posInc must be > 0");
       }
     }
-
-    // System.out.println("  got token=" + termAtt + " pos=" + pos);
     
     if (offsetAtt != null) {
       startOffset = offsetAtt.startOffset();

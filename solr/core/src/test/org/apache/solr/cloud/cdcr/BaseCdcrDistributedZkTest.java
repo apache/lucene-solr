@@ -447,7 +447,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     }
     Integer replicationFactor = (Integer) collectionProps.get(REPLICATION_FACTOR);
     if (replicationFactor == null) {
-      replicationFactor = (Integer) OverseerCollectionMessageHandler.COLL_PROPS.get(REPLICATION_FACTOR);
+      replicationFactor = (Integer) OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.get(REPLICATION_FACTOR);
     }
 
     if (confSetName != null) {

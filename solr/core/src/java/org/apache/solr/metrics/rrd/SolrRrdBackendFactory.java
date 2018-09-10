@@ -206,7 +206,8 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
         return null;
       }
       if (o instanceof byte[]) {
-        Long time = (Long)doc.getFieldValue("timestamp_l");
+        Object timeObj = doc.getFieldValue("timestamp_l");
+        Long time = timeObj instanceof Number ? ((Number)timeObj).longValue() : Long.parseLong(String.valueOf(timeObj));
         return new SolrRrdBackend.SyncData((byte[])o, time);
       } else {
         throw new SolrServerException("Unexpected value of '" + DATA_FIELD + "' field: " + o.getClass().getName() + ": " + o);
@@ -248,7 +249,11 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
         SolrDocumentList docs = rsp.getResults();
         if (docs != null) {
           docs.forEach(d -> {
-            Long time = (Long)d.getFieldValue("timestamp_l");
+            Object o = d.getFieldValue("timestamp_l");
+            if (o == null) {
+              return;
+            }
+            Long time = o instanceof Number ? ((Number)o).longValue() : Long.parseLong(String.valueOf(o));
             Pair<String, Long> p = new Pair<>(((String)d.getFieldValue("id")).substring(idPrefixLength), time);
             byName.put(p.first(), p);
           });

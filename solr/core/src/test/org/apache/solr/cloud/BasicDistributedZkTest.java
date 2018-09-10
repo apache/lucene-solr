@@ -86,6 +86,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+// DO NOT ENABLE @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
 public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -148,6 +149,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 4)
+  //DO NOT ENABLE @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void test() throws Exception {
     // setLoggingLevel(null);
 
@@ -710,24 +712,20 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     log.info("### STARTING doOptimisticLockingAndUpdating");
     printLayout();
     
-    SolrInputDocument sd =  sdoc("id", 1000, "_version_", -1);
+    final SolrInputDocument sd =  sdoc("id", 1000, "_version_", -1);
     indexDoc(sd);
 
     ignoreException("version conflict");
     for (SolrClient client : clients) {
-      try {
-        client.add(sd);
-        fail();
-      } catch (SolrException e) {
-        assertEquals(409, e.code());
-      }
+      SolrException e = expectThrows(SolrException.class, () -> client.add(sd));
+      assertEquals(409, e.code());
     }
     unIgnoreException("version conflict");
 
     // TODO: test deletes.  SolrJ needs a good way to pass version for delete...
 
-    sd =  sdoc("id", 1000, "foo_i",5);
-    clients.get(0).add(sd);
+    final SolrInputDocument sd2 =  sdoc("id", 1000, "foo_i",5);
+    clients.get(0).add(sd2);
 
     List<Integer> expected = new ArrayList<>();
     int val = 0;

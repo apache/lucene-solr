@@ -62,28 +62,28 @@ public class TestNeedsScores extends LuceneTestCase {
     Query required = new TermQuery(new Term("field", "this"));
     Query prohibited = new TermQuery(new Term("field", "3"));
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.add(new AssertNeedsScores(required, ScoreMode.COMPLETE), BooleanClause.Occur.MUST);
+    bq.add(new AssertNeedsScores(required, ScoreMode.TOP_SCORES), BooleanClause.Occur.MUST);
     bq.add(new AssertNeedsScores(prohibited, ScoreMode.COMPLETE_NO_SCORES), BooleanClause.Occur.MUST_NOT);
-    assertEquals(4, searcher.search(bq.build(), 5).totalHits); // we exclude 3
+    assertEquals(4, searcher.search(bq.build(), 5).totalHits.value); // we exclude 3
   }
   
   /** nested inside constant score query */
   public void testConstantScoreQuery() throws Exception {
     Query term = new TermQuery(new Term("field", "this"));
     Query constantScore = new ConstantScoreQuery(new AssertNeedsScores(term, ScoreMode.COMPLETE_NO_SCORES));
-    assertEquals(5, searcher.search(constantScore, 5).totalHits);
+    assertEquals(5, searcher.search(constantScore, 5).totalHits.value);
   }
   
   /** when not sorting by score */
   public void testSortByField() throws Exception {
     Query query = new AssertNeedsScores(new MatchAllDocsQuery(), ScoreMode.COMPLETE_NO_SCORES);
-    assertEquals(5, searcher.search(query, 5, Sort.INDEXORDER).totalHits);
+    assertEquals(5, searcher.search(query, 5, Sort.INDEXORDER).totalHits.value);
   }
   
   /** when sorting by score */
   public void testSortByScore() throws Exception {
     Query query = new AssertNeedsScores(new MatchAllDocsQuery(), ScoreMode.COMPLETE);
-    assertEquals(5, searcher.search(query, 5, Sort.RELEVANCE).totalHits);
+    assertEquals(5, searcher.search(query, 5, Sort.RELEVANCE).totalHits.value);
   }
 
   /** 

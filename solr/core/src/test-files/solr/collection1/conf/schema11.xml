@@ -288,7 +288,6 @@ valued. -->
     <fieldType name="text_length" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.LengthFilterFactory" min="2" max="32768"/>
       </analyzer>

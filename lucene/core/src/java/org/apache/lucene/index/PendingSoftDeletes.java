@@ -37,7 +37,7 @@ final class PendingSoftDeletes extends PendingDeletes {
   private final PendingDeletes hardDeletes;
 
   PendingSoftDeletes(String field, SegmentCommitInfo info)  {
-    super(info);
+    super(info, null, info.getDelCount(true) == 0);
     this.field = field;
     hardDeletes = new PendingDeletes(info);
   }
@@ -146,12 +146,12 @@ final class PendingSoftDeletes extends PendingDeletes {
     if (this.field.equals(info.name)) {
       pendingDeleteCount += applySoftDeletes(iterator, getMutableBits());
       assert assertPendingDeletes();
-      assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
-      assert dvGeneration != -2 : "docValues generation is still uninitialized";
-      dvGeneration = info.getDocValuesGen();
       this.info.setSoftDelCount(this.info.getSoftDelCount() + pendingDeleteCount);
       super.dropChanges();
     }
+    assert dvGeneration < info.getDocValuesGen() : "we have seen this generation update already: " + dvGeneration + " vs. " + info.getDocValuesGen();
+    assert dvGeneration != -2 : "docValues generation is still uninitialized";
+    dvGeneration = info.getDocValuesGen();
   }
 
   private boolean assertPendingDeletes() {
@@ -228,6 +228,11 @@ final class PendingSoftDeletes extends PendingDeletes {
   @Override
   Bits getHardLiveDocs() {
     return hardDeletes.getLiveDocs();
+  }
+
+  @Override
+  boolean mustInitOnDelete() {
+    return liveDocsInitialized == false;
   }
 
   static int countSoftDeletes(DocIdSetIterator softDeletedDocs, Bits hardDeletes) throws IOException {

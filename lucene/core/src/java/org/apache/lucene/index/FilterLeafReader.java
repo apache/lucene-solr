@@ -237,11 +237,6 @@ public abstract class FilterLeafReader extends LeafReader {
     }
 
     @Override
-    public AttributeSource attributes() {
-      return in.attributes();
-    }
-
-    @Override
     public int docID() {
       return in.docID();
     }

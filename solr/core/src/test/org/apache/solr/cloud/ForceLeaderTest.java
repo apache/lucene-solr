@@ -211,7 +211,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
   @Test
   @Slow
   //TODO remove in SOLR-11812
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+// 12-Jun-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testReplicasInLIRNoLeader() throws Exception {
     handle.put("maxScore", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
@@ -317,13 +317,9 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
   private void assertSendDocFails(int docId) throws Exception {
     // sending a doc in this state fails
-    try {
-      sendDoc(docId);
-      log.error("Should've failed indexing during a down state. Cluster state: " + printClusterStateInfo());
-      fail("Should've failed indexing during a down state.");
-    } catch (SolrException ex) {
-      log.info("Document couldn't be sent, which is expected.");
-    }
+    expectThrows(SolrException.class,
+        "Should've failed indexing during a down state.",
+        () -> sendDoc(docId));
   }
 
   private void putNonLeadersIntoLIR(String collectionName, String shard, ZkController zkController, Replica leader, List<Replica> notLeaders) throws Exception {

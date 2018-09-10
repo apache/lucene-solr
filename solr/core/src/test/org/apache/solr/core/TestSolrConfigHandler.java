@@ -186,6 +186,19 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertNull(response, map.get("errors")); // Will this ever be returned?
   }
 
+  public static void runConfigCommandExpectFailure(RestTestHarness harness, String uri, String payload, String expectedErrorMessage) throws Exception {
+    String json = SolrTestCaseJ4.json(payload);
+    log.info("going to send config command. path {} , payload: {}", uri, payload);
+    String response = harness.post(uri, json);
+    Map map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNotNull(response, map.get("errorMessages"));
+    assertNotNull(response, map.get("error"));
+    assertTrue("Expected status != 0: " + response, 0L != (Long)((Map)map.get("responseHeader")).get("status"));
+    List errorDetails = (List)((Map)map.get("error")).get("details");
+    List errorMessages = (List)((Map)errorDetails.get(0)).get("errorMessages");
+    assertTrue("Expected '" + expectedErrorMessage + "': " + response, 
+        errorMessages.get(0).toString().contains(expectedErrorMessage));
+  }
 
   public static void reqhandlertests(RestTestHarness writeHarness, String testServerBaseUrl, CloudSolrClient cloudSolrClient) throws Exception {
     String payload = "{\n" +
@@ -499,6 +512,31 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertEquals("Actual output "+ Utils.toJSONString(map), "org.apache.solr.search.LRUCache",getObjectByPath(map, true, ImmutableList.of( "caches", "perSegFilter")));
     assertEquals("Actual output "+ Utils.toJSONString(map), "org.apache.solr.search.LFUCache",getObjectByPath(map, true, ImmutableList.of( "caches", "lfuCacheDecayFalse")));
 
+  }
+  
+  public void testFailures() throws Exception {
+    String payload = "{ not-a-real-command: { param1: value1, param2: value2 } }";
+    runConfigCommandExpectFailure(restTestHarness, "/config", payload, "Unknown operation 'not-a-real-command'");
+
+    payload = "{ set-property: { update.autoCreateFields: false } }";
+    runConfigCommandExpectFailure(restTestHarness, "/config", payload, "'update.autoCreateFields' is not an editable property");
+    
+    payload = "{ set-property: { updateHandler.autoCommit.maxDocs: false } }";
+    runConfigCommandExpectFailure(restTestHarness, "/config", payload, "Property updateHandler.autoCommit.maxDocs must be of Integer type");
+
+    payload = "{ unset-property: not-an-editable-property }";
+    runConfigCommandExpectFailure(restTestHarness, "/config", payload, "'[not-an-editable-property]' is not an editable property");
+
+    for (String component : new String[] {
+        "requesthandler", "searchcomponent", "initparams", "queryresponsewriter", "queryparser",
+        "valuesourceparser", "transformer", "updateprocessor", "queryconverter", "listener", "runtimelib"}) {
+      for (String operation : new String[] { "add", "update" }) {
+        payload = "{ " + operation + "-" + component + ": { param1: value1 } }";
+        runConfigCommandExpectFailure(restTestHarness, "/config", payload, "'name' is a required field");
+      }
+      payload = "{ delete-" + component + ": not-a-real-component-name }";
+      runConfigCommandExpectFailure(restTestHarness, "/config", payload, "NO such ");
+    }
   }
 
   public static class CacheTest extends DumpRequestHandler {

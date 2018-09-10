@@ -30,7 +30,11 @@ import org.apache.lucene.util.Accountables;
  * A memory-resident {@link IndexOutput} implementation.
  *
  * @lucene.internal
+ * @deprecated This class uses inefficient synchronization and is discouraged
+ * in favor of {@link MMapDirectory}. It will be removed in future versions 
+ * of Lucene.
  */
+@Deprecated
 public class RAMOutputStream extends IndexOutput implements Accountable {
   static final int BUFFER_SIZE = 1024;
 

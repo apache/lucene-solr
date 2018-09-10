@@ -353,7 +353,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = newSearcher(reader);
     TopDocs hits = searcher.search(query, 10);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     FieldQuery fieldQuery  = highlighter.getFieldQuery(query, reader);
     String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, 1, "field", 1000, 1);
     assertEquals("This piece of <b>text</b> refers to Kennedy at the beginning then has a longer piece of <b>text</b> that is <b>very</b> <b>long</b> in the middle and finally ends with another reference to Kennedy", bestFragments[0]);

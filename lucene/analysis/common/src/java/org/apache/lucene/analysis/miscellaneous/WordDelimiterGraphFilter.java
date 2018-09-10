@@ -368,6 +368,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
           if (has(PRESERVE_ORIGINAL) == false) {
             continue;
           } else {
+            accumPosInc = 0;
             return true;
           }
         }

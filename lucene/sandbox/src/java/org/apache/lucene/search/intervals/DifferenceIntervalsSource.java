@@ -23,14 +23,15 @@ import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.MatchesIterator;
 
 class DifferenceIntervalsSource extends IntervalsSource {
 
-  final IntervalsSource minuend;
-  final IntervalsSource subtrahend;
-  final DifferenceIntervalFunction function;
+  private final IntervalsSource minuend;
+  private final IntervalsSource subtrahend;
+  private final DifferenceIntervalFunction function;
 
-  public DifferenceIntervalsSource(IntervalsSource minuend, IntervalsSource subtrahend, DifferenceIntervalFunction function) {
+  DifferenceIntervalsSource(IntervalsSource minuend, IntervalsSource subtrahend, DifferenceIntervalFunction function) {
     this.minuend = minuend;
     this.subtrahend = subtrahend;
     this.function = function;
@@ -45,6 +46,20 @@ class DifferenceIntervalsSource extends IntervalsSource {
     if (subIt == null)
       return minIt;
     return function.apply(minIt, subIt);
+  }
+
+  @Override
+  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    MatchesIterator minIt = minuend.matches(field, ctx, doc);
+    if (minIt == null) {
+      return null;
+    }
+    MatchesIterator subIt = subtrahend.matches(field, ctx, doc);
+    if (subIt == null) {
+      return minIt;
+    }
+    IntervalIterator difference = function.apply(IntervalMatches.wrapMatches(minIt, doc), IntervalMatches.wrapMatches(subIt, doc));
+    return IntervalMatches.asMatches(difference, minIt, doc);
   }
 
   @Override

@@ -39,6 +39,8 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -524,6 +526,48 @@ final class DefaultIndexingChain extends DocConsumer {
     fp.pointValuesWriter.addPackedValue(docState.docID, field.binaryValue());
   }
 
+  private void validateIndexSortDVType(Sort indexSort, String fieldName, DocValuesType dvType) {
+    for (SortField sortField : indexSort.getSort()) {
+      if (sortField.getField().equals(fieldName)) {
+        switch (dvType) {
+          case NUMERIC:
+            if (sortField.getType().equals(SortField.Type.INT) == false &&
+                  sortField.getType().equals(SortField.Type.LONG) == false &&
+                  sortField.getType().equals(SortField.Type.FLOAT) == false &&
+                  sortField.getType().equals(SortField.Type.DOUBLE) == false) {
+              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+            }
+            break;
+
+          case BINARY:
+            throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+
+          case SORTED:
+            if (sortField.getType().equals(SortField.Type.STRING) == false) {
+              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+            }
+            break;
+
+          case SORTED_NUMERIC:
+            if (sortField instanceof SortedNumericSortField == false) {
+              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+            }
+            break;
+
+          case SORTED_SET:
+            if (sortField instanceof SortedSetSortField == false) {
+              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+            }
+            break;
+
+          default:
+            throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+        }
+        break;
+      }
+    }
+  }
+
   /** Called from processDocument to index one field's doc value */
   private void indexDocValue(PerField fp, DocValuesType dvType, IndexableField field) throws IOException {
 
@@ -531,7 +575,12 @@ final class DefaultIndexingChain extends DocConsumer {
       // This is the first time we are seeing this field indexed with doc values, so we
       // now record the DV type so that any future attempt to (illegally) change
       // the DV type of this field, will throw an IllegalArgExc:
+      if (docWriter.getSegmentInfo().getIndexSort() != null) {
+        final Sort indexSort = docWriter.getSegmentInfo().getIndexSort();
+        validateIndexSortDVType(indexSort, fp.fieldInfo.name, dvType);
+      }
       fieldInfos.globalFieldNumbers.setDocValuesType(fp.fieldInfo.number, fp.fieldInfo.name, dvType);
+
     }
     fp.fieldInfo.setDocValuesType(dvType);
 

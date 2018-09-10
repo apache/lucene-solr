@@ -23,20 +23,22 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 
 public class Violation implements MapWriter {
   final String shard, coll, node;
   final Object actualVal;
-  final Long replicaCountDelta;//how far is the actual value from the expected value
+  Double replicaCountDelta;//how many extra replicas
   final Object tagKey;
   private final int hash;
   private final Clause clause;
   private List<ReplicaInfoAndErr> replicaInfoAndErrs = new ArrayList<>();
 
-  Violation(Clause clause, String coll, String shard, String node, Object actualVal, Long replicaCountDelta, Object tagKey) {
+  Violation(SealedClause clause, String coll, String shard, String node, Object actualVal, Double replicaCountDelta, Object tagKey) {
     this.clause = clause;
     this.shard = shard;
     this.coll = coll;
@@ -61,19 +63,60 @@ public class Violation implements MapWriter {
   }
 
   public boolean matchShard(String shard) {
-    if (getClause().shard.op == Operand.WILDCARD) return true;
+    if (getClause().getShard().op == Operand.WILDCARD) return true;
     return this.shard == null || this.shard.equals(shard);
+  }
+
+  //if the delta is lower , this violation is less serious
+  public boolean isLessSerious(Violation that) {
+    return this.getClause().getTag().varType.compareViolation(this, that) < 0;
+  }
+
+  @Override
+  public int hashCode() {
+    return hash;
+  }
+
+  public boolean isSimilarViolation(Violation that) {
+    if (Objects.equals(this.shard, that.shard) &&
+        Objects.equals(this.coll, that.coll) &&
+        Objects.equals(this.node, that.node)) {
+      if (this.clause.isPerCollectiontag() && that.clause.isPerCollectiontag()) {
+        return Objects.equals(this.clause.tag.getName(), that.clause.tag.getName());
+      } else if (!this.clause.isPerCollectiontag() && !that.clause.isPerCollectiontag()) {
+        return Objects.equals(this.clause.globalTag.getName(), that.clause.globalTag.getName())
+            && Objects.equals(this.node, that.node);
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+
+  }
+
+  @Override
+  public boolean equals(Object that) {
+    if (that instanceof Violation) {
+      Violation v = (Violation) that;
+      return Objects.equals(this.shard, v.shard) &&
+          Objects.equals(this.coll, v.coll) &&
+//          Objects.equals(this.node, v.node) &&
+          Objects.equals(this.clause, v.clause)
+          ;
+    }
+    return false;
   }
 
   static class ReplicaInfoAndErr implements MapWriter{
     final ReplicaInfo replicaInfo;
+    Double delta;
 
     ReplicaInfoAndErr(ReplicaInfo replicaInfo) {
       this.replicaInfo = replicaInfo;
     }
-    Long delta;
 
-    public ReplicaInfoAndErr withDelta(Long delta) {
+    public ReplicaInfoAndErr withDelta(Double delta) {
       this.delta = delta;
       return this;
     }
@@ -86,28 +129,6 @@ public class Violation implements MapWriter {
   }
 
   @Override
-  public int hashCode() {
-    return hash;
-  }
-  //if the delta is lower , this violation is less serious
-  public boolean isLessSerious(Violation that) {
-    return this.getClause().tag.varType.compareViolation(this,that) <0 ;
-  }
-
-  @Override
-  public boolean equals(Object that) {
-    if (that instanceof Violation) {
-      Violation v = (Violation) that;
-      return Objects.equals(this.shard, v.shard) &&
-          Objects.equals(this.coll, v.coll) &&
-          Objects.equals(this.node, v.node) &&
-          Objects.equals(this.clause, v.clause)
-          ;
-    }
-    return false;
-  }
-
-  @Override
   public String toString() {
     return Utils.toJSONString(Utils.getDeepCopy(toMap(new LinkedHashMap<>()), 5));
   }
@@ -115,14 +136,46 @@ public class Violation implements MapWriter {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.putIfNotNull("collection", coll);
-    ew.putIfNotNull("shard", shard);
+    if (!Policy.ANY.equals(shard)) ew.putIfNotNull("shard", shard);
     ew.putIfNotNull("node", node);
-    ew.putIfNotNull("tagKey", String.valueOf(tagKey));
+    ew.putIfNotNull("tagKey", tagKey);
     ew.putIfNotNull("violation", (MapWriter) ew1 -> {
       if (getClause().isPerCollectiontag()) ew1.put("replica", actualVal);
       else ew1.put(clause.tag.name, String.valueOf(actualVal));
       ew1.putIfNotNull("delta", replicaCountDelta);
     });
     ew.put("clause", getClause());
+    if (!replicaInfoAndErrs.isEmpty()) {
+      ew.put("violatingReplicas", (IteratorWriter) iw -> {
+        for (ReplicaInfoAndErr replicaInfoAndErr : replicaInfoAndErrs) {
+          iw.add(replicaInfoAndErr.replicaInfo);
+        }
+      });
+    }
+  }
+
+  static class Ctx {
+    final Function<Condition, Object> evaluator;
+    Object tagKey;
+    Clause clause;
+    ReplicaCount count;
+    Violation currentViolation;
+    List<Row> allRows;
+    List<Violation> allViolations = new ArrayList<>();
+
+    public Ctx(Clause clause, List<Row> allRows, Function<Condition, Object> evaluator) {
+      this.allRows = allRows;
+      this.clause = clause;
+      this.evaluator = evaluator;
+    }
+
+    public Ctx resetAndAddViolation(Object tagKey, ReplicaCount count, Violation currentViolation) {
+      this.tagKey = tagKey;
+      this.count = count;
+      this.currentViolation = currentViolation;
+      allViolations.add(currentViolation);
+      this.clause = currentViolation.getClause();
+      return this;
+    }
   }
 }

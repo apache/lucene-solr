@@ -44,6 +44,7 @@ import org.junit.Test;
 public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
 
   @Test
+  //17-Aug-2018 commented @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
     setupRestTestHarnesses();

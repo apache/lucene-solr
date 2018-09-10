@@ -35,9 +35,9 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -137,7 +137,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     final IndexSearcher searcher = getSearcher(r);
     // first run the standard query
     TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
@@ -209,7 +209,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
 
     // first run the standard query
     TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(5, hits.totalHits);
+    assertEquals(5, hits.totalHits.value);
 
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
@@ -245,7 +245,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
 
       final ScoreDoc[] slice = new ScoreDoc[topN];
       System.arraycopy(hits.scoreDocs, 0, slice, 0, topN);
-      hits = new TopDocs(hits.totalHits, slice, hits.getMaxScore());
+      hits = new TopDocs(hits.totalHits, slice);
       hits = rescorer.rescore(searcher, hits, topN);
       for (int i = topN - 1, j = 0; i >= 0; i--, j++) {
         log.info("doc {} in pos {}", searcher.doc(hits.scoreDocs[j].doc)
@@ -279,8 +279,8 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
     LTRScoringQuery.ModelWeight wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
-    modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
-    for (final Scorer.ChildScorer feat : modelScr.getChildren()) {
+    modelScr.getDocInfo().setOriginalDocScore(1f);
+    for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
       assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }
 
@@ -295,8 +295,8 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     query = new LTRScoringQuery(ltrScoringModel);
     wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     modelScr = wgt.scorer(null);
-    modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
-    for (final Scorer.ChildScorer feat : modelScr.getChildren()) {
+    modelScr.getDocInfo().setOriginalDocScore(1f);
+    for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
       assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }
   }

@@ -82,7 +82,6 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
             "/response/lst[@name='fieldType']/str[@name='name'] = 'teststop'",
             "/response/lst[@name='fieldType']/str[@name='class'] = 'solr.TextField'",
             "/response/lst[@name='fieldType']/lst[@name='analyzer']/lst[@name='tokenizer']/str[@name='class'] = 'solr.LowerCaseTokenizerFactory'",
-            "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.StandardFilterFactory']",
             "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.StopFilterFactory']",
             "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='words'][.='stopwords.txt']"
             );

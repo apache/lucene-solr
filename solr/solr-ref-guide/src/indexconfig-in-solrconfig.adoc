@@ -112,13 +112,16 @@ The example above shows Solr's {solr-javadocs}/solr-core/org/apache/solr/index/S
 
 The merge scheduler controls how merges are performed. The default `ConcurrentMergeScheduler` performs merges in the background using separate threads. The alternative, `SerialMergeScheduler`, does not perform merges with separate threads.
 
-The `ConcurrentMergeScheduler` has two configurable attributes:
+The `ConcurrentMergeScheduler` has the following configurable attributes:
 
 `maxMergeCount`::
 The maximum number of simultaneous merges that are allowed. If a merge is necessary yet we already have this many threads running, the indexing thread will block until a merge thread has completed. Note that Solr will only run the smallest `maxThreadCount` merges at a time.
 
 `maxThreadCount`::
 The maximum number of simultaneous merge threads that should be running at once. This must be less than `maxMergeCount`.
+
+`ioThrottle`::
+A Boolean value (true/ false) to explicitly control I/O throttling. By default throttling is enabled and the CMS will limit I/O throughput when merging to leave other (search, indexing) some room.
 
 The defaults for the above attributes are dynamically set based on whether the underlying disk drive is rotational disk or not. Refer to the <<taking-solr-to-production.adoc#dynamic-defaults-for-concurrentmergescheduler, Dynamic defaults for ConcurrentMergeScheduler>> section for more details.
 

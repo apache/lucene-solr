@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateHandler;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.apache.solr.core.SolrCore.verbose;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
 public class TestStressRecovery extends TestRTGBase {
 
   @BeforeClass
@@ -59,7 +61,8 @@ public class TestStressRecovery extends TestRTGBase {
   // This version simulates updates coming from the leader and sometimes being reordered
   // and tests the ability to buffer updates and apply them later
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+// 12-Jun-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testStressRecovery() throws Exception {
     assumeFalse("FIXME: This test is horribly slow sometimes on Windows!", Constants.WINDOWS);
     clearIndex();

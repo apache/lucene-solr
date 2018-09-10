@@ -407,6 +407,9 @@ public class IndexSizeTrigger extends TriggerBase {
         replicas.forEach(r -> lastAboveEventMap.put(r.getCore(), now));
       });
       belowSize.forEach((coll, replicas) -> {
+        if (replicas.size() < 2) {
+          return;
+        }
         lastBelowEventMap.put(replicas.get(0).getCore(), now);
         lastBelowEventMap.put(replicas.get(1).getCore(), now);
       });

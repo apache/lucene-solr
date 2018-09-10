@@ -26,8 +26,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
 
-/* A simple update request which streams content to the server
-
+/** A simple update request which streams content to the server
  */
 public class StreamingUpdateRequest extends AbstractUpdateRequest {
 

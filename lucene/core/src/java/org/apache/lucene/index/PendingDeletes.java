@@ -39,7 +39,7 @@ class PendingDeletes {
   // case getMutableBits needs to be called
   private FixedBitSet writeableLiveDocs;
   protected int pendingDeleteCount;
-  private boolean liveDocsInitialized;
+  boolean liveDocsInitialized;
 
   PendingDeletes(SegmentReader reader, SegmentCommitInfo info) {
     this(info, reader.getLiveDocs(), true);
@@ -53,7 +53,7 @@ class PendingDeletes {
     // For segments that were published we enforce a reader in the BufferedUpdatesStream.SegmentState ctor
   }
 
-  private PendingDeletes(SegmentCommitInfo info, Bits liveDocs, boolean liveDocsInitialized) {
+  PendingDeletes(SegmentCommitInfo info, Bits liveDocs, boolean liveDocsInitialized) {
     this.info = info;
     this.liveDocs = liveDocs;
     pendingDeleteCount = 0;
@@ -278,5 +278,14 @@ class PendingDeletes {
         info.info.maxDoc() + " rld.pendingDeleteCount=" + numPendingDeletes() +
         " info.getDelCount()=" + info.getDelCount();
     return true;
+  }
+
+  /**
+   * Returns {@code true} if we have to initialize this PendingDeletes before {@link #delete(int)};
+   * otherwise this PendingDeletes is ready to accept deletes. A PendingDeletes can be initialized
+   * by providing it a reader via {@link #onNewReader(CodecReader, SegmentCommitInfo)}.
+   */
+  boolean mustInitOnDelete() {
+    return false;
   }
 }

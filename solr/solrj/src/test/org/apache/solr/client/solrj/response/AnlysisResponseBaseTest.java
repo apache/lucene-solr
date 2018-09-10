@@ -98,6 +98,19 @@ public class AnlysisResponseBaseTest extends LuceneTestCase {
     assertPhase(phases.get(3), "Filter3", 3, tokenInfo);
   }
 
+  /**
+   * Tests the {@link AnalysisResponseBase#buildPhases(org.apache.solr.common.util.NamedList)} )}
+   * method for the special case of CharacterFilter.
+   */
+  @Test
+  public void testCharFilterBuildPhases() throws Exception {
+    NamedList nl = new NamedList();
+    nl.add("CharFilter1", "CharFilterOutput"); //not list of tokens
+    AnalysisResponseBase response = new AnalysisResponseBase();
+    List<AnalysisResponseBase.AnalysisPhase> phases = response.buildPhases(nl);
+    assertEquals(1, phases.size());
+  }
+
   //================================================ Helper Methods ==================================================
 
   private List<NamedList> buildFakeTokenInfoList(int numberOfTokens) {

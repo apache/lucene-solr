@@ -154,4 +154,10 @@ public final class NGramTokenFilter extends TokenFilter {
     curTermBuffer = null;
     curPosIncr = 0;
   }
+
+  @Override
+  public void end() throws IOException {
+    super.end();
+    posIncrAtt.setPositionIncrement(curPosIncr);
+  }
 }

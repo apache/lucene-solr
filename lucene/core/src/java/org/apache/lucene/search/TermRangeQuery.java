@@ -28,6 +28,10 @@ import org.apache.lucene.util.automaton.Automaton;
  * <p>This query matches the documents looking for terms that fall into the
  * supplied range according to {@link BytesRef#compareTo(BytesRef)}.
  *
+ * <p><b>NOTE</b>: {@link TermRangeQuery} performs significantly slower than
+ * {@link PointRangeQuery point-based ranges} as it needs to visit all terms
+ * that match the range and merges their matches. 
+ *
  * <p>This query uses the {@link
  * MultiTermQuery#CONSTANT_SCORE_REWRITE}
  * rewrite method.

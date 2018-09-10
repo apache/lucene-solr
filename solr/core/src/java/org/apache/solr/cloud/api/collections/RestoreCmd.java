@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -110,18 +111,25 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         zkStateReader.getClusterState().getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
 
     int numShards = backupCollectionState.getActiveSlices().size();
-    
-    int numNrtReplicas = getInt(message, NRT_REPLICAS, backupCollectionState.getNumNrtReplicas(), 0);
-    if (numNrtReplicas == 0) {
-      numNrtReplicas = getInt(message, REPLICATION_FACTOR, backupCollectionState.getReplicationFactor(), 0);
+
+    int numNrtReplicas;
+    if (message.get(REPLICATION_FACTOR) != null) {
+      numNrtReplicas = message.getInt(REPLICATION_FACTOR, 0);
+    } else if (message.get(NRT_REPLICAS) != null) {
+      numNrtReplicas = message.getInt(NRT_REPLICAS, 0);
+    } else {
+      //replicationFactor and nrtReplicas is always in sync after SOLR-11676
+      //pick from cluster state of the backed up collection
+      numNrtReplicas = backupCollectionState.getReplicationFactor();
     }
     int numTlogReplicas = getInt(message, TLOG_REPLICAS, backupCollectionState.getNumTlogReplicas(), 0);
     int numPullReplicas = getInt(message, PULL_REPLICAS, backupCollectionState.getNumPullReplicas(), 0);
     int totalReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
+    assert totalReplicasPerShard > 0;
     
     int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, backupCollectionState.getMaxShardsPerNode());
     int availableNodeCount = nodeList.size();
-    if ((numShards * totalReplicasPerShard) > (availableNodeCount * maxShardsPerNode)) {
+    if (maxShardsPerNode != -1 && (numShards * totalReplicasPerShard) > (availableNodeCount * maxShardsPerNode)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           String.format(Locale.ROOT, "Solr cloud with available number of nodes:%d is insufficient for"
               + " restoring a collection with %d shards, total replicas per shard %d and maxShardsPerNode %d."
@@ -130,8 +138,8 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     //Upload the configs
-    String configName = (String) properties.get(OverseerCollectionMessageHandler.COLL_CONF);
-    String restoreConfigName = message.getStr(OverseerCollectionMessageHandler.COLL_CONF, configName);
+    String configName = (String) properties.get(CollectionAdminParams.COLL_CONF);
+    String restoreConfigName = message.getStr(CollectionAdminParams.COLL_CONF, configName);
     if (zkStateReader.getConfigManager().configExists(restoreConfigName)) {
       log.info("Using existing config {}", restoreConfigName);
       //TODO add overwrite option?
@@ -151,18 +159,23 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       if (properties.get(STATE_FORMAT) == null) {
         propMap.put(STATE_FORMAT, "2");
       }
+      propMap.put(REPLICATION_FACTOR, numNrtReplicas);
+      propMap.put(NRT_REPLICAS, numNrtReplicas);
+      propMap.put(TLOG_REPLICAS, numTlogReplicas);
+      propMap.put(PULL_REPLICAS, numPullReplicas);
+      properties.put(MAX_SHARDS_PER_NODE, maxShardsPerNode);
 
       // inherit settings from input API, defaulting to the backup's setting.  Ex: replicationFactor
-      for (String collProp : OverseerCollectionMessageHandler.COLL_PROPS.keySet()) {
+      for (String collProp : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.keySet()) {
         Object val = message.getProperties().getOrDefault(collProp, backupCollectionState.get(collProp));
-        if (val != null) {
+        if (val != null && propMap.get(collProp) == null) {
           propMap.put(collProp, val);
         }
       }
 
       propMap.put(NAME, restoreCollectionName);
       propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET, OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY); //no cores
-      propMap.put(OverseerCollectionMessageHandler.COLL_CONF, restoreConfigName);
+      propMap.put(CollectionAdminParams.COLL_CONF, restoreConfigName);
 
       // router.*
       @SuppressWarnings("unchecked")
@@ -307,8 +320,8 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
       }
 
-      if (totalReplicasPerShard > 1) {
-        log.info("Adding replicas to restored collection={}", restoreCollection);
+        if (totalReplicasPerShard > 1) {
+        log.info("Adding replicas to restored collection={}", restoreCollection.getName());
         for (Slice slice : restoreCollection.getSlices()) {
 
           //Add the remaining replicas for each shard, considering it's type

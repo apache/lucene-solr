@@ -107,7 +107,7 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     DirectoryReader r = StandardDirectoryReader.open(dir, currentInfos, subs);
     addReaderClosedListener(r);
     node.message("refreshed to version=" + currentInfos.getVersion() + " r=" + r);
-    return SearcherManager.getSearcher(searcherFactory, r, (DirectoryReader) old.getIndexReader());
+    return SearcherManager.getSearcher(searcherFactory, r, old.getIndexReader());
   }
 
   private void addReaderClosedListener(IndexReader r) {

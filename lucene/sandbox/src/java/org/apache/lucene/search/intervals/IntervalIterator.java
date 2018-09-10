@@ -74,4 +74,9 @@ public abstract class IntervalIterator extends DocIdSetIterator {
    */
   public abstract float matchCost();
 
+  @Override
+  public String toString() {
+    return docID() + ":[" + start() + "->" + end() + "]";
+  }
+
 }

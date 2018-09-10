@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.junit.BeforeClass;
 
+// commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
 public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {

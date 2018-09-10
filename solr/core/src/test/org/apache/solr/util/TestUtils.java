@@ -119,7 +119,7 @@ public class TestUtils extends SolrTestCaseJ4 {
     map.add( "test", 10 );
     SimpleOrderedMap<Integer> clone = map.clone();
     assertEquals( map.toString(), clone.toString() );
-    assertEquals( new Integer(10), clone.get( "test" ) );
+    assertEquals(Integer.valueOf(10), clone.get( "test" ) );
   
     Map<String,Integer> realMap = new HashMap<>();
     realMap.put( "one", 1 );
@@ -138,7 +138,7 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals( "one", map.getName(0) );
     map.setName( 0, "ONE" );
     assertEquals( "ONE", map.getName(0) );
-    assertEquals( new Integer(100), map.get( "one", 1 ) );
+    assertEquals(Integer.valueOf(100), map.get( "one", 1 ) );
     assertEquals( 4, map.indexOf( null, 1 ) );
     assertEquals( null, map.get( null, 1 ) );
 
@@ -156,8 +156,8 @@ public class TestUtils extends SolrTestCaseJ4 {
       } catch( UnsupportedOperationException ignored) {}
     }
     // the values should be bigger
-    assertEquals( new Integer(10), map.get( "one" ) );
-    assertEquals( new Integer(20), map.get( "two" ) );
+    assertEquals(Integer.valueOf(10), map.get( "one" ) );
+    assertEquals(Integer.valueOf(20), map.get( "two" ) );
   }
   
   public void testNumberUtils()

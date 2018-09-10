@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -325,7 +325,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
-  public static Collection<Slice> getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
+  public static Slice[] getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
     ClusterState clusterState = zkStateReader.getClusterState();
 
     Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
@@ -341,16 +341,16 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     List<Slice> slices = collections.stream()
         .map(collectionsMap::get)
         .filter(Objects::nonNull)
-        .flatMap(docCol -> docCol.getActiveSlices().stream())
+        .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))
         .collect(Collectors.toList());
     if (!slices.isEmpty()) {
-      return slices;
+      return slices.toArray(new Slice[slices.size()]);
     }
 
     // Check collection case insensitive
     for(String collectionMapKey : collectionsMap.keySet()) {
       if(collectionMapKey.equalsIgnoreCase(collectionName)) {
-        return collectionsMap.get(collectionMapKey).getActiveSlices();
+        return collectionsMap.get(collectionMapKey).getActiveSlicesArr();
       }
     }
 

@@ -125,9 +125,9 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (firstPassGroupingCollector != null) {
       if (field.getType().getNumberType() != null) {
-        topGroups = GroupConverter.fromMutable(field, firstPassGroupingCollector.getTopGroups(0, true));
+        topGroups = GroupConverter.fromMutable(field, firstPassGroupingCollector.getTopGroups(0));
       } else {
-        topGroups = firstPassGroupingCollector.getTopGroups(0, true);
+        topGroups = firstPassGroupingCollector.getTopGroups(0);
       }
     } else {
       topGroups = Collections.emptyList();

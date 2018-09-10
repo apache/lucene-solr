@@ -44,7 +44,7 @@ public class NormalizeEvaluator extends RecursiveObjectEvaluator implements OneV
       return null;
     }
     else if(value instanceof List){
-      return Arrays.stream(StatUtils.normalize(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).mapToObj(Double::new).collect(Collectors.toList());
+      return Arrays.stream(StatUtils.normalize(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).boxed().collect(Collectors.toList());
     } else if (value instanceof Matrix) {
       Matrix matrix = (Matrix) value;
       double[][] data = matrix.getData();

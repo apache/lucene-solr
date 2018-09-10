@@ -1047,7 +1047,9 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         // if only one arg, assume it's the foreground
         // (background is the one that will most commonly just be "*:*")
         // see notes in RelatednessAgg constructor about why we don't do this yet
-        return new RelatednessAgg(fp.parseNestedQuery(), fp.parseNestedQuery());
+        RelatednessAgg agg = new RelatednessAgg(fp.parseNestedQuery(), fp.parseNestedQuery());
+        agg.setOpts(fp);
+        return agg;
       }
     });
     

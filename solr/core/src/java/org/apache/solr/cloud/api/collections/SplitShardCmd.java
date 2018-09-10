@@ -23,14 +23,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
+import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -45,18 +50,24 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CommonAdminParams;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.update.SolrIndexSplitter;
+import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TestInjection;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
@@ -80,13 +91,23 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
+    String methodStr = message.getStr(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
+    SolrIndexSplitter.SplitMethod splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
+    if (splitMethod == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
+          ": " + methodStr);
+    }
+    boolean withTiming = message.getBool(CommonParams.TIMING, false);
+
     String collectionName = message.getStr(CoreAdminParams.COLLECTION);
 
-    log.info("Split shard invoked");
+    log.debug("Split shard invoked: {}", message);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     zkStateReader.forceUpdateCollection(collectionName);
     AtomicReference<String> slice = new AtomicReference<>();
     slice.set(message.getStr(ZkStateReader.SHARD_ID_PROP));
+    Set<String> offlineSlices = new HashSet<>();
+    RTimerTree timings = new RTimerTree();
 
     String splitKey = message.getStr("split.key");
     DocCollection collection = clusterState.getCollection(collectionName);
@@ -94,6 +115,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     PolicyHelper.SessionWrapper sessionWrapper = null;
 
     Slice parentSlice = getParentSlice(clusterState, collectionName, slice, splitKey);
+    if (parentSlice.getState() != Slice.State.ACTIVE) {
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Parent slice is not active: " + parentSlice.getState());
+    }
 
     // find the leader for the shard
     Replica parentShardLeader = null;
@@ -101,7 +125,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       parentShardLeader = zkStateReader.getLeaderRetry(collectionName, slice.get(), 10000);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted.");
     }
+
+    RTimerTree t = timings.sub("checkDiskSpace");
+    checkDiskSpace(collectionName, slice.get(), parentShardLeader);
+    t.stop();
 
     // let's record the ephemeralOwner of the parent leader node
     Stat leaderZnodeStat = zkStateReader.getZkClient().exists(ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null, true);
@@ -114,9 +143,40 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     List<String> subSlices = new ArrayList<>();
     List<String> subShardNames = new ArrayList<>();
 
-    String rangesStr = fillRanges(ocmh.cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames);
+    // reproduce the currently existing number of replicas per type
+    AtomicInteger numNrt = new AtomicInteger();
+    AtomicInteger numTlog = new AtomicInteger();
+    AtomicInteger numPull = new AtomicInteger();
+    parentSlice.getReplicas().forEach(r -> {
+      switch (r.getType()) {
+        case NRT:
+          numNrt.incrementAndGet();
+          break;
+        case TLOG:
+          numTlog.incrementAndGet();
+          break;
+        case PULL:
+          numPull.incrementAndGet();
+      }
+    });
+    int repFactor = numNrt.get() + numTlog.get() + numPull.get();
 
+    boolean success = false;
     try {
+      // type of the first subreplica will be the same as leader
+      boolean firstNrtReplica = parentShardLeader.getType() == Replica.Type.NRT;
+      // verify that we indeed have the right number of correct replica types
+      if ((firstNrtReplica && numNrt.get() < 1) || (!firstNrtReplica && numTlog.get() < 1)) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "aborting split - inconsistent replica types in collection " + collectionName +
+            ": nrt=" + numNrt.get() + ", tlog=" + numTlog.get() + ", pull=" + numPull.get() + ", shard leader type is " +
+            parentShardLeader.getType());
+      }
+
+      List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
+
+      t = timings.sub("fillRanges");
+      String rangesStr = fillRanges(ocmh.cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames, firstNrtReplica);
+      t.stop();
 
       boolean oldShardsDeleted = false;
       for (String subSlice : subSlices) {
@@ -126,7 +186,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           if (state == Slice.State.ACTIVE) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "Sub-shard: " + subSlice + " exists in active state. Aborting split shard.");
-          } else if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
+          } else {
             // delete the shards
             log.info("Sub-shard: {} already exists therefore requesting its deletion", subSlice);
             Map<String, Object> propMap = new HashMap<>();
@@ -157,12 +217,13 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       Map<String, String> requestMap = new HashMap<>();
       String nodeName = parentShardLeader.getNodeName();
 
+      t = timings.sub("createSubSlicesAndLeadersInState");
       for (int i = 0; i < subRanges.size(); i++) {
         String subSlice = subSlices.get(i);
         String subShardName = subShardNames.get(i);
         DocRouter.Range subRange = subRanges.get(i);
 
-        log.info("Creating slice " + subSlice + " of collection " + collectionName + " on " + nodeName);
+        log.debug("Creating slice " + subSlice + " of collection " + collectionName + " on " + nodeName);
 
         Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD.toLower());
@@ -171,7 +232,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(ZkStateReader.SHARD_RANGE_PROP, subRange.toString());
         propMap.put(ZkStateReader.SHARD_STATE_PROP, Slice.State.CONSTRUCTION.toString());
         propMap.put(ZkStateReader.SHARD_PARENT_PROP, parentSlice.getName());
-        propMap.put("shard_parent_node", parentShardLeader.getNodeName());
+        propMap.put("shard_parent_node", nodeName);
         propMap.put("shard_parent_zk_session", leaderZnodeStat.getEphemeralOwner());
         DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
         inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
@@ -182,12 +243,13 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         // refresh cluster state
         clusterState = zkStateReader.getClusterState();
 
-        log.info("Adding replica " + subShardName + " as part of slice " + subSlice + " of collection " + collectionName
+        log.debug("Adding first replica " + subShardName + " as part of slice " + subSlice + " of collection " + collectionName
             + " on " + nodeName);
         propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
         propMap.put(COLLECTION_PROP, collectionName);
         propMap.put(SHARD_ID_PROP, subSlice);
+        propMap.put(REPLICA_TYPE, firstNrtReplica ? Replica.Type.NRT.toString() : Replica.Type.TLOG.toString());
         propMap.put("node", nodeName);
         propMap.put(CoreAdminParams.NAME, subShardName);
         propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
@@ -208,9 +270,11 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed to create subshard leaders", asyncId, requestMap);
 
+      t.stop();
+      t = timings.sub("waitForSubSliceLeadersAlive");
       for (String subShardName : subShardNames) {
         // wait for parent leader to acknowledge the sub-shard core
-        log.info("Asking parent leader to wait for: " + subShardName + " to be alive on: " + nodeName);
+        log.debug("Asking parent leader to wait for: " + subShardName + " to be alive on: " + nodeName);
         String coreNodeName = ocmh.waitForCoreNodeName(collectionName, nodeName, subShardName);
         CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
         cmd.setCoreName(subShardName);
@@ -226,8 +290,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       ocmh.processResponses(results, shardHandler, true, "SPLITSHARD timed out waiting for subshard leaders to come up",
           asyncId, requestMap);
+      t.stop();
 
-      log.info("Successfully created all sub-shards for collection " + collectionName + " parent shard: " + slice
+      log.debug("Successfully created all sub-shards for collection " + collectionName + " parent shard: " + slice
           + " on: " + parentShardLeader);
 
       log.info("Splitting shard " + parentShardLeader.getName() + " as part of slice " + slice + " of collection "
@@ -235,6 +300,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.toString());
+      params.set(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
       params.set(CoreAdminParams.CORE, parentShardLeader.getStr("core"));
       for (int i = 0; i < subShardNames.size(); i++) {
         String subShardName = subShardNames.get(i);
@@ -242,18 +308,22 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       params.set(CoreAdminParams.RANGES, rangesStr);
 
+      t = timings.sub("splitParentCore");
+
       ocmh.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
 
       ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed to invoke SPLIT core admin command", asyncId,
           requestMap);
+      t.stop();
 
-      log.info("Index on shard: " + nodeName + " split into two successfully");
+      log.debug("Index on shard: " + nodeName + " split into two successfully");
 
+      t = timings.sub("applyBufferedUpdates");
       // apply buffered updates on sub-shards
       for (int i = 0; i < subShardNames.size(); i++) {
         String subShardName = subShardNames.get(i);
 
-        log.info("Applying buffered updates on : " + subShardName);
+        log.debug("Applying buffered updates on : " + subShardName);
 
         params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
@@ -264,25 +334,13 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed while asking sub shard leaders" +
           " to apply buffered updates", asyncId, requestMap);
+      t.stop();
 
-      log.info("Successfully applied buffered updates on : " + subShardNames);
+      log.debug("Successfully applied buffered updates on : " + subShardNames);
 
       // Replica creation for the new Slices
+      // replica placement is controlled by the autoscaling policy framework
 
-      // look at the replication factor and see if it matches reality
-      // if it does not, find best nodes to create more cores
-
-      // TODO: Have replication factor decided in some other way instead of numShards for the parent
-
-      int repFactor = parentSlice.getReplicas().size();
-
-      // we need to look at every node and see how many cores it serves
-      // add our new cores to existing nodes serving the least number of cores
-      // but (for now) require that each core goes on a distinct node.
-
-      // TODO: add smarter options that look at the current number of cores per
-      // node?
-      // for now we just go random
       Set<String> nodes = clusterState.getLiveNodes();
       List<String> nodeList = new ArrayList<>(nodes.size());
       nodeList.addAll(nodes);
@@ -294,28 +352,42 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
+      // we have already created one subReplica for each subShard on the parent node.
+      // identify locations for the remaining replicas
+      if (firstNrtReplica) {
+        numNrt.decrementAndGet();
+      } else {
+        numTlog.decrementAndGet();
+      }
+
+      t = timings.sub("identifyNodesForReplicas");
       List<ReplicaPosition> replicaPositions = Assign.identifyNodes(ocmh.cloudManager,
           clusterState,
           new ArrayList<>(clusterState.getLiveNodes()),
           collectionName,
           new ZkNodeProps(collection.getProperties()),
-          subSlices, repFactor - 1, 0, 0);
+          subSlices, numNrt.get(), numTlog.get(), numPull.get());
       sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
+      t.stop();
 
-      List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
-
+      t = timings.sub("createReplicaPlaceholders");
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String sliceName = replicaPosition.shard;
         String subShardNodeName = replicaPosition.node;
-        String solrCoreName = collectionName + "_" + sliceName + "_replica" + (replicaPosition.index);
+        String solrCoreName = Assign.buildSolrCoreName(collectionName, sliceName, replicaPosition.type, replicaPosition.index);
 
-        log.info("Creating replica shard " + solrCoreName + " as part of slice " + sliceName + " of collection "
+        log.debug("Creating replica shard " + solrCoreName + " as part of slice " + sliceName + " of collection "
             + collectionName + " on " + subShardNodeName);
 
+        // we first create all replicas in DOWN state without actually creating their cores in order to
+        // avoid a race condition where Overseer may prematurely activate the new sub-slices (and deactivate
+        // the parent slice) before all new replicas are added. This situation may lead to a loss of performance
+        // because the new shards will be activated with possibly many fewer replicas.
         ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(),
             ZkStateReader.COLLECTION_PROP, collectionName,
             ZkStateReader.SHARD_ID_PROP, sliceName,
             ZkStateReader.CORE_NAME_PROP, solrCoreName,
+            ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
             ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(subShardNodeName),
             ZkStateReader.NODE_NAME_PROP, subShardNodeName,
@@ -326,6 +398,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
         propMap.put(COLLECTION_PROP, collectionName);
         propMap.put(SHARD_ID_PROP, sliceName);
+        propMap.put(REPLICA_TYPE, replicaPosition.type.name());
         propMap.put("node", subShardNodeName);
         propMap.put(CoreAdminParams.NAME, solrCoreName);
         // copy over property params:
@@ -345,7 +418,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
         replicas.add(propMap);
       }
-
+      t.stop();
       assert TestInjection.injectSplitFailureBeforeReplicaCreation();
 
       long ephemeralOwner = leaderZnodeStat.getEphemeralOwner();
@@ -375,12 +448,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       // we must set the slice state into recovery before actually creating the replica cores
-      // this ensures that the logic inside Overseer to update sub-shard state to 'active'
+      // this ensures that the logic inside ReplicaMutator to update sub-shard state to 'active'
       // always gets a chance to execute. See SOLR-7673
 
       if (repFactor == 1) {
         // switch sub shard states to 'active'
-        log.info("Replication factor is 1 so switching shard states");
+        log.debug("Replication factor is 1 so switching shard states");
         DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
         Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
@@ -392,7 +465,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ZkNodeProps m = new ZkNodeProps(propMap);
         inQueue.offer(Utils.toJSON(m));
       } else {
-        log.info("Requesting shard state be set to 'recovery'");
+        log.debug("Requesting shard state be set to 'recovery'");
         DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
         Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
@@ -404,17 +477,26 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         inQueue.offer(Utils.toJSON(m));
       }
 
+      t = timings.sub("createCoresForReplicas");
       // now actually create replica cores on sub shard nodes
       for (Map<String, Object> replica : replicas) {
         ocmh.addReplica(clusterState, new ZkNodeProps(replica), results, null);
       }
 
+      assert TestInjection.injectSplitFailureAfterReplicaCreation();
+
       ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed to create subshard replicas", asyncId, requestMap);
+      t.stop();
 
       log.info("Successfully created all replica shards for all sub-slices " + subSlices);
 
+      t = timings.sub("finalCommit");
       ocmh.commit(results, slice.get(), parentShardLeader);
-
+      t.stop();
+      if (withTiming) {
+        results.add(CommonParams.TIMING, timings.asNamedList());
+      }
+      success = true;
       return true;
     } catch (SolrException e) {
       throw e;
@@ -423,6 +505,120 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
     } finally {
       if (sessionWrapper != null) sessionWrapper.release();
+      if (!success) {
+        cleanupAfterFailure(zkStateReader, collectionName, parentSlice.getName(), subSlices, offlineSlices);
+      }
+    }
+  }
+
+  private void checkDiskSpace(String collection, String shard, Replica parentShardLeader) throws SolrException {
+    // check that enough disk space is available on the parent leader node
+    // otherwise the actual index splitting will always fail
+    NodeStateProvider nodeStateProvider = ocmh.cloudManager.getNodeStateProvider();
+    Map<String, Object> nodeValues = nodeStateProvider.getNodeValues(parentShardLeader.getNodeName(),
+        Collections.singletonList(ImplicitSnitch.DISK));
+    Map<String, Map<String, List<ReplicaInfo>>> infos = nodeStateProvider.getReplicaInfo(parentShardLeader.getNodeName(),
+        Collections.singletonList(Type.CORE_IDX.metricsAttribute));
+    if (infos.get(collection) == null || infos.get(collection).get(shard) == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing replica information for parent shard leader");
+    }
+    // find the leader
+    List<ReplicaInfo> lst = infos.get(collection).get(shard);
+    Double indexSize = null;
+    for (ReplicaInfo info : lst) {
+      if (info.getCore().equals(parentShardLeader.getCoreName())) {
+        Number size = (Number)info.getVariable(Type.CORE_IDX.metricsAttribute);
+        if (size == null) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing index size information for parent shard leader");
+        }
+        indexSize = (Double) Type.CORE_IDX.convertVal(size);
+        break;
+      }
+    }
+    if (indexSize == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing replica information for parent shard leader");
+    }
+    Number freeSize = (Number)nodeValues.get(ImplicitSnitch.DISK);
+    if (freeSize == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing node disk space information for parent shard leader");
+    }
+    if (freeSize.doubleValue() < 2.0 * indexSize) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "not enough free disk space to perform index split on node " +
+          parentShardLeader.getNodeName() + ", required: " + (2 * indexSize) + ", available: " + freeSize);
+    }
+  }
+
+  private void cleanupAfterFailure(ZkStateReader zkStateReader, String collectionName, String parentShard,
+                                   List<String> subSlices, Set<String> offlineSlices) {
+    log.info("Cleaning up after a failed split of " + collectionName + "/" + parentShard);
+    // get the latest state
+    try {
+      zkStateReader.forceUpdateCollection(collectionName);
+    } catch (KeeperException | InterruptedException e) {
+      log.warn("Cleanup failed after failed split of " + collectionName + "/" + parentShard + ": (force update collection)", e);
+      return;
+    }
+    ClusterState clusterState = zkStateReader.getClusterState();
+    DocCollection coll = clusterState.getCollectionOrNull(collectionName);
+
+    if (coll == null) { // may have been deleted
+      return;
+    }
+
+    // set already created sub shards states to CONSTRUCTION - this prevents them
+    // from entering into RECOVERY or ACTIVE (SOLR-9455)
+    DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
+    final Map<String, Object> propMap = new HashMap<>();
+    boolean sendUpdateState = false;
+    propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
+    propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
+    for (Slice s : coll.getSlices()) {
+      if (!subSlices.contains(s.getName())) {
+        continue;
+      }
+      propMap.put(s.getName(), Slice.State.CONSTRUCTION.toString());
+      sendUpdateState = true;
+    }
+
+    // if parent is inactive activate it again
+    Slice parentSlice = coll.getSlice(parentShard);
+    if (parentSlice.getState() == Slice.State.INACTIVE) {
+      sendUpdateState = true;
+      propMap.put(parentShard, Slice.State.ACTIVE.toString());
+    }
+    // plus any other previously deactivated slices
+    for (String sliceName : offlineSlices) {
+      propMap.put(sliceName, Slice.State.ACTIVE.toString());
+      sendUpdateState = true;
+    }
+
+    if (sendUpdateState) {
+      try {
+        ZkNodeProps m = new ZkNodeProps(propMap);
+        inQueue.offer(Utils.toJSON(m));
+      } catch (Exception e) {
+        // don't give up yet - just log the error, we may still be able to clean up
+        log.warn("Cleanup failed after failed split of " + collectionName + "/" + parentShard + ": (slice state changes)", e);
+      }
+    }
+
+    // delete existing subShards
+    for (String subSlice : subSlices) {
+      Slice s = coll.getSlice(subSlice);
+      if (s == null) {
+        continue;
+      }
+      log.debug("- sub-shard: {} exists therefore requesting its deletion", subSlice);
+      HashMap<String, Object> props = new HashMap<>();
+      props.put(Overseer.QUEUE_OPERATION, "deleteshard");
+      props.put(COLLECTION_PROP, collectionName);
+      props.put(SHARD_ID_PROP, subSlice);
+      ZkNodeProps m = new ZkNodeProps(props);
+      try {
+        ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList());
+      } catch (Exception e) {
+        log.warn("Cleanup failed after failed split of " + collectionName + "/" + parentShard + ": (deleting existing sub shard " + subSlice + ")", e);
+      }
     }
   }
 
@@ -463,7 +659,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   public static String fillRanges(SolrCloudManager cloudManager, ZkNodeProps message, DocCollection collection, Slice parentSlice,
-                                List<DocRouter.Range> subRanges, List<String> subSlices, List<String> subShardNames) {
+                                List<DocRouter.Range> subRanges, List<String> subSlices, List<String> subShardNames,
+                                  boolean firstReplicaNrt) {
     String splitKey = message.getStr("split.key");
     DocRouter.Range range = parentSlice.getRange();
     if (range == null) {
@@ -532,7 +729,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     for (int i = 0; i < subRanges.size(); i++) {
       String subSlice = parentSlice.getName() + "_" + i;
       subSlices.add(subSlice);
-      String subShardName = Assign.buildSolrCoreName(cloudManager.getDistribStateManager(), collection, subSlice, Replica.Type.NRT);
+      String subShardName = Assign.buildSolrCoreName(cloudManager.getDistribStateManager(), collection, subSlice,
+          firstReplicaNrt ? Replica.Type.NRT : Replica.Type.TLOG);
       subShardNames.add(subShardName);
     }
     return rangesStr;

@@ -33,19 +33,17 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
-import org.apache.solr.util.RTimer;
 
+/** Base abstraction for a class that computes facets. This is fairly internal to the module. */
 public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   SimpleOrderedMap<Object> response;
   FacetContext fcontext;
@@ -55,27 +53,6 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   LinkedHashMap<String,SlotAcc> accMap;
   SlotAcc[] accs;
   CountSlotAcc countAcc;
-
-  /** factory method for invoking json facet framework as whole.
-   * Note: this is currently only used from SimpleFacets, not from JSON Facet API itself. */
-  public static FacetProcessor<?> createProcessor(SolrQueryRequest req,
-                                                  Map<String, Object> params, DocSet docs){
-    FacetParser parser = new FacetTopParser(req);
-    FacetRequest facetRequest = null;
-    try {
-      facetRequest = parser.parse(params);
-    } catch (SyntaxError syntaxError) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-    }
-
-    FacetContext fcontext = new FacetContext();
-    fcontext.base = docs;
-    fcontext.req = req;
-    fcontext.searcher = req.getSearcher();
-    fcontext.qcontext = QueryContext.newContext(fcontext.searcher);
-
-    return facetRequest.createFacetProcessor(fcontext);
-  }
 
   FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
     this.fcontext = fcontext;
@@ -201,9 +178,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       return;
     }
 
-    // TODO: somehow remove responsebuilder dependency
-    ResponseBuilder rb = SolrRequestInfo.getRequestInfo().getResponseBuilder();
-    Map tagMap = (Map) rb.req.getContext().get("tags");
+    Map tagMap = (Map) fcontext.req.getContext().get("tags");
     if (tagMap == null) {
       // no filters were tagged
       return;
@@ -228,6 +203,9 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     if (excludeSet.size() == 0) return;
 
     List<Query> qlist = new ArrayList<>();
+
+    // TODO: somehow remove responsebuilder dependency
+    ResponseBuilder rb = SolrRequestInfo.getRequestInfo().getResponseBuilder();
 
     // add the base query
     if (!excludeSet.containsKey(rb.getQuery())) {
@@ -484,27 +462,16 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       FacetContext subContext = fcontext.sub(filter, domain);
       subContext.facetInfo = facetInfoSub;
       if (!skip) subContext.flags &= ~FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
-      FacetProcessor subProcessor = subRequest.createFacetProcessor(subContext);
 
       if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
         FacetDebugInfo fdebug = new FacetDebugInfo();
         subContext.setDebugInfo(fdebug);
         fcontext.getDebugInfo().addChild(fdebug);
-
-        fdebug.setReqDescription(subRequest.getFacetDescription());
-        fdebug.setProcessor(subProcessor.getClass().getSimpleName());
-        if (subContext.filter != null) fdebug.setFilter(subContext.filter.toString());
-
-        final RTimer timer = new RTimer();
-        subProcessor.process();
-        long timeElapsed = (long) timer.getTime();
-        fdebug.setElapse(timeElapsed);
-        fdebug.putInfoItem("domainSize", (long)subContext.base.size());
-      } else {
-        subProcessor.process();
       }
 
-      response.add( sub.getKey(), subProcessor.getResponse() );
+      Object result = subRequest.process(subContext);
+
+      response.add( sub.getKey(), result);
     }
   }
 

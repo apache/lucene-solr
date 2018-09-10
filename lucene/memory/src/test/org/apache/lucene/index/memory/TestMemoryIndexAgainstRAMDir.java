@@ -246,7 +246,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     for (String query : queries) {
       TopDocs ramDocs = ram.search(qp.parse(query), 1);
       TopDocs memDocs = mem.search(qp.parse(query), 1);
-      assertEquals(query, ramDocs.totalHits, memDocs.totalHits);
+      assertEquals(query, ramDocs.totalHits.value, memDocs.totalHits.value);
     }
     reader.close();
   }
@@ -652,7 +652,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     memory.addField("foo", new CannedTokenStream(new Token("", 0, 5)));
     IndexSearcher searcher = memory.createSearcher();
     TopDocs docs = searcher.search(new TermQuery(new Term("foo", "")), 10);
-    assertEquals(1, docs.totalHits);
+    assertEquals(1, docs.totalHits.value);
     TestUtil.checkReader(searcher.getIndexReader());
   }
 

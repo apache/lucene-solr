@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -187,6 +188,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected TransactionLog bufferTlog;
   protected TransactionLog tlog;
   protected TransactionLog prevTlog;
+  protected TransactionLog prevTlogOnPrecommit;
   protected final Deque<TransactionLog> logs = new LinkedList<>();  // list of recent logs, newest first
   protected LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
   protected int numOldRecords;  // number of records in the recent logs
@@ -809,6 +811,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // since document additions can happen concurrently with commit, create
       // a new transaction log first so that we know the old one is definitely
       // in the index.
+      if (prevTlog != null) {
+        // postCommit for prevTlog is not called, may be the index is corrupted
+        // if we override prevTlog value, the correspond tlog will be leaked, close it first
+        postCommit(cmd);
+      }
       prevTlog = tlog;
       tlog = null;
       id++;
@@ -1302,6 +1309,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     if (bufferTlog != null) return;
     String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
     bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
+    bufferTlog.isBuffer = true;
   }
 
   // Cleanup old buffer tlogs
@@ -1398,6 +1406,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     HashMap<Long, Update> updates;
     List<Update> deleteByQueryList;
     List<DeleteUpdate> deleteList;
+    Set<Long> bufferUpdates = new HashSet<>();
 
     public RecentUpdates(Deque<TransactionLog> logList) {
       this.logList = logList;
@@ -1416,6 +1425,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     public  List<Long> getVersions(int n){
       return getVersions(n, Long.MAX_VALUE);
+    }
+
+    public Set<Long> getBufferUpdates() {
+      return Collections.unmodifiableSet(bufferUpdates);
     }
 
     public List<Long> getVersions(int n, long maxVersion) {
@@ -1478,6 +1491,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               int opAndFlags = (Integer)entry.get(UpdateLog.FLAGS_IDX);
               int oper = opAndFlags & UpdateLog.OPERATION_MASK;
               long version = (Long) entry.get(UpdateLog.VERSION_IDX);
+
+              if (oldLog.isBuffer) bufferUpdates.add(version);
 
               switch (oper) {
                 case UpdateLog.ADD:

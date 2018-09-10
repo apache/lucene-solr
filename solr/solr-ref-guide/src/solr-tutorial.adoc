@@ -497,6 +497,8 @@ This starts the first node. When it's done start the second node, and tell it ho
 
 `./bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983`
 
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+
 === Create a New Collection
 
 We're going to use a whole new data set in this exercise, so it would be better to have a new collection instead of trying to reuse the one we had before.
@@ -529,7 +531,7 @@ WARNING: Using _default configset. Data driven schema functionality is enabled b
          NOT RECOMMENDED for production use.
 
          To turn it off:
-            curl http://localhost:7574/solr/films/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+            bin/solr config -c films -p 7574 -action set-user-property -property update.autoCreateFields -value false
 
 Connecting to ZooKeeper at localhost:9983 ...
 INFO  - 2017-07-27 15:07:46.191; org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider; Cluster at localhost:9983 ready

@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
 
+import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -282,12 +283,14 @@ public final class CommitTracker implements Runnable {
   
   @Override
   public String toString() {
-    if (timeUpperBound > 0 || docsUpperBound > 0) {
-      return (timeUpperBound > 0 ? ("if uncommited for " + timeUpperBound + "ms; ")
+    if (timeUpperBound > 0 || docsUpperBound > 0 || tLogFileSizeUpperBound > 0) {
+      return (timeUpperBound > 0 ? ("if uncommitted for " + timeUpperBound + "ms; ")
           : "")
-          + (docsUpperBound > 0 ? ("if " + docsUpperBound + " uncommited docs ")
-              : "");
-      
+          + (docsUpperBound > 0 ? ("if " + docsUpperBound + " uncommitted docs; ")
+              : "")
+          + (tLogFileSizeUpperBound > 0 ? String.format(Locale.ROOT, "if tlog file size has exceeded %d bytes",
+          tLogFileSizeUpperBound)
+            : "");
     } else {
       return "disabled";
     }

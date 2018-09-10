@@ -179,11 +179,6 @@ public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
     assertTrue(expected.getMessage().contains("Unknown parameters"));
     
     expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("Standard", "bogusArg", "bogusValue");
-    });
-    assertTrue(expected.getMessage().contains("Unknown parameters"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("Classic", "bogusArg", "bogusValue");
     });
     assertTrue(expected.getMessage().contains("Unknown parameters"));

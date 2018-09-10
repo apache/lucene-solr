@@ -264,7 +264,7 @@
     <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->
     <pathconvert property="netbeans.path.libs" pathsep=":" dirsep="/">
       <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" 
-               excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
+               excludes="**/*servlet-api*.jar, tools/**, build/**"/>
       <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" 
                excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**, server/solr-webapp/**" />
       <map from="${basedir}/" to=""/>
@@ -311,7 +311,7 @@
     </pathconvert>
     <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->
     <pathconvert property="eclipse.fileset.libs" pathsep="|" dirsep="/">
-      <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
+      <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" excludes="**/*servlet-api*.jar, tools/**, build/**"/>
       <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**" />
       <map from="${basedir}/" to=""/>
     </pathconvert>

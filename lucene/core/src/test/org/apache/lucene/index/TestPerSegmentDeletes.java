@@ -49,14 +49,14 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
     //System.out.println("commit1");
     writer.commit();
-    assertEquals(1, writer.segmentInfos.size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
     for (int x = 5; x < 10; x++) {
       writer.addDocument(DocHelper.createDocument(x, "2", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
     //System.out.println("commit2");
     writer.commit();
-    assertEquals(2, writer.segmentInfos.size());
+    assertEquals(2, writer.listOfSegmentCommitInfos().size());
 
     for (int x = 10; x < 15; x++) {
       writer.addDocument(DocHelper.createDocument(x, "3", 2));
@@ -90,7 +90,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     fsmp.length = 2;
     writer.maybeMerge();
 
-    assertEquals(2, writer.segmentInfos.size());
+    assertEquals(2, writer.listOfSegmentCommitInfos().size());
 
     // id:2 shouldn't exist anymore because
     // it's been applied in the merge and now it's gone

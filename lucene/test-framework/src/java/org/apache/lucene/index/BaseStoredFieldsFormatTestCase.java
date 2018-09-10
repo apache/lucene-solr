@@ -154,7 +154,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
             System.out.println("TEST: test id=" + testID);
           }
           TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
-          assertEquals(1, hits.totalHits);
+          assertEquals(1, hits.totalHits.value);
           Document doc = r.document(hits.scoreDocs[0].doc);
           Document docExp = docs.get(testID);
           for(int i=0;i<fieldCount;i++) {
@@ -436,8 +436,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
             final Query query = new TermQuery(new Term("fld", "" + q));
             try {
               final TopDocs topDocs = searcher.search(query, 1);
-              if (topDocs.totalHits != 1) {
-                throw new IllegalStateException("Expected 1 hit, got " + topDocs.totalHits);
+              if (topDocs.totalHits.value != 1) {
+                throw new IllegalStateException("Expected 1 hit, got " + topDocs.totalHits.value);
               }
               final Document sdoc = rd.document(topDocs.scoreDocs[0].doc);
               if (sdoc == null || sdoc.get("fld") == null) {
@@ -733,7 +733,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     for (int i = 0; i < numDocs; ++i) {
       final Query query = new TermQuery(new Term("id", "" + i));
       final TopDocs topDocs = searcher.search(query, 1);
-      assertEquals("" + i, 1, topDocs.totalHits);
+      assertEquals("" + i, 1, topDocs.totalHits.value);
       final Document doc = rd.document(topDocs.scoreDocs[0].doc);
       assertNotNull(doc);
       final IndexableField[] fieldValues = doc.getFields("fld");

@@ -341,7 +341,7 @@ abstract class IntervalFunction {
 
         @Override
         protected void reset() throws IOException {
-          bpos = true;
+          bpos = b.nextInterval() != NO_MORE_INTERVALS;
         }
       };
     }
@@ -388,7 +388,7 @@ abstract class IntervalFunction {
 
         @Override
         protected void reset() throws IOException {
-          bpos = true;
+          bpos = b.nextInterval() != NO_MORE_INTERVALS;
         }
       };
     }

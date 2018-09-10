@@ -30,32 +30,32 @@ and data structures and techniques for combining Solr's
 powerful streams with mathematical functions to make every
 record in your Solr Cloud cluster computable.
 
-== <<scalar-math.adoc#scalar-math,Scalar Math>>
+*<<scalar-math.adoc#scalar-math,Scalar Math>>*: The functions that apply to scalar numbers.
 
-== <<vector-math.adoc#vector-math,Vector Math>>
+*<<vector-math.adoc#vector-math,Vector Math>>*: Vector math expressions and vector manipulation.
 
-== <<variables.adoc#variables,Variables>>
+*<<variables.adoc#variables,Variables and Caching>>*: Assigning and caching variables.
 
-== <<matrix-math.adoc#matrix-math,Matrix Math>>
+*<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix creation, manipulation, and matrix math.
 
-== <<vectorization.adoc#vectorization,Streams and Vectorization>>
+*<<vectorization.adoc#vectorization,Streams and Vectorization>>*: Retrieving streams and vectorizing numeric and lat/lon location fields.
 
-== <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>
+*<<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>*: Using math expressions for text analysis and TF-IDF term vectors.
 
-== <<statistics.adoc#statistics,Statistics>>
+*<<statistics.adoc#statistics,Statistics>>*: Statistical functions in math expressions.
 
-== <<probability-distributions.adoc#probability-distributions,Probability>>
+*<<probability-distributions.adoc#probability-distributions,Probability>>*: Mathematical models for probability.
 
-== <<simulations.adoc#simulations,Monte Carlo Simulations>>
+*<<simulations.adoc#simulations,Monte Carlo Simulations>>*: Performing correlated and uncorrelated Monte Carlo simulations.
 
-== <<time-series.adoc#time-series,Time Series>>
+*<<regression.adoc#regression,Linear Regression>>*: Simple and multivariate linear regression.
 
-== <<regression.adoc#regression,Linear Regression>>
+*<<numerical-analysis.adoc#numerical-analysis,Interpolation, Derivatives and Integrals>>*: Numerical analysis math expressions.
 
-== <<numerical-analysis.adoc#numerical-analysis,Interpolation, Derivatives and Integrals>>
+*<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial and Gaussian curve fitting.
 
-== <<curve-fitting.adoc#curve-fitting,Curve Fitting>>
+*<<dsp.adoc#dsp,Digital Signal Processing>>*: Functions commonly used with digital signal processing.
 
-== <<dsp.adoc#dsp,Digital Signal Processing>>
+*<<time-series.adoc#time-series,Time Series>>*: Aggregation, smoothing, differencing, modeling and anomaly detection for time series.
 
-== <<machine-learning.adoc#machine-learning,Machine Learning>>
+*<<machine-learning.adoc#machine-learning,Machine Learning>>*: Functions used in machine learning.

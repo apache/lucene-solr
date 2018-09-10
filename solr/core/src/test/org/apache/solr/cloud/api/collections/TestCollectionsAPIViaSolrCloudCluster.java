@@ -172,7 +172,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testCollectionCreateWithoutCoresThenDelete() throws Exception {
 
     final String collectionName = "testSolrCloudCollectionWithoutCores";
@@ -205,7 +205,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     final CloudSolrClient client = cluster.getSolrClient();
 
     assertNotNull(cluster.getZkServer());
-    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
+    List<JettySolrRunner> jettys = new ArrayList<>(cluster.getJettySolrRunners()); // make a copy
     assertEquals(nodeCount, jettys.size());
     for (JettySolrRunner jetty : jettys) {
       assertTrue(jetty.isRunning());

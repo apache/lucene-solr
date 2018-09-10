@@ -190,7 +190,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testSignificantTermsQuery() throws Exception {
     SolrQueryRequest req = req("q", "*:*");
     try {
-      assertQueryEquals("sigificantTerms", req, "{!sigificantTerms}");
+      assertQueryEquals(SignificantTermsQParserPlugin.NAME,
+          req, "{!"+SignificantTermsQParserPlugin.NAME+"}");
     } finally {
       req.close();
     }

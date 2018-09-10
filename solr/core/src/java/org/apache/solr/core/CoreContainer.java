@@ -85,6 +85,7 @@ import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
 import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
+import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -120,6 +121,7 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_HISTORY_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
+import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
@@ -564,6 +566,7 @@ public class CoreContainer {
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
+    createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     healthCheckHandler = createHandler(HEALTH_CHECK_HANDLER_PATH, cfg.getHealthCheckHandlerClass(), HealthCheckHandler.class);
     infoHandler        = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
@@ -571,7 +574,7 @@ public class CoreContainer {
     configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
 
     // metricsHistoryHandler uses metricsHandler, so create it first
-    metricsHandler = new MetricsHandler(metricManager);
+    metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
     metricsHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_PATH);
 
@@ -1776,7 +1779,7 @@ public class CoreContainer {
    * @return true if we were able to successfuly perisist the repaired coreDescriptor, false otherwise.
    *
    * See SOLR-11503, This can be removed when there's no chance we'll need to upgrade a
-   * Solr isntallation createged with legacyCloud=true from 6.6.1 through 7.1
+   * Solr installation created with legacyCloud=true from 6.6.1 through 7.1
    */
   public boolean repairCoreProperty(CoreDescriptor cd, String prop) {
     // So far, coreNodeName is the only property that we need to repair, this may get more complex as other properties
@@ -1804,6 +1807,28 @@ public class CoreContainer {
     }
     log.error("Could not repair coreNodeName in core.properties file for core {}", coreName);
     return false;
+  }
+
+  /**
+   * @param solrCore te core against which we check if there has been a tragic exception
+   * @return whether this solr core has tragic exception
+   */
+  public boolean checkTragicException(SolrCore solrCore) {
+    Throwable tragicException;
+    try {
+      tragicException = solrCore.getSolrCoreState().getTragicException();
+    } catch (IOException e) {
+      // failed to open an indexWriter
+      tragicException = e;
+    }
+
+    if (tragicException != null) {
+      if (isZooKeeperAware()) {
+        getZkController().giveupLeadership(solrCore.getCoreDescriptor(), tragicException);
+      }
+    }
+    
+    return tragicException != null;
   }
 
 }

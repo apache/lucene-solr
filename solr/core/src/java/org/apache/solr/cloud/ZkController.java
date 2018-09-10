@@ -88,6 +88,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -127,6 +128,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /**
@@ -228,6 +230,8 @@ public class ZkController {
   private int clientTimeout;
 
   private volatile boolean isClosed;
+
+  private final ConcurrentHashMap<String, Throwable> replicasMetTragicEvent = new ConcurrentHashMap<>();
 
   @Deprecated
   // keeps track of replicas that have been asked to recover by leaders running on this node
@@ -591,6 +595,57 @@ public class ZkController {
     }
     assert ObjectReleaseTracker.release(this);
   }
+
+  public void giveupLeadership(CoreDescriptor cd, Throwable tragicException) {
+    DocCollection dc = getClusterState().getCollectionOrNull(cd.getCollectionName());
+    if (dc == null) return;
+
+    Slice shard = dc.getSlice(cd.getCloudDescriptor().getShardId());
+    if (shard == null) return;
+
+    // if this replica is not a leader, it will be put in recovery state by the leader
+    if (shard.getReplica(cd.getCloudDescriptor().getCoreNodeName()) != shard.getLeader()) return;
+
+    int numActiveReplicas = shard.getReplicas(
+        rep -> rep.getState() == Replica.State.ACTIVE
+            && rep.getType() != Type.PULL
+            && getClusterState().getLiveNodes().contains(rep.getNodeName())
+    ).size();
+
+    // at least the leader still be able to search, we should give up leadership if other replicas can take over
+    if (numActiveReplicas >= 2) {
+      String key = cd.getCollectionName() + ":" + cd.getCloudDescriptor().getCoreNodeName();
+      //TODO better handling the case when delete replica was failed
+      if (replicasMetTragicEvent.putIfAbsent(key, tragicException) == null) {
+        log.warn("Leader {} met tragic exception, give up its leadership", key, tragicException);
+        try {
+          // by using Overseer to remove and add replica back, we can do the task in an async/robust manner
+          Map<String,Object> props = new HashMap<>();
+          props.put(Overseer.QUEUE_OPERATION, "deletereplica");
+          props.put(COLLECTION_PROP, cd.getCollectionName());
+          props.put(SHARD_ID_PROP, shard.getName());
+          props.put(REPLICA_PROP, cd.getCloudDescriptor().getCoreNodeName());
+          getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)));
+
+          props.clear();
+          props.put(Overseer.QUEUE_OPERATION, "addreplica");
+          props.put(COLLECTION_PROP, cd.getCollectionName());
+          props.put(SHARD_ID_PROP, shard.getName());
+          props.put(ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().name().toUpperCase(Locale.ROOT));
+          props.put(CoreAdminParams.NODE, getNodeName());
+          getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)));
+        } catch (KeeperException e) {
+          log.info("Met exception on give up leadership for {}", key, e);
+          replicasMetTragicEvent.remove(key);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          log.info("Met exception on give up leadership for {}", key, e);
+          replicasMetTragicEvent.remove(key);
+        }
+      }
+    }
+  }
+
 
   /**
    * Returns true if config file exists
@@ -1522,6 +1577,7 @@ public class ZkController {
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
     final String collection = cd.getCloudDescriptor().getCollectionName();
     getCollectionTerms(collection).remove(cd.getCloudDescriptor().getShardId(), cd);
+    replicasMetTragicEvent.remove(collection+":"+coreNodeName);
 
     if (Strings.isNullOrEmpty(collection)) {
       log.error("No collection was specified.");

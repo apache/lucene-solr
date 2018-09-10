@@ -16,6 +16,11 @@
  */
 package org.apache.solr.handler;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.UnaryOperator;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -32,10 +37,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.UnaryOperator;
+import static org.apache.solr.common.params.CommonParams.ANONYMOUS_CHILD_DOCS;
 
 public class JsonLoaderTest extends SolrTestCaseJ4 {
 
@@ -411,6 +413,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "      \"id\": \"1.2\",\n" +
       "      \"name\": \"i am the 2nd child\",\n" +
       "      \"cat\": \"child\",\n" +
+      "      \"test_s\": \"test-new-label\",\n" +
       "      \"grandchildren\": [\n" +
       "        {\n" +
       "          \"id\": \"1.2.1\",\n" +
@@ -432,63 +435,87 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "f", "name:/children/grandchildren/name",
       "f", "cat:/children/grandchildren/cat"};
 
+  @Test
+  public void testFewParentsAnonymousJsonDoc() throws Exception {
+    String json = PARENT_TWO_CHILDREN_JSON;
+    assertFewParents(json, true);
+  }
+
+  @Test
   public void testFewParentsJsonDoc() throws Exception {
     String json = PARENT_TWO_CHILDREN_JSON;
+    assertFewParents(json, false);
+  }
+
+  private void assertFewParents(String json, boolean anonChildDocsFlag) throws Exception {
     SolrQueryRequest req;
     SolrQueryResponse rsp;
     BufferingRequestProcessor p;
-    JsonLoader loader;
-    { //multichild test case
-      final boolean array = random().nextBoolean();
-      StringBuilder b = new StringBuilder();
+    JsonLoader loader;//multichild test case
+    final boolean array = random().nextBoolean();
+    StringBuilder b = new StringBuilder();
+    if (array) {
+      b.append("[");
+    }
+    final int passes = atLeast(2);
+    for (int i=1;i<=passes;i++){
+      b.append(json.replace("1",""+i));
       if (array) {
-        b.append("[");
+        b.append(i<passes ? "," :"]");
       }
-      final int passes = atLeast(2);
-      for (int i=1;i<=passes;i++){
-        b.append(json.replace("1",""+i));
-        if (array) {
-          b.append(i<passes ? "," :"]");
-        }
+    }
+
+    req = req(PARENT_TWO_CHILDREN_PARAMS, ANONYMOUS_CHILD_DOCS, Boolean.toString(anonChildDocsFlag));
+    req.getContext().put("path", "/update/json/docs");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(b.toString()), p);
+    for (int i=1; i<=passes; i++){
+      final int ii = i;
+      UnaryOperator<String> s = (v)-> v.replace("1",""+ii);
+      final SolrInputDocument parent = p.addCommands.get(i-1).solrDoc;
+      assertOnlyValue(s.apply("1"), parent,"id");
+      assertOnlyValue("i am the parent", parent, "name");
+      assertOnlyValue("parent", parent, "cat");
+
+      List<SolrInputDocument> childDocs1;
+      if(anonChildDocsFlag) {
+        childDocs1 = parent.getChildDocuments();
+      } else {
+        childDocs1 = (List) ((parent.getField("children")).getValue());
       }
-      
-      req = req(PARENT_TWO_CHILDREN_PARAMS);
-      req.getContext().put("path", "/update/json/docs");
-      rsp = new SolrQueryResponse();
-      p = new BufferingRequestProcessor(null);
-      loader = new JsonLoader();
-      loader.load(req, rsp, new ContentStreamBase.StringStream(b.toString()), p);
-      for (int i=1; i<=passes; i++){
-        final int ii = i;
-        UnaryOperator<String> s = (v)-> v.replace("1",""+ii); 
-        final SolrInputDocument parent = p.addCommands.get(i-1).solrDoc;
-        assertOnlyValue(s.apply("1"), parent,"id");
-        assertOnlyValue("i am the parent", parent, "name");
-        assertOnlyValue("parent", parent, "cat");
-     
-        assertEquals(2, parent.getChildDocuments().size());
-        {
-          final SolrInputDocument child1 = parent.getChildDocuments().get(0);
-          assertOnlyValue(s.apply("1.1"), child1, "id");
-          assertOnlyValue(s.apply("i am the 1st child"), child1, "name");
-          assertOnlyValue("child", child1,"cat");
+
+      assertEquals(2, childDocs1.size());
+      {
+        final SolrInputDocument child1 = childDocs1.get(0);
+        assertOnlyValue(s.apply("1.1"), child1, "id");
+        assertOnlyValue(s.apply("i am the 1st child"), child1, "name");
+        assertOnlyValue("child", child1,"cat");
+      }
+      {
+        final SolrInputDocument child2 = childDocs1.get(1);
+        assertOnlyValue(s.apply("1.2"), child2, "id");
+        assertOnlyValue("i am the 2nd child", child2, "name");
+        assertOnlyValue("test-new-label", child2, "test_s");
+        assertOnlyValue("child", child2, "cat");
+
+        List<SolrInputDocument> childDocs2;
+        if(anonChildDocsFlag) {
+          childDocs2 = child2.getChildDocuments();
+        } else {
+          childDocs2 = (List) ((child2.getField("grandchildren")).getValue());
         }
-        {
-          final SolrInputDocument child2 = parent.getChildDocuments().get(1);
-          assertOnlyValue(s.apply("1.2"), child2, "id");
-          assertOnlyValue("i am the 2nd child", child2, "name");
-          assertOnlyValue("child", child2, "cat");
-          
-          assertEquals(1, child2.getChildDocuments().size());
-          final SolrInputDocument grandChild = child2.getChildDocuments().get(0);
-          assertOnlyValue(s.apply("1.2.1"), grandChild,"id");
-          assertOnlyValue("i am the grandchild", grandChild, "name");
-          assertOnlyValue("grandchild", grandChild, "cat");
-        }
+
+        assertEquals(1, childDocs2.size());
+        final SolrInputDocument grandChild = childDocs2.get(0);
+        assertOnlyValue(s.apply("1.2.1"), grandChild,"id");
+        assertOnlyValue("i am the grandchild", grandChild, "name");
+        assertOnlyValue("grandchild", grandChild, "cat");
       }
     }
   }
-  
+
   private static void assertOnlyValue(String expected, SolrInputDocument doc, String field) {
     assertEquals(Collections.singletonList(expected), doc.getFieldValues(field));
   }
@@ -790,53 +817,69 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req.close();
   }
 
+  private static final String SIMPLE_JSON_CHILD_DOCS = "{\n" +
+      "    \"add\": {\n" +
+      "        \"doc\": {\n" +
+      "            \"id\": \"1\",\n" +
+      "            \"_childDocuments_\": [\n" +
+      "                {\n" +
+      "                    \"id\": \"2\"\n" +
+      "                },\n" +
+      "                {\n" +
+      "                    \"id\": \"3\",\n" +
+      "                    \"foo_i\": [666,777]\n" +
+      "                }\n" +
+      "            ]\n" +
+      "        }\n" +
+      "    }\n" +
+      "}";
+
+  @Test
+  public void testSimpleAnonymousChildDocs() throws Exception {
+    checkTwoAnonymousChildDocs(SIMPLE_JSON_CHILD_DOCS);
+  }
+
   @Test
   public void testSimpleChildDocs() throws Exception {
-    String str = "{\n" +
-        "    \"add\": {\n" +
-        "        \"doc\": {\n" +
-        "            \"id\": \"1\",\n" +
-        "            \"_childDocuments_\": [\n" +
-        "                {\n" +
-        "                    \"id\": \"2\"\n" +
-        "                },\n" +
-        "                {\n" +
-        "                    \"id\": \"3\",\n" +
-        "                    \"foo_i\": [666,777]\n" +
-        "                }\n" +
-        "            ]\n" +
-        "        }\n" +
-        "    }\n" +
-        "}";
-    checkTwoChildDocs(str);
+    checkTwoAnonymousChildDocs(SIMPLE_JSON_CHILD_DOCS, false);
+  }
+
+  private static final String DUP_KEYS_JSON_CHILD_DOCS = "{\n" +
+      "    \"add\": {\n" +
+      "        \"doc\": {\n" +
+      "            \"_childDocuments_\": [\n" +
+      "                {\n" +
+      "                    \"id\": \"2\"\n" +
+      "                }\n" +
+      "            ],\n" +
+      "            \"id\": \"1\",\n" +
+      "            \"_childDocuments_\": [\n" +
+      "                {\n" +
+      "                    \"id\": \"3\",\n" +
+      "                    \"foo_i\": 666,\n" +
+      "                    \"foo_i\": 777\n" +
+      "                }\n" +
+      "            ]\n" +
+      "        }\n" +
+      "    }\n" +
+      "}";
+
+  @Test
+  public void testDupKeysAnonymousChildDocs() throws Exception {
+    checkTwoAnonymousChildDocs(DUP_KEYS_JSON_CHILD_DOCS);
   }
 
   @Test
   public void testDupKeysChildDocs() throws Exception {
-    String str = "{\n" +
-        "    \"add\": {\n" +
-        "        \"doc\": {\n" +
-        "            \"_childDocuments_\": [\n" +
-        "                {\n" +
-        "                    \"id\": \"2\"\n" +
-        "                }\n" +
-        "            ],\n" +
-        "            \"id\": \"1\",\n" +
-        "            \"_childDocuments_\": [\n" +
-        "                {\n" +
-        "                    \"id\": \"3\",\n" +
-        "                    \"foo_i\": 666,\n" +
-        "                    \"foo_i\": 777\n" +
-        "                }\n" +
-        "            ]\n" +
-        "        }\n" +
-        "    }\n" +
-        "}";
-    checkTwoChildDocs(str);
+    checkTwoAnonymousChildDocs(DUP_KEYS_JSON_CHILD_DOCS, false);
   }
 
-  private void checkTwoChildDocs(String rawJsonStr) throws Exception {
-    SolrQueryRequest req = req("commit","true");
+  private void checkTwoAnonymousChildDocs(String rawJsonStr) throws Exception {
+    checkTwoAnonymousChildDocs(rawJsonStr, true);
+  }
+
+  private void checkTwoAnonymousChildDocs(String rawJsonStr, boolean anonChildDocs) throws Exception {
+    SolrQueryRequest req = req("commit","true", ANONYMOUS_CHILD_DOCS, Boolean.toString(anonChildDocs));
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     JsonLoader loader = new JsonLoader();
@@ -849,11 +892,20 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrInputField f = d.getField( "id" );
     assertEquals("1", f.getValue());
 
-    SolrInputDocument cd = d.getChildDocuments().get(0);
+    SolrInputDocument cd;
+    if (anonChildDocs) {
+      cd = d.getChildDocuments().get(0);
+    } else {
+      cd = (SolrInputDocument) (d.getField("_childDocuments_")).getFirstValue();
+    }
     SolrInputField cf = cd.getField( "id" );
     assertEquals("2", cf.getValue());
 
-    cd = d.getChildDocuments().get(1);
+    if (anonChildDocs) {
+      cd = d.getChildDocuments().get(1);
+    } else {
+      cd = (SolrInputDocument)((List)(d.getField("_childDocuments_")).getValue()).get(1);
+    }
     cf = cd.getField( "id" );
     assertEquals("3", cf.getValue());
     cf = cd.getField( "foo_i" );
@@ -865,7 +917,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEmptyChildDocs() throws Exception {
+  public void testEmptyAnonymousChildDocs() throws Exception {
     String str = "{\n" +
         "    \"add\": {\n" +
         "        \"doc\": {\n" +
@@ -893,7 +945,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGrandChildDocs() throws Exception {
+  public void testAnonymousGrandChildDocs() throws Exception {
     String str = "{\n" +
         "    \"add\": {\n" +
         "        \"doc\": {\n" +
@@ -941,6 +993,88 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrInputDocument three = one.getChildDocuments().get(1);
     assertEquals("3", three.getFieldValue("id"));
     assertEquals("Bar", three.getFieldValue("foo_s"));
+
+    req.close();
+
+  }
+
+  @Test
+  public void testChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"children\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"2\",\n" +
+        "                    \"foo_s\": \"Yaz\"\n" +
+        "                },\n" +
+        "                {\n" +
+        "                    \"id\": \"3\",\n" +
+        "                    \"foo_s\": \"Bar\"\n" +
+        "                }\n" +
+        "            ]\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument one = add.solrDoc;
+    assertEquals("1", one.getFieldValue("id"));
+
+    List<SolrInputDocument> children = (List) one.getFieldValues("children");
+    SolrInputDocument two = children.get(0);
+    assertEquals("2", two.getFieldValue("id"));
+    assertEquals("Yaz", two.getFieldValue("foo_s"));
+
+    SolrInputDocument three = children.get(1);
+    assertEquals("3", three.getFieldValue("id"));
+    assertEquals("Bar", three.getFieldValue("foo_s"));
+
+    req.close();
+
+  }
+
+  @Test
+  public void testSingleRelationalChildDoc() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"child1\": \n" +
+        "                {\n" +
+        "                    \"id\": \"2\",\n" +
+        "                    \"foo_s\": \"Yaz\"\n" +
+        "                },\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument one = add.solrDoc;
+    assertEquals("1", one.getFieldValue("id"));
+
+    assertTrue(one.keySet().contains("child1"));
+
+    SolrInputDocument two = (SolrInputDocument) one.getField("child1").getValue();
+    assertEquals("2", two.getFieldValue("id"));
+    assertEquals("Yaz", two.getFieldValue("foo_s"));
 
     req.close();
 

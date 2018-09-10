@@ -60,9 +60,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -248,7 +248,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         DocCollection systemColl = clusterState.getCollectionOrNull(CollectionAdminParams.SYSTEM_COLL);
         if (systemColl == null) {
           if (logMissingCollection) {
-            log.warn("Missing " + CollectionAdminParams.SYSTEM_COLL + ", keeping metrics history in memory");
+            log.info("No " + CollectionAdminParams.SYSTEM_COLL + " collection, keeping metrics history in memory.");
             logMissingCollection = false;
           }
           factory.setPersistent(false);
@@ -262,7 +262,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
             }
           }
           if (!ready) {
-            log.debug(CollectionAdminParams.SYSTEM_COLL + " not ready yet, keeping metrics history in memory");
+            log.debug(CollectionAdminParams.SYSTEM_COLL + "collection not ready yet, keeping metrics history in memory");
             factory.setPersistent(false);
             return;
           }
@@ -284,7 +284,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         logMissingCollection = true;
       } catch (Exception e) {
         if (logMissingCollection) {
-          log.warn("Error querying .system collection, keeping metrics history in memory", e);
+          log.info("No " + CollectionAdminParams.SYSTEM_COLL + " collection, keeping metrics history in memory.");
         }
         logMissingCollection = false;
         factory.setPersistent(false);
@@ -333,12 +333,14 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     if (oid == null) {
       return null;
     }
-    String[] ids = oid.split("-");
-    if (ids.length != 3) { // unknown format
-      log.warn("Unknown format of leader id, skipping: " + oid);
+    String nodeName = null;
+    try {
+      nodeName = LeaderElector.getNodeName(oid);
+    } catch (Exception e) {
+      log.warn("Unknown format of leader id, skipping: " + oid, e);
       return null;
     }
-    return ids[1];
+    return nodeName;
   }
 
   private boolean amIOverseerLeader() {
@@ -486,10 +488,6 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           replicas.forEach(ri -> {
             collTags.forEach(tag -> {
               double value = ((Number)ri.getVariable(tag, 0.0)).doubleValue();
-              // TODO: fix this when Suggestion.Condition.DISK_IDX uses proper conversion
-              if (tag.contains(Suggestion.coreidxsize)) {
-                value = value * 1024.0 * 1024.0 * 1024.0;
-              }
               DoubleAdder adder = (DoubleAdder)perReg.computeIfAbsent(tag, t -> new DoubleAdder());
               adder.add(value);
             });
@@ -530,16 +528,16 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         Map<String, Number> perReg = totals
             .computeIfAbsent(Group.collection, g -> new HashMap<>())
             .computeIfAbsent(registry, r -> new HashMap<>());
-        Collection<Slice> slices = coll.getActiveSlices();
-        perReg.put(NUM_SHARDS_KEY, slices.size());
+        Slice[] slices = coll.getActiveSlicesArr();
+        perReg.put(NUM_SHARDS_KEY, slices.length);
         DoubleAdder numActiveReplicas = new DoubleAdder();
-        slices.forEach(s -> {
+        for (Slice s : slices) {
           s.forEach(r -> {
             if (r.isActive(state.getLiveNodes())) {
               numActiveReplicas.add(1.0);
             }
           });
-        });
+        }
         perReg.put(NUM_REPLICAS_KEY, numActiveReplicas);
       });
     } catch (IOException e) {

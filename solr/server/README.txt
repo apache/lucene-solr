@@ -93,7 +93,7 @@ statements in the solrconfig.xml file to reference plugin jars outside of
 this directory for loading "contrib" plugins via relative paths.  
 
 If you make a copy of this example server and wish to use the 
-ExtractingRequestHandler (SolrCell), DataImportHandler (DIH), UIMA, the 
+ExtractingRequestHandler (SolrCell), DataImportHandler (DIH), the 
 clustering component, or any other modules in "contrib", you will need to 
 copy the required jars or update the paths to those jars in your 
 solrconfig.xml.

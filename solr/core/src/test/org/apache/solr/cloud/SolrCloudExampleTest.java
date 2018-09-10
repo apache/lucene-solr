@@ -68,7 +68,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
     waitForThingsToLevelOut(30000);
 
@@ -204,10 +204,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     Map<String, Object> configJson = SolrCLI.getJson(configUrl);
     Object maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
     assertNotNull(maxTimeFromConfig);
-    assertEquals(new Long(-1L), maxTimeFromConfig);
+    assertEquals(-1L, maxTimeFromConfig);
 
     String prop = "updateHandler.autoSoftCommit.maxTime";
-    Long maxTime = new Long(3000L);
+    Long maxTime = 3000L;
     String[] args = new String[]{
         "-collection", testCollectionName,
         "-property", prop,

@@ -41,17 +41,13 @@ public class TestTimeSource extends SolrTestCaseJ4 {
 
     long[] prevTimeAndEpoch = ts.getTimeAndEpochNs();
     long delta = 500000000; // 500 ms
-    long maxDiff = 200000;
-    if (ts instanceof TimeSource.SimTimeSource) {
-      maxDiff = Math.round(maxDiff * ((TimeSource.SimTimeSource)ts).multiplier);
-    }
+    long maxDiff = 1000;
     for (int i = 0; i < 10; i++) {
       ts.sleep(500);
       long[] curTimeAndEpoch = ts.getTimeAndEpochNs();
-      long diff = prevTimeAndEpoch[0] + delta - curTimeAndEpoch[0];
-      assertTrue(ts + " time diff=" + diff, diff < maxDiff);
-      diff = prevTimeAndEpoch[1] + delta - curTimeAndEpoch[1];
-      assertTrue(ts + " epochTime diff=" + diff, diff < maxDiff);
+      long diffTime = prevTimeAndEpoch[0] + delta - curTimeAndEpoch[0];
+      long diffEpoch = prevTimeAndEpoch[1] + delta - curTimeAndEpoch[1];
+      assertTrue(ts + " diffTime=" + diffTime + ", diffEpoch=" + diffEpoch, Math.abs(diffTime - diffEpoch) < maxDiff);
       prevTimeAndEpoch = curTimeAndEpoch;
     }
   }

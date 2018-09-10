@@ -93,10 +93,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected InstrumentedHttpRequestExecutor httpRequestExecutor;
   private LBHttpSolrClient loadbalancer;
   //default values:
-  int soTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
-  int connectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
-  int maxConnectionsPerHost = 20;
-  int maxConnections = 10000;
+  int soTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+  int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+  int maxConnectionsPerHost = HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST;
+  int maxConnections = HttpClientUtil.DEFAULT_MAXCONNECTIONS;
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
   int keepAliveTime = 5;
