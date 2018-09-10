@@ -29,7 +29,11 @@ Apache ZooKeeper 3.4.11
 Jetty 9.4.11.v20180605
 
 
-(No Changes)
+Other Changes
+----------------------
+
+* SOLR-12762: Fix javadoc for SolrCloudTestCase.clusterShape() method and add a method that validates only against
+  Active slices (Anshum Gupta)
 
 
 ==================  7.5.0 ==================
