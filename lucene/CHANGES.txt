@@ -270,6 +270,8 @@ Changes in Runtime Behavior:
 
 Improvements
 
+* LUCENE-8416: Add tokenized version of o.o. to Stempel stopwords (gezapeti)
+
 * LUCENE-8468: A ByteBuffer based Directory implementation. (Dawid Weiss)
 
 * LUCENE-8447: Add DISJOINT and WITHIN support to LatLonShape queries. (Nick Knize)
