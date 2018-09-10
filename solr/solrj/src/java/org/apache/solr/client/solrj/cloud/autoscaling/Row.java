@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -71,6 +72,12 @@ public class Row implements MapWriter {
     }
   }
 
+  public void forEachShard(String collection, BiConsumer<String, List<ReplicaInfo>> consumer) {
+    collectionVsShardVsReplicas
+        .getOrDefault(collection, Collections.emptyMap())
+        .forEach(consumer);
+  }
+
   public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
       Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session) {
     this.session = session;
@@ -98,6 +105,7 @@ public class Row implements MapWriter {
   }
 
   Object getVal(String name) {
+    if (NODE.equals(name)) return this.node;
     for (Cell cell : cells) if (cell.name.equals(name)) return cell.val;
     return null;
   }
@@ -128,11 +136,11 @@ public class Row implements MapWriter {
    * values of certain attributes will be modified, in this node as well as other nodes. Please note that
    * the state of the current session is kept intact while this operation is being performed
    *
-   * @param coll  collection name
-   * @param shard shard name
-   * @param type  replica type
+   * @param coll           collection name
+   * @param shard          shard name
+   * @param type           replica type
    * @param recursionCount the number of times we have recursed to add more replicas
-   * @param strictMode whether suggester is operating in strict mode or not
+   * @param strictMode     whether suggester is operating in strict mode or not
    */
   Row addReplica(String coll, String shard, Replica.Type type, int recursionCount, boolean strictMode) {
     if (recursionCount > 3) {
@@ -157,7 +165,7 @@ public class Row implements MapWriter {
       if (op.isAdd) {
         row = row.session.getNode(op.node).addReplica(op.coll, op.shard, op.type, recursionCount + 1, strictMode);
       } else {
-        row.session.getNode(op.node).removeReplica(op.coll, op.shard, op.type, recursionCount+1);
+        row.session.getNode(op.node).removeReplica(op.coll, op.shard, op.type, recursionCount + 1);
       }
     }
 
@@ -198,10 +206,12 @@ public class Row implements MapWriter {
     if (idx == -1) return null;
     return r.get(idx);
   }
+
   public Row removeReplica(String coll, String shard, Replica.Type type) {
-    return removeReplica(coll,shard, type, 0);
+    return removeReplica(coll, shard, type, 0);
 
   }
+
   // this simulates removing a replica from a node
   public Row removeReplica(String coll, String shard, Replica.Type type, int recursionCount) {
     if (recursionCount > 3) {
@@ -240,10 +250,21 @@ public class Row implements MapWriter {
     forEachReplica(collectionVsShardVsReplicas, consumer);
   }
 
+  public void forEachReplica(String coll, Consumer<ReplicaInfo> consumer) {
+    collectionVsShardVsReplicas.getOrDefault(coll, Collections.emptyMap()).forEach((shard, replicaInfos) -> {
+      for (ReplicaInfo replicaInfo : replicaInfos) {
+        consumer.accept(replicaInfo);
+      }
+    });
+  }
+
   public static void forEachReplica(Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, Consumer<ReplicaInfo> consumer) {
     collectionVsShardVsReplicas.forEach((coll, shardVsReplicas) -> shardVsReplicas
         .forEach((shard, replicaInfos) -> {
-          for (ReplicaInfo r : replicaInfos) consumer.accept(r);
+          for (int i = 0; i < replicaInfos.size(); i++) {
+            ReplicaInfo r = replicaInfos.get(i);
+            consumer.accept(r);
+          }
         }));
   }
 }

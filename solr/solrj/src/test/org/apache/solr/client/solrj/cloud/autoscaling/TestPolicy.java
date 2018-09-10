@@ -1377,9 +1377,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}");
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
-        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3, sysprop.fs: unknown }," +
         "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
-        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1, sysprop.fs: unknown}" +
         "}");
     Policy policy = new Policy(policies);
     Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
@@ -1573,9 +1573,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}");
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
-        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3, sysprop.fs: unknown}," +
         "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
-        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1, sysprop.fs: unknown}" +
         "}");
     Policy policy = new Policy(policies);
     Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
@@ -1889,10 +1889,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      {'minimize':'cores', 'precision':3}," +
         "      {'maximize':'freedisk','precision':100}]}";
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
-        "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4}," +
-        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
+        "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3, sysprop.fs: slowdisk}," +
         "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
-        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1, sysprop.fs: slowdisk}" +
         "}");
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
     SolrCloudManager cloudManager = getSolrCloudManager(nodeValues, clusterState);
@@ -2526,7 +2526,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
 
-  public void testFreeDiskSuggestions() {
+  public void testFreeDiskSuggestions() throws IOException {
     String dataproviderdata = "{" +
         "  liveNodes:[node1,node2]," +
         "  replicaInfo : {" +
@@ -2549,7 +2549,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
     assertEquals(1, violations.size());
     assertEquals(4, violations.get(0).getViolatingReplicas().size());
-    assertEquals(-4, violations.get(0).replicaCountDelta, 0.1);
+    assertEquals(4, violations.get(0).replicaCountDelta, 0.1);
     for (Violation.ReplicaInfoAndErr r : violations.get(0).getViolatingReplicas()) {
       assertEquals(500d, r.delta, 0.1);
 
@@ -2579,11 +2579,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals(1, violations.size());
     assertEquals(-4, violations.get(0).replicaCountDelta, 0.1);
     assertEquals(1, violations.size());
-    assertEquals(4, violations.get(0).getViolatingReplicas().size());
-    for (Violation.ReplicaInfoAndErr r : violations.get(0).getViolatingReplicas()) {
-      assertEquals(500d, r.delta, 0.1);
+    assertEquals(0, violations.get(0).getViolatingReplicas().size());
 
-    }
     l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
     assertEquals(3, l.size());
     m = l.get(0).toMap(new LinkedHashMap<>());
@@ -3653,7 +3650,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) Utils.fromJSONString(dataproviderdata))).getViolations();
     assertEquals(1, violations.size());
-    assertEquals(4, violations.get(0).getViolatingReplicas().size());
+    assertEquals(-4d, violations.get(0).replicaCountDelta, 0.01);
     for (Violation.ReplicaInfoAndErr r : violations.get(0).getViolatingReplicas()) {
       assertEquals(10.0d, r.delta.doubleValue(), 0.1);
     }
