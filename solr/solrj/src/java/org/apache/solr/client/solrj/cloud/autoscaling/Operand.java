@@ -99,6 +99,7 @@ public enum Operand {
   NOT_EQUAL("!", 2) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
+      if(testVal == null) return PASS;
       return super.match(ruleVal, testVal) == PASS ? FAIL : PASS;
     }
 

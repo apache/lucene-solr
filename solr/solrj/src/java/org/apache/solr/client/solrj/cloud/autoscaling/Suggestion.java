@@ -18,7 +18,10 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.V2RequestSupport;
@@ -54,15 +57,51 @@ public class Suggestion {
     }
   }
 
+  static void suggestNegativeViolations(Suggestion.Ctx ctx, Function<Set<String>, List<String>> shardSorter) {
+    if (ctx.violation.coll == null) return;
+    Set<String> shardSet = new HashSet<>();
+    for (Row node : ctx.session.matrix)
+      node.forEachShard(ctx.violation.coll, (s, ri) -> {
+        if (Policy.ANY.equals(ctx.violation.shard) || s.equals(ctx.violation.shard)) shardSet.add(s);
+      });
+    //Now, sort shards based on their index size ascending
+    List<String> shards = shardSorter.apply(shardSet);
+    outer:
+    for (int i = 0; i < 5; i++) {
+      int totalSuggestions = 0;
+      for (String shard : shards) {
+        Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
+            .hint(Suggester.Hint.COLL_SHARD, new Pair<>(ctx.violation.coll, shard))
+            .forceOperation(true);
+        SolrRequest op = ctx.addSuggestion(suggester);
+        if (op == null) continue;
+        totalSuggestions++;
+        boolean violationStillExists = false;
+        for (Violation violation : suggester.session.getViolations()) {
+          if (violation.getClause().original == ctx.violation.getClause().original) {
+            violationStillExists = true;
+            break;
+          }
+        }
+        if (!violationStillExists) break outer;
+      }
+      if (totalSuggestions == 0) break;
+    }
+  }
 
-  static void perNodeSuggestions(Ctx ctx) {
+
+  static void suggestPositiveViolations(Ctx ctx) {
     if (ctx.violation == null) return;
+    Double currentDelta = ctx.violation.replicaCountDelta;
     for (ReplicaInfoAndErr e : ctx.violation.getViolatingReplicas()) {
+      if (currentDelta <= 0) break;
       Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
           .forceOperation(true)
           .hint(Suggester.Hint.COLL_SHARD, new Pair<>(e.replicaInfo.getCollection(), e.replicaInfo.getShard()))
           .hint(Suggester.Hint.SRC_NODE, e.replicaInfo.getNode());
-      if (ctx.addSuggestion(suggester) == null) break;
+      if (ctx.addSuggestion(suggester) != null) {
+        currentDelta--;
+      }
     }
   }
 
