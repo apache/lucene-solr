@@ -58,10 +58,10 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
 
     List<Suggestion> mySuggester = dictionary2suggestions.get("mySuggester");
     assertEquals("Computational framework", mySuggester.get(0).getTerm());
-    assertEquals(0, mySuggester.get(0).getWeight());
+    assertEquals(0, mySuggester.get(0).getWeight(), 0.01F);
     assertEquals("", mySuggester.get(0).getPayload());
     assertEquals("Computer", mySuggester.get(1).getTerm());
-    assertEquals(0, mySuggester.get(1).getWeight());
+    assertEquals(0, mySuggester.get(1).getWeight(), 0.01F);
     assertEquals("", mySuggester.get(1).getPayload());
   }
 

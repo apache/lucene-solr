@@ -45,7 +45,7 @@ public class SuggesterResponse {
         suggestionListToParse = (List<SimpleOrderedMap>) suggestionsNode.get(SUGGESTIONS_NODE_NAME);
         for (SimpleOrderedMap suggestion : suggestionListToParse) {
           String term = (String) suggestion.get(TERM_NODE_NAME);
-          long weight = (long) suggestion.get(WEIGHT_NODE_NAME);
+          double weight = (double) suggestion.get(WEIGHT_NODE_NAME);
           String payload = (String) suggestion.get(PAYLOAD_NODE_NAME);
 
           Suggestion parsedSuggestion = new Suggestion(term, weight, payload);

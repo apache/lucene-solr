@@ -21,10 +21,10 @@ package org.apache.solr.client.solrj.response;
  */
 public class Suggestion {
     private String term;
-    private long weight;
+    private double weight;
     private String payload;
 
-    public Suggestion(String term, long weight, String payload) {
+    public Suggestion(String term, double weight, String payload) {
         this.term = term;
         this.weight = weight;
         this.payload = payload;
@@ -52,7 +52,7 @@ public class Suggestion {
         return term;
     }
 
-    public long getWeight() {
+    public double getWeight() {
         return weight;
     }
 

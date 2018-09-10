@@ -463,7 +463,11 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
 
           output.writeBytes(scratch.bytes(), 0, scratch.length());
 
-          output.writeInt(encodeWeight(iterator.weight()));
+          if (iterator.weight() != null) {
+            output.writeInt(encodeWeight(iterator.weight()));
+          } else {
+            output.writeInt(encodeWeight(0L));
+          }
 
           if (hasPayloads) {
             for(int i=0;i<surfaceForm.length;i++) {
