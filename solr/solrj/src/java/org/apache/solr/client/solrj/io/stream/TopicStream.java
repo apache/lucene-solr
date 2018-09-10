@@ -428,8 +428,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         SolrStream solrStream = new SolrStream(coreUrl, params);
 
         if(streamContext != null) {
-          StreamContext localContext = new StreamContext();
-          localContext.setSolrClientCache(streamContext.getSolrClientCache());
+          StreamContext localContext = new StreamContext(streamContext.getSolrClientCache());
           solrStream.setStreamContext(localContext);
         }
 

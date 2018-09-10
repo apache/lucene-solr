@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -72,7 +73,7 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
   @Test
   public void absoluteValueFromContext() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     evaluator.setStreamContext(context);
     Object result;
     

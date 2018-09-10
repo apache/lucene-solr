@@ -106,9 +106,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamExpression expression;
     CloudSolrStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       // Basic test
@@ -178,9 +177,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       Map<String, List<String>> shardsMap = new HashMap();
       shardsMap.put("myCollection", shardUrls);
-      StreamContext context = new StreamContext();
+      StreamContext context = new StreamContext(solrClientCache);
       context.put("shards", shardsMap);
-      context.setSolrClientCache(solrClientCache);
 
       // Basic test
       expression = StreamExpressionParser.parse("search(myCollection, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
@@ -232,9 +230,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
 
     try {
@@ -284,9 +281,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamFactory factory = new StreamFactory();
     StreamExpression expression;
     CloudSolrStream stream;
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     List<Tuple> tuples;
 
     try {
@@ -412,9 +408,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     Tuple tuple;
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
@@ -487,10 +482,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withFunctionName("random", RandomStream.class);
 
 
-    StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
     try {
-      context.setSolrClientCache(cache);
+      StreamContext context = new StreamContext(cache);
 
       expression = StreamExpressionParser.parse("random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"1000\", fl=\"id, a_i\")");
       stream = factory.constructStream(expression);
@@ -557,10 +551,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     update.add(id, "2", "a_t", "hello world have a very nice day fancy sky");
     update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
     try {
-      context.setSolrClientCache(cache);
+      StreamContext context = new StreamContext(cache);
       ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
       sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
@@ -635,10 +628,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
     try {
-      streamContext.setSolrClientCache(cache);
+      StreamContext streamContext = new StreamContext(cache);
       String expr = "stats(" + COLLECTIONORALIAS + ", q=*:*, sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))";
       expression = StreamExpressionParser.parse(expr);
       stream = factory.constructStream(expression);
@@ -678,9 +670,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       expr = "stats(myCollection, q=*:*, sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))";
       Map<String, List<String>> shardsMap = new HashMap();
       shardsMap.put("myCollection", shardUrls);
-      StreamContext context = new StreamContext();
+      StreamContext context = new StreamContext(cache);
       context.put("shards", shardsMap);
-      context.setSolrClientCache(cache);
       stream = factory.constructStream(expr);
       stream.setStreamContext(context);
 
@@ -1420,8 +1411,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       expression = StreamExpressionParser.parse("topic(collection1, collection1, q=\"a_s:hello\", fl=\"id\", id=\"1000000\", checkpointEvery=3)");
 
       stream = factory.constructStream(expression);
-      StreamContext context = new StreamContext();
-      context.setSolrClientCache(cache);
+      StreamContext context = new StreamContext(cache);
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 
@@ -1433,8 +1423,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
               expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
               stream = factory.constructStream(expression);
-              context = new StreamContext();
-              context.setSolrClientCache(cache);
+              context = new StreamContext(cache);
               stream.setStreamContext(context);
               tuples = getTuples(stream);
               assertEquals(tuples.size(), 1);
@@ -1451,8 +1440,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       expression = StreamExpressionParser.parse("topic(collection1, collection1, fl=\"id\", q=\"a_s:hello\", id=\"1000000\", checkpointEvery=2)");
 
       stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
+      context = new StreamContext(cache);
       stream.setStreamContext(context);
 
       try {
@@ -1464,8 +1452,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
                 // Checkpoint should not have changed.
                 expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
                 TupleStream cstream = factory.constructStream(expression);
-                context = new StreamContext();
-                context.setSolrClientCache(cache);
+                context = new StreamContext(cache);
                 cstream.setStreamContext(context);
                 tuples = getTuples(cstream);
 
@@ -1482,8 +1469,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
                 //Checkpoint should have changed.
                 expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
                 cstream = factory.constructStream(expression);
-                context = new StreamContext();
-                context.setSolrClientCache(cache);
+                context = new StreamContext(cache);
                 cstream.setStreamContext(context);
                 tuples = getTuples(cstream);
 
@@ -1505,8 +1491,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       try {
         expression = StreamExpressionParser.parse("daemon(topic(collection1, collection1, fl=\"id\", q=\"a_s:hello\", id=\"1000000\", checkpointEvery=2), id=\"test\", runInterval=\"1000\", queueSize=\"9\")");
         dstream = (DaemonStream) factory.constructStream(expression);
-        context = new StreamContext();
-        context.setSolrClientCache(cache);
+        context = new StreamContext(cache);
         dstream.setStreamContext(context);
 
         //Index a few more documents
@@ -1595,8 +1580,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
                                                                "partitionKeys=\"id\"))");
 
       stream = factory.constructStream(expression);
-      StreamContext context = new StreamContext();
-      context.setSolrClientCache(cache);
+      StreamContext context = new StreamContext(cache);
       stream.setStreamContext(context);
       tuples = getTuples(stream);
 
@@ -1609,8 +1593,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000*\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
 
       stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
+      context = new StreamContext(cache);
       stream.setStreamContext(context);
       tuples = getTuples(stream);
       assertEquals(tuples.size(), 2);
@@ -1638,8 +1621,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "partitionKeys=\"id\"))");
 
       stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
+      context = new StreamContext(cache);
       stream.setStreamContext(context);
 
       assertTopicRun(stream, "10", "11");
@@ -1658,8 +1640,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "partitionKeys=\"id\"))");
 
       stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
+      context = new StreamContext(cache);
       stream.setStreamContext(context);
       assertTopicRun(stream, "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11");
 
@@ -1673,8 +1654,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       //Run the same topic again including the initialCheckpoint. It should start where it left off.
       //initialCheckpoint should be ignored for all but the first run.
       stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
+      context = new StreamContext(cache);
       stream.setStreamContext(context);
       assertTopicRun(stream, "12", "13");
 
@@ -1692,8 +1672,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "partitionKeys=\"id\"))");
 
       stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
+      context = new StreamContext(cache);
       stream.setStreamContext(context);
 
       assertTopicSubject(stream, "ha ha bla blah0",
@@ -1727,7 +1706,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1820,7 +1799,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1867,7 +1846,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 5);
@@ -2048,7 +2027,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2091,9 +2070,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -2213,9 +2191,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -2297,10 +2274,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withDefaultZkHost(cluster.getZkServer().getZkAddress())
         .withFunctionName("significantTerms", SignificantTermsStream.class);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
-    streamContext.setSolrClientCache(cache);
     try {
+      StreamContext streamContext = new StreamContext(cache);
 
       String significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, minTermLength=1, maxDocFreq=\".5\")";
       stream = factory.constructStream(significantTerms);
@@ -2408,9 +2384,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       Map<String, List<String>> shardsMap = new HashMap();
       shardsMap.put("myCollection", shardUrls);
-      StreamContext context = new StreamContext();
+      StreamContext context = new StreamContext(cache);
       context.put("shards", shardsMap);
-      context.setSolrClientCache(cache);
       significantTerms = "significantTerms(myCollection, q=\"id:a*\",  field=\"test_t\", limit=2, minDocFreq=\"2700\", minTermLength=1, maxDocFreq=\".5\")";
       stream = factory.constructStream(significantTerms);
       stream.setStreamContext(context);

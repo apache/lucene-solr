@@ -76,8 +76,7 @@ public class ModelCache {
     params.set("q","name_s:"+modelID);
     params.set("fl", "terms_ss, idfs_ds, weights_ds, iteration_i, _version_");
     params.set(SORT, "iteration_i desc");
-    StreamContext streamContext = new StreamContext();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     CloudSolrStream stream = new CloudSolrStream(zkHost, collection, params);
     stream.setStreamContext(streamContext);
     Tuple tuple = null;

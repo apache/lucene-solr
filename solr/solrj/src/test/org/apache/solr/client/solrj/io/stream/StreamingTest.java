@@ -131,9 +131,8 @@ public void testUniqueStream() throws Exception {
       .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
       .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-  StreamContext streamContext = new StreamContext();
   SolrClientCache solrClientCache = new SolrClientCache();
-  streamContext.setSolrClientCache(solrClientCache);
+  StreamContext streamContext = new StreamContext(solrClientCache);
   try {
     SolrParams sParams = StreamingTest.mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
     CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
@@ -175,9 +174,8 @@ public void testNonePartitionKeys() throws Exception {
       .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
       .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
       .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-  StreamContext streamContext = new StreamContext();
   SolrClientCache solrClientCache = new SolrClientCache();
-  streamContext.setSolrClientCache(solrClientCache);
+  StreamContext streamContext = new StreamContext(solrClientCache);
   try {
 
     SolrParams sParamsA = StreamingTest.mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_s asc,a_f asc", "partitionKeys", "none");
@@ -208,9 +206,8 @@ public void testParallelUniqueStream() throws Exception {
       .add(id, "8", "a_s", "hello1", "a_i", "13", "a_f", "4")
       .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-  StreamContext streamContext = new StreamContext();
   SolrClientCache solrClientCache = new SolrClientCache();
-  streamContext.setSolrClientCache(solrClientCache);
+  StreamContext streamContext = new StreamContext(solrClientCache);
 
   try {
 
@@ -251,9 +248,8 @@ public void testMultipleFqClauses() throws Exception {
 
   streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
 
-  StreamContext streamContext = new StreamContext();
   SolrClientCache solrClientCache = new SolrClientCache();
-  streamContext.setSolrClientCache(solrClientCache);
+  StreamContext streamContext = new StreamContext(solrClientCache);
 
   try {
     ModifiableSolrParams params = new ModifiableSolrParams(mapParams("q", "*:*", "fl", "id,a_i",
@@ -279,9 +275,8 @@ public void testRankStream() throws Exception {
       .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
       .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-  StreamContext streamContext = new StreamContext();
   SolrClientCache solrClientCache = new SolrClientCache();
-  streamContext.setSolrClientCache(solrClientCache);
+  StreamContext streamContext = new StreamContext(solrClientCache);
   try {
     SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc");
     CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
@@ -311,9 +306,8 @@ public void testParallelRankStream() throws Exception {
       .add(id, "10", "a_s", "hello1", "a_i", "10", "a_f", "1")
       .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-  StreamContext streamContext = new StreamContext();
   SolrClientCache solrClientCache = new SolrClientCache();
-  streamContext.setSolrClientCache(solrClientCache);
+  StreamContext streamContext = new StreamContext(new StreamContext(solrClientCache);
   try {
     SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc", "partitionKeys", "a_i");
     CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
@@ -347,9 +341,8 @@ public void testParallelRankStream() throws Exception {
       .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
       .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       //Test with spaces in the parameter lists.
@@ -383,9 +376,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       //Test with spaces in the parameter lists.
@@ -456,9 +448,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       //Test with spaces in the parameter lists.
@@ -492,9 +483,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       SolrParams sParamsA = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_s asc,a_f asc", "partitionKeys", "a_s");
@@ -570,9 +560,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     //Test an error that comes originates from the /select handler
     try {
       SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
@@ -666,9 +655,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       SolrParams sParamsA = mapParams("q", "*:*");
@@ -733,9 +721,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc");
@@ -1146,9 +1133,8 @@ public void testParallelRankStream() throws Exception {
     List<String> selectOrder = ("asc".equals(sortDir)) ? Arrays.asList(ascOrder) : Arrays.asList(descOrder);
     List<String> selectOrderBool = ("asc".equals(sortDir)) ? Arrays.asList(ascOrderBool) : Arrays.asList(descOrderBool);
     SolrParams exportParams = mapParams("q", "*:*", "qt", "/export", "fl", "id," + field, "sort", field + " " + sortDir + ",id asc");
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, exportParams)) {
       solrStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(solrStream);
@@ -1191,9 +1177,8 @@ public void testParallelRankStream() throws Exception {
     }
     SolrParams sParams = mapParams("q", "*:*", "qt", "/export", "fl", fl.toString(), "sort", "id asc");
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
       solrStream.setStreamContext(streamContext);
@@ -1346,9 +1331,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "level1_s", "hello0", "level2_s", "b", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
 
@@ -1538,9 +1522,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc");
@@ -1712,9 +1695,8 @@ public void testParallelRankStream() throws Exception {
   public void testDaemonTopicStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
-    StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
-    context.setSolrClientCache(cache);
+    StreamContext context = new StreamContext(cache);
 
     try {
       SolrParams sParams = mapParams("q", "a_s:hello0", "rows", "500", "fl", "id");
@@ -1800,9 +1782,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       //Intentionally adding partitionKeys to trigger SOLR-12674
@@ -1832,7 +1813,7 @@ public void testParallelRankStream() throws Exception {
       solrParams.add("qt", "/stream");
       solrParams.add("expr", "rollup(search(" + COLLECTIONORALIAS + ",q=\"*:*\",fl=\"a_s,a_i,a_f\",sort=\"a_s desc\",partitionKeys=\"a_s\"),over=\"a_s\")\n");
       SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
-      streamContext = new StreamContext();
+      streamContext = new StreamContext(solrClientCache);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assert (tuples.size() == 3);
@@ -1857,9 +1838,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc", "partitionKeys", "a_s");
@@ -1977,9 +1957,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     try {
       SolrParams sParamsA = mapParams("q", "blah", "fl", "id,a_s,a_i,a_f", "sort", "a_s asc,a_f asc", "partitionKeys", "a_s");
       CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
@@ -2005,9 +1984,8 @@ public void testParallelRankStream() throws Exception {
             "1", "i_multi", "2", "f_multi", "1.2", "f_multi", "1.3")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f,s_multi,i_multi,f_multi", "sort", "a_s asc");
@@ -2054,9 +2032,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       //Test ascending
@@ -2136,9 +2113,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello1", "a_i", "100", "a_f", "1")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       //Test ascending
@@ -2193,9 +2169,8 @@ public void testParallelRankStream() throws Exception {
         .add(id, "9", "a_s", "hello1", "a_i", "100", "a_f", "1")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       //Test ascending
@@ -2231,9 +2206,8 @@ public void testParallelRankStream() throws Exception {
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     //Basic CloudSolrStream Test with Descending Sort
 
     try {
@@ -2296,9 +2270,8 @@ public void testParallelRankStream() throws Exception {
     //Basic CloudSolrStream Test bools desc
 
     SolrParams sParams = mapParams("q", "*:*", "qt", which, "fl", "id,b_sing", "sort", "b_sing asc,id asc");
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
 
     try  {
@@ -2364,9 +2337,8 @@ public void testParallelRankStream() throws Exception {
   
   // We should be getting the exact same thing back with both the export and select handlers, so test
   private void tryWithQt(String which) throws IOException {
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     SolrParams sParams = StreamingTest.mapParams("q", "*:*", "qt", which, "fl", 
         "id,i_sing,i_multi,l_sing,l_multi,f_sing,f_multi,d_sing,d_multi,dt_sing,dt_multi,s_sing,s_multi,b_sing,b_multi", 
         "sort", "i_sing asc");
@@ -2492,7 +2464,7 @@ public void testParallelRankStream() throws Exception {
   }
   
   private void attachStreamFactory(TupleStream tupleStream) {
-    StreamContext streamContext = new StreamContext();
+    StreamContext streamContext = new StreamContext(new SolrClientCache());
     streamContext.setStreamFactory(streamFactory);
     tupleStream.setStreamContext(streamContext);
   }

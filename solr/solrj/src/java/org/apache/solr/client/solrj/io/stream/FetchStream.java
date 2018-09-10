@@ -237,8 +237,7 @@ public class FetchStream extends TupleStream implements Expressible {
       params.add(SORT, "_version_ desc");
 
       CloudSolrStream cloudSolrStream = new CloudSolrStream(zkHost, collection, params);
-      StreamContext newContext = new StreamContext();
-      newContext.setSolrClientCache(streamContext.getSolrClientCache());
+      StreamContext newContext = new StreamContext(streamContext.getSolrClientCache());
       cloudSolrStream.setStreamContext(newContext);
       Map<String, Tuple> fetched = new HashMap<>();
       try {

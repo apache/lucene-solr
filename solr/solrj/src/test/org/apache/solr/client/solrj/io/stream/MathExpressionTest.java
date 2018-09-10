@@ -93,7 +93,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
       SolrStream solrStream = new SolrStream(url, paramsLoc);
 
-      StreamContext context = new StreamContext();
+      StreamContext context = new StreamContext(new SolrClientCache());
       solrStream.setStreamContext(context);
       List<Tuple> tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 5);
@@ -127,7 +127,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
       paramsLoc.set("qt", "/stream");
 
       solrStream = new SolrStream(url, paramsLoc);
-      context = new StreamContext();
+      context = new StreamContext(new SolrClientCache());
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertEquals(tuples.size(), 1);
@@ -143,7 +143,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
       solrStream = new SolrStream(url, paramsLoc);
 
-      context = new StreamContext();
+      context = new StreamContext(new SolrClientCache());
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 5);
@@ -178,7 +178,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
       solrStream = new SolrStream(url, paramsLoc);
 
-      context = new StreamContext();
+      context = new StreamContext(new SolrClientCache());
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 1);
@@ -191,7 +191,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
       solrStream = new SolrStream(url, paramsLoc);
 
-      context = new StreamContext();
+      context = new StreamContext(new SolrClientCache());
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 1);
@@ -221,7 +221,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(),  1);
@@ -248,7 +248,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(),  1);
@@ -299,7 +299,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -337,7 +337,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -367,7 +367,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -411,7 +411,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -462,7 +462,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -509,7 +509,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -549,7 +549,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -693,7 +693,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -743,7 +743,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -805,7 +805,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -834,7 +834,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -850,7 +850,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     solrStream = new SolrStream(url, paramsLoc);
 
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -865,7 +865,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     solrStream = new SolrStream(url, paramsLoc);
 
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -884,7 +884,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -911,7 +911,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -930,7 +930,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -983,7 +983,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1010,7 +1010,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1050,7 +1050,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1072,7 +1072,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1105,7 +1105,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1174,7 +1174,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1274,7 +1274,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1304,7 +1304,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1340,7 +1340,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1379,7 +1379,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1423,7 +1423,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1445,7 +1445,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1471,7 +1471,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1498,7 +1498,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     try {
       TupleStream solrStream = new SolrStream(url, paramsLoc);
-      StreamContext context = new StreamContext();
+      StreamContext context = new StreamContext(new SolrClientCache());
       solrStream.setStreamContext(context);
       List<Tuple> tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 1);
@@ -1523,7 +1523,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
       //If it fails twice in a row, we probably broke some code.
 
       TupleStream solrStream = new SolrStream(url, paramsLoc);
-      StreamContext context = new StreamContext();
+      StreamContext context = new StreamContext(new SolrClientCache());
       solrStream.setStreamContext(context);
       List<Tuple> tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 1);
@@ -1552,7 +1552,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1568,7 +1568,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1593,7 +1593,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1671,7 +1671,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1744,7 +1744,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1815,7 +1815,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1869,7 +1869,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1894,7 +1894,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -1945,7 +1945,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2024,7 +2024,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2103,7 +2103,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2183,7 +2183,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2274,7 +2274,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2304,7 +2304,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2353,7 +2353,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2377,7 +2377,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2399,7 +2399,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2440,7 +2440,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(), 1);
@@ -2497,7 +2497,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2518,7 +2518,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2551,7 +2551,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2585,7 +2585,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2608,7 +2608,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2629,7 +2629,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2662,7 +2662,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2681,7 +2681,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2702,7 +2702,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2733,7 +2733,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2755,7 +2755,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2774,7 +2774,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2790,7 +2790,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2803,7 +2803,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2815,7 +2815,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2828,7 +2828,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2841,7 +2841,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2854,7 +2854,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2878,7 +2878,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2915,7 +2915,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2950,7 +2950,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -2974,7 +2974,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3000,7 +3000,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3042,7 +3042,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3077,7 +3077,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3100,7 +3100,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3131,7 +3131,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3180,7 +3180,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3238,7 +3238,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3262,7 +3262,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3303,7 +3303,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3353,7 +3353,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3382,7 +3382,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3424,7 +3424,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3471,7 +3471,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3507,7 +3507,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3526,7 +3526,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3549,7 +3549,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3594,7 +3594,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3624,7 +3624,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3645,7 +3645,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3664,7 +3664,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3685,7 +3685,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3727,7 +3727,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3754,7 +3754,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3775,7 +3775,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3792,7 +3792,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3811,7 +3811,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3827,7 +3827,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3858,7 +3858,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3892,7 +3892,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3940,7 +3940,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -3984,7 +3984,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4018,7 +4018,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4045,7 +4045,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4086,7 +4086,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4179,7 +4179,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4205,7 +4205,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4263,7 +4263,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4285,7 +4285,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4343,7 +4343,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4400,7 +4400,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4448,7 +4448,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4512,7 +4512,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4583,7 +4583,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4643,7 +4643,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4678,7 +4678,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
@@ -4692,7 +4692,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("qt", "/stream");
 
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 2);
@@ -4706,7 +4706,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 2);
@@ -4720,7 +4720,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");
     solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
+    context = new StreamContext(new SolrClientCache());
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);

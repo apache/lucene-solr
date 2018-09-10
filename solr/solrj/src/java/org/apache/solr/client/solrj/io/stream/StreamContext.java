@@ -42,9 +42,13 @@ public class StreamContext implements Serializable{
   private ConcurrentMap objectCache;
   public int workerID;
   public int numWorkers;
-  private SolrClientCache clientCache;
   private ModelCache modelCache;
   private StreamFactory streamFactory;
+  final private SolrClientCache clientCache;
+
+  public StreamContext(SolrClientCache clientCache){
+    this.clientCache = clientCache;
+  }
 
   public ConcurrentMap getObjectCache() {
     return this.objectCache;
@@ -72,10 +76,6 @@ public class StreamContext implements Serializable{
 
   public Map getEntries() {
     return this.entries;
-  }
-
-  public void setSolrClientCache(SolrClientCache clientCache) {
-    this.clientCache = clientCache;
   }
 
   public void setModelCache(ModelCache modelCache) {

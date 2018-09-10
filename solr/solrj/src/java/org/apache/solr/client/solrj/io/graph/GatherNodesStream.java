@@ -376,11 +376,10 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     if (traversal == null) {
       //No traversal in the context. So create a new context and a new traversal.
       //This ensures that two separate traversals in the same expression don't pollute each others traversal.
-      StreamContext localContext = new StreamContext();
+      StreamContext localContext = new StreamContext(context.getSolrClientCache());
 
       localContext.numWorkers = context.numWorkers;
       localContext.workerID = context.workerID;
-      localContext.setSolrClientCache(context.getSolrClientCache());
       localContext.setStreamFactory(context.getStreamFactory());
 
       for(Object key :context.getEntries().keySet()) {

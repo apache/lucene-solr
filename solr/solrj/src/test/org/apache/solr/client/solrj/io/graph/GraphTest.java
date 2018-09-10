@@ -97,9 +97,8 @@ public class GraphTest extends SolrCloudTestCase {
     Set<String> paths = null;
     ShortestPathStream stream = null;
     String zkHost = cluster.getZkServer().getZkAddress();
-    StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
-    context.setSolrClientCache(cache);
+    StreamContext context = new StreamContext(cache);
 
     SolrParams sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
 

@@ -233,9 +233,8 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('AL', 'Algeria')");
     }
 
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
     
     // Load Solr
     new UpdateRequest()
@@ -315,9 +314,8 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     String expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       // Basic test
@@ -398,9 +396,8 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     String expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       // Basic test for no alias
@@ -513,10 +510,8 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     String expression;
     TupleStream stream;
     List<Tuple> tuples;
-
-    StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    StreamContext streamContext = new StreamContext(solrClientCache);
 
     try {
       // Basic test

@@ -64,8 +64,7 @@ class ResultSetImpl implements ResultSet {
     try {
       this.solrStream = new PushBackStream(solrStream);
 
-      StreamContext context = new StreamContext();
-      context.setSolrClientCache(((ConnectionImpl)this.statement.getConnection()).getSolrClientCache());
+      StreamContext context = new StreamContext(((ConnectionImpl)this.statement.getConnection()).getSolrClientCache());
       this.solrStream.setStreamContext(context);
 
       this.solrStream.open();

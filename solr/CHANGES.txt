@@ -374,6 +374,8 @@ Optimizations
 Other Changes
 ----------------------
 
+* SOLR-12718: StreamContext ctor should always take a SolrClientCache (gezapeti)
+
 * SOLR-12361: Allow nested child documents to be in field values of a SolrInputDocument as an alternative to
   add/get ChildDocuments off to the side.  The latter is now referred to as "anonymous" child documents as opposed to
   "labelled" (by the field name).  Anonymous child docs might be deprecated in the future.

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.collections.map.HashedMap;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ConversionEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
@@ -58,7 +59,7 @@ public class ConversionEvaluatorsTest {
 
     try {
       evaluator = factory.constructEvaluator("convert(inches)");
-      StreamContext streamContext = new StreamContext();
+      StreamContext streamContext = new StreamContext(new SolrClientCache());
       evaluator.setStreamContext(streamContext);
       assertTrue(false);
     } catch (IOException e) {
@@ -67,7 +68,7 @@ public class ConversionEvaluatorsTest {
 
     try {
       evaluator = factory.constructEvaluator("convert(inches, yards, 3)");
-      StreamContext streamContext = new StreamContext();
+      StreamContext streamContext = new StreamContext(new SolrClientCache());
       evaluator.setStreamContext(streamContext);
       Tuple tuple = new Tuple(new HashMap());
       evaluator.evaluate(tuple);
@@ -118,7 +119,7 @@ public class ConversionEvaluatorsTest {
 
   public void testFunction(String expression, Number expected) throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator(expression);
-    StreamContext streamContext = new StreamContext();
+    StreamContext streamContext = new StreamContext(new SolrClientCache());
     evaluator.setStreamContext(streamContext);
     Object result = evaluator.evaluate(new Tuple(values));
     assertTrue(result instanceof Number);
