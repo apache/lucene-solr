@@ -246,9 +246,9 @@ When this expression is sent to the /stream handler it responds with:
 
 The `latlonVectors` function wraps a list of tuples and parses a lat/long location field into
 a matrix of lat/long vectors. Each row in the matrix is a vector that contains the lat/long
-pair for the corresponding tuple in the list. The column labels for the matrix are
+pair for the corresponding tuple in the list. The row labels for the matrix are
 automatically set to the *id* field in the tuples. The the lat/lon matrix can then be operated
-on by machine learning functions using the `haversineMeters` distance measure.
+on by distance based machine learning functions using the `haversineMeters` distance measure.
 
 The `latlonVectors` function takes two parameters: a list of tuples and a named parameter called
 *field*. The field parameter tells the `latlonVectors` function which field to parse the lat/lon
