@@ -33,6 +33,18 @@ class SortDoc {
     this.sortValues = sortValues;
   }
 
+  public SortDoc() {
+  }
+
+  public SortValue getSortValue(String field) {
+    for (SortValue value : sortValues) {
+      if (value.getField().equals(field)) {
+        return value;
+      }
+    }
+    return null;
+  }
+
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;
@@ -43,6 +55,7 @@ class SortDoc {
 
   public void reset() {
     this.docId = -1;
+    this.docBase = -1;
     for (SortValue value : sortValues) {
       value.reset();
     }
@@ -82,9 +95,9 @@ class SortDoc {
     SortValue[] sortValues1 = sd.sortValues;
     for(int i=0; i<sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sortValues1[i]);
-      if(comp < 0) {
+      if (comp < 0) {
         return true;
-      } if(comp > 0) {
+      } else if (comp > 0) {
         return false;
       }
     }

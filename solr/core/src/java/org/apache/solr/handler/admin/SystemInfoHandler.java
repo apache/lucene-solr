@@ -61,13 +61,14 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class SystemInfoHandler extends RequestHandlerBase 
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final String PARAM_NODE = "node";
 
   public static String REDACT_STRING = RedactionUtils.getRedactString();
 
   /**
    * <p>
    * Undocumented expert level system property to prevent doing a reverse lookup of our hostname.
-   * This property ill be logged as a suggested workaround if any probems are noticed when doing reverse 
+   * This property will be logged as a suggested workaround if any problems are noticed when doing reverse 
    * lookup.
    * </p>
    *
@@ -130,7 +131,11 @@ public class SystemInfoHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
+    rsp.setHttpCaching(false);
     SolrCore core = req.getCore();
+    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req, core))) {
+      return; // Request was proxied to other node
+    }
     if (core != null) rsp.add( "core", getCoreInfo( core, req.getSchema() ) );
     boolean solrCloudMode =  getCoreContainer(req, core).isZooKeeperAware();
     rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
@@ -142,7 +147,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
     rsp.add( "system", getSystemInfo() );
-    rsp.setHttpCaching(false);
+    if (solrCloudMode) {
+      rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
+    }
   }
 
   private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {

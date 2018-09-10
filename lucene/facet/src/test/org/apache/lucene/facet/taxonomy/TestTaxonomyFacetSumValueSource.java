@@ -261,7 +261,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, DoubleValuesSource.SCORES);
     
-    int expected = (int) (csq.getBoost() * td.totalHits);
+    int expected = (int) (csq.getBoost() * td.totalHits.value);
     assertEquals(expected, facets.getSpecificValue("dim", "a").intValue());
 
     iw.close();

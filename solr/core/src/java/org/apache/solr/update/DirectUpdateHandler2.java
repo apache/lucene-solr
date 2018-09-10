@@ -41,11 +41,13 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -233,6 +235,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       return addDoc0(cmd);
     } catch (SolrException e) {
       throw e;
+    } catch (AlreadyClosedException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          String.format(Locale.ROOT, "Server error writing document id %s to the index", cmd.getPrintableId()), e);
     } catch (IllegalArgumentException iae) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           String.format(Locale.ROOT, "Exception writing document id %s to the index; possible analysis error: "
@@ -898,8 +903,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     commit(new CommitUpdateCommand(cmd.req, false));
     SolrIndexSplitter splitter = new SolrIndexSplitter(cmd);
     splitCommands.mark();
+    NamedList<Object> results = new NamedList<>();
     try {
-      splitter.split();
+      splitter.split(results);
+      cmd.rsp.addResponse(results);
     } catch (IOException e) {
       numErrors.increment();
       numErrorsCumulative.mark();

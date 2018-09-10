@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -80,6 +81,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -175,8 +177,16 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
       }
 
-      List<ReplicaPosition> replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, message,
-          nodeList, shardNames, sessionWrapper);
+      List<ReplicaPosition> replicaPositions = null;
+      try {
+        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, message,
+            nodeList, shardNames, sessionWrapper);
+      } catch (Assign.AssignmentException e) {
+        ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
+        new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
+        // unwrap the exception
+        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e.getCause());
+      }
 
       if (nodeList.isEmpty()) {
         log.debug("Finished create command for collection: {}", collectionName);
@@ -304,6 +314,13 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             ZkStateReader.COLLECTION_PROP, withCollection,
             CollectionAdminParams.COLOCATED_WITH, collectionName);
         Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
+        try {
+          zkStateReader.waitForState(withCollection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionName.equals(collectionState.getStr(COLOCATED_WITH)));
+        } catch (TimeoutException e) {
+          log.warn("Timed out waiting to see the " + COLOCATED_WITH + " property set on collection: " + withCollection);
+          // maybe the overseer queue is backed up, we don't want to fail the create request
+          // because of this time out, continue
+        }
       }
 
     } catch (SolrException ex) {
@@ -318,7 +335,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
                                                             ZkNodeProps message,
                                                             List<String> nodeList, List<String> shardNames,
-                                                            AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException {
+                                                            AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException, Assign.AssignmentException {
     final String collectionName = message.getStr(NAME);
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores

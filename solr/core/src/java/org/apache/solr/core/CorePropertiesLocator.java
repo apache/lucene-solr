@@ -50,13 +50,13 @@ public class CorePropertiesLocator implements CoresLocator {
 
   public static final String PROPERTIES_FILENAME = "core.properties";
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Path rootDirectory;
 
   public CorePropertiesLocator(Path coreDiscoveryRoot) {
     this.rootDirectory = coreDiscoveryRoot;
-    logger.debug("Config-defined core root directory: {}", this.rootDirectory);
+    log.debug("Config-defined core root directory: {}", this.rootDirectory);
   }
 
   @Override
@@ -92,7 +92,7 @@ public class CorePropertiesLocator implements CoresLocator {
       }
     }
     catch (IOException e) {
-      logger.error("Couldn't persist core properties to {}: {}", propfile, e.getMessage());
+      log.error("Couldn't persist core properties to {}: {}", propfile, e.getMessage());
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Couldn't persist core properties to " + propfile.toAbsolutePath().toString() + " : " + e.getMessage());
     }
@@ -109,7 +109,7 @@ public class CorePropertiesLocator implements CoresLocator {
       try {
         Files.deleteIfExists(propfile);
       } catch (IOException e) {
-        logger.warn("Couldn't delete core properties file {}: {}", propfile, e.getMessage());
+        log.warn("Couldn't delete core properties file {}: {}", propfile, e.getMessage());
       }
     }
   }
@@ -132,7 +132,7 @@ public class CorePropertiesLocator implements CoresLocator {
 
   @Override
   public List<CoreDescriptor> discover(final CoreContainer cc) {
-    logger.debug("Looking for core definitions underneath {}", rootDirectory);
+    log.debug("Looking for core definitions underneath {}", rootDirectory);
     final List<CoreDescriptor> cds = Lists.newArrayList();
     try {
       Set<FileVisitOption> options = new HashSet<>();
@@ -144,7 +144,7 @@ public class CorePropertiesLocator implements CoresLocator {
           if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
             CoreDescriptor cd = buildCoreDescriptor(file, cc);
             if (cd != null) {
-              logger.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+              log.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
               cds.add(cd);
             }
             return FileVisitResult.SKIP_SIBLINGS;
@@ -157,19 +157,19 @@ public class CorePropertiesLocator implements CoresLocator {
           // if we get an error on the root, then fail the whole thing
           // otherwise, log a warning and continue to try and load other cores
           if (file.equals(rootDirectory)) {
-            logger.error("Error reading core root directory {}: {}", file, exc);
+            log.error("Error reading core root directory {}: {}", file, exc);
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading core root directory");
           }
-          logger.warn("Error visiting {}: {}", file, exc);
+          log.warn("Error visiting {}: {}", file, exc);
           return FileVisitResult.CONTINUE;
         }
       });
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Couldn't walk file tree under " + this.rootDirectory, e);
     }
-    logger.info("Found {} core definitions underneath {}", cds.size(), rootDirectory);
+    log.info("Found {} core definitions underneath {}", cds.size(), rootDirectory);
     if (cds.size() > 0) {
-      logger.info("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
+      log.info("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
     }
     return cds;
   }
@@ -190,7 +190,7 @@ public class CorePropertiesLocator implements CoresLocator {
       return ret;
     }
     catch (IOException e) {
-      logger.error("Couldn't load core descriptor from {}:{}", propertiesFile, e.toString());
+      log.error("Couldn't load core descriptor from {}:{}", propertiesFile, e.toString());
       return null;
     }
 

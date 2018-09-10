@@ -30,6 +30,16 @@ public class IntValue implements SortValue {
   protected int currentValue;
   protected IntComp comp;
   private int lastDocID;
+  protected boolean present;
+
+  public Object getCurrentValue() {
+    assert present == true;
+    return currentValue;
+  }
+
+  public String getField() {
+    return field;
+  }
 
   public IntValue copy() {
     return new IntValue(field, comp);
@@ -39,6 +49,7 @@ public class IntValue implements SortValue {
     this.field = field;
     this.comp = comp;
     this.currentValue = comp.resetValue();
+    this.present = false;
   }
 
   public void setNextReader(LeafReaderContext context) throws IOException {
@@ -56,10 +67,17 @@ public class IntValue implements SortValue {
       curDocID = vals.advance(docId);
     }
     if (docId == curDocID) {
+      present = true;
       currentValue = (int) vals.longValue();
     } else {
+      present = false;
       currentValue = 0;
     }
+  }
+
+  @Override
+  public boolean isPresent() {
+    return this.present;
   }
 
   public int compareTo(SortValue o) {
@@ -67,11 +85,14 @@ public class IntValue implements SortValue {
     return comp.compare(currentValue, iv.currentValue);
   }
 
-  public void setCurrentValue (SortValue value) {
-    currentValue = ((IntValue)value).currentValue;
+  public void setCurrentValue(SortValue sv) {
+    IntValue iv = (IntValue)sv;
+    this.currentValue = iv.currentValue;
+    this.present = iv.present;
   }
 
   public void reset() {
     currentValue = comp.resetValue();
+    this.present = false;
   }
 }

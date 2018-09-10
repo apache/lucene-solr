@@ -38,8 +38,8 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.RAMDirectory;
@@ -52,12 +52,12 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 /**
@@ -687,7 +687,7 @@ public class MemoryIndex {
     try {
       final float[] scores = new float[1]; // inits to 0.0f (no match)
       searcher.search(query, new SimpleCollector() {
-        private Scorer scorer;
+        private Scorable scorer;
 
         @Override
         public void collect(int doc) throws IOException {
@@ -695,7 +695,7 @@ public class MemoryIndex {
         }
 
         @Override
-        public void setScorer(Scorer scorer) {
+        public void setScorer(Scorable scorer) {
           this.scorer = scorer;
         }
         
@@ -887,10 +887,10 @@ public class MemoryIndex {
               assert pointValue.bytes.length == pointValue.length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
               for (int dim = 0; dim < numDimensions; ++dim) {
                 int offset = dim * numBytesPerDimension;
-                if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, minPackedValue, offset) < 0) {
+                if (FutureArrays.compareUnsigned(pointValue.bytes, offset, offset + numBytesPerDimension, minPackedValue, offset, offset + numBytesPerDimension) < 0) {
                   System.arraycopy(pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
                 }
-                if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, maxPackedValue, offset) > 0) {
+                if (FutureArrays.compareUnsigned(pointValue.bytes, offset, offset + numBytesPerDimension, maxPackedValue, offset, offset + numBytesPerDimension) > 0) {
                   System.arraycopy(pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
                 }
               }

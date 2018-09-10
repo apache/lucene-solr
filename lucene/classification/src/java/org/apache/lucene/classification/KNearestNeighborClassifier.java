@@ -190,7 +190,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   protected List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
     Map<BytesRef, Integer> classCounts = new HashMap<>();
     Map<BytesRef, Double> classBoosts = new HashMap<>(); // this is a boost based on class ranking positions in topDocs
-    float maxScore = topDocs.totalHits == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
+    float maxScore = topDocs.totalHits.value == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
       IndexableField[] storableFields = indexSearcher.doc(scoreDoc.doc).getFields(classFieldName);
       for (IndexableField singleStorableField : storableFields) {

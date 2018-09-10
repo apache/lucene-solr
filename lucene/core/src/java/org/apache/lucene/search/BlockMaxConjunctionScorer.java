@@ -244,15 +244,16 @@ final class BlockMaxConjunctionScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float score) {
+  public void setMinCompetitiveScore(float score) throws IOException {
     minScore = score;
+    maxScorePropagator.setMinCompetitiveScore(score);
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<>();
+  public Collection<ChildScorable> getChildren() {
+    ArrayList<ChildScorable> children = new ArrayList<>();
     for (Scorer scorer : scorers) {
-      children.add(new ChildScorer(scorer, "MUST"));
+      children.add(new ChildScorable(scorer, "MUST"));
     }
     return children;
   }

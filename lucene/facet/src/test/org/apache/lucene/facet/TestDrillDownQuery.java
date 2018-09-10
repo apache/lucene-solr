@@ -123,7 +123,7 @@ public class TestDrillDownQuery extends FacetTestCase {
     q.add("a", "2");
     q.add("b", "1");
     TopDocs docs = searcher.search(q, 100);
-    assertEquals(5, docs.totalHits);
+    assertEquals(5, docs.totalHits.value);
   }
   
   public void testQuery() throws IOException {
@@ -134,14 +134,14 @@ public class TestDrillDownQuery extends FacetTestCase {
     q.add("a");
     QueryUtils.check(q);
     TopDocs docs = searcher.search(q, 100);
-    assertEquals(25, docs.totalHits);
+    assertEquals(25, docs.totalHits.value);
     
     // Making sure the query yields 5 documents with the facet "b" and the
     // previous (facet "a") query as a base query
     DrillDownQuery q2 = new DrillDownQuery(config, q);
     q2.add("b");
     docs = searcher.search(q2, 100);
-    assertEquals(5, docs.totalHits);
+    assertEquals(5, docs.totalHits.value);
 
     // Making sure that a query of both facet "a" and facet "b" yields 5 results
     DrillDownQuery q3 = new DrillDownQuery(config);
@@ -149,14 +149,14 @@ public class TestDrillDownQuery extends FacetTestCase {
     q3.add("b");
     docs = searcher.search(q3, 100);
     
-    assertEquals(5, docs.totalHits);
+    assertEquals(5, docs.totalHits.value);
     // Check that content:foo (which yields 50% results) and facet/b (which yields 20%)
     // would gather together 10 results (10%..) 
     Query fooQuery = new TermQuery(new Term("content", "foo"));
     DrillDownQuery q4 = new DrillDownQuery(config, fooQuery);
     q4.add("b");
     docs = searcher.search(q4, 100);
-    assertEquals(10, docs.totalHits);
+    assertEquals(10, docs.totalHits.value);
   }
   
   public void testQueryImplicitDefaultParams() throws IOException {
@@ -171,7 +171,7 @@ public class TestDrillDownQuery extends FacetTestCase {
     DrillDownQuery q2 = new DrillDownQuery(config, q);
     q2.add("b");
     TopDocs docs = searcher.search(q2, 100);
-    assertEquals(5, docs.totalHits);
+    assertEquals(5, docs.totalHits.value);
 
     // Check that content:foo (which yields 50% results) and facet/b (which yields 20%)
     // would gather together 10 results (10%..) 
@@ -179,7 +179,7 @@ public class TestDrillDownQuery extends FacetTestCase {
     DrillDownQuery q4 = new DrillDownQuery(config, fooQuery);
     q4.add("b");
     docs = searcher.search(q4, 100);
-    assertEquals(10, docs.totalHits);
+    assertEquals(10, docs.totalHits.value);
   }
   
   public void testZeroLimit() throws IOException {

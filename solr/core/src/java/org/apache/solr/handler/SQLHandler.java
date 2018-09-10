@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 
 public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static String defaultZkhost = null;
   private static String defaultWorkerCollection = null;
@@ -124,7 +124,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
       if(tupleStream != null) {
         tupleStream.close();
       }
-      SolrException.log(logger, e);
+      SolrException.log(log, e);
       rsp.add("result-set", new StreamHandler.DummyErrorStream(e));
     }
   }

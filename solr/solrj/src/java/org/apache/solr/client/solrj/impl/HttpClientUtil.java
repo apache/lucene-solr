@@ -73,10 +73,12 @@ import org.slf4j.LoggerFactory;
  */
 public class HttpClientUtil {
   
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final int DEFAULT_CONNECT_TIMEOUT = 60000;
   public static final int DEFAULT_SO_TIMEOUT = 600000;
+  public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
+  public static final int DEFAULT_MAXCONNECTIONS = 100000;
   
   private static final int VALIDATE_AFTER_INACTIVITY_DEFAULT = 3000;
   private static final int EVICT_IDLE_CONNECTIONS_DEFAULT = 50000;
@@ -147,7 +149,7 @@ public class HttpClientUtil {
     // Configure the HttpClientBuilder if user has specified the factory type.
     String factoryClassName = System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
     if (factoryClassName != null) {
-      logger.debug ("Using " + factoryClassName);
+      log.debug ("Using " + factoryClassName);
       try {
         HttpClientBuilderFactory factory = (HttpClientBuilderFactory)Class.forName(factoryClassName).newInstance();
         httpClientBuilder = factory.getHttpClientBuilder(Optional.of(SolrHttpClientBuilder.create()));
@@ -176,7 +178,7 @@ public class HttpClientUtil {
           try {
             interceptor.process(request, context);
           } catch (Exception e) {
-            logger.error("", e);
+            log.error("", e);
           }
         }
       });
@@ -234,7 +236,7 @@ public class HttpClientUtil {
       } else {
         sslConnectionSocketFactory = new SSLConnectionSocketFactory(SSLContexts.createSystemDefault(),
                                                                     NoopHostnameVerifier.INSTANCE);
-        logger.debug(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME + "is false, hostname checks disabled.");
+        log.debug(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME + "is false, hostname checks disabled.");
       }
       builder.register("https", sslConnectionSocketFactory);
 
@@ -268,8 +270,8 @@ public class HttpClientUtil {
 
   public static CloseableHttpClient createClient(final SolrParams params, PoolingHttpClientConnectionManager cm, boolean sharedConnectionManager, HttpRequestExecutor httpRequestExecutor)  {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
-    if (logger.isDebugEnabled()) {
-      logger.debug("Creating new http client, config:" + config);
+    if (log.isDebugEnabled()) {
+      log.debug("Creating new http client, config:" + config);
     }
 
     cm.setMaxTotal(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000));

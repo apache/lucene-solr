@@ -141,21 +141,34 @@ http://localhost:8983/solr/dih/dataimport?command=full-import&jdbcurl=jdbc:hsqld
 
 ==== Encrypting a Database Password
 
-The database password can be encrypted if necessary to avoid plaintext passwords being exposed in unsecured files. To do this, follow these steps:
+The database password can be encrypted if necessary to avoid plaintext passwords being exposed in unsecured files. To do this, we will replace the password in `data-config.xml` with an encrypted password. We will use the `openssl` tool for the encryption, and the encryption key will be stored in a file which is only readable to the `solr` process. Please follow these steps:
 
-. In a terminal window, run the command `openssl enc -aes-128-cbc -a -salt -in pwd.txt`.
-..This assumes the password is in a file named `pwd.txt`. If you don't have the password in this file yet, you can do `echo "mypassword" > pwd.txt`.
-.. The openssl session will ask for a password to use for the decryption. You will use this file with a `encryptKeyFile` parameter in `data-config.xml`.
-.. The output of the process will be a long string such as `U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=`. This will be the password you put in your `data-config.xml` file.
-. Save the password you used as the decryption password in the previous step to a file, and determine the location of the file on the Solr server. You could use a command such as `echo myencrypfilepwd > /location/of/encryptionkey`. Replace "myencrypfilepwd" with the password you used while generating the key.
-. If the file is not yet on the Solr server, move it there. Also make sure the encryption key file permissions do not allow it to be read by unauthorized users. The `chmod 0600` command should set the permissions sufficiently.
+. Create a strong encryption password and store it in a file. Then make sure it is readable only for the `solr` user. Example commands:
++
+[source,text]
+echo -n "a-secret" > /var/solr/data/dih-encryptionkey
+chown solr:solr /var/solr/data/dih-encryptionkey
+chmod 600 /var/solr/data/dih-encryptionkey
++
+CAUTION: Note that we use the `-n` argument to `echo` to avoid including a newline character at the end of the password. If you use another method to generate the encrypted password, make sure to avoid newlines as well.
+
+. Encrypt the JDBC database password using `openssl` as follows:
++
+[source,text]
+echo -n "my-jdbc-password" | openssl enc -aes-128-cbc -a -salt -md md5 -pass file:/var/solr/data/dih-encryptionkey
++
+The output of the command will be a long string such as `U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=`. You will use this as `password` in your `data-config.xml` file.
+
 . In your `data-config.xml`, you'll add the `password` and `encryptKeyFile` parameters to the `<datasource>` configuration, as in this example:
 +
 [source,xml]
 <dataSource driver="org.hsqldb.jdbcDriver"
     url="jdbc:hsqldb:./example-DIH/hsqldb/ex"
-    user="sa" password="U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o="
-    encryptKeyFile="/location/of/encryptionkey />
+    user="sa"
+    password="U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o="
+    encryptKeyFile="/var/solr/data/dih-encryptionkey" />
+
+
 
 == DataImportHandler Commands
 

@@ -18,14 +18,14 @@ package org.apache.lucene.codecs.lucene70;
 
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene70.Lucene70Codec;
+import org.apache.lucene.codecs.lucene80.Lucene80Codec;
 import org.apache.lucene.index.BaseNormsFormatTestCase;
 
 /**
  * Tests Lucene70NormsFormat
  */
 public class TestLucene70NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = new Lucene70Codec();
+  private final Codec codec = new Lucene80Codec();
   
   @Override
   protected Codec getCodec() {

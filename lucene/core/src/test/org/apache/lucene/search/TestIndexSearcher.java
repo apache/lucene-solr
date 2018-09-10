@@ -165,7 +165,7 @@ public class TestIndexSearcher extends LuceneTestCase {
             .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
             .build()
           )) {
-        assertEquals(searcher.count(query), searcher.search(query, 1).totalHits);
+        assertEquals(searcher.count(query), searcher.search(query, 1).totalHits.value);
       }
       reader.close();
     }

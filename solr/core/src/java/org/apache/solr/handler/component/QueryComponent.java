@@ -35,15 +35,13 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -122,7 +120,7 @@ import org.slf4j.LoggerFactory;
 public class QueryComponent extends SearchComponent
 {
   public static final String COMPONENT_NAME = "query";
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
@@ -299,7 +297,7 @@ public class QueryComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException
   {
-    LOG.debug("process: {}", rb.req.getParams());
+    log.debug("process: {}", rb.req.getParams());
   
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
@@ -469,7 +467,7 @@ public class QueryComponent extends SearchComponent
           }
 
           doc -= currentLeaf.docBase;  // adjust for what segment this is in
-          leafComparator.setScorer(new FakeScorer(doc, score));
+          leafComparator.setScorer(new ScoreAndDoc(doc, score));
           leafComparator.copy(0, doc);
           Object val = comparator.value(0);
           if (null != ft) val = ft.marshalSortValue(val);
@@ -1461,12 +1459,11 @@ public class QueryComponent extends SearchComponent
    *
    * TODO: when SOLR-5595 is fixed, this wont be needed, as we dont need to recompute sort values here from the comparator
    */
-  protected static class FakeScorer extends Scorer {
+  protected static class ScoreAndDoc extends Scorable {
     final int docid;
     final float score;
 
-    FakeScorer(int docid, float score) {
-      super(null);
+    ScoreAndDoc(int docid, float score) {
       this.docid = docid;
       this.score = score;
     }
@@ -1479,26 +1476,6 @@ public class QueryComponent extends SearchComponent
     @Override
     public float score() throws IOException {
       return score;
-    }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Collection<ChildScorer> getChildren() {
-      throw new UnsupportedOperationException();
     }
   }
 }

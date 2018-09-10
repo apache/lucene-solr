@@ -58,6 +58,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final String name;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
+  private final Slice[] activeSlicesArr;
   private final Map<String, List<Replica>> nodeNameReplicas;
   private final Map<String, List<Replica>> nodeNameLeaderReplicas;
   private final DocRouter router;
@@ -112,6 +113,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         addNodeNameReplica(replica);
       }
     }
+    this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
     this.znode = znode == null? ZkStateReader.CLUSTER_STATE : znode;
     assert name != null && slices != null;
@@ -195,6 +197,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public Collection<Slice> getActiveSlices() {
     return activeSlices.values();
+  }
+
+  /**
+   * Return array of active slices for this collection (performance optimization).
+   */
+  public Slice[] getActiveSlicesArr() {
+    return activeSlicesArr;
   }
 
   /**

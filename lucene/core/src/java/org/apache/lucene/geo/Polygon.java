@@ -202,6 +202,36 @@ public final class Polygon {
     return sb.toString();
   }
 
+  public static String verticesToGeoJSON(final double[] lats, final double[] lons) {
+    StringBuilder sb = new StringBuilder();
+    sb.append('[');
+    for (int i = 0; i < lats.length; i++) {
+      sb.append("[")
+          .append(lons[i])
+          .append(", ")
+          .append(lats[i])
+          .append("]");
+      if (i != lats.length - 1) {
+        sb.append(", ");
+      }
+    }
+    sb.append(']');
+    return sb.toString();
+  }
+
+  /** prints polygons as geojson */
+  public String toGeoJSON() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append(verticesToGeoJSON(polyLats, polyLons));
+    for (Polygon hole : holes) {
+      sb.append(",");
+      sb.append(verticesToGeoJSON(hole.polyLats, hole.polyLons));
+    }
+    sb.append("]");
+    return sb.toString();
+  }
+
   /** Parses a standard GeoJSON polygon string.  The type of the incoming GeoJSON object must be a Polygon or MultiPolygon, optionally
    *  embedded under a "type: Feature".  A Polygon will return as a length 1 array, while a MultiPolygon will be 1 or more in length.
    *

@@ -47,6 +47,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
@@ -67,7 +68,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
  *
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
-//05-Jul-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12392")
 public class IndexSizeTriggerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -93,7 +93,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean() && false) {
+    if (random().nextBoolean() || true) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -116,6 +116,10 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     if (cloudManager instanceof SimCloudManager) {
       log.info(((SimCloudManager) cloudManager).dumpClusterState(true));
       ((SimCloudManager) cloudManager).getSimClusterStateProvider().simDeleteAllCollections();
+      ((SimCloudManager) cloudManager).simClearSystemCollection();
+      ((SimCloudManager) cloudManager).getSimClusterStateProvider().simResetLeaderThrottles();
+      ((SimCloudManager) cloudManager).simRestartOverseer(null);
+      cloudManager.getTimeSource().sleep(500);
       ((SimCloudManager) cloudManager).simResetOpCounts();
     } else {
       cluster.deleteAllCollections();
@@ -137,14 +141,14 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testTrigger() throws Exception {
     String collectionName = "testTrigger_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(2);
     create.process(solrClient);
     CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-        CloudTestUtils.clusterShape(2, 2));
+        CloudTestUtils.clusterShape(2, 2, false, true));
 
     long waitForSeconds = 3 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
@@ -235,14 +239,14 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testSplitIntegration() throws Exception {
     String collectionName = "testSplitIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(2);
     create.process(solrClient);
     CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-        CloudTestUtils.clusterShape(2, 2));
+        CloudTestUtils.clusterShape(2, 2, false, true));
 
     long waitForSeconds = 3 + random().nextInt(5);
     // add disabled trigger
@@ -264,7 +268,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'capturing'," +
+        "'name' : 'capturing2'," +
         "'trigger' : 'index_size_trigger2'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
@@ -310,10 +314,10 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     boolean await = finished.await(60000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
-    CloudTestUtils.waitForState(cloudManager, collectionName, 20, TimeUnit.SECONDS, CloudTestUtils.clusterShape(6, 2, true));
+    CloudTestUtils.waitForState(cloudManager, collectionName, 20, TimeUnit.SECONDS, CloudTestUtils.clusterShape(6, 2, true, true));
     assertEquals(1, listenerEvents.size());
-    List<CapturedEvent> events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    List<CapturedEvent> events = listenerEvents.get("capturing2");
+    assertNotNull("'capturing2' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
@@ -348,14 +352,14 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testMergeIntegration() throws Exception {
     String collectionName = "testMergeIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(2);
     create.process(solrClient);
     CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-        CloudTestUtils.clusterShape(2, 2));
+        CloudTestUtils.clusterShape(2, 2, false, true));
 
     for (int i = 0; i < 10; i++) {
       SolrInputDocument doc = new SolrInputDocument("id", "id-" + (i * 100));
@@ -382,7 +386,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'capturing'," +
+        "'name' : 'capturing3'," +
         "'trigger' : 'index_size_trigger3'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
@@ -428,8 +432,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
-    List<CapturedEvent> events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    List<CapturedEvent> events = listenerEvents.get("capturing3");
+    assertNotNull("'capturing3' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
@@ -458,19 +462,15 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
+  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
   public void testMixedBounds() throws Exception {
-//    if (cloudManager instanceof SimCloudManager) {
-//      log.warn("Requires SOLR-12208");
-//      return;
-//    }
 
     String collectionName = "testMixedBounds_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(2);
     create.process(solrClient);
     CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-        CloudTestUtils.clusterShape(2, 2));
+        CloudTestUtils.clusterShape(2, 2, false, true));
 
     for (int j = 0; j < 10; j++) {
       UpdateRequest ureq = new UpdateRequest();
@@ -531,7 +531,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'capturing'," +
+        "'name' : 'capturing4'," +
         "'trigger' : 'index_size_trigger4'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
         "'beforeAction' : ['compute_plan','execute_plan']," +
@@ -571,8 +571,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
-    List<CapturedEvent> events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    List<CapturedEvent> events = listenerEvents.get("capturing4");
+    assertNotNull("'capturing4' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
@@ -583,7 +583,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     // collection should have 2 inactive and 4 active shards
     CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-        CloudTestUtils.clusterShape(6, 2, true));
+        CloudTestUtils.clusterShape(6, 2, true, true));
 
     // check ops
     List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>) events.get(4).event.getProperty(TriggerEvent.REQUESTED_OPS);
@@ -623,15 +623,23 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    for (int j = 0; j < 8; j++) {
+    for (int j = 0; j < 10; j++) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParam("collection", collectionName);
-      for (int i = 0; i < 95; i++) {
+      for (int i = 0; i < 98; i++) {
         ureq.deleteById("id-" + (i * 100) + "-" + j);
       }
       solrClient.request(ureq);
     }
-    solrClient.commit(collectionName);
+    // make sure the actual index size is reduced by deletions, otherwise we may still violate aboveBytes
+    UpdateRequest ur = new UpdateRequest();
+    ur.setParam(UpdateParams.COMMIT, "true");
+    ur.setParam(UpdateParams.EXPUNGE_DELETES, "true");
+    ur.setParam(UpdateParams.OPTIMIZE, "true");
+    ur.setParam(UpdateParams.MAX_OPTIMIZE_SEGMENTS, "1");
+    ur.setParam(UpdateParams.WAIT_SEARCHER, "true");
+    ur.setParam(UpdateParams.OPEN_SEARCHER, "true");
+    solrClient.request(ur, collectionName);
 
     // resume trigger
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
@@ -643,8 +651,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     assertEquals(1, listenerEvents.size());
-    events = listenerEvents.get("capturing");
-    assertNotNull("'capturing' events not found", events);
+    events = listenerEvents.get("capturing4");
+    assertNotNull("'capturing4' events not found", events);
     assertEquals("events: " + events, 6, events.size());
     assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
     assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);

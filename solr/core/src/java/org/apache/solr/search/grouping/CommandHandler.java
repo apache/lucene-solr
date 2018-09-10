@@ -115,7 +115,7 @@ public class CommandHandler {
 
   }
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final QueryCommand queryCommand;
   private final List<Command> commands;
@@ -243,7 +243,7 @@ public class CommandHandler {
       searcher.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
       partialResults = true;
-      logger.warn( "Query: " + query + "; " + x.getMessage() );
+      log.warn( "Query: " + query + "; " + x.getMessage() );
     }
 
     if (includeHitCount) {

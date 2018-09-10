@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
@@ -32,6 +31,7 @@ import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.SortField;
@@ -87,14 +87,10 @@ public abstract class ValueSource {
     return context;
   }
 
-  private static class FakeScorer extends Scorer {
+  private static class ScoreAndDoc extends Scorable {
 
     int current = -1;
     float score = 0;
-
-    FakeScorer() {
-      super(null);
-    }
 
     @Override
     public int docID() {
@@ -102,18 +98,8 @@ public abstract class ValueSource {
     }
 
     @Override
-    public float score() throws IOException {
+    public float score() {
       return score;
-    }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException();
     }
   }
 
@@ -135,7 +121,7 @@ public abstract class ValueSource {
     @Override
     public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
       Map context = new IdentityHashMap<>();
-      FakeScorer scorer = new FakeScorer();
+      ScoreAndDoc scorer = new ScoreAndDoc();
       context.put("scorer", scorer);
       final FunctionValues fv = in.getValues(context, ctx);
       return new LongValues() {
@@ -211,7 +197,7 @@ public abstract class ValueSource {
     @Override
     public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
       Map context = new HashMap<>();
-      FakeScorer scorer = new FakeScorer();
+      ScoreAndDoc scorer = new ScoreAndDoc();
       context.put("scorer", scorer);
       context.put("searcher", searcher);
       FunctionValues fv = in.getValues(context, ctx);
@@ -248,7 +234,7 @@ public abstract class ValueSource {
     @Override
     public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
       Map context = new HashMap<>();
-      FakeScorer scorer = new FakeScorer();
+      ScoreAndDoc scorer = new ScoreAndDoc();
       scorer.score = scoreExplanation.getValue().floatValue();
       context.put("scorer", scorer);
       context.put("searcher", searcher);

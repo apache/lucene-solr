@@ -16,10 +16,13 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
+import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.util.Version;
-import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.SolrTestCaseJ4;
-
+import org.apache.solr.index.NoMergePolicyFactory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,13 +34,18 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   
   private static final int DEL_COUNT = 1;
   
+  private static final int NUM_SEGMENTS = 2;
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
 
     // we need a consistent segmentation to ensure we don't get a random
     // merge that reduces the total num docs in all segments, or the number of deletes
     //
-    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
+    systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
+    // Also prevent flushes
+    System.setProperty("solr.tests.maxBufferedDocs", "1000");
+    System.setProperty("solr.tests.ramBufferSizeMB", "5000");
     
     System.setProperty("enable.update.log", "false"); // no _version_ in our schema
     initCore("solrconfig.xml", "schema12.xml"); // segments API shouldn't depend on _version_ or ulog
@@ -54,25 +62,58 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
       assertU(adoc("id","SOLR200" + i, "name","Apache Solr:" + i));
     }
     assertU(commit());
+    h.getCore().withSearcher((searcher) -> {
+      int numSegments = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory()).size();
+      // if this is not NUM_SEGMENTS, there was some unexpected flush or merge
+      assertEquals("Unexpected number of segment in the index: " + numSegments, 
+          NUM_SEGMENTS, numSegments);
+      return null;
+    });
+    
+  }
+  
+  @AfterClass
+  public static void afterClass() {
+    systemClearPropertySolrTestsMergePolicyFactory();
+    System.clearProperty("solr.tests.maxBufferedDocs");
+    System.clearProperty("solr.tests.ramBufferSizeMB");
   }
 
   @Test
   public void testSegmentInfos() {   
-    assertQ("No segments mentioned in result",
+    assertQ("Unexpected number of segments returned",
         req("qt","/admin/segments"),
-          "0<count(//lst[@name='segments']/lst)");
+        NUM_SEGMENTS + "=count(//lst[@name='segments']/lst)");
   }
 
   @Test
   public void testSegmentInfosVersion() {
-    assertQ("No segments mentioned in result",
+    assertQ("Unexpected number of segments returned",
         req("qt","/admin/segments"),
-        "2=count(//lst[@name='segments']/lst/str[@name='version'][.='"+Version.LATEST+"'])");
+        NUM_SEGMENTS + "=count(//lst[@name='segments']/lst/str[@name='version'][.='" + Version.LATEST + "'])");
   }
   
   @Test
-  public void testSegmentInfosData() {   
-    assertQ("No segments mentioned in result",
+  public void testSegmentNames() throws IOException {
+    String[] segmentNamePatterns = new String[NUM_SEGMENTS];
+    h.getCore().withSearcher((searcher) -> {
+      int i = 0;
+      for (SegmentCommitInfo sInfo : SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
+        assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
+        segmentNamePatterns[i] = "//lst[@name='segments']/lst/str[@name='name'][.='" + sInfo.info.name + "']";
+        i++;
+      }
+      
+      return null;
+    });
+    assertQ("Unexpected segment names returned",
+        req("qt","/admin/segments"),
+        segmentNamePatterns);
+  }
+  
+  @Test
+  public void testSegmentInfosData() {
+    assertQ("Unexpected document counts in result",
         req("qt","/admin/segments"),
           //#Document
           (DOC_COUNT*2)+"=sum(//lst[@name='segments']/lst/int[@name='size'])",

@@ -68,11 +68,11 @@ public class ReRankCollector extends TopDocsCollector {
     Sort sort = cmd.getSort();
     if(sort == null) {
       this.sort = null;
-      this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
+      this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
     } else {
       this.sort = sort = sort.rewrite(searcher);
       //scores are needed for Rescorer (regardless of whether sort needs it)
-      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), true);
+      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
@@ -98,7 +98,7 @@ public class ReRankCollector extends TopDocsCollector {
 
       TopDocs mainDocs = mainCollector.topDocs(0,  Math.max(reRankDocs, length));
 
-      if(mainDocs.totalHits == 0 || mainDocs.scoreDocs.length == 0) {
+      if(mainDocs.totalHits.value == 0 || mainDocs.scoreDocs.length == 0) {
         return mainDocs;
       }
 

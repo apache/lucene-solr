@@ -17,8 +17,10 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -275,13 +277,22 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
       @Override
+      protected Set<HighlightFlag> getFlags(String field) {
+        if (random().nextBoolean()) {
+          return EnumSet.of(HighlightFlag.MULTI_TERM_QUERY, HighlightFlag.PHRASES, HighlightFlag.WEIGHT_MATCHES);
+        } else {
+          return super.getFlags(field);
+        }
+      }
+
+      @Override
       protected PassageScorer getScorer(String field) {
         return new PassageScorer(1.2f, 0, 87);
       }
     };
     Query query = new TermQuery(new Term("body", "test"));
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     String snippets[] = highlighter.highlight("body", query, topDocs, 1);
     assertEquals(1, snippets.length);
     assertTrue(snippets[0].startsWith("This <b>test</b> is a better <b>test</b>"));
@@ -315,6 +326,15 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
       @Override
+      protected Set<HighlightFlag> getFlags(String field) {
+        if (random().nextBoolean()) {
+          return EnumSet.of(HighlightFlag.MULTI_TERM_QUERY, HighlightFlag.PHRASES, HighlightFlag.WEIGHT_MATCHES);
+        } else {
+          return super.getFlags(field);
+        }
+      }
+
+      @Override
       protected PassageScorer getScorer(String field) {
         return new PassageScorer(0, 0.75f, 87);
       }
@@ -324,7 +344,7 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
         .add(new TermQuery(new Term("body", "bar")), BooleanClause.Occur.SHOULD)
         .build();
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     String snippets[] = highlighter.highlight("body", query, topDocs, 1);
     assertEquals(1, snippets.length);
     assertTrue(snippets[0].startsWith("On the other hand"));

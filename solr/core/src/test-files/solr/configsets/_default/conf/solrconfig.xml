@@ -1141,23 +1141,13 @@
   <updateProcessor class="solr.ParseDoubleFieldUpdateProcessorFactory" name="parse-double"/>
   <updateProcessor class="solr.ParseDateFieldUpdateProcessorFactory" name="parse-date">
     <arr name="format">
-      <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss,SSSZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss.SSS</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss,SSS</str>
-      <str>yyyy-MM-dd'T'HH:mm:ssZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss</str>
-      <str>yyyy-MM-dd'T'HH:mmZ</str>
-      <str>yyyy-MM-dd'T'HH:mm</str>
-      <str>yyyy-MM-dd HH:mm:ss.SSSZ</str>
-      <str>yyyy-MM-dd HH:mm:ss,SSSZ</str>
-      <str>yyyy-MM-dd HH:mm:ss.SSS</str>
-      <str>yyyy-MM-dd HH:mm:ss,SSS</str>
-      <str>yyyy-MM-dd HH:mm:ssZ</str>
-      <str>yyyy-MM-dd HH:mm:ss</str>
-      <str>yyyy-MM-dd HH:mmZ</str>
-      <str>yyyy-MM-dd HH:mm</str>
-      <str>yyyy-MM-dd</str>
+      <str>yyyy-MM-dd['T'[HH:mm[:ss[.SSS]][z</str>
+      <str>yyyy-MM-dd['T'[HH:mm[:ss[,SSS]][z</str>
+      <str>yyyy-MM-dd HH:mm[:ss[.SSS]][z</str>
+      <str>yyyy-MM-dd HH:mm[:ss[,SSS]][z</str>
+      <str>[EEE, ]dd MMM yyyy HH:mm[:ss] z</str>
+      <str>EEEE, dd-MMM-yy HH:mm:ss z</str>
+      <str>EEE MMM ppd HH:mm:ss [z ]yyyy</str>
     </arr>
   </updateProcessor>
   <updateProcessor class="solr.AddSchemaFieldsUpdateProcessorFactory" name="add-schema-fields">

@@ -246,6 +246,16 @@ public class Lang {
         .withFunctionName("zeros", ZerosEvaluator.class)
         .withFunctionName("getValue", GetValueEvaluator.class)
         .withFunctionName("setValue", SetValueEvaluator.class)
+        .withFunctionName("knnRegress", KnnRegressionEvaluator.class)
+        .withFunctionName("gaussfit", GaussFitEvaluator.class)
+        .withFunctionName("outliers", OutliersEvaluator.class)
+        .withFunctionName("stream", GetStream.class)
+        .withFunctionName("putCache", PutCacheEvaluator.class)
+        .withFunctionName("getCache", GetCacheEvaluator.class)
+        .withFunctionName("removeCache", RemoveCacheEvaluator.class)
+        .withFunctionName("listCache", ListCacheEvaluator.class)
+        .withFunctionName("zscores", NormalizeEvaluator.class)
+        .withFunctionName("latlonVectors", LatLonVectorsEvaluator.class)
 
         // Boolean Stream Evaluators
 

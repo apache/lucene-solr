@@ -28,7 +28,7 @@
           "additionalProperties" : true
         }
       },
-      "required" : ["name", "baseConfigSet"]
+      "required" : ["name"]
     }
   }
 }

@@ -106,6 +106,6 @@ public class LatLonPointPrototypeQueries {
       NearestNeighbor.NearestHit hit = hits[i];
       scoreDocs[i] = new FieldDoc(hit.docID, 0.0f, new Object[] {Double.valueOf(hit.distanceMeters)});
     }
-    return new TopFieldDocs(totalHits, scoreDocs, null);
+    return new TopFieldDocs(new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO), scoreDocs, null);
   }
 }

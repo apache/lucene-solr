@@ -27,6 +27,7 @@ import java.util.Properties;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -189,8 +190,8 @@ public class TestHarness extends BaseTestHarness {
     if (System.getProperty("zkHost") == null)
       cloudConfig = null;
     UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(
-        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS,
-        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST,
+        HttpClientUtil.DEFAULT_MAXCONNECTIONS,
+        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
         30000, 30000,
         UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
     // universal default metric reporter

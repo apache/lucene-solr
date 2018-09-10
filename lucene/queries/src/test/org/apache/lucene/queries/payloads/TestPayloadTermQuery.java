@@ -153,7 +153,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
             new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
-    assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
+    assertTrue("hits Size: " + hits.totalHits.value + " is not: " + 100, hits.totalHits.value == 100);
 
     //they should all have the exact same score, because they all contain seventy once, and we set
     //all the other similarity factors to be 1
@@ -193,7 +193,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
             new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
-    assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
+    assertTrue("hits Size: " + hits.totalHits.value + " is not: " + 100, hits.totalHits.value == 100);
 
     //they should all have the exact same score, because they all contain seventy once, and we set
     //all the other similarity factors to be 1
@@ -231,7 +231,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
             new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
-    assertTrue("hits Size: " + hits.totalHits + " is not: " + 0, hits.totalHits == 0);
+    assertTrue("hits Size: " + hits.totalHits.value + " is not: " + 0, hits.totalHits.value == 0);
 
   }
 
@@ -247,7 +247,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     query.add(c2);
     TopDocs hits = searcher.search(query.build(), 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
-    assertTrue("hits Size: " + hits.totalHits + " is not: " + 1, hits.totalHits == 1);
+    assertTrue("hits Size: " + hits.totalHits.value + " is not: " + 1, hits.totalHits.value == 1);
     int[] results = new int[1];
     results[0] = 0;//hits.scoreDocs[0].doc;
     CheckHits.checkHitCollector(random(), query.build(), PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);

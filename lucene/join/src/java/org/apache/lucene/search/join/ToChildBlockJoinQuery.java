@@ -142,8 +142,8 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public Collection<ChildScorer> getChildren() {
-      return Collections.singleton(new ChildScorer(parentScorer, "BLOCK_JOIN"));
+    public Collection<ChildScorable> getChildren() {
+      return Collections.singleton(new ChildScorable(parentScorer, "BLOCK_JOIN"));
     }
 
     @Override
@@ -282,7 +282,7 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public float getMaxScore(int upTo) throws IOException {
-      return parentScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+      return Float.POSITIVE_INFINITY;
     }
     
     int getParentDoc() {

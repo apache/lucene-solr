@@ -169,9 +169,8 @@ public class Field implements IndexableField {
    * @param name field name
    * @param value byte array pointing to binary content (not copied)
    * @param type field type
-   * @throws IllegalArgumentException if the field name is null,
-   *         or the field's type is indexed()
-   * @throws NullPointerException if the type is null
+   * @throws IllegalArgumentException if the field name, value or type
+   *         is null, or the field's type is indexed().
    */
   public Field(String name, byte[] value, IndexableFieldType type) {
     this(name, value, 0, value.length, type);
@@ -187,12 +186,11 @@ public class Field implements IndexableField {
    * @param offset starting position of the byte array
    * @param length valid length of the byte array
    * @param type field type
-   * @throws IllegalArgumentException if the field name is null,
-   *         or the field's type is indexed()
-   * @throws NullPointerException if the type is null
+   * @throws IllegalArgumentException if the field name, value or type
+   *         is null, or the field's type is indexed().
    */
   public Field(String name, byte[] value, int offset, int length, IndexableFieldType type) {
-    this(name, new BytesRef(value, offset, length), type);
+    this(name, value != null ? new BytesRef(value, offset, length) : null, type);
   }
 
   /**
@@ -203,9 +201,8 @@ public class Field implements IndexableField {
    * @param name field name
    * @param bytes BytesRef pointing to binary content (not copied)
    * @param type field type
-   * @throws IllegalArgumentException if the field name is null,
-   *         or the field's type is indexed()
-   * @throws NullPointerException if the type is null
+   * @throws IllegalArgumentException if the field name, bytes or type
+   *         is null, or the field's type is indexed().
    */
   public Field(String name, BytesRef bytes, IndexableFieldType type) {
     if (name == null) {
@@ -214,9 +211,12 @@ public class Field implements IndexableField {
     if (bytes == null) {
       throw new IllegalArgumentException("bytes must not be null");
     }
+    if (type == null) {
+      throw new IllegalArgumentException("type must not be null");
+    }
+    this.name = name;
     this.fieldsData = bytes;
     this.type = type;
-    this.name = name;
   }
 
   // TODO: allow direct construction of int, long, float, double value too..?
@@ -226,10 +226,9 @@ public class Field implements IndexableField {
    * @param name field name
    * @param value string value
    * @param type field type
-   * @throws IllegalArgumentException if either the name or value
+   * @throws IllegalArgumentException if either the name, value or type
    *         is null, or if the field's type is neither indexed() nor stored(), 
    *         or if indexed() is false but storeTermVectors() is true.
-   * @throws NullPointerException if the type is null
    */
   public Field(String name, String value, IndexableFieldType type) {
     if (name == null) {
@@ -238,13 +237,16 @@ public class Field implements IndexableField {
     if (value == null) {
       throw new IllegalArgumentException("value must not be null");
     }
+    if (type == null) {
+      throw new IllegalArgumentException("type must not be null");
+    }
     if (!type.stored() && type.indexOptions() == IndexOptions.NONE) {
       throw new IllegalArgumentException("it doesn't make sense to have a field that "
         + "is neither indexed nor stored");
     }
-    this.type = type;
     this.name = name;
     this.fieldsData = value;
+    this.type = type;
   }
 
   /**

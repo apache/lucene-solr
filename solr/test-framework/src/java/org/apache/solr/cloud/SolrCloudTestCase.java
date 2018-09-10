@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -49,6 +50,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.Before;
 
@@ -350,6 +352,52 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
+  }
+
+  protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
+    int i = 0;
+    for (; i < numRetries; i++) {
+      try {
+        NamedList<Object> response = cluster.getSolrClient().request(request);
+        if (predicate.test(response)) return response;
+        Thread.sleep(intervalInMillis);
+      } catch (RuntimeException rte) {
+        throw rte;
+      } catch (Exception e) {
+        throw new RuntimeException("error executing request", e);
+      }
+    }
+    fail("Tried " + i + " times , could not succeed. " + messageOnFail);
+    return null;
+  }
+
+  /**
+   * Ensure that the given number of solr instances are running. If less instances are found then new instances are
+   * started. If extra instances are found then they are stopped.
+   * @param nodeCount the number of Solr instances that should be running at the end of this method
+   * @throws Exception on error
+   */
+  public static void ensureRunningJettys(int nodeCount, int timeoutSeconds) throws Exception {
+    // ensure that exactly nodeCount jetty nodes are running
+    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
+    List<JettySolrRunner> copyOfJettys = new ArrayList<>(jettys);
+    int numJetties = copyOfJettys.size();
+    for (int i = nodeCount; i < numJetties; i++)  {
+      cluster.stopJettySolrRunner(copyOfJettys.get(i));
+    }
+    for (int i = copyOfJettys.size(); i < nodeCount; i++) {
+      // start jetty instances
+      cluster.startJettySolrRunner();
+    }
+    // refresh the count from the source
+    jettys = cluster.getJettySolrRunners();
+    numJetties = jettys.size();
+    for (int i = 0; i < numJetties; i++) {
+      if (!jettys.get(i).isRunning()) {
+        cluster.startJettySolrRunner(jettys.get(i));
+      }
+    }
+    cluster.waitForAllNodes(timeoutSeconds);
   }
 
 }

@@ -38,7 +38,7 @@ public abstract class SimpleCollector implements Collector, LeafCollector {
   protected void doSetNextReader(LeafReaderContext context) throws IOException {}
 
   @Override
-  public void setScorer(Scorer scorer) throws IOException {
+  public void setScorer(Scorable scorer) throws IOException {
     // no-op by default
   }
 

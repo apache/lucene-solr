@@ -317,13 +317,9 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
   private void assertSendDocFails(int docId) throws Exception {
     // sending a doc in this state fails
-    try {
-      sendDoc(docId);
-      log.error("Should've failed indexing during a down state. Cluster state: " + printClusterStateInfo());
-      fail("Should've failed indexing during a down state.");
-    } catch (SolrException ex) {
-      log.info("Document couldn't be sent, which is expected.");
-    }
+    expectThrows(SolrException.class,
+        "Should've failed indexing during a down state.",
+        () -> sendDoc(docId));
   }
 
   private void putNonLeadersIntoLIR(String collectionName, String shard, ZkController zkController, Replica leader, List<Replica> notLeaders) throws Exception {

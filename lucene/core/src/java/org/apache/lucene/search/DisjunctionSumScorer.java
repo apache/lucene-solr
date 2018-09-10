@@ -28,8 +28,8 @@ final class DisjunctionSumScorer extends DisjunctionScorer {
    * @param weight The weight to be used.
    * @param subScorers Array of at least two subscorers.
    */
-  DisjunctionSumScorer(Weight weight, List<Scorer> subScorers, boolean needsScores) throws IOException {
-    super(weight, subScorers, needsScores);
+  DisjunctionSumScorer(Weight weight, List<Scorer> subScorers, ScoreMode scoreMode) throws IOException {
+    super(weight, subScorers, scoreMode);
   }
 
   @Override

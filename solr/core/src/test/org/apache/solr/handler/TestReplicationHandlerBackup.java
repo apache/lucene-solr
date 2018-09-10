@@ -146,7 +146,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         IndexReader reader = DirectoryReader.open(dir)) {
       IndexSearcher searcher = new IndexSearcher(reader);
       TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
-      assertEquals(nDocs, hits.totalHits);
+      assertEquals(nDocs, hits.totalHits.value);
     }
   }
 

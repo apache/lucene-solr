@@ -186,21 +186,22 @@ final class WANDScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     // Let this disjunction know about the new min score so that it can skip
     // over clauses that produce low scores.
     assert minScore >= 0;
     long scaledMinScore = scaleMinScore(minScore, scalingFactor);
     assert scaledMinScore >= minCompetitiveScore;
     minCompetitiveScore = scaledMinScore;
+    maxScorePropagator.setMinCompetitiveScore(minScore);
   }
 
   @Override
-  public final Collection<ChildScorer> getChildren() throws IOException {
-    List<ChildScorer> matchingChildren = new ArrayList<>();
+  public final Collection<ChildScorable> getChildren() throws IOException {
+    List<ChildScorable> matchingChildren = new ArrayList<>();
     advanceAllTail();
     for (DisiWrapper s = lead; s != null; s = s.next) {
-      matchingChildren.add(new ChildScorer(s.scorer, "SHOULD"));
+      matchingChildren.add(new ChildScorable(s.scorer, "SHOULD"));
     }
     return matchingChildren;
   }

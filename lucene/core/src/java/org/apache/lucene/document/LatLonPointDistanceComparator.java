@@ -26,9 +26,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.SloppyMath;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
@@ -78,7 +77,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
   }
   
   @Override
-  public void setScorer(Scorer scorer) {}
+  public void setScorer(Scorable scorer) {}
 
   @Override
   public int compare(int slot1, int slot2) {
@@ -124,7 +123,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
       valuesDocID = currentDocs.docID();
       int count = currentDocs.docValueCount();
       if (count > currentValues.length) {
-        currentValues = new long[ArrayUtil.oversize(count, RamUsageEstimator.NUM_BYTES_LONG)];
+        currentValues = new long[ArrayUtil.oversize(count, Long.BYTES)];
       }
       for(int i=0;i<count;i++) {
         currentValues[i] = currentDocs.nextValue();

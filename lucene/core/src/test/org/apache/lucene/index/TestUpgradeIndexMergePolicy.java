@@ -19,11 +19,17 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.index.MergePolicy.MergeSpecification;
+import org.apache.lucene.util.TestUtil;
 
 public class TestUpgradeIndexMergePolicy extends BaseMergePolicyTestCase {
 
   public MergePolicy mergePolicy() {
-    return new UpgradeIndexMergePolicy(newMergePolicy(random()));
+    MergePolicy in = newMergePolicy(random());
+    if (in instanceof TieredMergePolicy) {
+      // Avoid low values of the max merged segment size which prevent this merge policy from scaling well
+      ((TieredMergePolicy) in).setMaxMergedSegmentMB(TestUtil.nextInt(random(), 1024, 10 * 1024));
+    }
+    return new UpgradeIndexMergePolicy(in);
   }
 
   @Override

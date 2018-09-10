@@ -328,12 +328,12 @@ public class TestShardSearching extends ShardSearchingTestBase {
         System.out.println("  shard=" + shardID + " maxDoc=" + shardSearchers[shardID].searcher.getIndexReader().maxDoc());
       }
       */
-      System.out.println("  single searcher: " + hits.totalHits);
+      System.out.println("  single searcher: " + hits.totalHits.value);
       for(int i=0;i<hits.scoreDocs.length;i++) {
         final ScoreDoc sd = hits.scoreDocs[i];
         System.out.println("    doc=" + sd.doc + " score=" + sd.score);
       }
-      System.out.println("  shard searcher: " + shardHits.totalHits);
+      System.out.println("  shard searcher: " + shardHits.totalHits.value);
       for(int i=0;i<shardHits.scoreDocs.length;i++) {
         final ScoreDoc sd = shardHits.scoreDocs[i];
         System.out.println("    doc=" + sd.doc + " (rebased: " + (sd.doc + base[sd.shardIndex]) + ") score=" + sd.score + " shard=" + sd.shardIndex);
@@ -355,7 +355,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
     final ScoreDoc bottomHit;
     final ScoreDoc bottomHitShards;
 
-    if (numHitsPaged < hits.totalHits) {
+    if (numHitsPaged < hits.totalHits.value) {
       // More hits to page through
       moreHits = true;
       if (sort == null) {
@@ -372,7 +372,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
       }
 
     } else {
-      assertEquals(hits.totalHits, numHitsPaged);
+      assertEquals(hits.totalHits.value, numHitsPaged);
       bottomHit = null;
       bottomHitShards = null;
       moreHits = false;
@@ -384,7 +384,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
       sd.doc += base[sd.shardIndex];
     }
 
-    TestUtil.assertEquals(hits, shardHits);
+    TestUtil.assertConsistent(hits, shardHits);
 
     if (moreHits) {
       // Return a continuation:

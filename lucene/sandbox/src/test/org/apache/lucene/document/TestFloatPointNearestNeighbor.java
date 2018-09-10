@@ -234,7 +234,7 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
 
   private IndexWriterConfig getIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(Codec.forName("Lucene70"));
+    iwc.setCodec(Codec.forName("Lucene80"));
     return iwc;
   }
 }

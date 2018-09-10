@@ -66,7 +66,7 @@ import org.junit.Test;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+//commented 23-AUG-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class StreamDecoratorTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
@@ -106,6 +106,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  //commented 23-AUG-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testUniqueStream() throws Exception {
 
     new UpdateRequest()
@@ -656,6 +657,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelHavingStream() throws Exception {
 
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -866,6 +868,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelFetchStream() throws Exception {
 
     new UpdateRequest()
@@ -1377,6 +1380,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -1509,6 +1513,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelMergeStream() throws Exception {
 
     new UpdateRequest()
@@ -2315,6 +2320,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelPriorityStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -2484,6 +2490,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -2583,6 +2590,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelDaemonUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3288,6 +3296,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testClassifyStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -3482,6 +3491,32 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testStream() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c e", "test_i", "5");
+    updateRequest.add(id, "hello1", "test_t", "l b c d c", "test_i", "4");
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"id:hello1\", fl=\"id,test_t, test_i\", sort=\"id desc\")";
+    String cat = "let(a ="+expr+",stream(a))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cat);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+
+
+  }
+
+  @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("workQueue", cluster.getSolrClient().getZkStateReader(),
@@ -3551,6 +3586,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1).processAndWait(cluster.getSolrClient(),DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("workQueue1", cluster.getSolrClient().getZkStateReader(),

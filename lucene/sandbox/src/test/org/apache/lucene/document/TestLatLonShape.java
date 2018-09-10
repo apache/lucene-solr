@@ -17,7 +17,9 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
+import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -43,8 +45,15 @@ public class TestLatLonShape extends LuceneTestCase {
     }
   }
 
+  protected void addLineToDoc(String field, Document doc, Line line) {
+    Field[] fields = LatLonShape.createIndexableFields(field, line);
+    for (Field f : fields) {
+      doc.add(f);
+    }
+  }
+
   protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
-    return LatLonShape.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
+    return LatLonShape.newBoxQuery(field, QueryRelation.INTERSECTS, minLat, maxLat, minLon, maxLon);
   }
 
   @Ignore
@@ -81,10 +90,23 @@ public class TestLatLonShape extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    // add a random polygon
+    // add a random polygon document
     Polygon p = GeoTestUtil.createRegularPolygon(0, 90, atLeast(1000000), numVertices);
     Document document = new Document();
     addPolygonsToDoc(FIELDNAME, document, p);
+    writer.addDocument(document);
+
+    // add a line document
+    document = new Document();
+    // add a line string
+    double lats[] = new double[p.numPoints() - 1];
+    double lons[] = new double[p.numPoints() - 1];
+    for (int i = 0; i < lats.length; ++i) {
+      lats[i] = p.getPolyLat(i);
+      lons[i] = p.getPolyLon(i);
+    }
+    Line l = new Line(lats, lons);
+    addLineToDoc(FIELDNAME, document, l);
     writer.addDocument(document);
 
     ////// search /////
@@ -92,8 +114,12 @@ public class TestLatLonShape extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     IndexSearcher searcher = newSearcher(reader);
-    Query q = newRectQuery(FIELDNAME, -1d, 1d, p.minLon, p.maxLon);
-    assertEquals(1, searcher.count(q));
+    double minLat = Math.min(lats[0], lats[1]);
+    double minLon = Math.min(lons[0], lons[1]);
+    double maxLat = Math.max(lats[0], lats[1]);
+    double maxLon = Math.max(lons[0], lons[1]);
+    Query q = newRectQuery(FIELDNAME, minLat, maxLat, minLon, maxLon);
+    assertEquals(2, searcher.count(q));
 
     // search a disjoint bbox
     q = newRectQuery(FIELDNAME, p.minLat-1d, p.minLat+1, p.minLon-1d, p.minLon+1d);

@@ -44,6 +44,7 @@ import org.apache.solr.core.backup.repository.HdfsBackupRepository;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +62,7 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 //05-Jul-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+//commented 23-AUG-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
 public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   public static final String SOLR_XML = "<solr>\n" +
       "\n" +
@@ -204,5 +206,11 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
       assertTrue(expected.contains(d));
     }
   }
+  @Override
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  public void test() throws Exception {
+    super.test();
+  }
 
-}
+  }

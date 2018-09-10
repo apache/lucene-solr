@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -44,7 +45,8 @@ import org.slf4j.LoggerFactory;
 
 public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final int NODE_COUNT = 4;
 
   private static Map<JettySolrRunner, SocketProxy> proxies;
   private static Map<URI, JettySolrRunner> jettys;
@@ -55,7 +57,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "2000");
 
-    configureCluster(4)
+    configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
 
@@ -68,7 +70,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jetty);//TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
       proxy.open(jetty.getBaseUrl().toURI());
-      LOG.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
+      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
       proxies.put(jetty, proxy);
       jettys.put(proxy.getUrl(), jetty);
     }
@@ -86,8 +88,16 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     System.clearProperty("leaderVoteWait");
   }
 
+  @Before
+  public void setupTest() throws Exception {
+    SolrCloudTestCase.ensureRunningJettys(NODE_COUNT, 5);
+    cluster.deleteAllCollections();
+    cluster.getSolrClient().setDefaultCollection(null);
+  }
+
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void basicTest() throws Exception {
     final String collectionName = "basicTest";
     CollectionAdminRequest.createCollection(collectionName, 1, 1)
@@ -124,7 +134,8 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testMostInSyncReplicasCanWinElection() throws Exception {
     final String collectionName = "collection1";
     CollectionAdminRequest.createCollection(collectionName, 1, 3)
@@ -193,7 +204,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     } catch (Exception e) {
       List<String> children = zkClient().getChildren("/collections/"+collectionName+"/leader_elect/shard1/election",
           null, true);
-      LOG.info("{} election nodes:{}", collectionName, children);
+      log.info("{} election nodes:{}", collectionName, children);
       throw e;
     }
     cluster.getJettySolrRunner(0).start();

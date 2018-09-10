@@ -42,7 +42,8 @@ import org.slf4j.LoggerFactory;
 public class ClusterProperties {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
+  public static final String EXT_PROPRTTY_PREFIX = "ext.";
+  
   private final SolrZkClient client;
 
   /**
@@ -119,9 +120,7 @@ public class ClusterProperties {
   @SuppressWarnings("unchecked")
   public void setClusterProperty(String propertyName, String propertyValue) throws IOException {
 
-    if (!ZkStateReader.KNOWN_CLUSTER_PROPS.contains(propertyName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Not a known cluster property " + propertyName);
-    }
+    validatePropertyName(propertyName);
 
     for (; ; ) {
       Stat s = new Stat();
@@ -153,6 +152,22 @@ public class ClusterProperties {
         throw new IOException("Error setting cluster property", SolrZkClient.checkInterrupted(e));
       }
       break;
+    }
+  }
+
+  /**
+   * The propertyName should be either: <br/>
+   * 1. <code>ZkStateReader.KNOWN_CLUSTER_PROPS</code> that is used by solr itself.<br/>
+   * 2. Custom property: it can be created by third-party extensions and should start with prefix <b>"ext."</b> and it's
+   * recommended to also add prefix of plugin name or company name or package name to avoid conflict.
+   * 
+   * @param propertyName The property name to validate
+   */
+  private void validatePropertyName(String propertyName) {
+    if (!ZkStateReader.KNOWN_CLUSTER_PROPS.contains(propertyName)
+        && !propertyName.startsWith(EXT_PROPRTTY_PREFIX)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Not a known cluster property or starts with prefix "
+          + EXT_PROPRTTY_PREFIX + ", propertyName: " + propertyName);
     }
   }
 }

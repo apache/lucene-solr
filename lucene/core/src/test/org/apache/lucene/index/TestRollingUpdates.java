@@ -79,7 +79,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       final boolean doUpdate;
       if (s != null && updateCount < SIZE) {
         TopDocs hits = s.search(new TermQuery(idTerm), 1);
-        assertEquals(1, hits.totalHits);
+        assertEquals(1, hits.totalHits.value);
         doUpdate = w.tryDeleteDocument(r, hits.scoreDocs[0].doc) == -1;
         if (VERBOSE) {
           if (doUpdate) {

@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -87,6 +88,7 @@ import org.slf4j.LoggerFactory;
 @Slow
 @SuppressSSL     // Currently unknown why SSL does not work with this test
 // commented 20-July-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -829,7 +831,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   
-  @Test 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void doTestStressReplication() throws Exception {
     // change solrconfig on slave
     // this has no entry for pollinginterval

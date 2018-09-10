@@ -58,6 +58,55 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void testEmptyValues() throws Exception {
+    //Index 2 document with one document that doesn't have field2_i_p
+    //Sort and return field2_i_p
+    //Test SOLR-12572 for potential NPEs
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+
+    assertU(adoc("id","1", "field2_i_p","1"));
+    assertU(adoc("id","2"));
+    assertU(commit());
+
+    String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id,field2_i_p", "sort", "field2_i_p asc"));
+    assertJsonEquals(resp, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":2,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"1\",\n" +
+        "        \"field2_i_p\":1}]}}");
+
+  }
+
+  @Test
+  public void testSortingOnFieldWithNoValues() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    assertU(adoc("id","1"));
+    assertU(commit());
+
+    // 10 fields
+    List<String> fieldNames = new ArrayList<>(Arrays.asList("floatdv", "intdv", "stringdv", "longdv", "doubledv",
+        "datedv", "booleandv", "field1_s_dv", "field2_i_p", "field3_l_p"));
+    for (String sortField : fieldNames) {
+      String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id," + sortField, "sort", sortField + " desc"));
+      assertJsonEquals(resp, "{\n" +
+          "  \"responseHeader\":{\"status\":0},\n" +
+          "  \"response\":{\n" +
+          "    \"numFound\":1,\n" +
+          "    \"docs\":[{\n" +
+          "        \"id\":\"1\"}]}}");
+    }
+
+  }
+
   public static void createIndex() {
     assertU(adoc("id","1",
                  "floatdv","2.1",

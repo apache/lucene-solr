@@ -188,6 +188,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected TransactionLog bufferTlog;
   protected TransactionLog tlog;
   protected TransactionLog prevTlog;
+  protected TransactionLog prevTlogOnPrecommit;
   protected final Deque<TransactionLog> logs = new LinkedList<>();  // list of recent logs, newest first
   protected LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
   protected int numOldRecords;  // number of records in the recent logs
@@ -810,6 +811,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // since document additions can happen concurrently with commit, create
       // a new transaction log first so that we know the old one is definitely
       // in the index.
+      if (prevTlog != null) {
+        // postCommit for prevTlog is not called, may be the index is corrupted
+        // if we override prevTlog value, the correspond tlog will be leaked, close it first
+        postCommit(cmd);
+      }
       prevTlog = tlog;
       tlog = null;
       id++;

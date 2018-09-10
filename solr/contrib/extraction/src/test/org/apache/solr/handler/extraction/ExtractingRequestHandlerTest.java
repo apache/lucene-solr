@@ -17,7 +17,6 @@
 package org.apache.solr.handler.extraction;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -42,8 +41,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
-        new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
+    assertFalse("SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.",
+        System.getProperty("java.version").startsWith("11"));
     initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr").getAbsolutePath());
   }
 

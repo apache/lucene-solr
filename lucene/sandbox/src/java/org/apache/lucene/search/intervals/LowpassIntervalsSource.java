@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.MatchesIterator;
 
 class LowpassIntervalsSource extends IntervalsSource {
 
@@ -65,6 +66,21 @@ class LowpassIntervalsSource extends IntervalsSource {
         return (i.end() - i.start()) + 1 <= maxWidth;
       }
     };
+  }
+
+  @Override
+  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    MatchesIterator mi = in.matches(field, ctx, doc);
+    if (mi == null) {
+      return null;
+    }
+    IntervalIterator filtered = new IntervalFilter(IntervalMatches.wrapMatches(mi, doc)) {
+      @Override
+      protected boolean accept() {
+        return (this.in.end() - this.in.start()) + 1 <= maxWidth;
+      }
+    };
+    return IntervalMatches.asMatches(filtered, mi, doc);
   }
 
   @Override

@@ -570,6 +570,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return docWriter.ramBytesUsed();
   }
 
+  /**
+   * Returns the number of bytes currently being flushed
+   */
+  public final long getFlushingBytes() {
+    ensureOpen();
+    return docWriter.getFlushingBytes();
+  }
+
   final long getReaderPoolRamBytesUsed() {
     return readerPool.ramBytesUsed();
   }

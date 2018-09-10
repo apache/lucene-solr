@@ -278,7 +278,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             cloudManager).get(0).nodeName;// TODO: use replica type in this logic too
       }
     }
-    log.info("Node Identified {} for creating new replica", node);
+    log.info("Node Identified {} for creating new replica of shard {}", node, shard);
 
     if (!clusterState.liveNodesContain(node)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Node: " + node + " is not live");

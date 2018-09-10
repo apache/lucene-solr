@@ -20,9 +20,13 @@
 
 The autoscaling policy and preferences are a set of rules and sorting preferences that help Solr select the target of cluster management operations so the overall load on the cluster remains balanced.
 
+Solr consults the configured policy and preferences when performing <<Commands That Use Autoscaling Policy and Preferences,Collections API commands>> in all contexts: manual, e.g., using `bin/solr`; semi-automatic, via the <<solrcloud-autoscaling-api.adoc#suggestions-api,Suggestions API>> or the Admin UI's <<suggestions-screen.adoc#suggestions-screen,Suggestions Screen>>; or fully automatic, via configured <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,Triggers>>.
+
+See the section <<Manual Collection Creation with a Policy>> for an example of how policy and preferences affect replica placement.
+
 == Cluster Preferences Specification
 
-A preference is a hint to Solr on how to sort nodes based on their utilization. The default cluster preference is to sort by the total number of Solr cores (or replicas) hosted by a node. Therefore, by default, when selecting a node to add a replica, Solr can apply the preferences and choose the node with the least number of cores.
+A preference is a hint to Solr on how to sort nodes based on their utilization. The default cluster preference is to sort by the total number of Solr cores (or replicas) hosted by a node. Therefore, by default, when selecting a node to which to add a replica, Solr can apply the preferences and choose the node with the fewest cores.
 
 More than one preference can be added to break ties. For example, we may choose to use free disk space to break ties if the number of cores on two nodes are the same. The node with the higher free disk space can be chosen as the target of the cluster operation.
 
@@ -86,11 +90,85 @@ In this example, we add a precision to the `freedisk` parameter so that nodes wi
 
 A policy is a hard rule to be satisfied by each node. If a node does not satisfy the rule then it is called a *violation*. Solr ensures that the number of violations are minimized while invoking any cluster management operations.
 
-=== Policy Attributes
-A policy can have the following attributes:
+=== Policy Rule Structure
+
+==== Rule Types
+
+Policy rules can be either global or per-collection:
+
+* *Global rules* constrain the number of cores per node or node group.  This type of rule applies to cores from all collections hosted on the specified node(s).  As a result, <<Defining Collection-Specific Policies,collection-specific policies>>, which are associated with individual collections, may not contain global rules.
+* *Per-collection rules* constrain the number of replicas per node or node group.
+
+Global rules have three parts:
+
+* <<Node Selector>>
+* <<Core Count Constraint>>
+* <<Rule Strictness>>
+
+Per-collection rules have four parts:
+
+* <<Node Selector>>
+* <<Replica Selector and Rule Evaluation Context>>
+* <<Replica Count Constraint>>
+* <<Rule Strictness>>
+
+==== Node Selector
+
+Rule evaluation is restricted to node(s) matching the value of one of the following attributes: `node`, `port`, `ip_\*`, `sysprop.*`, or `diskType`.  For replica/core count constraints other than `#EQUAL`, a condition specified in one of the following attributes may instead be used to select nodes: `freedisk`, `host`, `sysLoadAvg`, `heapUsage`, `nodeRole`, or `metrics.*`.
+
+Except for `node`, the attributes above cause selected nodes to be partitioned into node groups. A node group is referred to as a "bucket". Those attributes usable with the `#EQUAL` directive may define buckets either via the value `#EACH` or an array `["value1", ...]` (a subset of all possible values); in both cases, each node is placed in the bucket corresponding to the matching attribute value.
+
+The `node` attribute always places each selected node into its own bucket, regardless of the attribute value's form (`#ANY`, `node-name`, or `["node1-name", ...]`).
+
+Replica and core count constraints, described below, are evaluated against the total number in each bucket.
+
+==== Core Count Constraint
+
+The `cores` attribute value can be specified in one of the following forms:
+
+* the `#EQUAL` directive, which will cause cores to be distributed equally among the nodes specified via the rule's <<Node Selector>>.
+* a constraint on the core count on each <<Node Selector,selected node>>, specified as one of:
+** an integer value (e.g., `2`), a lower bound (e.g., `>0`), or an upper bound (e.g., `<3`)
+** a decimal value, interpreted as an acceptable range of core counts, from the floor of the value to the ceiling of the value, with the system preferring the rounded value (e.g., `1.6`: `1` or `2` is acceptable, and `2` is preferred)
+** a range of acceptable core counts, as inclusive lower and upper integer bounds separated by a hyphen (e.g., `3-5`)
+** a percentage (e.g., `33%`), which is multiplied by the number of cores in the cluster at runtime. This value is then interpreted as described above for literal decimal values.
+
+==== Replica Selector and Rule Evaluation Context
+
+Rule evaluation can be restricted to replicas that meet any combination of the following conditions:
+
+* The replica is of a shard belonging to the collection specified in the `collection` attribute value. (Not usable with per-collection policies.)
+* The replica is of a shard specified in the `shard` attribute value.
+* The replica has the replica type specified in the `type` attribute value (`NRT`, `TLOG`, or `PULL`).
+
+If none of the above attributes is specified, then the rule is evaluated separately for each collection against all types of replicas of all shards.
+
+Specifying `#EACH` as the `shard` attribute value causes the rule to be evaluated separately for each shard of each collection.
+
+==== Replica Count Constraint
+
+The `replica` attribute value can be specified in one of the following forms:
+
+* `#ALL`: All <<Replica Selector and Rule Evaluation Context,selected replicas>> will be placed on the <<Node Selector,selected nodes>>.
+* `#EQUAL`: Distribute <<Replica Selector and Rule Evaluation Context,selected replicas>> evenly among all the <<Node Selector,selected nodes>>.
+* a constraint on the replica count on each <<Node Selector,selected node>>, specified as one of:
+** an integer value (e.g., `2`), a lower bound (e.g., `>0`), or an upper bound (e.g., `<3`)
+** a decimal value, interpreted as an acceptable range of replica counts, from the floor of the value to the ceiling of the value, with the system preferring the rounded value (e.g., `1.6`: `1` or `2` is acceptable, and `2` is preferred)
+** a range of acceptable replica counts, as inclusive lower and upper integer bounds separated by a hyphen (e.g., `3-5`)
+** a percentage (e.g., `33%`), which is multiplied by the number of <<Replica Selector and Rule Evaluation Context,selected replicas>> at runtime. This value is then interpreted as described above for literal decimal values.
+
+==== Rule Strictness
+
+By default, the rule must be satisfied, and if it can't, then no action will be taken.
+
+If the `strict` attribute value is specified as `false`, Solr tries to satisfy the rule on a best effort basis, but if no node can satisfy the rule then any node may be chosen.
+
+=== Policy Rule Attributes
+
+A policy rule can have the following attributes:
 
 `cores`::
-This is a special attribute that applies to the entire cluster. It can only be used along with the `node` attribute and no other. This attribute is optional.
+This is a required attribute for <<Rule Types,global rules>>. It can only be used along with the `node` attribute and no other. See <<Core Count Constraint>> for possible attribute values.
 
 `collection`::
 The name of the collection to which the policy rule should apply. If omitted, the rule applies to all collections. This attribute is optional.
@@ -102,15 +180,7 @@ The name of the shard to which the policy rule should apply. If omitted, the rul
 The type of the replica to which the policy rule should apply. If omitted, the rule is applied for all replica types of this collection/shard. The allowed values are `NRT`, `TLOG` and `PULL`
 
 `replica`::
-This is a required attribute. The number of replicas that must exist to satisfy the rule. This must be one of
-
-* a positive integer . e.g : "`3`"
-* a number with a decimal value . e.g: "`1.66`" . This means both 1 and 2 are acceptable values but the system would prefer `2`
-* a number range. Such as `"3-5"` . This means `3,4,5` are acceptable values
-* `#ALL` : All replicas of a given collection or shard
-* a percentage value . e.g: `33%` . This is computed to a decimal value at runtime
-* `#EQUAL` : Divide the no:of replicas equally among all the nodes qualifying a certain property and place equal no:of them in each node
-
+This is a required attribute for <<Rule Types,per-collection rules>>. The number of replicas that must exist to satisfy the rule.  See <<Replica Count Constraint>> for possible attribute values.
 
 `strict`::
 An optional boolean value. The default is `true`. If true, the rule must be satisfied. If false, Solr tries to satisfy the rule on a best effort basis but if no node can satisfy the rule then any node may be chosen.
@@ -118,7 +188,7 @@ An optional boolean value. The default is `true`. If true, the rule must be sati
 One and only one of the following attributes can be specified in addition to the above attributes:
 
 `node`::
-The name of the node to which the rule should apply. The default value is `#ANY` which means that any node in the cluster may satisfy the rule.
+The name of the node to which the rule should apply.
 
 `port`::
 The port of the node to which the rule should apply.
@@ -150,7 +220,7 @@ Any arbitrary metric. For example, `metrics:solr.node:CONTAINER.fs.totalSpace`. 
 `diskType`::
 The type of disk drive being used for Solr's `coreRootDirectory`. The only two supported values are `rotational` and `ssd`. Refer to `coreRootDirectory` parameter in the <<format-of-solr-xml.adoc#solr-xml-parameters, Solr.xml Parameters>> section.
 +
-It's value is fetched from the Metrics API with the key named `solr.node:CONTAINER.fs.coreRoot.spins`. The disk type is auto-detected by Lucene using various heuristics and it is not guaranteed to be correct across all platforms or operating systems. Refer to the <<taking-solr-to-production.adoc#dynamic-defaults-for-concurrentmergescheduler, Dynamic defaults for ConcurrentMergeScheduler>> section for more details.
+Its value is fetched from the Metrics API with the key named `solr.node:CONTAINER.fs.coreRoot.spins`. The disk type is auto-detected by Lucene using various heuristics and it is not guaranteed to be correct across all platforms or operating systems. Refer to the <<taking-solr-to-production.adoc#dynamic-defaults-for-concurrentmergescheduler, Dynamic defaults for ConcurrentMergeScheduler>> section for more details.
 
 === Policy Operators
 
@@ -159,9 +229,8 @@ Each attribute in the policy may specify one of the following operators along wi
 * `<`: Less than
 * `>`: Greater than
 * `!`: Not
-* Range operator `(-)` : a value such as `"3-5"` means a value between 3 to 5 (inclusive). This is only supported in the following attributes
-** `replica`
-* array operator . e.g: `sysprop.zone = ["east", "west","apac"]`. This is equivalent to having multiple rules with each of these values. This can be used in the following attributes
+* Range operator `(-)`: a value such as `"3-5"` means a value between 3 to 5 (inclusive). This is only supported in the `replica` and `cores` attributes.
+* Array operator `[]`: e.g., `sysprop.zone= ["east","west","apac"]`. This is equivalent to having multiple rules with each of these values. This can be used in the following attributes:
 ** `sysprop.*`
 ** `port`
 ** `ip_*`
@@ -169,46 +238,47 @@ Each attribute in the policy may specify one of the following operators along wi
 ** `diskType`
 * None means equal
 
-==== Special functions
+==== Special Functions
+
 This supports values calculated at the time of execution.
 
-* `%` : A certain percentage of the value. This is supported by the following attributes
+* `%` : A certain percentage of the value. This is supported by the following attributes:
 ** `replica`
+** `cores`
 ** `freedisk`
-* `#ALL` : This is applied to the `replica` attribute only. This means all replicas qualifying a certain clause
-* `#EQUAL`:  This is applied to the `replica` attribute only. This means equal no:of replicas in each bucket.The buckets can be defined using an array operator (`[]`) or `#EACH` .The buckets can be defined on the following properties
-** `node`
+* `#ALL` : This is applied to the `replica` attribute only. This means all replicas that meet the rule condition.
+* `#EQUAL`:  This is applied to the `replica` and `cores` attributes only. This means an equal number of replicas/cores in each bucket. The buckets can be defined using an array operator (`[]`) or `#EACH`. The buckets can be defined using the following properties:
+** `node` \<- <<Rule Types,global rules>>, i.e., with the `cores` attribute, may only specify this attribute
 ** `sysprop.*`
 ** `port`
 ** `diskType`
 ** `ip_*`
-****
-Some content here
-****
-
-
 
 === Examples of Policy Rules
 
 ==== Limit Replica Placement
+
 Do not place more than one replica of the same shard on the same node:
 
 [source,json]
 {"replica": "<2", "shard": "#EACH", "node": "#ANY"}
 
 ==== Limit Cores per Node
+
 Do not place more than 10 cores in any node. This rule can only be added to the cluster policy because it mentions the `cores` attribute that is only applicable cluster-wide.
 
 [source,json]
 {"cores": "<10", "node": "#ANY"}
 
 ==== Place Replicas Based on Port
+
 Place exactly 1 replica of each shard of collection `xyz` on a node running on port `8983`
 
 [source,json]
 {"replica": 1, "shard": "#EACH", "collection": "xyz", "port": "8983"}
 
 ==== Place Replicas Based on a System Property
+
 Place all replicas on a node with system property `availability_zone=us-east-1a`.
 
 [source,json]
@@ -216,25 +286,28 @@ Place all replicas on a node with system property `availability_zone=us-east-1a`
 
 ===== Use Percentage
 
-====== example 1
-Place roughly a maximum of a 3rd of the replicas of a shard in a node. In the following example, the value of replica is computed in real time.
+====== Example 1
+
+Place roughly a maximum of a 3rd of the replicas of a shard in a node. In the following example, the value of `replica` is computed in real time:
+
 [source,json]
 {"replica": "33%", "shard": "#EACH", "node": "#ANY"}
 
-If the no:of of replicas in a shard is `2` , `33% of 2 = 0.66` . This means a node may have a maximum of `1` and a minimum of `0` replicas of each shard.
+If the number of replicas in a shard is `2`, `33% of 2 = 0.66`. This means a node may have a maximum of `1` and a minimum of `0` replicas of each shard.
 
-It is possible to get the same effect by hard coding the value of replica as follows
+It is possible to get the same effect by hard coding the value of `replica` as follows:
 
 [source,json]
 {"replica": 0.66, "shard": "#EACH", "node": "#ANY"}
 
-or using the range operator
+or using the range operator:
 
 [source,json]
 {"replica": "0-1", "shard": "#EACH", "node": "#ANY"}
 
-====== example 2
-Distribute  replicas across  datacenters east and west at a `1:2` ratio
+====== Example 2
+
+Distribute replicas across datacenters `east` and `west` at a `1:2` ratio:
 
 [source,json]
 {"replica": "33%", "shard": "#EACH", "sysprop.zone": "east"}
@@ -242,9 +315,7 @@ Distribute  replicas across  datacenters east and west at a `1:2` ratio
 
 For the above rule to work, all nodes must the started with a system property called `"zone"`
 
-== example 3
-
-Distribute replicas equally in each zone
+==== Distribute Replicas Equally in Each Zone
 
 [source,json]
 {"replica": "#EQUAL", "shard": "#EACH", "sysprop.zone": ["east", "west"]}
@@ -254,15 +325,16 @@ or simply as follows
 [source,json]
 {"replica": "#EQUAL", "shard": "#EACH", "sysprop.zone": "#EACH"}
 
-
 ==== Place Replicas Based on Node Role
+
 Do not place any replica on a node which has the overseer role. Note that the role is added by the `addRole` collection API. It is *not* automatically the node which is currently the overseer.
 
 [source,json]
 {"replica": 0, "nodeRole": "overseer"}
 
 ==== Place Replicas Based on Free Disk
-Place all replicas in nodes with freedisk more than 500GB. Here again, we have to write the rule in the negative sense.
+
+Place all replicas in nodes with freedisk more than 500GB.
 
 [source,json]
 {"replica": "#ALL", "freedisk": ">500"}
@@ -271,19 +343,19 @@ Keep all replicas in nodes with over `50%` freedisk
 [source,json]
 {"replica": "#ALL", "freedisk": ">50%"}
 
-
 ==== Try to Place Replicas Based on Free Disk
+
 Place all replicas in nodes with freedisk more than 500GB when possible. Here we use the strict keyword to signal that this rule is to be honored on a best effort basis.
 
 [source,json]
 {"replica": "#ALL", "freedisk": ">500", "strict" : false}
 
-==== Try to Place all Replicas of type TLOG on Nodes with SSD Drives
+==== Try to Place All Replicas of Type TLOG on Nodes with SSD Drives
 
 [source,json]
 { "replica": "#ALL","type" : "TLOG",  "diskType" : "ssd" }
 
-==== Try to Place all Replicas of type PULL on Nodes with Rotational Disk Drives
+==== Try to Place All Replicas of Type PULL on Nodes with Rotational Disk Drives
 
 [source,json]
 { "replica": "#ALL",   "type" : "PULL" , "diskType" : "rotational"}
@@ -299,9 +371,42 @@ It is possible to override conditions specified in the cluster policy using coll
 
 Also, if `maxShardsPerNode` is specified during the time of collection creation, then both `maxShardsPerNode` and the policy rules must be satisfied.
 
-Some attributes such as `cores` can only be used in the cluster policy. See the section above on policy attributes for details.
+Some attributes such as `cores` can only be used in the cluster policy. See the section <<Policy Rule Attributes>> for details.
 
-The policy is used by these <<collections-api.adoc#collections-api,Collections API>> commands:
+== Manual Collection Creation with a Policy 
+
+The starting state for this example is a Solr cluster with 3 nodes: "nodeA", "nodeB", and "nodeC".  An existing 2-shard `FirstCollection` with a `replicationFactor` of 1 has one replica on "nodeB" and one on "nodeC".  The default Autoscaling preferences are in effect:
+
+[source,json]
+[ {"minimize": "cores"} ]
+
+The configured policy rule allows at most 1 core per node:
+
+[source,json]    
+[ {"cores": "<2", "node": "#ANY"} ]
+    
+We now issue a CREATE command for a `SecondCollection` with two shards and a `replicationFactor` of 1:
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATE&name=SecondCollection&numShards=2&replicationFactor=1
+----
+
+For each of the two replicas to be created, each Solr node is tested, in order from least to most loaded: would all policy rules be satisfied if a replica were placed there using an ADDREPLICA sub-command?
+ 
+* ADDREPLICA for `shard1`: According to the Autoscaling preferences, the least loaded node is the one with the fewest cores: "nodeA", because it hosts no cores, while the other two nodes each host one core. The test to place a replica here succeeds, because doing so causes no policy violations, since the core count after adding the replica would not exceed the configured maximum of 1.  Because "nodeA" can host the first shard's replica, Solr skips testing of the other two nodes.
+* ADDREPLICA for `shard2`: After placing the `shard1` replica, all nodes would be equally loaded, since each would have one core. The test to place the `shard2` replica fails on each node, because placement would push the node over its maximum core count. Since there is no node that can host this replica, the CREATE command fails.
+
+Let's try again after increasing the maximum core count on all nodes to 2: 
+
+[source,json]    
+[ {"cores": "<3", "node": "#ANY"} ]
+
+After re-issuing the `SecondCollection` CREATE command, the replica for `shard1` will be placed on "nodeA": it's least loaded, so is tested first, and no policy violation will result from placement there.  The `shard2` replica could be placed on any of the 3 nodes, since they're all equally loaded, and the chosen node will remain below its maximum core count after placement.  The CREATE command succeeds. 
+
+== Commands That Use Autoscaling Policy and Preferences
+
+The configured autoscaling policy and preferences are used by these <<collections-api.adoc#collections-api,Collections API>> commands:
 
 * CREATE
 * CREATESHARD
@@ -310,5 +415,3 @@ The policy is used by these <<collections-api.adoc#collections-api,Collections A
 * SPLITSHARD
 * UTILIZENODE
 * MOVEREPLICA
-
-In the future, the policy and preferences will be used by the Autoscaling framework to automatically change the cluster in response to events such as a node being added or lost.

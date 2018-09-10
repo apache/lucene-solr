@@ -63,7 +63,19 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * reader ({@link DirectoryReader#open(IndexWriter)}).
  * Once you have a new {@link IndexReader}, it's relatively
  * cheap to create a new IndexSearcher from it.
- * 
+ *
+ * <p><b>NOTE</b>: The {@link #search} and {@link #searchAfter} methods are
+ * configured to only count top hits accurately up to {@code 1,000} and may
+ * return a {@link TotalHits.Relation lower bound} of the hit count if the
+ * hit count is greater than or equal to {@code 1,000}. On queries that match
+ * lots of documents, counting the number of hits may take much longer than
+ * computing the top hits so this trade-off allows to get some minimal
+ * information about the hit count without slowing down search too much. The
+ * {@link TopDocs#scoreDocs} array is always accurate however. If this behavior
+ * doesn't suit your needs, you should create collectors manually with either
+ * {@link TopScoreDocCollector#create} or {@link TopFieldCollector#create} and
+ * call {@link #search(Query, Collector)}.
+ *
  * <a name="thread-safety"></a><p><b>NOTE</b>: <code>{@link
  * IndexSearcher}</code> instances are completely
  * thread safe, meaning multiple threads can call any of its
@@ -82,6 +94,11 @@ public class IndexSearcher {
     final long maxRamBytesUsed = Math.min(1L << 25, Runtime.getRuntime().maxMemory() / 20);
     DEFAULT_QUERY_CACHE = new LRUQueryCache(maxCachedQueries, maxRamBytesUsed);
   }
+  /**
+   * By default we count hits accurately up to 1000. This makes sure that we
+   * don't spend most time on computing hit counts
+   */
+  private static final int TOTAL_HITS_THRESHOLD = 1000;
 
   final IndexReader reader; // package private for testing!
   
@@ -384,7 +401,7 @@ public class IndexSearcher {
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after, true);
+        return TopScoreDocCollector.create(cappedNumHits, after, TOTAL_HITS_THRESHOLD);
       }
 
       @Override
@@ -513,7 +530,7 @@ public class IndexSearcher {
       @Override
       public TopFieldCollector newCollector() throws IOException {
         // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, true);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, TOTAL_HITS_THRESHOLD);
       }
 
       @Override

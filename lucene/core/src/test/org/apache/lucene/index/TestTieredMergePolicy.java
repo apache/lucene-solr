@@ -54,7 +54,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
       totalMaxDoc += sci.info.maxDoc();
       long byteSize = sci.sizeInBytes();
       double liveRatio = 1 - (double) sci.getDelCount() / sci.info.maxDoc();
-      long weightedByteSize = (long) Math.round(liveRatio * byteSize);
+      long weightedByteSize = Math.round(liveRatio * byteSize);
       totalBytes += weightedByteSize;
       minSegmentBytes = Math.min(minSegmentBytes, weightedByteSize);
     }

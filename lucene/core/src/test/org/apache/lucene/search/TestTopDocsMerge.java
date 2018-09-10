@@ -57,7 +57,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
     }
 
     public TopDocs search(Weight weight, int topN) throws IOException {
-      TopScoreDocCollector collector = TopScoreDocCollector.create(topN);
+      TopScoreDocCollector collector = TopScoreDocCollector.create(topN, Integer.MAX_VALUE);
       search(ctx, weight, collector);
       return collector.topDocs();    }
 
@@ -77,8 +77,8 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
   public void testInconsistentTopDocsFail() {
     TopDocs[] topDocs = new TopDocs[] {
-        new TopDocs(1, new ScoreDoc[] { new ScoreDoc(1, 1.0f) }),
-        new TopDocs(1, new ScoreDoc[] { new ScoreDoc(1, 1.0f, -1) })
+        new TopDocs(new TotalHits(1, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(1, 1.0f) }),
+        new TopDocs(new TotalHits(1, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(1, 1.0f, -1) })
     };
     if (random().nextBoolean()) {
       ArrayUtil.swap(topDocs, 0, 1);
@@ -103,7 +103,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         // we set the shard index to index in the list here but shuffle the entire list below
         scoreDocs[j] = new ScoreDoc((100 * i) + j, score , i);
       }
-      topDocs.add(new TopDocs(numHits, scoreDocs));
+      topDocs.add(new TopDocs(new TotalHits(numHits, TotalHits.Relation.EQUAL_TO), scoreDocs));
       shardResultMapping.put(i, topDocs.get(i));
     }
     // shuffle the entire thing such that we don't get 1 to 1 mapping of shard index to index in the array
@@ -262,7 +262,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       final TopDocs topHits;
       if (sort == null) {
         if (useFrom) {
-          TopScoreDocCollector c = TopScoreDocCollector.create(numHits);
+          TopScoreDocCollector c = TopScoreDocCollector.create(numHits, Integer.MAX_VALUE);
           searcher.search(query, c);
           from = TestUtil.nextInt(random(), 0, numHits - 1);
           size = numHits - from;
@@ -281,7 +281,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
           topHits = searcher.search(query, numHits);
         }
       } else {
-        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true);
+        final TopFieldCollector c = TopFieldCollector.create(sort, numHits, Integer.MAX_VALUE);
         searcher.search(query, c);
         if (useFrom) {
           from = TestUtil.nextInt(random(), 0, numHits - 1);
@@ -306,7 +306,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         if (useFrom) {
           System.out.println("from=" + from + " size=" + size);
         }
-        System.out.println("  top search: " + topHits.totalHits + " totalHits; hits=" + (topHits.scoreDocs == null ? "null" : topHits.scoreDocs.length));
+        System.out.println("  top search: " + topHits.totalHits.value + " totalHits; hits=" + (topHits.scoreDocs == null ? "null" : topHits.scoreDocs.length));
         if (topHits.scoreDocs != null) {
           for(int hitIDX=0;hitIDX<topHits.scoreDocs.length;hitIDX++) {
             final ScoreDoc sd = topHits.scoreDocs[hitIDX];
@@ -330,14 +330,14 @@ public class TestTopDocsMerge extends LuceneTestCase {
         if (sort == null) {
           subHits = subSearcher.search(w, numHits);
         } else {
-          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true);
+          final TopFieldCollector c = TopFieldCollector.create(sort, numHits, Integer.MAX_VALUE);
           subSearcher.search(w, c);
           subHits = c.topDocs(0, numHits);
         }
 
         shardHits[shardIDX] = subHits;
         if (VERBOSE) {
-          System.out.println("  shard=" + shardIDX + " " + subHits.totalHits + " totalHits hits=" + (subHits.scoreDocs == null ? "null" : subHits.scoreDocs.length));
+          System.out.println("  shard=" + shardIDX + " " + subHits.totalHits.value + " totalHits hits=" + (subHits.scoreDocs == null ? "null" : subHits.scoreDocs.length));
           if (subHits.scoreDocs != null) {
             for(ScoreDoc sd : subHits.scoreDocs) {
               System.out.println("    doc=" + sd.doc + " score=" + sd.score);
@@ -372,10 +372,33 @@ public class TestTopDocsMerge extends LuceneTestCase {
         }
       }
 
-      TestUtil.assertEquals(topHits, mergedHits);
+      TestUtil.assertConsistent(topHits, mergedHits);
     }
     reader.close();
     dir.close();
+  }
+
+  public void testMergeTotalHitsRelation() {
+    TopDocs topDocs1 = new TopDocs(new TotalHits(2, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f) });
+    TopDocs topDocs2 = new TopDocs(new TotalHits(1, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f) });
+    TopDocs topDocs3 = new TopDocs(new TotalHits(1, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f) });
+    TopDocs topDocs4 = new TopDocs(new TotalHits(3, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f) });
+
+    TopDocs merged1 = TopDocs.merge(1, new TopDocs[] {topDocs1, topDocs2});
+    assertEquals(3, merged1.totalHits.value);
+    assertEquals(TotalHits.Relation.EQUAL_TO, merged1.totalHits.relation);
+
+    TopDocs merged2 = TopDocs.merge(1, new TopDocs[] {topDocs1, topDocs3});
+    assertEquals(3, merged2.totalHits.value);
+    assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, merged2.totalHits.relation);
+
+    TopDocs merged3 = TopDocs.merge(1, new TopDocs[] {topDocs3, topDocs4});
+    assertEquals(4, merged3.totalHits.value);
+    assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, merged3.totalHits.relation);
+
+    TopDocs merged4 = TopDocs.merge(1, new TopDocs[] {topDocs4, topDocs2});
+    assertEquals(4, merged4.totalHits.value);
+    assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, merged4.totalHits.relation);
   }
 
 }

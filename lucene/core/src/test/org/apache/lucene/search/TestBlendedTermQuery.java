@@ -108,7 +108,7 @@ public class TestBlendedTermQuery extends LuceneTestCase {
         .build();
 
     TopDocs topDocs = searcher.search(query, 20);
-    assertEquals(11, topDocs.totalHits);
+    assertEquals(11, topDocs.totalHits.value);
     // All docs must have the same score
     for (int i = 0; i < topDocs.scoreDocs.length; ++i) {
       assertEquals(topDocs.scoreDocs[0].score, topDocs.scoreDocs[i].score, 0.0f);

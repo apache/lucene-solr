@@ -414,7 +414,7 @@ public class TestInjection {
   }
 
   @SuppressForbidden(reason = "Need currentTimeMillis, because COMMIT_TIME_MSEC_KEY use currentTimeMillis as value")
-  public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) throws InterruptedException {
+  public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) {
     if (waitForReplicasInSync == null) return true;
     log.info("Start waiting for replica in sync with leader");
     long currentTime = System.currentTimeMillis();
@@ -422,8 +422,8 @@ public class TestInjection {
     boolean enabled = pair.first();
     if (!enabled) return true;
     long t = System.currentTimeMillis() - 200;
-    try {
-      for (int i = 0; i < pair.second(); i++) {
+    for (int i = 0; i < pair.second(); i++) {
+      try {
         if (core.isClosed()) return true;
         Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
             collection, shardId);
@@ -431,7 +431,7 @@ public class TestInjection {
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.set(CommonParams.QT, ReplicationHandler.PATH);
           params.set(COMMAND, CMD_DETAILS);
-
+  
           NamedList<Object> response = leaderClient.request(new QueryRequest(params));
           long leaderVersion = (long) ((NamedList)response.get("details")).get("indexVersion");
           String localVersion = core.withSearcher(searcher ->
@@ -445,14 +445,18 @@ public class TestInjection {
             log.debug("Tlog replica not in sync with leader yet. Attempt: {}. Local Version={}, leader Version={}", i, localVersion, leaderVersion);
             Thread.sleep(500);
           }
-
+  
         }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        if (core.isClosed()) return true;
+        log.error("Thread interrupted while waiting for core {} to be in sync with leader", core.getName());
+        return false;
+      } catch (Exception e) {
+        if (core.isClosed()) return true;
+        log.error("Exception when wait for replicas in sync with master. Will retry until timeout.", e);
       }
-
-    } catch (Exception e) {
-      log.error("Exception when wait for replicas in sync with master");
     }
-
     return false;
   }
   

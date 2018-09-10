@@ -17,18 +17,23 @@
 
 package org.apache.solr.cloud;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -133,8 +138,17 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         }
       }
     } catch (Exception e) {
-      log.info("Corrupt leader ex: ",e);
-      // Expected
+      log.info("Corrupt leader ex: ", e);
+      
+      // solrClient.add/commit would throw RemoteSolrException with error code 500 or 
+      // 404(when the leader replica is already deleted by giveupLeadership)
+      if (e instanceof RemoteSolrException) {
+        SolrException se = (SolrException) e;
+        assertThat(se.code(), anyOf(is(500), is(404)));
+      } else if (!(e instanceof AlreadyClosedException)) {
+        throw new RuntimeException("Unexpected exception", e);
+      }
+      //else expected
     }
     return oldLeader;
   }
@@ -167,15 +181,13 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
       Replica oldLeader = corruptLeader(collection, new ArrayList<>());
 
-      //TODO better way to test this
-      Thread.sleep(5000);
-      Replica leader = getCollectionState(collection).getSlice("shard1").getLeader();
-      assertEquals(leader.getName(), oldLeader.getName());
-
       if (otherReplicaJetty != null) {
-        // won't be able to do anything here, since this replica can't recovery from the leader
         otherReplicaJetty.start();
       }
+      //TODO better way to test this
+      Thread.sleep(2000);
+      Replica leader = getCollectionState(collection).getSlice("shard1").getLeader();
+      assertEquals(leader.getName(), oldLeader.getName());
     } finally {
       CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
     }

@@ -46,6 +46,7 @@ import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
@@ -76,7 +77,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Grouping {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrIndexSearcher searcher;
   private final QueryResult qr;
@@ -383,8 +384,8 @@ public class Grouping {
             cachedCollector.replay(secondPhaseCollectors);
           } else {
             signalCacheWarning = true;
-            logger.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
-            logger.warn("Please increase cache size or disable group caching.");
+            log.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
+            log.warn("Please increase cache size or disable group caching.");
             searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
           }
         } else {
@@ -446,7 +447,7 @@ public class Grouping {
       }
       searcher.search(q, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      logger.warn( "Query: " + query + "; " + x.getMessage() );
+      log.warn( "Query: " + query + "; " + x.getMessage() );
       qr.setPartialResults(true);
     }
   }
@@ -613,7 +614,8 @@ public class Grouping {
     }
 
     protected DocList getDocList(GroupDocs groups) {
-      int max = Math.toIntExact(groups.totalHits);
+      assert groups.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+      int max = Math.toIntExact(groups.totalHits.value);
       int off = groupOffset;
       int len = docsPerGroup;
       if (format == Format.simple) {
@@ -635,7 +637,7 @@ public class Grouping {
 
       float score = groups.maxScore;
       maxScore = maxAvoidNaN(score, maxScore);
-      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, groups.totalHits, score);
+      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, groups.totalHits.value, score);
 
       if (getDocList) {
         DocIterator iter = docs.iterator();
@@ -859,9 +861,9 @@ public class Grouping {
       int groupDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       Collector subCollector;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
-        subCollector = topCollector = TopScoreDocCollector.create(groupDocsToCollect);
+        subCollector = topCollector = TopScoreDocCollector.create(groupDocsToCollect, Integer.MAX_VALUE);
       } else {
-        topCollector = TopFieldCollector.create(searcher.weightSort(withinGroupSort), groupDocsToCollect, true);
+        topCollector = TopFieldCollector.create(searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE);
         if (needScores) {
           maxScoreCollector = new MaxScoreCollector();
           subCollector = MultiCollector.wrap(topCollector, maxScoreCollector);

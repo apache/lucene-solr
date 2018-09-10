@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -30,7 +29,6 @@ import java.util.TreeMap;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -294,20 +292,12 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     }
 
     if (rarely()) { // Try with createNodeSet configuration
-      List<String> nodeStrs = new ArrayList<>(1);//Always 1 as cluster.getJettySolrRunners().size()=NUM_SHARDS=2
-      Iterator<JettySolrRunner> iter = cluster.getJettySolrRunners().iterator();
-      nodeStrs.add(iter.next().getNodeName());
-      restore.setCreateNodeSet(String.join(",", nodeStrs));
-      restore.setCreateNodeSetShuffle(usually());
+      //Always 1 as cluster.getJettySolrRunners().size()=NUM_SHARDS=2
+      restore.setCreateNodeSet(cluster.getJettySolrRunners().get(0).getNodeName());
       // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
       isMaxShardsPerNodeExternal = true;
-      if (restore.getMaxShardsPerNode() != null) {
-        computeRestoreMaxShardsPerNode = restore.getMaxShardsPerNode() * 2;
-        restore.setMaxShardsPerNode(computeRestoreMaxShardsPerNode);
-      } else {
-        computeRestoreMaxShardsPerNode = origShardToDocCount.size() * backupReplFactor;
-        restore.setMaxShardsPerNode(origShardToDocCount.size() * backupReplFactor);
-      }
+      computeRestoreMaxShardsPerNode = origShardToDocCount.size() * restoreReplFactor;
+      restore.setMaxShardsPerNode(computeRestoreMaxShardsPerNode);
     }
 
     final int restoreMaxShardsPerNode = computeRestoreMaxShardsPerNode;

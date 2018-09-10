@@ -385,19 +385,19 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       // test inclusive range
       Query tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
       TopDocs tTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits );
+      assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits.value );
       // test exclusive range
       tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, false);
       tTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count of range query must be equal to exclusive range length", Math.max(upper-lower-1, 0), tTopDocs.totalHits );
+      assertEquals("Returned count of range query must be equal to exclusive range length", Math.max(upper-lower-1, 0), tTopDocs.totalHits.value );
       // test left exclusive range
       tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, true);
       tTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits );
+      assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits.value );
       // test right exclusive range
       tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, false);
       tTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits );
+      assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits.value );
     }
   }
 
@@ -429,7 +429,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     Query tq= LegacyNumericRangeQuery.newDoubleRange(field, precisionStep,
         NumericUtils.sortableLongToDouble(lower), NumericUtils.sortableLongToDouble(upper), true, true);
     TopDocs tTopDocs = searcher.search(tq, 1);
-    assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits );
+    assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits.value );
   }
 
   @Test

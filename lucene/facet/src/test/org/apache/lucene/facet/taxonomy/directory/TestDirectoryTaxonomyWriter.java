@@ -481,7 +481,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     IndexSearcher searcher = new IndexSearcher(indexReader);
     DrillDownQuery ddq = new DrillDownQuery(new FacetsConfig());
     ddq.add("dim", bigs);
-    assertEquals(1, searcher.search(ddq, 10).totalHits);
+    assertEquals(1, searcher.search(ddq, 10).totalHits.value);
     
     IOUtils.close(indexReader, taxoReader, indexDir, taxoDir);
   }

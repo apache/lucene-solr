@@ -66,7 +66,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   private final DocTransformer transformer;
   private final DocIterator docIterator;
 
-  private final RetrieveFieldsOptimizer retrieveFieldsOptimizer;
+  private final SolrReturnFields solrReturnFields;
 
   private int idx = -1;
 
@@ -76,9 +76,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     transformer = rctx.getReturnFields().getTransformer();
     docIterator = this.docs.iterator();
     docFetcher = rctx.getSearcher().getDocFetcher();
+    solrReturnFields = (SolrReturnFields)rctx.getReturnFields();
 
-    retrieveFieldsOptimizer = RetrieveFieldsOptimizer.create(docFetcher, rctx.getReturnFields());
-    retrieveFieldsOptimizer.optimize(docFetcher);
     if (transformer != null) transformer.setContext(rctx);
   }
 
@@ -93,26 +92,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   public SolrDocument next() {
     int id = docIterator.nextDoc();
     idx++;
-    SolrDocument sdoc = null;
-
-    try {
-      if (retrieveFieldsOptimizer.returnStoredFields()) {
-        Document doc = docFetcher.doc(id, retrieveFieldsOptimizer.getStoredFields());
-        // make sure to use the schema from the searcher and not the request (cross-core)
-        sdoc = convertLuceneDocToSolrDoc(doc, rctx.getSearcher().getSchema(),
-                                         rctx.getReturnFields());
-      } else {
-        // no need to get stored fields of the document, see SOLR-5968
-        sdoc = new SolrDocument();
-      }
-
-      // decorate the document with non-stored docValues fields
-      if (retrieveFieldsOptimizer.returnDVFields()) {
-        docFetcher.decorateDocValueFields(sdoc, id, retrieveFieldsOptimizer.getDvFields());
-      }
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading document with docId " + id, e);
-    }
+    SolrDocument sdoc = docFetcher.solrDoc(id, solrReturnFields);
 
     if (transformer != null) {
       boolean doScore = rctx.wantsScores();

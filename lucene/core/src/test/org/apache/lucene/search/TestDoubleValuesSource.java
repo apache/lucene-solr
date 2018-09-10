@@ -169,7 +169,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
 
     CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
 
-    if (size < actual.totalHits) {
+    if (size < actual.totalHits.value) {
       expected = searcher.searchAfter(expected.scoreDocs[size-1], query, size, sort);
       actual = searcher.searchAfter(actual.scoreDocs[size-1], query, size, mutatedSort);
       CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
@@ -210,7 +210,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       }
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.v = rewritten.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
       }
 
@@ -238,7 +238,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     searcher.search(q, new SimpleCollector() {
 
       DoubleValues v;
-      Scorer scorer;
+      Scorable scorer;
       LeafReaderContext ctx;
 
       @Override
@@ -247,7 +247,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       }
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.scorer = scorer;
         this.v = vs.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
       }
