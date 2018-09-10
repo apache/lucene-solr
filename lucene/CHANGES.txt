@@ -160,6 +160,9 @@ Optimizations
 * LUCENE-8448: Boolean queries now propagates the mininum score to their sub-scorers.
   (Jim Ferenczi, Adrien Grand)
 
+======================= Lucene 7.5.1 =======================
+(No Changes)
+
 ======================= Lucene 7.5.0 =======================
 
 API Changes:
