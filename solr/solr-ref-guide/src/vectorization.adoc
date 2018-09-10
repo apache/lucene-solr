@@ -241,3 +241,65 @@ When this expression is sent to the /stream handler it responds with:
   }
 }
 ----
+
+== Latitude / Longitude Vectors
+
+The `latlonVectors` function wraps a list of tuples and parses a lat/long location field into
+a matrix of lat/long vectors. Each row in the matrix is a vector that contains the lat/long
+pair for the corresponding tuple in the list. The column labels for the matrix are
+automatically set to the *id* field in the tuples. The the lat/lon matrix can then be operated
+on by machine learning functions using the `haversineMeters` distance measure.
+
+The `latlonVectors` function takes two parameters: a list of tuples and a named parameter called
+*field*. The field parameter tells the `latlonVectors` function which field to parse the lat/lon
+vectors from.
+
+Below is an example of the `latlonVectors`.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", fl="id, loc_p", rows="5"),
+    b=latlonVectors(a, field="loc_p"))
+----
+
+When this expression is sent to the /stream handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          [
+            42.87183530723629,
+            76.74102353397778
+          ],
+          [
+            42.91372904094898,
+            76.72874889228416
+          ],
+          [
+            42.911528804897564,
+            76.70537292977619
+          ],
+          [
+            42.91143870500213,
+            76.74749913047408
+          ],
+          [
+            42.904666267479705,
+            76.73933236046092
+          ]
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 21
+      }
+    ]
+  }
+}
+----
+
+

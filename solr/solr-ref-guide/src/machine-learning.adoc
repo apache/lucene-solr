@@ -179,10 +179,11 @@ numeric arrays or a *distance matrix* for the columns of a matrix.
 There are four distance measure functions that return a function
 that performs the actual distance calculation:
 
-* euclidean() (default)
-* manhattan()
-* canberra()
-* earthMovers()
+* euclidean (default)
+* manhattan
+* canberra
+* earthMovers
+* haversineMeters (Geospatial distance measure)
 
 The distance measure functions can be used with all machine learning functions
 that support different distance measures.
