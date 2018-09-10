@@ -138,7 +138,7 @@ public class Policy implements MapWriter {
     }
 
     this.policies = Collections.unmodifiableMap(
-        policiesFromMap((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
+        clausesFromMap((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
     List<Pair<String, Type>> params = newParams.stream()
         .map(s -> new Pair<>(s, VariableBase.getTagType(s)))
         .collect(toList());
@@ -241,7 +241,7 @@ public class Policy implements MapWriter {
     return getClusterPreferences().equals(policy.getClusterPreferences());
   }
 
-  public static Map<String, List<Clause>> policiesFromMap(Map<String, List<Map<String, Object>>> map, List<String> newParams) {
+  public static Map<String, List<Clause>> clausesFromMap(Map<String, List<Map<String, Object>>> map, List<String> newParams) {
     Map<String, List<Clause>> newPolicies = new HashMap<>();
     map.forEach((s, l1) ->
         newPolicies.put(s, l1.stream()
