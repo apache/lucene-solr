@@ -628,7 +628,7 @@ import org.tartarus.snowball.Among;
             // [, line 326
             ket = cursor;
             // substring, line 326
-            among_var = find_among_b(a_1, 5);
+            among_var = find_among_b(a_1, a_1.length);
             if (among_var == 0)
             {
                 break lab0;
@@ -1090,7 +1090,7 @@ import org.tartarus.snowball.Among;
         // [, line 424
         ket = cursor;
         // substring, line 424
-        among_var = find_among_b(a_10, 10);
+        among_var = find_among_b(a_10, a_10.length);
         if (among_var == 0)
         {
             return false;
@@ -1138,7 +1138,7 @@ import org.tartarus.snowball.Among;
         // [, line 432
         ket = cursor;
         // substring, line 432
-        among_var = find_among_b(a_11, 1);
+        among_var = find_among_b(a_11, a_11.length);
         if (among_var == 0)
         {
             return false;
@@ -1168,7 +1168,7 @@ import org.tartarus.snowball.Among;
         // [, line 439
         ket = cursor;
         // substring, line 439
-        among_var = find_among_b(a_12, 3);
+        among_var = find_among_b(a_12, a_12.length);
         if (among_var == 0)
         {
             return false;
@@ -1198,7 +1198,7 @@ import org.tartarus.snowball.Among;
         // [, line 446
         ket = cursor;
         // substring, line 446
-        among_var = find_among_b(a_13, 1);
+        among_var = find_among_b(a_13, a_13.length);
         if (among_var == 0)
         {
             return false;
@@ -1228,7 +1228,7 @@ import org.tartarus.snowball.Among;
         // [, line 453
         ket = cursor;
         // substring, line 453
-        among_var = find_among_b(a_14, 1);
+        among_var = find_among_b(a_14, a_14.length);
         if (among_var == 0)
         {
             return false;
@@ -1258,7 +1258,7 @@ import org.tartarus.snowball.Among;
         // [, line 459
         ket = cursor;
         // substring, line 459
-        among_var = find_among_b(a_15, 1);
+        among_var = find_among_b(a_15, a_15.length);
         if (among_var == 0)
         {
             return false;
@@ -1288,7 +1288,7 @@ import org.tartarus.snowball.Among;
         // [, line 465
         ket = cursor;
         // substring, line 465
-        among_var = find_among_b(a_16, 1);
+        among_var = find_among_b(a_16, a_16.length);
         if (among_var == 0)
         {
             return false;
@@ -1318,7 +1318,7 @@ import org.tartarus.snowball.Among;
         // [, line 472
         ket = cursor;
         // substring, line 472
-        among_var = find_among_b(a_17, 12);
+        among_var = find_among_b(a_17, a_17.length);
         if (among_var == 0)
         {
             return false;
@@ -1366,7 +1366,7 @@ import org.tartarus.snowball.Among;
         // [, line 480
         ket = cursor;
         // substring, line 480
-        among_var = find_among_b(a_18,11);
+        among_var = find_among_b(a_18, a_18.length);
         if (among_var == 0)
         {
             return false;
@@ -1432,7 +1432,7 @@ import org.tartarus.snowball.Among;
         // [, line 491
         ket = cursor;
         // substring, line 491
-        among_var = find_among_b(a_19, 2);
+        among_var = find_among_b(a_19, a_19.length);
         if (among_var == 0)
         {
             return false;
@@ -1462,7 +1462,7 @@ import org.tartarus.snowball.Among;
         // [, line 499
         ket = cursor;
         // substring, line 499
-        among_var = find_among_b(a_20, 2);
+        among_var = find_among_b(a_20, a_20.length);
         if (among_var == 0)
         {
             return false;
@@ -1501,7 +1501,7 @@ import org.tartarus.snowball.Among;
         // [, line 507
         ket = cursor;
         // substring, line 507
-        among_var = find_among_b(a_21, 1);
+        among_var = find_among_b(a_21, a_21.length);
         if (among_var == 0)
         {
             return false;
