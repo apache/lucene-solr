@@ -313,6 +313,12 @@ Improvements
   number of dimensions is bigger than 1. It improves performance when there is
   correlation between the dimensions, for example ranges. (Ignacio Vera, Adrien Grand)
 
+Build
+
+* LUCENE-5143: Stop publishing KEYS file with each version, use topmost lucene/KEYS file only. 
+  The buildAndPushRelease.py script validates that RM's PGP key is in the KEYS file.
+  Remove unused 'copy-to-stage' and '-dist-keys' targets from ant build. (janhoy)
+
 Other:
 
 * LUCENE-8485: Update randomizedtesting to version 2.6.4. (Dawid Weiss)

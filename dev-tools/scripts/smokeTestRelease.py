@@ -285,23 +285,22 @@ def checkAllJARs(topDir, project, gitRevision, version, tmpDir, baseURL):
                                % (fullPath, luceneDistFilenames[jarFilename]))
 
 
-def checkSigs(project, urlString, version, tmpDir, isSigned):
+def checkSigs(project, urlString, version, tmpDir, isSigned, local_keys):
 
   print('  test basics...')
   ents = getDirEntries(urlString)
   artifact = None
-  keysURL = None
   changesURL = None
   mavenURL = None
   expectedSigs = []
   if isSigned:
     expectedSigs.append('asc')
   expectedSigs.extend(['sha1', 'sha512'])
-  
+
   artifacts = []
   for text, subURL in ents:
     if text == 'KEYS':
-      keysURL = subURL
+      raise RuntimeError('%s: release dir should not contain a KEYS file - only toplevel /dist/lucene/KEYS is used' % project)
     elif text == 'maven/':
       mavenURL = subURL
     elif text.startswith('changes'):
@@ -346,14 +345,16 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   if expected != actual:
     raise RuntimeError('%s: wrong artifacts: expected %s but got %s' % (project, expected, actual))
                 
-  if keysURL is None:
-    raise RuntimeError('%s is missing KEYS' % project)
-
   print('  get KEYS')
-  download('%s.KEYS' % project, keysURL, tmpDir)
-
-  keysFile = '%s/%s.KEYS' % (tmpDir, project)
-
+  if local_keys is not None:
+    print("    Using local KEYS file %s" % local_keys)
+    keysFile = local_keys
+  else:
+    keysFileURL = "https://archive.apache.org/dist/lucene/KEYS"
+    print("    Downloading online KEYS file %s" % keysFileURL)
+    download('KEYS', keysFileURL, tmpDir)
+    keysFile = '%s/KEYS' % (tmpDir)
+  
   # Set up clean gpg world; import keys file:
   gpgHomeDir = '%s/%s.gpg' % (tmpDir, project)
   if os.path.exists(gpgHomeDir):
@@ -1291,6 +1292,8 @@ def parse_config():
                       help='Temporary directory to test inside, defaults to /tmp/smoke_lucene_$version_$revision')
   parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
                       help='Indicates the release is not signed')
+  parser.add_argument('--local-keys', metavar='PATH',
+                      help='Uses local KEYS file instead of fetching from https://archive.apache.org/dist/lucene/KEYS')
   parser.add_argument('--revision',
                       help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
@@ -1317,6 +1320,9 @@ def parse_config():
       parser.error('Could not find revision in URL')
     c.revision = revision_match.group(1)
     print('Revision: %s' % c.revision)
+
+  if c.local_keys is not None and not os.path.exists(c.local_keys):
+    parser.error('Local KEYS file "%s" not found' % c.local_keys)
 
   c.java = make_java_config(parser, c.test_java9)
 
@@ -1462,9 +1468,9 @@ def main():
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
-  smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
+  smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args))
 
-def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
+def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs):
 
   startTime = datetime.datetime.now()
 
@@ -1500,14 +1506,14 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
 
   print()
   print('Test Lucene...')
-  checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
+  checkSigs('lucene', lucenePath, version, tmpDir, isSigned, local_keys)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
     unpackAndVerify(java, 'lucene', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
   unpackAndVerify(java, 'lucene', tmpDir, 'lucene-%s-src.tgz' % version, gitRevision, version, testArgs, baseURL)
 
   print()
   print('Test Solr...')
-  checkSigs('solr', solrPath, version, tmpDir, isSigned)
+  checkSigs('solr', solrPath, version, tmpDir, isSigned, local_keys)
   for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
     unpackAndVerify(java, 'solr', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
   solrSrcUnpackPath = unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version,
