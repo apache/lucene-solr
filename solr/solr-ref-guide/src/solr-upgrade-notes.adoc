@@ -28,9 +28,33 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 == Upgrading to 7.x Releases
 
 === Solr 7.5
-When upgrading to Solr 7.4, users should be aware of the following major changes from v7.3:
 
-* When using the default TieredMergePolicy (TMP), optimize and expungeDeletes now respect the maxMergedSegmentMB configuration parameter, which defaults to 5,000 (5 gigaBytes). If it is absolutely necessary to control the number of segments present after optimize, specify maxSegments=# where # is a positive integer. maxSegments > 1 are honored on a "best effort" basis. TMP will also reclaim resources from segments that exceed maxMergedSegmentMB more aggressively.
+See the https://wiki.apache.org/solr/ReleaseNote75[7.5 Release Notes] for an overview of the main new features in Solr 7.5.
+
+When upgrading to Solr 7.5, users should be aware of the following major changes from v7.4:
+
+*Schema Changes*
+
+* Since Solr 7.0, Solr's schema field-guessing has created `_str` fields for all `_txt` fields, and returned those by default with queries. As of 7.5, `_str` fields will no longer be returned by default. They will still be available and can be requested with the `fl` parameter on queries. See also the section on <<schemaless-mode.adoc#enable-field-class-guessing,field guessing>> for more information about how schema field guessing works.
+* The Standard Filter, which has been non-operational since at least Solr v4, has been removed.
+
+*Index Merge Policy*
+
+* When using the <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,`TieredMergePolicy`>>, the default merge policy for Solr, `optimize` and `expungeDeletes` now respect the `maxMergedSegmentMB` configuration parameter, which defaults to `5000` (5GB).
++
+If it is absolutely necessary to control the number of segments present after optimize, specify `maxSegments` as a positive integer. Setting `maxSegments` higher than `1` are honored on a "best effort" basis.
++
+The `TieredMergePolicy` will also reclaim resources from segments that exceed `maxMergedSegmentMB` more aggressively than earlier.
+
+*UIMA Removed*
+
+* The UIMA contrib has been removed from Solr and is no longer available.
+
+*Logging*
+
+* Solr's logging configuration file is now located in `server/resources/log4j2.xml` by default.
+
+* A bug for Windows users has been corrected. When using Solr's examples (`bin/solr start -e`) log files will now be put in the correct location (`example/` instead of `server`). See also <<installing-solr.adoc#solr-examples,Solr Examples>> and <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> for more information.
 
 
 === Solr 7.4
@@ -39,9 +63,13 @@ See the https://wiki.apache.org/solr/ReleaseNote74[7.4 Release Notes] for an ove
 
 When upgrading to Solr 7.4, users should be aware of the following major changes from v7.3:
 
+*Logging*
+
 * Solr now uses Log4j v2.11. The Log4j configuration is now in `log4j2.xml` rather than `log4j.properties` files. This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging implementation which is compatible with SLF4J. We now let Log4j handle rotation of solr logs at startup, and `bin/solr` start scripts will no longer attempt this nor move existing console or garbage collection logs into `logs/archived` either. See <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for more details about Solr logging.
 
 * Configuring `slowQueryThresholdMillis` now logs slow requests to a separate file named `solr_slow_requests.log`. Previously they would get logged in the `solr.log` file.
+
+*Legacy Scaling (non-SolrCloud)*
 
 * In the <<index-replication.adoc#index-replication,master-slave model>> of scaling Solr, a slave no longer commits an empty index when a completely new index is detected on master during replication. To return to the previous behavior pass `false` to `skipCommitOnMasterVersionZero` in the slave section of replication handler configuration, or pass it to the `fetchindex` command.
 
@@ -53,13 +81,27 @@ See the https://wiki.apache.org/solr/ReleaseNote73[7.3 Release Notes] for an ove
 
 When upgrading to Solr 7.3, users should be aware of the following major changes from v7.2:
 
+*ConfigSets*
+
 * Collections created without specifying a configset name have used a copy of the `_default` configset since Solr 7.0. Before 7.3, the copied configset was named the same as the collection name, but from 7.3 onwards it will be named with a new ".AUTOCREATED" suffix. This is to prevent overwriting custom configset names.
 
-* The `rq` parameter used with Learning to Rank rerank query parsing no longer considers the `defType` parameter. See <<learning-to-rank.adoc#running-a-rerank-query,Running a Rerank Query>> for more information about this parameter.
+*Learning to Rank*
+
+* The `rq` parameter used with Learning to Rank `rerank` query parsing no longer considers the `defType` parameter. See <<learning-to-rank.adoc#running-a-rerank-query,Running a Rerank Query>> for more information about this parameter.
+
+*Autoscaling & AutoAddReplicas*
+
+* The behaviour of the autoscaling system will now pause all triggers from execution between the start of actions and the end of a cool down period. The triggers will resume after the cool down period expires. Previously, the cool down period was a fixed period started after actions for a trigger event completed and during this time all triggers continued to run but any events were rejected and tried later.
+
+* The throttling mechanism used to limit the rate of autoscaling events processed has been removed. This deprecates the `actionThrottlePeriodSeconds` setting in the <<solrcloud-autoscaling-api.adoc#change-autoscaling-properties,`set-properties` Autoscaling API>> which is now non-operational. Use the `triggerCooldownPeriodSeconds` parameter instead to pause event processing.
 
 * The default value of `autoReplicaFailoverWaitAfterExpiration`, used with the AutoAddReplicas feature, has increased to 120 seconds from the previous default of 30 seconds. This affects how soon Solr adds new replicas to replace the replicas on nodes which have either crashed or shutdown.
 
+*Logging*
+
 * The default Solr log file size and number of backups have been raised to 32MB and 10 respectively. See the section <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for more information about how to configure logging.
+
+*SolrCloud*
 
 * The old Leader-In-Recovery implementation (implemented in Solr 4.9) is now deprecated and replaced. Solr will support rolling upgrades from old 7.x versions of Solr to future 7.x releases until the last release of the 7.x major version.
 +
@@ -67,11 +109,11 @@ This means to upgrade to Solr 8 in the future, you will need to be on Solr 7.3 o
 
 * Replicas which are not up-to-date are no longer allowed to become leader. Use the <<collections-api.adoc#forceleader,FORCELEADER command>> of the Collections API to allow these replicas become leader.
 
-* The behaviour of the autoscaling system will now pause all triggers from execution between the start of actions and the end of a cool down period. The triggers will resume after the cool down period expires. Previously, the cool down period was a fixed period started after actions for a trigger event completed and during this time all triggers continued to run but any events were rejected and tried later.
-
-* The throttling mechanism used to limit the rate of autoscaling events processed has been removed. This deprecates the `actionThrottlePeriodSeconds` setting in the <<solrcloud-autoscaling-api.adoc#change-autoscaling-properties,`set-properties` Autoscaling API>> which is now non-operational. Use the `triggerCooldownPeriodSeconds` parameter instead to pause event processing.
+*Spatial*
 
 * If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0. This new version of JTS is now dual-licensed to include a BSD style license. See the section on <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
+
+*Highlighting*
 
 * The top-level `<highlighting>` element in `solrconfig.xml` is now officially deprecated in favour of the equivalent `<searchComponent>` syntax. This element has been out of use in default Solr installations for several releases already.
 
@@ -83,6 +125,8 @@ See the https://wiki.apache.org/solr/ReleaseNote72[7.2 Release Notes] for an ove
 
 When upgrading to Solr 7.2, users should be aware of the following major changes from v7.1:
 
+*Local Parameters*
+
 * Starting a query string with <<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameters>> `{!myparser ...}` is used to switch from one query parser to another, and is intended for use by Solr system developers, not end users doing searches. To reduce negative side-effects of unintended hack-ability, Solr now limits the cases when local parameters will be parsed to only contexts in which the default parser is "<<other-parsers.adoc#lucene-query-parser,lucene>>" or "<<other-parsers.adoc#function-query-parser,func>>".
 +
 So, if `defType=edismax` then `q={!myparser ...}` won't work. In that example, put the desired query parser into the `defType` parameter.
@@ -90,6 +134,8 @@ So, if `defType=edismax` then `q={!myparser ...}` won't work. In that example, p
 Another example is if `deftype=edismax` then `hl.q={!myparser ...}` won't work for the same reason. In this example, either put the desired query parser into the `hl.qparser` parameter or set `hl.qparser=lucene`. Most users won't run into these cases but some will need to change.
 +
 If you must have full backwards compatibility, use `luceneMatchVersion=7.1.0` or an earlier version.
+
+*eDisMax Parser*
 
 * The eDisMax parser by default no longer allows subqueries that specify a Solr parser using either local parameters, or the older `\_query_` magic field trick.
 +
@@ -105,6 +151,8 @@ See the https://wiki.apache.org/solr/ReleaseNote71[7.1 Release Notes] for an ove
 
 When upgrading to Solr 7.1, users should be aware of the following major changes from v7.0:
 
+*AutoAddReplicas*
+
 * The feature to automatically add replicas if a replica goes down, previously available only when storing indexes in HDFS, has been ported to the autoscaling framework. Due to this, `autoAddReplicas` is now available to all users even if their indexes are on local disks.
 +
 Existing users of this feature should not have to change anything. However, they should note these changes:
@@ -114,17 +162,27 @@ Existing users of this feature should not have to change anything. However, they
 +
 More information about the changes to this feature can be found in the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,SolrCloud Automatically Adding Replicas>>.
 
-* Shard and cluster metric reporter configuration now require a class attribute.
+*Metrics Reporters*
+
+* Shard and cluster metric reporter configuration now require a `class` attribute.
 ** If a reporter configures the `group="shard"` attribute then please also configure the `class="org.apache.solr.metrics.reporters.solr.SolrShardReporter"` attribute.
 ** If a reporter configures the `group="cluster"` attribute then please also configure the  `class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter"` attribute.
 +
 See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and Cluster Reporters>> for more information.
 
+*Streaming Expressions*
+
 * All Stream Evaluators in `solrj.io.eval` have been refactored to have a simpler and more robust structure. This simplifies and condenses the code required to implement a new Evaluator and makes it much easier for evaluators to handle differing data types (primitives, objects, arrays, lists, and so forth).
+
+*ReplicationHandler*
 
 * In the ReplicationHandler, the `master.commitReserveDuration` sub-element is deprecated. Instead please configure a direct `commitReserveDuration` element for use in all modes (master, slave, cloud).
 
+*RunExecutableListener*
+
 * The `RunExecutableListener` was removed for security reasons. If you want to listen to events caused by updates, commits, or optimize, write your own listener as native Java class as part of a Solr plugin.
+
+*XML Query Parser*
 
 * In the XML query parser (`defType=xmlparser` or `{!xmlparser ... }`) the resolving of external entities is now disallowed by default.
 
