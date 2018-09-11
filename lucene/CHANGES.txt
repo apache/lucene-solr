@@ -219,6 +219,10 @@ API Changes:
 * LUCENE-8422: Static helper functions for Matches and MatchesIterator implementations
   have been moved from Matches to MatchesUtils (Alan Woodward)
 
+* LUCENE-8459: SearcherTaxonomyManager now has a constructor taking already opened
+  IndexReaders, allowing the caller to pass a FilterDirectoryReader, for example.
+  (Mike McCandless)
+
 Bug Fixes:
 
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
