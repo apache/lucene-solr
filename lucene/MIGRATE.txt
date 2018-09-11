@@ -118,3 +118,8 @@ docId() and score() (LUCENE-6228)
 
 If a custom Scorer implementation does not have an associated Weight, it can probably
 be replaced with a Scorable instead.
+
+## Suggesters now return Long instead of long for weight() during indexing, and double
+instead of long at suggest time ##
+
+Most code should just require recompilation, though possibly requiring some added casts.
