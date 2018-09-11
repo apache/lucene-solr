@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.ConcurrentLFUCache;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.util.ConcurrentLFUCache;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
