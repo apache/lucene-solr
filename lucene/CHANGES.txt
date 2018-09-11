@@ -219,6 +219,10 @@ API Changes:
 * LUCENE-8422: Static helper functions for Matches and MatchesIterator implementations
   have been moved from Matches to MatchesUtils (Alan Woodward)
 
+* LUCENE-8343: Suggesters now require Long (versus long, previously) from weight() method
+  while indexing, and provide double (versus long, previously) scores at lookup time
+  (Alessandro Benedetti)
+
 * LUCENE-8459: SearcherTaxonomyManager now has a constructor taking already opened
   IndexReaders, allowing the caller to pass a FilterDirectoryReader, for example.
   (Mike McCandless)
