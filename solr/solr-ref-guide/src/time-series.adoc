@@ -38,7 +38,7 @@ timeseries(collection1,
            count(*))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -121,7 +121,7 @@ let(a=timeseries(collection1,
     b=col(a, count(*)))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -192,7 +192,7 @@ let(a=timeseries(collection1,
     c=movingAvg(b, 3))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -242,7 +242,7 @@ let(a=timeseries(collection1, q=*:*,
     c=expMovingAvg(b, 3))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -292,7 +292,7 @@ let(a=timeseries(collection1,
     c=movingMedian(b, 3))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -353,7 +353,7 @@ let(a=timeseries(collection1,
     c=diff(b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -403,7 +403,7 @@ let(a=array(1,2,5,2,1,2,5,2,1,2,5),
      b=diff(a, 4))
 ----
 
-Expression is sent to the /stream handler it responds with:
+Expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----

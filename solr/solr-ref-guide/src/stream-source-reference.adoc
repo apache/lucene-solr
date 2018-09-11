@@ -216,8 +216,8 @@ The `nodes` function provides breadth-first graph traversal. For details, see th
 
 == knnSearch
 
-The `knnSearch` function returns the K nearest neighbors for a document based on text similarity. Under the covers the `knnSearch` function
-use the More Like This query parser plugin.
+The `knnSearch` function returns the k-nearest neighbors for a document based on text similarity. Under the covers the `knnSearch` function
+uses the More Like This query parser plugin.
 
 === knnSearch Parameters
 

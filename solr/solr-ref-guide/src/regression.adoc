@@ -16,27 +16,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
-This section of the math expressions user guide covers simple and multivariate linear regression.
-
+The math expressions library supports simple and multivariate linear regression.
 
 == Simple Linear Regression
 
 The `regress` function is used to build a linear regression model
 between two random variables. Sample observations are provided with two
-numeric arrays. The first numeric array is the *independent variable* and
-the second array is the *dependent variable*.
+numeric arrays. The first numeric array is the independent variable and
+the second array is the dependent variable.
 
 In the example below the `random` function selects 5000 random samples each containing
-the fields *filesize_d* and *response_d*. The two fields are vectorized
-and stored in variables *b* and *c*. Then the `regress` function performs a regression
+the fields `filesize_d` and `response_d`. The two fields are vectorized
+and stored in variables *`b`* and *`c`*. Then the `regress` function performs a regression
 analysis on the two numeric arrays.
 
 The `regress` function returns a single tuple with the results of the regression
 analysis.
-
-Note that in this regression analysis the value of *RSquared* is *.75*. This means that changes in
-*filesize_d* explain 75% of the variability of the *response_d* variable.
 
 [source,text]
 ----
@@ -46,7 +41,8 @@ let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
     d=regress(b, c))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+Note that in this regression analysis the value of `RSquared` is `.75`. This means that changes in
+`filesize_d` explain 75% of the variability of the `response_d` variable:
 
 [source,json]
 ----
@@ -81,11 +77,10 @@ When this expression is sent to the /stream handler it responds with:
 
 The `predict` function uses the regression model to make predictions.
 Using the example above the regression model can be used to predict the value
-of *response_d* given a value for *filesize_d*.
+of `response_d` given a value for `filesize_d`.
 
 In the example below the `predict` function uses the regression analysis to predict
-the value of *response_d* for the *filesize_d* value of 40000.
-
+the value of `response_d` for the `filesize_d` value of `40000`.
 
 [source,text]
 ----
@@ -96,7 +91,7 @@ let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
     e=predict(d, 40000))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -131,7 +126,7 @@ let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
     e=predict(d, b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -169,9 +164,9 @@ The difference between the observed value and the predicted value is known as th
 residual. There isn't a specific function to calculate the residuals but vector
 math can used to perform the calculation.
 
-In the example below the predictions are stored in variable *e*. The `ebeSubtract`
+In the example below the predictions are stored in variable *`e`*. The `ebeSubtract`
 function is then used to subtract the predictions
-from the actual *response_d* values stored in variable *c*. Variable *f* contains
+from the actual `response_d` values stored in variable *`c`*. Variable *`f`* contains
 the array of residuals.
 
 [source,text]
@@ -184,7 +179,7 @@ let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
     f=ebeSubtract(c, e))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -221,20 +216,17 @@ When this expression is sent to the /stream handler it responds with:
 == Multivariate Linear Regression
 
 The `olsRegress` function performs a multivariate linear regression analysis. Multivariate linear
-regression models the linear relationship between two or more *independent* variables and a *dependent* variable.
+regression models the linear relationship between two or more independent variables and a dependent variable.
 
 The example below extends the simple linear regression example by introducing a new independent variable
-called *service_d*. The *service_d* variable is the service level of the request and it can range from 1 to 4
+called `service_d`. The `service_d` variable is the service level of the request and it can range from 1 to 4
 in the data-set. The higher the service level, the higher the bandwidth available for the request.
 
-Notice that the two independent variables *filesize_d* and *service_d* are vectorized and stored
-in the variables *b* and *c*. The variables *b* and *c* are then added as rows to a `matrix`. The matrix is
-then transposed so that each row in the matrix represents one observation with *filesize_d* and *service_d*.
+Notice that the two independent variables `filesize_d` and `service_d` are vectorized and stored
+in the variables *`b`* and *`c`*. The variables *`b`* and *`c`* are then added as rows to a `matrix`. The matrix is
+then transposed so that each row in the matrix represents one observation with `filesize_d` and `service_d`.
 The `olsRegress` function then performs the multivariate regression analysis using the observation matrix as the
-independent variables and the *response_d* values, stored in variable *d*, as the dependent variable.
-
-Notice that the RSquared of the regression analysis is 1. This means that linear relationship between
-*filesize_d* and *service_d* describe 100% of the variability of the *response_d* variable.
+independent variables and the `response_d` values, stored in variable *`d`*, as the dependent variable.
 
 [source,text]
 ----
@@ -246,7 +238,8 @@ let(a=random(collection2, q="*:*", rows="30000", fl="filesize_d, service_d, resp
     f=olsRegress(e, d))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+Notice in the response that the RSquared of the regression analysis is 1. This means that linear relationship between
+`filesize_d` and `service_d` describe 100% of the variability of the `response_d` variable:
 
 [source,json]
 ----
@@ -299,10 +292,11 @@ When this expression is sent to the /stream handler it responds with:
 
 === Prediction
 
-The `predict` function can also be used to make predictions for multivariate linear regression. Below is an example
-of a single prediction using the multivariate linear regression model and a single observation. The observation
-is an array that matches the structure of the observation matrix used to build the model. In this case
-the first value represent a *filesize_d* of 40000 and the second value represents a *service_d* of 4.
+The `predict` function can also be used to make predictions for multivariate linear regression.
+
+Below is an example of a single prediction using the multivariate linear regression model and a single observation.
+The observation is an array that matches the structure of the observation matrix used to build the model. In this case
+the first value represents a `filesize_d` of `40000` and the second value represents a `service_d` of `4`.
 
 [source,text]
 ----
@@ -315,7 +309,7 @@ let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, service_d, respo
     g=predict(f, array(40000, 4)))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -335,9 +329,10 @@ When this expression is sent to the /stream handler it responds with:
 ----
 
 The `predict` function can also make predictions for more than one multivariate observation. In this scenario
-an observation matrix used. In the example below the observation matrix used to build the multivariate regression model
-is passed to the `predict` function and it returns an array of predictions.
+an observation matrix used.
 
+In the example below the observation matrix used to build the multivariate regression model
+is passed to the `predict` function and it returns an array of predictions.
 
 [source,text]
 ----
@@ -350,7 +345,7 @@ let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, service_d, respo
     g=predict(f, e))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -388,7 +383,7 @@ Once the predictions are generated the residuals can be calculated using the sam
 simple linear regression.
 
 Below is an example of the residuals calculation following a multivariate linear regression. In the example
-the predictions stored variable *g* are subtracted from observed values stored in variable *d*.
+the predictions stored variable *`g`* are subtracted from observed values stored in variable *`d`*.
 
 [source,text]
 ----
@@ -402,7 +397,7 @@ let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, service_d, respo
     h=ebeSubtract(d, g))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -433,7 +428,3 @@ When this expression is sent to the /stream handler it responds with:
   }
 }
 ----
-
-
-
-
