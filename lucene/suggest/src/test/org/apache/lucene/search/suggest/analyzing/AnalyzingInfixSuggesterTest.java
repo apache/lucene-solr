@@ -196,7 +196,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false) {
         @Override
-        protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
+        protected Object highlight(String text, List<String> matchedTokens, String prefixToken) throws IOException {
           try (TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text))) {
             CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
             OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);

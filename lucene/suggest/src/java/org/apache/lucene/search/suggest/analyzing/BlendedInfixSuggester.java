@@ -83,7 +83,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    */
   public static enum BlenderType {
     /** Application dependent; override {@link
-     *  #calculateCoefficient} to compute it. */
+     *  #calculatePositionalCoefficient} to compute it. */
     CUSTOM,
     /** weight*(1 - 0.10*position) */
     POSITION_LINEAR,
@@ -183,7 +183,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
 
   @Override
   protected List<Lookup.LookupResult> createResults(IndexSearcher searcher, TopFieldDocs hits, int num, CharSequence key,
-                                                    boolean doHighlight, Set<String> matchedTokens, String prefixToken)
+                                                    boolean doHighlight, List<String> matchedTokens, String prefixToken)
       throws IOException {
 
     TreeSet<Lookup.LookupResult> results = new TreeSet<>(LOOKUP_COMP);
@@ -217,15 +217,18 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
         payload = null;
       }
 
-      double coefficient;
-      if (text.startsWith(key.toString())) {
-        // if hit starts with the key, we don't change the score
-        coefficient = 1;
-      } else {
-        coefficient = createCoefficient(searcher, fd.doc, matchedTokens, prefixToken);
+      int matchedTokensCount = matchedTokens.size();
+      if (prefixToken != null) {
+        matchedTokensCount++;
       }
 
-      long score = (long) (weight * coefficient);
+      double positionalCoefficient = calculatePositionalCoefficient(searcher, fd.doc, matchedTokens, prefixToken, matchedTokensCount);
+      double tokenCountCoefficient = getMatchedTokenCountCoefficient(searcher, matchedTokensCount, fd.doc);
+      
+      if (weight == 0) {
+        weight = 1;
+      }
+      long score = (long) (weight * (97 * positionalCoefficient) + (3 * tokenCountCoefficient));
 
       LookupResult result;
       if (doHighlight) {
@@ -261,6 +264,22 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
   }
 
   /**
+   * Calculate a coefficient that is affected by the length of the content of the field under evaluation.
+   * It measures the intersection of terms between the query terms and the field content.
+   * A value of 1 means the field content contains exactly the same number of query terms.
+   *
+   * @param doc                id of the document
+   * @param matchedTokensCount number of tokens found in the query
+   * @return the coefficient
+   * @throws IOException If there are problems reading term vectors from the underlying Lucene index.
+   */
+  protected double getMatchedTokenCountCoefficient(IndexSearcher searcher, int matchedTokensCount, int doc) throws IOException {
+    Terms tv = searcher.getIndexReader().getTermVector(doc, TEXT_FIELD_NAME);
+    double tokenCount = tv.getSumTotalTermFreq();
+    return matchedTokensCount / tokenCount;
+  }
+  
+  /**
    * Create the coefficient to transform the weight.
    *
    * @param doc id of the document
@@ -269,33 +288,36 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    * @return the coefficient
    * @throws IOException If there are problems reading term vectors from the underlying Lucene index.
    */
-  private double createCoefficient(IndexSearcher searcher, int doc, Set<String> matchedTokens, String prefixToken) throws IOException {
-
+  protected double calculatePositionalCoefficient(IndexSearcher searcher, int doc, List<String> matchedTokens, String prefixToken, int matchedTokensCount) throws IOException {
     Terms tv = searcher.getIndexReader().getTermVector(doc, TEXT_FIELD_NAME);
     TermsEnum it = tv.iterator();
-
-    Integer position = Integer.MAX_VALUE;
     BytesRef term;
-    // find the closest token position
+    int[] matchedTermSuggestionPositions;
+    matchedTermSuggestionPositions = new int[matchedTokensCount];
     while ((term = it.next()) != null) {
-
       String docTerm = term.utf8ToString();
-
-      if (matchedTokens.contains(docTerm) || (prefixToken != null && docTerm.startsWith(prefixToken))) {
- 
-        PostingsEnum docPosEnum = it.postings(null, PostingsEnum.OFFSETS);
-        docPosEnum.nextDoc();
-
-        // use the first occurrence of the term
-        int p = docPosEnum.nextPosition();
-        if (p < position) {
-          position = p;
-        }
+      int matchedTermQueryPosition;
+      if ((matchedTermQueryPosition = matchedTokens.indexOf(docTerm)) > -1) {
+        int matchedTermSuggestionPosition = getMatchedTermPositionInSuggestion(it, matchedTermQueryPosition);
+        matchedTermSuggestionPositions[matchedTermQueryPosition] = matchedTermSuggestionPosition;
+      }
+      if (prefixToken != null && docTerm.startsWith(prefixToken)) {
+        matchedTermQueryPosition = matchedTokensCount - 1;
+        int matchedTermSuggestionPosition = getMatchedTermPositionInSuggestion(it, matchedTermQueryPosition);
+        matchedTermSuggestionPositions[matchedTermQueryPosition] = matchedTermSuggestionPosition;
       }
     }
+    return calculateProductPositionalCoefficient(matchedTermSuggestionPositions);
+  }
 
-    // create corresponding coefficient based on position
-    return calculateCoefficient(position);
+  private int getMatchedTermPositionInSuggestion(TermsEnum it, int matchedTermQueryPosition) throws IOException {
+    PostingsEnum docPosEnum = it.postings(null, PostingsEnum.OFFSETS);
+    docPosEnum.nextDoc();
+    int matchedTermSuggestionPosition = docPosEnum.nextPosition();
+    while (matchedTermSuggestionPosition < matchedTermQueryPosition && matchedTermSuggestionPosition < docPosEnum.freq() - 1) {
+      matchedTermSuggestionPosition = docPosEnum.nextPosition();
+    }
+    return matchedTermSuggestionPosition;
   }
 
   /**
@@ -304,7 +326,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    * @param position of the first matching word in text
    * @return the coefficient
    */
-  protected double calculateCoefficient(int position) {
+  protected double calculatePositionalCoefficient(int position) {
 
     double coefficient;
     switch (blenderType) {
@@ -324,6 +346,29 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
         coefficient = 1;
     }
 
+    return coefficient;
+  }
+
+  /**
+   * Calculate the weight coefficient based on the position of all the matching words.
+   * It is just the product of the discontinued positions.
+   *
+   * @param positions of all the matching words in text
+   * @return the coefficient
+   */
+  protected double calculateProductPositionalCoefficient(int[] positions) {
+    double coefficient = 1;
+    int lastPosition = -1;
+    for (int i = 0; i < positions.length; i++) {
+      if (positions[i] != lastPosition + 1) {
+        double tokenPositionalCoefficient = calculatePositionalCoefficient(positions[i]);
+        double idealPositionalCoefficient = calculatePositionalCoefficient(i);
+        double normalizedPositionalCoefficient = tokenPositionalCoefficient / idealPositionalCoefficient;// how much the matched token position differs from the ideal position
+        double positionalWeightDecay = Math.min(1.0, 1 - calculatePositionalCoefficient(i + 1));// closer the misposition is to the beginning, stronger the decay of the coefficient
+        coefficient = coefficient * normalizedPositionalCoefficient * positionalWeightDecay;
+      }
+      lastPosition = positions[i];
+    }
     return coefficient;
   }
 
