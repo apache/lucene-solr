@@ -1076,6 +1076,15 @@ public void testParallelRankStream() throws Exception {
       assertEquals(7.5, avgi.doubleValue(), 0.1);
       assertEquals(5.5, avgf.doubleValue(), 0.1);
       assertEquals(2, count.doubleValue(), 0.1);
+
+      sorts[0] = new FieldComparator("a_s", ComparatorOrder.ASCENDING);
+
+      facetStream = new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, -1);
+      facetStream.setStreamContext(streamContext);
+      tuples = getTuples(facetStream);
+
+      assertEquals(3, tuples.size());
+
     } finally {
       solrClientCache.close();
     }
