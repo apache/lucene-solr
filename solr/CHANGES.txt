@@ -284,6 +284,9 @@ Bug Fixes
 
 * SOLR-12733: SolrMetricReporterTest failure (Erick Erickson, David Smiley)
 
+* SOLR-11836: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
+  (Alfonso Muñoz-Pomer Fuentes via Varun Thacker)
+
 Optimizations
 ----------------------
 
