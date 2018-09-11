@@ -96,13 +96,13 @@ The `<commit>` and `<optimize>` elements accept these optional attributes:
 `waitSearcher`::
 Default is `true`. Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
 
-`expungeDeletes`:: (commit only) Default is `false`. Merges segments that have more than 10% deleted docs, expunging the deleted documents in the process. Resulting segments will respect maxMergedSegmentMB.
-
+`expungeDeletes`:: (commit only) Default is `false`. Merges segments that have more than 10% deleted docs, expunging the deleted documents in the process. Resulting segments will respect `maxMergedSegmentMB`.
++
 WARNING: expungeDeletes is "less expensive" than optimize, but the same warnings apply.
 
-`maxSegments`:: (optimize only) Default is unlimited, resulting segments respect the maxMergedSegmentMB setting. Makes a "best effort" attempt to merge the segments down to no more than this number of segments but does not guarantee that the goal will be achieved. Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
+`maxSegments`:: (optimize only) Default is unlimited, resulting segments respect the `maxMergedSegmentMB` setting. Makes a best effort attempt to merge the segments down to no more than this number of segments but does not guarantee that the goal will be achieved. Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
 
-Here are examples of <commit> and <optimize> using optional attributes:
+Here are examples of `<commit>` and `<optimize>` using optional attributes:
 
 [source,xml]
 ----

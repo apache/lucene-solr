@@ -29,7 +29,7 @@ You can define the unique key field by naming it:
 <uniqueKey>id</uniqueKey>
 ----
 
-Schema defaults and `copyFields` cannot be used to populate the `uniqueKey` field. The `fieldType` of `uniqueKey` must not be analyzed. You can use `UUIDUpdateProcessorFactory` to have `uniqueKey` values generated automatically.
+Schema defaults and `copyFields` cannot be used to populate the `uniqueKey` field. The `fieldType` of `uniqueKey` must not be analyzed and must not be any of the `*PointField` types. You can use `UUIDUpdateProcessorFactory` to have `uniqueKey` values generated automatically.
 
 Further, the operation will fail if the `uniqueKey` field is used, but is multivalued (or inherits the multivalue-ness from the `fieldtype`). However, `uniqueKey` will continue to work, as long as the field is properly used.
 
