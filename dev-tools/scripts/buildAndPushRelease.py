@@ -78,9 +78,12 @@ def getGitRev():
     raise RuntimeError('git clone is dirty:\n\n%s' % status)
   branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
   command = 'git log origin/%s..' % branch
-  unpushedCommits = os.popen(command).read().strip()
-  if len(unpushedCommits) > 0:
-    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, unpushedCommits))
+  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  stdout, stderr = p.communicate()
+  if len(stdout.strip()) > 0:
+    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, stdout.decode('utf-8')))
+  if len(stderr.strip()) > 0:
+    raise RuntimeError('Command "%s" failed:\n\n%s' % (command, stderr.decode('utf-8')))
 
   print('  git clone is clean')
   return os.popen('git rev-parse HEAD').read().strip()
@@ -271,14 +274,6 @@ def parse_config():
   config.version = read_version(config.root)
   print('Building version: %s' % config.version)
 
-  if config.sign:
-    sys.stdout.flush()
-    import getpass
-    config.key_id = config.sign
-    config.key_password = getpass.getpass('Enter GPG keystore password: ')
-  else:
-    config.gpg_password = None
-
   return config
 
 def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
@@ -313,15 +308,15 @@ def check_key_in_keys(gpgKeyID, local_keys):
     if len(gpgKeyID) > 40:
       gpgKeyID = gpgKeyID.replace(" ", "")
     if len(gpgKeyID) == 8:
-      re_to_match = r"^pub\s+\d+[DR]/%s " % gpgKeyID
+      gpgKeyID8Char = "%s %s" % (gpgKeyID[0:4], gpgKeyID[4:8])
+      re_to_match = r"^pub .*\n\s+\w{4} \w{4} \w{4} \w{4} \w{4}  \w{4} \w{4} \w{4} %s" % gpgKeyID8Char
     elif len(gpgKeyID) == 40:
       gpgKeyID40Char = "%s %s %s %s %s  %s %s %s %s %s" % \
                        (gpgKeyID[0:4], gpgKeyID[4:8], gpgKeyID[8:12], gpgKeyID[12:16], gpgKeyID[16:20],
                        gpgKeyID[20:24], gpgKeyID[24:28], gpgKeyID[28:32], gpgKeyID[32:36], gpgKeyID[36:])
-      print("Generated id string %s" % gpgKeyID40Char)
-      re_to_match = r"^\s+Key fingerprint = %s$" % gpgKeyID40Char
+      re_to_match = r"^pub .*\n\s+%s" % gpgKeyID40Char
     else:
-      print('Invalid gpg key id format. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix.')
+      print('Invalid gpg key id format. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.')
       exit(2)
     if re.search(re_to_match, keysFileText, re.MULTILINE):
       print('    Found key %s in KEYS file at %s' % (gpgKeyID, keysFileLocation))
@@ -337,7 +332,15 @@ def main():
 
   c = parse_config()
 
-  check_key_in_keys(c.key_id, c.local_keys)
+  if c.sign:
+    sys.stdout.flush()
+    c.key_id = c.sign
+    check_key_in_keys(c.key_id, c.local_keys)
+    import getpass
+    c.key_password = getpass.getpass('Enter GPG keystore password: ')
+  else:
+    c.key_id = None
+    c.key_password = None
   
   if c.prepare:
     rev = prepare(c.root, c.version, c.key_id, c.key_password)
