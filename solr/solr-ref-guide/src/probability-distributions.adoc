@@ -17,18 +17,16 @@
 // under the License.
 
 This section of the user guide covers the
-*probability distribution
-framework* included in the math expressions library.
+probability distribution
+framework included in the math expressions library.
 
 == Probability Distribution Framework
 
-The probability distribution framework includes
-many commonly used *real* and *discrete* probability
-distributions, including support for *empirical* and
-*enumerated* distributions that model real world data.
+The probability distribution framework includes many commonly used <<Real Distributions,real>>
+and <<Discrete,discrete>> probability distributions, including support for <<Empirical Distribution,empirical>>
+and <<Enumerated Distributions,enumerated>> distributions that model real world data.
 
-The probability distribution framework also includes a set
-of functions that use the probability distributions
+The probability distribution framework also includes a set of functions that use the probability distributions
 to support probability calculations and sampling.
 
 === Real Distributions
@@ -93,18 +91,18 @@ random variable within a specific distribution.
 Below is example of calculating the cumulative probability
 of a random variable within a normal distribution.
 
-In the example a normal distribution function is created
-with a mean of 10 and a standard deviation of 5. Then
-the cumulative probability of the value 12 is calculated for this
-specific distribution.
-
 [source,text]
 ----
 let(a=normalDistribution(10, 5),
     b=cumulativeProbability(a, 12))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+In this example a normal distribution function is created
+with a mean of 10 and a standard deviation of 5. Then
+the cumulative probability of the value 12 is calculated for this
+specific distribution.
+
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -127,10 +125,10 @@ Below is an example of a cumulative probability calculation
 using an empirical distribution.
 
 In the example an empirical distribution is created from a random
-sample taken from the *price_f* field.
+sample taken from the `price_f` field.
 
-The cumulative probability of the value .75 is then calculated.
-The *price_f* field in this example was generated using a
+The cumulative probability of the value `.75` is then calculated.
+The `price_f` field in this example was generated using a
 uniform real distribution between 0 and 1, so the output of the
  `cumulativeProbability` function is very close to .75.
 
@@ -142,7 +140,7 @@ let(a=random(collection1, q="*:*", rows="30000", fl="price_f"),
     d=cumulativeProbability(c, .75))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -171,7 +169,7 @@ Below is an example which calculates the probability
 of a discrete value within a Poisson distribution.
 
 In the example a Poisson distribution function is created
-with a mean of 100. Then the
+with a mean of `100`. Then the
 probability of encountering a sample of the discrete value 101 is calculated for this
 specific distribution.
 
@@ -181,7 +179,7 @@ let(a=poissonDistribution(100),
     b=probability(a, 101))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -200,12 +198,10 @@ When this expression is sent to the /stream handler it responds with:
 }
 ----
 
-Below is an example of a probability calculation
-using an enumerated distribution.
+Below is an example of a probability calculation using an enumerated distribution.
 
 In the example an enumerated distribution is created from a random
-sample taken from the *day_i* field, which was created
-using a uniform integer distribution between 0 and 30.
+sample taken from the `day_i` field, which was created using a uniform integer distribution between 0 and 30.
 
 The probability of the discrete value 10 is then calculated.
 
@@ -217,7 +213,7 @@ let(a=random(collection1, q="*:*", rows="30000", fl="day_i"),
     d=probability(c, 10))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -239,11 +235,9 @@ When this expression is sent to the /stream handler it responds with:
 === Sampling
 
 All probability distributions support sampling. The `sample`
-function returns 1 or more random samples from a probability
-distribution.
+function returns 1 or more random samples from a probability distribution.
 
-Below is an example drawing a single sample from
-a normal distribution.
+Below is an example drawing a single sample from a normal distribution.
 
 [source,text]
 ----
@@ -251,7 +245,7 @@ let(a=normalDistribution(10, 5),
     b=sample(a))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -270,8 +264,7 @@ When this expression is sent to the /stream handler it responds with:
 }
 ----
 
-Below is an example drawing 10 samples from a normal
-distribution.
+Below is an example drawing 10 samples from a normal distribution.
 
 [source,text]
 ----
@@ -279,7 +272,7 @@ let(a=normalDistribution(10, 5),
     b=sample(a, 10))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -315,14 +308,14 @@ The multivariate normal distribution is a generalization of the
 univariate normal distribution to higher dimensions.
 
 The multivariate normal distribution models two or more random
-variables that are normally distributed. The relationship between
-the variables is defined by a covariance matrix.
+variables that are normally distributed. The relationship between the variables is defined by a covariance matrix.
 
 ==== Sampling
 
 The `sample` function can be used to draw samples
 from a multivariate normal distribution in much the same
 way as a univariate normal distribution.
+
 The difference is that each sample will be an array containing a sample
 drawn from each of the underlying normal distributions.
 If multiple samples are drawn, the `sample` function returns a matrix with a
@@ -333,33 +326,25 @@ multivariate normal distribution.
 The example below demonstrates how to initialize and draw samples
 from a multivariate normal distribution.
 
-In this example 5000 random samples are selected from a collection
-of log records. Each sample contains
-the fields *filesize_d* and *response_d*. The values of both fields conform
-to a normal distribution.
+In this example 5000 random samples are selected from a collection of log records. Each sample contains
+the fields `filesize_d` and `response_d`. The values of both fields conform to a normal distribution.
 
-Both fields are then vectorized. The *filesize_d* vector is stored in
-variable *b* and the *response_d* variable is stored in variable *c*.
+Both fields are then vectorized. The `filesize_d` vector is stored in
+variable *`b`* and the `response_d` variable is stored in variable *`c`*.
 
-An array is created that contains the *means* of the two vectorized fields.
+An array is created that contains the means of the two vectorized fields.
 
 Then both vectors are added to a matrix which is transposed. This creates
-an *observation* matrix where each row contains one observation of
-*filesize_d* and *response_d*. A covariance matrix is then created from the columns of
-the observation matrix with the
-`cov` function. The covariance matrix describes the covariance between
-*filesize_d* and *response_d*.
+an observation matrix where each row contains one observation of
+`filesize_d` and `response_d`. A covariance matrix is then created from the columns of
+the observation matrix with the `cov` function. The covariance matrix describes the covariance between
+`filesize_d` and `response_d`.
 
 The `multivariateNormalDistribution` function is then called with the
 array of means for the two fields and the covariance matrix. The model for the
-multivariate normal distribution is assigned to variable *g*.
+multivariate normal distribution is assigned to variable *`g`*.
 
-Finally five samples are drawn from the multivariate normal distribution. The samples
-are returned as a matrix, with each row representing one sample. There are two
-columns in the matrix. The first column contains samples for *filesize_d* and the second
-column contains samples for *response_d*. Over the long term the covariance between
-the columns will conform to the covariance matrix used to instantiate the
-multivariate normal distribution.
+Finally five samples are drawn from the multivariate normal distribution.
 
 [source,text]
 ----
@@ -373,7 +358,11 @@ let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
     h=sample(g, 5))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+The samples are returned as a matrix, with each row representing one sample. There are two
+columns in the matrix. The first column contains samples for `filesize_d` and the second
+column contains samples for `response_d`. Over the long term the covariance between
+the columns will conform to the covariance matrix used to instantiate the
+multivariate normal distribution.
 
 [source,json]
 ----
@@ -412,4 +401,3 @@ When this expression is sent to the /stream handler it responds with:
   }
 }
 ----
-

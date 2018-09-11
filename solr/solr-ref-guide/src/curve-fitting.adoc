@@ -21,11 +21,11 @@
 
 
 The `polyfit` function is a general purpose curve fitter used to model
-the *non-linear* relationship between two random variables.
+the non-linear relationship between two random variables.
 
-The `polyfit` function is passed *x* and *y* axises and fits a smooth curve to the data.
-If only a single array is provided it is treated as the *y* axis and a sequence is generated
-for the *x* axis.
+The `polyfit` function is passed x- and y-axes and fits a smooth curve to the data.
+If only a single array is provided it is treated as the y-axis and a sequence is generated
+for the x-axis.
 
 The `polyfit` function also has a parameter the specifies the degree of the polynomial. The higher
 the degree the more curves that can be modeled.
@@ -34,7 +34,7 @@ The example below uses the `polyfit` function to fit a curve to an array using
 a 3 degree polynomial. The fitted curve is then subtracted from the original curve. The output
 shows the error between the fitted curve and the original curve, known as the residuals.
 The output also includes the sum-of-squares of the residuals which provides a measure
-of how large the error is..
+of how large the error is.
 
 [source,text]
 ----
@@ -45,7 +45,7 @@ let(echo="residuals, sumSqError",
     sumSqError=sumSq(residuals))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -95,7 +95,7 @@ let(echo="residuals, sumSqError",
     sumSqError=sumSq(residuals))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -138,10 +138,10 @@ responds with:
 The `polyfit` function returns a function that can be used with the `predict`
 function.
 
-In the example below the x axis is included for clarity.
+In the example below the x-axis is included for clarity.
 The `polyfit` function returns a function for the fitted curve.
 The `predict` function is then used to predict a value along the curve, in this
-case the prediction is made for the *x* value of 5.
+case the prediction is made for the *`x`* value of 5.
 
 [source,text]
 ----
@@ -151,7 +151,7 @@ let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
     p=predict(curve, 5))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -185,7 +185,7 @@ let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
     d=derivative(curve))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -235,7 +235,7 @@ let(x=array(0,1,2,3,4,5,6,7,8,9, 10),
     f=gaussfit(x, y))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -283,7 +283,7 @@ let(x=array(0,1,2,3,4,5,6,7,8,9, 10),
 
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
