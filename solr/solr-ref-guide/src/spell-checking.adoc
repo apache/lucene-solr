@@ -233,7 +233,7 @@ This parameter specifies the maximum number of documents that should be collecte
 The default value for this parameter is `0`, but when `spellcheck.collateExtendedResults` is false, the optimization is always used as if `1` had been specified.
 
 `spellcheck.collateParam.*` Prefix::
-This parameter prefix can be used to specify any additional parameters that you wish to the Spellchecker to use when internally validating collation queries. For example, even if your regular search results allow for loose matching of one or more query terms via parameters like `q.op=OR` and `mm=20%` you can specify override params such as `spellcheck.collateParam.q.op=AND&spellcheck.collateParam.mm=100%` to require that only collations consisting of words that are all found in at least one document may be returned.
+This parameter prefix can be used to specify any additional parameters that you wish to the Spellchecker to use when internally validating collation queries. For example, even if your regular search results allow for loose matching of one or more query terms via parameters like `q.op=OR` and `mm=20%` you can specify override parameters such as `spellcheck.collateParam.q.op=AND&spellcheck.collateParam.mm=100%` to require that only collations consisting of words that are all found in at least one document may be returned.
 
 `spellcheck.dictionary`::
 This parameter causes Solr to use the dictionary named in the parameter's argument. The default setting is `default`. This parameter can be used to invoke a specific spellchecker on a per request basis.
