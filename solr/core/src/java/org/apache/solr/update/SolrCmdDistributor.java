@@ -79,7 +79,8 @@ public class SolrCmdDistributor implements Closeable {
     this.completionService = new ExecutorCompletionService<>(updateShardHandler.getUpdateExecutor());
   }
   
-  public SolrCmdDistributor(StreamingSolrClients clients, int retryPause) {
+  /* For tests only */
+  SolrCmdDistributor(StreamingSolrClients clients, int retryPause) {
     this.clients = clients;
     this.retryPause = retryPause;
     completionService = new ExecutorCompletionService<>(clients.getUpdateExecutor());
@@ -156,12 +157,6 @@ public class SolrCmdDistributor implements Closeable {
                 + err.req.cmd.toString() + " params:"
                 + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
           }
-          try {
-            Thread.sleep(retryPause); //TODO: Do we want this wait for every error?
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn(null, e);
-          }
           resubmitList.add(err);
         } else {
           allErrors.add(err);
@@ -169,6 +164,18 @@ public class SolrCmdDistributor implements Closeable {
       } catch (Exception e) {
         // continue on
         log.error("Unexpected Error while doing request retries", e);
+      }
+    }
+    
+    if (resubmitList.size() > 0) {
+      // Only backoff once for the full batch
+      try {
+        int backoffTime = retryPause * resubmitList.get(0).req.retries;
+        log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
+        Thread.sleep(backoffTime);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.warn(null, e);
       }
     }
     

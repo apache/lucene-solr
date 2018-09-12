@@ -308,6 +308,8 @@ Optimizations
 
 * SOLR-12723: Reduce object creation in HashBasedRouter. (ab)
 
+* SOLR-12766: When retrying internal requests, backoff only once for the full batch of retries (Tomás Fernández Löbbe)
+
 Other Changes
 ----------------------
 
