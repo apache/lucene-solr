@@ -56,9 +56,30 @@ New Features
 
 * SOLR-12474: Add an UpdateRequest Object that implements RequestWriter.ContentWriter (noble)
 
+* SOLR-12361: Allow nested child documents to be in field values of a SolrInputDocument as an alternative to
+  add/get ChildDocuments off to the side.  The latter is now referred to as "anonymous" child documents as opposed to
+  "labelled" (by the field name).  Anonymous child docs might be deprecated in the future.  This is an internal change
+  that should work for javabin/SolrJ; separate issues will address XML & JSON formats populating nested docs in this way.
+  AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
+
 * SOLR-12362: Uploading docs in JSON now supports child documents as field values, thus providing a label to the
-  relationship instead of the current "anonymous" relationship.  Use of this experimental feature requires
-  anonChildDocs=false parameter.  (Moshe Bla, David Smiley)
+  relationship instead of the current "anonymous" relationship.  Use of this experimental feature sometimes requires a
+  anonChildDocs=false parameter until Solr 8 due to syntax ambiguities.  (Moshe Bla, David Smiley)
+
+* SOLR-12485: Uploading docs in XML now supports child documents as field values, thus providing a label to the
+  relationship instead of the current "anonymous" relationship. (Moshe Bla, David Smiley)
+
+* SOLR-12441: (EXPERIMENTAL) New NestedUpdateProcessorFactory (URP) to populate special fields _nest_parent_ and
+  _nest_path_ of nested (child) documents. It will generate a uniqueKey of nested docs if they were blank too.
+  (Moshe Bla, David Smiley)
+
+* SOLR-12519: The [child] transformer now returns a nested child doc structure (attached as fields if provided this way)
+  provided the schema has the _nest_path_ field.  This is part of a broader enhancement of nested docs.
+  (Moshe Bla, David Smiley)
+
+* SOLR-12722: The [child] transformer now takes an 'fl' param to specify which fields to return.  It will evaluate
+  doc transformers if present.  In 7.5 a missing 'fl' defaults to the current behavior of all fields, but in 8.0
+  defaults to the top/request "fl". (Moshe Bla, David Smiley)
 
 * SOLR-11578: Solr 7 Admin UI (Cloud > Graph) should reflect the Replica type to give a more accurate representation
   of the cluster. (Rhoit Singh via Erick Erickson)
@@ -79,9 +100,6 @@ New Features
   (Ishan Chattopadhyaya)
 
 * SOLR-12495: An #EQUAL function for replica in autoscaling policy to equally distribute replicas (noble)
-
-* SOLR-12441: New NestedUpdateProcessorFactory (URP) to populate special fields _nest_parent_ and _nest_path_ of nested
-  (child) documents.  It will generate a uniqueKey of nested docs if they were blank too. (Moshe Bla, David Smiley)
 
 * SOLR-11986: Allow percentage in freedisk attribute in autoscaling policy rules (noble)
 
@@ -110,15 +128,8 @@ New Features
 
 * SOLR-12592: support #EQUAL function, range operator, decimal and percentage in cores in autoscaling policies (noble)
 
-* SOLR-12485: Uploading docs in XML now supports child documents as field values, thus providing a label to the
-  relationship instead of the current "anonymous" relationship. (Moshe Bla, David Smiley)
-
 * SOLR-12655: Add Korean morphological analyzer ("nori") to default distribution. This also adds examples
   for configuration in Solr's schema.  (Uwe Schindler)
-
-* SOLR-12519: The [child] transformer now returns a nested child doc structure (attached as fields if provided this way)
-  provided the schema is enabled for nested documents.  This is part of a broader enhancement of nested docs.
-  (Moshe Bla, David Smiley)
 
 * SOLR-11863: Add knnRegress Stream Evaluator to support nearest neighbor regression (Joel Bernstein)
 
@@ -143,10 +154,6 @@ New Features
 
 * SOLR-12716: NodeLostTrigger should support deleting replicas from lost nodes by setting preferredOperation=deletenode.
   (shalin)
-
-* SOLR-12722: The [child] transformer now takes an 'fl' param to specify which fields to return.  It will evaluate
-  doc transformers if present.  In 7.5 a missing 'fl' defaults to the current behavior of all fields, but in 8.0
-  defaults to the top/request "fl". (Moshe Bla, David Smiley)
 
 * SOLR-9418: Added a new (experimental) PhrasesIdentificationComponent for identifying potential phrases
   in query input based on overlapping shingles in the index. (Akash Mehta, Trey Grainger, hossman)
@@ -303,12 +310,6 @@ Optimizations
 
 Other Changes
 ----------------------
-
-* SOLR-12361: Allow nested child documents to be in field values of a SolrInputDocument as an alternative to
-  add/get ChildDocuments off to the side.  The latter is now referred to as "anonymous" child documents as opposed to
-  "labelled" (by the field name).  Anonymous child docs might be deprecated in the future.
-  This is an internal change not yet plumbed into /update formats.
-  AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
 
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
 

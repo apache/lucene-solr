@@ -541,27 +541,57 @@ The `/update/csv` path may be useful for clients sending in CSV formatted update
 
 == Nested Child Documents
 
-Solr indexes nested documents in blocks as a way to model documents containing other documents, such as a blog post parent document and comments as child documents -- or products as parent documents and sizes, colors, or other variations as child documents. At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships. In terms of performance, indexing the relationships between documents may be more efficient than attempting to do joins only at query time, since the relationships are already stored in the index and do not need to be computed.
+Solr supports indexing nested documents such as a blog post parent document and comments as child documents -- or products as parent documents and sizes, colors, or other variations as child documents.
+The parent with all children is referred to as a "block" and it explains some of the nomenclature of related features.
+At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships,
+ and the `[child]` <<transforming-result-documents.adoc#transforming-result-documents,Document Transformer>> can attach child documents to the result documents.
+In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent "query time join",
+ since the relationships are already stored in the index and do not need to be computed.
+However, nested documents are less flexible than query time joins as it imposes rules that some applications may not be able to accept.
 
-Nested documents may be indexed via either the XML or JSON data syntax (or using <<using-solrj.adoc#using-solrj,SolrJ)>> - but regardless of syntax, you must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
+.Note
+[NOTE]
+====
+A big limitation is that the whole block of parent-children documents must be updated or deleted together, not separately.
+In other words, even if a single child document or the parent document is changed, the whole block of parent-child documents must be indexed together.
+_Solr does not enforce this rule_; if it's violated, you may get sporadic query failures or incorrect results.
+====
 
-To support nested documents, the schema must include an indexed/non-stored field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
+Nested documents may be indexed via either the XML or JSON data syntax, and is also supported by <<using-solrj.adoc#using-solrj,SolrJ>> with javabin.
+
+=== Schema Notes
+
+ * The schema must include an indexed, non-stored field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
+ * Nested documents are very much documents in their own right even if certain nested documents hold different information from the parent.
+   Therefore:
+ ** the schema must be able to represent the fields of any document
+ ** it may be infeasible to use `required`
+ ** even child documents need a unique `id`
+ * You must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
+ * If you associate a child document as a field (e.g. comment), that field need not be defined in the schema, and probably
+   shouldn't be as it would be confusing.  There is no child document field type.
 
 === XML Examples
 
-For example, here are two documents and their child documents:
+For example, here are two documents and their child documents.
+It illustrates two styles of adding child documents; the first is associated via a field "comment" (preferred),
+and the second is done in the classic way now referred to as an "anonymous" or "unlabelled" child document.
+This field label relationship is available to the URP chain in Solr but is ultimately discarded.
+Solr 8 will save the relationship.
 
 [source,xml]
 ----
 <add>
   <doc>
-  <field name="id">1</field>
-  <field name="title">Solr adds block join support</field>
-  <field name="content_type">parentDocument</field>
-    <doc>
-      <field name="id">2</field>
-      <field name="comments">SolrCloud supports it too!</field>
-    </doc>
+    <field name="id">1</field>
+    <field name="title">Solr adds block join support</field>
+    <field name="content_type">parentDocument</field>
+    <field name="content">
+      <doc>
+        <field name="id">2</field>
+        <field name="comments">SolrCloud supports it too!</field>
+      </doc>
+    </field>
   </doc>
   <doc>
     <field name="id">3</field>
@@ -575,11 +605,15 @@ For example, here are two documents and their child documents:
 </add>
 ----
 
-In this example, we have indexed the parent documents with the field `content_type`, which has the value "parentDocument". We could have also used a boolean field, such as `isParent`, with a value of "true", or any other similar approach.
+In this example, we have indexed the parent documents with the field `content_type`, which has the value "parentDocument".
+We could have also used a boolean field, such as `isParent`, with a value of "true", or any other similar approach.
 
 === JSON Examples
 
-This example is equivalent to the XML example above, note the special `\_childDocuments_` key need to indicate the nested documents in JSON.
+This example is equivalent to the XML example above.
+Again, the field labelled relationship is preferred.
+The labelled relationship here is one child document but could have been wrapped in array brackets.
+For the anonymous relationship, note the special `\_childDocuments_` key whose contents must be an array of child documents.
 
 [source,json]
 ----
@@ -588,12 +622,10 @@ This example is equivalent to the XML example above, note the special `\_childDo
     "id": "1",
     "title": "Solr adds block join support",
     "content_type": "parentDocument",
-    "_childDocuments_": [
-      {
-        "id": "2",
-        "comments": "SolrCloud supports it too!"
-      }
-    ]
+    "comment": {
+      "id": "2",
+      "comments": "SolrCloud supports it too!"
+    }
   },
   {
     "id": "3",
@@ -609,8 +641,3 @@ This example is equivalent to the XML example above, note the special `\_childDo
 ]
 ----
 
-.Note
-[NOTE]
-====
-One limitation of indexing nested documents is that the whole block of parent-children documents must be updated together whenever any changes are required. In other words, even if a single child document or the parent document is changed, the whole block of parent-child documents must be indexed together.
-====
