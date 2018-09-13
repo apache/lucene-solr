@@ -119,8 +119,8 @@
   # monitoramento -> monitor
   {"amento",3,"",{"firmamento","fundamento","departamento"}},
   # nascimento -> nasc
-  {"imento",3},
-  {"mento",6,"",{"firmamento","elemento","complemento","instrumento","departamento"}},
+  {"imento",3, {"movimento"}},
+  {"mento",6,"",{"firmamento","elemento","complemento","instrumento","departamento", "movimento"}},
   # comercializado -> comerci
   {"alizado",4},
   # traumatizado -> traum
