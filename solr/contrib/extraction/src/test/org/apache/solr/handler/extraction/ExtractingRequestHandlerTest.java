@@ -41,7 +41,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assertFalse("SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.",
+    assumeFalse("SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.",
         System.getProperty("java.version").startsWith("11"));
     initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr").getAbsolutePath());
   }
