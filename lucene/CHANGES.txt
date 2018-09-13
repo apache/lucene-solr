@@ -40,6 +40,10 @@ New Features
 * LUCENE-8538: Add a Simple WKT Shape Parser for creating Lucene Geometries (Polygon, Line,
   Rectangle) from WKT format. (Nick Knize)
 
+* LUCENE-8462: Adds an Arabic snowball stemmer based on
+  https://github.com/snowballstem/snowball/blob/master/algorithms/arabic.sbl 
+  (Ryadh Dahimene via Jim Ferenczi)
+
 Improvements:
 
 * LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the
