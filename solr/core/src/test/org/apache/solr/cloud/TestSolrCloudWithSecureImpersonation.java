@@ -114,8 +114,6 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
     JettySolrRunner runner = miniCluster.getJettySolrRunners().get(0);
     solrClient = new HttpSolrClient.Builder(runner.getBaseUrl().toString()).build();
-    //TODO nocommit, remove this
-    Locale.setDefault(Locale.US);
   }
 
   /**
