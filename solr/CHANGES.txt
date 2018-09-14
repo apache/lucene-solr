@@ -22,7 +22,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.17
+Apache Tika 1.18
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
@@ -362,7 +362,7 @@ Other Changes
 
 * SOLR-12744: Improve logging messages and verbosity around recoveries (Cao Manh Dat, Varun Thacker)
 
-* SOLR-8742: In HdfsDirectoryTest replace RAMDirectory usages with ByteBuffersDirectory. 
+* SOLR-8742: In HdfsDirectoryTest replace RAMDirectory usages with ByteBuffersDirectory.
   (hossman, Mark Miller, Andrzej Bialecki, Steve Rowe)
 
 ==================  7.4.0 ==================
@@ -8173,8 +8173,8 @@ Bug Fixes
 
 * SOLR-6693: bin\solr.cmd doesn't support 32-bit JRE/JDK running on Windows due to
   parenthesis in JAVA_HOME. (Timothy Potter, Christopher Hewitt, Jan Høydahl)
-  
-* SOLR-12662: Reproducing TestPolicy failures: NPE and NoClassDefFoundError. 
+
+* SOLR-12662: Reproducing TestPolicy failures: NPE and NoClassDefFoundError.
   (Steve Rowe)
 
 Optimizations
