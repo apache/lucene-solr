@@ -32,11 +32,9 @@ import java.util.stream.Collectors;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import org.apache.http.NoHttpResponseException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -86,7 +84,6 @@ public class PeerSync implements SolrMetricProducer {
 
   private final boolean cantReachIsSuccess;
   private final boolean doFingerprint;
-  private final Http2SolrClient client;
   private final boolean onlyIfActive;
   private SolrCore core;
   private Updater updater;
@@ -118,15 +115,12 @@ public class PeerSync implements SolrMetricProducer {
     this.nUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.doFingerprint = doFingerprint && !("true".equals(System.getProperty("solr.disableFingerprint")));
-    //TODO nocommit, replace it with default client
-    this.client = core.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient();
     this.onlyIfActive = onlyIfActive;
     
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
-    // TODO: close
     shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreContainer().getShardHandlerFactory();
-    shardHandler = shardHandlerFactory.getShardHandler(client);
+    shardHandler = shardHandlerFactory.getShardHandler();
     this.updater = new Updater(msg(), core);
 
     core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.REPLICATION.toString(), this);
@@ -407,7 +401,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.params.set(DISTRIB, false);
     sreq.params.set("checkCanHandleVersionRanges", false);
 
-    ShardHandler sh = shardHandlerFactory.getShardHandler(client);
+    ShardHandler sh = shardHandlerFactory.getShardHandler();
     sh.submit(sreq, replica, sreq.params);
 
     ShardResponse srsp = sh.takeCompletedIncludingErrors();
