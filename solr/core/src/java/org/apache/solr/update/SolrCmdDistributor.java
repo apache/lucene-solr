@@ -129,8 +129,6 @@ public class SolrCmdDistributor implements Closeable {
 
     for (Error err : errors) {
       try {
-        String oldNodeUrl = err.req.node.getUrl();
-        
         /*
          * if this is a retryable request we may want to retry, depending on the error we received and
          * the number of times we have already retried
@@ -143,20 +141,6 @@ public class SolrCmdDistributor implements Closeable {
         // this can happen in certain situations such as close
         if (isRetry) {
           err.req.retries++;
-
-          if (err.req.node instanceof ForwardNode) {
-            SolrException.log(SolrCmdDistributor.log, "forwarding update to "
-                + oldNodeUrl + " failed - retrying ... retries: "
-                + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
-                + err.req.cmd.toString() + " params:"
-                + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
-          } else {
-            SolrException.log(SolrCmdDistributor.log, "FROMLEADER request to "
-                + oldNodeUrl + " failed - retrying ... retries: "
-                + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
-                + err.req.cmd.toString() + " params:"
-                + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
-          }
           resubmitList.add(err);
         } else {
           allErrors.add(err);
@@ -182,6 +166,19 @@ public class SolrCmdDistributor implements Closeable {
     clients.clearErrors();
     this.errors.clear();
     for (Error err : resubmitList) {
+      if (err.req.node instanceof ForwardNode) {
+        SolrException.log(SolrCmdDistributor.log, "forwarding update to "
+            + err.req.node.getUrl() + " failed - retrying ... retries: "
+            + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
+            + err.req.cmd.toString() + " params:"
+            + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
+      } else {
+        SolrException.log(SolrCmdDistributor.log, "FROMLEADER request to "
+            + err.req.node.getUrl() + " failed - retrying ... retries: "
+            + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
+            + err.req.cmd.toString() + " params:"
+            + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
+      }
       submit(err.req, false);
     }
     
