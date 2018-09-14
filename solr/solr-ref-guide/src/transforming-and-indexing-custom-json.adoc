@@ -903,7 +903,7 @@ It is possible to send any JSON to the `/update/json/docs` endpoint and the defa
 </initParams>
 ----
 
-So, if no params are passed, the entire JSON file would get indexed to the `\_src_` field and all the values in the input JSON would go to a field named `text`. If there is a value for the uniqueKey it is stored and if no value could be obtained from the input JSON, a UUID is created and used as the uniqueKey field value.
+So, if no parameters are passed, the entire JSON file would get indexed to the `\_src_` field and all the values in the input JSON would go to a field named `text`. If there is a value for the uniqueKey it is stored and if no value could be obtained from the input JSON, a UUID is created and used as the uniqueKey field value.
 
 Alternately, use the Request Parameters feature to set these parameters, as shown earlier in the section <<Reusing Parameters in Multiple Requests>>.
 

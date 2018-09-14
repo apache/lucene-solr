@@ -283,7 +283,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of active shards and active replicas
+   * number of shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
@@ -291,17 +291,37 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         return false;
       if (collectionState.getSlices().size() != expectedShards)
         return false;
-      for (Slice slice : collectionState) {
-        int activeReplicas = 0;
-        for (Replica replica : slice) {
-          if (replica.isActive(liveNodes))
-            activeReplicas++;
-        }
-        if (activeReplicas != expectedReplicas)
-          return false;
-      }
+      if (compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState)) return false;
       return true;
     };
+  }
+
+  /**
+   * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
+   * number of active shards and active replicas
+   */
+  public static CollectionStatePredicate activeClusterShape(int expectedShards, int expectedReplicas) {
+    return (liveNodes, collectionState) -> {
+      if (collectionState == null)
+        return false;
+      if (collectionState.getActiveSlices().size() != expectedShards)
+        return false;
+      if (compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState)) return false;
+      return true;
+    };
+  }
+
+  private static boolean compareActiveReplicaCountsForShards(int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
+    for (Slice slice : collectionState) {
+      int activeReplicas = 0;
+      for (Replica replica : slice) {
+        if (replica.isActive(liveNodes))
+          activeReplicas++;
+      }
+      if (activeReplicas != expectedReplicas)
+        return true;
+    }
+    return false;
   }
 
   /**

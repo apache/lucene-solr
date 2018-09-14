@@ -39,6 +39,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefComparator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.FutureArrays;
@@ -83,7 +84,9 @@ public class BKDWriter implements Closeable {
 
   public static final String CODEC_NAME = "BKD";
   public static final int VERSION_START = 4; // version used by Lucene 7.0
-  public static final int VERSION_CURRENT = VERSION_START;
+  //public static final int VERSION_CURRENT = VERSION_START;
+  public static final int VERSION_LEAF_STORES_BOUNDS = 5;
+  public static final int VERSION_CURRENT = VERSION_LEAF_STORES_BOUNDS;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
@@ -344,16 +347,16 @@ public class BKDWriter implements Closeable {
           docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchDocIDs);
           assert docsInBlock > 0;
           docBlockUpto = 0;
-          bkd.visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, docsInBlock, new IntersectVisitor() {
+          bkd.visitDocValues(state.commonPrefixLengths, state.scratchPackedValue1, state.scratchPackedValue2, state.in, state.scratchDocIDs, docsInBlock, new IntersectVisitor() {
             int i = 0;
 
             @Override
-            public void visit(int docID) throws IOException {
+            public void visit(int docID) {
               throw new UnsupportedOperationException();
             }
 
             @Override
-            public void visit(int docID, byte[] packedValue) throws IOException {
+            public void visit(int docID, byte[] packedValue) {
               assert docID == state.scratchDocIDs[i];
               System.arraycopy(packedValue, 0, packedValues, i * bkd.packedBytesLength, bkd.packedBytesLength);
               i++;
@@ -361,7 +364,7 @@ public class BKDWriter implements Closeable {
 
             @Override
             public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-              throw new UnsupportedOperationException();
+              return Relation.CELL_CROSSES_QUERY;
             }
 
           });
@@ -382,7 +385,7 @@ public class BKDWriter implements Closeable {
         if (mappedDocID != -1) {
           // Not deleted!
           docID = mappedDocID;
-          System.arraycopy(packedValues, index * bkd.packedBytesLength, state.scratchPackedValue, 0, bkd.packedBytesLength);
+          System.arraycopy(packedValues, index * bkd.packedBytesLength, state.scratchPackedValue1, 0, bkd.packedBytesLength);
           return true;
         }
       }
@@ -401,7 +404,7 @@ public class BKDWriter implements Closeable {
     public boolean lessThan(MergeReader a, MergeReader b) {
       assert a != b;
 
-      int cmp = FutureArrays.compareUnsigned(a.state.scratchPackedValue, 0, bytesPerDim, b.state.scratchPackedValue, 0, bytesPerDim);
+      int cmp = FutureArrays.compareUnsigned(a.state.scratchPackedValue1, 0, bytesPerDim, b.state.scratchPackedValue1, 0, bytesPerDim);
       if (cmp < 0) {
         return true;
       } else if (cmp > 0) {
@@ -543,7 +546,7 @@ public class BKDWriter implements Closeable {
       MergeReader reader = queue.top();
       // System.out.println("iter reader=" + reader);
 
-      oneDimWriter.add(reader.state.scratchPackedValue, reader.docID);
+      oneDimWriter.add(reader.state.scratchPackedValue1, reader.docID);
 
       if (reader.next()) {
         queue.updateTop();
@@ -1272,6 +1275,9 @@ public class BKDWriter implements Closeable {
       // all values in this block are equal
       out.writeByte((byte) -1);
     } else {
+      if (numDims != 1) {
+        writeActualBounds(out, commonPrefixLengths, count, packedValues);
+      }
       assert commonPrefixLengths[sortedDim] < bytesPerDim;
       out.writeByte((byte) sortedDim);
       int compressedByteOffset = sortedDim * bytesPerDim + commonPrefixLengths[sortedDim];
@@ -1289,6 +1295,40 @@ public class BKDWriter implements Closeable {
         assert i <= count;
       }
     }
+  }
+
+  private void writeActualBounds(DataOutput out, int[] commonPrefixLengths, int count, IntFunction<BytesRef> packedValues) throws IOException {
+    for (int dim = 0; dim < numDims; ++dim) {
+      int commonPrefixLength = commonPrefixLengths[dim];
+      int suffixLength = bytesPerDim - commonPrefixLength;
+      if (suffixLength > 0) {
+        BytesRef[] minMax = computeMinMax(count, packedValues, dim * bytesPerDim + commonPrefixLength, suffixLength);
+        BytesRef min = minMax[0];
+        BytesRef max = minMax[1];
+        out.writeBytes(min.bytes, min.offset, min.length);
+        out.writeBytes(max.bytes, max.offset, max.length);
+      }
+    }
+  }
+
+  /** Return an array that contains the min and max values for the [offset, offset+length] interval
+   *  of the given {@link BytesRef}s. */
+  private static BytesRef[] computeMinMax(int count, IntFunction<BytesRef> packedValues, int offset, int length) {
+    assert length > 0;
+    BytesRefBuilder min = new BytesRefBuilder();
+    BytesRefBuilder max = new BytesRefBuilder();
+    BytesRef first = packedValues.apply(0);
+    min.copyBytes(first.bytes, first.offset + offset, length);
+    max.copyBytes(first.bytes, first.offset + offset, length);
+    for (int i = 1; i < count; ++i) {
+      BytesRef candidate = packedValues.apply(i);
+      if (FutureArrays.compareUnsigned(min.bytes(), 0, length, candidate.bytes, candidate.offset + offset, candidate.offset + offset + length) > 0) {
+        min.copyBytes(candidate.bytes, candidate.offset + offset, length);
+      } else if (FutureArrays.compareUnsigned(max.bytes(), 0, length, candidate.bytes, candidate.offset + offset, candidate.offset + offset + length) < 0) {
+        max.copyBytes(candidate.bytes, candidate.offset + offset, length);
+      }
+    }
+    return new BytesRef[]{min.get(), max.get()};
   }
 
   private void writeLeafBlockPackedValuesRange(DataOutput out, int[] commonPrefixLengths, int start, int end, IntFunction<BytesRef> packedValues) throws IOException {

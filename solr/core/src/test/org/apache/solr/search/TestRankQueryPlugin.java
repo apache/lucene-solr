@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -32,7 +31,6 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -41,7 +39,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
@@ -424,7 +421,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
             }
 
             doc -= currentLeaf.docBase;  // adjust for what segment this is in
-            leafComparator.setScorer(new FakeScorer(doc, score));
+            leafComparator.setScorer(new ScoreAndDoc(doc, score));
             leafComparator.copy(0, doc);
             Object val = comparator.value(0);
             if (null != ft) val = ft.marshalSortValue(val);
@@ -438,13 +435,12 @@ public class TestRankQueryPlugin extends QParserPlugin {
       }
     }
 
-    private static class FakeScorer extends Scorer {
+    private static class ScoreAndDoc extends Scorable {
 
       final int docid;
       final float score;
 
-      FakeScorer(int docid, float score) {
-        super(null);
+      ScoreAndDoc(int docid, float score) {
         this.docid = docid;
         this.score = score;
       }
@@ -455,28 +451,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
       }
 
       @Override
-      public float score() throws IOException {
+      public float score() {
         return score;
-      }
-
-      @Override
-      public float getMaxScore(int upTo) throws IOException {
-        return score;
-      }
-
-      @Override
-      public DocIdSetIterator iterator() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public Weight getWeight() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public Collection<ChildScorable> getChildren() {
-        throw new UnsupportedOperationException();
       }
     }
 

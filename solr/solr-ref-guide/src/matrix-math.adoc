@@ -35,7 +35,7 @@ matrix(array(1, 2),
        array(4, 5))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -80,7 +80,7 @@ let(a=array(1, 2),
     d=colAt(c, 1))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -129,7 +129,7 @@ let(echo="d, e",
     e=getColumnLabels(c))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -182,7 +182,7 @@ let(echo="b,c",
     c=columnCount(a))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -217,7 +217,7 @@ let(a=matrix(array(1, 2),
     b=transpose(a))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -259,7 +259,7 @@ let(a=matrix(array(1, 2, 3),
     b=sumRows(a))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -292,7 +292,7 @@ let(a=matrix(array(1, 2, 3),
     b=grandSum(a))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -326,7 +326,7 @@ let(a=matrix(array(1, 2),
     b=scalarAdd(10, a))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -370,7 +370,7 @@ let(a=matrix(array(1, 2),
     b=ebeAdd(a, a))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -413,7 +413,7 @@ let(a=matrix(array(1, 2),
     c=matrixMult(a, b))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]

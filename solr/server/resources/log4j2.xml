@@ -27,8 +27,8 @@
       </PatternLayout>
     </Console>
 
-    <RollingRandomAccessFile
-        name="MainLogFile"
+    <RollingFile
+        name="RollingFile"
         fileName="${sys:solr.log.dir}/solr.log"
         filePattern="${sys:solr.log.dir}/solr.log.%i" >
       <PatternLayout>
@@ -41,10 +41,10 @@
         <SizeBasedTriggeringPolicy size="32 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="10"/>
-    </RollingRandomAccessFile>
+    </RollingFile>
 
-    <RollingRandomAccessFile
-        name="SlowLogFile"
+    <RollingFile
+        name="SlowFile"
         fileName="${sys:solr.log.dir}/solr_slow_requests.log"
         filePattern="${sys:solr.log.dir}/solr_slow_requests.log.%i" >
       <PatternLayout>
@@ -57,20 +57,20 @@
         <SizeBasedTriggeringPolicy size="32 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="10"/>
-    </RollingRandomAccessFile>
+    </RollingFile>
 
   </Appenders>
   <Loggers>
-    <AsyncLogger name="org.apache.hadoop" level="warn"/>
-    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
-    <AsyncLogger name="org.apache.zookeeper" level="warn"/>
-    <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="info" additivity="false">
-      <AppenderRef ref="SlowLogFile"/>
-    </AsyncLogger>
+    <Logger name="org.apache.hadoop" level="warn"/>
+    <Logger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
+    <Logger name="org.apache.zookeeper" level="warn"/>
+    <Logger name="org.apache.solr.core.SolrCore.SlowRequest" level="info" additivity="false">
+      <AppenderRef ref="SlowFile"/>
+    </Logger>
 
-    <AsyncRoot level="info">
-      <AppenderRef ref="MainLogFile"/>
+    <Root level="info">
+      <AppenderRef ref="RollingFile"/>
       <AppenderRef ref="STDOUT"/>
-    </AsyncRoot>
+    </Root>
   </Loggers>
 </Configuration>

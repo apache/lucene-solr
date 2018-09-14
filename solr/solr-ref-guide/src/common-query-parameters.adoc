@@ -284,9 +284,9 @@ The `echoParams` parameter controls what information about request parameters is
 
 The `echoParams` parameter accepts the following values:
 
-* `explicit`: This is the default value. Only parameters included in the actual request, plus the `_` parameter (which is a 64-bit numeric timestamp) will be added to the params section of the response header.
+* `explicit`: This is the default value. Only parameters included in the actual request, plus the `_` parameter (which is a 64-bit numeric timestamp) will be added to the `params` section of the response header.
 * `all`: Include all request parameters that contributed to the query. This will include everything defined in the request handler definition found in `solrconfig.xml` as well as parameters included with the request, plus the `_` parameter. If a parameter is included in the request handler definition AND the request, it will appear multiple times in the response header.
-* `none`: Entirely removes the "params" section of the response header. No information about the request parameters will be available in the response.
+* `none`: Entirely removes the `params` section of the response header. No information about the request parameters will be available in the response.
 
 Here is an example of a JSON response where the echoParams parameter was not included, so the default of `explicit` is active. The request URL that created this response included three parameters - `q`, `wt`, and `indent`:
 

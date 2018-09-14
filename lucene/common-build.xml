@@ -2380,32 +2380,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </sequential>
   </macrodef>
 
-  <property name="rc" value="rc0"/>
-  <property name="remote.staging.dir" value="public_html/staging_area/${rc}/${version}"/>
-  <property name="keyfile" value="${user.home}/.ssh/id_rsa"/>
-  <property name="scp.user" value="${user.name}"/>
-  <!--keys.dir is the location of the https://svn.apache.org/repos/asf/lucene/java/dist/ directory-->
-  <property name="keys.dir" value="${common.dir}/../../dist"/>
-  <macrodef name="copy-to-stage-macro">
-    <attribute name="artifacts.dir"/>
-    <sequential>
-      <sshexec host="home.apache.org"
-               username="${scp.user}"
-               keyfile="${keyfile}"
-               command="mkdir -p ${remote.staging.dir}"/>
-      <echo>Uploading artifacts to ${scp.user}@home.apache.org:${remote.staging.dir}</echo>
-      <scp todir="${scp.user}@home.apache.org:${remote.staging.dir}"
-           username="${scp.user}"
-           keyfile="${keyfile}"
-           verbose="true">
-        <fileset dir="${artifacts.dir}"/>
-        <fileset dir="${keys.dir}">
-          <include name="KEYS"/>
-        </fileset>
-      </scp>
-    </sequential>
-  </macrodef>
-
   <!-- JFlex task -->
   <target name="-install-jflex" unless="jflex.loaded" depends="ivy-availability-check,ivy-configure">
     <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.6.0"

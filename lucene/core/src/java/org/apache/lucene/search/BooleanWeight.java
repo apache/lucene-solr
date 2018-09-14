@@ -160,7 +160,7 @@ final class BooleanWeight extends Weight {
       @Override
       public int score(final LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
         final LeafCollector noScoreCollector = new LeafCollector() {
-          FakeScorer fake = new FakeScorer();
+          ScoreAndDoc fake = new ScoreAndDoc();
 
           @Override
           public void setScorer(Scorable scorer) throws IOException {

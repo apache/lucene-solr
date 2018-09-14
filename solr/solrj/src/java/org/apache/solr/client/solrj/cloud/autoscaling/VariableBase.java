@@ -18,11 +18,14 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
+import java.util.ArrayList;
+
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.StrUtils;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.parseString;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.perNodeSuggestions;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.suggestNegativeViolations;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.suggestPositiveViolations;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 
 public class VariableBase implements Variable {
@@ -34,7 +37,12 @@ public class VariableBase implements Variable {
 
   @Override
   public void getSuggestions(Suggestion.Ctx ctx) {
-    perNodeSuggestions(ctx);
+    if (ctx.violation == null) return;
+    if (ctx.violation.replicaCountDelta > 0) {
+      suggestPositiveViolations(ctx);
+    } else {
+      suggestNegativeViolations(ctx, ArrayList::new);
+    }
   }
 
   static Object getOperandAdjustedValue(Object val, Object original) {
@@ -177,7 +185,7 @@ public class VariableBase implements Variable {
 
     @Override
     public void getSuggestions(Suggestion.Ctx ctx) {
-      perNodeSuggestions(ctx);
+      suggestPositiveViolations(ctx);
     }
   }
 
@@ -188,7 +196,7 @@ public class VariableBase implements Variable {
 
     @Override
     public void getSuggestions(Suggestion.Ctx ctx) {
-      perNodeSuggestions(ctx);
+      suggestPositiveViolations(ctx);
     }
   }
 }

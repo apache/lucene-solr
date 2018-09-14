@@ -594,8 +594,8 @@ OR
 === distance Syntax
 
 [source,text]
-distance(numericArray1, numuericArray2) // Computes the euclidean distance for two numeric arrays.
-distance(numericArray1, numuericArray2, type=manhattan) // Computes the manhattan distance for two numeric arrays.
+distance(numericArray1, numericArray2) // Computes the euclidean distance for two numeric arrays.
+distance(numericArray1, numericArray2, type=manhattan) // Computes the manhattan distance for two numeric arrays.
 distance(matrix) // Computes the euclidean distance matrix for a matrix.
 distance(matrix, type=canberra) // Computes the canberra distance matrix for a matrix.
 

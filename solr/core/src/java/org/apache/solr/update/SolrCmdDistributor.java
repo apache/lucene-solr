@@ -57,8 +57,9 @@ public class SolrCmdDistributor {
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     this.client = updateShardHandler.getUpdateOnlyHttpClient();
   }
-
-  public SolrCmdDistributor(Http2SolrClient client, int retryPause) {
+  
+  /* For tests only */
+  SolrCmdDistributor(Http2SolrClient client, int retryPause) {
     this.client = client;
     this.retryPause = retryPause;
   }

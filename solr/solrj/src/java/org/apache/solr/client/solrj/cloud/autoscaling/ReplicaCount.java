@@ -27,6 +27,16 @@ import org.apache.solr.common.util.Utils;
 class ReplicaCount  implements MapWriter {
   long nrt, tlog, pull;
 
+  public ReplicaCount() {
+    nrt = tlog = pull = 0;
+  }
+
+  public ReplicaCount(long nrt, long tlog, long pull) {
+    this.nrt = nrt;
+    this.tlog = tlog;
+    this.pull = pull;
+  }
+
   public long total() {
     return nrt + tlog + pull;
   }
@@ -55,24 +65,36 @@ class ReplicaCount  implements MapWriter {
   public void increment(List<ReplicaInfo> infos) {
     if (infos == null) return;
     for (ReplicaInfo info : infos) {
-      switch (info.getType()) {
-        case NRT:
-          nrt++;
-          break;
-        case PULL:
-          pull++;
-          break;
-        case TLOG:
-          tlog++;
-          break;
-        default:
-          nrt++;
-      }
+      increment(info);
+    }
+  }
+
+  void increment(ReplicaInfo info) {
+    switch (info.getType()) {
+      case NRT:
+        nrt++;
+        break;
+      case PULL:
+        pull++;
+        break;
+      case TLOG:
+        tlog++;
+        break;
+      default:
+        nrt++;
     }
   }
 
   @Override
   public String toString() {
     return Utils.toJSONString(this);
+  }
+
+  public ReplicaCount copy() {
+    return new ReplicaCount(nrt, tlog, pull);
+  }
+
+  public void reset() {
+    nrt = tlog = pull = 0;
   }
 }

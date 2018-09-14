@@ -312,7 +312,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testLocationFunctions() throws Exception {
+  public void testLatlonFunctions() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
 
     int i=0;
@@ -326,7 +326,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     String expr = "let(echo=true," +
         "              a=search("+COLLECTIONORALIAS+", q=*:*, fl=\"id, loc_p, price_i\",rows=100, sort=\"price_i asc\"),"+
-        "              b=locationVectors(a, field=loc_p)," +
+        "              b=latlonVectors(a, field=loc_p)," +
         "              c=distance(array(40.7128, 74.0060), array(45.7128, 74.0060), haversineMeters()))";
 
 
