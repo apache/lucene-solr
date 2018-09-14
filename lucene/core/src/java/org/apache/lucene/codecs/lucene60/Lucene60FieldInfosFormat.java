@@ -149,9 +149,14 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
             attributes = lastAttributes;
           }
           lastAttributes = attributes;
-          int pointDimensionCount = input.readVInt();
+          int packedDimensionCount = input.readVInt();
+          int pointDataDimensionCount = 0x0000FFFF & packedDimensionCount;
+          int pointIndexDimensionCount = packedDimensionCount >>> 16;
+          if (pointIndexDimensionCount == 0) {
+            pointIndexDimensionCount = pointDataDimensionCount;
+          }
           int pointNumBytes;
-          if (pointDimensionCount != 0) {
+          if (pointDataDimensionCount != 0) {
             pointNumBytes = input.readVInt();
           } else {
             pointNumBytes = 0;
@@ -160,7 +165,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
           try {
             infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
                                      indexOptions, docValuesType, dvGen, attributes,
-                                     pointDimensionCount, pointNumBytes, isSoftDeletesField);
+                                     pointDataDimensionCount, pointIndexDimensionCount, pointNumBytes, isSoftDeletesField);
             infos[i].checkConsistency();
           } catch (IllegalStateException e) {
             throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
@@ -287,9 +292,13 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
         output.writeByte(docValuesByte(fi.getDocValuesType()));
         output.writeLong(fi.getDocValuesGen());
         output.writeMapOfStrings(fi.attributes());
-        int pointDimensionCount = fi.getPointDimensionCount();
-        output.writeVInt(pointDimensionCount);
-        if (pointDimensionCount != 0) {
+        // max number of dimensions is <= 8; so for backcompat we can use the integer value to pack number of data and index dimensions
+        // where first two bytes are data dimension count, second two bytes are index dimension count
+        int pointDataDimensionCount = 0x0000FFFF & fi.getPointDataDimensionCount();
+        int pointIndexDimensionCount = fi.getPointIndexDimensionCount();
+        int packedDimensionCount = (pointIndexDimensionCount << 16) | pointDataDimensionCount;
+        output.writeVInt(packedDimensionCount);
+        if (pointDataDimensionCount != 0) {
           output.writeVInt(fi.getPointNumBytes());
         }
       }

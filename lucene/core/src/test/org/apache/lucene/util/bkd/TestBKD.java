@@ -48,7 +48,7 @@ public class TestBKD extends LuceneTestCase {
 
   public void testBasicInts1D() throws Exception {
     try (Directory dir = getDirectory(100)) {
-      BKDWriter w = new BKDWriter(100, dir, "tmp", 1, 4, 2, 1.0f, 100, true);
+      BKDWriter w = new BKDWriter(100, dir, "tmp", 1, 1, 4, 2, 1.0f, 100, true);
       byte[] scratch = new byte[4];
       for(int docID=0;docID<100;docID++) {
         NumericUtils.intToSortableBytes(docID, scratch, 0);
@@ -121,12 +121,13 @@ public class TestBKD extends LuceneTestCase {
     int numDocs = atLeast(1000);
     try (Directory dir = getDirectory(numDocs)) {
       int numDims = TestUtil.nextInt(random(), 1, 5);
+      int numIndexDims = TestUtil.nextInt(random(), 1, numDims);
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 100);
       float maxMB = (float) 3.0 + (3*random().nextFloat());
-      BKDWriter w = new BKDWriter(numDocs, dir, "tmp", numDims, 4, maxPointsInLeafNode, maxMB, numDocs, true);
+      BKDWriter w = new BKDWriter(numDocs, dir, "tmp", numDims, numIndexDims, 4, maxPointsInLeafNode, maxMB, numDocs, true);
 
       if (VERBOSE) {
-        System.out.println("TEST: numDims=" + numDims + " numDocs=" + numDocs);
+        System.out.println("TEST: numDims=" + numDims + " numIndexDims=" + numIndexDims + " numDocs=" + numDocs);
       }
       int[][] docs = new int[numDocs][];
       byte[] scratch = new byte[4*numDims];
@@ -181,7 +182,7 @@ public class TestBKD extends LuceneTestCase {
           // Random N dims rect query:
           int[] queryMin = new int[numDims];
           int[] queryMax = new int[numDims];    
-          for(int dim=0;dim<numDims;dim++) {
+          for(int dim=0;dim<numIndexDims;dim++) {
             queryMin[dim] = random().nextInt();
             queryMax[dim] = random().nextInt();
             if (queryMin[dim] > queryMax[dim]) {
@@ -202,7 +203,7 @@ public class TestBKD extends LuceneTestCase {
             @Override
             public void visit(int docID, byte[] packedValue) {
               //System.out.println("visit check docID=" + docID);
-              for(int dim=0;dim<numDims;dim++) {
+              for(int dim=0;dim<numIndexDims;dim++) {
                 int x = NumericUtils.sortableBytesToInt(packedValue, dim * Integer.BYTES);
                 if (x < queryMin[dim] || x > queryMax[dim]) {
                   //System.out.println("  no");
@@ -217,7 +218,7 @@ public class TestBKD extends LuceneTestCase {
             @Override
             public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
-              for(int dim=0;dim<numDims;dim++) {
+              for(int dim=0;dim<numIndexDims;dim++) {
                 int min = NumericUtils.sortableBytesToInt(minPacked, dim * Integer.BYTES);
                 int max = NumericUtils.sortableBytesToInt(maxPacked, dim * Integer.BYTES);
                 assert max >= min;
@@ -240,7 +241,7 @@ public class TestBKD extends LuceneTestCase {
           for(int docID=0;docID<numDocs;docID++) {
             int[] docValues = docs[docID];
             boolean expected = true;
-            for(int dim=0;dim<numDims;dim++) {
+            for(int dim=0;dim<numIndexDims;dim++) {
               int x = docValues[dim];
               if (x < queryMin[dim] || x > queryMax[dim]) {
                 expected = false;
@@ -264,7 +265,7 @@ public class TestBKD extends LuceneTestCase {
       int numDims = TestUtil.nextInt(random(), 1, 5);
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 100);
       float maxMB = (float) 3.0 + (3*random().nextFloat());
-      BKDWriter w = new BKDWriter(numDocs, dir, "tmp", numDims, numBytesPerDim, maxPointsInLeafNode, maxMB, numDocs, true);
+      BKDWriter w = new BKDWriter(numDocs, dir, "tmp", numDims, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB, numDocs, true);
       BigInteger[][] docs = new BigInteger[numDocs][];
 
       byte[] scratch = new byte[numBytesPerDim*numDims];
@@ -439,7 +440,7 @@ public class TestBKD extends LuceneTestCase {
   public void testTooLittleHeap() throws Exception { 
     try (Directory dir = getDirectory(0)) {
       IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-        new BKDWriter(1, dir, "bkd", 1, 16, 1000000, 0.001, 0, true);
+        new BKDWriter(1, dir, "bkd", 1, 1, 16, 1000000, 0.001, 0, true);
       });
       assertTrue(expected.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
     }
@@ -631,7 +632,7 @@ public class TestBKD extends LuceneTestCase {
     List<MergeState.DocMap> docMaps = null;
     int seg = 0;
 
-    BKDWriter w = new BKDWriter(numValues, dir, "_" + seg, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB, docValues.length, false);
+    BKDWriter w = new BKDWriter(numValues, dir, "_" + seg, numDims, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB, docValues.length, false);
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
     IndexInput in = null;
 
@@ -691,7 +692,7 @@ public class TestBKD extends LuceneTestCase {
           seg++;
           maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 1000);
           maxMB = (float) 3.0 + (3*random().nextDouble());
-          w = new BKDWriter(numValues, dir, "_" + seg, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB, docValues.length, false);
+          w = new BKDWriter(numValues, dir, "_" + seg, numDims, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB, docValues.length, false);
           lastDocIDBase = docID;
         }
       }
@@ -712,7 +713,7 @@ public class TestBKD extends LuceneTestCase {
         out.close();
         in = dir.openInput("bkd", IOContext.DEFAULT);
         seg++;
-        w = new BKDWriter(numValues, dir, "_" + seg, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB, docValues.length, false);
+        w = new BKDWriter(numValues, dir, "_" + seg, numDims, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB, docValues.length, false);
         List<BKDReader> readers = new ArrayList<>();
         for(long fp : toMerge) {
           in.seek(fp);
@@ -971,7 +972,7 @@ public class TestBKD extends LuceneTestCase {
   public void testTieBreakOrder() throws Exception {
     try (Directory dir = newDirectory()) {
       int numDocs = 10000;
-      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 1, Integer.BYTES, 2, 0.01f, numDocs, true);
+      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 1, 1, Integer.BYTES, 2, 0.01f, numDocs, true);
       for(int i=0;i<numDocs;i++) {
         w.add(new byte[Integer.BYTES], i);
       }
@@ -1012,7 +1013,7 @@ public class TestBKD extends LuceneTestCase {
       boolean singleValuePerDoc = false;
       boolean longOrds = true;
       int offlineSorterMaxTempFiles = TestUtil.nextInt(random(), 2, 20);
-      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 2, Integer.BYTES, 2, 0.01f, numDocs,
+      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 2, 2, Integer.BYTES, 2, 0.01f, numDocs,
                                   singleValuePerDoc, longOrds, 1, offlineSorterMaxTempFiles);
       byte[] buffer = new byte[2*Integer.BYTES];
       for(int i=0;i<numDocs;i++) {
@@ -1063,7 +1064,7 @@ public class TestBKD extends LuceneTestCase {
 
     Directory dir = newFSDirectory(createTempDir());
     int numDocs = 100000;
-    BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", numDims, bytesPerDim, 32, 1f, numDocs, true);
+    BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", numDims, numDims, bytesPerDim, 32, 1f, numDocs, true);
     byte[] tmp = new byte[bytesUsed];
     byte[] buffer = new byte[numDims * bytesPerDim];
     for(int i=0;i<numDocs;i++) {
@@ -1117,7 +1118,7 @@ public class TestBKD extends LuceneTestCase {
     final byte[] uniquePointValue = new byte[numBytesPerDim];
     random().nextBytes(uniquePointValue);
 
-    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, numBytesPerDim, maxPointsInLeafNode,
+    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, 1, numBytesPerDim, maxPointsInLeafNode,
         BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues, true);
     for (int i = 0; i < numValues; ++i) {
       if (i == numValues / 2) {

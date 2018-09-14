@@ -410,7 +410,7 @@ public class MemoryIndex {
       storeDocValues(info, docValuesType, docValuesValue);
     }
 
-    if (field.fieldType().pointDimensionCount() > 0) {
+    if (field.fieldType().pointDataDimensionCount() > 0) {
       storePointValues(info, field.binaryValue());
     }
 
@@ -486,9 +486,9 @@ public class MemoryIndex {
     if (info == null) {
       fields.put(fieldName, info = new Info(createFieldInfo(fieldName, fields.size(), fieldType), byteBlockPool));
     }
-    if (fieldType.pointDimensionCount() != info.fieldInfo.getPointDimensionCount()) {
-      if (fieldType.pointDimensionCount() > 0)
-        info.fieldInfo.setPointDimensions(fieldType.pointDimensionCount(), fieldType.pointNumBytes());
+    if (fieldType.pointDataDimensionCount() != info.fieldInfo.getPointDataDimensionCount()) {
+      if (fieldType.pointDataDimensionCount() > 0)
+        info.fieldInfo.setPointDimensions(fieldType.pointDataDimensionCount(), fieldType.pointIndexDimensionCount(), fieldType.pointNumBytes());
     }
     if (fieldType.docValuesType() != info.fieldInfo.getDocValuesType()) {
       if (fieldType.docValuesType() != DocValuesType.NONE)
@@ -501,7 +501,7 @@ public class MemoryIndex {
     IndexOptions indexOptions = storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     return new FieldInfo(fieldName, ord, fieldType.storeTermVectors(), fieldType.omitNorms(), storePayloads,
         indexOptions, fieldType.docValuesType(), -1, Collections.emptyMap(),
-        fieldType.pointDimensionCount(), fieldType.pointNumBytes(), false);
+        fieldType.pointDataDimensionCount(), fieldType.pointIndexDimensionCount(), fieldType.pointNumBytes(), false);
   }
 
   private void storePointValues(Info info, BytesRef pointValue) {
@@ -520,7 +520,8 @@ public class MemoryIndex {
       info.fieldInfo = new FieldInfo(
           info.fieldInfo.name, info.fieldInfo.number, info.fieldInfo.hasVectors(), info.fieldInfo.hasPayloads(),
           info.fieldInfo.hasPayloads(), info.fieldInfo.getIndexOptions(), docValuesType, -1, info.fieldInfo.attributes(),
-          info.fieldInfo.getPointDimensionCount(), info.fieldInfo.getPointNumBytes(), info.fieldInfo.isSoftDeletesField()
+          info.fieldInfo.getPointDataDimensionCount(), info.fieldInfo.getPointIndexDimensionCount(), info.fieldInfo.getPointNumBytes(),
+          info.fieldInfo.isSoftDeletesField()
       );
     } else if (existingDocValuesType != docValuesType) {
       throw new IllegalArgumentException("Can't add [" + docValuesType + "] doc values field [" + fieldName + "], because [" + existingDocValuesType + "] doc values field already exists");
@@ -870,7 +871,7 @@ public class MemoryIndex {
         if (pointValues != null) {
           assert pointValues[0].bytes.length == pointValues[0].length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
 
-          final int numDimensions = fieldInfo.getPointDimensionCount();
+          final int numDimensions = fieldInfo.getPointDataDimensionCount();
           final int numBytesPerDimension = fieldInfo.getPointNumBytes();
           if (numDimensions == 1) {
             // PointInSetQuery.MergePointVisitor expects values to be visited in increasing order,
@@ -1576,8 +1577,13 @@ public class MemoryIndex {
       }
 
       @Override
-      public int getNumDimensions() throws IOException {
-        return info.fieldInfo.getPointDimensionCount();
+      public int getNumDataDimensions() throws IOException {
+        return info.fieldInfo.getPointDataDimensionCount();
+      }
+
+      @Override
+      public int getNumIndexDimensions() throws IOException {
+        return info.fieldInfo.getPointDataDimensionCount();
       }
 
       @Override

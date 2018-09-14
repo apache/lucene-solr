@@ -35,7 +35,8 @@ import org.apache.lucene.util.MathUtil;
 public final class BKDReader extends PointValues implements Accountable {
   // Packed array of byte[] holding all split values in the full binary tree:
   final int leafNodeOffset;
-  final int numDims;
+  final int numDataDims;
+  final int numIndexDims;
   final int bytesPerDim;
   final int numLeaves;
   final IndexInput in;
@@ -52,10 +53,17 @@ public final class BKDReader extends PointValues implements Accountable {
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
   public BKDReader(IndexInput in) throws IOException {
     version = CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
-    numDims = in.readVInt();
+    int packedDims = in.readVInt();
+    if (version >= BKDWriter.VERSION_LEAF_STORES_BOUNDS) {
+      numDataDims = packedDims & 0x0000FFFF;
+      numIndexDims = packedDims >>> 16;
+    } else {
+      numDataDims = packedDims;
+      numIndexDims = numDataDims;
+    }
     maxPointsInLeafNode = in.readVInt();
     bytesPerDim = in.readVInt();
-    packedBytesLength = numDims * bytesPerDim;
+    packedBytesLength = numDataDims * bytesPerDim;
 
     // Read index:
     numLeaves = in.readVInt();
@@ -68,7 +76,7 @@ public final class BKDReader extends PointValues implements Accountable {
     in.readBytes(minPackedValue, 0, packedBytesLength);
     in.readBytes(maxPackedValue, 0, packedBytesLength);
 
-    for(int dim=0;dim<numDims;dim++) {
+    for(int dim=0;dim<numIndexDims;dim++) {
       if (FutureArrays.compareUnsigned(minPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, maxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) > 0) {
         throw new CorruptIndexException("minPackedValue " + new BytesRef(minPackedValue) + " is > maxPackedValue " + new BytesRef(maxPackedValue) + " for dim=" + dim, in);
       }
@@ -128,7 +136,7 @@ public final class BKDReader extends PointValues implements Accountable {
       rightNodePositions = new int[treeDepth+1];
       splitValuesStack = new byte[treeDepth+1][];
       splitDims = new int[treeDepth+1];
-      negativeDeltas = new boolean[numDims*(treeDepth+1)];
+      negativeDeltas = new boolean[numIndexDims*(treeDepth+1)];
 
       in = new ByteArrayDataInput(packedIndex);
       splitValuesStack[0] = new byte[packedBytesLength];
@@ -144,9 +152,9 @@ public final class BKDReader extends PointValues implements Accountable {
       if (splitPackedValueStack[level] == null) {
         splitPackedValueStack[level] = new byte[packedBytesLength];
       }
-      System.arraycopy(negativeDeltas, (level-1)*numDims, negativeDeltas, level*numDims, numDims);
+      System.arraycopy(negativeDeltas, (level-1)*numIndexDims, negativeDeltas, level*numIndexDims, numIndexDims);
       assert splitDim != -1;
-      negativeDeltas[level*numDims+splitDim] = true;
+      negativeDeltas[level*numIndexDims+splitDim] = true;
       in.setPosition(nodePosition);
       readNodeData(true);
     }
@@ -162,7 +170,7 @@ public final class BKDReader extends PointValues implements Accountable {
       index.leftNodePositions[level] = leftNodePositions[level];
       index.rightNodePositions[level] = rightNodePositions[level];
       index.splitValuesStack[index.level] = splitValuesStack[index.level].clone();
-      System.arraycopy(negativeDeltas, level*numDims, index.negativeDeltas, level*numDims, numDims);
+      System.arraycopy(negativeDeltas, level*numIndexDims, index.negativeDeltas, level*numIndexDims, numIndexDims);
       index.splitDims[level] = splitDims[level];
       return index;
     }
@@ -174,9 +182,9 @@ public final class BKDReader extends PointValues implements Accountable {
       if (splitPackedValueStack[level] == null) {
         splitPackedValueStack[level] = new byte[packedBytesLength];
       }
-      System.arraycopy(negativeDeltas, (level-1)*numDims, negativeDeltas, level*numDims, numDims);
+      System.arraycopy(negativeDeltas, (level-1)*numIndexDims, negativeDeltas, level*numIndexDims, numIndexDims);
       assert splitDim != -1;
-      negativeDeltas[level*numDims+splitDim] = false;
+      negativeDeltas[level*numIndexDims+splitDim] = false;
       in.setPosition(nodePosition);
       readNodeData(false);
     }
@@ -276,9 +284,9 @@ public final class BKDReader extends PointValues implements Accountable {
 
         // read split dim, prefix, firstDiffByteDelta encoded as int:
         int code = in.readVInt();
-        splitDim = code % numDims;
+        splitDim = code % numIndexDims;
         splitDims[level] = splitDim;
-        code /= numDims;
+        code /= numIndexDims;
         int prefix = code % (1+bytesPerDim);
         int suffix = bytesPerDim - prefix;
 
@@ -288,7 +296,7 @@ public final class BKDReader extends PointValues implements Accountable {
         System.arraycopy(splitValuesStack[level-1], 0, splitValuesStack[level], 0, packedBytesLength);
         if (suffix > 0) {
           int firstDiffByteDelta = code / (1+bytesPerDim);
-          if (negativeDeltas[level*numDims + splitDim]) {
+          if (negativeDeltas[level*numIndexDims + splitDim]) {
             firstDiffByteDelta = -firstDiffByteDelta;
           }
           int oldByte = splitValuesStack[level][splitDim*bytesPerDim+prefix] & 0xFF;
@@ -389,7 +397,7 @@ public final class BKDReader extends PointValues implements Accountable {
   /** Create a new {@link IntersectState} */
   public IntersectState getIntersectState(IntersectVisitor visitor) {
     IndexTree index = new IndexTree();
-    return new IntersectState(in.clone(), numDims,
+    return new IntersectState(in.clone(), numDataDims,
                               packedBytesLength,
                               maxPointsInLeafNode,
                               visitor,
@@ -433,7 +441,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
     readCommonPrefixes(commonPrefixLengths, scratchPackedValue1, in);
 
-    if (numDims != 1 && version >= BKDWriter.VERSION_LEAF_STORES_BOUNDS) {
+    if (numIndexDims != 1 && version >= BKDWriter.VERSION_LEAF_STORES_BOUNDS) {
       byte[] minPackedValue = scratchPackedValue1;
       byte[] maxPackedValue = scratchPackedValue2;
       //Copy common prefixes before reading adjusted
@@ -474,7 +482,7 @@ public final class BKDReader extends PointValues implements Accountable {
   }
 
     private void readMinMax(int[] commonPrefixLengths, byte[] minPackedValue, byte[] maxPackedValue, IndexInput in) throws IOException {
-      for (int dim = 0; dim < numDims; dim++) {
+      for (int dim = 0; dim < numIndexDims; dim++) {
         int prefix = commonPrefixLengths[dim];
         in.readBytes(minPackedValue, dim * bytesPerDim + prefix, bytesPerDim - prefix);
         in.readBytes(maxPackedValue, dim * bytesPerDim + prefix, bytesPerDim - prefix);
@@ -484,7 +492,7 @@ public final class BKDReader extends PointValues implements Accountable {
   // Just read suffixes for every dimension
   private void visitRawDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count; ++i) {
-      for(int dim=0;dim<numDims;dim++) {
+      for(int dim=0;dim<numDataDims;dim++) {
         int prefix = commonPrefixLengths[dim];
         in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
       }
@@ -502,7 +510,7 @@ public final class BKDReader extends PointValues implements Accountable {
       scratchPackedValue[compressedByteOffset] = in.readByte();
       final int runLen = Byte.toUnsignedInt(in.readByte());
       for (int j = 0; j < runLen; ++j) {
-        for(int dim=0;dim<numDims;dim++) {
+        for(int dim=0;dim<numDataDims;dim++) {
           int prefix = commonPrefixLengths[dim];
           in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
         }
@@ -517,14 +525,14 @@ public final class BKDReader extends PointValues implements Accountable {
 
   private int readCompressedDim(IndexInput in) throws IOException {
     int compressedDim = in.readByte();
-    if (compressedDim < -1 || compressedDim >= numDims) {
+    if (compressedDim < -1 || compressedDim >= numDataDims) {
       throw new CorruptIndexException("Got compressedDim="+compressedDim, in);
     }
     return compressedDim;
   }
 
   private void readCommonPrefixes(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in) throws IOException {
-    for(int dim=0;dim<numDims;dim++) {
+    for(int dim=0;dim<numDataDims;dim++) {
       int prefix = in.readVInt();
       commonPrefixLengths[dim] = prefix;
       if (prefix > 0) {
@@ -568,8 +576,8 @@ public final class BKDReader extends PointValues implements Accountable {
       
       // Non-leaf node: recurse on the split left and right nodes
       int splitDim = state.index.getSplitDim();
-      assert splitDim >= 0: "splitDim=" + splitDim;
-      assert splitDim < numDims;
+      assert splitDim >= 0: "splitDim=" + splitDim + ", numIndexDims=" + numIndexDims;
+      assert splitDim < numIndexDims: "splitDim=" + splitDim + ", numIndexDims=" + numIndexDims;
 
       byte[] splitPackedValue = state.index.getSplitPackedValue();
       BytesRef splitDimValue = state.index.getSplitDimValue();
@@ -577,8 +585,8 @@ public final class BKDReader extends PointValues implements Accountable {
       //System.out.println("  splitDimValue=" + splitDimValue + " splitDim=" + splitDim);
 
       // make sure cellMin <= splitValue <= cellMax:
-      assert FutureArrays.compareUnsigned(cellMinPacked, splitDim * bytesPerDim, splitDim * bytesPerDim + bytesPerDim, splitDimValue.bytes, splitDimValue.offset, splitDimValue.offset + bytesPerDim) <= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
-      assert FutureArrays.compareUnsigned(cellMaxPacked, splitDim * bytesPerDim, splitDim * bytesPerDim + bytesPerDim, splitDimValue.bytes, splitDimValue.offset, splitDimValue.offset + bytesPerDim) >= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
+      assert FutureArrays.compareUnsigned(cellMinPacked, splitDim * bytesPerDim, splitDim * bytesPerDim + bytesPerDim, splitDimValue.bytes, splitDimValue.offset, splitDimValue.offset + bytesPerDim) <= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numIndexDims=" + numIndexDims + " numDataDims=" + numDataDims;
+      assert FutureArrays.compareUnsigned(cellMaxPacked, splitDim * bytesPerDim, splitDim * bytesPerDim + bytesPerDim, splitDimValue.bytes, splitDimValue.offset, splitDimValue.offset + bytesPerDim) >= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numIndexDims=" + numIndexDims + " numDataDims=" + numDataDims;
 
       // Recurse on left sub-tree:
       System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
@@ -622,8 +630,8 @@ public final class BKDReader extends PointValues implements Accountable {
       
       // Non-leaf node: recurse on the split left and right nodes
       int splitDim = state.index.getSplitDim();
-      assert splitDim >= 0: "splitDim=" + splitDim;
-      assert splitDim < numDims;
+      assert splitDim >= 0: "splitDim=" + splitDim + ", numIndexDims=" + numIndexDims;
+      assert splitDim < numIndexDims: "splitDim=" + splitDim + ", numIndexDims=" + numIndexDims;
 
       byte[] splitPackedValue = state.index.getSplitPackedValue();
       BytesRef splitDimValue = state.index.getSplitDimValue();
@@ -631,8 +639,8 @@ public final class BKDReader extends PointValues implements Accountable {
       //System.out.println("  splitDimValue=" + splitDimValue + " splitDim=" + splitDim);
 
       // make sure cellMin <= splitValue <= cellMax:
-      assert FutureArrays.compareUnsigned(cellMinPacked, splitDim * bytesPerDim, splitDim * bytesPerDim + bytesPerDim, splitDimValue.bytes, splitDimValue.offset, splitDimValue.offset + bytesPerDim) <= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
-      assert FutureArrays.compareUnsigned(cellMaxPacked, splitDim * bytesPerDim, splitDim * bytesPerDim + bytesPerDim, splitDimValue.bytes, splitDimValue.offset, splitDimValue.offset + bytesPerDim) >= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
+      assert FutureArrays.compareUnsigned(cellMinPacked, splitDim * bytesPerDim, splitDim * bytesPerDim + bytesPerDim, splitDimValue.bytes, splitDimValue.offset, splitDimValue.offset + bytesPerDim) <= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numIndexDims=" + numIndexDims + " numDataDims=" + numDataDims;
+      assert FutureArrays.compareUnsigned(cellMaxPacked, splitDim * bytesPerDim, splitDim * bytesPerDim + bytesPerDim, splitDimValue.bytes, splitDimValue.offset, splitDimValue.offset + bytesPerDim) >= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numIndexDims=" + numIndexDims + " numDataDims=" + numDataDims;
 
       // Recurse on left sub-tree:
       System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
@@ -670,8 +678,13 @@ public final class BKDReader extends PointValues implements Accountable {
   }
 
   @Override
-  public int getNumDimensions() {
-    return numDims;
+  public int getNumDataDimensions() {
+    return numDataDims;
+  }
+
+  @Override
+  public int getNumIndexDimensions() {
+    return numIndexDims;
   }
 
   @Override
