@@ -1250,7 +1250,7 @@ public abstract class FieldType extends FieldProperties {
     
     /** 
      * The appropriate <code>SortedSetSelector.Type</code> option for this <code>MultiValueSelector</code>,
-     * may be null if there is no equivilent
+     * may be null if there is no equivalent
      */
     public SortedSetSelector.Type getSortedSetSelectorType() {
       return sType;
@@ -1258,7 +1258,7 @@ public abstract class FieldType extends FieldProperties {
 
     /** 
      * The appropriate <code>SortedNumericSelector.Type</code> option for this <code>MultiValueSelector</code>,
-     * may be null if there is no equivilent
+     * may be null if there is no equivalent
      */
     public SortedNumericSelector.Type getSortedNumericSelectorType() {
       return nType;
