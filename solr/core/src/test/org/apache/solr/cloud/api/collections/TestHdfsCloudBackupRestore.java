@@ -208,7 +208,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
   }
   @Override
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  // commented 15-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void test() throws Exception {
     super.test();
   }
