@@ -710,7 +710,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // multiple params for picking groupHead should work as long as only one is non-null
     // sort used
     for (SolrParams collapse : new SolrParams[] {
-        // these should all be equivilently valid
+        // these should all be equally valid
         params("fq", "{!collapse field="+group+" nullPolicy=collapse sort='test_i asc'"+hint+"}"),
         params("fq", "{!collapse field="+group+" nullPolicy=collapse min='' sort='test_i asc'"+hint+"}"),
         params("fq", "{!collapse field="+group+" nullPolicy=collapse max='' sort='test_i asc'"+hint+"}"),

@@ -883,7 +883,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "6",  "bday", "NOW+2YEARS"));
     assertU(commit());
     
-    // a ridiculoulsy long date math expression that's still equivilent to july4
+    // a ridiculoulsy long date math expression that's still equivalent to july4
     final StringBuilder july4Long = new StringBuilder(july4);
     final int iters = atLeast(10);
     for (int i = 0; i < iters; i++) {

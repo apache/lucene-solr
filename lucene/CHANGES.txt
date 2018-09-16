@@ -3042,7 +3042,7 @@ Other
 
 * LUCENE-6845: SpanScorer is now merged into Spans (Alan Woodward, David Smiley)
 
-* LUCENE-6887: DefaultSimilarity is deprecated, use ClassicSimilarity for equivilent behavior,
+* LUCENE-6887: DefaultSimilarity is deprecated, use ClassicSimilarity for equivalent behavior,
   or consider switching to BM25Similarity which will become the new default in Lucene 6.0 (hossman)
 
 * LUCENE-6893: factor out CorePlusQueriesParser from CorePlusExtensionsParser
