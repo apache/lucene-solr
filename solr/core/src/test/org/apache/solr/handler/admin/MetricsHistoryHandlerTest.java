@@ -110,6 +110,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testBasic() throws Exception {
     timeSource.sleep(10000);
     List<Pair<String, Long>> list = handler.getFactory().list(100);

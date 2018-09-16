@@ -267,6 +267,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
    */
   @Test
   //05-Jul-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15);
 
@@ -327,6 +328,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testSplitMixedReplicaTypes() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.REWRITE);
   }

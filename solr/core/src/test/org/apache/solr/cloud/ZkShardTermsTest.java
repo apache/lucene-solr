@@ -52,6 +52,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testParticipationOfReplicas() throws IOException, SolrServerException, InterruptedException {
     String collection = "collection1";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
