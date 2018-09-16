@@ -75,12 +75,15 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.RealTimeGetComponent;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -102,6 +105,10 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
@@ -113,6 +120,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public static final String DISTRIB_FROM = "distrib.from";
   public static final String DISTRIB_INPLACE_PREVVERSION = "distrib.inplace.prevversion";
   private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
+  private static final char PATH_SEP_CHAR = '/';
+  private static final char NUM_SEP_CHAR = '#';
+  private static final Set<String> NESTED_META_FIELDS = Sets.newHashSet(IndexSchema.NEST_PATH_FIELD_NAME, IndexSchema.NEST_PARENT_FIELD_NAME);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -435,7 +445,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     return false;
   }
-  
+
   private List<Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     String leaderCoreNodeName = leaderReplica.getName();
@@ -1058,6 +1068,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
+    Long prevVersion = null;
+    DeleteUpdateCommand dmd = null;
     vinfo.lockForUpdate();
     try {
       synchronized (bucket) {
@@ -1073,6 +1085,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         if (versionsStored) {
 
+          prevVersion = vinfo.lookupVersion(cmd.getIndexedId());
           long bucketVersion = bucket.highest;
 
           if (leaderLogic) {
@@ -1198,7 +1211,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
-        
+
+        if(prevVersion != null && req.getSchema().isUsableForChildDocs() &&
+            req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
+            cmd.solrDoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) {
+          dmd = new DeleteUpdateCommand(new LocalSolrQueryRequest(req.getCore(), new ModifiableSolrParams().set("q", IndexSchema.ROOT_FIELD_NAME + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) + " AND " + VERSION_FIELD + ": [* TO " + Long.toString(prevVersion) + "]")));
+          dmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
+          dmd.query = dmd.getReq().getParams().get("q");
+          doLocalDelete(dmd);
+        }
+
         if (willDistrib && cloneRequiredOnLeader) {
           cmd.solrDoc = clonedDoc;
         }
@@ -1206,6 +1228,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }  // end synchronized (bucket)
     } finally {
       vinfo.unlockForUpdate();
+    }
+    if(prevVersion != null && dmd != null) {
+      versionDeleteByQuery(dmd);
     }
     return false;
   }
@@ -1376,22 +1401,45 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // full (non-inplace) atomic update
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
-    SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id);
+    SolrInputDocument blockDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
+        false, NESTED_META_FIELDS, true, true);
 
-    if (oldDoc == null) {
-      // create a new doc by default if an old one wasn't found
-      if (versionOnUpdate <= 0) {
-        oldDoc = new SolrInputDocument();
-      } else {
+    if (blockDoc == null) {
+      if (versionOnUpdate > 0) {
         // could just let the optimistic locking throw the error
         throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + cmd.getPrintableId());
       }
     } else {
-      oldDoc.remove(CommonParams.VERSION_FIELD);
+      blockDoc.remove(CommonParams.VERSION_FIELD);
     }
 
 
-    cmd.solrDoc = docMerger.merge(sdoc, oldDoc);
+    SolrInputDocument mergedDoc;
+    if(idField == null || blockDoc == null) {
+      // create a new doc by default if an old one wasn't found
+      mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
+    } else {
+      BytesRef rootId = new BytesRef(blockDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME).toString());
+      if(req.getSchema().isUsableForChildDocs() && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
+          blockDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) && !rootId.equals(id)) {
+        SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
+            false, NESTED_META_FIELDS, true, false);
+        mergedDoc = docMerger.merge(sdoc, oldDoc);
+        String docPath = (String) mergedDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
+        List<String> docPaths = StrUtils.splitSmart(docPath, PATH_SEP_CHAR);
+        SolrInputField replaceDoc = blockDoc.getField(docPaths.remove(0).replaceAll(PATH_SEP_CHAR + "|" + NUM_SEP_CHAR, ""));
+        for(String subPath: docPaths) {
+          subPath = subPath.replaceAll(PATH_SEP_CHAR + "|" + NUM_SEP_CHAR, "");
+          replaceDoc = blockDoc.getField(subPath);
+        }
+        replaceDoc.setValue(mergedDoc);
+        mergedDoc = blockDoc;
+        // TODO: replace current doc in block with the merged doc
+      } else {
+        mergedDoc = docMerger.merge(sdoc, blockDoc);
+      }
+    }
+    cmd.solrDoc = mergedDoc;
     return true;
   }
 
@@ -1916,7 +1964,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
       }
       isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
-      
+
       nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
       if (nodes == null) {
         // This could happen if there are only pull replicas
@@ -1941,7 +1989,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           assert TestInjection.waitForInSyncWithLeader(req.getCore(),
               zkController, collection, cloudDesc.getShardId()) : "Core " + req.getCore() + " not in sync with leader";
         }
-
       } else if (replicaType == Replica.Type.PULL) {
         log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
       } else {
@@ -1950,7 +1997,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           long commitVersion = vinfo.getNewClock();
           cmd.setVersion(commitVersion);
         }
-  
         doLocalCommit(cmd);
       }
     } else {

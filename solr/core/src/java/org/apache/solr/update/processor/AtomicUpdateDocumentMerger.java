@@ -261,7 +261,8 @@ public class AtomicUpdateDocumentMerger {
        null, // don't want the version to be returned
        true, // avoid stored fields from index
        updatedFields,
-       true); // resolve the full document
+       true, // resolve the full document
+       false); // do not resolve the whole block if doc is a child document
                                               
     if (oldDocument == RealTimeGetComponent.DELETED || oldDocument == null) {
       // This doc was deleted recently. In-place update cannot work, hence a full atomic update should be tried.
@@ -320,8 +321,7 @@ public class AtomicUpdateDocumentMerger {
   }
 
   protected void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
-    SchemaField sf = schema.getField(sif.getName());
-    toDoc.addField(sif.getName(), sf.getType().toNativeType(fieldVal));
+    toDoc.addField(sif.getName(), getNativeFieldValue(sif, fieldVal));
   }
 
   protected void doAddDistinct(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
@@ -441,6 +441,25 @@ public class AtomicUpdateDocumentMerger {
       patterns.add(Pattern.compile(fieldVal.toString()));
     }
     return patterns;
+  }
+
+  private Object getNativeFieldValue(SolrInputField sif, Object val) {
+    if(isChildDoc(val)) {
+      return val;
+    }
+    SchemaField sf = schema.getField(sif.getName());
+    return sf.getType().toNativeType(val);
+  }
+
+  private static boolean isChildDoc(Object obj) {
+    if(!(obj instanceof Collection)) {
+      return obj instanceof SolrDocumentBase;
+    }
+    Collection objValues = (Collection) obj;
+    if(objValues.size() == 0) {
+      return false;
+    }
+    return objValues.iterator().next() instanceof SolrDocumentBase;
   }
   
 }

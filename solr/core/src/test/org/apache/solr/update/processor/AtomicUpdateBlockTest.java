@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,11 +36,20 @@ import org.junit.Test;
 public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
   private final static String VERSION = "_version_";
+  private static String PREVIOUS_ENABLE_UPDATE_LOG_VALUE;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    PREVIOUS_ENABLE_UPDATE_LOG_VALUE = System.getProperty("enable.update.log");
     System.setProperty("enable.update.log", "true");
     initCore("solrconfig-update-processor-chains.xml", "schema-nest.xml"); // use "nest" schema
+  }
+
+  @AfterClass
+  public static void afterTests() throws Exception {
+    // restore enable.update.log
+    PREVIOUS_ENABLE_UPDATE_LOG_VALUE = System.getProperty("enable.update.log");
+    System.setProperty("enable.update.log", PREVIOUS_ENABLE_UPDATE_LOG_VALUE);
   }
 
   @Before
@@ -69,11 +79,10 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     // commit the changes
     assertU(commit());
 
-    SolrInputDocument addedDoc = new SolrInputDocument();
     SolrInputDocument newChildDoc = sdoc("id", "3", "cat_ss", "child");
-    addedDoc.setField("id", "1");
-    addedDoc.setField("cat_ss", ImmutableMap.of("add", "bbb"));
-    addedDoc.setField("child", ImmutableMap.of("add", sdocs(newChildDoc)));
+    SolrInputDocument addedDoc = sdoc("id", "1",
+        "cat_ss", ImmutableMap.of("add", "bbb"),
+        "child", ImmutableMap.of("add", sdocs(newChildDoc)));
     block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
     block.removeField(VERSION);
     SolrInputDocument preMergeDoc = new SolrInputDocument(block);
@@ -91,7 +100,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
     SolrInputDocument doc = sdoc("id", "1",
         "cat_ss", new String[] {"aaa", "ccc"},
-        "child", sdoc("id", "2", "cat_ss", "child")
+        "child1", sdoc("id", "2", "cat_ss", "child")
     );
     json(doc);
     addDoc(adoc(doc), "nested-rtg");
@@ -100,7 +109,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
     // assert block doc has child docs
-    assertTrue(block.containsKey("child"));
+    assertTrue(block.containsKey("child1"));
 
     assertJQ(req("q","id:1")
         ,"/response/numFound==0"
@@ -118,28 +127,58 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
         ,"/response/numFound==1"
     );
 
-    doc = new SolrInputDocument();
-    doc.setField("id", "1");
-    doc.setField("cat_ss", ImmutableMap.of("add", "bbb"));
-    doc.setField("child2", ImmutableMap.of("add", sdoc("id", "3", "cat_ss", "child")));
+    doc = sdoc("id", "1",
+        "cat_ss", ImmutableMap.of("add", "bbb"),
+        "child2", ImmutableMap.of("add", sdoc("id", "3", "cat_ss", "child")));
     addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
 
 
-    // returns whole block since child is in fl and document is fetched from tlog.
-    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child")
-        ,"=={\"doc\":{'id':\"1\"" +
-            ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child:{\"id\":\"2\",\"cat_ss\":[\"child\"]}" +
-            "       }}"
-    );
+     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
+     ,"=={\"doc\":{'id':\"1\"" +
+     ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child1:{\"id\":\"2\",\"cat_ss\":[\"child\"]}" +
+     "       }}"
+     );
 
     assertU(commit());
 
     // a cut-n-paste of the first big query, but this time it will be retrieved from the index rather than the transaction log
     // this requires ChildDocTransformer to get the whole block, since the document is retrieved using an index lookup
-    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child, [child]")
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
         ,"=={'doc':{'id':'1'" +
-            ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child:{\"id\":\"2\",\"cat_ss\":[\"child\"]}" +
+            ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child1:{\"id\":\"2\",\"cat_ss\":[\"child\"]}" +
             "       }}"
+    );
+
+    doc = sdoc("id", "2",
+        "child3", ImmutableMap.of("add", sdoc("id", "4", "cat_ss", "child")));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child3, [child]")
+        ,"=={'doc':{'id':'1'" +
+            ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child1:{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:{\"id\":\"4\",\"cat_ss\":[\"child\"]}}" +
+            "       }}"
+    );
+
+    assertJQ(req("qt","/get", "id","2", "fl","id, cat_ss, child, child3, [child]")
+        ,"=={'doc':{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:{\"id\":\"4\",\"cat_ss\":[\"child\"]}}" +
+            "       }}"
+    );
+
+    assertU(commit());
+
+    // ensure the whole block has been committed correctly to the index.
+    assertJQ(req("q","id:1", "fl", "*, [child]"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='1'",
+        "/response/docs/[0]/cat_ss/[0]==\"aaa\"",
+        "/response/docs/[0]/cat_ss/[1]==\"ccc\"",
+        "/response/docs/[0]/cat_ss/[2]==\"bbb\"",
+        "/response/docs/[0]/child1/id=='2'",
+        "/response/docs/[0]/child1/cat_ss/[0]=='child'",
+        "/response/docs/[0]/child1/child3/id=='4'",
+        "/response/docs/[0]/child1/child3/cat_ss/[0]=='child'",
+        "/response/docs/[0]/child2/id=='3'",
+        "/response/docs/[0]/child2/cat_ss/[0]=='child'"
     );
   }
 
