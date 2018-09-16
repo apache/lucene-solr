@@ -16790,7 +16790,7 @@ the canonical format when generating dates from "Date Math" strings
 (particularly as it pertains to milliseconds ending in trailing zeros).
 As a result equivalent dates could not always be compared properly.
 This problem is corrected in Solr 1.3, but DateField users that might
-have been affected by indexing inconsistent formats of equivilent
+have been affected by indexing inconsistent formats of equivalent
 dates (ie: 1995-12-31T23:59:59Z vs 1995-12-31T23:59:59.000Z) may want
 to consider reindexing to correct these inconsistencies.  Users who
 depend on some of the the "broken" behavior of DateField in Solr 1.2

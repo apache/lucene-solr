@@ -211,7 +211,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     // we should be able to compute exact same stats for a field even
     // when we specify it using the "field()" function, or use other 
-    // identify equivilent functions
+    // identify equivalent functions
     for (String param : new String[] {
         // bare
         "{!key="+key+" ex=key_ex_tag}" + f,
@@ -543,7 +543,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     // we should be able to compute exact same stats for a field even
     // when we specify it using the "field()" function, or use other 
-    // identify equivilent functions
+    // identify equivalent functions
     for (String param : new String[] {
         // bare
         "{!key="+key+" ex=key_ex_tag}" + f,
@@ -628,7 +628,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     // we should be able to compute exact same stats & stats.facet for a field even
     // when we specify it using the "field()" function, or use other 
-    // identify equivilent functions
+    // identify equivalent functions
     for (String param : new String[] {
         // bare
         "{!key="+f+" ex=key_ex_tag}" + f,
@@ -1697,7 +1697,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
                  "need to note in upgrade instructions and probably adjust hueristic",
                  8, HLL.MAXIMUM_REGWIDTH_PARAM);
 
-    // all of these should produce equivilent HLLOptions (Long, Double, or String using defaults)
+    // all of these should produce equivalent HLLOptions (Long, Double, or String using defaults)
     SolrParams[] longDefaultParams = new SolrParams[] {
       // basic usage
       params("cardinality","true"),
@@ -1733,7 +1733,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     }
 
-    // all of these should produce equivilent HLLOptions (Int, Float, or ValueSource using defaults)
+    // all of these should produce equivalent HLLOptions (Int, Float, or ValueSource using defaults)
     SolrParams[] intDefaultParams = new SolrParams[] {
       // basic usage
       params("cardinality","true"),
