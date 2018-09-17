@@ -598,6 +598,7 @@ public class RealTimeGetComponent extends SearchComponent
    * resolveFullDocument param as true, i.e. it resolves any partial documents (in-place updates), in case the 
    * document is fetched from the tlog, to a full document.
    */
+
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, boolean resolveBlock) throws IOException {
     return getInputDocument (core, idBytes, null, false, null, true, resolveBlock);
   }

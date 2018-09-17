@@ -39,6 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import org.apache.calcite.avatica.proto.Common;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -107,7 +108,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 // NOT mt-safe... create a new processor for each add thread
@@ -1069,8 +1069,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    Long prevVersion = null;
     DeleteUpdateCommand dmd = null;
+    Long lastKnownVersion = null;
     vinfo.lockForUpdate();
     try {
       synchronized (bucket) {
@@ -1086,8 +1086,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         if (versionsStored) {
 
-          prevVersion = vinfo.lookupVersion(cmd.getIndexedId());
+
           long bucketVersion = bucket.highest;
+          lastKnownVersion = vinfo.lookupVersion(cmd.getIndexedId());
 
           if (leaderLogic) {
 
@@ -1213,10 +1214,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
 
-        if(prevVersion != null && req.getSchema().isUsableForChildDocs() &&
+        if(lastKnownVersion != null && req.getSchema().isUsableForChildDocs() &&
             req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
             cmd.solrDoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) {
-          dmd = new DeleteUpdateCommand(new LocalSolrQueryRequest(req.getCore(), new ModifiableSolrParams().set("q", IndexSchema.ROOT_FIELD_NAME + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) + " AND " + VERSION_FIELD + ": [* TO " + Long.toString(prevVersion) + "]")));
+          dmd = new DeleteUpdateCommand(new LocalSolrQueryRequest(req.getCore(), new ModifiableSolrParams().set("q", IndexSchema.ROOT_FIELD_NAME + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) + " AND " + CommonParams.VERSION_FIELD + ": [* TO " + Long.toString(lastKnownVersion) + "]")));
           dmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
           dmd.query = dmd.getReq().getParams().get("q");
           doLocalDelete(dmd);
@@ -1230,7 +1231,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } finally {
       vinfo.unlockForUpdate();
     }
-    if(prevVersion != null && dmd != null) {
+    if(lastKnownVersion != null && dmd != null) {
       versionDeleteByQuery(dmd);
     }
     return false;
@@ -1253,7 +1254,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * depends on (in the case that this current update is an in-place update) has already been completed. If not,
    * this method will wait for the missing update until it has arrived. If it doesn't arrive within a timeout threshold,
    * then this actively fetches from the leader.
-   *
+   * 
    * @return -1 if the current in-place should be dropped, or last found version if previous update has been indexed.
    */
   private long waitForDependentUpdates(AddUpdateCommand cmd, long versionOnUpdate,
