@@ -50,6 +50,7 @@ import com.codahale.metrics.ObjectNameFactory;
 import com.codahale.metrics.Reporter;
 import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -558,9 +559,12 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       try {
         if (filter.matches(name, gauge)) {
           final ObjectName objectName = createName("gauges", name);
-          if (gauge instanceof MetricsMap) {
-            ((MetricsMap)gauge).setAttribute(new Attribute(INSTANCE_TAG, tag));
-            registerMBean(gauge, objectName);
+          if (gauge instanceof SolrMetricManager.GaugeWrapper &&
+              ((SolrMetricManager.GaugeWrapper)gauge).getGauge() instanceof MetricsMap) {
+            MetricsMap mm = (MetricsMap)((SolrMetricManager.GaugeWrapper)gauge).getGauge();
+            mm.setAttribute(new Attribute(INSTANCE_TAG, tag));
+            // don't wrap it in a JmxGauge, it already supports all necessary JMX attributes
+            registerMBean(mm, objectName);
           } else {
             registerMBean(new JmxGauge(gauge, objectName, tag), objectName);
           }
