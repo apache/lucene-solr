@@ -395,6 +395,8 @@ Other Changes
 
 * SOLR-8742: In HdfsDirectoryTest replace RAMDirectory usages with ByteBuffersDirectory.
   (hossman, Mark Miller, Andrzej Bialecki, Steve Rowe)
+  
+* SOLR-12771: Improve Autoscaling Policy and Preferences documentation. (hossman, Steve Rowe)
 
 ==================  7.4.0 ==================
 
