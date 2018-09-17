@@ -111,6 +111,10 @@ Bug Fixes:
 * LUCENE-8466: IndexWriter.deleteDocs(Query... query) incorrectly applies deletes on flush
   if the index is sorted. (Adrien Grand, Jim Ferenczi, Vish Ramachandran)
 
+* LUCENE-8502: Allow access to delegate in FilterCodecReader. FilterCodecReader didn't 
+  allow access to it's delegate like other filter readers. This adds a new #getDelegate method
+  to access the wrapped reader. (Simon Willnauer)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
@@ -119,6 +123,11 @@ Changes in Runtime Behavior:
 * LUCENE-8263: TieredMergePolicy now reclaims deleted documents more
   aggressively by default ensuring that no more than ~1/3 of the index size is
   used by deleted documents. (Adrien Grand)
+
+* LUCENE-8503: Call #getDelegate instead of direct member access during unwrap. 
+  Filter*Reader instances access the member or the delegate directly instead of 
+  calling getDelegate(). In order to track access of the delegate these methods
+  should call #getDelegate() (Simon Willnauer)
 
 Improvements
 
