@@ -161,7 +161,10 @@ Optimizations
   (Jim Ferenczi, Adrien Grand)
 
 ======================= Lucene 7.6.0 =======================
-(No Changes)
+
+Build
+
+* LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
 
 ======================= Lucene 7.5.0 =======================
 
