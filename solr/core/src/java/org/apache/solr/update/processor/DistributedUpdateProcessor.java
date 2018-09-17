@@ -1419,9 +1419,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // create a new doc by default if an old one wasn't found
       mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
     } else {
-      BytesRef rootId = new BytesRef(blockDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME).toString());
       if(req.getSchema().isUsableForChildDocs() && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
-          blockDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) && !rootId.equals(id)) {
+          blockDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) && !id.utf8ToString().equals(blockDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
         SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
             false, NESTED_META_FIELDS, true, false);
         mergedDoc = docMerger.merge(sdoc, oldDoc);

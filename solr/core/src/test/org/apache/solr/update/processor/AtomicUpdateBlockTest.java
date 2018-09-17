@@ -48,7 +48,6 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterTests() throws Exception {
     // restore enable.update.log
-    PREVIOUS_ENABLE_UPDATE_LOG_VALUE = System.getProperty("enable.update.log");
     System.setProperty("enable.update.log", PREVIOUS_ENABLE_UPDATE_LOG_VALUE);
   }
 
