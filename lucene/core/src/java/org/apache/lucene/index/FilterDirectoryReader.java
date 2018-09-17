@@ -37,7 +37,7 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
    *  an instance of {@link FilterDirectoryReader}.  */
   public static DirectoryReader unwrap(DirectoryReader reader) {
     while (reader instanceof FilterDirectoryReader) {
-      reader = ((FilterDirectoryReader) reader).in;
+      reader = ((FilterDirectoryReader) reader).getDelegate();
     }
     return reader;
   }

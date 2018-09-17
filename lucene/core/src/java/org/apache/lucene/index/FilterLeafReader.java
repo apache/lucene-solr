@@ -44,7 +44,7 @@ public abstract class FilterLeafReader extends LeafReader {
    *  an instance of {@link FilterLeafReader}.  */
   public static LeafReader unwrap(LeafReader reader) {
     while (reader instanceof FilterLeafReader) {
-      reader = ((FilterLeafReader) reader).in;
+      reader = ((FilterLeafReader) reader).getDelegate();
     }
     return reader;
   }
