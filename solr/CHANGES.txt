@@ -271,6 +271,8 @@ Bug Fixes
 
 * SOLR-12733: SolrMetricReporterTest failure (Erick Erickson, David Smiley)
 
+* SOLR-12765: Incorrect format of JMX cache stats. (Bojan Smid, ab)
+
 Optimizations
 ----------------------
 
