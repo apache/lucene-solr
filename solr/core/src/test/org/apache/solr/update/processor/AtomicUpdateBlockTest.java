@@ -42,7 +42,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
   public static void beforeTests() throws Exception {
     PREVIOUS_ENABLE_UPDATE_LOG_VALUE = System.getProperty("enable.update.log");
     System.setProperty("enable.update.log", "true");
-    initCore("solrconfig-update-processor-chains.xml", "schema-nest.xml"); // use "nest" schema
+    initCore("solrconfig-block-atomic-update.xml", "schema-nest.xml"); // use "nest" schema
   }
 
   @AfterClass

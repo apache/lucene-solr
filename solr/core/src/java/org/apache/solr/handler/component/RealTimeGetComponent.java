@@ -355,7 +355,7 @@ public class RealTimeGetComponent extends SearchComponent
     String idStr = params.get("getInputDocument", null);
     if (idStr == null) return;
     AtomicLong version = new AtomicLong();
-    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, false, null, true, true);
+    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, false, null, true, false);
     log.info("getInputDocument called for id="+idStr+", returning: "+doc);
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
@@ -809,6 +809,7 @@ public class RealTimeGetComponent extends SearchComponent
    * @lucene.experimental
    */
   public static SolrDocument toSolrDoc(SolrInputDocument sdoc, IndexSchema schema) {
+    // TODO what about child / nested docs?
     // TODO: do something more performant than this double conversion
     Document doc = DocumentBuilder.toDocument(sdoc, schema);
 

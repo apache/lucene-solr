@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -129,7 +130,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * Request forwarded to a leader of a different shard will be retried up to this amount of times by default
    */
   static final int MAX_RETRIES_ON_FORWARD_DEAULT = Integer.getInteger("solr.retries.on.forward",  25);
-  
+
   /**
    * Requests from leader to it's followers will be retried this amount of times by default
    */
@@ -138,7 +139,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   /**
    * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
    * This is an implementation detail exposed solely for tests.
-   * 
+   *
    * @see DistributingUpdateProcessorFactory#DISTRIB_UPDATE_PARAM
    */
   public static enum DistribPhase {
@@ -152,7 +153,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         return valueOf(param);
       } catch (IllegalArgumentException e) {
         throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST, "Illegal value for " + 
+          (SolrException.ErrorCode.BAD_REQUEST, "Illegal value for " +
            DISTRIB_UPDATE_PARAM + ": " + param, e);
       }
     }
@@ -163,7 +164,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   // used to assert we don't call finish more than once, see finish()
   private boolean finished = false;
-  
+
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
   private final UpdateRequestProcessor next;
@@ -178,9 +179,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private NamedList<Object> deleteResponse = null;
   private NamedList<Object> deleteByQueryResponse = null;
   private CharsRefBuilder scratch;
-  
+
   private final SchemaField idField;
-  
+
   private SolrCmdDistributor cmdDistrib;
 
   private final boolean zkEnabled;
@@ -188,7 +189,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final CloudDescriptor cloudDesc;
   private final String collection;
   private final ZkController zkController;
-  
+
   // these are setup at the start of each request processing
   // method in this update processor
   private boolean isLeader = true;
@@ -197,7 +198,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<Node> nodes;
   private Set<String> skippedCoreNodeNames;
   private boolean isIndexChanged = false;
-  
+
   /**
    * Number of times requests forwarded to some other shard's leader can be retried
    */
@@ -208,7 +209,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 
   private UpdateCommand updateCommand;  // the current command this processor is working on.
-    
+
   //used for keeping track of replicas that have processed an add/update from the leader
   private RollupRequestReplicationTracker rollupReplicationTracker = null;
   private LeaderRequestReplicationTracker leaderReplicationTracker = null;
@@ -244,7 +245,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
 
     this.req = req;
-    
+
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
       (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD);
@@ -258,7 +259,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
-    
+
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
       replicaType = cloudDesc.getReplicaType();
@@ -692,7 +693,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     // TODO: if minRf > 1 and we know the leader is the only active replica, we could fail
     // the request right here but for now I think it is better to just return the status
-    // to the client that the minRf wasn't reached and let them handle it    
+    // to the client that the minRf wasn't reached and let them handle it
 
     boolean dropCmd = false;
     if (!forwardToLeader) {
@@ -812,7 +813,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       cmdDistrib.close();
     }
   }
- 
+
   // TODO: optionally fail if n replicas are not reached...
   private void doFinish() {
     boolean shouldUpdateTerms = isLeader && isIndexChanged;
@@ -826,16 +827,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO: if not a forward and replication req is not specified, we could
     // send in a background thread
 
-    cmdDistrib.finish();    
+    cmdDistrib.finish();
     List<Error> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
 
     List<Error> errorsForClient = new ArrayList<>(errors.size());
     Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
     for (final SolrCmdDistributor.Error error : errors) {
-      
+
       if (error.req.node instanceof ForwardNode) {
-        // if it's a forward, any fail is a problem - 
+        // if it's a forward, any fail is a problem -
         // otherwise we assume things are fine if we got it locally
         // until we start allowing min replication param
         errorsForClient.add(error);
@@ -843,13 +844,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
 
       // else...
-      
+
       // for now we don't error - we assume if it was added locally, we
-      // succeeded 
+      // succeeded
       if (log.isWarnEnabled()) {
         log.warn("Error sending update to " + error.req.node.getBaseUrl(), error.e);
       }
-      
+
       // Since it is not a forward request, for each fail, try to tell them to
       // recover - the doc was already added locally, so it should have been
       // legit
@@ -1144,8 +1145,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 // this was checked for (in waitForDependentUpdates()) before entering the synchronized block.
                 // So we shouldn't be here, unless what must've happened is:
                 // by the time synchronization block was entered, the prev update was deleted by DBQ. Since
-                // now that update is not in index, the vinfo.lookupVersion() is possibly giving us a version 
-                // from the deleted list (which might be older than the prev update!) 
+                // now that update is not in index, the vinfo.lookupVersion() is possibly giving us a version
+                // from the deleted list (which might be older than the prev update!)
                 UpdateCommand fetchedFromLeader = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
 
                 if (fetchedFromLeader instanceof DeleteUpdateCommand) {
@@ -1201,9 +1202,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             }
           }
         }
-        
+
         boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
-        
+
         SolrInputDocument clonedDoc = null;
         if (willDistrib && cloneRequiredOnLeader) {
           clonedDoc = cmd.solrDoc.deepCopy();
@@ -1252,7 +1253,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * depends on (in the case that this current update is an in-place update) has already been completed. If not,
    * this method will wait for the missing update until it has arrived. If it doesn't arrive within a timeout threshold,
    * then this actively fetches from the leader.
-   * 
+   *
    * @return -1 if the current in-place should be dropped, or last found version if previous update has been indexed.
    */
   private long waitForDependentUpdates(AddUpdateCommand cmd, long versionOnUpdate,
@@ -1267,7 +1268,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         lastFoundVersion = lookedUpVersion == null ? 0L: lookedUpVersion;
 
         if (Math.abs(lastFoundVersion) < cmd.prevVersion) {
-          log.debug("Re-ordered inplace update. version={}, prevVersion={}, lastVersion={}, replayOrPeerSync={}, id={}", 
+          log.debug("Re-ordered inplace update. version={}, prevVersion={}, lastVersion={}, replayOrPeerSync={}, id={}",
               (cmd.getVersion() == 0 ? versionOnUpdate : cmd.getVersion()), cmd.prevVersion, lastFoundVersion, isReplayOrPeersync, cmd.getPrintableId());
         }
 
@@ -1306,12 +1307,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // We have waited enough, but dependent update didn't arrive. Its time to actively fetch it from leader
-    log.info("Missing update, on which current in-place update depends on, hasn't arrived. id={}, looking for version={}, last found version={}", 
+    log.info("Missing update, on which current in-place update depends on, hasn't arrived. id={}, looking for version={}, last found version={}",
         cmd.getPrintableId(), cmd.prevVersion, lastFoundVersion);
-    
+
     UpdateCommand missingUpdate = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
     if (missingUpdate instanceof DeleteUpdateCommand) {
-      log.info("Tried to fetch document {} from the leader, but the leader says document has been deleted. " 
+      log.info("Tried to fetch document {} from the leader, but the leader says document has been deleted. "
           + "Deleting the document here and skipping this update: Last found version: {}, was looking for: {}", cmd.getPrintableId(), lastFoundVersion, cmd.prevVersion);
       versionDelete((DeleteUpdateCommand)missingUpdate);
       return -1;
@@ -1339,7 +1340,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     SolrRequest<SimpleSolrResponse> ur = new GenericSolrRequest(METHOD.GET, "/get", params);
 
     String leaderUrl = req.getParams().get(DISTRIB_FROM);
-    
+
     if (leaderUrl == null) {
       // An update we're dependent upon didn't arrive! This is unexpected. Perhaps likely our leader is
       // down or partitioned from us for some reason. Lets force refresh cluster state, and request the
@@ -1383,7 +1384,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     cmd.setVersion((long)leaderDoc.getFieldValue(CommonParams.VERSION_FIELD));
     return cmd;
   }
-  
+
   // TODO: may want to switch to using optimistic locking in the future for better concurrency
   // that's why this code is here... need to retry in a loop closely around/in versionAdd
   boolean getUpdatedDocument(AddUpdateCommand cmd, long versionOnUpdate) throws IOException {
@@ -1397,12 +1398,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // in-place update failed, so fall through and re-try the same with a full atomic update
       }
     }
-    
+
     // full (non-inplace) atomic update
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
     SolrInputDocument blockDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
-        false, NESTED_META_FIELDS, true, true);
+        false, req.getSchema().isUsableForChildDocs()? NESTED_META_FIELDS: null, true, true);
 
     if (blockDoc == null) {
       if (versionOnUpdate > 0) {
