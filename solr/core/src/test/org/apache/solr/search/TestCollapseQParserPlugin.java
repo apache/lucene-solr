@@ -920,6 +920,22 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testForNotSupportedCases() {
+    String[] doc = {"id","3", "term_s", "YYYY", "test_ii", "5000", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc));
+    assertU(commit());
+
+    // collapsing on multivalued field
+    assertQEx("Should Fail with Bad Request", "Collapsing not supported on multivalued fields",
+        req("q","*:*", "fq","{!collapse field=test_ii}"), SolrException.ErrorCode.BAD_REQUEST);
+
+    // collapsing on unknown field
+    assertQEx("Should Fail with Bad Request", "org.apache.solr.search.SyntaxError: undefined field: \"bleh\"",
+        req("q","*:*", "fq","{!collapse field=bleh}"), SolrException.ErrorCode.BAD_REQUEST);
+
+  }
+
+  @Test
   public void test64BitCollapseFieldException() {
     ModifiableSolrParams doubleParams = new ModifiableSolrParams();
     doubleParams.add("q", "*:*");

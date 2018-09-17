@@ -83,6 +83,12 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
 Jetty 9.4.11.v20180605
 
+New Features
+----------------------
+
+* SOLR-6280: {!collapse}: if you attempt to use CollapseQParser on a field that is multi-valued, you will now get an
+  error.  Previously, the collapsing behavior was unreliable and undefined despite no explicit error.
+  (Munendra S N, David Smiley)
 
 Other Changes
 ----------------------
