@@ -39,6 +39,15 @@ import org.apache.lucene.util.Bits;
  * {@link #getCoreCacheHelper()} and {@link #getReaderCacheHelper()}.
  */
 public abstract class FilterCodecReader extends CodecReader {
+
+  /** Get the wrapped instance by <code>reader</code> as long as this reader is
+   *  an instance of {@link FilterCodecReader}.  */
+  public static CodecReader unwrap(CodecReader reader) {
+    while (reader instanceof FilterCodecReader) {
+      reader = ((FilterCodecReader) reader).getDelegate();
+    }
+    return reader;
+  }
   /** 
    * The underlying CodecReader instance. 
    */
@@ -125,6 +134,11 @@ public abstract class FilterCodecReader extends CodecReader {
   @Override
   public void checkIntegrity() throws IOException {
     in.checkIntegrity();
+  }
+
+  /** Returns the wrapped {@link CodecReader}. */
+  public CodecReader getDelegate() {
+    return in;
   }
 
   /**
