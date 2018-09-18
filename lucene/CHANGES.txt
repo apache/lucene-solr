@@ -78,6 +78,9 @@ API Changes
 
 * LUCENE-8483: Scorers may no longer take null as a Weight (Alan Woodward)
 
+* LUCENE-8352: TokenStreamComponents is now final, and can take a Consumer<Reader>
+  in its constructor (Mark Harwood, Alan Woodward, Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

@@ -123,3 +123,9 @@ be replaced with a Scorable instead.
 instead of long at suggest time ##
 
 Most code should just require recompilation, though possibly requiring some added casts.
+
+## TokenStreamComponents is now final ##
+
+Instead of overriding TokenStreamComponents#setReader() to customise analyzer
+initialisation, you should now pass a Consumer&lt;Reader> instance to the
+TokenStreamComponents constructor.
