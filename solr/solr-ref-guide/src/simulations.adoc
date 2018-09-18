@@ -22,7 +22,7 @@ stochastic systems. This section describes
 how to perform both uncorrelated and correlated Monte Carlo simulations
 using the sampling capabilities of the probability distribution framework.
 
-=== Uncorrelated Simulations
+== Uncorrelated Simulations
 
 Uncorrelated Monte Carlo simulations model stochastic systems with the assumption
 that the underlying random variables move independently of each other.
@@ -89,7 +89,7 @@ be 5 or less:
 }
 ----
 
-=== Correlated Simulations
+== Correlated Simulations
 
 The simulation above assumes that the lengths of `componentA` and `componentB` vary independently.
 What would happen to the probability model if there was a correlation between the lengths of
@@ -208,4 +208,3 @@ When this expression is sent to the `/stream` handler it responds with:
   }
 }
 ----
-
