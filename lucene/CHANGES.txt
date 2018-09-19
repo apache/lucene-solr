@@ -9,6 +9,13 @@ Build
 
 * LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
 
+======================= Lucene 7.5.1 =======================
+
+Bug Fixes:
+
+* LUCENE-8454: Fix incorrect vertex indexing and other computation errors in
+  shape tessellation that would sometimes cause an infinite loop. (Nick Knize)
+
 ======================= Lucene 7.5.0 =======================
 
 API Changes:
