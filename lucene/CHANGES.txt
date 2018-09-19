@@ -117,6 +117,10 @@ New Features
   how close a value of a long field is from an configurable origin. This is
   typically useful to boost by recency. (Adrien Grand)
 
+* LUCENE-8482: LatLonPoint#newDistanceFeatureQuery may be used to boost scores
+  based on the haversine distance of a LatLonPoint field to a provided point. This is
+  typically useful to boost by distance. (Ignacio Vera)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
