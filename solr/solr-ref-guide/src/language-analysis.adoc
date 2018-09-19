@@ -1,4 +1,5 @@
 = Language Analysis
+:example-source-dir: {solr-root-path}core/src/test-files/solr/collection1/conf/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -69,9 +70,8 @@ IMPORTANT: When adding the same token twice, it will also score twice (double), 
 
 Overrides stemming algorithms by applying a custom mapping, then protecting these terms from being modified by stemmers.
 
-A customized mapping of words to stems, in a tab-separated file, can be specified to the "dictionary" attribute in the schema. Words in this mapping will be stemmed to the stems from the file, and will not be further changed by any stemmer.
+A customized mapping of words to stems, in a tab-separated file, can be specified to the `dictionary` attribute in the schema. Words in this mapping will be stemmed to the stems from the file, and will not be further changed by any stemmer.
 
-A sample http://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/test-files/solr/collection1/conf/stemdict.txt[stemdict.txt] with comments can be found in the Source Repository.
 
 [source,xml]
 ----
@@ -83,6 +83,15 @@ A sample http://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/test-fil
   </analyzer>
 </fieldtype>
 ----
+
+A sample `stemdict.txt` file is shown below:
+
+[source,text]
+----
+include::{example-source-dir}stemdict.txt[lines=18..22]
+----
+
+If you have a checkout of Solr's source code locally, you can also find this example in Solr's test resources at `solr/core/src/test-files/solr/collection1/conf/stemdict.txt`.
 
 == Dictionary Compound Word Token Filter
 
