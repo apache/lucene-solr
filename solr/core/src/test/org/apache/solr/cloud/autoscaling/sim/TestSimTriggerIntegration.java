@@ -127,7 +127,10 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
     SolrClient solrClient = cluster.simGetSolrClient();
     NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    String result = response.get("result").toString();
+    if (!"success".equals(result) && !result.contains("No trigger exists")) {
+      fail("Unexpected response: " + result);
+    }
 
     waitForSeconds = 1 + random().nextInt(3);
     actionConstructorCalled = new CountDownLatch(1);
