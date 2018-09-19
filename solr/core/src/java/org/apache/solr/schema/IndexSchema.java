@@ -360,7 +360,7 @@ public class IndexSchema {
     for (FieldInfo f : MultiFields.getMergedFieldInfos(reader)) {
       if (f.getDocValuesType() == DocValuesType.NONE) {
         // we have a field (of some kind) in the reader w/o DocValues
-        // if we have an equivilent indexed=true field in the schema, trust it's uninversion type (if any)
+        // if we have an equivalent indexed=true field in the schema, trust it's uninversion type (if any)
         final SchemaField sf = getFieldOrNull(f.name);
         if (sf != null && sf.indexed()) {
           final UninvertingReader.Type type = sf.getType().getUninversionType(sf);

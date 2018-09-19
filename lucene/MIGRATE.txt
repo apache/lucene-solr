@@ -113,3 +113,19 @@ Scorer has a number of methods that should never be called from Collectors, for 
 those that advance the underlying iterators.  To hide these, LeafCollector.setScorer()
 now takes a Scorable, an abstract class that Scorers can extend, with methods
 docId() and score() (LUCENE-6228)
+
+## Scorers must have non-null Weights ##
+
+If a custom Scorer implementation does not have an associated Weight, it can probably
+be replaced with a Scorable instead.
+
+## Suggesters now return Long instead of long for weight() during indexing, and double
+instead of long at suggest time ##
+
+Most code should just require recompilation, though possibly requiring some added casts.
+
+## TokenStreamComponents is now final ##
+
+Instead of overriding TokenStreamComponents#setReader() to customise analyzer
+initialisation, you should now pass a Consumer&lt;Reader> instance to the
+TokenStreamComponents constructor.

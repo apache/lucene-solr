@@ -325,7 +325,7 @@ public final class BKDReader extends PointValues implements Accountable {
   public static final class IntersectState {
     final IndexInput in;
     final int[] scratchDocIDs;
-    final byte[] scratchPackedValue;
+    final byte[] scratchPackedValue1, scratchPackedValue2;
     final int[] commonPrefixLengths;
 
     final IntersectVisitor visitor;
@@ -340,7 +340,8 @@ public final class BKDReader extends PointValues implements Accountable {
       this.visitor = visitor;
       this.commonPrefixLengths = new int[numDims];
       this.scratchDocIDs = new int[maxPointsInLeafNode];
-      this.scratchPackedValue = new byte[packedBytesLength];
+      this.scratchPackedValue1 = new byte[packedBytesLength];
+      this.scratchPackedValue2 = new byte[packedBytesLength];
       this.index = indexVisitor;
     }
   }
@@ -402,7 +403,7 @@ public final class BKDReader extends PointValues implements Accountable {
     int count = readDocIDs(state.in, index.getLeafBlockFP(), state.scratchDocIDs);
 
     // Again, this time reading values and checking with the visitor
-    visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, count, state.visitor);
+    visitDocValues(state.commonPrefixLengths, state.scratchPackedValue1, state.scratchPackedValue2, state.in, state.scratchDocIDs, count, state.visitor);
   }
 
   private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor) throws IOException {
@@ -427,19 +428,58 @@ public final class BKDReader extends PointValues implements Accountable {
     return count;
   }
 
-  void visitDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
-    visitor.grow(count);
+  void visitDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue1, byte[] scratchPackedValue2, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
 
-    readCommonPrefixes(commonPrefixLengths, scratchPackedValue, in);
+
+    readCommonPrefixes(commonPrefixLengths, scratchPackedValue1, in);
+
+    if (numDims != 1 && version >= BKDWriter.VERSION_LEAF_STORES_BOUNDS) {
+      byte[] minPackedValue = scratchPackedValue1;
+      byte[] maxPackedValue = scratchPackedValue2;
+      //Copy common prefixes before reading adjusted
+      // box
+      System.arraycopy(minPackedValue, 0, maxPackedValue, 0, packedBytesLength);
+      readMinMax(commonPrefixLengths, minPackedValue, maxPackedValue, in);
+
+      // The index gives us range of values for each dimension, but the actual range of values
+      // might be much more narrow than what the index told us, so we double check the relation
+      // here, which is cheap yet might help figure out that the block either entirely matches
+      // or does not match at all. This is especially more likely in the case that there are
+      // multiple dimensions that have correlation, ie. splitting on one dimension also
+      // significantly changes the range of values in another dimension.
+      Relation r = visitor.compare(minPackedValue, maxPackedValue);
+      if (r == Relation.CELL_OUTSIDE_QUERY) {
+        return;
+      }
+      visitor.grow(count);
+
+      if (r == Relation.CELL_INSIDE_QUERY) {
+        for (int i = 0; i < count; ++i) {
+          visitor.visit(docIDs[i]);
+        }
+        return;
+      }
+    } else {
+      visitor.grow(count);
+    }
+
 
     int compressedDim = readCompressedDim(in);
 
     if (compressedDim == -1) {
-      visitRawDocValues(commonPrefixLengths, scratchPackedValue, in, docIDs, count, visitor);
+      visitRawDocValues(commonPrefixLengths, scratchPackedValue1, in, docIDs, count, visitor);
     } else {
-      visitCompressedDocValues(commonPrefixLengths, scratchPackedValue, in, docIDs, count, visitor, compressedDim);
+      visitCompressedDocValues(commonPrefixLengths, scratchPackedValue1, in, docIDs, count, visitor, compressedDim);
     }
   }
+
+    private void readMinMax(int[] commonPrefixLengths, byte[] minPackedValue, byte[] maxPackedValue, IndexInput in) throws IOException {
+      for (int dim = 0; dim < numDims; dim++) {
+        int prefix = commonPrefixLengths[dim];
+        in.readBytes(minPackedValue, dim * bytesPerDim + prefix, bytesPerDim - prefix);
+        in.readBytes(maxPackedValue, dim * bytesPerDim + prefix, bytesPerDim - prefix);
+      }
+    }
 
   // Just read suffixes for every dimension
   private void visitRawDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
@@ -521,7 +561,7 @@ public final class BKDReader extends PointValues implements Accountable {
         int count = readDocIDs(state.in, state.index.getLeafBlockFP(), state.scratchDocIDs);
 
         // Again, this time reading values and checking with the visitor
-        visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, count, state.visitor);
+        visitDocValues(state.commonPrefixLengths, state.scratchPackedValue1, state.scratchPackedValue2, state.in, state.scratchDocIDs, count, state.visitor);
       }
 
     } else {

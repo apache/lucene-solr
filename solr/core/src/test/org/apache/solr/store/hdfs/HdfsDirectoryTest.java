@@ -24,11 +24,11 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -140,9 +140,8 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testEOF() throws IOException {
-    Directory fsDir = new RAMDirectory();
+    Directory fsDir = new ByteBuffersDirectory();
     String name = "test.eof";
     createFile(name, fsDir, directory);
     long fsLength = fsDir.fileLength(name);
@@ -168,7 +167,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     try {
       Set<String> names = new HashSet<>();
       for (; i< 10; i++) {
-        Directory fsDir = new RAMDirectory();
+        Directory fsDir = new ByteBuffersDirectory();
         String name = getName();
         System.out.println("Working on pass [" + i  +"] contains [" + names.contains(name) + "]");
         names.add(name);

@@ -443,10 +443,6 @@
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
   <!-- ========================================================================= -->
  
-  <target name="copy-to-stage">
-    <copy-to-stage-macro artifacts.dir="${package.dir}"/>
-  </target>
-  
   <target name="dist"
           description="Creates the Solr distribution files."
           depends="dist-solrj, dist-core, dist-test-framework, dist-contrib" />
@@ -467,7 +463,7 @@
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  
   <!-- make a distribution -->
-  <target name="package" depends="package-src-tgz,create-package,documentation,-dist-changes,-dist-keys"/>
+  <target name="package" depends="package-src-tgz,create-package,documentation,-dist-changes"/>
 
   <!-- copy changes/ to the release folder -->
   <target name="-dist-changes">
@@ -476,12 +472,6 @@
    </copy>
   </target>
 
-  <!-- copy KEYS to the release folder -->
-  <target name="-dist-keys">
-   <get src="http://home.apache.org/keys/group/lucene.asc" 
-        dest="${package.dir}/KEYS"/>
-  </target>
- 
   <!-- Makes a tarball of the source.    -->
   <!-- Copies NOTICE.txt and LICENSE.txt from solr/ to the root level. -->
   <target name="package-src-tgz" depends="init-dist"

@@ -305,7 +305,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   /**
    * Given a set of term facets, and top level query strings, asserts that 
    * the SKG stats for each facet term returned when executing that query with those foreground/background
-   * queries match the expected results of executing the equivilent queries in isolation.
+   * queries match the expected results of executing the equivalent queries in isolation.
    *
    * @see #verifySKGResults
    */
@@ -355,7 +355,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   /** 
    * Recursive helper method that walks the actual facet response, comparing the SKG results to 
-   * the expected output based on the equivilent filters generated from the original TermFacet.
+   * the expected output based on the equivalent filters generated from the original TermFacet.
    */
   private void assertFacetSKGsAreCorrect(final AtomicInteger maxBucketsToCheck,
                                          final Map<String,TermFacet> expected,

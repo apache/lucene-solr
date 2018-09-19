@@ -167,7 +167,7 @@ host:!192.45.67.3
 
 == Defining Rules
 
-Rules are specified per collection during collection creation as request parameters. It is possible to specify multiple ‘rule’ and ‘snitch’ params as in this example:
+Rules are specified per collection during collection creation as request parameters. It is possible to specify multiple ‘rule’ and ‘snitch’ parameters as in this example:
 
 [source,text]
 ----

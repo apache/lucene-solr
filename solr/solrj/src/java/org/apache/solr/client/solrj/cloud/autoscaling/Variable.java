@@ -31,8 +31,8 @@ import java.util.function.Consumer;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 import static java.util.Collections.emptySet;
-import static java.util.Collections.unmodifiableSet;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.unmodifiableSet;
 
 /**
  * A Variable Type used in Autoscaling policy rules. Each variable type may have unique implementation
@@ -53,11 +53,8 @@ public interface Variable {
   default void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector, boolean strictMode) {
   }
 
-  default void addViolatingReplicas(Violation.Ctx ctx) {
-    for (Row row : ctx.allRows) {
-      if (ctx.clause.tag.varType.meta.isNodeSpecificVal() && !row.node.equals(ctx.tagKey)) continue;
-      Violation.collectViolatingReplicas(ctx, row);
-    }
+  default boolean addViolatingReplicas(Violation.Ctx ctx) {
+    return false;
   }
 
   void getSuggestions(Suggestion.Ctx ctx);
@@ -85,7 +82,10 @@ public interface Variable {
    * Type details of each variable in policies
    */
   public enum Type implements Variable {
-    @Meta(name = "withCollection", type = String.class, isNodeSpecificVal = true, implementation = WithCollectionVariable.class)
+    @Meta(name = "withCollection",
+        type = String.class,
+        isNodeSpecificVal = true,
+        implementation = WithCollectionVariable.class)
     WITH_COLLECTION(),
 
     @Meta(name = "collection",
@@ -285,8 +285,8 @@ public interface Variable {
     }
 
     @Override
-    public void addViolatingReplicas(Violation.Ctx ctx) {
-      impl.addViolatingReplicas(ctx);
+    public boolean addViolatingReplicas(Violation.Ctx ctx) {
+      return impl.addViolatingReplicas(ctx);
     }
 
     public Operand getOperand(Operand expected, Object val, ComputedType computedType) {

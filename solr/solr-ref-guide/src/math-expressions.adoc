@@ -38,7 +38,7 @@ record in your Solr Cloud cluster computable.
 
 *<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix creation, manipulation, and matrix math.
 
-*<<vectorization.adoc#vectorization,Streams and Vectorization>>*: Retrieving streams and vectorizing numeric fields.
+*<<vectorization.adoc#vectorization,Streams and Vectorization>>*: Retrieving streams and vectorizing numeric and lat/lon location fields.
 
 *<<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>*: Using math expressions for text analysis and TF-IDF term vectors.
 

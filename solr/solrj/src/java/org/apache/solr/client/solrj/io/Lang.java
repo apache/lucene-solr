@@ -255,6 +255,7 @@ public class Lang {
         .withFunctionName("removeCache", RemoveCacheEvaluator.class)
         .withFunctionName("listCache", ListCacheEvaluator.class)
         .withFunctionName("zscores", NormalizeEvaluator.class)
+        .withFunctionName("latlonVectors", LatLonVectorsEvaluator.class)
 
         // Boolean Stream Evaluators
 

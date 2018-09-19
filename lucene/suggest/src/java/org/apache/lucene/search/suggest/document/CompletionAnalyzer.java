@@ -132,6 +132,6 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
   protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
     CompletionTokenStream tokenStream = new CompletionTokenStream(components.getTokenStream(),
         preserveSep, preservePositionIncrements, maxGraphExpansions);
-    return new TokenStreamComponents(components.getTokenizer(), tokenStream);
+    return new TokenStreamComponents(components.getSource(), tokenStream);
   }
 }

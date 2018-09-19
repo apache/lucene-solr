@@ -20,12 +20,16 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.Pair;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.suggestNegativeViolations;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORE_IDX;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.TOTALDISK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
@@ -68,14 +72,12 @@ public class FreeDiskVariable extends VariableBase {
   @Override
   public void getSuggestions(Suggestion.Ctx ctx) {
     if (ctx.violation == null) return;
-    if (ctx.violation.replicaCountDelta < 0 && !ctx.violation.getViolatingReplicas().isEmpty()) {
-
-      Comparator<Row> rowComparator = Comparator.comparing(r -> ((Double) r.getVal(ImplicitSnitch.DISK, 0d)));
+    if (ctx.violation.replicaCountDelta > 0) {
       List<Row> matchingNodes = ctx.session.matrix.stream().filter(
           row -> ctx.violation.getViolatingReplicas()
               .stream()
               .anyMatch(p -> row.node.equals(p.replicaInfo.getNode())))
-          .sorted(rowComparator)
+          .sorted(Comparator.comparing(r -> ((Double) r.getVal(ImplicitSnitch.DISK, 0d))))
           .collect(Collectors.toList());
 
 
@@ -94,14 +96,40 @@ public class FreeDiskVariable extends VariableBase {
           if (currentDelta < 1) break;
           if (replica.getVariables().get(CORE_IDX.tagName) == null) continue;
           Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
-              .hint(Suggester.Hint.COLL_SHARD, new Pair<>(replica.getCollection(), replica.getShard()))
-              .hint(Suggester.Hint.SRC_NODE, node.node)
+              .hint(Hint.COLL_SHARD, new Pair<>(replica.getCollection(), replica.getShard()))
+              .hint(Hint.SRC_NODE, node.node)
               .forceOperation(true);
           if (ctx.addSuggestion(suggester) == null) break;
           currentDelta -= Clause.parseLong(CORE_IDX.tagName, replica.getVariable(CORE_IDX.tagName));
         }
       }
+    } else if (ctx.violation.replicaCountDelta < 0) {
+      suggestNegativeViolations(ctx, shards -> getSortedShards(ctx,shards));
     }
+  }
+
+
+
+
+  private List<String> getSortedShards(Suggestion.Ctx ctx, Set<String> shardSet) {
+    return  shardSet.stream()
+        .map(shard1 -> {
+          AtomicReference<Pair<String, Long>> result = new AtomicReference<>();
+          for (Row node : ctx.session.matrix) {
+            node.forEachShard(ctx.violation.coll, (s, ri) -> {
+              if (result.get() != null) return;
+              if (s.equals(shard1) && ri.size() > 0) {
+                Number sz = ((Number) ri.get(0).getVariable(CORE_IDX.tagName));
+                if (sz != null) result.set(new Pair<>(shard1, sz.longValue()));
+              }
+            });
+          }
+          return result.get() == null ? new Pair<>(shard1, 0L) : result.get();
+        })
+        .sorted(Comparator.comparingLong(Pair::second))
+        .map(Pair::first)
+        .collect(Collectors.toList());
+
   }
 
   //When a replica is added, freedisk should be incremented

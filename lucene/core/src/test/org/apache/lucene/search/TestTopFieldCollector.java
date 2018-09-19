@@ -149,7 +149,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for (int totalHitsThreshold = 1; totalHitsThreshold < 20; ++ totalHitsThreshold) {
       for (FieldDoc after : new FieldDoc[] { null, new FieldDoc(4, Float.NaN, new Object[] { 2L })}) {
         TopFieldCollector collector = TopFieldCollector.create(sort, 2, after, totalHitsThreshold);
-        FakeScorer scorer = new FakeScorer();
+        ScoreAndDoc scorer = new ScoreAndDoc();
 
         LeafCollector leafCollector1 = collector.getLeafCollector(reader.leaves().get(0));
         leafCollector1.setScorer(scorer);

@@ -16,24 +16,22 @@
  */
 package org.apache.solr.cloud.autoscaling.sim;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 
 /**
  *
  */
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-02-26
+// commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-02-26
 public class TestSimGenericDistributedQueue extends TestSimDistributedQueue {
   DistribStateManager stateManager = new SimDistribStateManager();
 
   @Override
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   protected DistributedQueue makeDistributedQueue(String dqZNode) throws Exception {
     return new GenericDistributedQueue(stateManager, dqZNode);
   }
 
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testDistributedQueue() throws Exception {
     super.testDistributedQueue();
   }

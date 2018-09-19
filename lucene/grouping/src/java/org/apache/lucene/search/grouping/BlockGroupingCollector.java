@@ -286,7 +286,7 @@ public class BlockGroupingCollector extends SimpleCollector {
     }
     int totalGroupedHitCount = 0;
 
-    final FakeScorer fakeScorer = new FakeScorer();
+    final ScoreAndDoc fakeScorer = new ScoreAndDoc();
 
     float maxScore = Float.MIN_VALUE;
 
@@ -493,5 +493,22 @@ public class BlockGroupingCollector extends SimpleCollector {
   @Override
   public ScoreMode scoreMode() {
     return needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
+  }
+
+  private static class ScoreAndDoc extends Scorable {
+
+    float score;
+    int doc = -1;
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public float score() {
+      return score;
+    }
+
   }
 }

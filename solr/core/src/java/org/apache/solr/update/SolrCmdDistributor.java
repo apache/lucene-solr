@@ -80,7 +80,8 @@ public class SolrCmdDistributor implements Closeable {
     this.completionService = new ExecutorCompletionService<>(updateShardHandler.getUpdateExecutor());
   }
   
-  public SolrCmdDistributor(StreamingSolrClients clients, int retryPause) {
+  /* For tests only */
+  SolrCmdDistributor(StreamingSolrClients clients, int retryPause) {
     this.clients = clients;
     this.retryPause = retryPause;
     completionService = new ExecutorCompletionService<>(clients.getUpdateExecutor());
@@ -129,8 +130,6 @@ public class SolrCmdDistributor implements Closeable {
 
     for (Error err : errors) {
       try {
-        String oldNodeUrl = err.req.node.getUrl();
-        
         /*
          * if this is a retryable request we may want to retry, depending on the error we received and
          * the number of times we have already retried
@@ -143,26 +142,6 @@ public class SolrCmdDistributor implements Closeable {
         // this can happen in certain situations such as close
         if (isRetry) {
           err.req.retries++;
-
-          if (err.req.node instanceof ForwardNode) {
-            SolrException.log(SolrCmdDistributor.log, "forwarding update to "
-                + oldNodeUrl + " failed - retrying ... retries: "
-                + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
-                + err.req.cmd.toString() + " params:"
-                + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
-          } else {
-            SolrException.log(SolrCmdDistributor.log, "FROMLEADER request to "
-                + oldNodeUrl + " failed - retrying ... retries: "
-                + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
-                + err.req.cmd.toString() + " params:"
-                + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
-          }
-          try {
-            Thread.sleep(retryPause); //TODO: Do we want this wait for every error?
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn(null, e);
-          }
           resubmitList.add(err);
         } else {
           allErrors.add(err);
@@ -173,9 +152,34 @@ public class SolrCmdDistributor implements Closeable {
       }
     }
     
+    if (resubmitList.size() > 0) {
+      // Only backoff once for the full batch
+      try {
+        int backoffTime = Math.min(retryPause * resubmitList.get(0).req.retries, 2000);
+        log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
+        Thread.sleep(backoffTime);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.warn(null, e);
+      }
+    }
+    
     clients.clearErrors();
     this.errors.clear();
     for (Error err : resubmitList) {
+      if (err.req.node instanceof ForwardNode) {
+        SolrException.log(SolrCmdDistributor.log, "forwarding update to "
+            + err.req.node.getUrl() + " failed - retrying ... retries: "
+            + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
+            + err.req.cmd.toString() + " params:"
+            + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
+      } else {
+        SolrException.log(SolrCmdDistributor.log, "FROMLEADER request to "
+            + err.req.node.getUrl() + " failed - retrying ... retries: "
+            + err.req.retries + "/" + err.req.node.getMaxRetries() + ". "
+            + err.req.cmd.toString() + " params:"
+            + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
+      }
       submit(err.req, false);
     }
     

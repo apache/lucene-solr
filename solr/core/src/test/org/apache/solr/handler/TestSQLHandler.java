@@ -79,6 +79,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   //@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void doTest() throws Exception {
     waitForRecoveriesToFinish(false);
 

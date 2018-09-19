@@ -360,7 +360,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         if (fieldName.equals(TEXTGRAMS_FIELD_NAME) && minPrefixChars > 0) {
           // TODO: should use an EdgeNGramTokenFilterFactory here
           TokenFilter filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars, false);
-          return new TokenStreamComponents(components.getTokenizer(), filter);
+          return new TokenStreamComponents(components.getSource(), filter);
         } else {
           return components;
         }

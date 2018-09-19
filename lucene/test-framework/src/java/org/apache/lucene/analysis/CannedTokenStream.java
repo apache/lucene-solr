@@ -52,7 +52,13 @@ public final class CannedTokenStream extends TokenStream {
     posIncrAtt.setPositionIncrement(finalPosInc);
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
-  
+
+  @Override
+  public void reset() throws IOException {
+    upto = 0;
+    super.reset();
+  }
+
   @Override
   public boolean incrementToken() {
     if (upto < tokens.length) {

@@ -623,6 +623,27 @@ without error.  If there was no limit, than an erroneous value could trigger man
 +
 The default is 10 minutes.
 
+`router.preemptiveCreateMath`::
+A date math expression that results in early creation of new collections.
++
+If a document arrives with a timestamp that is after the end time of the most recent collection minus this
+interval, then the next (and only the next) collection will be created asynchronously. Without this setting, collections are created
+synchronously when required by the document time stamp and thus block the flow of documents until the collection
+is created (possibly several seconds). Preemptive creation reduces these hiccups. If set to enough time (perhaps
+an hour or more) then if there are problems creating a collection, this window of time might be enough to take
+corrective action. However after a successful preemptive creation,  the collection is consuming resources without
+being used, and new documents will tend to be routed through it only to be routed elsewhere. Also, note that
+router.autoDeleteAge is currently evaluated relative to the date of a newly created collection, and so you may
+want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
+soon. Note that it has to be possible to subtract the interval specified from a date, so if prepending a
+minus sign creates invalid date math, this will cause an error. Also note that a document that is itself
+destined for a collection that does not exist will still trigger synchronous creation up to that destination collection
+but will not trigger additional async preemptive creation. Only one type of collection creation can happen
+per document.
+Example: `90MINUTES`.
++
+This property is blank by default indicating just-in-time, synchronous creation of new collections.
+
 `router.autoDeleteAge`::
 A date math expression that results in the oldest collections getting deleted automatically.
 +
@@ -1085,7 +1106,8 @@ Add, edit or delete a cluster-wide property.
 === CLUSTERPROP Parameters
 
 `name`::
-The name of the property. Supported properties names are `urlScheme` and `autoAddReplicas and location`. Other names are rejected with an error.
+The name of the property. Supported properties names are `autoAddReplicas`, `legacyCloud` , `location`, `maxCoresPerNode` and `urlScheme`. Other properties can be set
+(for example, if you need them for custom plugins) but they must begin with the prefix `ext.`. Unknown properties that don't begin with `ext.` will be rejected.
 
 `val`::
 The value of the property. If the value is empty or null, the property is unset.

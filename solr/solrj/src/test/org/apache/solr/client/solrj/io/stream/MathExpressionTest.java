@@ -310,6 +310,52 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(array.get(2).intValue(), 50);
     assertEquals(array.get(3).intValue(), 50);
   }
+
+  @Test
+  public void testLatlonFunctions() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    int i=0;
+    while(i<5) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2016", "5", "1"),
+          "price_i",  Integer.toString(i), "loc_p", (42.906797030808235+i)+","+(76.69455762489834+i));
+    }
+
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "let(echo=true," +
+        "              a=search("+COLLECTIONORALIAS+", q=*:*, fl=\"id, loc_p, price_i\",rows=100, sort=\"price_i asc\"),"+
+        "              b=latlonVectors(a, field=loc_p)," +
+        "              c=distance(array(40.7128, 74.0060), array(45.7128, 74.0060), haversineMeters()))";
+
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>>locVectors = (List<List<Number>>)tuples.get(0).get("b");
+    System.out.println(locVectors);
+    int v=1;
+    for(List<Number> row : locVectors) {
+     double lat = row.get(0).doubleValue();
+     double lon = row.get(1).doubleValue();
+     assertEquals(lat, 42.906797030808235+v, 0);
+     assertEquals(lon, 76.69455762489834+v, 0);
+     ++v;
+    }
+
+    double distance = tuples.get(0).getDouble("c");
+    assertEquals(distance, 555975.3986718428, 1.0);
+
+  }
   
   @Test
   public void testHist() throws Exception {

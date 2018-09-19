@@ -92,13 +92,10 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
     TokenStream tok = new ClassicFilter(src);
     tok = new LowerCaseFilter(tok);
     tok = new StopFilter(tok, stopwords);
-    return new TokenStreamComponents(src, tok) {
-      @Override
-      protected void setReader(final Reader reader) {
-        src.setMaxTokenLength(ClassicAnalyzer.this.maxTokenLength);
-        super.setReader(reader);
-      }
-    };
+    return new TokenStreamComponents(r -> {
+      src.setMaxTokenLength(ClassicAnalyzer.this.maxTokenLength);
+      src.setReader(r);
+    }, tok);
   }
 
   @Override
