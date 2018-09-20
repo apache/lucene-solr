@@ -800,12 +800,12 @@ final public class Tessellator {
 
     /** get the x value */
     public final double getX() {
-      return x;
+      return polygon.getPolyLon(vrtxIdx);
     }
 
     /** get the y value */
     public final double getY() {
-      return y;
+      return polygon.getPolyLat(vrtxIdx);
     }
 
     /** get the longitude value */
