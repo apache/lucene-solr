@@ -41,6 +41,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -76,6 +77,11 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
       solrClient = ((SimCloudManager)cloudManager).simGetSolrClient();
     }
     timeSource = cloudManager.getTimeSource();
+  }
+
+  @Before
+  public void initTest() {
+    triggerFired = new CountDownLatch(1);
   }
 
   @After
@@ -138,7 +144,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     }
   }
 
-  static CountDownLatch triggerFired = new CountDownLatch(1);
+  static CountDownLatch triggerFired;
 
   public static class TestTriggerAction extends TriggerActionBase {
 
