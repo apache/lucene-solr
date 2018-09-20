@@ -169,7 +169,12 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_INDEX, false);
       if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
       NamedList deleteResult = new NamedList();
-      ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+      try {
+        ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+      } catch (SolrException e) {
+        // assume this failed completely so there's nothing to roll back
+        deleteResult.add("failure", e.toString());
+      }
       if (deleteResult.get("failure") != null) {
         String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s",
             coll.getName(), slice.getName(), replica.getName(), deleteResult.get("failure"));
@@ -304,7 +309,11 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         REPLICA_PROP, replica.getName());
     if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
     NamedList deleteResult = new NamedList();
-    ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+    try {
+      ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+    } catch (SolrException e) {
+      deleteResult.add("failure", e.toString());
+    }
     if (deleteResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s",
           coll.getName(), slice.getName(), replica.getName(), deleteResult.get("failure"));

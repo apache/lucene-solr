@@ -81,6 +81,9 @@ API Changes
 * LUCENE-8352: TokenStreamComponents is now final, and can take a Consumer<Reader>
   in its constructor (Mark Harwood, Alan Woodward, Adrien Grand)
 
+* LUCENE-8498: LowerCaseTokenizer has been removed, and CharTokenizer no longer
+  takes a normalizer function. (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

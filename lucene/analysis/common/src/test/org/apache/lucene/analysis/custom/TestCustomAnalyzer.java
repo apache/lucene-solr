@@ -31,9 +31,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory;
 import org.apache.lucene.analysis.charfilter.MappingCharFilterFactory;
+import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
-import org.apache.lucene.analysis.core.LowerCaseTokenizer;
-import org.apache.lucene.analysis.core.LowerCaseTokenizerFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
@@ -419,7 +418,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
 
     @Override
     public Tokenizer create(AttributeFactory factory) {
-      return new LowerCaseTokenizer(factory);
+      return new LetterTokenizer(factory);
     }
 
   }
@@ -499,14 +498,6 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
         .addCharFilter(MappingCharFilterFactory.class, new HashMap<>(Collections.singletonMap("mapping", "org/apache/lucene/analysis/custom/mapping2.txt")))
         .build();
     assertEquals(new BytesRef("e f c"), analyzer.normalize("dummy", "a b c"));
-  }
-  
-  /** test normalize where the TokenizerFactory returns a filter to normalize the text */
-  public void testNormalizationWithLowerCaseTokenizer() throws IOException {
-    CustomAnalyzer analyzer1 = CustomAnalyzer.builder()
-        .withTokenizer(LowerCaseTokenizerFactory.class, Collections.emptyMap())
-        .build();
-    assertEquals(new BytesRef("abc"), analyzer1.normalize("dummy", "ABC"));
   }
 
   public void testConditions() throws IOException {
