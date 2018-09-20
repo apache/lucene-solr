@@ -99,4 +99,10 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
     }
   }
+
+  @Override
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8454")
+  public void testRandomMedium() throws Exception {
+    super.testRandomMedium();
+  }
 }
