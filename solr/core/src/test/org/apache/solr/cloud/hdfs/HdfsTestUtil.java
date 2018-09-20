@@ -82,18 +82,8 @@ public class HdfsTestUtil {
     ThreadLocalRandom.setInitialSeedUniquifier(1L);
     
     int dataNodes = Integer.getInteger("tests.hdfs.numdatanodes", 2);
-    
-    Configuration conf = new Configuration();
-    conf.set("dfs.block.access.token.enable", "false");
-    conf.set("dfs.permissions.enabled", "false");
-    conf.set("hadoop.security.authentication", "simple");
-    conf.set("hdfs.minidfs.basedir", dir + File.separator + "hdfsBaseDir");
-    conf.set("dfs.namenode.name.dir", dir + File.separator + "nameNodeNameDir");
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-    
-    System.setProperty("test.build.data", dir + File.separator + "hdfs" + File.separator + "build");
-    System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");
-    System.setProperty("solr.lock.type", DirectoryFactory.LOCK_TYPE_HDFS);
+
+    Configuration conf = getDefaultConfiguration(dir);
     
     
     System.setProperty("solr.hdfs.blockcache.global", Boolean.toString(LuceneTestCase.random().nextBoolean()));
@@ -167,6 +157,44 @@ public class HdfsTestUtil {
     SolrTestCaseJ4.useFactory("org.apache.solr.core.HdfsDirectoryFactory");
     
     return dfsCluster;
+  }
+
+  public static MiniDFSCluster setupClassBasic(String dir) throws Exception {
+    LuceneTestCase.assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
+        Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
+
+    savedLocale = Locale.getDefault();
+    // TODO: we HACK around HADOOP-9643
+    Locale.setDefault(Locale.ENGLISH);
+
+    Configuration conf = getDefaultConfiguration(dir);
+
+
+    System.setProperty("solr.hdfs.blockcache.global", "true");
+
+    MiniDFSCluster dfsCluster = new MiniDFSCluster(conf, 1, true, null);
+
+    System.setProperty("solr.hdfs.home", getDataDir(dfsCluster, "solr_hdfs_home"));
+    dfsCluster.waitActive();
+
+    SolrTestCaseJ4.useFactory("org.apache.solr.core.HdfsDirectoryFactory");
+
+    return dfsCluster;
+  }
+
+  private static Configuration getDefaultConfiguration(String dir) {
+    Configuration conf = new Configuration();
+    conf.set("dfs.block.access.token.enable", "false");
+    conf.set("dfs.permissions.enabled", "false");
+    conf.set("hadoop.security.authentication", "simple");
+    conf.set("hdfs.minidfs.basedir", dir + File.separator + "hdfsBaseDir");
+    conf.set("dfs.namenode.name.dir", dir + File.separator + "nameNodeNameDir");
+    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+
+    System.setProperty("test.build.data", dir + File.separator + "hdfs" + File.separator + "build");
+    System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");
+    System.setProperty("solr.lock.type", DirectoryFactory.LOCK_TYPE_HDFS);
+    return conf;
   }
 
   public static Configuration getClientConfiguration(MiniDFSCluster dfsCluster) {

@@ -126,6 +126,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.store.hdfs.HdfsLockFactory;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -308,6 +309,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       }
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
+      HdfsLockFactory.INSTANCE.stopBackgroundTasks();
     } finally {
       ObjectReleaseTracker.clear();
       TestInjection.reset();
@@ -349,7 +351,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
     }
   }
-  
+
   /**
    * @return null if ok else error message
    */
@@ -810,7 +812,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       // clears the updatelog sysprop at the end of the test run
       System.clearProperty(UPDATELOG_SYSPROP);
     }
-    
+
     solrConfig = null;
     h = null;
     lrf = null;
@@ -2269,27 +2271,27 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * some internal settings.
    */
   public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
-    
+
     public CloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
       randomizeCloudSolrClient();
     }
-    
+
     public CloudSolrClientBuilder(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
       randomizeCloudSolrClient();
     }
-    
+
     public CloudSolrClientBuilder(MiniSolrCloudCluster cluster) {
       if (random().nextBoolean()) {
         this.zkHosts.add(cluster.getZkServer().getZkAddress());
       } else {
         populateSolrUrls(cluster);
       }
-      
+
       randomizeCloudSolrClient();
     }
-    
+
     private void populateSolrUrls(MiniSolrCloudCluster cluster) {
       if (random().nextBoolean()) {
         final List<JettySolrRunner> solrNodes = cluster.getJettySolrRunners();
@@ -2300,7 +2302,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         this.solrUrls.add(cluster.getRandomJetty(random()).getBaseUrl().toString());
       }
     }
-    
+
     private void randomizeCloudSolrClient() {
       this.directUpdatesToLeadersOnly = random().nextBoolean();
       this.shardLeadersOnly = random().nextBoolean();

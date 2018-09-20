@@ -1011,6 +1011,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         log.error("Error while closing", t);
       }
 
+      log.error("Error creating core", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     } finally {
       // allow firstSearcher events to fire and make sure it is released
