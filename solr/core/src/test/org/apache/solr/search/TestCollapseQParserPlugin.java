@@ -710,7 +710,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // multiple params for picking groupHead should work as long as only one is non-null
     // sort used
     for (SolrParams collapse : new SolrParams[] {
-        // these should all be equivilently valid
+        // these should all be equally valid
         params("fq", "{!collapse field="+group+" nullPolicy=collapse sort='test_i asc'"+hint+"}"),
         params("fq", "{!collapse field="+group+" nullPolicy=collapse min='' sort='test_i asc'"+hint+"}"),
         params("fq", "{!collapse field="+group+" nullPolicy=collapse max='' sort='test_i asc'"+hint+"}"),
@@ -917,6 +917,22 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                  GroupHeadSelector.build(params("sort", "foo_s asc",
                                                 "other", "stuff")).hashCode());
     
+  }
+
+  @Test
+  public void testForNotSupportedCases() {
+    String[] doc = {"id","3", "term_s", "YYYY", "test_ii", "5000", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc));
+    assertU(commit());
+
+    // collapsing on multivalued field
+    assertQEx("Should Fail with Bad Request", "Collapsing not supported on multivalued fields",
+        req("q","*:*", "fq","{!collapse field=test_ii}"), SolrException.ErrorCode.BAD_REQUEST);
+
+    // collapsing on unknown field
+    assertQEx("Should Fail with Bad Request", "org.apache.solr.search.SyntaxError: undefined field: \"bleh\"",
+        req("q","*:*", "fq","{!collapse field=bleh}"), SolrException.ErrorCode.BAD_REQUEST);
+
   }
 
   @Test

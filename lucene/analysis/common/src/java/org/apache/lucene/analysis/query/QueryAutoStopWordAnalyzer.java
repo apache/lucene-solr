@@ -169,7 +169,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
     }
     StopFilter stopFilter = new StopFilter(components.getTokenStream(), 
         new CharArraySet(stopWords, false));
-    return new TokenStreamComponents(components.getTokenizer(), stopFilter);
+    return new TokenStreamComponents(components.getSource(), stopFilter);
   }
 
   /**

@@ -3040,7 +3040,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='between'])=0]"
     );
 
-    // these should have equivilent behavior (multivalued 'other' param: top level vs local)
+    // these should have equivalent behavior (multivalued 'other' param: top level vs local)
     for (SolrQueryRequest req : new SolrQueryRequest[] {
         req("q", "id_i1:[42 TO 47]"
             ,"facet","true"

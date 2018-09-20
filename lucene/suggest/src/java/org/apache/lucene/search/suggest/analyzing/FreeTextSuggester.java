@@ -236,7 +236,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
         protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
           ShingleFilter shingles = new ShingleFilter(components.getTokenStream(), 2, grams);
           shingles.setTokenSeparator(Character.toString((char) separator));
-          return new TokenStreamComponents(components.getTokenizer(), shingles);
+          return new TokenStreamComponents(components.getSource(), shingles);
         }
       };
     }

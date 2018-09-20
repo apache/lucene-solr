@@ -3893,7 +3893,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     
     for (Object value : values) {
       // ideally we should require that all input values be diff forms of the same logical value
-      // (ie '"42"' vs 'new Integer(42)') and assert that each produces an equivilent list of IndexableField objects
+      // (ie '"42"' vs 'new Integer(42)') and assert that each produces an equivalent list of IndexableField objects
       // but that doesn't seem to work -- appears not all IndexableField classes override Object.equals?
       final List<IndexableField> result = callAndCheckCreateFields(fieldName, pointType, value);
       assertNotNull(value + " => null", result);

@@ -22,7 +22,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.17
+Apache Tika 1.18
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
@@ -83,6 +83,12 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
 Jetty 9.4.11.v20180605
 
+New Features
+----------------------
+
+* SOLR-6280: {!collapse}: if you attempt to use CollapseQParser on a field that is multi-valued, you will now get an
+  error.  Previously, the collapsing behavior was unreliable and undefined despite no explicit error.
+  (Munendra S N, David Smiley)
 
 Other Changes
 ----------------------
@@ -97,7 +103,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.17
+Apache Tika 1.18
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
@@ -349,6 +355,8 @@ Bug Fixes
 * SOLR-11836: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
   (Alfonso Muñoz-Pomer Fuentes, Amrit Sarkar via Varun Thacker)
 
+* SOLR-12765: Incorrect format of JMX cache stats. (Bojan Smid, ab)
+
 Optimizations
 ----------------------
 
@@ -441,8 +449,10 @@ Other Changes
 
 * SOLR-12744: Improve logging messages and verbosity around recoveries (Cao Manh Dat, Varun Thacker)
 
-* SOLR-8742: In HdfsDirectoryTest replace RAMDirectory usages with ByteBuffersDirectory. 
+* SOLR-8742: In HdfsDirectoryTest replace RAMDirectory usages with ByteBuffersDirectory.
   (hossman, Mark Miller, Andrzej Bialecki, Steve Rowe)
+  
+* SOLR-12771: Improve Autoscaling Policy and Preferences documentation. (hossman, Steve Rowe)
 
 ==================  7.4.0 ==================
 
@@ -8246,8 +8256,8 @@ Bug Fixes
 
 * SOLR-6693: bin\solr.cmd doesn't support 32-bit JRE/JDK running on Windows due to
   parenthesis in JAVA_HOME. (Timothy Potter, Christopher Hewitt, Jan Høydahl)
-  
-* SOLR-12662: Reproducing TestPolicy failures: NPE and NoClassDefFoundError. 
+
+* SOLR-12662: Reproducing TestPolicy failures: NPE and NoClassDefFoundError.
   (Steve Rowe)
 
 Optimizations
@@ -16790,7 +16800,7 @@ the canonical format when generating dates from "Date Math" strings
 (particularly as it pertains to milliseconds ending in trailing zeros).
 As a result equivalent dates could not always be compared properly.
 This problem is corrected in Solr 1.3, but DateField users that might
-have been affected by indexing inconsistent formats of equivilent
+have been affected by indexing inconsistent formats of equivalent
 dates (ie: 1995-12-31T23:59:59Z vs 1995-12-31T23:59:59.000Z) may want
 to consider reindexing to correct these inconsistencies.  Users who
 depend on some of the the "broken" behavior of DateField in Solr 1.2

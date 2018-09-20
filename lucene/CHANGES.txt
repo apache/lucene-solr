@@ -78,6 +78,12 @@ API Changes
 
 * LUCENE-8483: Scorers may no longer take null as a Weight (Alan Woodward)
 
+* LUCENE-8352: TokenStreamComponents is now final, and can take a Consumer<Reader>
+  in its constructor (Mark Harwood, Alan Woodward, Adrien Grand)
+
+* LUCENE-8498: LowerCaseTokenizer has been removed, and CharTokenizer no longer
+  takes a normalizer function. (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -116,6 +122,10 @@ New Features
 * LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
   how close a value of a long field is from an configurable origin. This is
   typically useful to boost by recency. (Adrien Grand)
+
+* LUCENE-8482: LatLonPoint#newDistanceFeatureQuery may be used to boost scores
+  based on the haversine distance of a LatLonPoint field to a provided point. This is
+  typically useful to boost by distance. (Ignacio Vera)
 
 Improvements
 
@@ -161,7 +171,17 @@ Optimizations
   (Jim Ferenczi, Adrien Grand)
 
 ======================= Lucene 7.6.0 =======================
-(No Changes)
+
+Build
+
+* LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
+
+======================= Lucene 7.5.1 =======================
+
+Bug Fixes:
+
+* LUCENE-8454: Fix incorrect vertex indexing and other computation errors in
+  shape tessellation that would sometimes cause an infinite loop. (Nick Knize)
 
 ======================= Lucene 7.5.0 =======================
 
@@ -267,6 +287,10 @@ Bug Fixes:
 * LUCENE-8466: IndexWriter.deleteDocs(Query... query) incorrectly applies deletes on flush
   if the index is sorted. (Adrien Grand, Jim Ferenczi, Vish Ramachandran)
 
+* LUCENE-8502: Allow access to delegate in FilterCodecReader. FilterCodecReader didn't 
+  allow access to it's delegate like other filter readers. This adds a new #getDelegate method
+  to access the wrapped reader. (Simon Willnauer)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
@@ -275,6 +299,11 @@ Changes in Runtime Behavior:
 * LUCENE-8263: TieredMergePolicy now reclaims deleted documents more
   aggressively by default ensuring that no more than ~1/3 of the index size is
   used by deleted documents. (Adrien Grand)
+
+* LUCENE-8503: Call #getDelegate instead of direct member access during unwrap. 
+  Filter*Reader instances access the member or the delegate directly instead of 
+  calling getDelegate(). In order to track access of the delegate these methods
+  should call #getDelegate() (Simon Willnauer)
 
 Improvements
 
@@ -3199,7 +3228,7 @@ Other
 
 * LUCENE-6845: SpanScorer is now merged into Spans (Alan Woodward, David Smiley)
 
-* LUCENE-6887: DefaultSimilarity is deprecated, use ClassicSimilarity for equivilent behavior,
+* LUCENE-6887: DefaultSimilarity is deprecated, use ClassicSimilarity for equivalent behavior,
   or consider switching to BM25Similarity which will become the new default in Lucene 6.0 (hossman)
 
 * LUCENE-6893: factor out CorePlusQueriesParser from CorePlusExtensionsParser

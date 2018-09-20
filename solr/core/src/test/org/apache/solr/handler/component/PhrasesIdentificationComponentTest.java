@@ -161,7 +161,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
 
   public void testWhiteBoxPhraseParsingShortInput() throws Exception {
-    // for input this short, either of these fields should be (mostly) equivilent
+    // for input this short, either of these fields should be (mostly) equivalent
     final Map<String,Integer> fields = new TreeMap<>();
     fields.put("multigrams_body", 7); 
     fields.put("multigrams_body_short", 3);

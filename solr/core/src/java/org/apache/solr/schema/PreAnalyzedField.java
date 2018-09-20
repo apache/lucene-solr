@@ -374,18 +374,13 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final PreAnalyzedTokenizer tokenizer = new PreAnalyzedTokenizer(parser);
-      return new TokenStreamComponents(tokenizer) {
-        @Override
-        protected void setReader(final Reader reader) {
-          super.setReader(reader);
-          try {
-            tokenizer.decodeInput(reader);
-          } catch (IOException e) {
-            // save this exception for reporting when reset() is called
-            tokenizer.setReaderConsumptionException(e);
-          }
+      return new TokenStreamComponents(r -> {
+        try {
+          tokenizer.decodeInput(r);
+        } catch (IOException e) {
+          tokenizer.setReaderConsumptionException(e);
         }
-      };
+      }, tokenizer);
     }
   }
 }

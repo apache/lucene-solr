@@ -21,6 +21,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PointRangeQuery;
@@ -250,6 +252,28 @@ public class LatLonPoint extends Field {
    */
   public static Query newPolygonQuery(String field, Polygon... polygons) {
     return new LatLonPointInPolygonQuery(field, polygons);
+  }
+
+  /**
+   * Given a field that indexes point values into a {@link LatLonPoint}
+   * and doc values into {@link LatLonDocValuesField}, this returns a query that scores
+   * documents based on their haversine distance in meters to {@code (originLat, originLon)}:
+   * {@code score = weight * pivotDistanceMeters / (pivotDistanceMeters + distance)}, ie.
+   * score is in the {@code [0, weight]} range, is equal to {@code weight} when
+   * the document's value is equal to {@code (originLat, originLon)} and is equal to
+   * {@code weight/2}  when the document's value is distant of
+   * {@code pivotDistanceMeters} from {@code (originLat, originLon)}.
+   * In case of multi-valued fields, only the closest point to {@code (originLat, originLon)}
+   * will be considered.
+   * This query is typically useful to boost results based on distance by adding
+   * this query to a {@link Occur#SHOULD} clause of a {@link BooleanQuery}.
+   */
+  public static Query newDistanceFeatureQuery(String field, float weight, double originLat, double originLon, double pivotDistanceMeters) {
+    Query query = new LatLonPointDistanceFeatureQuery(field, originLat, originLon, pivotDistanceMeters);
+    if (weight != 1f) {
+      query = new BoostQuery(query, weight);
+    }
+    return query;
   }
 
 }

@@ -75,7 +75,7 @@ import org.jsoup.select.NodeVisitor;
  *
  * <p>
  * This tool parses the generated HTML site, looking for these situations in order to fail the build, since
- * (depending on the type of check) these situations will result in inconsistent/broken HTML, or equivilent
+ * (depending on the type of check) these situations will result in inconsistent/broken HTML, or equivalent
  * problems in the generated PDF.
  * </p>
  * <p>
