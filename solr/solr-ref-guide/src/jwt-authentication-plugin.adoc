@@ -125,11 +125,11 @@ claimsMatch     ; JSON object of claims (key) that must match a regular expressi
 |===
 
 
-== Editing Authentication Plugin Configuration
+== Editing JWT Authentication Plugin Configuration
 
 All properties mentioned above can be set or changed using the <<basic-authentication-plugin.adoc#editing-authentication-plugin-configuration,Config Edit API>>. You can thus start with a simple configuration with only `class` configured and then configure the rest using the API.
 
-=== Set a Property
+=== Set a config Property
 
 Set properties for the authentication plugin. Each of the configuration keys in the table above can be used as parameter keys for the `set-property` command.
 
@@ -137,7 +137,7 @@ Example:
 
 [.dynamic-tabs]
 --
-[example.tab-pane#v1set-property]
+[example.tab-pane#jwt-v1set-property]
 ====
 [.tab-label]*V1 API*
 
@@ -147,7 +147,7 @@ curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'C
 ----
 ====
 
-[example.tab-pane#v2set-property]
+[example.tab-pane#jwt-v2set-property]
 ====
 [.tab-label]*V2 API*
 
@@ -160,10 +160,12 @@ curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentica
 
 == Using clients with JWT Auth 
 
+[#jwt-soljr]
 === SolrJ
 
 SolrJ does not currently support setting JWT tokens per request. This is planned for a future release.
 
+[#jwt-curl]
 === cURL
 
 To authenticate with Solr with cURL
@@ -172,6 +174,6 @@ To authenticate with Solr with cURL
 
 The Admin UI runs as a SPA (single page application) in your browser, and talks with the Solr APIs just like any other client. Because of this the Admin UI will stop working after enabling this plugin. To circumvent this you can install a browser plugin that adds HTTP headers to requests, and add a valid JWT token to the `Authorization` header by hand. 
 
-== Using the Solr Control Script with Basic Auth
+== Using the Solr Control Script with JWT Auth
 
 The control script (`bin/solr`) does not currently support JWT Auth.
