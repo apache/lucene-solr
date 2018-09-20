@@ -248,13 +248,22 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     addDocs(coll, 100);
 
-    Replica replica = getRandomReplica(coll, cloudClient);
+    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+    String overseerLeader = (String) overSeerStatus.get("leader");
+
+    // don't kill overseer in this test
+    Replica replica;
+    int count = 10;
+    do {
+      replica = getRandomReplica(coll, cloudClient);
+    } while (!replica.getNodeName().equals(overseerLeader) && count-- > 0);
+    assertNotNull("could not find non-overseer replica???", replica);
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;
     for (String node : liveNodes) {
-      if (!replica.getNodeName().equals(node)) {
+      if (!replica.getNodeName().equals(node) && !overseerLeader.equals(node)) {
         targetNode = node;
         break;
       }
@@ -269,6 +278,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       if (cluster.getJettySolrRunner(i).getNodeName().equals(targetNode)) {
         cluster.stopJettySolrRunner(i);
+        break;
       }
     }
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
