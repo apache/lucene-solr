@@ -161,12 +161,6 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     CloudTestUtils.waitForState(cloudManager, "failed to create " + collection1, collection1,
         CloudTestUtils.clusterShape(1, 1));
 
-    CollectionAdminRequest.SplitShard split1 = CollectionAdminRequest.splitShard(collection1)
-        .setShardName("shard1");
-    split1.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, "failed to split " + collection1, collection1,
-        CloudTestUtils.clusterShape(3, 1, true, true));
-
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
@@ -197,8 +191,17 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+
     boolean await = listenerCreated.await(10, TimeUnit.SECONDS);
     assertTrue("listener not created in time", await);
+
+    CollectionAdminRequest.SplitShard split1 = CollectionAdminRequest.splitShard(collection1)
+        .setShardName("shard1");
+    split1.process(solrClient);
+    CloudTestUtils.waitForState(cloudManager, "failed to split " + collection1, collection1,
+        CloudTestUtils.clusterShape(3, 1, true, true));
+
+
     await = triggerFired.await(60, TimeUnit.SECONDS);
     assertTrue("cleanup action didn't run", await);
 
