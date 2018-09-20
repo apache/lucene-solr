@@ -135,6 +135,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  @Override
+  public String toString() {
+    return jsonStr();
+  }
+
   /**
    * Base class for asynchronous collection admin requests
    */
