@@ -43,7 +43,7 @@ import static org.apache.solr.core.CoreContainer.CORE_DISCOVERY_COMPLETE;
 import static org.apache.solr.core.CoreContainer.INITIAL_CORE_LOAD_COMPLETE;
 import static org.apache.solr.core.CoreContainer.LOAD_COMPLETE;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.Matchers.containsString;
 
 public class TestCoreDiscovery extends SolrTestCaseJ4 {
 

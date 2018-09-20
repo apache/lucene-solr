@@ -24,6 +24,7 @@
   </configurations>
 
   <dependencies>
+    <dependency org="org.hamcrest" name="hamcrest-all" rev="${/org.hamcrest/hamcrest-all}" conf="compile"/>
     <dependency org="junit" name="junit" rev="${/junit/junit}" conf="compile"/>
     <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="${/com.carrotsearch.randomizedtesting/randomizedtesting-runner}" conf="compile"/>
 

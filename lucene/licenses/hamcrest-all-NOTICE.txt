@@ -1,0 +1,2 @@
+Java Hamcrest is licensed under BSD License.
+See http://hamcrest.org/

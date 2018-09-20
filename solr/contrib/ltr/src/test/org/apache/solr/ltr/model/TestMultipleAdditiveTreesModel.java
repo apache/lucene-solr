@@ -16,13 +16,13 @@
  */
 package org.apache.solr.ltr.model;
 
-import static org.junit.internal.matchers.StringContains.containsString;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
 
 public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
