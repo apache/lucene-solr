@@ -120,7 +120,10 @@ public abstract class CharTokenizer extends Tokenizer {
    * <pre class="prettyprint lang-java">
    * Tokenizer tok = CharTokenizer.fromTokenCharPredicate(Character::isLetter, Character::toLowerCase);
    * </pre>
+   *
+   * @deprecated Normalization should be done in a subsequent TokenFilter
    */
+  @Deprecated
   public static CharTokenizer fromTokenCharPredicate(final IntPredicate tokenCharPredicate, final IntUnaryOperator normalizer) {
     return fromTokenCharPredicate(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, tokenCharPredicate, normalizer);
   }
@@ -135,7 +138,10 @@ public abstract class CharTokenizer extends Tokenizer {
    * <pre class="prettyprint lang-java">
    * Tokenizer tok = CharTokenizer.fromTokenCharPredicate(factory, Character::isLetter, Character::toLowerCase);
    * </pre>
+   *
+   * @deprecated Normalization should be done in a subsequent TokenFilter
    */
+  @Deprecated
   public static CharTokenizer fromTokenCharPredicate(AttributeFactory factory, final IntPredicate tokenCharPredicate, final IntUnaryOperator normalizer) {
     Objects.requireNonNull(tokenCharPredicate, "predicate must not be null.");
     Objects.requireNonNull(normalizer, "normalizer must not be null");
@@ -192,7 +198,10 @@ public abstract class CharTokenizer extends Tokenizer {
    * <pre class="prettyprint lang-java">
    * Tokenizer tok = CharTokenizer.fromSeparatorCharPredicate(Character::isWhitespace, Character::toLowerCase);
    * </pre>
+   *
+   * @deprecated Normalization should be done in a subsequent TokenFilter
    */
+  @Deprecated
   public static CharTokenizer fromSeparatorCharPredicate(final IntPredicate separatorCharPredicate, final IntUnaryOperator normalizer) {
     return fromSeparatorCharPredicate(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, separatorCharPredicate, normalizer);
   }
@@ -207,7 +216,10 @@ public abstract class CharTokenizer extends Tokenizer {
    * <pre class="prettyprint lang-java">
    * Tokenizer tok = CharTokenizer.fromSeparatorCharPredicate(factory, Character::isWhitespace, Character::toLowerCase);
    * </pre>
+   *
+   * @deprecated Normalization should be done in a subsequent TokenFilter
    */
+  @Deprecated
   public static CharTokenizer fromSeparatorCharPredicate(AttributeFactory factory, final IntPredicate separatorCharPredicate, final IntUnaryOperator normalizer) {
     return fromTokenCharPredicate(factory, separatorCharPredicate.negate(), normalizer);
   }
@@ -234,7 +246,10 @@ public abstract class CharTokenizer extends Tokenizer {
    * Called on each token character to normalize it before it is added to the
    * token. The default implementation does nothing. Subclasses may use this to,
    * e.g., lowercase tokens.
+   *
+   * @deprecated Normalization should be done in a subsequent TokenFilter
    */
+  @Deprecated
   protected int normalize(int c) {
     return c;
   }

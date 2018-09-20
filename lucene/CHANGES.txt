@@ -9,6 +9,9 @@ Build
 
 * LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
 
+* LUCENE-8498: Deprecate LowerCaseTokenizer and CharTokenizer static methods
+  that take normalizer functions (Alan Woodward)
+
 ======================= Lucene 7.5.1 =======================
 
 Bug Fixes:

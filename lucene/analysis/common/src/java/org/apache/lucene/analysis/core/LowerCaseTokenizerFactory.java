@@ -43,7 +43,10 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  *     It is rare to need to change this
  * else {@link CharTokenizer}::DEFAULT_MAX_WORD_LEN</li>
  * </ul>
+ *
+ * @deprecated Use {@link LetterTokenizerFactory} followed by {@link LowerCaseFilterFactory}
  */
+@Deprecated
 public class LowerCaseTokenizerFactory extends TokenizerFactory implements MultiTermAwareComponent {
   private final int maxTokenLen;
 
