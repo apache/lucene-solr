@@ -90,6 +90,8 @@ New Features
   error.  Previously, the collapsing behavior was unreliable and undefined despite no explicit error.
   (Munendra S N, David Smiley)
 
+* SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
+
 Other Changes
 ----------------------
 

@@ -31,15 +31,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.Header;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ValidatingJsonMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,53 +104,65 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
   @Override
   public boolean doAuthenticate(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws Exception {
-
+    Timer.Context timer = requestTimes.time();
+    requests.inc();
     HttpServletRequest request = (HttpServletRequest) servletRequest;
     HttpServletResponse response = (HttpServletResponse) servletResponse;
 
     String authHeader = request.getHeader("Authorization");
-    if (authHeader != null) {
-      BasicAuthPlugin.authHeader.set(new BasicHeader("Authorization", authHeader));
-      StringTokenizer st = new StringTokenizer(authHeader);
-      if (st.hasMoreTokens()) {
-        String basic = st.nextToken();
-        if (basic.equalsIgnoreCase("Basic")) {
-          try {
-            String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
-            int p = credentials.indexOf(":");
-            if (p != -1) {
-              final String username = credentials.substring(0, p).trim();
-              String pwd = credentials.substring(p + 1).trim();
-              if (!authenticate(username, pwd)) {
-                log.debug("Bad auth credentials supplied in Authorization header");
-                authenticationFailure(response, "Bad credentials");
-              } else {
-                HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
-                  @Override
-                  public Principal getUserPrincipal() {
-                    return new BasicUserPrincipal(username);
-                  }
-                };
-                filterChain.doFilter(wrapper, response);
-                return true;
-              }
+    try {
+      if (authHeader != null) {
+        BasicAuthPlugin.authHeader.set(new BasicHeader("Authorization", authHeader));
+        StringTokenizer st = new StringTokenizer(authHeader);
+        if (st.hasMoreTokens()) {
+          String basic = st.nextToken();
+          if (basic.equalsIgnoreCase("Basic")) {
+            try {
+              String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
+              int p = credentials.indexOf(":");
+              if (p != -1) {
+                final String username = credentials.substring(0, p).trim();
+                String pwd = credentials.substring(p + 1).trim();
+                if (!authenticate(username, pwd)) {
+                  numWrongCredentials.inc();
+                  log.debug("Bad auth credentials supplied in Authorization header");
+                  authenticationFailure(response, "Bad credentials");
+                } else {
+                  HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
+                    @Override
+                    public Principal getUserPrincipal() {
+                      return new BasicUserPrincipal(username);
+                    }
+                  };
+                  numAuthenticated.inc();
+                  filterChain.doFilter(wrapper, response);
+                  return true;
+                }
 
-            } else {
-              authenticationFailure(response, "Invalid authentication token");
+              } else {
+                numInvalidCredentials.inc();
+                authenticationFailure(response, "Invalid authentication token");
+              }
+            } catch (UnsupportedEncodingException e) {
+              numErrors.mark();
+              throw new Error("Couldn't retrieve authentication", e);
             }
-          } catch (UnsupportedEncodingException e) {
-            throw new Error("Couldn't retrieve authentication", e);
           }
         }
-      }
-    } else {
-      if (blockUnknown) {
-        authenticationFailure(response, "require authentication");
       } else {
-        request.setAttribute(AuthenticationPlugin.class.getName(), authenticationProvider.getPromptHeaders());
-        filterChain.doFilter(request, response);
-        return true;
+        if (blockUnknown) {
+          numMissingCredentials.inc();
+          authenticationFailure(response, "require authentication");
+        } else {
+          numPassThrough.inc();
+          request.setAttribute(AuthenticationPlugin.class.getName(), authenticationProvider.getPromptHeaders());
+          filterChain.doFilter(request, response);
+          return true;
+        }
       }
+    } finally {
+      long elapsed = timer.stop();
+      totalTime.inc(elapsed);
     }
     return false;
   }
