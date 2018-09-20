@@ -114,7 +114,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
       Throwable priorE = null;
       FieldInfo infos[] = null;
       try {
-        CodecUtil.checkIndexHeader(input,
+        int version = CodecUtil.checkIndexHeader(input,
                                    Lucene60FieldInfosFormat.CODEC_NAME, 
                                    Lucene60FieldInfosFormat.FORMAT_START, 
                                    Lucene60FieldInfosFormat.FORMAT_CURRENT,
@@ -149,14 +149,13 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
             attributes = lastAttributes;
           }
           lastAttributes = attributes;
-          int packedDimensionCount = input.readVInt();
-          int pointDataDimensionCount = 0x0000FFFF & packedDimensionCount;
-          int pointIndexDimensionCount = packedDimensionCount >>> 16;
-          if (pointIndexDimensionCount == 0) {
-            pointIndexDimensionCount = pointDataDimensionCount;
-          }
+          int pointDataDimensionCount = input.readVInt();
           int pointNumBytes;
+          int pointIndexDimensionCount = pointDataDimensionCount;
           if (pointDataDimensionCount != 0) {
+            if (version >= Lucene60FieldInfosFormat.FORMAT_SELECTIVE_INDEXING) {
+              pointIndexDimensionCount = input.readVInt();
+            }
             pointNumBytes = input.readVInt();
           } else {
             pointNumBytes = 0;
@@ -292,13 +291,9 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
         output.writeByte(docValuesByte(fi.getDocValuesType()));
         output.writeLong(fi.getDocValuesGen());
         output.writeMapOfStrings(fi.attributes());
-        // max number of dimensions is <= 8; so for backcompat we can use the integer value to pack number of data and index dimensions
-        // where first two bytes are data dimension count, second two bytes are index dimension count
-        int pointDataDimensionCount = 0x0000FFFF & fi.getPointDataDimensionCount();
-        int pointIndexDimensionCount = fi.getPointIndexDimensionCount();
-        int packedDimensionCount = (pointIndexDimensionCount << 16) | pointDataDimensionCount;
-        output.writeVInt(packedDimensionCount);
-        if (pointDataDimensionCount != 0) {
+        output.writeVInt(fi.getPointDataDimensionCount());
+        if (fi.getPointDataDimensionCount() != 0) {
+          output.writeVInt(fi.getPointIndexDimensionCount());
           output.writeVInt(fi.getPointNumBytes());
         }
       }
@@ -313,7 +308,8 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
   static final String CODEC_NAME = "Lucene60FieldInfos";
   static final int FORMAT_START = 0;
   static final int FORMAT_SOFT_DELETES = 1;
-  static final int FORMAT_CURRENT = FORMAT_SOFT_DELETES;
+  static final int FORMAT_SELECTIVE_INDEXING = 2;
+  static final int FORMAT_CURRENT = FORMAT_SELECTIVE_INDEXING;
   
   // Field flags
   static final byte STORE_TERMVECTOR = 0x1;

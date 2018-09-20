@@ -86,7 +86,8 @@ public class BKDWriter implements Closeable {
   public static final int VERSION_START = 4; // version used by Lucene 7.0
   //public static final int VERSION_CURRENT = VERSION_START;
   public static final int VERSION_LEAF_STORES_BOUNDS = 5;
-  public static final int VERSION_CURRENT = VERSION_LEAF_STORES_BOUNDS;
+  public static final int VERSION_SELECTIVE_INDEXING = 6;
+  public static final int VERSION_CURRENT = VERSION_SELECTIVE_INDEXING;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
@@ -996,7 +997,7 @@ public class BKDWriter implements Closeable {
     boolean success = false;
     try {
       //long t0 = System.nanoTime();
-      for(int dim=0;dim<numDataDims;dim++) {
+      for(int dim=0;dim<numIndexDims;dim++) {
         sortedPointWriters[dim] = new PathSlice(sort(dim), 0, pointCount);
       }
       //long t1 = System.nanoTime();
@@ -1255,10 +1256,8 @@ public class BKDWriter implements Closeable {
   private void writeIndex(IndexOutput out, int countPerLeaf, int numLeaves, byte[] packedIndex) throws IOException {
     
     CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
-    // pack the dimensions
-    int packedDims = 0x0000FFFF & numDataDims;
-    packedDims |= (numIndexDims << 16);
-    out.writeVInt(packedDims);
+    out.writeVInt(numDataDims);
+    out.writeVInt(numIndexDims);
     out.writeVInt(countPerLeaf);
     out.writeVInt(bytesPerDim);
 

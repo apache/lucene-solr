@@ -53,12 +53,10 @@ public final class BKDReader extends PointValues implements Accountable {
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
   public BKDReader(IndexInput in) throws IOException {
     version = CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
-    int packedDims = in.readVInt();
-    if (version >= BKDWriter.VERSION_LEAF_STORES_BOUNDS) {
-      numDataDims = packedDims & 0x0000FFFF;
-      numIndexDims = packedDims >>> 16;
+    numDataDims = in.readVInt();
+    if (version >= BKDWriter.VERSION_SELECTIVE_INDEXING) {
+      numIndexDims = in.readVInt();
     } else {
-      numDataDims = packedDims;
       numIndexDims = numDataDims;
     }
     maxPointsInLeafNode = in.readVInt();
