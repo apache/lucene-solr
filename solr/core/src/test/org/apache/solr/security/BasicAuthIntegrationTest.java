@@ -194,6 +194,11 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
       executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
 
+      UpdateRequest del = new UpdateRequest().deleteByQuery("*:*");
+      del.setBasicAuthCredentials("harry","HarryIsUberCool");
+      del.setCommitWithin(10);
+      del.process(cluster.getSolrClient(), COLLECTION);
+
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id","4");
       UpdateRequest update = new UpdateRequest();

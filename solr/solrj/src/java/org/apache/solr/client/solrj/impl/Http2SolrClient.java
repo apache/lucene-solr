@@ -58,6 +58,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -169,7 +170,7 @@ public class Http2SolrClient extends SolrClient {
     } else {
       httpClient = builder.httpClient;
     }
-    if (builder.beginListener != null) this.beginListener = builder.beginListener;
+    if (builder.beginListener != null) setBeginListener(builder.beginListener);
     if (!httpClient.isStarted()) {
       try {
         httpClient.start();
@@ -269,6 +270,7 @@ public class Http2SolrClient extends SolrClient {
                                       OnComplete onComplete,
                                       boolean returnStream) throws IOException, SolrServerException {
     Request req = makeRequest(solrRequest, collection);
+    setBasicAuthHeader(solrRequest, req);
     if (listenerFactory != null) {
       HttpListenerFactory.RequestResponseListener listener = listenerFactory.get();
       req.onRequestBegin(listener);
@@ -349,6 +351,14 @@ public class Http2SolrClient extends SolrClient {
 
   public void setListenerFactory(HttpListenerFactory listenerFactory) {
     this.listenerFactory = listenerFactory;
+  }
+
+  private void setBasicAuthHeader(SolrRequest solrRequest, Request req) throws UnsupportedEncodingException {
+    if (solrRequest.getBasicAuthUser() != null && solrRequest.getBasicAuthPassword() != null) {
+      String userPass = solrRequest.getBasicAuthUser() + ":" + solrRequest.getBasicAuthPassword();
+      String encoded = Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
+      req.header("Authorization", "Basic " + encoded);
+    }
   }
 
   private Request makeRequest(SolrRequest solrRequest, String collection)
