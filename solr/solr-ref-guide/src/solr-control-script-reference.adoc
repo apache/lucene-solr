@@ -60,7 +60,7 @@ Start Solr in SolrCloud mode, which will also launch the embedded ZooKeeper inst
 +
 This option can be shortened to simply `-c`.
 +
-If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) or pass the -z parameter.
+If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solrs-include-files,instructions>>) or pass the -z parameter.
 +
 For more details, see the section <<SolrCloud Mode>> below.
 +
@@ -172,7 +172,7 @@ The `-c` and `-cloud` options are equivalent:
 
 If you specify a ZooKeeper connection string, such as `-z 192.168.1.4:2181`, then Solr will connect to ZooKeeper and join the cluster.
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from all `bin/solr` commands.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solrs-include-files,instructions>>) you can omit `-z <zk host string>` from all `bin/solr` commands.
 
  When starting Solr in cloud mode, if you neither define `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` nor specify the `-z` option, then Solr will launch an embedded ZooKeeper server listening on the Solr port + 1000, i.e., if Solr is running on port 8983, then the embedded ZooKeeper will be listening on port 9983.
 
