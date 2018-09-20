@@ -157,7 +157,7 @@ Limited back-compatibility is offered by automatically adding a default instance
 +
 This behavior can be also disabled by specifying a `SolrJmxReporter` configuration with a boolean init argument `enabled` set to `false`. For a more fine-grained control users should explicitly specify at least one `SolrJmxReporter` configuration.
 +
-See also the section <<metrics-reporting.adoc#the-metricsreporters-element,The <metrics><reporters> Element>>, which describes how to set up Metrics Reporters in `solr.xml`. Note that back-compatibility support may be removed in Solr 8.
+See also the section <<metrics-reporting.adoc#the-metrics-reporters-element,The <metrics><reporters> Element>>, which describes how to set up Metrics Reporters in `solr.xml`. Note that back-compatibility support may be removed in Solr 8.
 
 * MBean names and attributes now follow the hierarchical names used in metrics. This is reflected also in `/admin/mbeans` and `/admin/plugins` output, and can be observed in the UI Plugins tab, because now all these APIs get their data from the metrics API. The old (mostly flat) JMX view has been removed.
 

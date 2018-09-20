@@ -55,7 +55,7 @@ generated, which may significantly differ due to the rate limits set by `waitFor
 indicates the nodes that were lost or added.
 
 == Trigger Configuration
-Trigger configurations are managed using the <<solrcloud-autoscaling-api.adoc#write-api,Autoscaling Write API>> with the commands `<<solrcloud-autoscaling-api.adoc#createupdate-trigger,set-trigger>>`, `<<solrcloud-autoscaling-api.adoc#remove-trigger,remove-trigger>>`,
+Trigger configurations are managed using the <<solrcloud-autoscaling-api.adoc#write-api,Autoscaling Write API>> with the commands `<<solrcloud-autoscaling-api.adoc#create-update-trigger,set-trigger>>`, `<<solrcloud-autoscaling-api.adoc#remove-trigger,remove-trigger>>`,
 `suspend-trigger`, and `resume-trigger`.
 
 === Trigger Properties
