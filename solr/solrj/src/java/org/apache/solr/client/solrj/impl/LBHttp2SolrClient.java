@@ -89,7 +89,7 @@ import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
  * a dedicated hardware load balancer or using Apache httpd with mod_proxy_balancer as a load balancer. See <a
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
  *
- * @since solr 1.4
+ * @since solr 8.0
  */
 public class LBHttp2SolrClient extends SolrClient {
   private static Set<Integer> RETRY_CODES = new HashSet<>(4);
@@ -105,7 +105,7 @@ public class LBHttp2SolrClient extends SolrClient {
   private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<>();
   // access to aliveServers should be synchronized on itself
 
-  protected final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>();
+  private final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>();
 
   // changes to aliveServers are reflected in this array, no need to synchronize
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
@@ -121,9 +121,6 @@ public class LBHttp2SolrClient extends SolrClient {
   private volatile RequestWriter requestWriter;
 
   private Set<String> queryParams = new HashSet<>();
-  private Integer connectionTimeout;
-
-  private Integer soTimeout;
 
   static {
     solrQuery.setRows(0);
@@ -150,7 +147,7 @@ public class LBHttp2SolrClient extends SolrClient {
 
     int failedPings = 0;
 
-    public ServerWrapper(String baseUrl) {
+    ServerWrapper(String baseUrl) {
       this.baseUrl = baseUrl;
     }
 
@@ -258,7 +255,7 @@ public class LBHttp2SolrClient extends SolrClient {
       try {
         MDC.put("LBHttp2SolrClient.url", serverStr);
 
-        if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
+        if (numServersToTry != null && numServersTried > numServersToTry) {
           break;
         }
 
@@ -279,7 +276,7 @@ public class LBHttp2SolrClient extends SolrClient {
           break;
         }
 
-        if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
+        if (numServersToTry != null && numServersTried > numServersToTry) {
           break;
         }
 
@@ -301,10 +298,10 @@ public class LBHttp2SolrClient extends SolrClient {
     if (timeAllowedExceeded) {
       solrServerExceptionMessage = "Time allowed to handle this request exceeded";
     } else {
-      if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
+      if (numServersToTry != null && numServersTried > numServersToTry) {
         solrServerExceptionMessage = "No live SolrServers available to handle this request:"
             + " numServersTried="+numServersTried
-            + " numServersToTry="+numServersToTry.intValue();
+            + " numServersToTry="+ numServersToTry;
       } else {
         solrServerExceptionMessage = "No live SolrServers available to handle this request";
       }
@@ -317,7 +314,7 @@ public class LBHttp2SolrClient extends SolrClient {
 
   }
 
-  protected Exception addZombie(String serverStr, Exception e) {
+  private Exception addZombie(String serverStr, Exception e) {
 
     ServerWrapper wrapper;
 
@@ -328,8 +325,8 @@ public class LBHttp2SolrClient extends SolrClient {
     return e;
   }
 
-  protected Exception doRequest(String serverStr, Req req, Rsp rsp, boolean isNonRetryable,
-      boolean isZombie) throws SolrServerException, IOException {
+  private Exception doRequest(String serverStr, Req req, Rsp rsp, boolean isNonRetryable,
+                              boolean isZombie) throws SolrServerException, IOException {
     Exception ex = null;
     try {
       rsp.server = serverStr;
@@ -382,7 +379,7 @@ public class LBHttp2SolrClient extends SolrClient {
 
   private void updateAliveList() {
     synchronized (aliveServers) {
-      aliveServerList = aliveServers.values().toArray(new ServerWrapper[aliveServers.size()]);
+      aliveServerList = aliveServers.values().toArray(new ServerWrapper[0]);
     }
   }
 
@@ -455,7 +452,7 @@ public class LBHttp2SolrClient extends SolrClient {
     Exception ex = null;
     ServerWrapper[] serverList = aliveServerList;
 
-    final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
+    final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry);
     int numServersTried = 0;
     Map<String,ServerWrapper> justFailed = null;
 
@@ -497,7 +494,7 @@ public class LBHttp2SolrClient extends SolrClient {
         break;
       }
 
-      if (wrapper.standard==false || justFailed!=null && justFailed.containsKey(wrapper.baseUrl)) continue;
+      if (!wrapper.standard || justFailed!=null && justFailed.containsKey(wrapper.baseUrl)) continue;
       try {
         ++numServersTried;
         request.setBasePath(wrapper.baseUrl);
@@ -526,10 +523,10 @@ public class LBHttp2SolrClient extends SolrClient {
     if (timeAllowedExceeded) {
       solrServerExceptionMessage = "Time allowed to handle this request exceeded";
     } else {
-      if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
+      if (numServersToTry != null && numServersTried > numServersToTry) {
         solrServerExceptionMessage = "No live SolrServers available to handle this request:"
             + " numServersTried="+numServersTried
-            + " numServersToTry="+numServersToTry.intValue();
+            + " numServersToTry="+ numServersToTry;
       } else {
         solrServerExceptionMessage = "No live SolrServers available to handle this request";
       }
@@ -635,19 +632,12 @@ public class LBHttp2SolrClient extends SolrClient {
   private static Runnable getAliveCheckRunner(final WeakReference<LBHttp2SolrClient> lbRef) {
     return () -> {
       LBHttp2SolrClient lb = lbRef.get();
-      if (lb != null && lb.zombieServers != null) {
+      if (lb != null) {
         for (ServerWrapper zombieServer : lb.zombieServers.values()) {
           lb.checkAZombieServer(zombieServer);
         }
       }
     };
-  }
-
-  /**
-   * Return the HttpClient this instance uses.
-   */
-  private Http2SolrClient getHttpClient() {
-    return httpClient;
   }
 
   public ResponseParser getParser() {
