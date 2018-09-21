@@ -198,8 +198,7 @@ public class Http2SolrClient extends SolrClient {
     httpClientExecutor.setDaemon(true);
 
     HttpClientTransport transport;
-    boolean isHttpsBaseUrl = serverBaseUrl != null && serverBaseUrl.startsWith("https");
-    if (builder.useHttp1_1 || builder.sslConfig != null || isHttpsBaseUrl) {
+    if (useHttp1(builder)) {
       LOG.info("Create Http2SolrClient with HTTP/1.1 transport");
       transport = new HttpClientTransportOverHTTP(2);
 
@@ -230,6 +229,18 @@ public class Http2SolrClient extends SolrClient {
     return httpClient;
   }
 
+  private boolean useHttp1(Builder builder) {
+    if (serverBaseUrl != null && serverBaseUrl.startsWith("https"))
+      return true;
+
+    if (builder.useHttp1_1 || builder.sslConfig != null)
+      return true;
+
+    if (System.getProperty("javax.net.ssl.trustStore") != null)
+      return true;
+
+    return false;
+  }
 
   public HttpClient getHttpClient() {
     return httpClient;
