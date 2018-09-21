@@ -82,9 +82,6 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "authCollection";
 
-  private static final List<String> METRICS_METER_KEYS = Arrays.asList("errors", "timeouts");
-  private static final List<String> METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
-  
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
@@ -280,61 +277,8 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
     assertEquals(num, registry0.getMetrics().entrySet().stream().filter(e -> e.getKey().startsWith("SECURITY")).count());
   }
 
-  private void assertPkiAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
-    assertAuthMetrics("SECURITY./authentication/pki.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
-  }
-  
-  private void assertBasicAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
-    assertAuthMetrics("SECURITY./authentication.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
-  }  
-  
-  private void assertAuthMetrics(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
-    MetricRegistry registry0 = cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager().registry("solr.node");
-    MetricRegistry registry1 = cluster.getJettySolrRunner(1).getCoreContainer().getMetricManager().registry("solr.node");
-    MetricRegistry registry2 = cluster.getJettySolrRunner(2).getCoreContainer().getMetricManager().registry("solr.node");
-    assertNotNull(registry0);
-    assertNotNull(registry1);
-    assertNotNull(registry2);
-
-    List<Map<String, Metric>> metrics = new ArrayList<>();
-    metrics.add(registry0.getMetrics());
-    metrics.add(registry1.getMetrics());
-    metrics.add(registry2.getMetrics());
-
-    Map<String,Long> counts = new HashMap<>();
-    Arrays.asList("errors", "timeouts", "requests", "authenticated", "passThrough", "failWrongCredentials", 
-        "failMissingCredentials", "failInvalidCredentials", "requestTimes", "totalTime").forEach(k -> {
-          counts.put(k, sumCount(prefix, k, metrics));
-    });
-    
-    // check each counter
-    assertEquals("Metrics were: " + counts, requests, counts.get("requests").intValue());
-    assertEquals("Metrics were: " + counts, authenticated, counts.get("authenticated").intValue());
-    assertEquals("Metrics were: " + counts, passThrough, counts.get("passThrough").intValue());
-    assertEquals("Metrics were: " + counts, failWrongCredentials, counts.get("failWrongCredentials").intValue());
-    assertEquals("Metrics were: " + counts, failMissingCredentials, counts.get("failMissingCredentials").intValue());
-    assertEquals("Metrics were: " + counts, failInvalidCredentials, counts.get("failInvalidCredentials").intValue());
-    assertEquals("Metrics were: " + counts, errors, counts.get("errors").intValue());
-    assertEquals("Metrics were: " + counts, timeouts, counts.get("timeouts").intValue());
-    if (counts.get("requests") > 0) {
-      assertTrue("Metrics were: " + counts, counts.get("requestTimes") > 1);
-      assertTrue("Metrics were: " + counts, counts.get("totalTime") > 0);
-    }
-  }
-
   private void initMetricsFromServer() {
     
-  }
-
-  // Have to sum the metrics from all three shards/nodes
-  private long sumCount(String prefix, String key, List<Map<String, Metric>> metrics) {
-    assertTrue("Metric " + prefix + key + " does not exist", metrics.get(0).containsKey(prefix + key)); 
-    if (METRICS_METER_KEYS.contains(key))
-      return metrics.stream().mapToLong(l -> ((Meter)l.get(prefix + key)).getCount()).sum();
-    else if (METRICS_TIMER_KEYS.contains(key))
-      return (long) ((long) 1000 * metrics.stream().mapToDouble(l -> ((Timer)l.get(prefix + key)).getMeanRate()).average().orElse(0.0d));
-    else
-      return metrics.stream().mapToLong(l -> ((Counter)l.get(prefix + key)).getCount()).sum();
   }
 
   public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd)
