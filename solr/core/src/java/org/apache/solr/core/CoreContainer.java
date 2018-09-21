@@ -798,10 +798,10 @@ public class CoreContainer {
     SecurityConfHandler.SecurityConfig securityConfig = securityConfHandler.getSecurityConfig(false);
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
     initializeAuthenticationPlugin((Map<String, Object>) securityConfig.getData().get("authentication"));
-    if (authenticationPlugin != null) {
+    if (authenticationPlugin != null && authenticationPlugin.plugin.getMetricRegistry() == null) {
       authenticationPlugin.plugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication");
     }
-    if (pkiAuthenticationPlugin != null) {
+    if (pkiAuthenticationPlugin != null && pkiAuthenticationPlugin.getMetricRegistry() == null) {
       pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
     }
   }

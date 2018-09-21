@@ -23,13 +23,20 @@ import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -53,7 +60,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -73,6 +82,9 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "authCollection";
 
+  private static final List<String> METRICS_METER_KEYS = Arrays.asList("errors", "timeouts");
+  private static final List<String> METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
@@ -101,6 +113,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
       JettySolrRunner randomJetty = cluster.getRandomJetty(random());
       String baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
+      assertNumberOfMetrics(10); // Only pki plugin registered
       zkClient().setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
@@ -108,7 +121,10 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
       randomJetty.start(false);
       baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
-
+      assertNumberOfMetrics(20); // Basic auth metrics available
+      assertBasicAuthMetrics(1, 0, 1, 0, 0, 0, 0, 0);
+      assertPkiAuthMetrics(0, 0, 0, 0, 0, 0, 0, 0);
+      
       String command = "{\n" +
           "'set-user': {'harry':'HarryIsCool'}\n" +
           "}";
@@ -126,7 +142,9 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
         cluster.getSolrClient().request(genericReq);
       });
       assertEquals(401, exp.code());
-
+      assertBasicAuthMetrics(2, 0, 2, 0, 0, 0, 0, 0);
+      assertPkiAuthMetrics(0, 0, 0, 0, 0, 0, 0, 0);
+      
       command = "{\n" +
           "'set-user': {'harry':'HarryIsUberCool'}\n" +
           "}";
@@ -140,6 +158,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
       int statusCode = r.getStatusLine().getStatusCode();
       Utils.consumeFully(r.getEntity());
       assertEquals("proper_cred sent, but access denied", 200, statusCode);
+      assertBasicAuthMetrics(4, 1, 3, 0, 0, 0, 0, 0);
 
       baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
 
@@ -149,6 +168,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
           "}";
 
       executeCommand(baseUrl + authzPrefix, cl,command, "solr", "SolrRocks");
+      assertBasicAuthMetrics(6, 2, 4, 0, 0, 0, 0, 0);
 
       baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
@@ -159,10 +179,12 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
               "role", "dev"))), "harry", "HarryIsUberCool" );
 
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/collection", "x", 20);
+      assertBasicAuthMetrics(9, 3, 6, 0, 0, 0, 0, 0);
 
       executeCommand(baseUrl + authzPrefix, cl,Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
           ("name", "collection-admin-edit", "role", "admin"))), "harry", "HarryIsUberCool"  );
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
+      assertBasicAuthMetrics(11, 4, 7, 0, 0, 0, 0, 0);
 
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
@@ -189,7 +211,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
             .setBasicAuthCredentials("harry", "Cool12345"));
         fail("This should not succeed");
       } catch (HttpSolrClient.RemoteSolrException e) {
-
+        assertBasicAuthMetrics(15, 5, 9, 1, 0, 0, 0, 0);
       }
 
       executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
@@ -206,6 +228,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
+      assertBasicAuthMetrics(18, 8, 9, 1, 0, 0, 0, 0);
 
       String[] toolArgs = new String[]{
           "status", "-solr", baseUrl};
@@ -224,12 +247,94 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
         log.error("RunExampleTool failed due to: " + e +
             "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
       }
+
+      SolrParams params = new MapSolrParams(Collections.singletonMap("q", "*:*"));
+      // Query that fails due to missing credentials
+      exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+        cluster.getSolrClient().query(COLLECTION, params);
+      });
+      assertEquals(401, exp.code());
+      assertBasicAuthMetrics(20, 8, 9, 1, 2, 0, 0, 0);
+      assertPkiAuthMetrics(4, 4, 0, 0, 0, 0, 0, 0);
+
+      // Query that succeeds
+      GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params);
+      req.setBasicAuthCredentials("harry", "HarryIsUberCool");
+      cluster.getSolrClient().request(req, COLLECTION);
+      
+      assertBasicAuthMetrics(21, 9, 9, 1, 2, 0, 0, 0);
+      assertPkiAuthMetrics(7, 7, 0, 0, 0, 0, 0, 0);
+
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
     } finally {
       if (cl != null) {
         HttpClientUtil.close(cl);
       }
     }
+  }
+
+  private void assertNumberOfMetrics(int num) {
+    MetricRegistry registry0 = cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager().registry("solr.node");
+    assertNotNull(registry0);
+
+    assertEquals(num, registry0.getMetrics().entrySet().stream().filter(e -> e.getKey().startsWith("SECURITY")).count());
+  }
+
+  private void assertPkiAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
+    assertAuthMetrics("SECURITY./authentication/pki.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
+  }
+  
+  private void assertBasicAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
+    assertAuthMetrics("SECURITY./authentication.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
+  }  
+  
+  private void assertAuthMetrics(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
+    MetricRegistry registry0 = cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager().registry("solr.node");
+    MetricRegistry registry1 = cluster.getJettySolrRunner(1).getCoreContainer().getMetricManager().registry("solr.node");
+    MetricRegistry registry2 = cluster.getJettySolrRunner(2).getCoreContainer().getMetricManager().registry("solr.node");
+    assertNotNull(registry0);
+    assertNotNull(registry1);
+    assertNotNull(registry2);
+
+    List<Map<String, Metric>> metrics = new ArrayList<>();
+    metrics.add(registry0.getMetrics());
+    metrics.add(registry1.getMetrics());
+    metrics.add(registry2.getMetrics());
+
+    Map<String,Long> counts = new HashMap<>();
+    Arrays.asList("errors", "timeouts", "requests", "authenticated", "passThrough", "failWrongCredentials", 
+        "failMissingCredentials", "failInvalidCredentials", "requestTimes", "totalTime").forEach(k -> {
+          counts.put(k, sumCount(prefix, k, metrics));
+    });
+    
+    // check each counter
+    assertEquals("Metrics were: " + counts, requests, counts.get("requests").intValue());
+    assertEquals("Metrics were: " + counts, authenticated, counts.get("authenticated").intValue());
+    assertEquals("Metrics were: " + counts, passThrough, counts.get("passThrough").intValue());
+    assertEquals("Metrics were: " + counts, failWrongCredentials, counts.get("failWrongCredentials").intValue());
+    assertEquals("Metrics were: " + counts, failMissingCredentials, counts.get("failMissingCredentials").intValue());
+    assertEquals("Metrics were: " + counts, failInvalidCredentials, counts.get("failInvalidCredentials").intValue());
+    assertEquals("Metrics were: " + counts, errors, counts.get("errors").intValue());
+    assertEquals("Metrics were: " + counts, timeouts, counts.get("timeouts").intValue());
+    if (counts.get("requests") > 0) {
+      assertTrue("Metrics were: " + counts, counts.get("requestTimes") > 1);
+      assertTrue("Metrics were: " + counts, counts.get("totalTime") > 0);
+    }
+  }
+
+  private void initMetricsFromServer() {
+    
+  }
+
+  // Have to sum the metrics from all three shards/nodes
+  private long sumCount(String prefix, String key, List<Map<String, Metric>> metrics) {
+    assertTrue("Metric " + prefix + key + " does not exist", metrics.get(0).containsKey(prefix + key)); 
+    if (METRICS_METER_KEYS.contains(key))
+      return metrics.stream().mapToLong(l -> ((Meter)l.get(prefix + key)).getCount()).sum();
+    else if (METRICS_TIMER_KEYS.contains(key))
+      return (long) ((long) 1000 * metrics.stream().mapToDouble(l -> ((Timer)l.get(prefix + key)).getMeanRate()).average().orElse(0.0d));
+    else
+      return metrics.stream().mapToLong(l -> ((Counter)l.get(prefix + key)).getCount()).sum();
   }
 
   public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd)
