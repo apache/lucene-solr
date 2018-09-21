@@ -80,6 +80,23 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
   public abstract boolean doAuthenticate(ServletRequest request, ServletResponse response,
       FilterChain filterChain) throws Exception;
 
+  /**
+   * This method is called by SolrDispatchFilter in order to initiate authentication.
+   * It does some standard metrics counting.
+   */
+  public final boolean authenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
+    Timer.Context timer = requestTimes.time();
+    requests.inc();
+    try {
+      return doAuthenticate(request, response, filterChain);
+    } catch(Exception e) {
+      numErrors.mark();
+      throw e;
+    } finally {
+      long elapsed = timer.stop();
+      totalTime.inc(elapsed);
+    }
+  }
 
   /**
    * Cleanup any per request  data

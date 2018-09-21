@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.Header;
@@ -104,19 +103,17 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
   @Override
   public boolean doAuthenticate(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws Exception {
-    Timer.Context timer = requestTimes.time();
-    requests.inc();
     HttpServletRequest request = (HttpServletRequest) servletRequest;
     HttpServletResponse response = (HttpServletResponse) servletResponse;
 
     String authHeader = request.getHeader("Authorization");
-    try {
-      if (authHeader != null) {
-        BasicAuthPlugin.authHeader.set(new BasicHeader("Authorization", authHeader));
-        StringTokenizer st = new StringTokenizer(authHeader);
-        if (st.hasMoreTokens()) {
-          String basic = st.nextToken();
-          if (basic.equalsIgnoreCase("Basic")) {
+    if (authHeader != null) {
+      BasicAuthPlugin.authHeader.set(new BasicHeader("Authorization", authHeader));
+      StringTokenizer st = new StringTokenizer(authHeader);
+      if (st.hasMoreTokens()) {
+        String basic = st.nextToken();
+        if (basic.equalsIgnoreCase("Basic")) {
+          if (st.hasMoreTokens()) {
             try {
               String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
               int p = credentials.indexOf(":");
@@ -127,6 +124,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
                   numWrongCredentials.inc();
                   log.debug("Bad auth credentials supplied in Authorization header");
                   authenticationFailure(response, "Bad credentials");
+                  return false;
                 } else {
                   HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
                     @Override
@@ -138,33 +136,34 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
                   filterChain.doFilter(wrapper, response);
                   return true;
                 }
-
               } else {
                 numInvalidCredentials.inc();
                 authenticationFailure(response, "Invalid authentication token");
+                return false;
               }
             } catch (UnsupportedEncodingException e) {
-              numErrors.mark();
               throw new Error("Couldn't retrieve authentication", e);
             }
+          } else {
+            numInvalidCredentials.inc();
+            authenticationFailure(response, "Malformed Basic Auth header");
+            return false;
           }
         }
-      } else {
-        if (blockUnknown) {
-          numMissingCredentials.inc();
-          authenticationFailure(response, "require authentication");
-        } else {
-          numPassThrough.inc();
-          request.setAttribute(AuthenticationPlugin.class.getName(), authenticationProvider.getPromptHeaders());
-          filterChain.doFilter(request, response);
-          return true;
-        }
       }
-    } finally {
-      long elapsed = timer.stop();
-      totalTime.inc(elapsed);
     }
-    return false;
+    
+    // No auth header OR header empty OR Authorization header not of type Basic, i.e. "unknown" user
+    if (blockUnknown) {
+      numMissingCredentials.inc();
+      authenticationFailure(response, "require authentication");
+      return false;
+    } else {
+      numPassThrough.inc();
+      request.setAttribute(AuthenticationPlugin.class.getName(), authenticationProvider.getPromptHeaders());
+      filterChain.doFilter(request, response);
+      return true;
+    }
   }
 
   @Override

@@ -84,7 +84,6 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @LogLevel("org.apache.solr=DEBUG")
   public void testBasicAuth() throws Exception {
 
     String authcPrefix = "/admin/authentication";
