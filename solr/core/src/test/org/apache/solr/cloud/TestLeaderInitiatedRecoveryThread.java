@@ -46,6 +46,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
 
   @Test
   //17-Aug-2018 commented @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testPublishDownState() throws Exception {
     waitForRecoveriesToFinish(true);
 
