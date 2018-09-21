@@ -140,7 +140,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
                 log.debug("Successfully created replica for collection={} shard={} on node={}",
                     sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), target);
               }
-            });
+            }).get(0);
 
         if (addedReplica != null) {
           createdReplicas.add(addedReplica);

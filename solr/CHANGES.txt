@@ -90,6 +90,11 @@ New Features
   error.  Previously, the collapsing behavior was unreliable and undefined despite no explicit error.
   (Munendra S N, David Smiley)
 
+* SOLR-9317: ADDREPLICA command should be able to add more than one replica to a collection,shard at a time.
+  The API now supports 'nrtReplicas', 'tlogReplicas', 'pullReplicas' parameters as well 'createNodeSet' parameter.
+  As part of this change, the CREATESHARD API now delegates placing replicas entirely to the ADDREPLICA command
+  and uses the new parameters to add all the replicas in one API call. (shalin)
+
 Other Changes
 ----------------------
 
