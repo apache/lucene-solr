@@ -25,6 +25,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -87,40 +88,35 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
     defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null ) {
       defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       defaultConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
-    }
-
-    ModifiableSolrParams clientParams = new ModifiableSolrParams();
-    if (cfg != null)  {
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
       clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
+      // following is done only for logging complete configuration.
+      // The maxConnections and maxConnectionsPerHost have already been specified on the connection manager
+      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
+      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
       socketTimeout = cfg.getDistributedSocketTimeout();
       connectionTimeout = cfg.getDistributedConnectionTimeout();
     }
+    log.debug("Created default UpdateShardHandler HTTP client with params: {}", clientParams);
 
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
     updateHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
 
     Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
-      updateOnlyClientBuilder.connectionTimeout(cfg.getDistributedConnectionTimeout())
-          .idleTimeout(cfg.getDistributedSocketTimeout());
+      updateOnlyClientBuilder
+          .connectionTimeout(cfg.getDistributedConnectionTimeout())
+          .idleTimeout(cfg.getDistributedSocketTimeout())
+          .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
     updateOnlyClient = updateOnlyClientBuilder.build();
     updateOnlyClient.setListenerFactory(updateHttpListenerFactory);
 
     defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, false, httpRequestExecutor);
-
-    // following is done only for logging complete configuration.
-    // The maxConnections and maxConnectionsPerHost have already been specified on the connection manager
-    if (cfg != null)  {
-      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
-      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
-    }
-    log.debug("Created default UpdateShardHandler HTTP client with params: {}", clientParams);
-    log.debug("Created update only UpdateShardHandler HTTP client with params: {}", clientParams);
 
     ThreadFactory recoveryThreadFactory = new SolrjNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
@@ -241,10 +237,12 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     }
   }
 
+  @VisibleForTesting
   public int getSocketTimeout() {
     return socketTimeout;
   }
 
+  @VisibleForTesting
   public int getConnectionTimeout() {
     return connectionTimeout;
   }

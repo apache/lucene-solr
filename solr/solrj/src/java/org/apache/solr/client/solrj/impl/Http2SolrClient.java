@@ -215,10 +215,11 @@ public class Http2SolrClient extends SolrClient {
     httpClient.setStrictEventOrdering(false);
     httpClient.setConnectBlocking(true);
     httpClient.setFollowRedirects(false);
-    httpClient.setMaxConnectionsPerDestination(4);
-    httpClient.setMaxRequestsQueuedPerDestination(MAX_OUTSTANDING_REQUESTS * 4); // comfortably above max outstanding     // requests
+    // comfortably above max outstanding requests
+    httpClient.setMaxRequestsQueuedPerDestination(MAX_OUTSTANDING_REQUESTS * 4);
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
 
+    if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     if (builder.idleTimeout != null) httpClient.setIdleTimeout(builder.idleTimeout);
     if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
     return httpClient;
@@ -638,6 +639,7 @@ public class Http2SolrClient extends SolrClient {
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout;
     private Integer connectionTimeout;
+    private Integer maxConnectionsPerHost;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
     private Request.BeginListener beginListener = request -> {};
@@ -661,6 +663,11 @@ public class Http2SolrClient extends SolrClient {
 
     public Builder withSSLConfig(SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
+      return this;
+    }
+
+    public Builder maxConnectionsPerHost(int max) {
+      this.maxConnectionsPerHost = max;
       return this;
     }
 

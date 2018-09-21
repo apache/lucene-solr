@@ -90,11 +90,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
   private LBHttp2SolrClient loadbalancer;
-  //default values:
-  int soTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
-  int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
-  int maxConnectionsPerHost = HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST;
-  int maxConnections = HttpClientUtil.DEFAULT_MAXCONNECTIONS;
+
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
   int keepAliveTime = 5;
@@ -156,7 +152,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
     NamedList args = info.initArgs;
-    this.soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, soTimeout,sb);
     this.scheme = getParameter(args, INIT_URL_SCHEME, null,sb);
     if(StringUtils.endsWith(this.scheme, "://")) {
       this.scheme = StringUtils.removeEnd(this.scheme, "://");
@@ -169,9 +164,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
           "Unknown metricNameStrategy: " + strategy + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
     }
 
-    this.connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout, sb);
-    this.maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost,sb);
-    this.maxConnections = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections,sb);
     this.corePoolSize = getParameter(args, INIT_CORE_POOL_SIZE, corePoolSize,sb);
     this.maximumPoolSize = getParameter(args, INIT_MAX_POOL_SIZE, maximumPoolSize,sb);
     this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, keepAliveTime,sb);
@@ -208,7 +200,17 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     );
 
     this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
-    this.defaultClient = new Http2SolrClient.Builder().connectionTimeout(connectionTimeout).idleTimeout(soTimeout).build();
+    int connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT,
+        HttpClientUtil.DEFAULT_CONNECT_TIMEOUT, sb);
+    int maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
+        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST, sb);
+    int soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT,
+        HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
+
+    this.defaultClient = new Http2SolrClient.Builder()
+        .connectionTimeout(connectionTimeout)
+        .idleTimeout(soTimeout)
+        .maxConnectionsPerHost(maxConnectionsPerHost).build();
     this.defaultClient.setListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBHttp2SolrClient(defaultClient);
   }
@@ -218,13 +220,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     if (securityBuilder != null) {
       securityBuilder.applyHttp2Configurator(defaultClient);
     }
-  }
-
-  protected ModifiableSolrParams getClientParams() {
-    ModifiableSolrParams clientParams = new ModifiableSolrParams();
-    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
-    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections);
-    return clientParams;
   }
 
   protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
