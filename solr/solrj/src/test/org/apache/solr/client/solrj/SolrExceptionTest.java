@@ -22,6 +22,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.junit.Test;
 
 /**
  * 
@@ -30,6 +31,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
  */
 public class SolrExceptionTest extends LuceneTestCase {
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSolrException() throws Throwable {
     // test a connection to a solr server that probably doesn't exist
     // this is a very simple test and most of the test should be considered verified 

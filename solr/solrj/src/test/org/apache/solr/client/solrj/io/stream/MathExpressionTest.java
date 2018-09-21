@@ -3113,6 +3113,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //2018-03-10
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testMultiVariateNormalDistribution() throws Exception {
     String cexpr = "let(echo=true," +
         "     a=array(1,2,3,4,5,6,7)," +

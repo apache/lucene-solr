@@ -18,6 +18,7 @@ package org.apache.solr.common.params;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
+import org.junit.Test;
 
 /**
  * This class tests backwards compatibility of {@link ShardParams} parameter constants.
@@ -49,7 +50,9 @@ public class ShardParamsTest extends LuceneTestCase
   public void testRoute() { assertEquals(ShardParams._ROUTE_, "_route_"); }
   
   public void testDistribSinglePass() { assertEquals(ShardParams.DISTRIB_SINGLE_PASS, "distrib.singlePass"); }
-  
+
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testGetShardsTolerantAsBool() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     // shards.tolerant param is not set; default should be false
