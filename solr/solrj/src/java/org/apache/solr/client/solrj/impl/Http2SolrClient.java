@@ -268,9 +268,9 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  public Http2ClientResponse request(SolrRequest solrRequest, String collection, OnComplete onComplete)
+  public void request(SolrRequest solrRequest, String collection, OnComplete onComplete)
       throws SolrServerException, IOException {
-    return request(solrRequest, collection, onComplete, false);
+    request(solrRequest, collection, onComplete, false);
   }
 
   private boolean isV2ApiRequest(final SolrRequest request) {
@@ -608,36 +608,14 @@ public class Http2SolrClient extends SolrClient {
 
   @Override
   public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
-    return request(request, collection, null).response;
+    return request(request, collection, null, false).response;
   }
 
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }
 
-  // sample new async method
-  public void add(String collection, SolrInputDocument doc, int commitWithinMs, OnComplete<UpdateResponse> onComplete)
-      throws SolrServerException, IOException {
-
-    UpdateRequest req = new UpdateRequest();
-    req.add(doc);
-    req.setCommitWithin(commitWithinMs);
-    request(req, collection, onComplete);
-  }
-
-  public String get(String url) throws InterruptedException, ExecutionException, TimeoutException {
-    ContentResponse response = httpClient.GET(url);
-    return response.getContentAsString();
-  }
-
-  // sample new async method
-  public void query(String collection, SolrParams params, OnComplete<QueryResponse> onComplete)
-      throws SolrServerException, IOException {
-    QueryRequest queryRequest = new QueryRequest(params);
-    request(queryRequest, collection, onComplete);
-  }
-
-  public InputStream queryAndStreamResponse(String collection, SolrParams params)
+  private InputStream queryAndStreamResponse(String collection, SolrParams params)
       throws SolrServerException, IOException {
     QueryRequest queryRequest = new QueryRequest(params);
     Http2ClientResponse resp = request(queryRequest, collection, null, true);
@@ -645,22 +623,8 @@ public class Http2SolrClient extends SolrClient {
     return resp.stream;
   }
 
-  public void commit(String collection, boolean softCommit, boolean waitSearcher, OnComplete<UpdateResponse> onComplete)
-      throws SolrServerException, IOException {
-    UpdateRequest req = new UpdateRequest();
-    ModifiableSolrParams params = new ModifiableSolrParams();
-
-    params.set(UpdateParams.COMMIT, "true");
-    params.set(UpdateParams.SOFT_COMMIT, String.valueOf(softCommit));
-
-    params.set(UpdateParams.WAIT_SEARCHER, String.valueOf(waitSearcher));
-    req.setParams(params);
-
-    request(req, collection, onComplete);
-  }
-
-  public interface OnComplete<T> {
-    void onSuccess(T result);
+  public interface OnComplete {
+    void onSuccess(NamedList result);
 
     void onFailure(Throwable e);
   }
