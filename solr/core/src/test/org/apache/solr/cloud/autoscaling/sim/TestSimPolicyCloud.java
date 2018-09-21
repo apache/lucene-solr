@@ -236,7 +236,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     String pullNodeName = nodes.get(1);
     int pullPort = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(pullNodeName, ImplicitSnitch.PORT);
 
-    String tlogNodeName = nodes.get(1);
+    String tlogNodeName = nodes.get(2);
     int tlogPort = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(tlogNodeName, ImplicitSnitch.PORT);
     log.info("NRT {} PULL {} , TLOG {} ", nrtNodeName, pullNodeName, tlogNodeName);
 
