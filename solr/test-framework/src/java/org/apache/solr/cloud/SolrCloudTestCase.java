@@ -428,14 +428,20 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   static final List<String> AUTH_METRICS_KEYS = Arrays.asList("errors", "timeouts", "requests", "authenticated", 
       "passThrough", "failWrongCredentials", "failMissingCredentials", "failInvalidCredentials", "requestTimes", "totalTime");
-  static final List<String> METRICS_METER_KEYS = Arrays.asList("errors", "timeouts");
-  static final List<String> METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
-  
+  static final List<String> AUTH_METRICS_METER_KEYS = Arrays.asList("errors", "timeouts");
+  static final List<String> AUTH_METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
+
+  /**
+   * Used to check metric counts for PKI auth
+   */
   protected static void assertPkiAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
     assertAuthMetrics("SECURITY./authentication/pki.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
   }
   
-  protected static void assertBasicAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
+  /**
+   * Used to check metric counts for the AuthPlugin in use (except PKI)
+   */
+  protected static void assertAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
     assertAuthMetrics("SECURITY./authentication.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
   }  
   
@@ -443,7 +449,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Common test method to be able to check security from any authentication plugin
    * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
    */
-  static void assertAuthMetrics(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
+  private static void assertAuthMetrics(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
     List<Map<String, Metric>> metrics = new ArrayList<>();
     cluster.getJettySolrRunners().forEach(r -> {
       MetricRegistry registry = r.getCoreContainer().getMetricManager().registry("solr.node");
@@ -474,9 +480,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   // Have to sum the metrics from all three shards/nodes
   static long sumCount(String prefix, String key, List<Map<String, Metric>> metrics) {
     assertTrue("Metric " + prefix + key + " does not exist", metrics.get(0).containsKey(prefix + key)); 
-    if (METRICS_METER_KEYS.contains(key))
+    if (AUTH_METRICS_METER_KEYS.contains(key))
       return metrics.stream().mapToLong(l -> ((Meter)l.get(prefix + key)).getCount()).sum();
-    else if (METRICS_TIMER_KEYS.contains(key))
+    else if (AUTH_METRICS_TIMER_KEYS.contains(key))
       return (long) ((long) 1000 * metrics.stream().mapToDouble(l -> ((Timer)l.get(prefix + key)).getMeanRate()).average().orElse(0.0d));
     else
       return metrics.stream().mapToLong(l -> ((Counter)l.get(prefix + key)).getCount()).sum();
