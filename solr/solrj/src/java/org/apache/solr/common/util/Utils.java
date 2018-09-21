@@ -232,7 +232,7 @@ public class Utils {
 
   public static Object fromJSON(InputStream is){
     try {
-      return new ObjectBuilder(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getObject();
+      return new ObjectBuilder(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
@@ -260,7 +260,7 @@ public class Utils {
 
   public static Object fromJSONString(String json)  {
     try {
-      return new ObjectBuilder(getJSONParser(new StringReader(json))).getObject();
+      return new ObjectBuilder(getJSONParser(new StringReader(json))).getVal();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
