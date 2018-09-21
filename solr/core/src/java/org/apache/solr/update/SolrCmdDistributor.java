@@ -168,7 +168,7 @@ public class SolrCmdDistributor {
         pendingTasksPhaser.arriveAndDeregister();
       } else {
         //TODO write add cmds in single outputstream
-        client.request(req.uReq, null, new Http2SolrClient.OnComplete<NamedList>() {
+        client.request(req.uReq, null, new Http2SolrClient.OnComplete() {
           @Override
           public void onSuccess(NamedList result) {
             req.trackRequestResult(result, true);
