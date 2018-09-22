@@ -21,12 +21,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -266,7 +267,8 @@ public final class MultiFields extends Fields {
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
     final String softDeletesField = reader.leaves().stream()
         .map(l -> l.reader().getFieldInfos().getSoftDeletesField())
-        .filter(Objects::nonNull).findAny().orElse(null);
+        .filter(Objects::nonNull)
+        .findAny().orElse(null);
     final FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(softDeletesField));
     for(final LeafReaderContext ctx : reader.leaves()) {
       builder.add(ctx.reader().getFieldInfos());
@@ -274,22 +276,13 @@ public final class MultiFields extends Fields {
     return builder.finish();
   }
 
-  /** Call this to get the (merged) FieldInfos representing the
-   *  set of indexed fields <b>only</b> for a composite reader. 
-   *  <p>
-   *  NOTE: the returned field numbers will likely not
-   *  correspond to the actual field numbers in the underlying
-   *  readers, and codec metadata ({@link FieldInfo#getAttribute(String)}
-   *  will be unavailable.
-   */
+  /** Returns a set of names of fields that have a terms index.  The order is undefined. */
   public static Collection<String> getIndexedFields(IndexReader reader) {
-    final Collection<String> fields = new HashSet<>();
-    for(final FieldInfo fieldInfo : getMergedFieldInfos(reader)) {
-      if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
-        fields.add(fieldInfo.name);
-      }
-    }
-    return fields;
+    return reader.leaves().stream()
+        .flatMap(l -> StreamSupport.stream(l.reader().getFieldInfos().spliterator(), false)
+        .filter(fi -> fi.getIndexOptions() != IndexOptions.NONE))
+        .map(fi -> fi.name)
+        .collect(Collectors.toSet());
   }
 
   private static class LeafReaderFields extends Fields {

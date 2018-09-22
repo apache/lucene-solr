@@ -170,6 +170,9 @@ Optimizations
 * LUCENE-8448: Boolean queries now propagates the mininum score to their sub-scorers.
   (Jim Ferenczi, Adrien Grand)
 
+* LUCENE-8511: MultiFields.getIndexedFields is now optimized; does not call getMergedFieldInfos
+  (David Smiley)
+
 ======================= Lucene 7.6.0 =======================
 
 Build
