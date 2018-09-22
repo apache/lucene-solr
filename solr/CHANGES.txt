@@ -101,6 +101,12 @@ Other Changes
 * SOLR-12762: Fix javadoc for SolrCloudTestCase.clusterShape() method and add a method that validates only against
   Active slices (Anshum Gupta)
 
+Bug Fixes
+----------------------
+
+* SOLR-11836: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
+  (Alfonso Muñoz-Pomer Fuentes, Amrit Sarkar via Varun Thacker)
+
 
 ==================  7.5.0 ==================
 
@@ -356,9 +362,6 @@ Bug Fixes
   (Steve Rowe, Varun Thacker)
 
 * SOLR-12733: SolrMetricReporterTest failure (Erick Erickson, David Smiley)
-
-* SOLR-11836: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
-  (Alfonso Muñoz-Pomer Fuentes, Amrit Sarkar via Varun Thacker)
 
 * SOLR-12765: Incorrect format of JMX cache stats. (Bojan Smid, ab)
 
