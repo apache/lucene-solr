@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -413,23 +414,46 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     ClusterState clusterState = getClusterState();
     DocCollection coll = clusterState.getCollection(message.getStr(ZkStateReader.COLLECTION_PROP));
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
-    message = AddReplicaCmd.assignReplicaDetails(cloudManager, clusterState, message, sessionWrapper);
+
+    Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT));
+    EnumMap<Replica.Type, Integer> replicaTypesVsCount = new EnumMap<>(Replica.Type.class);
+    replicaTypesVsCount.put(Replica.Type.NRT, message.getInt(NRT_REPLICAS, replicaType == Replica.Type.NRT ? 1 : 0));
+    replicaTypesVsCount.put(Replica.Type.TLOG, message.getInt(TLOG_REPLICAS, replicaType == Replica.Type.TLOG ? 1 : 0));
+    replicaTypesVsCount.put(Replica.Type.PULL, message.getInt(PULL_REPLICAS, replicaType == Replica.Type.PULL ? 1 : 0));
+
+    int totalReplicas = 0;
+    for (Map.Entry<Replica.Type, Integer> entry : replicaTypesVsCount.entrySet()) {
+      totalReplicas += entry.getValue();
+    }
+    if (totalReplicas > 1)  {
+      if (message.getStr(CoreAdminParams.NAME) != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'name' parameter is specified");
+      }
+      if (message.getStr(CoreAdminParams.CORE_NODE_NAME) != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'coreNodeName' parameter is specified");
+      }
+    }
+
+    List<ReplicaPosition> replicaPositions = AddReplicaCmd.buildReplicaPositions(cloudManager, clusterState, coll.getName(), message, replicaTypesVsCount, sessionWrapper);
+    for (ReplicaPosition replicaPosition : replicaPositions) {
+      AddReplicaCmd.CreateReplica createReplica = AddReplicaCmd.assignReplicaDetails(cloudManager, clusterState, message, replicaPosition);
+      if (message.getStr(CoreAdminParams.CORE_NODE_NAME) == null) {
+        createReplica.coreNodeName = Assign.assignCoreNodeName(stateManager, coll);
+      }
+      ReplicaInfo ri = new ReplicaInfo(
+          createReplica.coreNodeName,
+          createReplica.coreName,
+          createReplica.collectionName,
+          createReplica.sliceName,
+          createReplica.replicaType,
+          createReplica.node,
+          message.getProperties()
+      );
+      simAddReplica(ri.getNode(), ri, true);
+    }
     if (sessionWrapper.get() != null) {
       sessionWrapper.get().release();
     }
-    if (message.getStr(CoreAdminParams.CORE_NODE_NAME) == null) {
-      message = message.plus(CoreAdminParams.CORE_NODE_NAME, Assign.assignCoreNodeName(stateManager, coll));
-    }
-    ReplicaInfo ri = new ReplicaInfo(
-        message.getStr(CoreAdminParams.CORE_NODE_NAME),
-        message.getStr(CoreAdminParams.NAME),
-        message.getStr(ZkStateReader.COLLECTION_PROP),
-        message.getStr(ZkStateReader.SHARD_ID_PROP),
-        Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT)),
-        message.getStr(CoreAdminParams.NODE),
-        message.getProperties()
-    );
-    simAddReplica(message.getStr(CoreAdminParams.NODE), ri, true);
     results.add("success", "");
   }
 
@@ -1015,31 +1039,30 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           .filter(e -> !e.getKey().equals("replicas"))
           .forEach(e -> props.put(e.getKey(), e.getValue()));
       // 2. create new replicas
-      AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
-      List<ReplicaPosition> positions = CreateShardCmd.buildReplicaPositions(cloudManager, clusterState, collectionName,
-          message, sessionWrapper);
-      if (sessionWrapper.get() != null) {
-        sessionWrapper.get().release();
-      }
-      AtomicInteger replicaNum = new AtomicInteger(1);
-      positions.forEach(pos -> {
-        Map<String, Object> replicaProps = new HashMap<>();
-        replicaProps.put(ZkStateReader.SHARD_ID_PROP, pos.shard);
-        replicaProps.put(ZkStateReader.NODE_NAME_PROP, pos.node);
-        replicaProps.put(ZkStateReader.REPLICA_TYPE, pos.type.toString());
-        replicaProps.put(ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(pos.node, "http"));
-        String coreName = String.format(Locale.ROOT, "%s_%s_replica_%s%s", collectionName, pos.shard, pos.type.name().substring(0,1).toLowerCase(Locale.ROOT),
-            replicaNum.getAndIncrement());
+      EnumMap<Replica.Type, Integer> replicaTypesVsCount = new EnumMap<>(Replica.Type.class);
+      int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
+      int numTlogReplicas = message.getInt(TLOG_REPLICAS, message.getInt(TLOG_REPLICAS, collection.getInt(TLOG_REPLICAS, 0)));
+      int numPullReplicas = message.getInt(PULL_REPLICAS, message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0)));
+      replicaTypesVsCount.put(Replica.Type.NRT, numNrtReplicas);
+      replicaTypesVsCount.put(Replica.Type.TLOG, numTlogReplicas);
+      replicaTypesVsCount.put(Replica.Type.PULL, numPullReplicas);
+
+      ZkNodeProps addReplicasProps = new ZkNodeProps(
+          COLLECTION_PROP, collectionName,
+          SHARD_ID_PROP, sliceName,
+          ZkStateReader.NRT_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.NRT)),
+          ZkStateReader.TLOG_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.TLOG)),
+          ZkStateReader.PULL_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.PULL)),
+          OverseerCollectionMessageHandler.CREATE_NODE_SET, message.getStr(OverseerCollectionMessageHandler.CREATE_NODE_SET)
+          );
+
         try {
-          replicaProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
-          ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
-              coreName, collectionName, pos.shard, pos.type, pos.node, replicaProps);
-          simAddReplica(pos.node, ri, false);
+          simAddReplica(addReplicasProps, results);
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
-      });
-      Map<String, Object> colProps = collProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>());
+
+      collProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>());
 
       simRunLeaderElection(Collections.singleton(collectionName), true);
       results.add("success", "");

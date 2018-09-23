@@ -158,7 +158,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     assertTrue("Should have gotten the right error message back",
         e2.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
 
-    // And finally, insure that there are all the replcias we expect. We should have shards 1, 2 and 4 and each
+    // And finally, ensure that there are all the replicas we expect. We should have shards 1, 2 and 4 and each
     // should have exactly two replicas
     waitForState("Expected shards shardstart, 1, 2 and 4, each with two active replicas", collectionName, (n, c) -> {
       return DocCollection.isFullyActive(n, c, 4, 2);

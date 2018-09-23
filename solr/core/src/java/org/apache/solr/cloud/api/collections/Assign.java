@@ -273,7 +273,7 @@ public class Assign {
     } else {
       if (numTlogReplicas + numPullReplicas != 0 && rulesMap != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules or cluster policies");
+            Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules");
       }
     }
 
@@ -322,11 +322,11 @@ public class Assign {
   // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if not enough replicas
   // could be created on live nodes given maxShardsPerNode, Replication factor (if from createShard) etc.
   public static List<ReplicaCount> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
-                                                          String shard, int nrtReplicas,
+                                                          String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
                                                           Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
-    log.debug("getNodesForNewReplicas() shard: {} , replicas : {} , createNodeSet {}", shard, nrtReplicas, createNodeSet );
+    log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}", shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet );
     DocCollection coll = clusterState.getCollection(collectionName);
-    Integer maxShardsPerNode = coll.getMaxShardsPerNode();
+    Integer maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
     List<String> createNodeList = null;
 
     if (createNodeSet instanceof List) {
@@ -338,15 +338,15 @@ public class Assign {
      HashMap<String, ReplicaCount> nodeNameVsShardCount = getNodeNameVsShardCount(collectionName, clusterState, createNodeList);
 
     if (createNodeList == null) { // We only care if we haven't been told to put new replicas on specific nodes.
-      int availableSlots = 0;
+      long availableSlots = 0;
       for (Map.Entry<String, ReplicaCount> ent : nodeNameVsShardCount.entrySet()) {
         //ADDREPLICA can put more than maxShardsPerNode on an instance, so this test is necessary.
         if (maxShardsPerNode > ent.getValue().thisCollectionNodes) {
           availableSlots += (maxShardsPerNode - ent.getValue().thisCollectionNodes);
         }
       }
-      if (availableSlots < nrtReplicas) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      if (availableSlots < nrtReplicas + tlogReplicas + pullReplicas) {
+        throw new AssignmentException(
             String.format(Locale.ROOT, "Cannot create %d new replicas for collection %s given the current number of live nodes and a maxShardsPerNode of %d",
                 nrtReplicas, collectionName, maxShardsPerNode));
       }
@@ -355,13 +355,17 @@ public class Assign {
     List l = (List) coll.get(DocCollection.RULE);
     List<ReplicaPosition> replicaPositions = null;
     if (l != null) {
+      if (tlogReplicas + pullReplicas > 0)  {
+        throw new AssignmentException(Replica.Type.TLOG + " or " + Replica.Type.PULL +
+            " replica types not supported with placement rules");
+      }
       // TODO: make it so that this method doesn't require access to CC
       replicaPositions = getNodesViaRules(clusterState, shard, nrtReplicas, cloudManager, coll, createNodeList, l);
     }
     String policyName = coll.getStr(POLICY);
     AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
     if (policyName != null || !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) {
-      replicaPositions = Assign.getPositionsUsingPolicy(collectionName, Collections.singletonList(shard), nrtReplicas, 0, 0,
+      replicaPositions = Assign.getPositionsUsingPolicy(collectionName, Collections.singletonList(shard), nrtReplicas, tlogReplicas, pullReplicas,
           policyName, cloudManager, createNodeList);
     }
 
@@ -461,7 +465,7 @@ public class Assign {
       return nodeNameVsShardCount;
     }
     DocCollection coll = clusterState.getCollection(collectionName);
-    Integer maxShardsPerNode = coll.getMaxShardsPerNode();
+    int maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
       DocCollection c = entry.getValue();

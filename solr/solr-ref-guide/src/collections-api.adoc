@@ -396,6 +396,10 @@ Use SPLITSHARD for collections created with the 'compositeId' router (`router.ke
 
 `/admin/collections?action=CREATESHARD&shard=_shardName_&collection=_name_`
 
+The default values for `replicationFactor` or `nrtReplicas`, `tlogReplicas`, `pullReplicas` from the collection is used to determine the number of replicas to be created for the new shard. This can be customized by explicitly passing the corresponding parameters to the request.
+
+The API uses the Autoscaling framework to find the best possible nodes in the cluster when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+
 === CREATESHARD Parameters
 
 `collection`::
@@ -408,6 +412,15 @@ The name of the shard to be created. This parameter is required.
 Allows defining the nodes to spread the new collection across. If not provided, the CREATESHARD operation will create shard-replica spread across all live Solr nodes.
 +
 The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
+
+`nrtReplicas`::
+The number of `nrt` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
+
+`tlogReplicas`::
+The number of `tlog` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
+
+`pullReplicas`::
+The number of `pull` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
@@ -1016,9 +1029,9 @@ http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=tes
 [[addreplica]]
 == ADDREPLICA: Add Replica
 
-Add a replica to a shard in a collection. The node name can be specified if the replica is to be created in a specific node.
+Add one or more replicas to a shard in a collection. The node name can be specified if the replica is to be created in a specific node. Otherwise, a set of nodes can be specified and the most suitable ones among them will be chosen to create the replica(s).
 
-The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replica but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replica(s) but only when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
 `/admin/collections?action=ADDREPLICA&collection=_collection_&shard=_shard_&node=_nodeName_`
 
@@ -1038,7 +1051,14 @@ If the exact shard name is not known, users may pass the `\_route_` value and th
 Ignored if the `shard` parameter is also specified.
 
 `node`::
-The name of the node where the replica should be created.
+The name of the node where the replica should be created (optional)
+
+`createNodeSet`::
+A comma-separated list of nodes among which the best ones will be chosen to place the replicas (optional)
++
+The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
+
+If neither `node`, nor `createNodeSet` is specified then the best node(s) from among all the live nodes in the cluster are chosen.
 
 `instanceDir`::
 The instanceDir for the core that will be created.
@@ -1056,6 +1076,15 @@ The type of replica to create. These possible values are allowed:
 --
 +
 See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
+
+`nrtReplicas`::
+The number of `nrt` replicas that should be created (optional, defaults to 1 if `type` is `nrt` otherwise 0).
+
+`tlogReplicas`::
+The number of `tlog` replicas that should be created (optional, defaults to 1 if `type` is `tlog` otherwise 0).
+
+`pullReplicas`::
+The number of `pull` replicas that should be created (optional, defaults to 1 if `type` is `pull` otherwise 0).
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details about supported properties and values.
@@ -1094,6 +1123,39 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&
     </lst>
   </lst>
 </response>
+----
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=addreplica&collection=gettingstarted&shard=shard1&tlogReplicas=1&pullReplicas=1
+----
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 784
+    },
+    "success": {
+        "127.0.1.1:7574_solr": {
+            "responseHeader": {
+                "status": 0,
+                "QTime": 257
+            },
+            "core": "gettingstarted_shard1_replica_p11"
+        },
+        "127.0.1.1:8983_solr": {
+            "responseHeader": {
+                "status": 0,
+                "QTime": 295
+            },
+            "core": "gettingstarted_shard1_replica_t10"
+        }
+    }
+}
 ----
 
 [[clusterprop]]
