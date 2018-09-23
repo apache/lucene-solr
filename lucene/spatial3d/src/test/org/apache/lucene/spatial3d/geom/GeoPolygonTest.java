@@ -1911,7 +1911,7 @@ shape:
 
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8512")
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8512")
   public void testLUCENE8512() {
     //POLYGON((35.4190030282028 -67.85799140154762,35.420218772379776 -67.85786846162631,35.42021877254679 -67.85786846168897,35.420218772734266 -67.85786846168025,35.4190030282028 -67.85799140154762))
     final List<GeoPoint> points = new ArrayList<>();
