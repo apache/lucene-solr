@@ -981,8 +981,8 @@ IF [%SOLR_LOGS_DIR%] == [] (
 )
 
 set "EXAMPLE_DIR=%SOLR_TIP%\example"
-set TMP=!SOLR_HOME:%EXAMPLE_DIR%=!
-IF NOT "%TMP%"=="%SOLR_HOME%" (
+set TMP_SOLR_HOME=!SOLR_HOME:%EXAMPLE_DIR%=!
+IF NOT "%TMP_SOLR_HOME%"=="%SOLR_HOME%" (
   set "SOLR_LOGS_DIR=%SOLR_HOME%\..\logs"
   set "LOG4J_CONFIG=file:///%SOLR_SERVER_DIR%\resources\log4j2.xml"
 )
