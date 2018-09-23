@@ -107,6 +107,7 @@ Bug Fixes
 * SOLR-11836: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
   (Alfonso Muñoz-Pomer Fuentes, Amrit Sarkar via Varun Thacker)
 
+* SOLR-12776: Setting of TMP in solr.cmd causes invisibility of Solr to JDK tools (Petr Bodnar via Erick Erickson)
 
 ==================  7.5.0 ==================
 
