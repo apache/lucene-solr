@@ -35,6 +35,9 @@ New Features
   error.  Previously, the collapsing behavior was unreliable and undefined despite no explicit error.
   (Munendra S N, David Smiley)
 
+* SOLR-11522: /autoscaling/suggestions now include rebalance options as well even if there are no violations (noble)
+
+
 Other Changes
 ----------------------
 
