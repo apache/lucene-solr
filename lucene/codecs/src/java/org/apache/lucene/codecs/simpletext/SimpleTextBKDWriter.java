@@ -666,7 +666,7 @@ final class SimpleTextBKDWriter implements Closeable {
   }
 
   private PointWriter sort(int dim) throws IOException {
-    assert dim >= 0 && dim < numIndexDims;
+    assert dim >= 0 && dim < numDataDims;
 
     if (heapPointWriter != null) {
 
@@ -699,7 +699,7 @@ final class SimpleTextBKDWriter implements Closeable {
       final int offset = bytesPerDim * dim;
 
       Comparator<BytesRef> cmp;
-      if (dim == numIndexDims - 1) {
+      if (dim == numDataDims - 1) {
         // in that case the bytes for the dimension and for the doc id are contiguous,
         // so we don't need a branch
         cmp = new BytesRefComparator(bytesPerDim + Integer.BYTES) {
@@ -1466,10 +1466,10 @@ final class SimpleTextBKDWriter implements Closeable {
     if (ord > 0) {
       int cmp = FutureArrays.compareUnsigned(lastPackedValue, dimOffset, dimOffset + bytesPerDim, packedValue, packedValueOffset + dimOffset, packedValueOffset + dimOffset + bytesPerDim);
       if (cmp > 0) {
-        throw new AssertionError("values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue, packedValueOffset, packedBytesLength) + " ord=" + ord);
+        throw new AssertionError("values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue, packedValueOffset, packedBytesLength) + " ord=" + ord + " sortedDim=" + sortedDim);
       }
       if (cmp == 0 && doc < lastDoc) {
-        throw new AssertionError("docs out of order: last doc=" + lastDoc + " current doc=" + doc + " ord=" + ord);
+        throw new AssertionError("docs out of order: last doc=" + lastDoc + " current doc=" + doc + " ord=" + ord + " sortedDim=" + sortedDim);
       }
     }
     System.arraycopy(packedValue, packedValueOffset, lastPackedValue, 0, packedBytesLength);

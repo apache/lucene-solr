@@ -997,7 +997,9 @@ public class BKDWriter implements Closeable {
     boolean success = false;
     try {
       //long t0 = System.nanoTime();
-      for(int dim=0;dim<numIndexDims;dim++) {
+      // even with selective indexing we create the sortedPointWriters so we can compress
+      // the leaf node data by common prefix
+      for(int dim=0;dim<numDataDims;dim++) {
         sortedPointWriters[dim] = new PathSlice(sort(dim), 0, pointCount);
       }
       //long t1 = System.nanoTime();
@@ -1054,7 +1056,7 @@ public class BKDWriter implements Closeable {
     // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree (only happens
     // if it was created by OneDimensionBKDWriter).  In this case the leaf nodes may straddle the two bottom
     // levels of the binary tree:
-    if (numDataDims == 1 && numLeaves > 1) {
+    if (numIndexDims == 1 && numLeaves > 1) {
       int levelCount = 2;
       while (true) {
         if (numLeaves >= levelCount && numLeaves <= 2*levelCount) {
@@ -1134,7 +1136,7 @@ public class BKDWriter implements Closeable {
       if (isLeft == false) {
         leftBlockFP = getLeftMostLeafBlockFP(leafBlockFPs, nodeID);
         long delta = leftBlockFP - minBlockFP;
-        assert nodeID == 1 || delta > 0;
+        assert nodeID == 1 || delta > 0 : "expected nodeID=1 or delta > 0; got nodeID=" + nodeID + " and delta=" + delta;
         writeBuffer.writeVLong(delta);
       } else {
         // The left tree's left most leaf block FP is always the minimal FP:

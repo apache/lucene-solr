@@ -62,8 +62,8 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.bytesPerDim = bytesPerDim;
     // no version check here because callers of this API (SimpleText) have no back compat:
-    bytesPerIndexEntry = numDataDims == 1 ? bytesPerDim : bytesPerDim + 1;
-    packedBytesLength = numDataDims * bytesPerDim;
+    bytesPerIndexEntry = numIndexDims == 1 ? bytesPerDim : bytesPerDim + 1;
+    packedBytesLength = numIndexDims * bytesPerDim;
     this.leafNodeOffset = leafBlockFPs.length;
     this.leafBlockFPs = leafBlockFPs;
     this.splitPackedValues = splitPackedValues;

@@ -246,7 +246,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         SimpleTextUtil.writeNewline(out);
 
         SimpleTextUtil.write(out, INDEX_DIM_COUNT);
-        SimpleTextUtil.write(out, Integer.toString(fi.getPointDataDimensionCount()), scratch);
+        SimpleTextUtil.write(out, Integer.toString(fi.getPointIndexDimensionCount()), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, DIM_NUM_BYTES);
