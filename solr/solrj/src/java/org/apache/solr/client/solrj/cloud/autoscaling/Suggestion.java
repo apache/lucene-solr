@@ -32,6 +32,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 
 public class Suggestion {
   static class Ctx {
+    int max = Integer.MAX_VALUE;
     public Policy.Session session;
     public Violation violation;
     private List<Suggester.SuggestionInfo> suggestions = new ArrayList<>();
@@ -54,6 +55,10 @@ public class Suggestion {
 
     public List<Suggester.SuggestionInfo> getSuggestions() {
       return suggestions;
+    }
+
+    public boolean needMore() {
+      return suggestions.size() < max;
     }
   }
 
