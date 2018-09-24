@@ -95,6 +95,8 @@ New Features
   As part of this change, the CREATESHARD API now delegates placing replicas entirely to the ADDREPLICA command
   and uses the new parameters to add all the replicas in one API call. (shalin)
 
+* SOLR-11522: /autoscaling/suggestions now include rebalance options as well even if there are no violations (noble)
+
 Other Changes
 ----------------------
 

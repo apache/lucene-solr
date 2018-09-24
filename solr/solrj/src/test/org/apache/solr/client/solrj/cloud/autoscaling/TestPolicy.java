@@ -79,6 +79,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 
 public class TestPolicy extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   static Suggester createSuggester(SolrCloudManager cloudManager, Map jsonObj, Suggester seed) throws IOException, InterruptedException {
     Policy.Session session = null;
     if (seed != null) session = seed.session;
@@ -397,19 +398,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
     // collect the set of nodes to which replicas are being added
     Set<String> nodes = new HashSet<>(2);
 
-    m = l.get(0).toMap(new LinkedHashMap<>());
-    assertEquals(1.0d, Utils.getObjectByPath(m, true, "violation/violation/delta"));
-    assertEquals("POST", Utils.getObjectByPath(m, true, "operation/method"));
-    assertEquals("/c/articles_coll/shards", Utils.getObjectByPath(m, true, "operation/path"));
-    assertNotNull(Utils.getObjectByPath(m, false, "operation/command/add-replica"));
-    nodes.add((String) Utils.getObjectByPath(m, true, "operation/command/add-replica/node"));
+    assertEquals(1.0d, l.get(0)._get("violation/violation/delta", null));
+    assertEquals("POST", l.get(0)._get("operation/method", null));
+    assertEquals("/c/articles_coll/shards", l.get(0)._get("operation/path", null));
+    assertNotNull(l.get(0)._get("operation/command/add-replica", null));
+    nodes.add((String) l.get(0)._get("operation/command/add-replica/node", null));
 
-    m = l.get(1).toMap(new LinkedHashMap<>());
-    assertEquals(1.0d, Utils.getObjectByPath(m, true, "violation/violation/delta"));
-    assertEquals("POST", Utils.getObjectByPath(m, true, "operation/method"));
-    assertEquals("/c/articles_coll/shards", Utils.getObjectByPath(m, true, "operation/path"));
-    assertNotNull(Utils.getObjectByPath(m, false, "operation/command/add-replica"));
-    nodes.add((String) Utils.getObjectByPath(m, true, "operation/command/add-replica/node"));
+    assertEquals(1.0d, l.get(1)._get("violation/violation/delta", null));
+    assertEquals("POST", l.get(1)._get("operation/method", null));
+    assertEquals("/c/articles_coll/shards", l.get(1)._get("operation/path", null));
+    assertNotNull(l.get(1)._get("operation/command/add-replica", null));
+    nodes.add((String) l.get(1)._get("operation/command/add-replica/node", null));
 
     assertEquals(2, nodes.size());
     assertTrue(nodes.contains("node1"));
@@ -565,18 +564,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Set<String> targetNodes = new HashSet<>();
     Set<String> movedReplicas = new HashSet<>();
     for (Suggester.SuggestionInfo suggestionInfo : l) {
-      Map s = suggestionInfo.toMap(new LinkedHashMap<>());
-      assertEquals("POST", Utils.getObjectByPath(s, true, "operation/method"));
-      if (Utils.getObjectByPath(s, false, "operation/command/add-replica") != null) {
+      assertEquals("POST", suggestionInfo._get("operation/method", null));
+      if (suggestionInfo._get("operation/command/add-replica", null) != null) {
         numAdds++;
-        assertEquals(1.0d, Utils.getObjectByPath(s, true, "violation/violation/delta"));
-        assertEquals("/c/articles_coll/shards", Utils.getObjectByPath(s, true, "operation/path"));
-        addNodes.add((String) Utils.getObjectByPath(s, true, "operation/command/add-replica/node"));
-      } else if (Utils.getObjectByPath(s, false, "operation/command/move-replica") != null) {
+        assertEquals(1.0d, suggestionInfo._get("violation/violation/delta", null));
+        assertEquals("/c/articles_coll/shards", suggestionInfo._get("operation/path", null));
+        addNodes.add((String) suggestionInfo._get("operation/command/add-replica/node", null));
+      } else if (suggestionInfo._get("operation/command/move-replica", null) != null) {
         numMoves++;
-        assertEquals("/c/articles_coll", Utils.getObjectByPath(s, true, "operation/path"));
-        targetNodes.add((String) Utils.getObjectByPath(s, true, "operation/command/move-replica/targetNode"));
-        movedReplicas.add((String) Utils.getObjectByPath(s, true, "operation/command/move-replica/replica"));
+        assertEquals("/c/articles_coll", suggestionInfo._get("operation/path", null));
+        targetNodes.add((String) suggestionInfo._get("operation/command/move-replica/targetNode", null));
+        movedReplicas.add((String) suggestionInfo._get("operation/command/move-replica/replica", null));
       } else {
         fail("Unexpected operation type suggested for suggestion: " + suggestionInfo);
       }
@@ -2357,13 +2355,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
         cloudManagerWithData(dataproviderdata));
     assertFalse(l.isEmpty());
 
-    Map m = l.get(0).toMap(new LinkedHashMap<>());
-    assertEquals(1.0d, Utils.getObjectByPath(m, true, "violation/violation/delta"));
-    assertEquals("POST", Utils.getObjectByPath(m, true, "operation/method"));
-    assertEquals("/c/mycoll1", Utils.getObjectByPath(m, true, "operation/path"));
-    assertNotNull(Utils.getObjectByPath(m, false, "operation/command/move-replica"));
-    assertEquals("10.0.0.6:7574_solr", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
-    assertEquals("core_node2", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
+    assertEquals(1.0d, l.get(0)._get( "violation/violation/delta",null));
+    assertEquals("POST", l.get(0)._get("operation/method",null));
+    assertEquals("/c/mycoll1", l.get(0)._get( "operation/path",null));
+    assertNotNull(l.get(0)._get("operation/command/move-replica", null));
+    assertEquals("10.0.0.6:7574_solr", l.get(0)._get( "operation/command/move-replica/targetNode",null));
+    assertEquals("core_node2", l.get(0)._get("operation/command/move-replica/replica", null));
   }
 
 
@@ -2526,7 +2523,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
 
-  public void testFreeDiskSuggestions() throws IOException {
+  public void testFreeDiskSuggestions() {
     String dataproviderdata = "{" +
         "  liveNodes:[node1,node2]," +
         "  replicaInfo : {" +
@@ -2557,17 +2554,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
     assertEquals(3, l.size());
-    Map m = l.get(0).toMap(new LinkedHashMap<>());
-    assertEquals("r4", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
-    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+    assertEquals("r4", l.get(0)._get("operation/command/move-replica/replica", null));
+    assertEquals("node1", l.get(0)._get("operation/command/move-replica/targetNode", null));
 
-    m = l.get(1).toMap(new LinkedHashMap<>());
-    assertEquals("r3", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
-    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+    assertEquals("r3", l.get(1)._get("operation/command/move-replica/replica", null));
+    assertEquals("node1", l.get(1)._get("operation/command/move-replica/targetNode", null));
 
-    m = l.get(2).toMap(new LinkedHashMap<>());
-    assertEquals("r2", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
-    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+    assertEquals("r2", l.get(2)._get("operation/command/move-replica/replica", null));
+    assertEquals("node1", l.get(2)._get("operation/command/move-replica/targetNode", null));
 
 
     autoScalingjson = "  { cluster-policy:[" +
@@ -2582,18 +2576,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals(0, violations.get(0).getViolatingReplicas().size());
 
     l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
-    assertEquals(3, l.size());
-    m = l.get(0).toMap(new LinkedHashMap<>());
-    assertEquals("r4", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
-    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+    assertEquals(4, l.size());
+    assertEquals("r4", l.get(0)._get("operation/command/move-replica/replica", null));
+    assertEquals("node1", l.get(0)._get("operation/command/move-replica/targetNode", null));
 
-    m = l.get(1).toMap(new LinkedHashMap<>());
-    assertEquals("r3", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
-    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+    assertEquals("r3", l.get(1)._get("operation/command/move-replica/replica", null));
+    assertEquals("node1", l.get(1)._get("operation/command/move-replica/targetNode", null));
 
-    m = l.get(2).toMap(new LinkedHashMap<>());
-    assertEquals("r2", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
-    assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+    assertEquals("r2", l.get(2)._get("operation/command/move-replica/replica", null));
+    assertEquals("node1", l.get(2)._get("operation/command/move-replica/targetNode", null));
+
+    assertEquals("improvement", l.get(3)._get("type", null));
 
 
   }
@@ -2630,10 +2623,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
         cloudManagerWithData(dataproviderdata));
     assertEquals(2, l.size());
     for (Suggester.SuggestionInfo suggestionInfo : l) {
-      Map m = suggestionInfo.toMap(new LinkedHashMap<>());
-      assertEquals("10.0.0.6:7574_solr", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
-      assertEquals("POST", Utils.getObjectByPath(m, true, "operation/method"));
-      assertEquals("/c/mycoll1", Utils.getObjectByPath(m, true, "operation/path"));
+      assertEquals("10.0.0.6:7574_solr", suggestionInfo._get("operation/command/move-replica/targetNode", null));
+      assertEquals("POST", suggestionInfo._get("operation/method", null));
+      assertEquals("/c/mycoll1", suggestionInfo._get("operation/path", null));
     }
 
   }
