@@ -93,7 +93,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private static final String PARAM_JWK_CACHE_DURATION = "jwkCacheDur";
   private static final String PARAM_CLAIMS_MATCH = "claimsMatch";
   private static final String PARAM_SCOPE = "scope";
-  private static final String PARAM_ADMIN_SCOPE = "adminScope";
   private static final String PARAM_CLIENT_ID = "clientId";
   private static final String PARAM_WELL_KNOWN_URL = "wellKnownUrl";
 
@@ -101,10 +100,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private static final String CLAIM_SCOPE = "scope";
 
   private final JwtPkiDelegationInterceptor interceptor = new JwtPkiDelegationInterceptor();
-  static final Set<String> supported_ops = ImmutableSet.of("set-user", "delete-user");
   private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN, PARAM_JWK_URL, PARAM_JWK, PARAM_ISSUER,
       PARAM_AUDIENCE, PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
-      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_ADMIN_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL);
+      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL);
 
   private JwtConsumer jwtConsumer;
   private String iss;
@@ -116,7 +114,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private String principalClaim;
   private HashMap<String, Pattern> claimsMatchCompiled;
   private boolean blockUnknown;
-  private String adminScope;
   private HashSet<String> requiredScopes = new HashSet<>();
   private String clientId;
   private long jwkCacheDuration;
@@ -178,7 +175,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     if (!StringUtils.isEmpty(requiredScopesStr)) {
       requiredScopes = new HashSet<>(Arrays.asList(requiredScopesStr.split("\\s+")));
     }
-    adminScope = (String) pluginConfig.get(PARAM_ADMIN_SCOPE);
     Map<String, String> claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
     claimsMatchCompiled = new HashMap<>();
     if (claimsMatch != null) {
