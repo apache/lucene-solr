@@ -62,6 +62,8 @@ SOLR-12591: Expand the set of recognized date format patterns of schemaless mode
   locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
 
+* SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis (janhoy) 
+
 Other Changes
 ----------------------
 
