@@ -694,6 +694,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
       copy(req.getParams(), map,
           REPLICATION_FACTOR,
+          NRT_REPLICAS,
+          TLOG_REPLICAS,
+          PULL_REPLICAS,
           CREATE_NODE_SET,
           WAIT_FOR_FINAL_STATE);
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
@@ -828,7 +831,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DATA_DIR,
           ULOG_DIR,
           REPLICA_TYPE,
-          WAIT_FOR_FINAL_STATE);
+          WAIT_FOR_FINAL_STATE,
+          NRT_REPLICAS,
+          TLOG_REPLICAS,
+          PULL_REPLICAS,
+          CREATE_NODE_SET);
       return copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
     }),
     OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> (Map) new LinkedHashMap<>()),
