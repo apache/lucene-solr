@@ -163,16 +163,21 @@ curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentica
 [#jwt-soljr]
 === SolrJ
 
-SolrJ does not currently support setting JWT tokens per request. This is planned for a future release.
+SolrJ does not currently support supplying JWT tokens per request.
 
 [#jwt-curl]
 === cURL
 
-To authenticate with Solr with cURL
+To authenticate with Solr when using the cURL utility, supply a valid JWT access token in an `Authorization` header, as follows (replace xxxxxx.xxxxxx.xxxxxx with your JWT compact token):
+
+[source,bash]
+----
+curl -H "Authorization: Bearer xxxxxx.xxxxxx.xxxxxx" http://localhost:8983/solr/admin/info/system 
+----
 
 === Admin UI 
 
-The Admin UI runs as a SPA (single page application) in your browser, and talks with the Solr APIs just like any other client. Because of this the Admin UI will stop working after enabling this plugin. To circumvent this you can install a browser plugin that adds HTTP headers to requests, and add a valid JWT token to the `Authorization` header by hand. 
+The Admin UI runs as a SPA (single page application) in your browser, and talks with the Solr APIs just like any other client. Because of this the Admin UI will stop working after enabling this plugin. To circumvent this you may be able to install a browser plugin that adds HTTP headers to requests, and add manually a valid JWT token to the `Authorization` header. 
 
 == Using the Solr Control Script with JWT Auth
 
