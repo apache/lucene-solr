@@ -107,19 +107,19 @@ Let's comment on this config:
 
 [%header,format=csv,separator=;]
 |===
-Key              ; Description                                             ; Default
+Key             ; Description                                             ; Default
 blockUnknown    ; Set to `false` in order to pass requests from unknown users without a token  ; `true`
-wellKnownUrl   ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; 
+wellKnownUrl    ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; 
 clientId        ; Client identifier for use with OpenID Connect           ;
-scope            ; Whitespace separate list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
+scope           ; Whitespace separate list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
 jwkUrl          ; An https URL to a https://tools.ietf.org/html/rfc7517[JWK] keys file. Not required if `well_known_url` is provided ; Auto configured if `well_known_url` is provided
-jwk              ; As an alternative to `jwk_url` you may provide a JSON object here containing the public key(s) of the issuer.  ; Auto configured if `well_known_url` is provided
-iss              ; Validates that `iss` (issuer) equals this string        ; If `well_known_url` is provided, use `issuer` from there.
-aud              ; Validates that `aud` (audience) equals this string      ; If `client_id` is configured, require `aud` to match it
+jwk             ; As an alternative to `jwk_url` you may provide a JSON object here containing the public key(s) of the issuer.  ; Auto configured if `well_known_url` is provided
+iss             ; Validates that `iss` (issuer) equals this string        ; If `well_known_url` is provided, use `issuer` from there.
+aud             ; Validates that `aud` (audience) equals this string      ; If `client_id` is configured, require `aud` to match it
 requireSub      ; Makes `sub` (subject) mandatory                         ; `true`
 requireExp      ; Makes `exp` (expiry time) mandatory                     ; `true`
 algWhitelist    ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; 
-jwkCacheDur    ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
+jwkCacheDur     ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
 principalClaim  ; What claim id to pull principal from                    ; `sub`
 claimsMatch     ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ; (none)
 |===
