@@ -53,6 +53,7 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -934,19 +935,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).  */
-  private void validateIndexSort() throws CorruptIndexException {
+  private void validateIndexSort() {
     Sort indexSort = config.getIndexSort();
     if (indexSort != null) {
       for(SegmentCommitInfo info : segmentInfos) {
         Sort segmentIndexSort = info.info.getIndexSort();
-        if (segmentIndexSort != null && indexSort.equals(segmentIndexSort) == false) {
+        if (segmentIndexSort == null || isCongruentSort(indexSort, segmentIndexSort) == false) {
           throw new IllegalArgumentException("cannot change previous indexSort=" + segmentIndexSort + " (from segment=" + info + ") to new indexSort=" + indexSort);
-        } else if (segmentIndexSort == null) {
-          // Flushed segments are not sorted if they were built with a version prior to 6.5.0
-          throw new CorruptIndexException("segment not sorted with indexSort=" + segmentIndexSort, info.info.toString());
         }
       }
     }
+  }
+
+  /**
+   * Returns true if <code>indexSort</code> is a prefix of <code>otherSort</code>.
+   **/
+  static boolean isCongruentSort(Sort indexSort, Sort otherSort) {
+    final SortField[] fields1 = indexSort.getSort();
+    final SortField[] fields2 = otherSort.getSort();
+    if (fields1.length > fields2.length) {
+      return false;
+    }
+    return Arrays.asList(fields1).equals(Arrays.asList(fields2).subList(0, fields1.length));
   }
 
   // reads latest field infos for the commit
@@ -2824,8 +2834,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
             Sort segmentIndexSort = info.info.getIndexSort();
 
-            if (indexSort != null && segmentIndexSort != null && indexSort.equals(segmentIndexSort) == false) {
-              // TODO: we could make this smarter, e.g. if the incoming indexSort is congruent with our sort ("starts with") then it's OK
+            if (indexSort != null && (segmentIndexSort == null || isCongruentSort(indexSort, segmentIndexSort) == false)) {
               throw new IllegalArgumentException("cannot change index sort from " + segmentIndexSort + " to " + indexSort);
             }
 
@@ -2908,8 +2917,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     Sort leafIndexSort = segmentMeta.getSort();
-    if (config.getIndexSort() != null && leafIndexSort != null
-        && config.getIndexSort().equals(leafIndexSort) == false) {
+    if (config.getIndexSort() != null &&
+          (leafIndexSort == null || isCongruentSort(config.getIndexSort(), leafIndexSort) == false)) {
       throw new IllegalArgumentException("cannot change index sort from " + leafIndexSort + " to " + config.getIndexSort());
     }
   }

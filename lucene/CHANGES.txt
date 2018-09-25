@@ -117,6 +117,9 @@ Changes in Runtime Behavior
   total hit counts accurately up to 1,000 in order to enable top-hits
   optimizations such as block-max WAND (LUCENE-8135). (Adrien Grand)
 
+* LUCENE-8505: IndexWriter#addIndices will now fail if the target index is sorted but
+  the candidate is not. (Jim Ferenczi)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
