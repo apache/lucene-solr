@@ -168,7 +168,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson))
         , createCloudManager(state, metaData));
     assertEquals(1, suggestions.size());
-    String repName = (String) Utils.getObjectByPath(suggestions.get(0).operation, true, "command/move-replica/replica");
+    String repName = (String) suggestions.get(0)._get("operation/command/move-replica/replica", null);
 
     AtomicBoolean found = new AtomicBoolean(false);
     session.getNode("node1").forEachReplica(replicaInfo -> {
@@ -372,7 +372,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     assertEquals(2, suggestions.size());
     for (Suggester.SuggestionInfo suggestion : suggestions) {
       assertTrue(ImmutableSet.of("127.0.0.1:63219_solr", "127.0.0.1:63229_solr").contains(
-          Utils.getObjectByPath(suggestion, true, "operation/command/move-replica/targetNode")));
+          suggestion._get("operation/command/move-replica/targetNode", null)));
 
     }
   }

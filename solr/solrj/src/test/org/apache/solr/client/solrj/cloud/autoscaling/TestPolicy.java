@@ -2666,7 +2666,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
     assertEquals(2, suggestions.size());
     for (Suggester.SuggestionInfo suggestion : suggestions) {
-      Utils.getObjectByPath(suggestion, true, "operation/move-replica/targetNode");
+      suggestion._get("operation/move-replica/targetNode", null);
     }
   }
 
