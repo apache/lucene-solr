@@ -36,14 +36,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -257,17 +256,17 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * @param urls The list of solr server urls to load balance across
    * @return The response from the request
    */
-  public LBHttpSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
+  public LBSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
     throws SolrServerException, IOException {
     return loadbalancer.request(newLBHttpSolrClientReq(req, urls));
   }
 
-  protected LBHttpSolrClient.Req newLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
+  protected LBSolrClient.Req newLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
     int numServersToTry = (int)Math.floor(urls.size() * this.permittedLoadBalancerRequestsMaximumFraction);
     if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
       numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
     }
-    return new LBHttpSolrClient.Req(req, urls, numServersToTry);
+    return new LBSolrClient.Req(req, urls, numServersToTry);
   }
 
   /**
@@ -288,7 +287,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   /**
-   * A distributed request is made via {@link LBHttpSolrClient} to the first live server in the URL list.
+   * A distributed request is made via {@link LBSolrClient} to the first live server in the URL list.
    * This means it is just as likely to choose current host as any of the other hosts.
    * This function makes sure that the cores are sorted according to the given list of preferences.
    * E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive less requests from 

@@ -35,7 +35,7 @@ import java.util.function.Predicate;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -169,7 +169,7 @@ public class HttpShardHandler extends ShardHandler {
           req.setBasePath(url);
           ssr.nl = httpClient.request(req);
         } else {
-          LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
+          LBSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
           ssr.nl = rsp.getResponse();
           srsp.setShardAddress(rsp.getServer());
         }
