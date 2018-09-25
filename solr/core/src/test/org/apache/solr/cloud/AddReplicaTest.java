@@ -17,10 +17,9 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -98,9 +97,12 @@ public class AddReplicaTest extends SolrCloudTestCase {
 
     // but adding any number of replicas is supported if an explicit create node set is specified
     // so test that as well
-    List<String> createNodeSet = new ArrayList<>(2);
+    LinkedHashSet<String> createNodeSet = new LinkedHashSet<>(2);
     createNodeSet.add(cluster.getRandomJetty(random()).getNodeName());
-    createNodeSet.add(cluster.getRandomJetty(random()).getNodeName());
+    while (true)  {
+      String nodeName = cluster.getRandomJetty(random()).getNodeName();
+      if (createNodeSet.add(nodeName))  break;
+    }
     addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
         .setNrtReplicas(3)
         .setTlogReplicas(1)
