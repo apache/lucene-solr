@@ -71,6 +71,8 @@ Other Changes
   java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
 
+* SOLR-12805: Store previous term (generation) of replica when start recovery process (Cao Manh Dat)
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
