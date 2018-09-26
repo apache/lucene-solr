@@ -38,8 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Sets;
-import org.apache.calcite.avatica.proto.Common;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -123,7 +121,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
   private static final char PATH_SEP_CHAR = '/';
   private static final char NUM_SEP_CHAR = '#';
-  private static final Set<String> NESTED_META_FIELDS = Sets.newHashSet(IndexSchema.NEST_PATH_FIELD_NAME, IndexSchema.NEST_PARENT_FIELD_NAME);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -1055,6 +1052,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
+    final boolean isNestedSchema = req.getSchema().isUsableForChildDocs();
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
 
@@ -1088,7 +1086,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
 
           long bucketVersion = bucket.highest;
-          lastKnownVersion = vinfo.lookupVersion(cmd.getIndexedId());
+          if(isNestedSchema) {
+            lastKnownVersion = vinfo.lookupVersion(cmd.getIndexedId());
+          }
 
           if (leaderLogic) {
 
@@ -1214,11 +1214,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
 
-        if(lastKnownVersion != null && req.getSchema().isUsableForChildDocs() &&
+        // delete old block locally
+        if(lastKnownVersion != null && isNestedSchema &&
             req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
             cmd.solrDoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) {
           dmd = new DeleteUpdateCommand(new LocalSolrQueryRequest(req.getCore(), new ModifiableSolrParams().set("q", IndexSchema.ROOT_FIELD_NAME + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) + " AND " + CommonParams.VERSION_FIELD + ": [* TO " + Long.toString(lastKnownVersion) + "]")));
-          dmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
           dmd.query = dmd.getReq().getParams().get("q");
           doLocalDelete(dmd);
         }
@@ -1231,6 +1231,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } finally {
       vinfo.unlockForUpdate();
     }
+    // delete old block distributed
     if(lastKnownVersion != null && dmd != null) {
       versionDeleteByQuery(dmd);
     }
@@ -1401,10 +1402,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // full (non-inplace) atomic update
+    final boolean isNestedSchema = req.getSchema().isUsableForChildDocs();
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
     SolrInputDocument blockDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
-        false, req.getSchema().isUsableForChildDocs()? NESTED_META_FIELDS: null, true, true);
+        false, null, true, true);
 
     if (blockDoc == null) {
       if (versionOnUpdate > 0) {
@@ -1421,10 +1423,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // create a new doc by default if an old one wasn't found
       mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
     } else {
-      if(req.getSchema().isUsableForChildDocs() && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
+      if(isNestedSchema && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
           blockDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) && !id.utf8ToString().equals(blockDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
         SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
-            false, NESTED_META_FIELDS, true, false);
+            false, null, true, false);
         mergedDoc = docMerger.merge(sdoc, oldDoc);
         String docPath = (String) mergedDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
         List<String> docPaths = StrUtils.splitSmart(docPath, PATH_SEP_CHAR);

@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesType;
@@ -100,6 +101,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 public class RealTimeGetComponent extends SearchComponent
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Set<String> NESTED_META_FIELDS = Sets.newHashSet(IndexSchema.NEST_PATH_FIELD_NAME, IndexSchema.NEST_PARENT_FIELD_NAME);
   public static final String COMPONENT_NAME = "get";
 
   @Override
@@ -650,7 +652,7 @@ public class RealTimeGetComponent extends SearchComponent
           Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, schema);
         }
-        ensureDocDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher);
+        ensureDocDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, resolveBlock || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
         SolrInputField rootField;
         if(resolveBlock && schema.isUsableForChildDocs() && (rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME))!=null) {
           // doc is part of a nested structure
@@ -668,7 +670,7 @@ public class RealTimeGetComponent extends SearchComponent
             blockDoc = toSolrDoc(sid, schema);
           } else {
             blockDoc = toSolrDoc(docFetcher.doc(rootDocId), schema);
-            ensureDocDecorated(onlyTheseNonStoredDVs, blockDoc, rootDocId, docFetcher);
+            ensureDocDecorated(onlyTheseNonStoredDVs, blockDoc, rootDocId, docFetcher, true);
           }
           childDocTransformer.transform(blockDoc, rootDocId);
           sid = toSolrInputDocument(blockDoc, schema);
@@ -689,10 +691,17 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   private static void ensureDocDecorated(Set<String> onlyTheseNonStoredDVs, SolrDocumentBase doc, int docid, SolrDocumentFetcher docFetcher) throws IOException {
+    ensureDocDecorated(onlyTheseNonStoredDVs, doc, docid, docFetcher, false);
+  }
+
+  private static void ensureDocDecorated(Set<String> onlyTheseNonStoredDVs, SolrDocumentBase doc, int docid, SolrDocumentFetcher docFetcher, boolean resolveNestedFields) throws IOException {
     if (onlyTheseNonStoredDVs != null) {
       docFetcher.decorateDocValueFields(doc, docid, onlyTheseNonStoredDVs);
     } else {
       docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVsWithoutCopyTargets());
+    }
+    if(resolveNestedFields) {
+      docFetcher.decorateDocValueFields(doc, docid, NESTED_META_FIELDS);
     }
   }
 
