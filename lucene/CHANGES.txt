@@ -12,6 +12,8 @@ Build
 * LUCENE-8498: Deprecate LowerCaseTokenizer and CharTokenizer static methods
   that take normalizer functions (Alan Woodward)
 
+* LUCENE-8493: Stop publishing insecure .sha1 files with releases (janhoy)
+
 ======================= Lucene 7.5.1 =======================
 
 Bug Fixes:
