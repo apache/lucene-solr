@@ -182,6 +182,8 @@ Build
 
 * LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
 
+* LUCENE-8493: Stop publishing insecure .sha1 files with releases (janhoy)
+
 ======================= Lucene 7.5.1 =======================
 
 Bug Fixes:
