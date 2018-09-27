@@ -65,7 +65,8 @@ public class QueryValueSource extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (QueryValueSource.class != o.getClass()) return false;
+    if (o == null) return false;
+    if (getClass() != o.getClass()) return false;
     QueryValueSource other = (QueryValueSource)o;
     return this.q.equals(other.q) && this.defVal==other.defVal;
   }
