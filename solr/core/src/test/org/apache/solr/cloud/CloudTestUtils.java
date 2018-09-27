@@ -109,7 +109,7 @@ public class CloudTestUtils {
         log.trace("-- still not matching predicate: {}", state);
       }
     }
-    throw new TimeoutException("last state: " + coll);
+    throw new TimeoutException("last ClusterState: " + state + ", last coll state: " + coll);
   }
 
   /**
@@ -141,13 +141,13 @@ public class CloudTestUtils {
       }
       Collection<Slice> slices = withInactive ? collectionState.getSlices() : collectionState.getActiveSlices();
       if (slices.size() != expectedShards) {
-        log.trace("-- wrong number of active slices, expected={}, found={}", expectedShards, collectionState.getSlices().size());
+        log.trace("-- wrong number of slices, expected={}, found={}: {}", expectedShards, collectionState.getSlices().size(), collectionState.getSlices());
         return false;
       }
       Set<String> leaderless = new HashSet<>();
       for (Slice slice : slices) {
         int activeReplicas = 0;
-        if (requireLeaders && slice.getLeader() == null) {
+        if (requireLeaders && slice.getState() != Slice.State.INACTIVE && slice.getLeader() == null) {
           leaderless.add(slice.getName());
           continue;
         }
