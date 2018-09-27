@@ -479,7 +479,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
       fail("The TriggerAction should have been created by now");
     }
 
-    String lostNodeName = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String lostNodeName = cluster.getSimClusterStateProvider().simGetRandomNode();
     cluster.simRemoveNode(lostNodeName, false);
     boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
@@ -647,7 +647,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
         "'actions' : [{'name':'test','class':'" + TestEventQueueAction.class.getName() + "'}]" +
         "}}";
 
-    String overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode();
 
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
@@ -805,7 +805,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     SolrClient solrClient = cluster.simGetSolrClient();
 
     // pick overseer node
-    String overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode();
 
     // add a node
     String node = cluster.simAddNode();
@@ -864,7 +864,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode();
 
     // create another node
     log.info("====== ADD NODE 1");

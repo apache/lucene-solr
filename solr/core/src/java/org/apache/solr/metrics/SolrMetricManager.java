@@ -791,7 +791,7 @@ public class SolrMetricManager {
    */
   public static String getRegistryName(SolrInfoBean.Group group, String... names) {
     String fullName;
-    String prefix = REGISTRY_NAME_PREFIX + group.toString() + ".";
+    String prefix = new StringBuilder(REGISTRY_NAME_PREFIX).append(group.name()).append('.').toString();
     // check for existing prefix and group
     if (names != null && names.length > 0 && names[0] != null && names[0].startsWith(prefix)) {
       // assume the first segment already was expanded
