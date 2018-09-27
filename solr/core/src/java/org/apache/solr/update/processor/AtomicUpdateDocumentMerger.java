@@ -193,6 +193,10 @@ public class AtomicUpdateDocumentMerger {
           // not a supported in-place update op
           return Collections.emptySet();
         }
+        // fail fast if child doc
+        if(isChildDoc(((Map<String, Object>) fieldValue).get(op))) {
+          return Collections.emptySet();
+        }
       }
       candidateFields.add(fieldName);
     }
@@ -316,12 +320,13 @@ public class AtomicUpdateDocumentMerger {
   }
 
   protected void doSet(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
-    SchemaField sf = schema.getField(sif.getName());
-    toDoc.setField(sif.getName(), sf.getType().toNativeType(fieldVal));
+    String name = sif.getName();
+    toDoc.setField(name, getNativeFieldValue(name, fieldVal));
   }
 
   protected void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
-    toDoc.addField(sif.getName(), getNativeFieldValue(sif, fieldVal));
+    String name = sif.getName();
+    toDoc.addField(name, getNativeFieldValue(name, fieldVal));
   }
 
   protected void doAddDistinct(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
@@ -393,21 +398,21 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
     if (existingField == null) return;
-    SchemaField sf = schema.getField(name);
-
-    if (sf != null) {
-      final Collection<Object> original = existingField.getValues();
-      if (fieldVal instanceof Collection) {
-        for (Object object : (Collection) fieldVal) {
-          Object o = sf.getType().toNativeType(object);
-          original.remove(o);
+    final boolean isChildDoc = isChildDoc(fieldVal);
+    final Collection original = existingField.getValues();
+    if (fieldVal instanceof Collection) {
+      for (Object object : (Collection) fieldVal) {
+        if (isChildDoc) {
+          removeChildDoc(original, (SolrInputDocument) fieldVal);
+        } else {
+          original.remove(getNativeFieldValue(name, object));
         }
-      } else {
-        original.remove(sf.getType().toNativeType(fieldVal));
       }
-
-      toDoc.setField(name, original);
+    } else {
+      removeObj(original, fieldVal, name);
     }
+
+    toDoc.setField(name, original);
   }
 
   protected void doRemoveRegex(SolrInputDocument toDoc, SolrInputField sif, Object valuePatterns) {
@@ -443,11 +448,11 @@ public class AtomicUpdateDocumentMerger {
     return patterns;
   }
 
-  private Object getNativeFieldValue(SolrInputField sif, Object val) {
+  private Object getNativeFieldValue(String fieldName, Object val) {
     if(isChildDoc(val)) {
       return val;
     }
-    SchemaField sf = schema.getField(sif.getName());
+    SchemaField sf = schema.getField(fieldName);
     return sf.getType().toNativeType(val);
   }
 
@@ -460,6 +465,34 @@ public class AtomicUpdateDocumentMerger {
       return false;
     }
     return objValues.iterator().next() instanceof SolrDocumentBase;
+  }
+
+  private void removeObj(Collection original, Object toRemove, String fieldName) {
+    if(isChildDoc(toRemove)) {
+      removeChildDoc(original, (SolrInputDocument) toRemove);
+    } else {
+      original.remove(getNativeFieldValue(fieldName, toRemove));
+    }
+  }
+
+  private static void removeChildDoc(Collection original, SolrInputDocument docToRemove) {
+    for(SolrInputDocument doc: (Collection<SolrInputDocument>) original) {
+      if(isDerivedFromDoc(doc, docToRemove)) {
+        original.remove(doc);
+        return;
+      }
+    }
+  }
+
+  private static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument subDoc) {
+    for(SolrInputField subSif: subDoc) {
+      String fieldName = subSif.getName();
+      if(!fullDoc.containsKey(fieldName)) return false;
+      Collection<Object> fieldValues = subDoc.getFieldValues(fieldName);
+      if(fieldValues.size() < subSif.getValueCount()) return false;
+      if(!fullDoc.getFieldValues(fieldName).containsAll(subSif.getValues())) return false;
+    }
+    return true;
   }
   
 }

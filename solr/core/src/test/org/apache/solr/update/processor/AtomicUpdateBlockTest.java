@@ -17,6 +17,7 @@
 
 package org.apache.solr.update.processor;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -95,7 +96,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBlockRealTimeGet() throws Exception {
+  public void testBlockAtomicAdd() throws Exception {
 
     SolrInputDocument doc = sdoc("id", "1",
         "cat_ss", new String[] {"aaa", "ccc"},
@@ -178,6 +179,180 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/child1/child3/cat_ss/[0]=='child'",
         "/response/docs/[0]/child2/id=='3'",
         "/response/docs/[0]/child2/cat_ss/[0]=='child'"
+    );
+  }
+
+  @Test
+  public void testBlockAtomicSet() throws Exception {
+    SolrInputDocument doc = sdoc("id", "1",
+        "cat_ss", new String[] {"aaa", "ccc"},
+        "child1", Collections.singleton(sdoc("id", "2", "cat_ss", "child"))
+    );
+    json(doc);
+    addDoc(adoc(doc), "nested-rtg");
+
+    BytesRef rootDocId = new BytesRef("1");
+    SolrCore core = h.getCore();
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
+    // assert block doc has child docs
+    assertTrue(block.containsKey("child1"));
+
+    assertJQ(req("q","id:1")
+        ,"/response/numFound==0"
+    );
+
+    // commit the changes
+    assertU(commit());
+
+    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
+    BytesRef childDocId = new BytesRef("2");
+    // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
+    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, true).toString());
+
+    assertJQ(req("q","id:1")
+        ,"/response/numFound==1"
+    );
+
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
+        ,"=={\"doc\":{'id':\"1\"" +
+            ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]" +
+            "       }}"
+    );
+
+    assertU(commit());
+
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
+        ,"=={\"doc\":{'id':\"1\"" +
+            ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]" +
+            "       }}"
+    );
+
+    doc = sdoc("id", "1",
+        "cat_ss", ImmutableMap.of("set", Arrays.asList("aaa", "bbb")),
+        "child1", ImmutableMap.of("set", sdoc("id", "3", "cat_ss", "child")));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
+        ,"=={\"doc\":{'id':\"1\"" +
+            ", cat_ss:[\"aaa\",\"bbb\"], child1:{\"id\":\"3\",\"cat_ss\":[\"child\"]}" +
+            "       }}"
+    );
+
+    assertU(commit());
+
+    // a cut-n-paste of the first big query, but this time it will be retrieved from the index rather than the transaction log
+    // this requires ChildDocTransformer to get the whole block, since the document is retrieved using an index lookup
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
+        ,"=={'doc':{'id':'1'" +
+            ", cat_ss:[\"aaa\",\"bbb\"], child1:{\"id\":\"3\",\"cat_ss\":[\"child\"]}" +
+            "       }}"
+    );
+
+    doc = sdoc("id", "3",
+        "child2", ImmutableMap.of("set", sdoc("id", "4", "cat_ss", "child")));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child2, [child]")
+        ,"=={'doc':{'id':'1'" +
+            ", cat_ss:[\"aaa\",\"bbb\"], child1:{\"id\":\"3\",\"cat_ss\":[\"child\"], child2:{\"id\":\"4\",\"cat_ss\":[\"child\"]}}" +
+            "       }}"
+    );
+
+    assertJQ(req("qt","/get", "id","3", "fl","id, cat_ss, child, child2, [child]")
+        ,"=={'doc':{\"id\":\"3\",\"cat_ss\":[\"child\"], child2:{\"id\":\"4\",\"cat_ss\":[\"child\"]}}" +
+            "       }}"
+    );
+
+    assertU(commit());
+
+    // ensure the whole block has been committed correctly to the index.
+    assertJQ(req("q","id:1", "fl", "*, [child]"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='1'",
+        "/response/docs/[0]/cat_ss/[0]==\"aaa\"",
+        "/response/docs/[0]/cat_ss/[1]==\"bbb\"",
+        "/response/docs/[0]/child1/id=='3'",
+        "/response/docs/[0]/child1/cat_ss/[0]=='child'",
+        "/response/docs/[0]/child1/child2/id=='4'",
+        "/response/docs/[0]/child1/child2/cat_ss/[0]=='child'"
+    );
+  }
+
+  @Test
+  public void testBlockAtomicRemove() throws Exception {
+    SolrInputDocument doc = sdoc("id", "1",
+        "cat_ss", new String[] {"aaa", "ccc"},
+        "child1", sdocs(sdoc("id", "2", "cat_ss", "child"), sdoc("id", "3", "cat_ss", "child"))
+    );
+    json(doc);
+    addDoc(adoc(doc), "nested-rtg");
+
+    BytesRef rootDocId = new BytesRef("1");
+    SolrCore core = h.getCore();
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
+    // assert block doc has child docs
+    assertTrue(block.containsKey("child1"));
+
+    assertJQ(req("q","id:1")
+        ,"/response/numFound==0"
+    );
+
+    // commit the changes
+    assertU(commit());
+
+    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
+    BytesRef childDocId = new BytesRef("2");
+    // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
+    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, true).toString());
+
+    assertJQ(req("q","id:1")
+        ,"/response/numFound==1"
+    );
+
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
+        ,"=={\"doc\":{'id':\"1\"" +
+            ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}, {\"id\":\"3\",\"cat_ss\":[\"child\"]}]" +
+            "       }}"
+    );
+
+    assertU(commit());
+
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
+        ,"=={\"doc\":{'id':\"1\"" +
+            ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}, {\"id\":\"3\",\"cat_ss\":[\"child\"]}]" +
+            "       }}"
+    );
+
+    doc = sdoc("id", "1",
+        "child1", ImmutableMap.of("remove", sdoc("id", "3", "cat_ss", "child")));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
+        ,"=={\"doc\":{'id':\"1\"" +
+            ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]" +
+            "       }}"
+    );
+
+    assertU(commit());
+
+    // a cut-n-paste of the first big query, but this time it will be retrieved from the index rather than the transaction log
+    // this requires ChildDocTransformer to get the whole block, since the document is retrieved using an index lookup
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
+        ,"=={'doc':{'id':'1'" +
+            ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]" +
+            "       }}"
+    );
+
+    // ensure the whole block has been committed correctly to the index.
+    assertJQ(req("q","id:1", "fl", "*, [child]"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='1'",
+        "/response/docs/[0]/cat_ss/[0]==\"aaa\"",
+        "/response/docs/[0]/cat_ss/[1]==\"ccc\"",
+        "/response/docs/[0]/child1/[0]/id=='2'",
+        "/response/docs/[0]/child1/[0]/cat_ss/[0]=='child'"
     );
   }
 
