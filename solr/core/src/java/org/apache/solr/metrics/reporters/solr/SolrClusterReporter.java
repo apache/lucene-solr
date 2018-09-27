@@ -94,14 +94,14 @@ import static org.apache.solr.common.params.CommonParams.ID;
 public class SolrClusterReporter extends SolrCoreContainerReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String CLUSTER_GROUP = SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.cluster.toString());
+  public static final String CLUSTER_GROUP = SolrMetricManager.enforcePrefix(SolrInfoBean.Group.cluster.toString());
 
   public static final List<SolrReporter.Report> DEFAULT_REPORTS = new ArrayList<SolrReporter.Report>() {{
     add(new SolrReporter.Report(CLUSTER_GROUP, "jetty",
-        SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.jetty.toString()),
+        SolrMetricManager.enforcePrefix(SolrInfoBean.Group.jetty.toString()),
         Collections.emptySet())); // all metrics
     add(new SolrReporter.Report(CLUSTER_GROUP, "jvm",
-        SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.jvm.toString()),
+        SolrMetricManager.enforcePrefix(SolrInfoBean.Group.jvm.toString()),
         new HashSet<String>() {{
           add("memory\\.total\\..*");
           add("memory\\.heap\\..*");
@@ -111,7 +111,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
           add("os\\.OpenFileDescriptorCount");
           add("threads\\.count");
         }}));
-    add(new SolrReporter.Report(CLUSTER_GROUP, "node", SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.node.toString()),
+    add(new SolrReporter.Report(CLUSTER_GROUP, "node", SolrMetricManager.enforcePrefix(SolrInfoBean.Group.node.toString()),
         new HashSet<String>() {{
           add("CONTAINER\\.cores\\..*");
           add("CONTAINER\\.fs\\..*");
