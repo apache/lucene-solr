@@ -213,7 +213,6 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
           });
           http2Client.getHttpClient().setAuthenticationStore(authenticationStore);
           http2Client.getProtocolHandlers().put(new SolrWWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
-          http2Client.getProtocolHandlers().put(new SolrProxyAuthenticationProtocolHandler(http2Client.getHttpClient()));
         });
       }
     } else {
