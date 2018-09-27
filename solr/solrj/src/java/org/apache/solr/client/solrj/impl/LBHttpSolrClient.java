@@ -155,6 +155,9 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   protected LBHttpSolrClient(Builder builder) {
     super(builder.baseSolrUrls);
+    for (String baseUrl: builder.baseSolrUrls) {
+      urlToClient.put(baseUrl, makeSolrClient(baseUrl));
+    }
     this.clientIsInternal = builder.httpClient == null;
     this.httpSolrClientBuilder = builder.httpSolrClientBuilder;
     this.httpClient = builder.httpClient == null ? constructClient(builder.baseSolrUrls.toArray(new String[builder.baseSolrUrls.size()])) : builder.httpClient;
@@ -246,12 +249,12 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   @Override
   protected SolrClient getClient(String baseUrl) {
-    return urlToClient.computeIfAbsent(baseUrl, this::makeSolrClient);
-  }
-
-  @Override
-  protected void removeClient(String serverStr) {
-    urlToClient.remove(serverStr);
+    HttpSolrClient client = urlToClient.get(baseUrl);
+    if (client == null) {
+      return makeSolrClient(baseUrl);
+    } else {
+      return client;
+    }
   }
 
   @Override

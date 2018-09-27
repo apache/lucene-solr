@@ -293,9 +293,6 @@ public abstract class LBSolrClient extends SolrClient {
 
         ++numServersTried;
         ex = doRequest(serverStr, req, rsp, isNonRetryable, false);
-        if (!aliveServers.containsKey(serverStr) && !zombieServers.containsKey(serverStr)) {
-          removeClient(serverStr);
-        }
         if (ex == null) {
           return rsp; // SUCCESS
         }
@@ -346,12 +343,6 @@ public abstract class LBSolrClient extends SolrClient {
     } else {
       throw new SolrServerException(solrServerExceptionMessage+":" + zombieServers.keySet(), ex);
     }
-  }
-
-  // In some case a client which is not belonging to server list may be created to handle Req,
-  // by overriding this, subclasses will be able to remove the client from cache.
-  protected void removeClient(String serverStr) {
-
   }
 
   /**
