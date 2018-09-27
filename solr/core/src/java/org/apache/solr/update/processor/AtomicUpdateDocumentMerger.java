@@ -402,11 +402,7 @@ public class AtomicUpdateDocumentMerger {
     final Collection original = existingField.getValues();
     if (fieldVal instanceof Collection) {
       for (Object object : (Collection) fieldVal) {
-        if (isChildDoc) {
-          removeChildDoc(original, (SolrInputDocument) fieldVal);
-        } else {
-          original.remove(getNativeFieldValue(name, object));
-        }
+        removeObj(original, fieldVal, name);
       }
     } else {
       removeObj(original, fieldVal, name);
