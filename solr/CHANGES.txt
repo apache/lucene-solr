@@ -105,6 +105,10 @@ Other Changes
 * SOLR-12762: Fix javadoc for SolrCloudTestCase.clusterShape() method and add a method that validates only against
   Active slices (Anshum Gupta)
 
+* SOLR-12756: Refactor Assign and extract replica placement strategies out of it. Now, assignment is done with the help
+  of a builder class instead of calling a method with large number of arguments. The number of special cases that had
+  to be handled have been cut down as well. (shalin)
+
 Bug Fixes
 ----------------------
 

@@ -741,7 +741,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       results.add(CoreAdminParams.REQUESTID, props.getStr(CommonAdminParams.ASYNC));
     }
     boolean waitForFinalState = props.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
-    List<String> nodeList = new ArrayList<>();
     final String collectionName = props.getStr(NAME);
 
     String router = props.getStr("router.name", DocRouter.DEFAULT_NAME);
@@ -784,8 +783,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     opDelay(collectionName, CollectionParams.CollectionAction.CREATE.name());
 
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
-    List<ReplicaPosition> replicaPositions = CreateCollectionCmd.buildReplicaPositions(cloudManager, getClusterState(), props,
-        nodeList, shardNames, sessionWrapper);
+    List<ReplicaPosition> replicaPositions = CreateCollectionCmd.buildReplicaPositions(cloudManager, getClusterState(), cmd.collection, props,
+        shardNames, sessionWrapper);
     if (sessionWrapper.get() != null) {
       sessionWrapper.get().release();
     }
@@ -1102,13 +1101,18 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     SplitShardCmd.fillRanges(cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames, true);
     // add replicas for new subShards
     int repFactor = parentSlice.getReplicas().size();
-    List<ReplicaPosition> replicaPositions = Assign.identifyNodes(cloudManager,
-        clusterState,
-        new ArrayList<>(clusterState.getLiveNodes()),
-        collectionName,
-        new ZkNodeProps(collection.getProperties()),
-        // reproduce the bug
-        subSlices, repFactor, 0, 0);
+    Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+        .forCollection(collectionName)
+        .forShard(subSlices)
+        .assignNrtReplicas(repFactor)
+        .assignTlogReplicas(0)
+        .assignPullReplicas(0)
+        .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
+        .build();
+    Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
+    Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, collection);
+    // reproduce the bug
+    List<ReplicaPosition> replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
     PolicyHelper.SessionWrapper sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
     if (sessionWrapper != null) sessionWrapper.release();
 
