@@ -70,6 +70,8 @@ Other Changes
 * SOLR-12586: Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") to use Java 8's
   java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
+  
+* SOLR-5163: edismax now throws an exception when qf refers to a nonexistent field (Charles Sanders, David Smiley)
 
 * SOLR-12805: Store previous term (generation) of replica when start recovery process (Cao Manh Dat)
 
