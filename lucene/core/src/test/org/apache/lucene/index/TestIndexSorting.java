@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1820,19 +1821,52 @@ public class TestIndexSorting extends LuceneTestCase {
     dir.close();
   }
 
-  public void testAddIndexes(boolean withDeletes, boolean useReaders) throws Exception {
+  public void testBadAddIndexes() throws Exception {
     Directory dir = newDirectory();
     Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
     IndexWriterConfig iwc1 = newIndexWriterConfig();
-    if (random().nextBoolean()) {
-      iwc1.setIndexSort(indexSort);
+    iwc1.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc1);
+    w.addDocument(new Document());
+    List<Sort> indexSorts = Arrays.asList(null, new Sort(new SortField("bar", SortField.Type.LONG)));
+    for (Sort sort : indexSorts) {
+      Directory dir2 = newDirectory();
+      IndexWriterConfig iwc2 = newIndexWriterConfig();
+      if (sort != null) {
+        iwc2.setIndexSort(sort);
+      }
+      IndexWriter w2 = new IndexWriter(dir2, iwc2);
+      w2.addDocument(new Document());
+      final IndexReader reader = w2.getReader();
+      w2.close();
+      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> w.addIndexes(dir2));
+      assertThat(expected.getMessage(), containsString("cannot change index sort"));
+      CodecReader[] codecReaders = new CodecReader[reader.leaves().size()];
+      for (int i = 0; i < codecReaders.length; ++i) {
+        codecReaders[i] = (CodecReader) reader.leaves().get(i).reader();
+      }
+      expected = expectThrows(IllegalArgumentException.class, () -> w.addIndexes(codecReaders));
+      assertThat(expected.getMessage(), containsString("cannot change index sort"));
+
+      reader.close();
+      dir2.close();
     }
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    w.close();
+    dir.close();
+  }
+
+  public void testAddIndexes(boolean withDeletes, boolean useReaders) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig();
+    Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG), new SortField("bar", SortField.Type.LONG));
+    iwc1.setIndexSort(indexSort);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc1);
     final int numDocs = atLeast(100);
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Store.NO));
       doc.add(new NumericDocValuesField("foo", random().nextInt(20)));
+      doc.add(new NumericDocValuesField("bar", random().nextInt(20)));
       w.addDocument(doc);
     }
     if (withDeletes) {
@@ -1848,7 +1882,12 @@ public class TestIndexSorting extends LuceneTestCase {
 
     Directory dir2 = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setIndexSort(indexSort);
+    if (indexSort != null && random().nextBoolean()) {
+      // test congruent index sort
+      iwc.setIndexSort(new Sort(new SortField("foo", SortField.Type.LONG)));
+    } else {
+      iwc.setIndexSort(indexSort);
+    }
     IndexWriter w2 = new IndexWriter(dir2, iwc);
 
     if (useReaders) {

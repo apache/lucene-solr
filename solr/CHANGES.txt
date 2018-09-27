@@ -71,6 +71,8 @@ Other Changes
   java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
 
+* SOLR-12805: Store previous term (generation) of replica when start recovery process (Cao Manh Dat)
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -94,6 +96,8 @@ New Features
   The API now supports 'nrtReplicas', 'tlogReplicas', 'pullReplicas' parameters as well 'createNodeSet' parameter.
   As part of this change, the CREATESHARD API now delegates placing replicas entirely to the ADDREPLICA command
   and uses the new parameters to add all the replicas in one API call. (shalin)
+
+* SOLR-11522: /autoscaling/suggestions now include rebalance options as well even if there are no violations (noble)
 
 Other Changes
 ----------------------

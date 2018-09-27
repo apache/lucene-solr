@@ -208,7 +208,7 @@ public abstract class Suggester implements MapWriter {
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put("type", violation == null ? "improvement" : "violation");
-      ew.putIfNotNull("violation",
+      if(violation!= null) ew.put("violation",
           new ConditionalMapWriter(violation,
               (k, v) -> !"violatingReplicas".equals(k)));
       ew.put("operation", operation);

@@ -83,16 +83,19 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
       zkShardTerms.registerTerm("replica1");
       zkShardTerms.registerTerm("replica2");
+
+      // normal case when leader start lir process
       zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       zkShardTerms.startRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica2"), 1);
-      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 0);
 
       zkShardTerms.doneRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica1"), 1);
       assertEquals(zkShardTerms.getTerm("replica2"), 1);
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
 
+      // stack of lir processes
       zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       assertEquals(zkShardTerms.getTerm("replica1"), 2);
       assertEquals(zkShardTerms.getTerm("replica2"), 1);
@@ -100,16 +103,17 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
 
       zkShardTerms.startRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica2"), 2);
-      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 2);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 1);
 
       zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       assertEquals(zkShardTerms.getTerm("replica1"), 3);
       assertEquals(zkShardTerms.getTerm("replica2"), 2);
-      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 2);
-      zkShardTerms.doneRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 1);
 
+      zkShardTerms.doneRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica2"), 2);
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
+
       zkShardTerms.startRecovering("replica2");
       zkShardTerms.doneRecovering("replica2");
 
@@ -119,7 +123,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       zkShardTerms.startRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica1"), 5);
       assertEquals(zkShardTerms.getTerm("replica2"), 5);
-      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 5);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 3);
       zkShardTerms.doneRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
 

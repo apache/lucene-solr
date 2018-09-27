@@ -154,7 +154,7 @@ public class Row implements MapWriter {
     if (row == null) throw new RuntimeException("couldn't get a row");
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
-    String replicaname = "" + new Random().nextInt(1000) + 1000;
+    String replicaname = "SYNTHETIC." + new Random().nextInt(1000) + 1000;
     ReplicaInfo ri = new ReplicaInfo(replicaname, replicaname, coll, shard, type, this.node,
         Utils.makeMap(ZkStateReader.REPLICA_TYPE, type != null ? type.toString() : Replica.Type.NRT.toString()));
     replicas.add(ri);
