@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -131,7 +132,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     ocmh.validateConfigOrThrowSolrException(configName);
 
-    List<String> nodeList = new ArrayList<>();
     String router = message.getStr("router.name", DocRouter.DEFAULT_NAME);
     String policy = message.getStr(Policy.POLICY);
     AutoScalingConfig autoScalingConfig = ocmh.cloudManager.getDistribStateManager().getAutoScalingConfig();
@@ -177,10 +177,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
       }
 
+      // refresh cluster state
+      clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
+
       List<ReplicaPosition> replicaPositions = null;
       try {
-        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, message,
-            nodeList, shardNames, sessionWrapper);
+        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames, sessionWrapper);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
@@ -188,7 +190,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e.getCause());
       }
 
-      if (nodeList.isEmpty()) {
+      if (replicaPositions.isEmpty()) {
         log.debug("Finished create command for collection: {}", collectionName);
         return;
       }
@@ -333,8 +335,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
+                                                            DocCollection docCollection,
                                                             ZkNodeProps message,
-                                                            List<String> nodeList, List<String> shardNames,
+                                                            List<String> shardNames,
                                                             AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException, Assign.AssignmentException {
     final String collectionName = message.getStr(NAME);
     // look at the replication factor and see if it matches reality
@@ -342,11 +345,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
     int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
-    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-    String policy = message.getStr(Policy.POLICY);
-    boolean usePolicyFramework = !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || policy != null;
+    boolean usePolicyFramework = CloudUtil.usePolicyFramework(docCollection, cloudManager);
 
-    Integer numSlices = shardNames.size();
+    int numSlices = shardNames.size();
     int maxShardsPerNode = checkMaxShardsPerNode(message, usePolicyFramework);
 
     // we need to look at every node and see how many cores it serves
@@ -354,7 +355,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     // but (for now) require that each core goes on a distinct node.
 
     List<ReplicaPosition> replicaPositions;
-    nodeList.addAll(Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM));
+    List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
     if (nodeList.isEmpty()) {
       log.warn("It is unusual to create a collection ("+collectionName+") without cores.");
 
@@ -387,8 +388,17 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             + ". This requires " + requestedShardsToCreate
             + " shards to be created (higher than the allowed number)");
       }
-      replicaPositions = Assign.identifyNodes(cloudManager
-          , clusterState, nodeList, collectionName, message, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
+      Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+          .forCollection(collectionName)
+          .forShard(shardNames)
+          .assignNrtReplicas(numNrtReplicas)
+          .assignTlogReplicas(numTlogReplicas)
+          .assignPullReplicas(numPullReplicas)
+          .onNodes(nodeList)
+          .build();
+      Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
+      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, docCollection);
+      replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
       sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
     }
     return replicaPositions;

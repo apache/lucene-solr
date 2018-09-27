@@ -232,11 +232,17 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     PolicyHelper.SessionWrapper sessionWrapper = null;
 
     try {
-      List<ReplicaPosition> replicaPositions = Assign.identifyNodes(
-          ocmh.cloudManager, clusterState,
-          nodeList, restoreCollectionName,
-          message, sliceNames,
-          numNrtReplicas, numTlogReplicas, numPullReplicas);
+      Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+          .forCollection(restoreCollectionName)
+          .forShard(sliceNames)
+          .assignNrtReplicas(numNrtReplicas)
+          .assignTlogReplicas(numTlogReplicas)
+          .assignPullReplicas(numPullReplicas)
+          .onNodes(nodeList)
+          .build();
+      Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
+      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, restoreCollection);
+      List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
       sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
       //Create one replica per shard and copy backed up data to it
       for (Slice slice : restoreCollection.getSlices()) {
