@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -431,8 +432,15 @@ public class IndexSizeTrigger extends TriggerBase {
                           Map<String, List<ReplicaInfo>> belowSize) {
       super(TriggerEventType.INDEXSIZE, source, eventTime, null);
       properties.put(TriggerEvent.REQUESTED_OPS, ops);
-      properties.put(ABOVE_SIZE_PROP, aboveSize);
-      properties.put(BELOW_SIZE_PROP, belowSize);
+      // avoid passing very large amounts of data here - just use replica names
+      TreeMap<String, String> above = new TreeMap<>();
+      aboveSize.forEach((coll, replicas) ->
+          replicas.forEach(r -> above.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_PROP) + ", bytes=" + r.getVariable(BYTES_SIZE_PROP))));
+      properties.put(ABOVE_SIZE_PROP, above);
+      TreeMap<String, String> below = new TreeMap<>();
+      belowSize.forEach((coll, replicas) ->
+          replicas.forEach(r -> below.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_PROP) + ", bytes=" + r.getVariable(BYTES_SIZE_PROP))));
+      properties.put(BELOW_SIZE_PROP, below);
     }
   }
 

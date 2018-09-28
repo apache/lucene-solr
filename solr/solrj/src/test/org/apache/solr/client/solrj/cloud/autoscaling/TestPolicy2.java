@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -167,7 +168,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson))
         , createCloudManager(state, metaData));
     assertEquals(1, suggestions.size());
-    String repName = (String) Utils.getObjectByPath(suggestions.get(0).operation, true, "command/move-replica/replica");
+    String repName = (String) suggestions.get(0)._get("operation/command/move-replica/replica", null);
 
     AtomicBoolean found = new AtomicBoolean(false);
     session.getNode("node1").forEachReplica(replicaInfo -> {
@@ -290,182 +291,8 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     };
   }
 
-  public void testAutoScalingHandlerFailure() {
-    String diagnostics = "{" +
-        "  'diagnostics': {" +
-        "    'sortedNodes': [" +
-        "      {" +
-        "        'node': '127.0.0.1:63191_solr'," +
-        "        'isLive': true," +
-        "        'cores': 3.0," +
-        "        'freedisk': 680.908073425293," +
-        "        'heapUsage': 24.97510064011647," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {" +
-        "          'readApiTestViolations': {" +
-        "            'shard1': [" +
-        "              {" +
-        "                'core_node5': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n2'," +
-        "                  'leader': 'true'," +
-        "                  'base_url': 'https://127.0.0.1:63191/solr'," +
-        "                  'node_name': '127.0.0.1:63191_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node7': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n4'," +
-        "                  'base_url': 'https://127.0.0.1:63191/solr'," +
-        "                  'node_name': '127.0.0.1:63191_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node12': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n10'," +
-        "                  'base_url': 'https://127.0.0.1:63191/solr'," +
-        "                  'node_name': '127.0.0.1:63191_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }" +
-        "            ]" +
-        "          }" +
-        "        }" +
-        "      }," +
-        "      {" +
-        "        'node': '127.0.0.1:63192_solr'," +
-        "        'isLive': true," +
-        "        'cores': 3.0," +
-        "        'freedisk': 680.908073425293," +
-        "        'heapUsage': 24.98878807983566," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {" +
-        "          'readApiTestViolations': {" +
-        "            'shard1': [" +
-        "              {" +
-        "                'core_node3': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n1'," +
-        "                  'base_url': 'https://127.0.0.1:63192/solr'," +
-        "                  'node_name': '127.0.0.1:63192_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node9': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n6'," +
-        "                  'base_url': 'https://127.0.0.1:63192/solr'," +
-        "                  'node_name': '127.0.0.1:63192_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node11': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n8'," +
-        "                  'base_url': 'https://127.0.0.1:63192/solr'," +
-        "                  'node_name': '127.0.0.1:63192_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }" +
-        "            ]" +
-        "          }" +
-        "        }" +
-        "      }," +
-        "      {" +
-        "        'node': '127.0.0.1:63219_solr'," +
-        "        'isLive': true," +
-        "        'cores': 0.0," +
-        "        'freedisk': 680.908073425293," +
-        "        'heapUsage': 24.98878807983566," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {}" +
-        "      }" +
-        "    ]," +
-        "    'liveNodes': [" +
-        "      '127.0.0.1:63191_solr'," +
-        "      '127.0.0.1:63192_solr'," +
-        "      '127.0.0.1:63219_solr'" +
-        "    ]," +
-        "    'violations': [" +
-        "      {" +
-        "        'collection': 'readApiTestViolations'," +
-        "        'shard': 'shard1'," +
-        "        'node': '127.0.0.1:63191_solr'," +
-        "        'violation': {" +
-        "          'replica': {'NRT': 3, 'count': 3}," +
-        "          'delta': 2.0" +
-        "        }," +
-        "        'clause': {" +
-        "          'replica': '<3'," +
-        "          'shard': '#EACH'," +
-        "          'node': '#ANY'," +
-        "          'collection': 'readApiTestViolations'" +
-        "        }" +
-        "      }," +
-        "      {" +
-        "        'collection': 'readApiTestViolations'," +
-        "        'shard': 'shard1'," +
-        "        'node': '127.0.0.1:63192_solr'," +
-        "        'violation': {" +
-        "          'replica': {'NRT': 3, 'count': 3}," +
-        "          'delta': 2.0" +
-        "        }," +
-        "        'clause': {" +
-        "          'replica': '<2'," +
-        "          'shard': '#EACH'," +
-        "          'node': '#ANY'," +
-        "          'collection': 'readApiTestViolations'" +
-        "        }" +
-        "      }" +
-        "    ]," +
-        "    'config': {" +
-        "      'cluster-preferences': [" +
-        "        {'minimize': 'cores', 'precision': 3}," +
-        "        {'maximize': 'freedisk', 'precision': 100}," +
-        "        {'minimize': 'sysLoadAvg', 'precision': 10}," +
-        "        {'minimize': 'heapUsage', 'precision': 10}" +
-        "      ]," +
-        "      'cluster-policy': [" +
-        "        {'cores': '<10', 'node': '#ANY'}," +
-        "        {'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "        {'nodeRole': 'overseer', 'replica': 0}" +
-        "      ]" +
-        "    }" +
-        "  }}";
-    Map<String, Object> m = (Map<String, Object>) Utils.fromJSONString(diagnostics);
+  public void testAutoScalingHandlerFailure() throws IOException {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testAutoScalingHandlerFailure.json");
 
     Policy policy = new Policy((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
@@ -527,164 +354,10 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
       }
     };
   }
-  public void testSysPropSuggestions() {
-    String diagnostics = "{" +
-        "  'diagnostics': {" +
-        "    'sortedNodes': [" +
-        "      {" +
-        "        'node': '127.0.0.1:63191_solr'," +
-        "        'isLive': true," +
-        "        'cores': 3.0," +
-        "        'sysprop.zone': 'east'," +
-        "        'freedisk': 1727.1459312438965," +
-        "        'heapUsage': 24.97510064011647," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {" +
-        "          'zonesTest': {" +
-        "            'shard1': [" +
-        "              {" +
-        "                'core_node5': {" +
-        "                  'core': 'zonesTest_shard1_replica_n2'," +
-        "                  'leader': 'true'," +
-        "                  'base_url': 'https://127.0.0.1:63191/solr'," +
-        "                  'node_name': '127.0.0.1:63191_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'zonesTest'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node7': {" +
-        "                  'core': 'zonesTest_shard1_replica_n4'," +
-        "                  'base_url': 'https://127.0.0.1:63191/solr'," +
-        "                  'node_name': '127.0.0.1:63191_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'zonesTest'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node12': {" +
-        "                  'core': 'zonesTest_shard1_replica_n10'," +
-        "                  'base_url': 'https://127.0.0.1:63191/solr'," +
-        "                  'node_name': '127.0.0.1:63191_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'zonesTest'" +
-        "                }" +
-        "              }" +
-        "            ]" +
-        "          }" +
-        "        }" +
-        "      }," +
-        "      {" +
-        "        'node': '127.0.0.1:63192_solr'," +
-        "        'isLive': true," +
-        "        'cores': 3.0," +
-        "        'sysprop.zone': 'east'," +
-        "        'freedisk': 1727.1459312438965," +
-        "        'heapUsage': 24.98878807983566," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {" +
-        "          'zonesTest': {" +
-        "            'shard2': [" +
-        "              {" +
-        "                'core_node3': {" +
-        "                  'core': 'zonesTest_shard1_replica_n1'," +
-        "                  'base_url': 'https://127.0.0.1:63192/solr'," +
-        "                  'node_name': '127.0.0.1:63192_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard2'," +
-        "                  'collection': 'zonesTest'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node9': {" +
-        "                  'core': 'zonesTest_shard1_replica_n6'," +
-        "                  'base_url': 'https://127.0.0.1:63192/solr'," +
-        "                  'node_name': '127.0.0.1:63192_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard2'," +
-        "                  'collection': 'zonesTest'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node11': {" +
-        "                  'core': 'zonesTest_shard1_replica_n8'," +
-        "                  'base_url': 'https://127.0.0.1:63192/solr'," +
-        "                  'node_name': '127.0.0.1:63192_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard2'," +
-        "                  'collection': 'zonesTest'" +
-        "                }" +
-        "              }" +
-        "            ]" +
-        "          }" +
-        "        }" +
-        "      }," +
-        "      {" +
-        "        'node': '127.0.0.1:63219_solr'," +
-        "        'isLive': true," +
-        "        'cores': 0.0," +
-        "        'sysprop.zone': 'west'," +
-        "        'freedisk': 1768.6174201965332," +
-        "        'heapUsage': 24.98878807983566," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {}" +
-        "      }," +
-        "      {" +
-        "        'node': '127.0.0.1:63229_solr'," +
-        "        'isLive': true," +
-        "        'cores': 0.0," +
-        "        'sysprop.zone': 'west'," +
-        "        'freedisk': 1768.6174201965332," +
-        "        'heapUsage': 24.98878807983566," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {}" +
-        "      }" +
-        "    ]," +
-        "    'liveNodes': [" +
-        "      '127.0.0.1:63191_solr'," +
-        "      '127.0.0.1:63192_solr'," +
-        "      '127.0.0.1:63219_solr'," +
-        "      '127.0.0.1:63229_solr'" +
-        "    ]," +
-        "    'config': {" +
-        "      'cluster-preferences': [" +
-        "        {'minimize': 'cores', 'precision': 1}," +
-        "        {'maximize': 'freedisk', 'precision': 100}," +
-        "        {'minimize': 'sysLoadAvg', 'precision': 10}" +
-        "      ]," +
-        "      'cluster-policy': [" +
-        "        {'replica': '<3', 'shard': '#EACH', 'sysprop.zone': [east, west]}" +
-        "      ]" +
-        "    }" +
-        "  }" +
-        "}";
 
-    Map<String, Object> m = (Map<String, Object>) Utils.fromJSONString(diagnostics);
+  public void testSysPropSuggestions() throws IOException {
+
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testSysPropSuggestions.json");
 
     Map<String, Object> conf = (Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config");
     Policy policy = new Policy(conf);
@@ -699,10 +372,54 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     assertEquals(2, suggestions.size());
     for (Suggester.SuggestionInfo suggestion : suggestions) {
       assertTrue(ImmutableSet.of("127.0.0.1:63219_solr", "127.0.0.1:63229_solr").contains(
-          Utils.getObjectByPath(suggestion, true, "operation/command/move-replica/targetNode")));
+          suggestion._get("operation/command/move-replica/targetNode", null)));
 
     }
   }
 
+  public void testSuggestionsRebalanceOnly() throws IOException {
+    String conf = " {" +
+        "    'cluster-preferences':[{" +
+        "      'minimize':'cores'," +
+        "      'precision':1}," +
+        "      {'maximize':'freedisk','precision':100}," +
+        "      {'minimize':'sysLoadAvg','precision':10}]," +
+        "    'cluster-policy':[" +
+        "{'replica':'<5','shard':'#EACH','sysprop.zone':['east','west']}]}";
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testSuggestionsRebalanceOnly.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(conf));
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
+
+    assertEquals(2, suggestions.size());
+    assertEquals("improvement", suggestions.get(0)._get("type",null));
+    assertEquals("127.0.0.1:63229_solr", suggestions.get(0)._get("operation/command/move-replica/targetNode", null));
+    assertEquals("improvement", suggestions.get(1)._get( "type",null));
+    assertEquals("127.0.0.1:63219_solr", suggestions.get(1)._get("operation/command/move-replica/targetNode", null));
+  }
+
+  public void testSuggestionsRebalance2() throws IOException {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testSuggestionsRebalance2.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
+
+    assertEquals(3, suggestions.size());
+
+    for (Suggester.SuggestionInfo suggestion : suggestions) {
+      assertEquals("improvement", suggestion._get("type", null));
+      assertEquals("10.0.0.79:8983_solr", suggestion._get("operation/command/move-replica/targetNode",null));
+    }
+
+
+
+  }
+
+  public static Object loadFromResource(String file) throws IOException {
+    try (InputStream is = TestPolicy2.class.getResourceAsStream("/solrj/solr/autoscaling/" + file)) {
+      return Utils.fromJSON(is);
+    }
+  }
 
 }

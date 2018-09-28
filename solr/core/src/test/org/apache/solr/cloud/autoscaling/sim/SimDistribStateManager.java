@@ -214,6 +214,8 @@ public class SimDistribStateManager implements DistribStateManager {
   private final String id;
   private final Node root;
 
+  private int juteMaxbuffer = 0xfffff;
+
   public SimDistribStateManager() {
     this(null);
   }
@@ -226,6 +228,8 @@ public class SimDistribStateManager implements DistribStateManager {
     this.id = IdUtils.timeRandomId();
     this.root = root != null ? root : createNewRootNode();
     watchersPool = ExecutorUtil.newMDCAwareFixedThreadPool(10, new DefaultSolrThreadFactory("sim-watchers"));
+    String bufferSize = System.getProperty("jute.maxbuffer", Integer.toString(0xffffff));
+    juteMaxbuffer = Integer.parseInt(bufferSize);
   }
 
   public SimDistribStateManager(ActionThrottle actionThrottle, ActionError actionError) {
@@ -493,6 +497,9 @@ public class SimDistribStateManager implements DistribStateManager {
 
   @Override
   public void setData(String path, byte[] data, int version) throws NoSuchElementException, BadVersionException, IOException {
+    if (data.length > juteMaxbuffer) {
+      throw new IOException("Len error " + data.length);
+    }
     multiLock.lock();
     Node n = null;
     try {

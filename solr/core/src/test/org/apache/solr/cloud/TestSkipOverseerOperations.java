@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
@@ -73,6 +74,8 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
 
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSkipDownOperations() throws Exception {
     String overseerLeader = getOverseerLeader();
     List<JettySolrRunner> notOverseerNodes = cluster.getJettySolrRunners()

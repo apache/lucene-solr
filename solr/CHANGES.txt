@@ -70,6 +70,12 @@ Other Changes
 * SOLR-12586: Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") to use Java 8's
   java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
+  
+* SOLR-5163: edismax now throws an exception when qf refers to a nonexistent field (Charles Sanders, David Smiley)
+
+* SOLR-12805: Store previous term (generation) of replica when start recovery process (Cao Manh Dat)
+
+* SOLR-12652: Remove SolrMetricManager.overridableRegistryName method (Peter Somogyi via David Smiley)
 
 ==================  7.6.0 ==================
 
@@ -90,12 +96,30 @@ New Features
   error.  Previously, the collapsing behavior was unreliable and undefined despite no explicit error.
   (Munendra S N, David Smiley)
 
+* SOLR-9317: ADDREPLICA command should be able to add more than one replica to a collection,shard at a time.
+  The API now supports 'nrtReplicas', 'tlogReplicas', 'pullReplicas' parameters as well 'createNodeSet' parameter.
+  As part of this change, the CREATESHARD API now delegates placing replicas entirely to the ADDREPLICA command
+  and uses the new parameters to add all the replicas in one API call. (shalin)
+
+* SOLR-11522: /autoscaling/suggestions now include rebalance options as well even if there are no violations (noble)
+
 Other Changes
 ----------------------
 
 * SOLR-12762: Fix javadoc for SolrCloudTestCase.clusterShape() method and add a method that validates only against
   Active slices (Anshum Gupta)
 
+* SOLR-12756: Refactor Assign and extract replica placement strategies out of it. Now, assignment is done with the help
+  of a builder class instead of calling a method with large number of arguments. The number of special cases that had
+  to be handled have been cut down as well. (shalin)
+
+Bug Fixes
+----------------------
+
+* SOLR-11836: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
+  (Alfonso Muñoz-Pomer Fuentes, Amrit Sarkar via Varun Thacker)
+
+* SOLR-12776: Setting of TMP in solr.cmd causes invisibility of Solr to JDK tools (Petr Bodnar via Erick Erickson)
 
 ==================  7.5.0 ==================
 
@@ -351,9 +375,6 @@ Bug Fixes
   (Steve Rowe, Varun Thacker)
 
 * SOLR-12733: SolrMetricReporterTest failure (Erick Erickson, David Smiley)
-
-* SOLR-11836: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
-  (Alfonso Muñoz-Pomer Fuentes, Amrit Sarkar via Varun Thacker)
 
 * SOLR-12765: Incorrect format of JMX cache stats. (Bojan Smid, ab)
 

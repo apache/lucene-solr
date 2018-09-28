@@ -70,6 +70,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -232,7 +233,7 @@ public class Utils {
 
   public static Object fromJSON(InputStream is){
     try {
-      return new ObjectBuilder(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getObject();
+      return new ObjectBuilder(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
@@ -260,13 +261,14 @@ public class Utils {
 
   public static Object fromJSONString(String json)  {
     try {
-      return new ObjectBuilder(getJSONParser(new StringReader(json))).getObject();
+      return new ObjectBuilder(getJSONParser(new StringReader(json))).getVal();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
   }
 
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, String hierarchy) {
+    if (hierarchy == null) return getObjectByPath(root, onlyPrimitive, singletonList(null));
     List<String> parts = StrUtils.splitSmart(hierarchy, '/');
     if (parts.get(0).isEmpty()) parts.remove(0);
     return getObjectByPath(root, onlyPrimitive, parts);
@@ -362,8 +364,12 @@ public class Utils {
         Object val = getVal(obj, s);
         if (val == null) return null;
         if (idx > -1) {
-          List l = (List) val;
-          val = idx < l.size() ? l.get(idx) : null;
+          if (val instanceof IteratorWriter) {
+            val = getValueAt((IteratorWriter) val, idx);
+          } else {
+            List l = (List) val;
+            val = idx < l.size() ? l.get(idx) : null;
+          }
         }
         if (onlyPrimitive && isMapLike(val)) {
           return null;
@@ -373,6 +379,27 @@ public class Utils {
     }
 
     return false;
+  }
+
+  private static Object getValueAt(IteratorWriter iteratorWriter, int idx) {
+    Object[] result = new Object[1];
+    try {
+      iteratorWriter.writeIter(new IteratorWriter.ItemWriter() {
+        int i = -1;
+
+        @Override
+        public IteratorWriter.ItemWriter add(Object o) {
+          ++i;
+          if (i > idx) return this;
+          if (i == idx) result[0] = o;
+          return this;
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return result[0];
+
   }
 
   private static boolean isMapLike(Object o) {
