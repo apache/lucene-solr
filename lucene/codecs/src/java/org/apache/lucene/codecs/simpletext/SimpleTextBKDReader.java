@@ -53,6 +53,7 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
   final int docCount;
   final int version;
   protected final int packedBytesLength;
+  protected final int packedIndexBytesLength;
 
   public SimpleTextBKDReader(IndexInput in, int numDataDims, int numIndexDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues,
                              byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int docCount) throws IOException {
@@ -63,7 +64,8 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
     this.bytesPerDim = bytesPerDim;
     // no version check here because callers of this API (SimpleText) have no back compat:
     bytesPerIndexEntry = numIndexDims == 1 ? bytesPerDim : bytesPerDim + 1;
-    packedBytesLength = numIndexDims * bytesPerDim;
+    packedBytesLength = numDataDims * bytesPerDim;
+    packedIndexBytesLength = numIndexDims * bytesPerDim;
     this.leafNodeOffset = leafBlockFPs.length;
     this.leafBlockFPs = leafBlockFPs;
     this.splitPackedValues = splitPackedValues;
@@ -72,8 +74,8 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
     this.pointCount = pointCount;
     this.docCount = docCount;
     this.version = SimpleTextBKDWriter.VERSION_CURRENT;
-    assert minPackedValue.length == packedBytesLength;
-    assert maxPackedValue.length == packedBytesLength;
+    assert minPackedValue.length == packedIndexBytesLength;
+    assert maxPackedValue.length == packedIndexBytesLength;
   }
 
   /** Used to track all state for a single call to {@link #intersect}. */
@@ -270,17 +272,17 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
 
       // TODO: can we alloc & reuse this up front?
 
-      byte[] splitPackedValue = new byte[packedBytesLength];
+      byte[] splitPackedValue = new byte[packedIndexBytesLength];
 
       // Recurse on left sub-tree:
-      System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedIndexBytesLength);
       System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       intersect(state,
                 2*nodeID,
                 cellMinPacked, splitPackedValue);
 
       // Recurse on right sub-tree:
-      System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedIndexBytesLength);
       System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       intersect(state,
                 2*nodeID+1,
@@ -319,17 +321,17 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
 
       // TODO: can we alloc & reuse this up front?
 
-      byte[] splitPackedValue = new byte[packedBytesLength];
+      byte[] splitPackedValue = new byte[packedIndexBytesLength];
 
       // Recurse on left sub-tree:
-      System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedIndexBytesLength);
       System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       final long leftCost = estimatePointCount(state,
                 2*nodeID,
                 cellMinPacked, splitPackedValue);
 
       // Recurse on right sub-tree:
-      System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedIndexBytesLength);
       System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       final long rightCost = estimatePointCount(state,
                 2*nodeID+1,

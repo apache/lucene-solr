@@ -168,7 +168,7 @@ public class TestBKD extends LuceneTestCase {
 
         byte[] minPackedValue = r.getMinPackedValue();
         byte[] maxPackedValue = r.getMaxPackedValue();
-        for(int dim=0;dim<numDims;dim++) {
+        for(int dim=0;dim<numIndexDims;dim++) {
           assertEquals(minValue[dim], NumericUtils.sortableBytesToInt(minPackedValue, dim * Integer.BYTES));
           assertEquals(maxValue[dim], NumericUtils.sortableBytesToInt(maxPackedValue, dim * Integer.BYTES));
         }

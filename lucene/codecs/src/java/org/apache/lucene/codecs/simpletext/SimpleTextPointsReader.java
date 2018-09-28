@@ -119,12 +119,12 @@ class SimpleTextPointsReader extends PointsReader {
     readLine(dataIn);
     assert startsWith(MIN_VALUE);
     BytesRef minValue = SimpleTextUtil.fromBytesRefString(stripPrefix(MIN_VALUE));
-    assert minValue.length == numDataDims*bytesPerDim;
+    assert minValue.length == numIndexDims*bytesPerDim;
 
     readLine(dataIn);
     assert startsWith(MAX_VALUE);
     BytesRef maxValue = SimpleTextUtil.fromBytesRefString(stripPrefix(MAX_VALUE));
-    assert maxValue.length == numDataDims*bytesPerDim;
+    assert maxValue.length == numIndexDims*bytesPerDim;
 
     readLine(dataIn);
     assert startsWith(POINT_COUNT);
