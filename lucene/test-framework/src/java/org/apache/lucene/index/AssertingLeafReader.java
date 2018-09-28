@@ -1173,8 +1173,8 @@ public class AssertingLeafReader extends FilterLeafReader {
       for(int dim=0;dim<numIndexDims;dim++) {
         assert FutureArrays.compareUnsigned(minPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, maxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) <= 0;
       }
-      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, numDataDims*bytesPerDim);
-      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, numDataDims*bytesPerDim);
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, numIndexDims*bytesPerDim);
+      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, numIndexDims*bytesPerDim);
       lastCompareResult = in.compare(minPackedValue, maxPackedValue);
       return lastCompareResult;
     }

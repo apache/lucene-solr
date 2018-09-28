@@ -2115,7 +2115,7 @@ public final class CheckIndex implements Closeable {
       }
 
       if (packedValue.length != (docID < 0 ? packedIndexBytesCount : packedBytesCount)) {
-        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
+        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedIndexBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
       }
     }
   }
