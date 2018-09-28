@@ -19,12 +19,20 @@ package org.apache.solr.client.solrj.impl;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 
 public interface HttpListenerFactory {
-  public interface RequestResponseListener extends Request.BeginListener, Response.CompleteListener {
+  abstract class RequestResponseListener implements Request.BeginListener, Response.CompleteListener, Request.QueuedListener {
+    @Override
+    public void onBegin(Request request){}
 
+    @Override
+    public void onQueued(Request request) {}
+
+    @Override
+    public void onComplete(Result result) {}
   }
 
-  public RequestResponseListener get();
+  RequestResponseListener get();
 }
 

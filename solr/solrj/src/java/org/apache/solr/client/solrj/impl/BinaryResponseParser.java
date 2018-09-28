@@ -71,9 +71,9 @@ public class BinaryResponseParser extends ResponseParser {
   }
 
   private static JavaBinCodec.StringCache STR_CACHE = new JavaBinCodec.StringCache(new ConcurrentLFUCache(12000, 8000, 6000, 6000, false, true, null, true));
-//  {
-//    if ("true".equals(System.getProperty("cache.str"))) {
-//      STR_CACHE = new JavaBinCodec.StringCache(new ConcurrentLFUCache(12000, 8000, 6000, 6000, false, true, null, true));
-//    }
-//  }
+  {
+    if ("true".equals(System.getProperty("cache.str"))) {
+      STR_CACHE = new JavaBinCodec.StringCache(new ConcurrentLFUCache(12000, 8000, 6000, 6000, false, true, null, true));
+    }
+  }
 }

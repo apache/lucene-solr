@@ -33,12 +33,12 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
 
   public void testSystemPropertyFlag() {
     System.setProperty("solr.http1", "true");
-    try (Http2SolrClient client = new Http2SolrClient.Builder("")
+    try (Http2SolrClient client = new Http2SolrClient.Builder()
         .build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
     }
     System.clearProperty("solr.http1");
-    try (Http2SolrClient client = new Http2SolrClient.Builder("")
+    try (Http2SolrClient client = new Http2SolrClient.Builder()
         .build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
     }

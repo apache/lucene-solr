@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -85,7 +86,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
-// TODO: error handling, small Http2SolrClient features, basic auth, security, ssl, apiV2 ...
+// TODO: error handling, small Http2SolrClient features, security, ssl
 /**
  * @lucene.experimental
  */
@@ -93,7 +94,6 @@ public class Http2SolrClient extends SolrClient {
   private static volatile SSLConfig defaultSSLConfig;
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final int MAX_OUTSTANDING_REQUESTS = 1000;
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
   private static final String DEFAULT_PATH = "/select";
@@ -101,40 +101,12 @@ public class Http2SolrClient extends SolrClient {
 
   private HttpClient httpClient;
   private volatile Set<String> queryParams = Collections.emptySet();
-  private Phaser phaser = new Phaser(1);
-  private final Semaphore available;
   private int idleTimeout;
 
   private ResponseParser parser = new BinaryResponseParser();
   private volatile RequestWriter requestWriter = new BinaryRequestWriter();
-  private volatile HttpListenerFactory listenerFactory;
-
-  private Request.QueuedListener requestQueuedListener = new Request.QueuedListener() {
-
-    @Override
-    public void onQueued(Request request) {
-      phaser.register();
-      try {
-        available.acquire();
-      } catch (InterruptedException e) {
-
-      }
-    }
-  };
-
-  private volatile Request.BeginListener beginListener = req -> {
-
-  };
-
-  private Response.CompleteListener requestCompleteListener = new Response.CompleteListener() {
-
-    @Override
-    public void onComplete(Result arg0) {
-      phaser.arriveAndDeregister();
-      available.release();
-    }
-  };
-
+  private List<HttpListenerFactory> listenerFactory = new LinkedList<>();
+  private AsyncTracker asyncTracker = new AsyncTracker();
   /**
    * The URL of the Solr server.
    */
@@ -142,9 +114,6 @@ public class Http2SolrClient extends SolrClient {
   private boolean closeClient;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
-    // TODO: what about shared instances?
-    available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
-
     if (serverBaseUrl != null)  {
       if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
         serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
@@ -165,7 +134,6 @@ public class Http2SolrClient extends SolrClient {
     } else {
       httpClient = builder.httpClient;
     }
-    if (builder.beginListener != null) setBeginListener(builder.beginListener);
     if (!httpClient.isStarted()) {
       try {
         httpClient.start();
@@ -177,16 +145,19 @@ public class Http2SolrClient extends SolrClient {
     assert ObjectReleaseTracker.track(this);
   }
 
-  public void setBeginListener(Request.BeginListener beginListener) {
-    this.beginListener = beginListener;
+  public void addListenerFactory(HttpListenerFactory factory) {
+    this.listenerFactory.add(factory);
   }
 
-  public ProtocolHandlers getProtocolHandlers() {
+  HttpClient getHttpClient() {
+    return httpClient;
+  }
+
+  ProtocolHandlers getProtocolHandlers() {
     return httpClient.getProtocolHandlers();
   }
 
   private HttpClient createHttpClient(Builder builder) {
-
     HttpClient httpClient;
 
     QueuedThreadPool httpClientExecutor = new QueuedThreadPool(100, 4);
@@ -215,8 +186,7 @@ public class Http2SolrClient extends SolrClient {
     httpClient.setStrictEventOrdering(false);
     httpClient.setConnectBlocking(true);
     httpClient.setFollowRedirects(false);
-    // comfortably above max outstanding requests
-    httpClient.setMaxRequestsQueuedPerDestination(MAX_OUTSTANDING_REQUESTS * 4);
+    httpClient.setMaxRequestsQueuedPerDestination(asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
 
     if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
@@ -238,30 +208,20 @@ public class Http2SolrClient extends SolrClient {
     return false;
   }
 
-  public HttpClient getHttpClient() {
-    return httpClient;
-  }
-
   public void close() {
     // we wait for async requests, so far devs don't want to give sugar for this
-    phaser.arriveAndAwaitAdvance();
-    phaser.arriveAndDeregister();
+    asyncTracker.waitForComplete();
     if (closeClient) {
-      close(httpClient);
+      try {
+        // TODO: stop time?
+        httpClient.setStopTimeout(1000);
+        httpClient.stop();
+      } catch (Exception e) {
+        throw new RuntimeException("Exception on closing client", e);
+      }
     }
 
     assert ObjectReleaseTracker.release(this);
-  }
-
-  public static void close(HttpClient httpClient) {
-    try {
-      // TODO: stop time?
-      httpClient.setStopTimeout(1000);
-      httpClient.stop();
-
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
   }
 
   public void request(SolrRequest solrRequest, String collection, OnComplete onComplete)
@@ -279,20 +239,17 @@ public class Http2SolrClient extends SolrClient {
                                       boolean returnStream) throws IOException, SolrServerException {
     Request req = makeRequest(solrRequest, collection);
     setBasicAuthHeader(solrRequest, req);
-    if (listenerFactory != null) {
-      HttpListenerFactory.RequestResponseListener listener = listenerFactory.get();
+    for (HttpListenerFactory factory : listenerFactory) {
+      HttpListenerFactory.RequestResponseListener listener = factory.get();
       req.onRequestBegin(listener);
       req.onComplete(listener);
+      req.onRequestQueued(listener);
     }
 
-    if (beginListener != null) {
-      // By calling listener here, we will make sure that SolrRequestInfo can be get from the same thread
-      beginListener.onBegin(req);
-    }
     try {
       if (onComplete != null) {
-        req.onRequestQueued(requestQueuedListener)
-            .onComplete(requestCompleteListener).send(new BufferingResponseListener() {
+        req.onRequestQueued(asyncTracker.queuedListener)
+            .onComplete(asyncTracker.completeListener).send(new BufferingResponseListener() {
 
           @Override
           public void onComplete(Result result) {
@@ -355,10 +312,6 @@ public class Http2SolrClient extends SolrClient {
       }
       throw new SolrServerException(cause.getMessage(), cause);
     }
-  }
-
-  public void setListenerFactory(HttpListenerFactory listenerFactory) {
-    this.listenerFactory = listenerFactory;
   }
 
   private void setBasicAuthHeader(SolrRequest solrRequest, Request req) throws UnsupportedEncodingException {
@@ -633,6 +586,45 @@ public class Http2SolrClient extends SolrClient {
     return serverBaseUrl;
   }
 
+  private static class AsyncTracker {
+    private static final int MAX_OUTSTANDING_REQUESTS = 1000;
+
+    // wait for async requests
+    private final Phaser phaser;
+    // maximum outstanding requests left
+    private final Semaphore available;
+    private final Request.QueuedListener queuedListener;
+    private final Response.CompleteListener completeListener;
+
+    AsyncTracker() {
+      // TODO: what about shared instances?
+      phaser = new Phaser(1);
+      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
+      queuedListener = request -> {
+        phaser.register();
+        try {
+          available.acquire();
+        } catch (InterruptedException ignored) {
+
+        }
+      };
+      completeListener = result -> {
+        phaser.arriveAndDeregister();
+        available.release();
+      };
+    }
+
+    int getMaxRequestsQueuedPerDestination() {
+      // comfortably above max outstanding requests
+      return MAX_OUTSTANDING_REQUESTS * 2;
+    }
+
+    public void waitForComplete() {
+      phaser.arriveAndAwaitAdvance();
+      phaser.arriveAndDeregister();
+    }
+  }
+
   public static class Builder {
 
     private HttpClient httpClient;
@@ -642,7 +634,6 @@ public class Http2SolrClient extends SolrClient {
     private Integer maxConnectionsPerHost;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
-    private Request.BeginListener beginListener = request -> {};
 
     public Builder() {
 
@@ -686,10 +677,6 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    public Builder withListener(Request.BeginListener beginListener) {
-      this.beginListener = beginListener;
-      return this;
-    }
   }
 
   /**

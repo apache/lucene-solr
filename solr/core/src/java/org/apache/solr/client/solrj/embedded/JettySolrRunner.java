@@ -239,7 +239,7 @@ public class JettySolrRunner {
         connector = new ServerConnector(server, new SslConnectionFactory(sslcontext, "http/1.1"),
             new HttpConnectionFactory(configuration));
       } else {
-        if (config.useOnlyHttp1) {
+        if (config.onlyHttp1) {
           connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
         } else {
           connector = new ServerConnector(server, new HttpConnectionFactory(configuration),

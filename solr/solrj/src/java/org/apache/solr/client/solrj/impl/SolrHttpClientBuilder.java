@@ -81,7 +81,6 @@ public class SolrHttpClientBuilder {
     return this;
   }
 
-  //I know this is a horrible design, but as soon as we remove the usage of apache httpclient, things will be much cleaner
   public final SolrHttpClientBuilder setHttp2Configurator (
       final Http2Configurator configurator) {
     this.configurator = configurator;

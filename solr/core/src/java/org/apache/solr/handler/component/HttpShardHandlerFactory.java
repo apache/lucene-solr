@@ -102,8 +102,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   private InstrumentedHttpListenerFactory.NameStrategy metricNameStrategy;
 
-  private String metricTag;
-
   protected final Random r = new Random();
 
   private final ReplicaListTransformer shufflingReplicaListTransformer = new ShufflingReplicaListTransformer(r);
@@ -210,7 +208,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         .connectionTimeout(connectionTimeout)
         .idleTimeout(soTimeout)
         .maxConnectionsPerHost(maxConnectionsPerHost).build();
-    this.defaultClient.setListenerFactory(this.httpListenerFactory);
+    this.defaultClient.addListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBHttp2SolrClient(defaultClient);
   }
 
@@ -454,7 +452,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    this.metricTag = tag;
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
     httpListenerFactory.initializeMetrics(manager, registry, tag, expandedScope);
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,

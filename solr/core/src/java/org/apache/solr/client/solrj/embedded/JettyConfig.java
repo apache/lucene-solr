@@ -25,7 +25,8 @@ import java.util.TreeMap;
 
 public class JettyConfig {
 
-  public final boolean useOnlyHttp1;
+  // by default when https is not enabled, jetty will start with http2 + http1 support
+  public final boolean onlyHttp1;
 
   public final int port;
 
@@ -41,9 +42,9 @@ public class JettyConfig {
 
   public final SSLConfig sslConfig;
 
-  private JettyConfig(boolean useOnlyHttp1, int port, String context, boolean stopAtShutdown, Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
+  private JettyConfig(boolean onlyHttp1, int port, String context, boolean stopAtShutdown, Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
                       Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig) {
-    this.useOnlyHttp1 = useOnlyHttp1;
+    this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.context = context;
     this.stopAtShutdown = stopAtShutdown;
@@ -70,7 +71,7 @@ public class JettyConfig {
 
   public static class Builder {
 
-    boolean useOnlyHttp1 = false;
+    boolean onlyHttp1 = false;
     int port = 0;
     String context = "/solr";
     boolean stopAtShutdown = true;
@@ -80,7 +81,7 @@ public class JettyConfig {
     SSLConfig sslConfig = null;
 
     public Builder useOnlyHttp1(boolean useOnlyHttp1) {
-      this.useOnlyHttp1 = useOnlyHttp1;
+      this.onlyHttp1 = useOnlyHttp1;
       return this;
     }
 
@@ -132,7 +133,7 @@ public class JettyConfig {
     }
 
     public JettyConfig build() {
-      return new JettyConfig(useOnlyHttp1, port, context, stopAtShutdown, waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig);
+      return new JettyConfig(onlyHttp1, port, context, stopAtShutdown, waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig);
     }
 
   }

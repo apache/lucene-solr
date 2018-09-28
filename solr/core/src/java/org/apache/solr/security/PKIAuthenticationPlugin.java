@@ -41,6 +41,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -50,6 +51,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -225,10 +228,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     HttpClientUtil.addRequestInterceptor(interceptor);
-    builder.setHttp2Configurator(client -> {
-      client.setBeginListener(request -> {
+    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
+      @Override
+      public void onQueued(Request request) {
         generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
-      });
+      }
+    };
+    builder.setHttp2Configurator(client -> {
+      client.addListenerFactory(() -> listener);
     });
     return builder;
   }
@@ -282,33 +289,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
   void setHeader(HttpRequest httpRequest) {
-    SolrRequestInfo reqInfo = getRequestInfo();
-    String usr;
-    if (reqInfo != null) {
-      Principal principal = reqInfo.getReq().getUserPrincipal();
-      if (principal == null) {
-        //this had a request but not authenticated
-        //so we don't not need to set a principal
-        return;
-      } else {
-        usr = principal.getName();
-      }
-    } else {
-      if (!isSolrThread()) {
-        //if this is not running inside a Solr threadpool (as in testcases)
-        // then no need to add any header
-        return;
-      }
-      //this request seems to be originated from Solr itself
-      usr = "$"; //special name to denote the user is the node itself
-    }
-
-    String s = usr + " " + System.currentTimeMillis();
-
-    byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
-    String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
-    httpRequest.setHeader(HEADER, myNodeName + " " + base64Cipher);
+    generateToken().ifPresent(s -> httpRequest.setHeader(HEADER, myNodeName + " " + s));
   }
 
   boolean isSolrThread() {

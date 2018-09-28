@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -51,11 +51,13 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
+import org.eclipse.jetty.client.api.Request;
 
 /**
  * AuthenticationHandler that supports delegation tokens and simple
@@ -148,10 +150,14 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     HttpClientUtil.addRequestInterceptor(interceptor);
     builder = super.getHttpClientBuilder(builder);
-    builder.setHttp2Configurator(client -> {
-      client.setBeginListener(request -> {
+    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
+      @Override
+      public void onQueued(Request request) {
         getPrincipal().ifPresent(usr -> request.header(INTERNAL_REQUEST_HEADER, usr));
-      });
+      }
+    };
+    builder.setHttp2Configurator(client -> {
+      client.addListenerFactory(() -> listener);
     });
     return builder;
   }

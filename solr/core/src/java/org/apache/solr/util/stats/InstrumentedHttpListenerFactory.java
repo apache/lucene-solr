@@ -32,7 +32,7 @@ import org.eclipse.jetty.client.api.Result;
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 /**
- * Sub-class of HttpRequestExecutor which tracks metrics interesting to solr
+ * A HttpListenerFactory tracks metrics interesting to solr
  * Inspired and partially copied from dropwizard httpclient library
  */
 public class InstrumentedHttpListenerFactory implements SolrMetricProducer, HttpListenerFactory {
