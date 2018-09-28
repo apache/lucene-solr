@@ -1617,6 +1617,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       ReplicaInfo ri = getReplicaInfo(r);
       Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs", 0L);
       count.addAndGet(numDocs.longValue());
+      AtomicLong bufferedUpdates = (AtomicLong)sliceProperties.get(collection).get(s.getName()).get(BUFFERED_UPDATES);
+      if (bufferedUpdates != null) {
+        count.addAndGet(bufferedUpdates.get());
+      }
     }
     QueryResponse rsp = new QueryResponse();
     NamedList<Object> values = new NamedList<>();
