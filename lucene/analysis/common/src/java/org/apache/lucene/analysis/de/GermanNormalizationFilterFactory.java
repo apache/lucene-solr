@@ -20,8 +20,6 @@ package org.apache.lucene.analysis.de;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.de.GermanNormalizationFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -51,9 +49,9 @@ public class GermanNormalizationFilterFactory extends TokenFilterFactory impleme
   public TokenStream create(TokenStream input) {
     return new GermanNormalizationFilter(input);
   }
-  
+
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
 }

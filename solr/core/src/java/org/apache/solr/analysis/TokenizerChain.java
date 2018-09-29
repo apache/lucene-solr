@@ -21,7 +21,6 @@ import java.io.Reader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
@@ -89,10 +88,7 @@ public final class TokenizerChain extends SolrAnalyzer {
   protected Reader initReaderForNormalization(String fieldName, Reader reader) {
     if (charFilters != null && charFilters.length > 0) {
       for (CharFilterFactory charFilter : charFilters) {
-        if (charFilter instanceof MultiTermAwareComponent) {
-          charFilter = (CharFilterFactory) ((MultiTermAwareComponent) charFilter).getMultiTermComponent();
-          reader = charFilter.create(reader);
-        }
+        reader = charFilter.normalize(reader);
       }
     }
     return reader;
@@ -112,10 +108,7 @@ public final class TokenizerChain extends SolrAnalyzer {
   protected TokenStream normalize(String fieldName, TokenStream in) {
     TokenStream result = in;
     for (TokenFilterFactory filter : filters) {
-      if (filter instanceof MultiTermAwareComponent) {
-        filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
-        result = filter.create(result);
-      }
+      result = filter.normalize(result);
     }
     return result;
   }

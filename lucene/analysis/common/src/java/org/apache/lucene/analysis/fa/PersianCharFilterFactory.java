@@ -21,8 +21,6 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.fa.PersianCharFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 
@@ -52,7 +50,7 @@ public class PersianCharFilterFactory extends CharFilterFactory implements Multi
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public CharFilter normalize(Reader input) {
+    return create(input);
   }
 }

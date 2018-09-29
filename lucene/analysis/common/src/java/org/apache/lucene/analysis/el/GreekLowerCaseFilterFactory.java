@@ -20,8 +20,6 @@ package org.apache.lucene.analysis.el;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -51,8 +49,8 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements M
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public GreekLowerCaseFilter normalize(TokenStream input) {
+    return create(input);
   }
 }
 

@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -58,9 +57,9 @@ public class ICUTransformFilterFactory extends TokenFilterFactory implements Mul
   public TokenStream create(TokenStream input) {
     return new ICUTransformFilter(input, transliterator);
   }
-  
+
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
 }

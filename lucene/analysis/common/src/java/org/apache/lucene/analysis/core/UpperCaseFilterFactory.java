@@ -20,8 +20,6 @@ package org.apache.lucene.analysis.core;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.UpperCaseFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -57,7 +55,7 @@ public class UpperCaseFilterFactory extends TokenFilterFactory implements MultiT
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public UpperCaseFilter normalize(TokenStream input) {
+    return create(input);
   }
 }

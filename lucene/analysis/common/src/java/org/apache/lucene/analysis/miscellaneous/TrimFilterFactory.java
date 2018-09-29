@@ -20,8 +20,6 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.TrimFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -53,7 +51,7 @@ public class TrimFilterFactory extends TokenFilterFactory implements MultiTermAw
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TrimFilter normalize(TokenStream input) {
+    return create(input);
   }
 }

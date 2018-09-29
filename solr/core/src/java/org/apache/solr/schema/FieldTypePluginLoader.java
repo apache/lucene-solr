@@ -30,7 +30,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -212,22 +211,21 @@ public final class FieldTypePluginLoader
 
     public void add(Object current) {
       if (!(current instanceof MultiTermAwareComponent)) return;
-      AbstractAnalysisFactory newComponent = ((MultiTermAwareComponent)current).getMultiTermComponent();
-      if (newComponent instanceof TokenFilterFactory) {
+      if (current instanceof TokenFilterFactory) {
         if (filters == null) {
           filters = new ArrayList<>(2);
         }
-        filters.add((TokenFilterFactory)newComponent);
-      } else if (newComponent instanceof TokenizerFactory) {
-        tokenizer = (TokenizerFactory)newComponent;
-      } else if (newComponent instanceof CharFilterFactory) {
+        filters.add((TokenFilterFactory)current);
+      } else if (current instanceof TokenizerFactory) {
+        tokenizer = (TokenizerFactory)current;
+      } else if (current instanceof CharFilterFactory) {
         if (charFilters == null) {
           charFilters = new ArrayList<>(1);
         }
-        charFilters.add( (CharFilterFactory)newComponent);
+        charFilters.add( (CharFilterFactory)current);
 
       } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown analysis component from MultiTermAwareComponent: " + newComponent);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown analysis component from MultiTermAwareComponent: " + current);
       }
     }
 

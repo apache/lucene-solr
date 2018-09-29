@@ -39,7 +39,6 @@ import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
 import org.apache.lucene.analysis.reverse.ReverseStringFilterFactory;
 import org.apache.lucene.analysis.standard.ClassicTokenizerFactory;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -404,10 +403,9 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public AbstractAnalysisFactory getMultiTermComponent() {
-      return new DummyCharFilterFactory(Collections.emptyMap(), '0', '2');
+    public Reader normalize(Reader input) {
+      return create(input);
     }
-
   }
 
   public static class DummyTokenizerFactory extends TokenizerFactory {
@@ -421,19 +419,6 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
       return new LetterTokenizer(factory);
     }
 
-  }
-
-  public static class DummyMultiTermAwareTokenizerFactory extends DummyTokenizerFactory implements MultiTermAwareComponent {
-
-    public DummyMultiTermAwareTokenizerFactory(Map<String,String> args) {
-      super(args);
-    }
-
-    @Override
-    public AbstractAnalysisFactory getMultiTermComponent() {
-      return new DummyTokenFilterFactory(Collections.emptyMap());
-    }
-    
   }
 
   public static class DummyTokenFilterFactory extends TokenFilterFactory {
@@ -456,8 +441,8 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public AbstractAnalysisFactory getMultiTermComponent() {
-      return new ASCIIFoldingFilterFactory(Collections.emptyMap());
+    public TokenStream normalize(TokenStream input) {
+      return new ASCIIFoldingFilterFactory(Collections.emptyMap()).normalize(input);
     }
     
   }
@@ -472,12 +457,13 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertEquals(new BytesRef("0À"), analyzer1.normalize("dummy", "0À"));
 
     CustomAnalyzer analyzer2 = CustomAnalyzer.builder()
+        // this component in not multi-term aware so it should not be applied
+        .withTokenizer(DummyTokenizerFactory.class, Collections.emptyMap())
         // these components are multi-term aware so they should be applied
-        .withTokenizer(DummyMultiTermAwareTokenizerFactory.class, Collections.emptyMap())
         .addCharFilter(DummyMultiTermAwareCharFilterFactory.class, Collections.emptyMap())
         .addTokenFilter(DummyMultiTermAwareTokenFilterFactory.class, Collections.emptyMap())
         .build();
-    assertEquals(new BytesRef("2A"), analyzer2.normalize("dummy", "0À"));
+    assertEquals(new BytesRef("1A"), analyzer2.normalize("dummy", "0À"));
   }
 
   public void testNormalizationWithMultipleTokenFilters() throws IOException {

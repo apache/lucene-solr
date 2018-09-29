@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -86,6 +85,11 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     return normMap == null ? input : new MappingCharFilter(normMap,input);
   }
 
+  @Override
+  public Reader normalize(Reader input) {
+    return create(input);
+  }
+
   // "source" => "target"
   static Pattern p = Pattern.compile( "\"(.*)\"\\s*=>\\s*\"(.*)\"\\s*$" );
 
@@ -131,8 +135,4 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     return new String( out, 0, writePos );
   }
 
-  @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
-  }
 }

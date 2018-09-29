@@ -66,8 +66,8 @@ public class ElisionFilterFactory extends TokenFilterFactory implements Resource
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public ElisionFilter normalize(TokenStream input) {
+    return create(input);
   }
 }
 

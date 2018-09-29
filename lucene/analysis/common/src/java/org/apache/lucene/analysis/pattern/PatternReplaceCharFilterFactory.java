@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 
@@ -59,7 +58,7 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory implement
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public CharFilter normalize(Reader input) {
+    return create(input);
   }
 }

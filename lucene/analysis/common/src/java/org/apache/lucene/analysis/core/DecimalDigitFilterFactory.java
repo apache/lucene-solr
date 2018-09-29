@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.core;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -51,7 +50,7 @@ public class DecimalDigitFilterFactory extends TokenFilterFactory implements Mul
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public DecimalDigitFilter normalize(TokenStream input) {
+    return create(input);
   }
 }
