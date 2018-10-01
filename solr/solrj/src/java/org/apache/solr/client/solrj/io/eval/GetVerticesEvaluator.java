@@ -35,7 +35,7 @@ public class GetVerticesEvaluator extends RecursiveObjectEvaluator implements On
   @Override
   public Object doWork(Object value) throws IOException {
     if(!(value instanceof ConvexHull2D)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a clustering result",toExpression(constructingFactory), value.getClass().getSimpleName()));
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a ConvexHull2D",toExpression(constructingFactory), value.getClass().getSimpleName()));
     } else {
       ConvexHull2D convexHull2D = (ConvexHull2D)value;
       Vector2D[] vectors = convexHull2D.getVertices();
