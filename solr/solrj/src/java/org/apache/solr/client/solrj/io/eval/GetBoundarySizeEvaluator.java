@@ -34,7 +34,7 @@ public class GetBoundarySizeEvaluator extends RecursiveObjectEvaluator implement
   @Override
   public Object doWork(Object value) throws IOException {
     if(!(value instanceof ConvexHull2D)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a clustering result",toExpression(constructingFactory), value.getClass().getSimpleName()));
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a ConvexHull2D",toExpression(constructingFactory), value.getClass().getSimpleName()));
     } else {
       ConvexHull2D convexHull2D = (ConvexHull2D)value;
       return convexHull2D.createRegion().getBoundarySize();
