@@ -70,7 +70,8 @@ public class TestLang extends LuceneTestCase {
       "mod", "ceil", "floor", "sin", "asin", "sinh", "cos", "acos", "cosh", "tan", "atan", "tanh", "round", "sqrt",
       "cbrt", "coalesce", "uuid", "if", "convert", "valueAt", "memset", "fft", "ifft", "euclidean","manhattan",
       "earthMovers", "canberra", "chebyshev", "ones", "zeros", "setValue", "getValue", "knnRegress", "gaussfit",
-      "outliers", "stream", "getCache", "putCache", "listCache", "removeCache", "zscores", "latlonVectors"};
+      "outliers", "stream", "getCache", "putCache", "listCache", "removeCache", "zscores", "latlonVectors",
+      "convexHull", "getVertices", "getBaryCenter", "getArea", "getBoundarySize"};
 
   @Test
   public void testLang() {
