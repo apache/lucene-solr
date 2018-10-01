@@ -321,135 +321,135 @@ public class RecoveryStrategy implements Runnable, Closeable {
 //        + core.getUpdateHandler().getUpdateLog());
 //    return;
 //  }
-  while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) { // don't use interruption or it will close channels though
-    try {
-      CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
-      ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(
-          cloudDesc.getCollectionName(), cloudDesc.getShardId());
-      final String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
-      final String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
-
-      String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName);
-
-      String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-
-      boolean isLeader = leaderUrl.equals(ourUrl); //TODO: We can probably delete most of this code if we say this strategy can only be used for pull replicas
-      if (isLeader && !cloudDesc.isLeader()) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
-      }
-      if (cloudDesc.isLeader()) {
-        assert cloudDesc.getReplicaType() != Replica.Type.PULL;
-        // we are now the leader - no one else must have been suitable
-        log.warn("We have not yet recovered - but we are now the leader!");
-        log.info("Finished recovery process.");
-        zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
-        return;
-      }
-      
-      
-      log.info("Publishing state of core [{}] as recovering, leader is [{}] and I am [{}]", core.getName(), leaderUrl,
-          ourUrl);
-      zkController.publish(core.getCoreDescriptor(), Replica.State.RECOVERING);
-      
-      if (isClosed()) {
-        log.info("Recovery for core {} has been closed", core.getName());
-        break;
-      }
-      log.info("Starting Replication Recovery.");
-
+    while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) { // don't use interruption or it will close channels though
       try {
-        log.info("Stopping background replicate from leader process");
-        zkController.stopReplicationFromLeader(coreName);
-        replicate(zkController.getNodeName(), core, leaderprops);
+        CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
+        ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(
+            cloudDesc.getCollectionName(), cloudDesc.getShardId());
+        final String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
+        final String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
 
-        if (isClosed()) {
-          log.info("Recovery for core {} has been closed", core.getName());
-          break;
+        String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName);
+
+        String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+
+        boolean isLeader = leaderUrl.equals(ourUrl); //TODO: We can probably delete most of this code if we say this strategy can only be used for pull replicas
+        if (isLeader && !cloudDesc.isLeader()) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
         }
-
-        log.info("Replication Recovery was successful.");
-        successfulRecovery = true;
-      } catch (Exception e) {
-        SolrException.log(log, "Error while trying to recover", e);
-      }
-
-    } catch (Exception e) {
-      SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
-    } finally {
-      if (successfulRecovery) {
-        log.info("Restaring background replicate from leader process");
-        zkController.startReplicationFromLeader(coreName, false);
-        log.info("Registering as Active after recovery.");
-        try {
+        if (cloudDesc.isLeader()) {
+          assert cloudDesc.getReplicaType() != Replica.Type.PULL;
+          // we are now the leader - no one else must have been suitable
+          log.warn("We have not yet recovered - but we are now the leader!");
+          log.info("Finished recovery process.");
           zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
-        } catch (Exception e) {
-          log.error("Could not publish as ACTIVE after succesful recovery", e);
-          successfulRecovery = false;
+          return;
         }
-        
-        if (successfulRecovery) {
-          close = true;
-          recoveryListener.recovered();
-        }
-      }
-    }
 
-    if (!successfulRecovery) {
-      // lets pause for a moment and we need to try again...
-      // TODO: we don't want to retry for some problems?
-      // Or do a fall off retry...
-      try {
+
+        log.info("Publishing state of core [{}] as recovering, leader is [{}] and I am [{}]", core.getName(), leaderUrl,
+            ourUrl);
+        zkController.publish(core.getCoreDescriptor(), Replica.State.RECOVERING);
 
         if (isClosed()) {
           log.info("Recovery for core {} has been closed", core.getName());
           break;
         }
-        
-        log.error("Recovery failed - trying again... (" + retries + ")");
-        
-        retries++;
-        if (retries >= maxRetries) {
-          SolrException.log(log, "Recovery failed - max retries exceeded (" + retries + ").");
-          try {
-            recoveryFailed(core, zkController, baseUrl, coreZkNodeName, core.getCoreDescriptor());
-          } catch (Exception e) {
-            SolrException.log(log, "Could not publish that recovery failed", e);
-          }
-          break;
-        }
-      } catch (Exception e) {
-        SolrException.log(log, "An error has occurred during recovery", e);
-      }
+        log.info("Starting Replication Recovery.");
 
-      try {
-        // Wait an exponential interval between retries, start at 5 seconds and work up to a minute.
-        // If we're at attempt >= 4, there's no point computing pow(2, retries) because the result
-        // will always be the minimum of the two (12). Since we sleep at 5 seconds sub-intervals in
-        // order to check if we were closed, 12 is chosen as the maximum loopCount (5s * 12 = 1m).
-        int loopCount = retries < 4 ? (int) Math.min(Math.pow(2, retries), 12) : 12;
-        log.info("Wait [{}] seconds before trying to recover again (attempt={})",
-            TimeUnit.MILLISECONDS.toSeconds(loopCount * startingRecoveryDelayMilliSeconds), retries);
-        for (int i = 0; i < loopCount; i++) {
+        try {
+          log.info("Stopping background replicate from leader process");
+          zkController.stopReplicationFromLeader(coreName);
+          replicate(zkController.getNodeName(), core, leaderprops);
+
           if (isClosed()) {
             log.info("Recovery for core {} has been closed", core.getName());
-            break; // check if someone closed us
+            break;
           }
-          Thread.sleep(startingRecoveryDelayMilliSeconds);
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.warn("Recovery was interrupted.", e);
-        close = true;
-      }
-    }
 
+          log.info("Replication Recovery was successful.");
+          successfulRecovery = true;
+        } catch (Exception e) {
+          SolrException.log(log, "Error while trying to recover", e);
+        }
+
+      } catch (Exception e) {
+        SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
+      } finally {
+        if (successfulRecovery) {
+          log.info("Restaring background replicate from leader process");
+          zkController.startReplicationFromLeader(coreName, false);
+          log.info("Registering as Active after recovery.");
+          try {
+            zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+          } catch (Exception e) {
+            log.error("Could not publish as ACTIVE after succesful recovery", e);
+            successfulRecovery = false;
+          }
+
+          if (successfulRecovery) {
+            close = true;
+            recoveryListener.recovered();
+          }
+        }
+      }
+
+      if (!successfulRecovery) {
+        // lets pause for a moment and we need to try again...
+        // TODO: we don't want to retry for some problems?
+        // Or do a fall off retry...
+        try {
+
+          if (isClosed()) {
+            log.info("Recovery for core {} has been closed", core.getName());
+            break;
+          }
+
+          log.error("Recovery failed - trying again... (" + retries + ")");
+
+          retries++;
+          if (retries >= maxRetries) {
+            SolrException.log(log, "Recovery failed - max retries exceeded (" + retries + ").");
+            try {
+              recoveryFailed(core, zkController, baseUrl, coreZkNodeName, core.getCoreDescriptor());
+            } catch (Exception e) {
+              SolrException.log(log, "Could not publish that recovery failed", e);
+            }
+            break;
+          }
+        } catch (Exception e) {
+          SolrException.log(log, "An error has occurred during recovery", e);
+        }
+
+        try {
+          // Wait an exponential interval between retries, start at 5 seconds and work up to a minute.
+          // If we're at attempt >= 4, there's no point computing pow(2, retries) because the result
+          // will always be the minimum of the two (12). Since we sleep at 5 seconds sub-intervals in
+          // order to check if we were closed, 12 is chosen as the maximum loopCount (5s * 12 = 1m).
+          int loopCount = retries < 4 ? (int) Math.min(Math.pow(2, retries), 12) : 12;
+          log.info("Wait [{}] seconds before trying to recover again (attempt={})",
+              TimeUnit.MILLISECONDS.toSeconds(loopCount * startingRecoveryDelayMilliSeconds), retries);
+          for (int i = 0; i < loopCount; i++) {
+            if (isClosed()) {
+              log.info("Recovery for core {} has been closed", core.getName());
+              break; // check if someone closed us
+            }
+            Thread.sleep(startingRecoveryDelayMilliSeconds);
+          }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          log.warn("Recovery was interrupted.", e);
+          close = true;
+        }
+      }
+
+    }
+    // We skip core.seedVersionBuckets(); We don't have a transaction log
+    log.info("Finished recovery process, successful=[{}]", Boolean.toString(successfulRecovery));
   }
-  // We skip core.seedVersionBuckets(); We don't have a transaction log
-  log.info("Finished recovery process, successful=[{}]", Boolean.toString(successfulRecovery));
-}
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
-  final public void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
+  public final void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
     boolean successfulRecovery = false;
 
     UpdateLog ulog;
@@ -488,7 +488,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.info("currentVersions size={} range=[{} to {}]", recentVersions.size(), recentVersions.get(0), recentVersions.get(recentVersions.size()-1));
         }
 
-        log.info("startupVersions size={} range=[{} to {}]", startingVersions.size(), startingVersions.get(0), startingVersions.get(startingVersions.size()-1));
+        if (startingVersions.isEmpty()) {
+          log.info("startupVersions is empty");
+        } else {
+          log.info("startupVersions size={} range=[{} to {}]", startingVersions.size(), startingVersions.get(0), startingVersions.get(startingVersions.size()-1));
+        }
       } catch (Exception e) {
         SolrException.log(log, "Error getting recent versions.", e);
         recentVersions = new ArrayList<>(0);
