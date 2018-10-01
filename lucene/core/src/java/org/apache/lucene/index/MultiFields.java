@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,44 +46,12 @@ import org.apache.lucene.util.MergedIterator;
  * atomic leaves and then operate per-LeafReader,
  * instead of using this class.
  *
- * @lucene.experimental
+ * @lucene.internal
  */
 public final class MultiFields extends Fields {
   private final Fields[] subs;
   private final ReaderSlice[] subSlices;
   private final Map<String,Terms> terms = new ConcurrentHashMap<>();
-
-  /** Returns a single {@link Fields} instance for this
-   *  reader, merging fields/terms/docs/positions on the
-   *  fly.  This method will return null if the reader 
-   *  has no postings.
-   *
-   *  <p><b>NOTE</b>: this is a slow way to access postings.
-   *  It's better to get the sub-readers and iterate through them
-   *  yourself. */
-  public static Fields getFields(IndexReader reader) throws IOException {
-    final List<LeafReaderContext> leaves = reader.leaves();
-    switch (leaves.size()) {
-      case 1:
-        // already an atomic reader / reader with one leave
-        return new LeafReaderFields(leaves.get(0).reader());
-      default:
-        final List<Fields> fields = new ArrayList<>(leaves.size());
-        final List<ReaderSlice> slices = new ArrayList<>(leaves.size());
-        for (final LeafReaderContext ctx : leaves) {
-          final LeafReader r = ctx.reader();
-          final Fields f = new LeafReaderFields(r);
-          fields.add(f);
-          slices.add(new ReaderSlice(ctx.docBase, r.maxDoc(), fields.size()-1));
-        }
-        if (fields.size() == 1) {
-          return fields.get(0);
-        } else {
-          return new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
-                                         slices.toArray(ReaderSlice.EMPTY_ARRAY));
-        }
-    }
-  }
 
   /** Returns a single {@link Bits} instance for this
    *  reader, merging live Documents on the
@@ -133,7 +100,7 @@ public final class MultiFields extends Fields {
       Terms subTerms = ctx.reader().terms(field);
       if (subTerms != null) {
         termsPerLeaf.add(subTerms);
-        slicePerLeaf.add(new ReaderSlice(ctx.docBase, r.maxDoc(), leafIdx - 1));
+        slicePerLeaf.add(new ReaderSlice(ctx.docBase, r.maxDoc(), leafIdx));
       }
     }
 
@@ -285,36 +252,5 @@ public final class MultiFields extends Fields {
         .collect(Collectors.toSet());
   }
 
-  private static class LeafReaderFields extends Fields {
-
-    private final LeafReader leafReader;
-    private final List<String> indexedFields;
-
-    LeafReaderFields(LeafReader leafReader) {
-      this.leafReader = leafReader;
-      this.indexedFields = new ArrayList<>();
-      for (FieldInfo fieldInfo : leafReader.getFieldInfos()) {
-        if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
-          indexedFields.add(fieldInfo.name);
-        }
-      }
-      Collections.sort(indexedFields);
-    }
-
-    @Override
-    public Iterator<String> iterator() {
-      return Collections.unmodifiableList(indexedFields).iterator();
-    }
-
-    @Override
-    public int size() {
-      return indexedFields.size();
-    }
-
-    @Override
-    public Terms terms(String field) throws IOException {
-      return leafReader.terms(field);
-    }
-  }
 }
 

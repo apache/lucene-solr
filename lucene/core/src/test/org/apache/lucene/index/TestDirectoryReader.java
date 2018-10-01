@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -618,19 +619,19 @@ public class TestDirectoryReader extends LuceneTestCase {
     }
     
     // check dictionary and posting lists
-    Fields fields1 = MultiFields.getFields(index1);
-    Fields fields2 = MultiFields.getFields(index2);
+    TreeSet<String> fields1 = new TreeSet<>(MultiFields.getIndexedFields(index1));
+    TreeSet<String> fields2 = new TreeSet<>(MultiFields.getIndexedFields(index2));
     Iterator<String> fenum2 = fields2.iterator();
     for (String field1 : fields1) {
       assertEquals("Different fields", field1, fenum2.next());
-      Terms terms1 = fields1.terms(field1);
+      Terms terms1 = MultiFields.getTerms(index1, field1);
       if (terms1 == null) {
-        assertNull(fields2.terms(field1));
+        assertNull(MultiFields.getTerms(index2, field1));
         continue;
       }
       TermsEnum enum1 = terms1.iterator();
 
-      Terms terms2 = fields2.terms(field1);
+      Terms terms2 = MultiFields.getTerms(index2, field1);
       assertNotNull(terms2);
       TermsEnum enum2 = terms2.iterator();
 

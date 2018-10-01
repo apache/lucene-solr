@@ -82,6 +82,8 @@ Other Changes
 
 * SOLR-12652: Remove SolrMetricManager.overridableRegistryName method (Peter Somogyi via David Smiley)
 
+* LUCENE-8513: SlowCompositeReaderWrapper now uses MultiTerms directly instead of MultiFields (David Smiley)
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
