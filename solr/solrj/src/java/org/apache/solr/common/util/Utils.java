@@ -43,6 +43,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -100,6 +101,26 @@ public class Utils {
       copy.put(e.getKey(), makeDeepCopy(e.getValue(),maxDepth, mutable, sorted));
     }
     return mutable ? copy : Collections.unmodifiableMap(copy);
+  }
+
+  public static void forEachMapEntry(MapWriter mw, String path, BiConsumer fun) {
+    Object o = path == null ? mw : Utils.getObjectByPath(mw, false, path);
+    if (o instanceof MapWriter) {
+      MapWriter m = (MapWriter) o;
+      try {
+        m.writeMap(new MapWriter.EntryWriter() {
+          @Override
+          public MapWriter.EntryWriter put(String k, Object v) {
+            fun.accept(k, v);
+            return this;
+          }
+        });
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    } else if (o instanceof Map) {
+      ((Map) o).forEach((k, v) -> fun.accept(k, v));
+    }
   }
 
   private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
@@ -295,7 +316,7 @@ public class Utils {
         }
       }
       if (i < hierarchy.size() - 1) {
-        Object o = getVal(obj, s);
+        Object o = getVal(obj, s, -1);
         if (o == null) return false;
         if (idx > -1) {
           List l = (List) o;
@@ -315,7 +336,7 @@ public class Utils {
           }
           return true;
         } else {
-          Object v = getVal(obj, s);
+          Object v = getVal(obj, s, -1);
           if (v instanceof List) {
             List list = (List) v;
             if (idx == -1) {
@@ -352,7 +373,7 @@ public class Utils {
         }
       }
       if (i < hierarchy.size() - 1) {
-        Object o = getVal(obj, s);
+        Object o = getVal(obj, s, -1);
         if (o == null) return null;
         if (idx > -1) {
           List l = (List) o;
@@ -361,10 +382,13 @@ public class Utils {
         if (!isMapLike(o)) return null;
         obj = o;
       } else {
-        Object val = getVal(obj, s);
+        Object val = getVal(obj, s, -1);
         if (val == null) return null;
         if (idx > -1) {
-          if (val instanceof IteratorWriter) {
+          if (val instanceof MapWriter) {
+            val = getVal((MapWriter) val, null, idx);
+
+          } else if (val instanceof IteratorWriter) {
             val = getValueAt((IteratorWriter) val, idx);
           } else {
             List l = (List) val;
@@ -380,6 +404,7 @@ public class Utils {
 
     return false;
   }
+
 
   private static Object getValueAt(IteratorWriter iteratorWriter, int idx) {
     Object[] result = new Object[1];
@@ -406,14 +431,20 @@ public class Utils {
     return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
-  private static Object getVal(Object obj, String key) {
+  private static Object getVal(Object obj, String key, int idx) {
     if (obj instanceof MapWriter) {
       Object[] result = new Object[1];
       try {
         ((MapWriter) obj).writeMap(new MapWriter.EntryWriter() {
+          int count = -1;
           @Override
-          public MapWriter.EntryWriter put(String k, Object v) throws IOException {
-            if (key.equals(k)) result[0] = v;
+          public MapWriter.EntryWriter put(String k, Object v) {
+            if (result[0] != null) return this;
+            if (k != null) {
+              if (key.equals(k)) result[0] = v;
+            } else {
+              if (++count == idx) result[0] = v;
+            }
             return this;
           }
         });
@@ -422,8 +453,6 @@ public class Utils {
       }
       return result[0];
     }
-
-    if (obj instanceof NamedList) return ((NamedList) obj).get(key);
     else if (obj instanceof Map) return ((Map) obj).get(key);
     else throw new RuntimeException("must be a NamedList or Map");
   }

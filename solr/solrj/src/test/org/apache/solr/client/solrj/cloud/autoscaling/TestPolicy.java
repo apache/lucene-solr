@@ -143,9 +143,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
       "            'node_name':'node1'," +
       "            'state':'active'}}}}}}";
 
-  public static Map<String, Map<String, List<ReplicaInfo>>> getReplicaDetails(String node, String clusterState) {
+  public static Map<String, Map<String, List<ReplicaInfo>>> getReplicaDetails(String node, Map clusterState) {
     ValidatingJsonMap m = ValidatingJsonMap
-        .getDeepCopy((Map) Utils.fromJSONString(clusterState), 6, true);
+        .getDeepCopy(clusterState, 6, true);
     Map<String, Map<String, List<ReplicaInfo>>> result = new LinkedHashMap<>();
 
     m.forEach((collName, o) -> {
@@ -1426,101 +1426,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
 
-  public void testMoveReplicasInMultipleCollections() {
+  public void testMoveReplicasInMultipleCollections() throws IOException {
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:2}," +
         "node3:{cores:4}" +
         "}");
-    String clusterState = "{\n" +
-        "'collection1' : {\n" +
-        "  'pullReplicas':'0',\n" +
-        "  'replicationFactor':'2',\n" +
-        "  'shards':{\n" +
-        "    'shard1':{\n" +
-        "      'range':'80000000-ffffffff',\n" +
-        "      'state':'active',\n" +
-        "      'replicas':{\n" +
-        "        'core_node1':{\n" +
-        "          'core':'collection1_shard1_replica_n1',\n" +
-        "          'base_url':'http://127.0.0.1:51650/solr',\n" +
-        "          'node_name':'node1',\n" +
-        "          'state':'active',\n" +
-        "          'type':'NRT',\n" +
-        "          'leader':'true'},\n" +
-        "        'core_node6':{\n" +
-        "          'core':'collection1_shard1_replica_n3',\n" +
-        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
-        "          'node_name':'node3',\n" +
-        "          'state':'active',\n" +
-        "          'type':'NRT'}}},\n" +
-        "    'shard2':{\n" +
-        "      'range':'0-7fffffff',\n" +
-        "      'state':'active',\n" +
-        "      'replicas':{\n" +
-        "        'core_node3':{\n" +
-        "          'core':'collection1_shard2_replica_n1',\n" +
-        "          'base_url':'http://127.0.0.1:51650/solr',\n" +
-        "          'node_name':'node1',\n" +
-        "          'state':'active',\n" +
-        "          'type':'NRT',\n" +
-        "          'leader':'true'},\n" +
-        "        'core_node5':{\n" +
-        "          'core':'collection1_shard2_replica_n3',\n" +
-        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
-        "          'node_name':'node3',\n" +
-        "          'state':'active',\n" +
-        "          'type':'NRT'}}}},\n" +
-        "  'router':{'name':'compositeId'},\n" +
-        "  'maxShardsPerNode':'2',\n" +
-        "  'autoAddReplicas':'true',\n" +
-        "  'nrtReplicas':'2',\n" +
-        "  'tlogReplicas':'0'},\n" +
-        "'collection2' : {\n" +
-        "  'pullReplicas':'0',\n" +
-        "  'replicationFactor':'2',\n" +
-        "  'shards':{\n" +
-        "    'shard1':{\n" +
-        "      'range':'80000000-ffffffff',\n" +
-        "      'state':'active',\n" +
-        "      'replicas':{\n" +
-        "        'core_node1':{\n" +
-        "          'core':'collection2_shard1_replica_n1',\n" +
-        "          'base_url':'http://127.0.0.1:51649/solr',\n" +
-        "          'node_name':'node2',\n" +
-        "          'state':'active',\n" +
-        "          'type':'NRT'},\n" +
-        "        'core_node2':{\n" +
-        "          'core':'collection2_shard1_replica_n2',\n" +
-        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
-        "          'node_name':'node3',\n" +
-        "          'state':'active',\n" +
-        "          'type':'NRT',\n" +
-        "          'leader':'true'}}},\n" +
-        "    'shard2':{\n" +
-        "      'range':'0-7fffffff',\n" +
-        "      'state':'active',\n" +
-        "      'replicas':{\n" +
-        "        'core_node3':{\n" +
-        "          'core':'collection2_shard2_replica_n1',\n" +
-        "          'base_url':'http://127.0.0.1:51649/solr',\n" +
-        "          'node_name':'node2',\n" +
-        "          'state':'active',\n" +
-        "          'type':'NRT'},\n" +
-        "        'core_node4':{\n" +
-        "          'core':'collection2_shard2_replica_n2',\n" +
-        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
-        "          'node_name':'node3',\n" +
-        "          'state':'active',\n" +
-        "          'type':'NRT',\n" +
-        "          'leader':'true'}}}},\n" +
-        "  'router':{'name':'compositeId'},\n" +
-        "  'maxShardsPerNode':'2',\n" +
-        "  'autoAddReplicas':'true',\n" +
-        "  'nrtReplicas':'2',\n" +
-        "  'tlogReplicas':'0'}\n" +
-        "}";
     Policy policy = new Policy(new HashMap<>());
-    Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
+    Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues,
+        (Map<String, Object>) TestPolicy2.loadFromResource("testMoveReplicasInMultipleCollections.json")))
         .getSuggester(MOVEREPLICA)
         .hint(Hint.COLL, "collection1")
         .hint(Hint.COLL, "collection2")
@@ -2083,8 +1996,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertNotNull(op);
     assertEquals("node2", op.getNode());
   }
+  static SolrCloudManager getSolrCloudManager(final Map<String, Map> nodeValues, String clusterS) {
+    return getSolrCloudManager(nodeValues,(Map) Utils.fromJSONString(clusterS));
 
-  private SolrCloudManager getSolrCloudManager(final Map<String, Map> nodeValues, String clusterS) {
+  }
+  private static SolrCloudManager getSolrCloudManager(final Map<String, Map> nodeValues, Map clusterS) {
     return new SolrCloudManager() {
       ObjectCache objectCache = new ObjectCache();
 
@@ -2188,7 +2104,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-            return getReplicaDetails(node, clusterState);
+            return getReplicaDetails(node, (Map)Utils.fromJSONString(clusterState));
           }
         };
       }
@@ -2240,7 +2156,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-            return getReplicaDetails(node, clusterState);
+            return getReplicaDetails(node, (Map)Utils.fromJSONString(clusterState));
           }
         };
       }

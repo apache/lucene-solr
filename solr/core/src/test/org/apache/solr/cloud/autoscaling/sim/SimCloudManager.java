@@ -31,12 +31,14 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
@@ -50,6 +52,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -118,6 +121,7 @@ public class SimCloudManager implements SolrCloudManager {
   private final String metricTag;
 
   private final List<SolrInputDocument> systemColl = Collections.synchronizedList(new ArrayList<>());
+  private final Map<String, Map<String, AtomicInteger>> eventCounts = new ConcurrentHashMap<>();
   private final MockSearchableSolrClient solrClient;
   private final Map<String, AtomicLong> opCounts = new ConcurrentSkipListMap<>();
 
@@ -129,9 +133,11 @@ public class SimCloudManager implements SolrCloudManager {
   private MetricsHandler metricsHandler;
   private MetricsHistoryHandler metricsHistoryHandler;
   private TimeSource timeSource;
+  private boolean useSystemCollection = true;
 
   private static int nodeIdPort = 10000;
-  public static int DEFAULT_DISK = 1024; // 1000 GiB
+  public static int DEFAULT_FREE_DISK = 1024; // 1000 GiB
+  public static int DEFAULT_TOTAL_DISK = 10240; // 10 TiB
   public static long DEFAULT_IDX_SIZE_BYTES = 10240; // 10 kiB
 
   /**
@@ -201,7 +207,14 @@ public class SimCloudManager implements SolrCloudManager {
               request = new QueryRequest(params);
             } else {
               // search request
-              return super.request(request, collection);
+              if (collection.equals(CollectionAdminParams.SYSTEM_COLL)) {
+                return super.request(request, collection);
+              } else {
+                // forward it
+                ModifiableSolrParams params = new ModifiableSolrParams(request.getParams());
+                params.set("collection", collection);
+                request = new QueryRequest(params);
+              }
             }
           } else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "when collection != null only UpdateRequest and QueryRequest are supported: request=" + request + ", collection=" + collection);
@@ -306,7 +319,8 @@ public class SimCloudManager implements SolrCloudManager {
     values.put(ImplicitSnitch.PORT, port);
     values.put(ImplicitSnitch.NODE, nodeId);
     values.put(ImplicitSnitch.CORES, 0);
-    values.put(ImplicitSnitch.DISK, DEFAULT_DISK);
+    values.put(ImplicitSnitch.DISK, DEFAULT_FREE_DISK);
+    values.put(Variable.Type.TOTALDISK.tagName, DEFAULT_TOTAL_DISK);
     values.put(ImplicitSnitch.SYSLOADAVG, 1.0);
     values.put(ImplicitSnitch.HEAPUSAGE, 123450000);
     values.put("sysprop.java.version", System.getProperty("java.version"));
@@ -353,7 +367,13 @@ public class SimCloudManager implements SolrCloudManager {
     Set<String> deadNodes = getSimNodeStateProvider().simGetDeadNodes();
     sb.append("## Dead nodes:\t\t" + deadNodes.size() + "\n");
     deadNodes.forEach(n -> sb.append("##\t\t" + n + "\n"));
-    sb.append("## Collections:\t" + getSimClusterStateProvider().simListCollections() + "\n");
+    sb.append("## Collections:\n");
+      clusterStateProvider.simGetCollectionStats().forEach((coll, stats) -> {
+        sb.append("##  * ").append(coll).append('\n');
+        stats.forEach((k, v) -> {
+          sb.append("##    " + k + "\t" + v + "\n");
+        });
+      });
     if (withCollections) {
       ClusterState state = clusterStateProvider.getClusterState();
       state.forEachCollection(coll -> sb.append(coll.toString() + "\n"));
@@ -383,6 +403,13 @@ public class SimCloudManager implements SolrCloudManager {
    */
   public SolrResourceLoader getLoader() {
     return loader;
+  }
+
+  /**
+   * Get the source of randomness (usually initialized by the test suite).
+   */
+  public Random getRandom() {
+    return RandomizedContext.current().getRandom();
   }
 
   /**
@@ -448,6 +475,10 @@ public class SimCloudManager implements SolrCloudManager {
     }
   }
 
+  public void simSetUseSystemCollection(boolean useSystemCollection) {
+    this.useSystemCollection = useSystemCollection;
+  }
+
   /**
    * Clear the (simulated) .system collection.
    */
@@ -464,17 +495,7 @@ public class SimCloudManager implements SolrCloudManager {
   }
 
   public Map<String, Map<String, AtomicInteger>> simGetEventCounts() {
-    TreeMap<String, Map<String, AtomicInteger>> counts = new TreeMap<>();
-    synchronized (systemColl) {
-      for (SolrInputDocument d : systemColl) {
-        if (!"autoscaling_event".equals(d.getFieldValue("type"))) {
-          continue;
-        }
-        counts.computeIfAbsent((String)d.getFieldValue("event.source_s"), s -> new TreeMap<>())
-            .computeIfAbsent((String)d.getFieldValue("stage_s"), s -> new AtomicInteger())
-            .incrementAndGet();
-      }
-    }
+    TreeMap<String, Map<String, AtomicInteger>> counts = new TreeMap<>(eventCounts);
     return counts;
   }
 
@@ -705,6 +726,9 @@ public class SimCloudManager implements SolrCloudManager {
         rsp.setResponse(queryResponse.getValues());
         log.trace("-- response: {}", rsp);
         return rsp;
+      } else if (req instanceof QueryRequest) {
+        incrementCount("query");
+        return clusterStateProvider.simQuery((QueryRequest)req);
       }
     }
     if (req instanceof UpdateRequest) {
@@ -715,7 +739,17 @@ public class SimCloudManager implements SolrCloudManager {
       if (collection == null || collection.equals(CollectionAdminParams.SYSTEM_COLL)) {
         List<SolrInputDocument> docs = ureq.getDocuments();
         if (docs != null) {
-          systemColl.addAll(docs);
+          if (useSystemCollection) {
+            systemColl.addAll(docs);
+          }
+          for (SolrInputDocument d : docs) {
+            if (!"autoscaling_event".equals(d.getFieldValue("type"))) {
+              continue;
+            }
+            eventCounts.computeIfAbsent((String)d.getFieldValue("event.source_s"), s -> new TreeMap<>())
+                .computeIfAbsent((String)d.getFieldValue("stage_s"), s -> new AtomicInteger())
+                .incrementAndGet();
+          }
         }
         return new UpdateResponse();
       } else {

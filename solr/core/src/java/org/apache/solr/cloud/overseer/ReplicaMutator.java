@@ -282,9 +282,7 @@ public class ReplicaMutator {
 
     Slice slice = collection != null ?  collection.getSlice(sliceName) : null;
 
-    Map<String, Object> replicaProps = new LinkedHashMap<>();
-
-    replicaProps.putAll(message.getProperties());
+    Map<String, Object> replicaProps = new LinkedHashMap<>(message.getProperties());
     if (slice != null) {
       Replica oldReplica = slice.getReplica(coreNodeName);
       if (oldReplica != null) {

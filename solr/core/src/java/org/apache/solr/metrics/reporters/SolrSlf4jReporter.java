@@ -131,9 +131,9 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     if (logger == null || logger.isEmpty()) {
       // construct logger name from Group
       if (pluginInfo.attributes.containsKey("group")) {
-        logger = SolrMetricManager.overridableRegistryName(pluginInfo.attributes.get("group"));
+        logger = SolrMetricManager.enforcePrefix(pluginInfo.attributes.get("group"));
       } else if (pluginInfo.attributes.containsKey("registry")) {
-        String reg = SolrMetricManager.overridableRegistryName(pluginInfo.attributes.get("registry"));
+        String reg = SolrMetricManager.enforcePrefix(pluginInfo.attributes.get("registry"));
         String[] names = reg.split("\\.");
         if (names.length < 2) {
           logger = reg;
