@@ -1100,11 +1100,14 @@ public class TestBKD extends LuceneTestCase {
 
         @Override
         public void visit(int docID, byte[] packedValue) {
+          assert packedValue.length == numDims * bytesPerDim;
           visit(docID);
         }
 
         @Override
         public Relation compare(byte[] minPacked, byte[] maxPacked) {
+          assert minPacked.length == numIndexDims * bytesPerDim;
+          assert maxPacked.length == numIndexDims * bytesPerDim;
           if (random().nextInt(7) == 1) {
             return Relation.CELL_CROSSES_QUERY;
           } else {

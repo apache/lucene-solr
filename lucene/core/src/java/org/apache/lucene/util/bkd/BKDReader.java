@@ -442,12 +442,11 @@ public final class BKDReader extends PointValues implements Accountable {
     readCommonPrefixes(commonPrefixLengths, scratchPackedValue1, in);
 
     if (numIndexDims != 1 && version >= BKDWriter.VERSION_LEAF_STORES_BOUNDS) {
-      byte[] minPackedValue = new byte[packedIndexBytesLength];
-      byte[] maxPackedValue = new byte[packedIndexBytesLength];
+      byte[] minPackedValue = scratchPackedValue1;
+      byte[] maxPackedValue = scratchPackedValue2;
       //Copy common prefixes before reading adjusted
       // box
-      System.arraycopy(scratchPackedValue1, 0, minPackedValue, 0, packedIndexBytesLength);
-      System.arraycopy(minPackedValue, 0, maxPackedValue, 0, packedIndexBytesLength);
+      System.arraycopy(minPackedValue, 0, maxPackedValue, 0, packedBytesLength);
       readMinMax(commonPrefixLengths, minPackedValue, maxPackedValue, in);
 
       // The index gives us range of values for each dimension, but the actual range of values
