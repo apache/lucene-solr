@@ -155,15 +155,15 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   protected LBHttpSolrClient(Builder builder) {
     super(builder.baseSolrUrls);
-    for (String baseUrl: builder.baseSolrUrls) {
-      urlToClient.put(baseUrl, makeSolrClient(baseUrl));
-    }
     this.clientIsInternal = builder.httpClient == null;
     this.httpSolrClientBuilder = builder.httpSolrClientBuilder;
     this.httpClient = builder.httpClient == null ? constructClient(builder.baseSolrUrls.toArray(new String[builder.baseSolrUrls.size()])) : builder.httpClient;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;    
     this.parser = builder.responseParser;
+    for (String baseUrl: builder.baseSolrUrls) {
+      urlToClient.put(baseUrl, makeSolrClient(baseUrl));
+    }
   }
 
   private HttpClient constructClient(String[] solrServerUrl) {
