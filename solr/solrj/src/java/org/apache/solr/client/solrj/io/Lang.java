@@ -256,6 +256,11 @@ public class Lang {
         .withFunctionName("listCache", ListCacheEvaluator.class)
         .withFunctionName("zscores", NormalizeEvaluator.class)
         .withFunctionName("latlonVectors", LatLonVectorsEvaluator.class)
+        .withFunctionName("convexHull", ConvexHullEvaluator.class)
+        .withFunctionName("getVertices", GetVerticesEvaluator.class)
+        .withFunctionName("getBaryCenter", GetBaryCenterEvaluator.class)
+        .withFunctionName("getArea", GetAreaEvaluator.class)
+        .withFunctionName("getBoundarySize", GetBoundarySizeEvaluator.class)
 
         // Boolean Stream Evaluators
 

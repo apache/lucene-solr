@@ -52,6 +52,9 @@ Upgrade Notes
   expanded from before to subsume those patterns previously handled by the "extract" contrib (Solr Cell / Tika).
   (David Smiley, Bar Rotstein)
 
+* SOLR-12593: The "extraction" contrib (Solr Cell) no longer does any date parsing, and thus no longer has the
+  "date.formats" configuration.  To ensure date strings are properly parsed, use ParseDateFieldUpdateProcessorFactory
+  (an URP) commonly registered with the name "parse-date" in "schemaless mode".  (David Smiley, Bar Rotstein)
 
 New Features
 ----------------------
@@ -61,6 +64,8 @@ SOLR-12591: Expand the set of recognized date format patterns of schemaless mode
   patterns, but also included enabling "lenient" parsing in ParseDateFieldUpdateProcessorFactory.  The default
   locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
+
+SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
 Other Changes
 ----------------------
