@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import org.apache.solr.common.util.Utils;
@@ -80,6 +81,35 @@ public interface MapWriter extends MapSerializable {
 
   void writeMap(EntryWriter ew) throws IOException;
 
+  /**Get a child object value using json path
+   *
+   * @param path the full path to that object such as a/b/c[4]/d etc
+   * @param def the default
+   * @return the found value or default
+   */
+  default Object _get(String path, Object def) {
+    Object v = Utils.getObjectByPath(this, false, path);
+    return v == null ? def : v;
+  }
+  default void _forEachEntry(String path, BiConsumer fun) {
+    Utils.forEachMapEntry(this, path, fun);
+  }
+
+  default void _forEachEntry(BiConsumer fun) {
+    Utils.forEachMapEntry(this, null, fun);
+  }
+
+  /**
+   * Get a child object value using json path
+   *
+   * @param path the full path to that object such as ["a","b","c[4]","d"] etc
+   * @param def  the default
+   * @return the found value or default
+   */
+  default Object _get(List<String> path, Object def) {
+    Object v = Utils.getObjectByPath(this, false, path);
+    return v == null ? def : v;
+  }
   /**
    * An interface to push one entry at a time to the output.
    * The order of the keys is not defined, but we assume they are distinct -- don't call {@code put} more than once

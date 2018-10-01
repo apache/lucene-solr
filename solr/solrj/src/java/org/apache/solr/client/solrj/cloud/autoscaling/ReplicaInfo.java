@@ -49,10 +49,12 @@ public class ReplicaInfo implements MapWriter {
     this.collection = coll;
     this.shard = shard;
     this.type = r.getType();
-    this.isLeader = r.getBool(LEADER_PROP, false);
+    boolean maybeLeader = r.getBool(LEADER_PROP, false);
     if (vals != null) {
       this.variables.putAll(vals);
+      maybeLeader = "true".equals(String.valueOf(vals.getOrDefault(LEADER_PROP, maybeLeader)));
     }
+    this.isLeader = maybeLeader;
     this.node = r.getNodeName();
   }
 

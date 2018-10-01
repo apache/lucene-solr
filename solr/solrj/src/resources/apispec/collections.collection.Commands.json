@@ -53,8 +53,7 @@
           "default": "true",
           "description": "For replicas that use shared filesystems allow 'in-place' move that reuses shared data."
         }
-      },
-      "required":["targetNode"]
+      }
     },
     "migrate-docs":{
       "type":"object",

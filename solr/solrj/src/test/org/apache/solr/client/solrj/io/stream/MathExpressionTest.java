@@ -402,6 +402,77 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testConvexHull() throws Exception {
+    String expr = "let(echo=true," +
+        "              x=array(96.42894739701268, 99.11076410926444, 95.71563821370013,101.4356840561301, 96.17912865782684, 113.430677406492, 109.5927785287056, 87.26561260238425, 103.3122002816537, 100.4959815617706, 92.78972440872515, 92.98815024042877, 89.1448359089767, 104.9410622701036, 106.5546761317927, 102.0132643274808, 119.6726096270366, 97.61388415294184, 106.7928221374049, 94.31369945729962, 87.37098859879977, 82.8015657665458, 88.84342877874248, 94.58797342988339, 92.38720473619748)," +
+        "              y=array(97.43395922838836, 109.5441846957560, 78.82698890096127, 96.67181538737611,95.52423701473863, 85.3391529394878, 87.01956497912255, 111.5289690656729,86.41034184809114, 84.11696923489203, 109.3874354244069, 102.3391063812790,109.0604436531823,102.7957014900897,114.4376483055848,107.4387578165579,106.2490201384653,103.4490197583837,93.8201540211101,101.6060721649409, 115.3512636715722,119.1046170610335,99.74910277836263,104.2116724112481, 86.02222520549304)," +
+        "              c=transpose(matrix(x, y))," +
+        "              d=convexHull(c)," +
+        "              e=getVertices(d)," +
+        "              f=getArea(d)," +
+        "              g=getBoundarySize(d)," +
+        "              h=getBaryCenter(d))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> points = (List<List<Number>>)tuples.get(0).get("e");
+    assertTrue(points.size() == 6);
+    List<Number> point1 = points.get(0);
+    assertEquals(point1.size(), 2);
+    assertEquals(point1.get(0).doubleValue(), 82.8015657665458, 0.0);
+    assertEquals(point1.get(1).doubleValue(), 119.1046170610335, 0.0);
+
+    List<Number> point2 = points.get(1);
+    assertEquals(point2.size(), 2);
+    assertEquals(point2.get(0).doubleValue(), 92.38720473619748, 0.0);
+    assertEquals(point2.get(1).doubleValue(), 86.02222520549304, 0.0);
+
+
+    List<Number> point3 = points.get(2);
+    assertEquals(point3.size(), 2);
+    assertEquals(point3.get(0).doubleValue(), 95.71563821370013, 0.0);
+    assertEquals(point3.get(1).doubleValue(), 78.82698890096127, 0.0);
+
+    List<Number> point4 = points.get(3);
+    assertEquals(point4.size(), 2);
+    assertEquals(point4.get(0).doubleValue(), 113.430677406492, 0.0);
+    assertEquals(point4.get(1).doubleValue(),  85.3391529394878, 0.0);
+
+
+    List<Number> point5 = points.get(4);
+    assertEquals(point5.size(), 2);
+    assertEquals(point5.get(0).doubleValue(), 119.6726096270366, 0.0);
+    assertEquals(point5.get(1).doubleValue(),  106.2490201384653, 0.0);
+
+
+    List<Number> point6 = points.get(5);
+    assertEquals(point6.size(), 2);
+    assertEquals(point6.get(0).doubleValue(), 106.5546761317927, 0.0);
+    assertEquals(point6.get(1).doubleValue(),  114.4376483055848, 0.0);
+
+
+    double area = tuples.get(0).getDouble("f");
+    assertEquals(area, 911.6283603859929, 0.0);
+
+    double boundarySize = tuples.get(0).getDouble("g");
+    assertEquals(boundarySize, 122.73784789223708, 0.0);
+
+    List<Number> baryCenter = (List<Number>)tuples.get(0).get("h");
+    assertEquals(baryCenter.size(), 2);
+    assertEquals(baryCenter.get(0).doubleValue(), 101.3021125450865, 0.0);
+    assertEquals(baryCenter.get(1).doubleValue(), 100.07343616615786, 0.0);
+
+  }
+
+  @Test
   public void testCumulativeProbability() throws Exception {
     String expr = "cumulativeProbability(normalDistribution(500, 40), 500)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();

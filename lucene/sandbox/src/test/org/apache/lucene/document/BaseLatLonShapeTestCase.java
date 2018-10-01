@@ -149,7 +149,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     doTestRandom(50000);
   }
 
-  private void doTestRandom(int count) throws Exception {
+  protected void doTestRandom(int count) throws Exception {
     int numShapes = atLeast(count);
     ShapeType type = getShapeType();
 

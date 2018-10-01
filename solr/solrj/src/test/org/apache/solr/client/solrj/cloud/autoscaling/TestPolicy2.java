@@ -168,7 +168,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson))
         , createCloudManager(state, metaData));
     assertEquals(1, suggestions.size());
-    String repName = (String) Utils.getObjectByPath(suggestions.get(0).operation, true, "command/move-replica/replica");
+    String repName = (String) suggestions.get(0)._get("operation/command/move-replica/replica", null);
 
     AtomicBoolean found = new AtomicBoolean(false);
     session.getNode("node1").forEachReplica(replicaInfo -> {
@@ -201,9 +201,9 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson)),
         createCloudManager(state, metaData));
     assertEquals(1, suggestions.size());
-    assertEquals("node5", Utils.getObjectByPath(suggestions.get(0).operation, true, "command/move-replica/targetNode"));
+    assertEquals("node5", suggestions.get(0)._get("operation/command/move-replica/targetNode", null));
 
-    String rName = (String) Utils.getObjectByPath(suggestions.get(0).operation, true, "command/move-replica/replica");
+    String rName = (String) suggestions.get(0)._get("operation/command/move-replica/replica", null);
 
     found.set(false);
     session.getNode("node1").forEachReplica(replicaInfo -> {
@@ -372,9 +372,46 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     assertEquals(2, suggestions.size());
     for (Suggester.SuggestionInfo suggestion : suggestions) {
       assertTrue(ImmutableSet.of("127.0.0.1:63219_solr", "127.0.0.1:63229_solr").contains(
-          Utils.getObjectByPath(suggestion, true, "operation/command/move-replica/targetNode")));
+          suggestion._get("operation/command/move-replica/targetNode", null)));
 
     }
+  }
+
+  public void testSuggestionsRebalanceOnly() throws IOException {
+    String conf = " {" +
+        "    'cluster-preferences':[{" +
+        "      'minimize':'cores'," +
+        "      'precision':1}," +
+        "      {'maximize':'freedisk','precision':100}," +
+        "      {'minimize':'sysLoadAvg','precision':10}]," +
+        "    'cluster-policy':[" +
+        "{'replica':'<5','shard':'#EACH','sysprop.zone':['east','west']}]}";
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testSuggestionsRebalanceOnly.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(conf));
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
+
+    assertEquals(2, suggestions.size());
+    assertEquals("improvement", suggestions.get(0)._get("type",null));
+    assertEquals("127.0.0.1:63229_solr", suggestions.get(0)._get("operation/command/move-replica/targetNode", null));
+    assertEquals("improvement", suggestions.get(1)._get( "type",null));
+    assertEquals("127.0.0.1:63219_solr", suggestions.get(1)._get("operation/command/move-replica/targetNode", null));
+  }
+
+  public void testSuggestionsRebalance2() throws IOException {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testSuggestionsRebalance2.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
+
+    assertEquals(3, suggestions.size());
+
+    for (Suggester.SuggestionInfo suggestion : suggestions) {
+      assertEquals("improvement", suggestion._get("type", null));
+      assertEquals("10.0.0.79:8983_solr", suggestion._get("operation/command/move-replica/targetNode",null));
+    }
+
   }
 
   public static Object loadFromResource(String file) throws IOException {
