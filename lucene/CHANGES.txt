@@ -192,6 +192,14 @@ Bug fixes:
 * LUCENE-8479: QueryBuilder#analyzeGraphPhrase now throws TooManyClause exception
   if the number of expanded path reaches the BooleanQuery#maxClause limit. (Jim Ferenczi)
 
+New Features
+
+* LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
+  to select a fewer number of dimensions to be used for creating the index than
+  the total number of dimensions used for field encoding. i.e., dimensions 0 to N
+  may be used to determine how to split the inner nodes, and dimensions N+1 to D
+  are ignored and stored as data dimensions at the leaves. (Nick Knize)
+
 ======================= Lucene 7.5.1 =======================
 
 Bug Fixes:
