@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -264,11 +265,11 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(collectionRate, totalReplicaRate.get(), 5.0);
 
     // check operations
-    List<Map<String, Object>> ops = (List<Map<String, Object>>) ev.context.get("properties.operations");
+    List<MapWriter> ops = (List<MapWriter>) ev.context.get("properties.operations");
     assertNotNull(ops);
     assertTrue(ops.size() > 1);
-    for (Map<String, Object> m : ops) {
-      assertEquals("ADDREPLICA", m.get("params.action"));
+    for (MapWriter m : ops) {
+      assertEquals("ADDREPLICA", m._get("params.action",null));
     }
   }
 
