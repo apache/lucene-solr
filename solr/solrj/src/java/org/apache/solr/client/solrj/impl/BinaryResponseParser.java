@@ -16,15 +16,14 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.JavaBinCodec;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ConcurrentLFUCache;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.NamedList;
 
 /**
  *
@@ -48,7 +47,7 @@ public class BinaryResponseParser extends ResponseParser {
   @Override
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
-      return (NamedList<Object>) new JavaBinCodec(null, stringCache == null ? STR_CACHE : stringCache).unmarshal(body);
+      return (NamedList<Object>) new JavaBinCodec(null,stringCache).unmarshal(body);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
 
@@ -70,10 +69,4 @@ public class BinaryResponseParser extends ResponseParser {
     throw new RuntimeException("Cannot handle character stream");
   }
 
-  private static JavaBinCodec.StringCache STR_CACHE = new JavaBinCodec.StringCache(new ConcurrentLFUCache(12000, 8000, 6000, 6000, false, true, null, true));
-  {
-    if ("true".equals(System.getProperty("cache.str"))) {
-      STR_CACHE = new JavaBinCodec.StringCache(new ConcurrentLFUCache(12000, 8000, 6000, 6000, false, true, null, true));
-    }
-  }
 }
