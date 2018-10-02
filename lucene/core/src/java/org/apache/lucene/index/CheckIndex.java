@@ -2114,12 +2114,8 @@ public final class CheckIndex implements Closeable {
         throw new RuntimeException(desc + " is null for docID=" + docID + " field=\"" + fieldName + "\"");
       }
 
-      if (packedBytesCount != packedIndexBytesCount) {
-        if (packedValue.length != packedIndexBytesCount && packedValue.length != packedBytesCount) {
-          throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedIndexBytesCount + " or " + packedBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
-        }
-      } else if (packedValue.length != packedBytesCount) {
-        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
+      if (packedValue.length != packedIndexBytesCount) {
+        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedIndexBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
       }
     }
   }
