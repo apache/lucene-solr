@@ -189,15 +189,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    String nodeName = ((NamedList) response.getResponse().get("success")).getName(0);
-    String corename = (String) response.getResponse()._get(asList("success", nodeName,"core"),null);
+    String nodeName = (String) response._get("success[0]/key", null);
+    String corename = (String) response._get(asList("success", nodeName, "core"), null);
 
     try (HttpSolrClient coreclient = getHttpSolrClient(cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreclient);
-      NamedList m = status.getResponse();
-      assertEquals(collectionName, m._get(asList("status", corename, "cloud", "collection"), null));
-      assertNotNull(m._get(asList("status", corename, "cloud", "shard"), null));
-      assertNotNull(m._get(asList("status", corename, "cloud", "replica"), null));
+      assertEquals(collectionName, status._get(asList("status", corename, "cloud", "collection"), null));
+      assertNotNull(status._get(asList("status", corename, "cloud", "shard"), null));
+      assertNotNull(status._get(asList("status", corename, "cloud", "replica"), null));
     }
   }
 
