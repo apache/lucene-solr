@@ -678,8 +678,16 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
       if (m.get("success") != null) {
         replicas.incrementAndGet();
       } else if (m.get("status") != null) {
-        NamedList<Object> status = (NamedList<Object>)m.get("status");
-        if ("completed".equals(status.get("state"))) {
+        Object status = m.get("status");
+        String state;
+        if (status instanceof Map) {
+          state = (String)((Map)status).get("state");
+        } else if (status instanceof NamedList) {
+          state = (String)((NamedList)status).get("state");
+        } else {
+          throw new IllegalArgumentException("unsupported status format: " + status.getClass().getName() + ", " + status);
+        }
+        if ("completed".equals(state)) {
           nodes.incrementAndGet();
         } else {
           fail("unexpected DELETENODE status: " + m);

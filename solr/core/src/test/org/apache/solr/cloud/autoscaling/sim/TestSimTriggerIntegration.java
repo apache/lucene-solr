@@ -76,7 +76,7 @@ import static org.apache.solr.cloud.autoscaling.ScheduledTriggers.DEFAULT_SCHEDU
 /**
  * An end-to-end integration test for triggers
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;")
 public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -152,12 +152,11 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
       // lets start a node
       cluster.simAddNode();
     }
+    cluster.getTimeSource().sleep(10000);
     // do this in advance if missing
-    if (!cluster.getSimClusterStateProvider().simListCollections().contains(CollectionAdminParams.SYSTEM_COLL)) {
-      cluster.getSimClusterStateProvider().createSystemCollection();
-      CloudTestUtils.waitForState(cluster, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
-          CloudTestUtils.clusterShape(1, 1, false, true));
-    }
+    cluster.getSimClusterStateProvider().createSystemCollection();
+    CloudTestUtils.waitForState(cluster, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
+        CloudTestUtils.clusterShape(1, 2, false, true));
   }
 
   @Test
@@ -660,6 +659,9 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     if (!actionInitCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
       fail("The TriggerAction should have been created by now");
     }
+
+    // wait for the trigger to run at least once
+    cluster.getTimeSource().sleep(2 * waitForSeconds * 1000);
 
     // add node to generate the event
     String newNode = cluster.simAddNode();
