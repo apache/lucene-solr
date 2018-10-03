@@ -478,6 +478,13 @@ public class Policy implements MapWriter {
     return empty;
   }
 
+  /**
+   * @return true if no preferences were specified by the user, false otherwise
+   */
+  public boolean isEmptyPreferences() {
+    return emptyPreferences;
+  }
+
   /*This stores the logical state of the system, given a policy and
    * a cluster state.
    *

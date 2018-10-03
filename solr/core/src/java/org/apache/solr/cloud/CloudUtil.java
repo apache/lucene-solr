@@ -174,7 +174,7 @@ public class CloudUtil {
     // if no autoscaling configuration exists then obviously we cannot use the policy framework
     if (autoScalingConfig.getPolicy().isEmpty()) return false;
     // do custom preferences exist
-    if (!autoScalingConfig.getPolicy().getClusterPreferences().equals(Policy.DEFAULT_PREFERENCES)) return true;
+    if (!autoScalingConfig.getPolicy().isEmptyPreferences()) return true;
     // does a cluster policy exist
     if (!autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) return true;
     // finally we check if the current collection has a policy
