@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
@@ -583,7 +584,7 @@ public class Assign {
       AutoScalingConfig autoScalingConfig = solrCloudManager.getDistribStateManager().getAutoScalingConfig();
 
       StrategyType strategyType = null;
-      if ((ruleMaps == null || ruleMaps.isEmpty()) && policyName == null && autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) {
+      if ((ruleMaps == null || ruleMaps.isEmpty()) && !CloudUtil.usePolicyFramework(collection, solrCloudManager)) {
         strategyType = StrategyType.LEGACY;
       } else if (ruleMaps != null && !ruleMaps.isEmpty()) {
         strategyType = StrategyType.RULES;

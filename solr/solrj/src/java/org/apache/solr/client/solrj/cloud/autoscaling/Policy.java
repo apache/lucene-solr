@@ -94,7 +94,15 @@ public class Policy implements MapWriter {
   final List<Pair<String, Type>> params;
   final List<String> perReplicaAttributes;
   final int zkVersion;
+  /**
+   * True if cluster policy, preferences and custom policies are all non-existent
+   */
   final boolean empty;
+  /**
+   * True if cluster preferences was originally empty, false otherwise. It is used to figure out if
+   * the current preferences were implicitly added or not.
+   */
+  final boolean emptyPreferences;
 
   public Policy() {
     this(Collections.emptyMap());
@@ -115,7 +123,8 @@ public class Policy implements MapWriter {
       Preference preference = initialClusterPreferences.get(i);
       preference.next = initialClusterPreferences.get(i + 1);
     }
-    if (initialClusterPreferences.isEmpty()) {
+    emptyPreferences = initialClusterPreferences.isEmpty();
+    if (emptyPreferences) {
       initialClusterPreferences.addAll(DEFAULT_PREFERENCES);
     }
     this.clusterPreferences = Collections.unmodifiableList(initialClusterPreferences);
@@ -162,7 +171,8 @@ public class Policy implements MapWriter {
     this.zkVersion = version;
     this.policies = policies != null ? Collections.unmodifiableMap(policies) : Collections.emptyMap();
     this.clusterPolicy = clusterPolicy != null ? Collections.unmodifiableList(clusterPolicy) : Collections.emptyList();
-    this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) : DEFAULT_PREFERENCES;
+    this.emptyPreferences = clusterPreferences == null;
+    this.clusterPreferences = emptyPreferences ? DEFAULT_PREFERENCES : Collections.unmodifiableList(clusterPreferences);
     this.params = Collections.unmodifiableList(
         buildParams(this.clusterPreferences, this.clusterPolicy, this.policies).stream()
             .map(s -> new Pair<>(s, VariableBase.getTagType(s)))
@@ -211,6 +221,10 @@ public class Policy implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
+    // if we were initially empty then we don't want to persist any implicitly added
+    // policy or preferences
+    if (empty)  return;
+
     if (!policies.isEmpty()) {
       ew.put(POLICIES, (MapWriter) ew1 -> {
         for (Map.Entry<String, List<Clause>> e : policies.entrySet()) {
@@ -218,7 +232,7 @@ public class Policy implements MapWriter {
         }
       });
     }
-    if (!clusterPreferences.isEmpty()) {
+    if (!emptyPreferences && !clusterPreferences.isEmpty()) {
       ew.put(CLUSTER_PREFERENCES, (IteratorWriter) iw -> {
         for (Preference p : clusterPreferences) iw.add(p);
       });
