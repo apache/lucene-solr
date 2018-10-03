@@ -101,6 +101,11 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
 Jetty 9.4.11.v20180605
 
+Upgrade Notes
+----------------------
+* SOLR-12767: The min_rf parameter is no longer needed, Solr will always return the achieved replication factor (rf)
+  in the response header.
+
 New Features
 ----------------------
 
@@ -139,6 +144,15 @@ Bug Fixes
   non-empty cluster policy exists. (shalin)
 
 * SOLR-12750: Migrate API should lock the collection instead of shard. (shalin)
+
+* SOLR-12767: When using min_rf, shard leader skipped bad replicas instead of marking them for recovery, this could
+  create inconsistencies between replicas of the same shard. min_rf parameter is now deprecated, and even if provided
+  replicas that don't ack an update from the leader will be marked for recovery. (Tomás Fernández Löbbe)
+
+Improvements
+----------------------
+* SOLR-12767: Solr now always includes in the response of update requests the achieved replication factor
+   (Tomás Fernández Löbbe)
 
 ==================  7.5.0 ==================
 
