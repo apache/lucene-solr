@@ -84,6 +84,9 @@ API Changes
 * LUCENE-8498: LowerCaseTokenizer has been removed, and CharTokenizer no longer
   takes a normalizer function. (Alan Woodward)
 
+* LUCENE-8513: MultiFields.getFields is now removed.  Please avoid this class,
+  and Fields in general, when possible. (David Smiley)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

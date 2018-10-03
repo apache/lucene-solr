@@ -91,12 +91,17 @@ public interface MapWriter extends MapSerializable {
     Object v = Utils.getObjectByPath(this, false, path);
     return v == null ? def : v;
   }
+
   default void _forEachEntry(String path, BiConsumer fun) {
     Utils.forEachMapEntry(this, path, fun);
   }
 
+  default void _forEachEntry(List<String> path, BiConsumer fun) {
+    Utils.forEachMapEntry(this, path, fun);
+  }
+
   default void _forEachEntry(BiConsumer fun) {
-    Utils.forEachMapEntry(this, null, fun);
+    Utils.forEachMapEntry(this, fun);
   }
 
   /**
