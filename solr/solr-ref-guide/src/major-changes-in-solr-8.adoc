@@ -22,4 +22,37 @@
 // *****   Until then it's a place for upgrade notes     *****
 // *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
 
-* Due to LIR redesign in SOLR-11702, all users must be on Solr 7.3 or higher to upgrade to Solr 8
+Solr 8 is a major new release of Solr which introduces new features and a number of other changes that may impact your existing installation.
+
+== Upgrade Planning
+
+Due to the introduction of LIR redesign since Solr 7.3 (SOLR-11702) and the removing of old LIR implementation in Solr 8.
+Rolling updates are not possible unless all nodes must be on Solr 7.3 or higher. If not updates can be lost.
+
+Solr nodes can now listen and serve HTTP/2 and HTTP/1 requests. However  nodes with HTTPS setup still can only serve
+HTTP/1.1 requests. By default, most of internal requests are sent by using HTTP/2 (except for HTTPS case as mentioned above),
+therefore Solr 8.0 nodes can't talk to old nodes (7.x).
+
+However we can follow these steps to do rolling updates:
+
+* Do rolling updates as normally, but the Solr 8.0 nodes must start with `-Dsolr.http1=true` as startup parameter.
+  By using this parameter internal requests are sent by using HTTP/1.1
+* When all nodes are upgraded to 8.0, restart them, this time `-Dsolr.http1` parameter should be removed.
+
+== HTTP/2
+
+Until Solr 8, Solr nodes only support HTTP/1 requests. HTTP/1.1 practically allows only one outstanding request
+per TCP connection this means that for sending multiple requests at the same time multiple TCP connections must be
+established. This leads to waste of resources on both-sides and long GC-pause. Solr 8 with HTTP/2 support overcomes that problem by allowing
+multiple requests can be sent in parallel using a same TCP connection.
+
+`Http2SolrClient` with HTTP/2 and async capabilities based on Jetty Client is introduced. This client replaced
+`HttpSolrClient` and `ConcurrentUpdateSolrClient` for sending most of internal requests (sent by `UpdateShardHandler`,
+`HttpShardHandler`). An interesting benchmark result showing gain of using `Http2SolrClient` had been posted
+https://issues.apache.org/jira/browse/SOLR-12642?focusedCommentId=16606648&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-16606648[here]. However this leads to several changes in configuration and authentication setup
+
+* `UpdateShardHandler.maxConnections` parameter is no longer being used
+* `HttpShardHandlerFactory.maxConnections` parameter is no longer being used
+*  Custom `AuthenticationPlugin` must provide its own setup for `Http2SolrClient` through
+   `SolrHttpClientBuilder.setHttp2Configurator`, if not internal requests can't be authenticated
+
