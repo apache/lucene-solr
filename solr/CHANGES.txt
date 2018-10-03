@@ -131,6 +131,8 @@ Bug Fixes
 * SOLR-12648: Autoscaling framework based replica placement is not used unless a policy is specified or
   non-empty cluster policy exists. (shalin)
 
+* SOLR-12750: Migrate API should lock the collection instead of shard. (shalin)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
