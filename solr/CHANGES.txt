@@ -115,6 +115,8 @@ New Features
 
 * SOLR-11522: /autoscaling/suggestions now include rebalance options as well even if there are no violations (noble)
 
+* SOLR-12822: /autoscaling/suggestions to include suggestion to add-replica for lost replicas (noble)
+
 Other Changes
 ----------------------
 

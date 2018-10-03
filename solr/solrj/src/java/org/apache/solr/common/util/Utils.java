@@ -45,6 +45,7 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -265,7 +266,23 @@ public class Utils {
 
   public static Object fromJSON(InputStream is){
     try {
-      return new ObjectBuilder(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
+      return STANDARDOBJBUILDER.apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
+    }
+  }
+
+  public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER = jsonParser -> {
+    try {
+      return new ObjectBuilder(jsonParser);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
+
+  public static Object fromJSON(InputStream is, Function<JSONParser, ObjectBuilder> objBuilderProvider) {
+    try {
+      return objBuilderProvider.apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
@@ -293,7 +310,7 @@ public class Utils {
 
   public static Object fromJSONString(String json)  {
     try {
-      return new ObjectBuilder(getJSONParser(new StringReader(json))).getVal();
+      return STANDARDOBJBUILDER.apply(getJSONParser(new StringReader(json))).getVal();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }

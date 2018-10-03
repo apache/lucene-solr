@@ -1345,6 +1345,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
       public ClusterStateProvider getClusterStateProvider() {
         return new DelegatingClusterStateProvider(null) {
           @Override
+          public ClusterState getClusterState() throws IOException {
+            return ClusterState.load(0,new HashMap<>(), getLiveNodes(),"/clusterstate.json");
+          }
+
+          @Override
           public Set<String> getLiveNodes() {
             return new HashSet<>((Collection<String>) m.get("liveNodes"));
           }
