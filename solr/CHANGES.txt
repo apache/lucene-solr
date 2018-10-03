@@ -128,6 +128,9 @@ Bug Fixes
 
 * SOLR-12776: Setting of TMP in solr.cmd causes invisibility of Solr to JDK tools (Petr Bodnar via Erick Erickson)
 
+* SOLR-12648: Autoscaling framework based replica placement is not used unless a policy is specified or
+  non-empty cluster policy exists. (shalin)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
