@@ -542,6 +542,7 @@ public class SimCloudManager implements SolrCloudManager {
     triggerThread.interrupt();
     IOUtils.closeQuietly(triggerThread);
     if (killNodeId != null) {
+      log.info("  = killing node " + killNodeId);
       simRemoveNode(killNodeId, false);
     }
     objectCache.clear();
@@ -746,7 +747,7 @@ public class SimCloudManager implements SolrCloudManager {
             if (!"autoscaling_event".equals(d.getFieldValue("type"))) {
               continue;
             }
-            eventCounts.computeIfAbsent((String)d.getFieldValue("event.source_s"), s -> new TreeMap<>())
+            eventCounts.computeIfAbsent((String)d.getFieldValue("event.source_s"), s -> new ConcurrentHashMap<>())
                 .computeIfAbsent((String)d.getFieldValue("stage_s"), s -> new AtomicInteger())
                 .incrementAndGet();
           }

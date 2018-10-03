@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -264,11 +265,11 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(collectionRate, totalReplicaRate.get(), 5.0);
 
     // check operations
-    List<Map<String, Object>> ops = (List<Map<String, Object>>) ev.context.get("properties.operations");
+    List<MapWriter> ops = (List<MapWriter>) ev.context.get("properties.operations");
     assertNotNull(ops);
     assertTrue(ops.size() > 1);
-    for (Map<String, Object> m : ops) {
-      assertEquals("ADDREPLICA", m.get("params.action"));
+    for (MapWriter m : ops) {
+      assertEquals("ADDREPLICA", m._get("params.action",null));
     }
   }
 
@@ -677,8 +678,16 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
       if (m.get("success") != null) {
         replicas.incrementAndGet();
       } else if (m.get("status") != null) {
-        NamedList<Object> status = (NamedList<Object>)m.get("status");
-        if ("completed".equals(status.get("state"))) {
+        Object status = m.get("status");
+        String state;
+        if (status instanceof Map) {
+          state = (String)((Map)status).get("state");
+        } else if (status instanceof NamedList) {
+          state = (String)((NamedList)status).get("state");
+        } else {
+          throw new IllegalArgumentException("unsupported status format: " + status.getClass().getName() + ", " + status);
+        }
+        if ("completed".equals(state)) {
           nodes.incrementAndGet();
         } else {
           fail("unexpected DELETENODE status: " + m);

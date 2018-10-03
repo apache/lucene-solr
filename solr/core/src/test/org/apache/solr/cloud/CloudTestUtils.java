@@ -97,14 +97,14 @@ public class CloudTestUtils {
       // due to the way we manage collections in SimClusterStateProvider a null here
       // can mean that a collection is still being created but has no replicas
       if (coll == null) { // does not yet exist?
-        timeout.sleep(50);
+        timeout.sleep(100);
         continue;
       }
       if (predicate.matches(state.getLiveNodes(), coll)) {
         log.trace("-- predicate matched with state {}", state);
         return timeout.timeElapsed(TimeUnit.MILLISECONDS);
       }
-      timeout.sleep(50);
+      timeout.sleep(100);
       if (timeout.timeLeft(TimeUnit.MILLISECONDS) < timeWarn) {
         log.trace("-- still not matching predicate: {}", state);
       }

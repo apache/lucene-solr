@@ -36,14 +36,15 @@ import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.autoscaling.ActionContext;
+import org.apache.solr.cloud.autoscaling.CapturedEvent;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
@@ -53,8 +54,8 @@ import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerEventQueue;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
-import org.apache.solr.cloud.autoscaling.CapturedEvent;
 import org.apache.solr.cloud.autoscaling.TriggerValidationException;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -75,7 +76,7 @@ import static org.apache.solr.cloud.autoscaling.ScheduledTriggers.DEFAULT_SCHEDU
 /**
  * An end-to-end integration test for triggers
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;")
 public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -151,12 +152,11 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
       // lets start a node
       cluster.simAddNode();
     }
+    cluster.getTimeSource().sleep(10000);
     // do this in advance if missing
-    if (!cluster.getSimClusterStateProvider().simListCollections().contains(CollectionAdminParams.SYSTEM_COLL)) {
-      cluster.getSimClusterStateProvider().createSystemCollection();
-      CloudTestUtils.waitForState(cluster, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
-          CloudTestUtils.clusterShape(1, 1, false, true));
-    }
+    cluster.getSimClusterStateProvider().createSystemCollection();
+    CloudTestUtils.waitForState(cluster, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
+        CloudTestUtils.clusterShape(1, 2, false, true));
   }
 
   @Test
@@ -659,6 +659,9 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     if (!actionInitCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
       fail("The TriggerAction should have been created by now");
     }
+
+    // wait for the trigger to run at least once
+    cluster.getTimeSource().sleep(2 * waitForSeconds * 1000);
 
     // add node to generate the event
     String newNode = cluster.simAddNode();
@@ -1315,11 +1318,11 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue(totalReplicaRate.get() > 100.0);
 
     // check operations
-    List<Map<String, Object>> ops = (List<Map<String, Object>>)ev.context.get("properties.operations");
+    List<MapWriter> ops = (List<MapWriter>)ev.context.get("properties.operations");
     assertNotNull(ops);
     assertTrue(ops.size() > 1);
-    for (Map<String, Object> m : ops) {
-      assertEquals("ADDREPLICA", m.get("params.action"));
+    for (MapWriter m : ops) {
+      assertEquals("ADDREPLICA", m._get("params.action", null));
     }
   }
 }
