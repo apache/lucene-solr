@@ -398,11 +398,10 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
     if (existingField == null) return;
-    final boolean isChildDoc = isChildDoc(fieldVal);
     final Collection original = existingField.getValues();
     if (fieldVal instanceof Collection) {
       for (Object object : (Collection) fieldVal) {
-        removeObj(original, fieldVal, name);
+        removeObj(original, object, name);
       }
     } else {
       removeObj(original, fieldVal, name);
