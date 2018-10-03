@@ -71,7 +71,7 @@ public class ConditionalMapWriter implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    delegate.writeMap(new EntryWriterWrapper(ew));
+    if(delegate!=null) delegate.writeMap(new EntryWriterWrapper(ew));
   }
 
   public static BiPredicate<String, Object> dedupeKeyPredicate(Set<String> keys) {

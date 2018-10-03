@@ -136,7 +136,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     if (!cluster.getSimClusterStateProvider().simListCollections().contains(CollectionAdminParams.SYSTEM_COLL)) {
       cluster.getSimClusterStateProvider().createSystemCollection();
       CloudTestUtils.waitForState(cluster, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
-          CloudTestUtils.clusterShape(1, 1, false, true));
+          CloudTestUtils.clusterShape(1, 3, false, true));
     }
   }
 

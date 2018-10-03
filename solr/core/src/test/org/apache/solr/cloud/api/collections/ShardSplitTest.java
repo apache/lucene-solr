@@ -542,7 +542,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void testSplitShardWithRule() throws Exception {
-    doSplitShardWithRule(SolrIndexSplitter.SplitMethod.LINK);
+    doSplitShardWithRule(SolrIndexSplitter.SplitMethod.REWRITE);
   }
 
   @Test

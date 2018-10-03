@@ -18,9 +18,9 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -104,19 +104,17 @@ public class FreeDiskVariable extends VariableBase {
         }
       }
     } else if (ctx.violation.replicaCountDelta < 0) {
-      suggestNegativeViolations(ctx, shards -> getSortedShards(ctx,shards));
+      suggestNegativeViolations(ctx, shards -> getSortedShards(ctx.session.matrix, shards, ctx.violation.coll));
     }
   }
 
 
-
-
-  private List<String> getSortedShards(Suggestion.Ctx ctx, Set<String> shardSet) {
+  static List<String> getSortedShards(List<Row> matrix, Collection<String> shardSet, String coll) {
     return  shardSet.stream()
         .map(shard1 -> {
           AtomicReference<Pair<String, Long>> result = new AtomicReference<>();
-          for (Row node : ctx.session.matrix) {
-            node.forEachShard(ctx.violation.coll, (s, ri) -> {
+          for (Row node : matrix) {
+            node.forEachShard(coll, (s, ri) -> {
               if (result.get() != null) return;
               if (s.equals(shard1) && ri.size() > 0) {
                 Number sz = ((Number) ri.get(0).getVariable(CORE_IDX.tagName));

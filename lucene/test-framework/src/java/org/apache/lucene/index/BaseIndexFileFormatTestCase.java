@@ -25,9 +25,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -357,7 +359,25 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       
     };
     try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState)) {
-      consumer.write(MultiFields.getFields(oneDocReader), fakeNorms);
+      final Fields fields = new Fields() {
+        TreeSet<String> indexedFields = new TreeSet<>(MultiFields.getIndexedFields(oneDocReader));
+
+        @Override
+        public Iterator<String> iterator() {
+          return indexedFields.iterator();
+        }
+
+        @Override
+        public Terms terms(String field) throws IOException {
+          return oneDocReader.terms(field);
+        }
+
+        @Override
+        public int size() {
+          return indexedFields.size();
+        }
+      };
+      consumer.write(fields, fakeNorms);
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }

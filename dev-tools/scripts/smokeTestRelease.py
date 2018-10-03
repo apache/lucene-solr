@@ -295,7 +295,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
   expectedSigs = []
   if isSigned:
     expectedSigs.append('asc')
-  expectedSigs.extend(['sha1', 'sha512'])
+  expectedSigs.extend(['sha512'])
 
   artifacts = []
   for text, subURL in ents:
@@ -538,29 +538,20 @@ def run(command, logFile):
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
     
 def verifyDigests(artifact, urlString, tmpDir):
-  print('    verify sha1/sha512 digests')
-  sha1Expected, t = load(urlString + '.sha1').strip().split()
-  if t != '*'+artifact:
-    raise RuntimeError('SHA1 %s.sha1 lists artifact %s but expected *%s' % (urlString, t, artifact))
-
+  print('    verify sha512 digest')
   sha512Expected, t = load(urlString + '.sha512').strip().split()
   if t != '*'+artifact:
     raise RuntimeError('SHA512 %s.sha512 lists artifact %s but expected *%s' % (urlString, t, artifact))
   
-  s = hashlib.sha1()
   s512 = hashlib.sha512()
   f = open('%s/%s' % (tmpDir, artifact), 'rb')
   while True:
     x = f.read(65536)
     if len(x) == 0:
       break
-    s.update(x)
     s512.update(x)
   f.close()
-  sha1Actual = s.hexdigest()
   sha512Actual = s512.hexdigest()
-  if sha1Actual != sha1Expected:
-    raise RuntimeError('SHA1 digest mismatch for %s: expected %s but got %s' % (artifact, sha1Expected, sha1Actual))
   if sha512Actual != sha512Expected:
     raise RuntimeError('SHA512 digest mismatch for %s: expected %s but got %s' % (artifact, sha512Expected, sha512Actual))
 

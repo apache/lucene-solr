@@ -131,7 +131,7 @@ public class TestSimNodeLostTrigger extends SimSolrCloudTestCase {
       trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
 
-      String lostNode = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+      String lostNode = cluster.getSimClusterStateProvider().simGetRandomNode();
       cluster.simRemoveNode(lostNode, false);
       AtomicBoolean fired = new AtomicBoolean(false);
       trigger.setProcessor(event -> {

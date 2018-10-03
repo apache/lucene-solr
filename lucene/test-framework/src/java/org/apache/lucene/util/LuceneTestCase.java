@@ -1950,7 +1950,7 @@ public abstract class LuceneTestCase extends Assert {
 
   public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
     assertReaderStatisticsEquals(info, leftReader, rightReader);
-    assertFieldsEquals(info, leftReader, MultiFields.getFields(leftReader), MultiFields.getFields(rightReader), true);
+    assertTermsEquals(info, leftReader, rightReader, true);
     assertNormsEquals(info, leftReader, rightReader);
     assertStoredFieldsEquals(info, leftReader, rightReader);
     assertTermVectorsEquals(info, leftReader, rightReader);
@@ -1974,33 +1974,13 @@ public abstract class LuceneTestCase extends Assert {
   /** 
    * Fields api equivalency 
    */
-  public void assertFieldsEquals(String info, IndexReader leftReader, Fields leftFields, Fields rightFields, boolean deep) throws IOException {
-    // Fields could be null if there are no postings,
-    // but then it must be null for both
-    if (leftFields == null || rightFields == null) {
-      assertNull(info, leftFields);
-      assertNull(info, rightFields);
-      return;
-    }
-    assertFieldStatisticsEquals(info, leftFields, rightFields);
-    
-    Iterator<String> leftEnum = leftFields.iterator();
-    Iterator<String> rightEnum = rightFields.iterator();
-    
-    while (leftEnum.hasNext()) {
-      String field = leftEnum.next();
-      assertEquals(info, field, rightEnum.next());
-      assertTermsEquals(info, leftReader, leftFields.terms(field), rightFields.terms(field), deep);
-    }
-    assertFalse(rightEnum.hasNext());
-  }
+  public void assertTermsEquals(String info, IndexReader leftReader, IndexReader rightReader, boolean deep) throws IOException {
+    Set<String> leftFields = new HashSet<>(MultiFields.getIndexedFields(leftReader));
+    Set<String> rightFields = new HashSet<>(MultiFields.getIndexedFields(rightReader));
+    assertEquals(info, leftFields, rightFields);
 
-  /** 
-   * checks that top-level statistics on Fields are the same 
-   */
-  public void assertFieldStatisticsEquals(String info, Fields leftFields, Fields rightFields) throws IOException {
-    if (leftFields.size() != -1 && rightFields.size() != -1) {
-      assertEquals(info, leftFields.size(), rightFields.size());
+    for (String field : leftFields) {
+      assertTermsEquals(info, leftReader, MultiFields.getTerms(leftReader, field), MultiFields.getTerms(rightReader, field), deep);
     }
   }
 
@@ -2331,15 +2311,9 @@ public abstract class LuceneTestCase extends Assert {
    * checks that norms are the same across all fields 
    */
   public void assertNormsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
-    Fields leftFields = MultiFields.getFields(leftReader);
-    Fields rightFields = MultiFields.getFields(rightReader);
-    // Fields could be null if there are no postings,
-    // but then it must be null for both
-    if (leftFields == null || rightFields == null) {
-      assertNull(info, leftFields);
-      assertNull(info, rightFields);
-      return;
-    }
+    Set<String> leftFields = new HashSet<>(MultiFields.getIndexedFields(leftReader));
+    Set<String> rightFields = new HashSet<>(MultiFields.getIndexedFields(rightReader));
+    assertEquals(info, leftFields, rightFields);
     
     for (String field : leftFields) {
       NumericDocValues leftNorms = MultiDocValues.getNormValues(leftReader, field);
@@ -2407,7 +2381,26 @@ public abstract class LuceneTestCase extends Assert {
     for (int i = 0; i < leftReader.maxDoc(); i++) {
       Fields leftFields = leftReader.getTermVectors(i);
       Fields rightFields = rightReader.getTermVectors(i);
-      assertFieldsEquals(info, leftReader, leftFields, rightFields, rarely());
+
+      // Fields could be null if there are no postings,
+      // but then it must be null for both
+      if (leftFields == null || rightFields == null) {
+        assertNull(info, leftFields);
+        assertNull(info, rightFields);
+        return;
+      }
+      if (leftFields.size() != -1 && rightFields.size() != -1) {
+        assertEquals(info, leftFields.size(), rightFields.size());
+      }
+
+      Iterator<String> leftEnum = leftFields.iterator();
+      Iterator<String> rightEnum = rightFields.iterator();
+      while (leftEnum.hasNext()) {
+        String field = leftEnum.next();
+        assertEquals(info, field, rightEnum.next());
+        assertTermsEquals(info, leftReader, leftFields.terms(field), rightFields.terms(field), rarely());
+      }
+      assertFalse(rightEnum.hasNext());
     }
   }
 

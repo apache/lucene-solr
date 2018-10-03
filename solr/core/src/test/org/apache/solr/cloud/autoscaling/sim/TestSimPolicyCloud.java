@@ -109,7 +109,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
   public void testCreateCollectionAddReplica() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
-    String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode();
 
     int port = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.PORT);
 
@@ -134,13 +134,13 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
   public void testCreateCollectionSplitShard() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
-    String firstNode = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String firstNode = cluster.getSimClusterStateProvider().simGetRandomNode();
     int firstNodePort = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(firstNode, ImplicitSnitch.PORT);
 
     String secondNode;
     int secondNodePort;
     while (true)  {
-      secondNode = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+      secondNode = cluster.getSimClusterStateProvider().simGetRandomNode();
       secondNodePort = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(secondNode, ImplicitSnitch.PORT);
       if (secondNodePort != firstNodePort)  break;
     }
@@ -236,7 +236,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     String pullNodeName = nodes.get(1);
     int pullPort = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(pullNodeName, ImplicitSnitch.PORT);
 
-    String tlogNodeName = nodes.get(1);
+    String tlogNodeName = nodes.get(2);
     int tlogPort = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(tlogNodeName, ImplicitSnitch.PORT);
     log.info("NRT {} PULL {} , TLOG {} ", nrtNodeName, pullNodeName, tlogNodeName);
 
@@ -257,6 +257,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
+        .setMaxShardsPerNode(-1)
         .process(solrClient);
     CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
         CloudTestUtils.clusterShape(1, 3, false, true));
@@ -292,7 +293,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
   public void testCreateCollectionAddShardUsingPolicy() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
-    String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode();
     int port = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.PORT);
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + port + "'}]}}";
@@ -343,7 +344,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
       assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).doubleValue(), Double.compare(((Number) val.get("sysLoadAvg")).doubleValue(), 0.0d) > 0);
     }
     // simulator doesn't have Overseer, so just pick a random node
-    String overseerNode = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String overseerNode = cluster.getSimClusterStateProvider().simGetRandomNode();
     solrClient.request(CollectionAdminRequest.addRole(overseerNode, "overseer"));
     for (int i = 0; i < 10; i++) {
       Map<String, Object> data = Utils.getJson(cluster.getDistribStateManager(), ZkStateReader.ROLES);

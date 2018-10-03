@@ -325,6 +325,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
+        .setMaxShardsPerNode(-1)
         .process(cluster.getSolrClient());
 
     DocCollection coll = getCollectionState("policiesTest");

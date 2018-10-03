@@ -48,6 +48,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -55,6 +56,8 @@ import org.apache.solr.parser.QueryParser;
 import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.ExtendedDismaxQParser.ExtendedSolrQueryParser.Alias;
 import org.apache.solr.util.SolrPluginUtils;
 
 import com.google.common.collect.Multimap;
@@ -144,6 +147,7 @@ public class ExtendedDismaxQParser extends QParser {
       ExtendedSolrQueryParser up = createEdismaxQueryParser(this, IMPOSSIBLE_FIELD_NAME);
       up.addAlias(IMPOSSIBLE_FIELD_NAME, config.tiebreaker, config.queryFields);
       addAliasesFromRequest(up, config.tiebreaker);
+      validateQueryFields(up);
       up.setPhraseSlop(config.qslop);     // slop for explicit user phrase queries
       up.setAllowLeadingWildcard(true);
       up.setAllowSubQueryParsing(config.userFields.isAllowed(MagicFieldName.QUERY.field));
@@ -203,6 +207,84 @@ public class ExtendedDismaxQParser extends QParser {
     }
     
     return topQuery;
+  }
+  
+  /**
+   * Validate query field names. Must be explicitly defined in the schema or match a dynamic field pattern.
+   * Checks source field(s) represented by a field alias
+   * 
+   * @param up parser used
+   * @throws SyntaxError for invalid field name
+   */
+  protected void validateQueryFields(ExtendedSolrQueryParser up) throws SyntaxError {
+    List<String> flds = new ArrayList<>(config.queryFields.keySet().size());
+    for (String fieldName : config.queryFields.keySet()) {
+      buildQueryFieldList(fieldName, up.getAlias(fieldName), flds, up);
+    }
+    
+    checkFieldsInSchema(flds);
+  }
+  
+  /**
+   * Build list of source (non-alias) query field names. Recursive through aliases.
+   * 
+   * @param fieldName query field name
+   * @param alias field alias
+   * @param flds list of query field names
+   * @param up parser used
+   * @throws SyntaxError for invalid field name
+   */
+  private void buildQueryFieldList(String fieldName, Alias alias, List<String> flds, ExtendedSolrQueryParser up) throws SyntaxError {
+    if (null == alias) {
+        flds.add(fieldName);
+        return;
+    }
+
+    up.validateCyclicAliasing(fieldName);
+    flds.addAll(getFieldsFromAlias(up, alias));
+  }
+  
+  /**
+   * Return list of source (non-alias) field names from an alias
+   * 
+   * @param up parser used
+   * @param a field alias
+   * @return list of source fields
+   * @throws SyntaxError for invalid field name
+   */
+  private List<String> getFieldsFromAlias(ExtendedSolrQueryParser up, Alias a) throws SyntaxError {
+    List<String> lst = new ArrayList<>();
+    for (String s : a.fields.keySet()) {
+      buildQueryFieldList(s, up.getAlias(s), lst, up);
+    }
+
+    return lst;
+  }
+  
+  /**
+   * Verify field name exists in schema, explicit or dynamic field pattern
+   * 
+   * @param fieldName source field name to verify
+   * @throws SyntaxError for invalid field name
+   */
+  private void checkFieldInSchema(String fieldName) throws SyntaxError {
+    try {
+        config.schema.getField(fieldName);
+    } catch (SolrException se) {
+        throw new SyntaxError("Query Field '" + fieldName + "' is not a valid field name", se);
+    }
+  }
+
+  /**
+   * Verify list of source field names
+   * 
+   * @param flds list of source field names to verify
+   * @throws SyntaxError for invalid field name
+   */
+  private void checkFieldsInSchema(List<String> flds) throws SyntaxError {
+    for (String fieldName : flds) {
+        checkFieldInSchema(fieldName);
+    }
   }
   
   /**
@@ -1597,15 +1679,18 @@ public class ExtendedDismaxQParser extends QParser {
     protected  String[] boostFuncs;
 
     protected boolean splitOnWhitespace;
+    
+    protected IndexSchema schema;
 
     public ExtendedDismaxConfiguration(SolrParams localParams,
         SolrParams params, SolrQueryRequest req) {
       solrParams = SolrParams.wrapDefaults(localParams, params);
-      minShouldMatch = DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams); // req.getSearcher() here causes searcher refcount imbalance
+      schema = req.getSchema();
+      minShouldMatch = DisMaxQParser.parseMinShouldMatch(schema, solrParams); // req.getSearcher() here causes searcher refcount imbalance
       final boolean forbidSubQueryByDefault = req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_2_0);
       userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)), forbidSubQueryByDefault);
       try {
-        queryFields = DisMaxQParser.parseQueryFields(req.getSchema(), solrParams);  // req.getSearcher() here causes searcher refcount imbalance
+        queryFields = DisMaxQParser.parseQueryFields(schema, solrParams);  // req.getSearcher() here causes searcher refcount imbalance
       } catch (SyntaxError e) {
         throw new RuntimeException(e);
       }
