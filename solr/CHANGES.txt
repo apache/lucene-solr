@@ -127,6 +127,8 @@ New Features
 
 * SOLR-12822: /autoscaling/suggestions to include suggestion to add-replica for lost replicas (noble)
 
+* SOLR-12815: Implement maxOps limit for IndexSizeTrigger. (ab)
+
 Other Changes
 ----------------------
 
