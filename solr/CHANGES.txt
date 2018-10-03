@@ -428,6 +428,8 @@ Optimizations
 
 * SOLR-12766: When retrying internal requests, backoff only once for the full batch of retries (Tomás Fernández Löbbe)
 
+* SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition (ab)
+
 Other Changes
 ----------------------
 
