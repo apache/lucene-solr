@@ -67,6 +67,11 @@ SOLR-12591: Expand the set of recognized date format patterns of schemaless mode
 
 SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
+Optimizations
+----------------------
+
+* SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition. (ab)
+
 Other Changes
 ----------------------
 
@@ -427,8 +432,6 @@ Optimizations
 * SOLR-12723: Reduce object creation in HashBasedRouter. (ab)
 
 * SOLR-12766: When retrying internal requests, backoff only once for the full batch of retries (Tomás Fernández Löbbe)
-
-* SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition (ab)
 
 Other Changes
 ----------------------
