@@ -226,7 +226,7 @@ public class PolicyHelper {
 
   public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf,
                                                               SolrCloudManager cloudManager) {
-    return getSuggestions(autoScalingConf, cloudManager, 20);
+    return getSuggestions(autoScalingConf, cloudManager, 50);
   }
 
   public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf,
@@ -244,13 +244,52 @@ public class PolicyHelper {
       tagType.getSuggestions(ctx.setViolation(violation));
       ctx.violation = null;
     }
-    if (ctx.getSuggestions().size() < max) {
-      suggestOptimizations(ctx);
+
+    if (ctx.needMore()) {
+      try {
+        addMissingReplicas(cloudManager, ctx);
+      } catch (IOException e) {
+        log.error("Unable to fetch cluster state", e);
+      }
+    }
+
+    if (ctx.needMore()) {
+      suggestOptimizations(ctx, Math.min(ctx.max - ctx.getSuggestions().size(), 10));
     }
     return ctx.getSuggestions();
   }
 
-  private static void suggestOptimizations(Suggestion.Ctx ctx) {
+  private static void addMissingReplicas(SolrCloudManager cloudManager, Suggestion.Ctx ctx) throws IOException {
+    cloudManager.getClusterStateProvider().getClusterState().forEachCollection(coll -> coll.forEach(slice -> {
+          ReplicaCount replicaCount = new ReplicaCount();
+          slice.forEach(replica -> {
+            if (replica.getState() == Replica.State.ACTIVE || replica.getState() == Replica.State.RECOVERING) {
+              replicaCount.increment(replica.getType());
+            }
+          });
+          addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.NRT, ctx);
+          addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.PULL, ctx);
+          addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.TLOG, ctx);
+        }
+    ));
+  }
+
+  private static void addMissingReplicas(ReplicaCount count, DocCollection coll, String shard, Replica.Type type, Suggestion.Ctx ctx) {
+    int delta = count.delta(coll.getExpectedReplicaCount(type, 0), type);
+    for (; ; ) {
+      if (delta >= 0) break;
+      SolrRequest suggestion = ctx.addSuggestion(
+          ctx.session.getSuggester(ADDREPLICA)
+              .hint(Hint.REPLICATYPE, type)
+              .hint(Hint.COLL_SHARD, new Pair(coll.getName(), shard)), "repair");
+      if (suggestion == null) return;
+      delta++;
+    }
+  }
+
+
+  private static void suggestOptimizations(Suggestion.Ctx ctx, int count) {
+    int maxTotalSuggestions = ctx.getSuggestions().size() + count;
     List<Row> matrix = ctx.session.matrix;
     if (matrix.isEmpty()) return;
     for (int i = 0; i < matrix.size(); i++) {
@@ -261,13 +300,13 @@ public class PolicyHelper {
         e.setValue(FreeDiskVariable.getSortedShards(Collections.singletonList(row), e.getValue(), e.getKey()));
       }
       for (Map.Entry<String, Collection<String>> e : collVsShards.entrySet()) {
-        if (!ctx.needMore()) break;
+        if (ctx.getSuggestions().size() >= maxTotalSuggestions) break;
         for (String shard : e.getValue()) {
-          if (!ctx.needMore()) break;
           Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
               .hint(Hint.COLL_SHARD, new Pair<>(e.getKey(), shard))
               .hint(Hint.SRC_NODE, row.node);
-          ctx.addSuggestion(suggester);
+          ctx.addSuggestion(suggester, "improvement");
+          if (ctx.getSuggestions().size() >= maxTotalSuggestions) break;
         }
       }
     }
