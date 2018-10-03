@@ -759,10 +759,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       Bits liveDocs = MultiFields.getLiveDocs(r);
 
       // Verify min/max values are correct:
-      byte[] minValues = new byte[numDataDims*numBytesPerDim];
+      byte[] minValues = new byte[numIndexDims*numBytesPerDim];
       Arrays.fill(minValues, (byte) 0xff);
 
-      byte[] maxValues = new byte[numDataDims*numBytesPerDim];
+      byte[] maxValues = new byte[numIndexDims*numBytesPerDim];
 
       for(LeafReaderContext ctx : r.leaves()) {
         PointValues dimValues = ctx.reader().getPointValues("field");
