@@ -197,7 +197,6 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     if (forwardCredentials) {
       if (httpContext instanceof HttpClientContext) {
         HttpClientContext httpClientContext = (HttpClientContext) httpContext;
-        log.info("*** HttpClientContext token={}", httpClientContext.getUserToken());
         if (httpClientContext.getUserToken() instanceof BasicAuthUserPrincipal) {
           BasicAuthUserPrincipal principal = (BasicAuthUserPrincipal) httpClientContext.getUserToken();
           String userPassBase64 = Base64.encodeBase64String((principal.getName() + ":" + principal.getPassword()).getBytes(StandardCharsets.UTF_8));

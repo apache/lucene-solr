@@ -239,10 +239,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         return;
       }
       if (!cores.getAuthenticationPlugin().interceptInternodeRequest(httpRequest, httpContext)) {
-        log.debug("PKIAuthenticationPlugin secures this internode request");
+        log.debug("{} secures this internode request", this.getClass().getSimpleName());
         setHeader(httpRequest);
       } else {
-        log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getName());
+        log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
       }
     }
   }
