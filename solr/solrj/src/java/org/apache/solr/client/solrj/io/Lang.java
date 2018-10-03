@@ -174,6 +174,7 @@ public class Lang {
         .withFunctionName("betaDistribution", BetaDistributionEvaluator.class)
         .withFunctionName("polyfit", PolyFitEvaluator.class)
         .withFunctionName("harmonicFit", HarmonicFitEvaluator.class)
+        .withFunctionName("harmfit", HarmonicFitEvaluator.class)
         .withFunctionName("loess", LoessEvaluator.class)
         .withFunctionName("matrix", MatrixEvaluator.class)
         .withFunctionName("transpose", TransposeEvaluator.class)
@@ -261,7 +262,10 @@ public class Lang {
         .withFunctionName("getBaryCenter", GetBaryCenterEvaluator.class)
         .withFunctionName("getArea", GetAreaEvaluator.class)
         .withFunctionName("getBoundarySize", GetBoundarySizeEvaluator.class)
-
+        .withFunctionName("oscillate", OscillateEvaluator.class)
+        .withFunctionName("getAmplitude", GetAmplitudeEvaluator.class)
+        .withFunctionName("getPhase", GetPhaseEvaluator.class)
+        .withFunctionName("getAngularFrequency", GetAngularFrequencyEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)

@@ -342,7 +342,6 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     List<List<Number>>locVectors = (List<List<Number>>)tuples.get(0).get("b");
-    System.out.println(locVectors);
     int v=1;
     for(List<Number> row : locVectors) {
      double lat = row.get(0).doubleValue();
@@ -2360,6 +2359,46 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testOscillate() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=oscillate(10, .3, 2.9)," +
+        "               b=describe(a)," +
+        "               c=getValue(b, min)," +
+        "               d=getValue(b, max)," +
+        "               e=harmfit(a)," +
+        "               f=getAmplitude(e)," +
+        "               g=getAngularFrequency(e)," +
+        "               h=getPhase(e))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> wave = (List<Number>)tuples.get(0).get("a");
+    assertEquals(wave.size(), 128);
+    Map desc = (Map)tuples.get(0).get("b");
+    Number min = (Number)tuples.get(0).get("c");
+    Number max = (Number)tuples.get(0).get("d");
+    assertEquals(min.doubleValue(), -9.9, .1);
+    assertEquals(max.doubleValue(), 9.9, .1);
+
+    List<Number> wave1 = (List<Number>)tuples.get(0).get("e");
+    assertEquals(wave1.size(), 128);
+
+    Number amp = (Number)tuples.get(0).get("f");
+    Number freq = (Number)tuples.get(0).get("g");
+    Number pha = (Number)tuples.get(0).get("h");
+
+    assertEquals(amp.doubleValue(), 10, .1);
+    assertEquals(freq.doubleValue(), .3, .1);
+    assertEquals(pha.doubleValue(), 2.9, .1);
+  }
+
+  @Test
   public void testEbeAdd() throws Exception {
     String cexpr = "let(echo=true," +
         "               a=array(2, 4, 6, 8, 10, 12)," +
@@ -2408,6 +2447,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(row2.get(4).doubleValue(), 505.0, 0.0);
     assertEquals(row2.get(5).doubleValue(), 606.0, 0.0);
   }
+
 
 
   @Test
