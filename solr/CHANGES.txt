@@ -160,6 +160,8 @@ Bug Fixes
   create inconsistencies between replicas of the same shard. min_rf parameter is now deprecated, and even if provided
   replicas that don't ack an update from the leader will be marked for recovery. (Tomás Fernández Löbbe)
 
+* SOLR-12814: Metrics history causing "HttpParser URI is too large >8192" when many collections (janhoy)
+
 Improvements
 ----------------------
 * SOLR-12767: Solr now always includes in the response of update requests the achieved replication factor
