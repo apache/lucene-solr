@@ -47,12 +47,15 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 public class VersionInfo {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final int DEFAULT_VERSION_LOCK_TIME_IN_MILL = -1;
 
   private final UpdateLog ulog;
   private final VersionBucket[] buckets;
   private SchemaField versionField;
   private SchemaField idField;
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
+
+  private int verionLockInMill;
 
   /**
    * Gets and returns the {@link org.apache.solr.common.params.CommonParams#VERSION_FIELD} from the specified
@@ -94,9 +97,11 @@ public class VersionInfo {
     IndexSchema schema = ulog.uhandler.core.getLatestSchema(); 
     versionField = getAndCheckVersionField(schema);
     idField = schema.getUniqueKeyField();
+    verionLockInMill = ulog.uhandler.core.getSolrConfig().getInt("updateHandler/versionLock/timeInMill",
+        DEFAULT_VERSION_LOCK_TIME_IN_MILL);
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
     for (int i=0; i<buckets.length; i++) {
-      buckets[i] = new VersionBucket();
+      buckets[i] = new VersionBucket(verionLockInMill);
     }
   }
 

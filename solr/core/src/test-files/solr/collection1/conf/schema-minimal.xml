@@ -17,5 +17,8 @@
 -->
 <schema name="minimal" version="1.1">
   <fieldType name="string" class="solr.StrField"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
+ 
   <dynamicField name="*" type="string" indexed="true" stored="true"/>
+  <uniqueKey>id</uniqueKey>
 </schema>
