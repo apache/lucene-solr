@@ -90,4 +90,9 @@ public interface CollectionAdminParams {
    * and points to the collection on which the `withCollection` was specified.
    */
   String COLOCATED_WITH = "COLOCATED_WITH";
+
+  /**
+   * Used by cluster properties API to provide defaults for collection, cluster etc.
+   */
+  String DEFAULTS = "defaults";
 }
