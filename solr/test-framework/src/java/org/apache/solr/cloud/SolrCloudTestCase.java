@@ -33,11 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -424,69 +419,4 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
     cluster.waitForAllNodes(timeoutSeconds);
   }
-
-
-  static final List<String> AUTH_METRICS_KEYS = Arrays.asList("errors", "timeouts", "requests", "authenticated", 
-      "passThrough", "failWrongCredentials", "failMissingCredentials", "failInvalidCredentials", "requestTimes", "totalTime");
-  static final List<String> AUTH_METRICS_METER_KEYS = Arrays.asList("errors", "timeouts");
-  static final List<String> AUTH_METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
-
-  /**
-   * Used to check metric counts for PKI auth
-   */
-  protected static void assertPkiAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
-    assertAuthMetrics("SECURITY./authentication/pki.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
-  }
-  
-  /**
-   * Used to check metric counts for the AuthPlugin in use (except PKI)
-   */
-  protected static void assertAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
-    assertAuthMetrics("SECURITY./authentication.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
-  }  
-  
-  /**
-   * Common test method to be able to check security from any authentication plugin
-   * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
-   */
-  private static void assertAuthMetrics(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
-    List<Map<String, Metric>> metrics = new ArrayList<>();
-    cluster.getJettySolrRunners().forEach(r -> {
-      MetricRegistry registry = r.getCoreContainer().getMetricManager().registry("solr.node");
-      assertNotNull(registry);
-      metrics.add(registry.getMetrics());
-    });
-
-    Map<String,Long> counts = new HashMap<>();
-    AUTH_METRICS_KEYS.forEach(k -> {
-      counts.put(k, sumCount(prefix, k, metrics));
-    });
-    
-    // check each counter
-    assertEquals("Metrics were: " + counts, requests, counts.get("requests").intValue());
-    assertEquals("Metrics were: " + counts, authenticated, counts.get("authenticated").intValue());
-    assertEquals("Metrics were: " + counts, passThrough, counts.get("passThrough").intValue());
-    assertEquals("Metrics were: " + counts, failWrongCredentials, counts.get("failWrongCredentials").intValue());
-    assertEquals("Metrics were: " + counts, failMissingCredentials, counts.get("failMissingCredentials").intValue());
-    assertEquals("Metrics were: " + counts, failInvalidCredentials, counts.get("failInvalidCredentials").intValue());
-    assertEquals("Metrics were: " + counts, errors, counts.get("errors").intValue());
-    assertEquals("Metrics were: " + counts, timeouts, counts.get("timeouts").intValue());
-    if (counts.get("requests") > 0) {
-      assertTrue("Metrics were: " + counts, counts.get("requestTimes") > 1);
-      assertTrue("Metrics were: " + counts, counts.get("totalTime") > 0);
-    }
-  }
- 
-  // Have to sum the metrics from all three shards/nodes
-  static long sumCount(String prefix, String key, List<Map<String, Metric>> metrics) {
-    assertTrue("Metric " + prefix + key + " does not exist", metrics.get(0).containsKey(prefix + key)); 
-    if (AUTH_METRICS_METER_KEYS.contains(key))
-      return metrics.stream().mapToLong(l -> ((Meter)l.get(prefix + key)).getCount()).sum();
-    else if (AUTH_METRICS_TIMER_KEYS.contains(key))
-      return (long) ((long) 1000 * metrics.stream().mapToDouble(l -> ((Timer)l.get(prefix + key)).getMeanRate()).average().orElse(0.0d));
-    else
-      return metrics.stream().mapToLong(l -> ((Counter)l.get(prefix + key)).getCount()).sum();
-  }
-
-  
 }
