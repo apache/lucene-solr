@@ -18,36 +18,43 @@
 package org.apache.solr.common;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MapWriterMap implements MapWriter {
-  private final Map delegate;
+public class LinkedHashMapWriter<V> extends LinkedHashMap<String, V> implements MapWriter {
 
-  public MapWriterMap(Map delegate) {
-    this.delegate = delegate;
+  public LinkedHashMapWriter(int initialCapacity) {
+    super(initialCapacity);
+  }
+
+  public LinkedHashMapWriter() {
+    super();
+  }
+
+  public LinkedHashMapWriter(Map<? extends String, ? extends V> m) {
+    super(m);
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    delegate.forEach((k, v) -> ew.putNoEx(k == null ? null : k.toString(), v));
+    forEach((k, v) -> ew.putNoEx(k, v));
   }
 
   @Override
   public Object _get(String path, Object def) {
-    if (path.indexOf('/') == -1) return delegate.getOrDefault(path, def);
+    if (path.indexOf('/') == -1) return getOrDefault(path, (V) def);
     return MapWriter.super._get(path, def);
   }
 
   @Override
   public Object _get(List<String> path, Object def) {
-    if (path.size() == 1) return delegate.getOrDefault(path.get(0), def);
+    if (path.size() == 1) return getOrDefault(path.get(0), (V) def);
     return MapWriter.super._get(path, def);
   }
 
-
   @Override
-  public Map toMap(Map<String, Object> map) {
-    return delegate;
+  public String toString() {
+    return jsonStr();
   }
 }
