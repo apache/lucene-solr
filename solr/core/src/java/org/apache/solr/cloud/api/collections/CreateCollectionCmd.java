@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
@@ -134,8 +133,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     String router = message.getStr("router.name", DocRouter.DEFAULT_NAME);
     String policy = message.getStr(Policy.POLICY);
-    AutoScalingConfig autoScalingConfig = ocmh.cloudManager.getDistribStateManager().getAutoScalingConfig();
-    boolean usePolicyFramework = !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || policy != null;
+    boolean usePolicyFramework = CloudUtil.usePolicyFramework(ocmh.cloudManager) || policy != null;
 
     // fail fast if parameters are wrong or incomplete
     List<String> shardNames = populateShardNames(message, router);
