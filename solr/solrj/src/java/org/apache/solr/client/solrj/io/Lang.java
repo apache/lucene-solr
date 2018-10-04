@@ -266,6 +266,10 @@ public class Lang {
         .withFunctionName("getAmplitude", GetAmplitudeEvaluator.class)
         .withFunctionName("getPhase", GetPhaseEvaluator.class)
         .withFunctionName("getAngularFrequency", GetAngularFrequencyEvaluator.class)
+        .withFunctionName("enclosingDisk", EnclosingDiskEvaluator.class)
+        .withFunctionName("getCenter", GetCenterEvaluator.class)
+        .withFunctionName("getRadius", GetRadiusEvaluator.class)
+        .withFunctionName("getSupportPoints", GetSupportPointsEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)

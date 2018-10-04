@@ -72,7 +72,8 @@ public class TestLang extends LuceneTestCase {
       "earthMovers", "canberra", "chebyshev", "ones", "zeros", "setValue", "getValue", "knnRegress", "gaussfit",
       "outliers", "stream", "getCache", "putCache", "listCache", "removeCache", "zscores", "latlonVectors",
       "convexHull", "getVertices", "getBaryCenter", "getArea", "getBoundarySize","oscillate",
-      "getAmplitude", "getPhase", "getAngularFrequency"};
+      "getAmplitude", "getPhase", "getAngularFrequency", "enclosingDisk", "getCenter", "getRadius",
+      "getSupportPoints"};
 
   @Test
   public void testLang() {
