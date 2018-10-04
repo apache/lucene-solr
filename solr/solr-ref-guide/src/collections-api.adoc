@@ -1201,7 +1201,7 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 
 === Deeply Nested Cluster Properties ===
 
-==== `collectionDefaults` ====
+==== `defaults` ====
 It is possible to set cluster-wide default values for certain attributes of a collection.
 
 
@@ -1209,14 +1209,17 @@ It is possible to set cluster-wide default values for certain attributes of a co
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
-{ "set-obj-property" : {
-    "collectionDefaults" : {
-        "numShards" : 2,
-        "nrtReplicas" : 1,
-        "tlogReplicas" : 1,
-        "pullReplicas" : 1,
-
-   }
+{
+  "set-obj-property": {
+    "defaults" : {
+      "collection": {
+        "numShards": 2,
+        "nrtReplicas": 1,
+        "tlogReplicas": 1,
+        "pullReplicas": 1
+      }
+    }
+  }
 }' http://localhost:8983/api/cluster
 ----
 
@@ -1224,22 +1227,29 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
-{ "set-obj-property" : {
-    "collectionDefaults" : {
-        "nrtReplicas" : null,
-   }
+{
+  "set-obj-property": {
+    "defaults" : {
+      "collection": {
+        "nrtReplicas": null
+      }
+    }
+  }
 }' http://localhost:8983/api/cluster
 ----
 
-*Example 2: Unset all values in `collectionDefaults`*
+*Example 2: Unset all values in `defaults`*
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
 { "set-obj-property" : {
-    "collectionDefaults" : null
+    "defaults" : null
 }' http://localhost:8983/api/cluster
 ----
 
+NOTE: Until Solr 7.5, cluster properties supported a "collectionDefaults" key which is no longer supported. Using the API
+structure for Solr 7.4 or Solr 7.5 will continue to work but the format of the properties will automatically be converted
+to the new nested structure. The old "collectionDefaults" key is deprecated and will be removed in Solr 9.
 
 [[collectionprop]]
 == COLLECTIONPROP: Collection Properties
