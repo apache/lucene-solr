@@ -1247,9 +1247,10 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-NOTE: Until Solr 7.5, cluster properties supported a "collectionDefaults" key which is no longer supported. Using the API
-structure for Solr 7.4 or Solr 7.5 will continue to work but the format of the properties will automatically be converted
-to the new nested structure. The old "collectionDefaults" key is deprecated and will be removed in Solr 9.
+NOTE: Until Solr 7.5, cluster properties supported a "collectionDefaults" key which is now deprecated. Using the API
+structure for Solr 7.4 or Solr 7.5 with "collectionDefaults" will continue to work but the format of the properties
+will automatically be converted to the new nested structure. Support for the "collectionDefaults" key will be
+removed in Solr 9.
 
 [[collectionprop]]
 == COLLECTIONPROP: Collection Properties
