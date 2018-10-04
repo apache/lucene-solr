@@ -1018,155 +1018,172 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     vinfo.lockForUpdate();
+    boolean vBucketLocked = false;
     try {
-      synchronized (bucket) {
-        bucket.notifyAll(); //just in case anyone is waiting let them know that we have a new update
-        // we obtain the version when synchronized and then do the add so we can ensure that
-        // if version1 < version2 then version1 is actually added before version2.
+      vBucketLocked = tryLockElseThrow(bucket);
+      bucket.wakeUpAll();
+      //just in case anyone is waiting let them know that we have a new update
+      // we obtain the version when synchronized and then do the add so we can ensure that
+      // if version1 < version2 then version1 is actually added before version2.
 
-        // even if we don't store the version field, synchronizing on the bucket
-        // will enable us to know what version happened first, and thus enable
-        // realtime-get to work reliably.
-        // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
-        // there may be other reasons in the future for a version on the commands
+      // even if we don't store the version field, synchronizing on the bucket
+      // will enable us to know what version happened first, and thus enable
+      // realtime-get to work reliably.
+      // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
+      // there may be other reasons in the future for a version on the commands
 
-        if (versionsStored) {
+      if (versionsStored) {
 
-          long bucketVersion = bucket.highest;
+        long bucketVersion = bucket.highest;
 
-          if (leaderLogic) {
+        if (leaderLogic) {
 
-            if (forwardedFromCollection && ulog.getState() == UpdateLog.State.ACTIVE) {
-              // forwarded from a collection but we are not buffering so strip original version and apply our own
-              // see SOLR-5308
-              log.info("Removing version field from doc: " + cmd.getPrintableId());
-              cmd.solrDoc.remove(CommonParams.VERSION_FIELD);
-              versionOnUpdate = 0;
-            }
+          if (forwardedFromCollection && ulog.getState() == UpdateLog.State.ACTIVE) {
+            // forwarded from a collection but we are not buffering so strip original version and apply our own
+            // see SOLR-5308
+            log.info("Removing version field from doc: " + cmd.getPrintableId());
+            cmd.solrDoc.remove(CommonParams.VERSION_FIELD);
+            versionOnUpdate = 0;
+          }
 
-            boolean updated = getUpdatedDocument(cmd, versionOnUpdate);
+          boolean updated = getUpdatedDocument(cmd, versionOnUpdate);
 
-            // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
-            if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
-                && isReplayOrPeersync == false) {
-              // we're not in an active state, and this update isn't from a replay, so buffer it.
-              log.info("Leader logic applied but update log is buffering: " + cmd.getPrintableId());
-              cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
-              ulog.add(cmd);
-              return true;
-            }
+          // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
+          if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
+              && isReplayOrPeersync == false) {
+            // we're not in an active state, and this update isn't from a replay, so buffer it.
+            log.info("Leader logic applied but update log is buffering: " + cmd.getPrintableId());
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+            ulog.add(cmd);
+            return true;
+          }
 
-            if (versionOnUpdate != 0) {
-              Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-              long foundVersion = lastVersion == null ? -1 : lastVersion;
-              if ( versionOnUpdate == foundVersion || (versionOnUpdate < 0 && foundVersion < 0) || (versionOnUpdate==1 && foundVersion > 0) ) {
-                // we're ok if versions match, or if both are negative (all missing docs are equal), or if cmd
-                // specified it must exist (versionOnUpdate==1) and it does.
-              } else {
-                throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId() + " expected=" + versionOnUpdate + " actual=" + foundVersion);
-              }
-            }
-
-
-            long version = vinfo.getNewClock();
-            cmd.setVersion(version);
-            cmd.getSolrInputDocument().setField(CommonParams.VERSION_FIELD, version);
-            bucket.updateHighest(version);
-          } else {
-            // The leader forwarded us this update.
-            cmd.setVersion(versionOnUpdate);
-
-            if (shouldBufferUpdate(cmd, isReplayOrPeersync, ulog.getState())) {
-              // we're not in an active state, and this update isn't from a replay, so buffer it.
-              cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
-              ulog.add(cmd);
-              return true;
-            }
-
-            if (cmd.isInPlaceUpdate()) {
-              long prev = cmd.prevVersion;
-              Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-              if (lastVersion == null || Math.abs(lastVersion) < prev) {
-                // this was checked for (in waitForDependentUpdates()) before entering the synchronized block.
-                // So we shouldn't be here, unless what must've happened is:
-                // by the time synchronization block was entered, the prev update was deleted by DBQ. Since
-                // now that update is not in index, the vinfo.lookupVersion() is possibly giving us a version 
-                // from the deleted list (which might be older than the prev update!) 
-                UpdateCommand fetchedFromLeader = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
-
-                if (fetchedFromLeader instanceof DeleteUpdateCommand) {
-                  log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document"
-                      + " was deleted at the leader subsequently.", idBytes.utf8ToString());
-                  versionDelete((DeleteUpdateCommand)fetchedFromLeader);
-                  return true;
-                } else {
-                  assert fetchedFromLeader instanceof AddUpdateCommand;
-                  // Newer document was fetched from the leader. Apply that document instead of this current in-place update.
-                  log.info("In-place update of {} failed to find valid lastVersion to apply to, forced to fetch full doc from leader: {}",
-                      idBytes.utf8ToString(), fetchedFromLeader);
-
-                  // Make this update to become a non-inplace update containing the full document obtained from the leader
-                  cmd.solrDoc = ((AddUpdateCommand)fetchedFromLeader).solrDoc;
-                  cmd.prevVersion = -1;
-                  cmd.setVersion((long)cmd.solrDoc.getFieldValue(CommonParams.VERSION_FIELD));
-                  assert cmd.isInPlaceUpdate() == false;
-                }
-              } else {
-                if (lastVersion != null && Math.abs(lastVersion) > prev) {
-                  // this means we got a newer full doc update and in that case it makes no sense to apply the older
-                  // inplace update. Drop this update
-                  log.info("Update was applied on version: " + prev + ", but last version I have is: " + lastVersion
-                      + ". Dropping current update.");
-                  return true;
-                } else {
-                  // We're good, we should apply this update. First, update the bucket's highest.
-                  if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-                    bucket.updateHighest(versionOnUpdate);
-                  }
-                }
-              }
+          if (versionOnUpdate != 0) {
+            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            long foundVersion = lastVersion == null ? -1 : lastVersion;
+            if ( versionOnUpdate == foundVersion || (versionOnUpdate < 0 && foundVersion < 0) || (versionOnUpdate==1 && foundVersion > 0) ) {
+              // we're ok if versions match, or if both are negative (all missing docs are equal), or if cmd
+              // specified it must exist (versionOnUpdate==1) and it does.
             } else {
-              // if we aren't the leader, then we need to check that updates were not re-ordered
-              if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-                // we're OK... this update has a version higher than anything we've seen
-                // in this bucket so far, so we know that no reordering has yet occurred.
-                bucket.updateHighest(versionOnUpdate);
-              } else {
-                // there have been updates higher than the current update.  we need to check
-                // the specific version for this id.
-                Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-                if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-                  // This update is a repeat, or was reordered.  We need to drop this update.
-                  log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
-                  return true;
-                }
-              }
-            }
-            if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
-              cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+              throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId() + " expected=" + versionOnUpdate + " actual=" + foundVersion);
             }
           }
-        }
-        
-        boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
-        
-        SolrInputDocument clonedDoc = null;
-        if (willDistrib && cloneRequiredOnLeader) {
-          clonedDoc = cmd.solrDoc.deepCopy();
-        }
 
-        // TODO: possibly set checkDeleteByQueries as a flag on the command?
-        doLocalAdd(cmd);
-        
-        if (willDistrib && cloneRequiredOnLeader) {
-          cmd.solrDoc = clonedDoc;
-        }
 
-      }  // end synchronized (bucket)
-    } finally {
+          long version = vinfo.getNewClock();
+          cmd.setVersion(version);
+          cmd.getSolrInputDocument().setField(CommonParams.VERSION_FIELD, version);
+          bucket.updateHighest(version);
+        } else {
+          // The leader forwarded us this update.
+          cmd.setVersion(versionOnUpdate);
+
+          if (shouldBufferUpdate(cmd, isReplayOrPeersync, ulog.getState())) {
+            // we're not in an active state, and this update isn't from a replay, so buffer it.
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+            ulog.add(cmd);
+            return true;
+          }
+
+          if (cmd.isInPlaceUpdate()) {
+            long prev = cmd.prevVersion;
+            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            if (lastVersion == null || Math.abs(lastVersion) < prev) {
+              // this was checked for (in waitForDependentUpdates()) before entering the synchronized block.
+              // So we shouldn't be here, unless what must've happened is:
+              // by the time synchronization block was entered, the prev update was deleted by DBQ. Since
+              // now that update is not in index, the vinfo.lookupVersion() is possibly giving us a version 
+              // from the deleted list (which might be older than the prev update!) 
+              UpdateCommand fetchedFromLeader = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
+
+              if (fetchedFromLeader instanceof DeleteUpdateCommand) {
+                log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document"
+                    + " was deleted at the leader subsequently.", idBytes.utf8ToString());
+                versionDelete((DeleteUpdateCommand)fetchedFromLeader);
+                return true;
+              } else {
+                assert fetchedFromLeader instanceof AddUpdateCommand;
+                // Newer document was fetched from the leader. Apply that document instead of this current in-place update.
+                log.info("In-place update of {} failed to find valid lastVersion to apply to, forced to fetch full doc from leader: {}",
+                    idBytes.utf8ToString(), fetchedFromLeader);
+
+                // Make this update to become a non-inplace update containing the full document obtained from the leader
+                cmd.solrDoc = ((AddUpdateCommand)fetchedFromLeader).solrDoc;
+                cmd.prevVersion = -1;
+                cmd.setVersion((long)cmd.solrDoc.getFieldValue(CommonParams.VERSION_FIELD));
+                assert cmd.isInPlaceUpdate() == false;
+              }
+            } else {
+              if (lastVersion != null && Math.abs(lastVersion) > prev) {
+                // this means we got a newer full doc update and in that case it makes no sense to apply the older
+                // inplace update. Drop this update
+                log.info("Update was applied on version: " + prev + ", but last version I have is: " + lastVersion
+                    + ". Dropping current update.");
+                return true;
+              } else {
+                // We're good, we should apply this update. First, update the bucket's highest.
+                if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
+                  bucket.updateHighest(versionOnUpdate);
+                }
+              }
+            }
+          } else {
+            // if we aren't the leader, then we need to check that updates were not re-ordered
+            if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
+              // we're OK... this update has a version higher than anything we've seen
+              // in this bucket so far, so we know that no reordering has yet occurred.
+              bucket.updateHighest(versionOnUpdate);
+            } else {
+              // there have been updates higher than the current update.  we need to check
+              // the specific version for this id.
+              Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+              if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+                // This update is a repeat, or was reordered.  We need to drop this update.
+                log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
+                return true;
+              }
+            }
+          }
+          if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+          }
+        }
+      }
+      
+      boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
+      
+      SolrInputDocument clonedDoc = null;
+      if (willDistrib && cloneRequiredOnLeader) {
+        clonedDoc = cmd.solrDoc.deepCopy();
+      }
+
+      // TODO: possibly set checkDeleteByQueries as a flag on the command?
+      doLocalAdd(cmd);
+      
+      if (willDistrib && cloneRequiredOnLeader) {
+        cmd.solrDoc = clonedDoc;
+      }
+    }
+    finally {
+      if(vBucketLocked) {
+        bucket.unlock();
+      }
       vinfo.unlockForUpdate();
     }
     return false;
+  }
+
+  /**
+   * @return true if able to get lock of VersionBucket, else throws SolrException
+   */
+  @VisibleForTesting
+  protected boolean tryLockElseThrow(VersionBucket bucket) {
+    boolean vBucketLocked = bucket.tryLock();
+    if (!vBucketLocked) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unable to get version bucket lock in " + bucket.getVersionLockInMill() + " mill seconds");
+    }
+    return vBucketLocked;
   }
 
   @VisibleForTesting
@@ -1195,8 +1212,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     TimeOut waitTimeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     vinfo.lockForUpdate();
+    boolean vBucketLocked = false; 
     try {
-      synchronized (bucket) {
+        vBucketLocked = tryLockElseThrow(bucket);
         Long lookedUpVersion = vinfo.lookupVersion(cmd.getIndexedId());
         lastFoundVersion = lookedUpVersion == null ? 0L: lookedUpVersion;
 
@@ -1206,19 +1224,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
 
         while (Math.abs(lastFoundVersion) < cmd.prevVersion && !waitTimeout.hasTimedOut())  {
-          try {
-            long timeLeft = waitTimeout.timeLeft(TimeUnit.MILLISECONDS);
-            if (timeLeft > 0) { // wait(0) waits forever until notified, but we don't want that.
-              bucket.wait(timeLeft);
-            }
-          } catch (InterruptedException ie) {
-            throw new RuntimeException(ie);
-          }
+          bucket.awaitNanos(waitTimeout.timeLeft(TimeUnit.NANOSECONDS));
           lookedUpVersion = vinfo.lookupVersion(cmd.getIndexedId());
           lastFoundVersion = lookedUpVersion == null ? 0L: lookedUpVersion;
         }
-      }
     } finally {
+      if (vBucketLocked) {
+        bucket.unlock();
+      }
       vinfo.unlockForUpdate();
     }
 
@@ -1778,82 +1791,83 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     VersionBucket bucket = vinfo.bucket(bucketHash);
 
     vinfo.lockForUpdate();
+    boolean vBucketLocked = false;
     try {
+      vBucketLocked = tryLockElseThrow(bucket);
+      if (versionsStored) {
+        long bucketVersion = bucket.highest;
 
-      synchronized (bucket) {
-        if (versionsStored) {
-          long bucketVersion = bucket.highest;
+        if (leaderLogic) {
 
-          if (leaderLogic) {
+          if (forwardedFromCollection && ulog.getState() == UpdateLog.State.ACTIVE) {
+            // forwarded from a collection but we are not buffering so strip original version and apply our own
+            // see SOLR-5308
+            log.info("Removing version field from doc: " + cmd.getId());
+            versionOnUpdate = signedVersionOnUpdate = 0;
+          }
 
-            if (forwardedFromCollection && ulog.getState() == UpdateLog.State.ACTIVE) {
-              // forwarded from a collection but we are not buffering so strip original version and apply our own
-              // see SOLR-5308
-              log.info("Removing version field from doc: " + cmd.getId());
-              versionOnUpdate = signedVersionOnUpdate = 0;
-            }
+          // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
+          if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
+              && !isReplayOrPeersync) {
+            // we're not in an active state, and this update isn't from a replay, so buffer it.
+            log.info("Leader logic applied but update log is buffering: " + cmd.getId());
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+            ulog.delete(cmd);
+            return true;
+          }
 
-            // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
-            if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
-                && !isReplayOrPeersync) {
-              // we're not in an active state, and this update isn't from a replay, so buffer it.
-              log.info("Leader logic applied but update log is buffering: " + cmd.getId());
-              cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
-              ulog.delete(cmd);
-              return true;
-            }
-
-            if (signedVersionOnUpdate != 0) {
-              Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-              long foundVersion = lastVersion == null ? -1 : lastVersion;
-              if ( (signedVersionOnUpdate == foundVersion) || (signedVersionOnUpdate < 0 && foundVersion < 0) || (signedVersionOnUpdate == 1 && foundVersion > 0) ) {
-                // we're ok if versions match, or if both are negative (all missing docs are equal), or if cmd
-                // specified it must exist (versionOnUpdate==1) and it does.
-              } else {
-                throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getId() + " expected=" + signedVersionOnUpdate + " actual=" + foundVersion);
-              }
-            }
-
-            long version = vinfo.getNewClock();
-            cmd.setVersion(-version);
-            bucket.updateHighest(version);
-          } else {
-            cmd.setVersion(-versionOnUpdate);
-
-            if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
-              // we're not in an active state, and this update isn't from a replay, so buffer it.
-              cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
-              ulog.delete(cmd);
-              return true;
-            }
-
-            // if we aren't the leader, then we need to check that updates were not re-ordered
-            if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-              // we're OK... this update has a version higher than anything we've seen
-              // in this bucket so far, so we know that no reordering has yet occured.
-              bucket.updateHighest(versionOnUpdate);
+          if (signedVersionOnUpdate != 0) {
+            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            long foundVersion = lastVersion == null ? -1 : lastVersion;
+            if ( (signedVersionOnUpdate == foundVersion) || (signedVersionOnUpdate < 0 && foundVersion < 0) || (signedVersionOnUpdate == 1 && foundVersion > 0) ) {
+              // we're ok if versions match, or if both are negative (all missing docs are equal), or if cmd
+              // specified it must exist (versionOnUpdate==1) and it does.
             } else {
-              // there have been updates higher than the current update.  we need to check
-              // the specific version for this id.
-              Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-              if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-                // This update is a repeat, or was reordered.  We need to drop this update.
-                log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
-                return true;
-              }
-            }
-
-            if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
-              cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+              throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getId() + " expected=" + signedVersionOnUpdate + " actual=" + foundVersion);
             }
           }
+
+          long version = vinfo.getNewClock();
+          cmd.setVersion(-version);
+          bucket.updateHighest(version);
+        } else {
+          cmd.setVersion(-versionOnUpdate);
+
+          if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
+            // we're not in an active state, and this update isn't from a replay, so buffer it.
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+            ulog.delete(cmd);
+            return true;
+          }
+
+          // if we aren't the leader, then we need to check that updates were not re-ordered
+          if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
+            // we're OK... this update has a version higher than anything we've seen
+            // in this bucket so far, so we know that no reordering has yet occured.
+            bucket.updateHighest(versionOnUpdate);
+          } else {
+            // there have been updates higher than the current update.  we need to check
+            // the specific version for this id.
+            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+              // This update is a repeat, or was reordered.  We need to drop this update.
+              log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
+              return true;
+            }
+          }
+
+          if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+          }
         }
+      }
 
-        doLocalDelete(cmd);
-        return false;
-      }  // end synchronized (bucket)
-
+      doLocalDelete(cmd);
+      return false;
     } finally {
+      if(vBucketLocked) {
+        bucket.unlock();
+      }
       vinfo.unlockForUpdate();
     }
   }

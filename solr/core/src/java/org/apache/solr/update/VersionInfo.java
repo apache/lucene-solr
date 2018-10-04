@@ -45,14 +45,21 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 public class VersionInfo {
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final String SYS_PROP_VERSION_LOCK_TIMEOUT_IN_MILL = "versionLockTimeoutInMill";
+
+  /**
+   * same as default client read timeout: 10 mins
+   */
+  private static final int DEFAULT_VERSION_LOCK_TIMEOUT_IN_MILL = 19 * 60 * 1000;
 
   private final UpdateLog ulog;
   private final VersionBucket[] buckets;
   private SchemaField versionField;
   private SchemaField idField;
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
+
+  private int versionLockInMill;
 
   /**
    * Gets and returns the {@link org.apache.solr.common.params.CommonParams#VERSION_FIELD} from the specified
@@ -94,9 +101,11 @@ public class VersionInfo {
     IndexSchema schema = ulog.uhandler.core.getLatestSchema(); 
     versionField = getAndCheckVersionField(schema);
     idField = schema.getUniqueKeyField();
+    versionLockInMill = ulog.uhandler.core.getSolrConfig().getInt("updateHandler/versionLock/timeoutInMill",
+        Integer.parseInt(System.getProperty(SYS_PROP_VERSION_LOCK_TIMEOUT_IN_MILL, "" + DEFAULT_VERSION_LOCK_TIMEOUT_IN_MILL)));
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
     for (int i=0; i<buckets.length; i++) {
-      buckets[i] = new VersionBucket();
+      buckets[i] = new VersionBucket(versionLockInMill);
     }
   }
 
