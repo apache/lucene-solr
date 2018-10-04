@@ -55,6 +55,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
@@ -241,7 +242,7 @@ public class Utils {
         JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
         JSONParser.OPTIONAL_OUTER_BRACES);
     try {
-      return ObjectBuilder.getVal(parser);
+      return STANDARDOBJBUILDER.apply(parser).getVal(parser);
     } catch (IOException e) {
       throw new RuntimeException(e); // should never happen w/o using real IO
     }
@@ -275,6 +276,18 @@ public class Utils {
   public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER = jsonParser -> {
     try {
       return new ObjectBuilder(jsonParser);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
+  public static final Function<JSONParser, ObjectBuilder> MAPWRITEROBJBUILDER = jsonParser -> {
+    try {
+      return new ObjectBuilder(jsonParser){
+        @Override
+        public Object newObject() {
+          return new LinkedHashMapWriter();
+        }
+      };
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -675,4 +688,5 @@ public class Utils {
     }
     return def;
   }
+
 }
