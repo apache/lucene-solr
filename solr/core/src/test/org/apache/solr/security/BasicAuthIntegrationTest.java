@@ -271,10 +271,6 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals(num, registry0.getMetrics().entrySet().stream().filter(e -> e.getKey().startsWith("SECURITY")).count());
   }
 
-  private void initMetricsFromServer() {
-    
-  }
-
   public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd)
       throws IOException {
     HttpPost httpPost;
