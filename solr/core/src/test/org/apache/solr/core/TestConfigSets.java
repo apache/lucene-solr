@@ -33,7 +33,7 @@ import org.junit.rules.TestRule;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.Matchers.containsString;
 
 public class TestConfigSets extends SolrTestCaseJ4 {
 

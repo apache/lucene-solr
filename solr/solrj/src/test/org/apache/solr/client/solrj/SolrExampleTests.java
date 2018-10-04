@@ -69,7 +69,7 @@ import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.Matchers.containsString;
 
 /**
  * This should include tests against the example solr config
