@@ -406,4 +406,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public String getPolicyName() {
     return policy;
   }
+
+  public int getExpectedReplicaCount(Replica.Type type, int def) {
+    Integer result = null;
+    if (type == Replica.Type.NRT) result = numNrtReplicas;
+    if (type == Replica.Type.PULL) result = numPullReplicas;
+    if (type == Replica.Type.TLOG) result = numTlogReplicas;
+    return result == null ? def : result;
+
+  }
 }

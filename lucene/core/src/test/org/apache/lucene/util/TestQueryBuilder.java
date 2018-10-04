@@ -18,8 +18,10 @@ package org.apache.lucene.util;
 
 
 import java.io.IOException;
+import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockSynonymFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -442,5 +444,32 @@ public class TestQueryBuilder extends LuceneTestCase {
     };
     QueryBuilder builder = new QueryBuilder(analyzer);
     assertNull(builder.createBooleanQuery("field", "whatever"));
+  }
+
+  public void testMaxBooleanClause() throws Exception {
+    int size = 34;
+    CannedBinaryTokenStream.BinaryToken[] tokens = new CannedBinaryTokenStream.BinaryToken[size];
+    BytesRef term1 = new BytesRef("ff");
+    BytesRef term2 = new BytesRef("f");
+    for (int i = 0; i < size;) {
+      if (i % 2 == 0) {
+        tokens[i] = new CannedBinaryTokenStream.BinaryToken(term2, 1, 1);
+        tokens[i + 1] = new CannedBinaryTokenStream.BinaryToken(term1, 0, 2);
+        i += 2;
+      } else {
+        tokens[i] = new CannedBinaryTokenStream.BinaryToken(term2, 1, 1);
+        i ++;
+      }
+    }
+    QueryBuilder qb = new QueryBuilder(null);
+    try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
+      expectThrows(BooleanQuery.TooManyClauses.class, () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.MUST));
+    }
+    try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
+      expectThrows(BooleanQuery.TooManyClauses.class, () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.SHOULD));
+    }
+    try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
+      expectThrows(BooleanQuery.TooManyClauses.class, () -> qb.analyzeGraphPhrase(ts, "", 0));
+    }
   }
 }

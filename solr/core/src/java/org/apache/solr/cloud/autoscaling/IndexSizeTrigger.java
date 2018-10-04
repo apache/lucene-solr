@@ -62,6 +62,7 @@ public class IndexSizeTrigger extends TriggerBase {
   public static final String BELOW_DOCS_PROP = "belowDocs";
   public static final String BELOW_OP_PROP = "belowOp";
   public static final String COLLECTIONS_PROP = "collections";
+  public static final String MAX_OPS_PROP = "maxOps";
 
   public static final String BYTES_SIZE_PROP = "__bytes__";
   public static final String DOCS_SIZE_PROP = "__docs__";
@@ -69,9 +70,12 @@ public class IndexSizeTrigger extends TriggerBase {
   public static final String BELOW_SIZE_PROP = "belowSize";
   public static final String VIOLATION_PROP = "violationType";
 
+  public static final int DEFAULT_MAX_OPS = 10;
+
   public enum Unit { bytes, docs }
 
   private long aboveBytes, aboveDocs, belowBytes, belowDocs;
+  private int maxOps;
   private CollectionParams.CollectionAction aboveOp, belowOp;
   private final Set<String> collections = new HashSet<>();
   private final Map<String, Long> lastAboveEventMap = new ConcurrentHashMap<>();
@@ -80,7 +84,8 @@ public class IndexSizeTrigger extends TriggerBase {
   public IndexSizeTrigger(String name) {
     super(TriggerEventType.INDEXSIZE, name);
     TriggerUtils.validProperties(validProperties,
-        ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, BELOW_BYTES_PROP, BELOW_DOCS_PROP, COLLECTIONS_PROP);
+        ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, BELOW_BYTES_PROP, BELOW_DOCS_PROP,
+        COLLECTIONS_PROP, MAX_OPS_PROP);
   }
 
   @Override
@@ -150,6 +155,15 @@ public class IndexSizeTrigger extends TriggerBase {
     belowOp = CollectionParams.CollectionAction.get(belowOpStr);
     if (belowOp == null) {
       throw new TriggerValidationException(getName(), BELOW_OP_PROP, "unrecognized value of: '" + belowOpStr + "'");
+    }
+    String maxOpsStr = String.valueOf(properties.getOrDefault(MAX_OPS_PROP, DEFAULT_MAX_OPS));
+    try {
+      maxOps = Integer.parseInt(maxOpsStr);
+      if (maxOps < 1) {
+        throw new Exception("must be > 1");
+      }
+    } catch (Exception e) {
+      throw new TriggerValidationException(getName(), MAX_OPS_PROP, "invalid value: '" + maxOpsStr + "': " + e.getMessage());
     }
   }
 
@@ -351,7 +365,22 @@ public class IndexSizeTrigger extends TriggerBase {
     // calculate ops
     final List<TriggerEvent.Op> ops = new ArrayList<>();
     aboveSize.forEach((coll, replicas) -> {
+      // sort by decreasing size to first split the largest ones
+      // XXX see the comment below about using DOCS_SIZE_PROP in lieu of BYTES_SIZE_PROP
+      replicas.sort((r1, r2) -> {
+        long delta = (Long) r1.getVariable(DOCS_SIZE_PROP) - (Long) r2.getVariable(DOCS_SIZE_PROP);
+        if (delta > 0) {
+          return -1;
+        } else if (delta < 0) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
       replicas.forEach(r -> {
+        if (ops.size() >= maxOps) {
+          return;
+        }
         TriggerEvent.Op op = new TriggerEvent.Op(aboveOp);
         op.addHint(Suggester.Hint.COLL_SHARD, new Pair<>(coll, r.getShard()));
         ops.add(op);
@@ -363,6 +392,9 @@ public class IndexSizeTrigger extends TriggerBase {
     });
     belowSize.forEach((coll, replicas) -> {
       if (replicas.size() < 2) {
+        return;
+      }
+      if (ops.size() >= maxOps) {
         return;
       }
       // sort by increasing size

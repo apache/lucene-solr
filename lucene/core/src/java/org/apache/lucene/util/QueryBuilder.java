@@ -552,6 +552,7 @@ public class QueryBuilder {
     List<SpanQuery> clauses = new ArrayList<>();
     int[] articulationPoints = graph.articulationPoints();
     int lastState = 0;
+    int maxClauseCount = BooleanQuery.getMaxClauseCount();
     for (int i = 0; i <= articulationPoints.length; i++) {
       int start = lastState;
       int end = -1;
@@ -567,6 +568,9 @@ public class QueryBuilder {
           TokenStream ts = it.next();
           SpanQuery q = createSpanQuery(ts, field);
           if (q != null) {
+            if (queries.size() >= maxClauseCount) {
+              throw new BooleanQuery.TooManyClauses();
+            }
             queries.add(q);
           }
         }
@@ -581,6 +585,9 @@ public class QueryBuilder {
         if (terms.length == 1) {
           queryPos = new SpanTermQuery(terms[0]);
         } else {
+          if (terms.length >= maxClauseCount) {
+            throw new BooleanQuery.TooManyClauses();
+          }
           SpanTermQuery[] orClauses = new SpanTermQuery[terms.length];
           for (int idx = 0; idx < terms.length; idx++) {
             orClauses[idx] = new SpanTermQuery(terms[idx]);
@@ -591,6 +598,9 @@ public class QueryBuilder {
       }
 
       if (queryPos != null) {
+        if (clauses.size() >= maxClauseCount) {
+          throw new BooleanQuery.TooManyClauses();
+        }
         clauses.add(queryPos);
       }
     }

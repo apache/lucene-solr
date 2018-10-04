@@ -181,11 +181,16 @@ Optimizations
 
 ======================= Lucene 7.6.0 =======================
 
-Build
+Build:
 
 * LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
 
 * LUCENE-8493: Stop publishing insecure .sha1 files with releases (janhoy)
+
+Bug fixes:
+
+* LUCENE-8479: QueryBuilder#analyzeGraphPhrase now throws TooManyClause exception
+  if the number of expanded path reaches the BooleanQuery#maxClause limit. (Jim Ferenczi)
 
 ======================= Lucene 7.5.1 =======================
 

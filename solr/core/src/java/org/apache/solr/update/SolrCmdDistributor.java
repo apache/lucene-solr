@@ -386,10 +386,10 @@ public class SolrCmdDistributor implements Closeable {
     // we need to add the data to the rollup tracker.
     //
     // In the case of a leaderTracker and rollupTracker both being present, then we need to take care when assembling
-    // the final response to check both the rollup and leader trackers on the aggrator node.
+    // the final response to check both the rollup and leader trackers on the aggregator node.
     public void trackRequestResult(HttpResponse resp, boolean success) {
-
-      // Returing Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just need to increment
+      
+      // Returning Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just need to increment
       // our achieved rf if we are a leader, i.e. have a leaderTracker.
       int rfFromResp = getRfFromResponse(resp);
 
@@ -420,7 +420,7 @@ public class SolrCmdDistributor implements Closeable {
             }
           }
         } catch (Exception e) {
-          log.warn("Failed to parse response from " + node + " during replication factor accounting due to: " + e);
+          log.warn("Failed to parse response from {} during replication factor accounting", node, e);
         } finally {
           if (inputStream != null) {
             try {
