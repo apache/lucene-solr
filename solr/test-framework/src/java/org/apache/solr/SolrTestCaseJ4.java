@@ -42,6 +42,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -137,6 +138,7 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
+import org.conscrypt.OpenSSLProvider;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -282,7 +284,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
-    
+
+    Security.insertProviderAt(new OpenSSLProvider(), 1);
+
     sslConfig = buildSSLConfig();
     // based on randomized SSL config, set SchemaRegistryProvider appropriately
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());

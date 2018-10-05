@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -41,11 +42,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.conscrypt.OpenSSLProvider;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -236,8 +242,31 @@ public class JettySolrRunner {
       if (sslcontext != null) {
         configuration.setSecureScheme("https");
         configuration.addCustomizer(new SecureRequestCustomizer());
-        connector = new ServerConnector(server, new SslConnectionFactory(sslcontext, "http/1.1"),
-            new HttpConnectionFactory(configuration));
+        HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
+
+        if (config.onlyHttp1) {
+          connector = new ServerConnector(server, new SslConnectionFactory(sslcontext,
+              http1ConnectionFactory.getProtocol()),
+              http1ConnectionFactory);
+        } else {
+          sslcontext.setProvider("Conscrypt");
+          sslcontext.setCipherComparator(HTTP2Cipher.COMPARATOR);
+
+          connector = new ServerConnector(server);
+          SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslcontext, "alpn");
+          connector.addConnectionFactory(sslConnectionFactory);
+          connector.setDefaultProtocol(sslConnectionFactory.getProtocol());
+
+          HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
+
+          ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(
+              http2ConnectionFactory.getProtocol(),
+              http1ConnectionFactory.getProtocol());
+          alpn.setDefaultProtocol(http1ConnectionFactory.getProtocol());
+          connector.addConnectionFactory(alpn);
+          connector.addConnectionFactory(http1ConnectionFactory);
+          connector.addConnectionFactory(http2ConnectionFactory);
+        }
       } else {
         if (config.onlyHttp1) {
           connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
@@ -505,7 +534,7 @@ public class JettySolrRunner {
         throw new IllegalStateException("Jetty Connector is not open: " + 
                                         c.getLocalPort());
       }
-      protocol = c.getDefaultProtocol().startsWith("SSL")  ? "https" : "http";
+      protocol = c.getDefaultProtocol().equalsIgnoreCase("ssl")  ? "https" : "http";
       return new URL(protocol, c.getHost(), c.getLocalPort(), config.context);
 
     } catch (MalformedURLException e) {

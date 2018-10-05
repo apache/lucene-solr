@@ -163,25 +163,25 @@ public class Http2SolrClient extends SolrClient {
     QueuedThreadPool httpClientExecutor = new QueuedThreadPool(100, 4);
     httpClientExecutor.setDaemon(true);
 
-    HttpClientTransport transport;
-    if (useHttp1(builder)) {
-      LOG.info("Create Http2SolrClient with HTTP/1.1 transport");
-      transport = new HttpClientTransportOverHTTP(2);
+    SslContextFactory sslContextFactory;
+    if (builder.sslConfig == null) {
+      sslContextFactory = getDefaultSslContextFactory();
+    } else {
+      sslContextFactory = builder.sslConfig.createContextFactory();
+    }
 
-      SslContextFactory sslContextFactory;
-      if (builder.sslConfig == null) {
-        sslContextFactory = getDefaultSslContextFactory();
-      } else {
-        sslContextFactory = builder.sslConfig.createContextFactory();
-      }
+    HttpClientTransport transport;
+    if (builder.useHttp1_1) {
+      LOG.debug("Create Http2SolrClient with HTTP/1.1 transport");
+      transport = new HttpClientTransportOverHTTP(2);
       httpClient = new HttpClient(transport, sslContextFactory);
     } else {
-      LOG.info("Create Http2SolrClient with HTTP/2 transport");
-      //TODO adding https support for HTTP2 when use JDK 9
+      LOG.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);
-      httpClient = new HttpClient(transport, null);
+      httpClient = new HttpClient(transport, sslContextFactory);
     }
+
     httpClient.setExecutor(httpClientExecutor);
     httpClient.setStrictEventOrdering(false);
     httpClient.setConnectBlocking(true);
@@ -193,19 +193,6 @@ public class Http2SolrClient extends SolrClient {
     if (builder.idleTimeout != null) httpClient.setIdleTimeout(builder.idleTimeout);
     if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
     return httpClient;
-  }
-
-  private boolean useHttp1(Builder builder) {
-    if (serverBaseUrl != null && serverBaseUrl.startsWith("https"))
-      return true;
-
-    if (builder.useHttp1_1 || builder.sslConfig != null)
-      return true;
-
-    if (System.getProperty("javax.net.ssl.trustStore") != null)
-      return true;
-
-    return false;
   }
 
   public void close() {
