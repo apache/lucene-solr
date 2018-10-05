@@ -143,6 +143,8 @@ Other Changes
   changed from {collectionDefaults: {nrtReplicas : 2}} to {defaults : {collection : {nrtReplicas : 2}}}.
   (ab, shalin)
 
+* SOLR-12835: Document statistics exposed by the Query Result Cache when maxRamMB is configured. (shalin)
+
 Bug Fixes
 ----------------------
 
