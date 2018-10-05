@@ -27,18 +27,15 @@ public class TestIndexSearch {
     Directory directory = FSDirectory.open(TestIndexStructure.indexPath);
     IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = new IndexSearcher(reader);
-    BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    builder.add(LongPoint.newExactQuery("brand_id", 81l), BooleanClause.Occur.MUST);
+    TermQuery query = new TermQuery(new Term("brand_id", "11111111"));
 
     SortField sortField = new SortField("s1",SortField.Type.FLOAT,true);
     Sort sort = new Sort(sortField);
-    TopFieldDocs topFieldDocs = searcher.search(builder.build(), 100, sort);
+    TopFieldDocs topFieldDocs = searcher.search(query, 100, sort);
 
     for (ScoreDoc sc : topFieldDocs.scoreDocs) {
       Document document = reader.document(sc.doc);
-      System.out.println(document.get("ware_id") + " , " + document.get("title") + " , " + document.get("s1"));
+      System.out.println(document.get("ware_id") + " , " + document.get("title") + " , " + document.get("s1") + " , " + document.get("brand_id"));
     }
-
-
   }
 }

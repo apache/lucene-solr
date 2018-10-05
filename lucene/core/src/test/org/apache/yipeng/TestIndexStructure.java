@@ -49,6 +49,78 @@ public class TestIndexStructure {
   public static  Path indexPath = Paths.get("/lucene/index_structure");
   //ware_id,category_id,vender_id,title,online_time,stock,brand_id,s1,s2
   public static void main(String[] args) throws IOException {
+    updateIndex();
+  }
+
+
+  public static Document createDoc(Map<String, String> map) {
+    Document document = new Document();
+    for(Map.Entry<String,String> entry : map.entrySet()){
+      if(entry.getKey().equals("ware_id")){
+        document.add(new StringField(entry.getKey(),entry.getValue(), Field.Store.YES));
+        document.add(new StoredField(entry.getKey(),Long.parseLong(entry.getValue())));
+      }
+
+      if(entry.getKey().equals("category_id")){
+        document.add(new StringField(entry.getKey(),entry.getValue(), Field.Store.YES));
+        document.add(new StoredField(entry.getKey(),Long.parseLong(entry.getValue())));
+      }
+
+      if(entry.getKey().equals("vender_id")){
+        document.add(new StringField(entry.getKey(),entry.getValue(), Field.Store.YES));
+        document.add(new StoredField(entry.getKey(),Long.parseLong(entry.getValue())));
+      }
+
+      if(entry.getKey().equals("title")){
+        document.add(new TextField(entry.getKey(),entry.getValue(), Field.Store.YES));
+      }
+
+      if(entry.getKey().equals("online_time")){
+        document.add(new StringField(entry.getKey(),entry.getValue(), Field.Store.YES));
+      }
+
+      if(entry.getKey().equals("stock")){
+        document.add(new StringField(entry.getKey(),entry.getValue(), Field.Store.YES));
+        document.add(new NumericDocValuesField(entry.getKey(),Integer.parseInt(entry.getValue())));
+        document.add(new StoredField(entry.getKey(),Integer.parseInt(entry.getValue())));
+      }
+
+      if(entry.getKey().equals("brand_id")){
+        document.add(new StringField(entry.getKey(),entry.getValue(), Field.Store.YES));
+        document.add(new StoredField(entry.getKey(),Long.parseLong(entry.getValue())));
+      }
+
+      if(entry.getKey().equals("s1")){
+        document.add(new StringField(entry.getKey(),entry.getValue(), Field.Store.YES));
+        document.add(new FloatDocValuesField(entry.getKey(),Float.parseFloat(entry.getValue())));
+        document.add(new StoredField(entry.getKey(),Float.parseFloat(entry.getValue())));
+      }
+
+      if(entry.getKey().equals("s2")){
+        document.add(new StringField(entry.getKey(),entry.getValue(), Field.Store.YES));
+        document.add(new FloatDocValuesField(entry.getKey(),Float.parseFloat(entry.getValue())));
+        document.add(new StoredField(entry.getKey(),Float.parseFloat(entry.getValue())));
+      }
+    }
+    return document;
+  }
+
+  public static void updateIndex() throws IOException{
+    Directory directory = FSDirectory.open(indexPath);
+    List<Map<String,String>> indexMapList = DataReader.getUpdateIndexDatas();
+    IndexWriterConfig writerConfig = new IndexWriterConfig(new StandardAnalyzer());
+    writerConfig.setUseCompoundFile(false);
+    IndexWriter indexWriter = new IndexWriter(directory,writerConfig);
+
+    for(Map<String,String> map : indexMapList){
+      Document document = createDoc(map);
+      indexWriter.addDocument(document);
+    }
+    indexWriter.commit();
+    indexWriter.close();
+  }
+
+  public static void createIndex() throws IOException{
     Directory directory = FSDirectory.open(indexPath);
     List<Map<String,String>> indexMapList = DataReader.getIndexDatas();
     IndexWriterConfig writerConfig = new IndexWriterConfig(new StandardAnalyzer());
@@ -56,54 +128,7 @@ public class TestIndexStructure {
     IndexWriter indexWriter = new IndexWriter(directory,writerConfig);
 
     for(Map<String,String> map : indexMapList){
-      Document document = new Document();
-      for(Map.Entry<String,String> entry : map.entrySet()){
-        if(entry.getKey().equals("ware_id")){
-          document.add(new LongPoint(entry.getKey(),Long.parseLong(entry.getValue())));
-          document.add(new StoredField(entry.getKey(),Long.parseLong(entry.getValue())));
-        }
-
-        if(entry.getKey().equals("category_id")){
-          document.add(new LongPoint(entry.getKey(),Long.parseLong(entry.getValue())));
-          document.add(new StoredField(entry.getKey(),Long.parseLong(entry.getValue())));
-        }
-
-        if(entry.getKey().equals("vender_id")){
-          document.add(new LongPoint(entry.getKey(),Long.parseLong(entry.getValue())));
-          document.add(new StoredField(entry.getKey(),Long.parseLong(entry.getValue())));
-        }
-
-        if(entry.getKey().equals("title")){
-          document.add(new TextField(entry.getKey(),entry.getValue(), Field.Store.YES));
-        }
-
-        if(entry.getKey().equals("online_time")){
-          document.add(new StringField(entry.getKey(),entry.getValue(), Field.Store.YES));
-        }
-
-        if(entry.getKey().equals("stock")){
-          document.add(new IntPoint(entry.getKey(),Integer.parseInt(entry.getValue())));
-          document.add(new NumericDocValuesField(entry.getKey(),Integer.parseInt(entry.getValue())));
-          document.add(new StoredField(entry.getKey(),Integer.parseInt(entry.getValue())));
-        }
-
-        if(entry.getKey().equals("brand_id")){
-          document.add(new LongPoint(entry.getKey(),Long.parseLong(entry.getValue())));
-          document.add(new StoredField(entry.getKey(),Long.parseLong(entry.getValue())));
-        }
-
-        if(entry.getKey().equals("s1")){
-          document.add(new FloatPoint(entry.getKey(),Float.parseFloat(entry.getValue())));
-          document.add(new FloatDocValuesField(entry.getKey(),Float.parseFloat(entry.getValue())));
-          document.add(new StoredField(entry.getKey(),Float.parseFloat(entry.getValue())));
-        }
-
-        if(entry.getKey().equals("s2")){
-          document.add(new FloatPoint(entry.getKey(),Float.parseFloat(entry.getValue())));
-          document.add(new FloatDocValuesField(entry.getKey(),Float.parseFloat(entry.getValue())));
-          document.add(new StoredField(entry.getKey(),Float.parseFloat(entry.getValue())));
-        }
-      }
+      Document document = createDoc(map);
       indexWriter.addDocument(document);
     }
     indexWriter.commit();
