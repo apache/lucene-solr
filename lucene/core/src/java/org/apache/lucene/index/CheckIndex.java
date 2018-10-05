@@ -2052,9 +2052,10 @@ public final class CheckIndex implements Closeable {
         }
       }
 
-      // In the 1D case, PointValues must make a single in-order sweep through all values, and tie-break by
+      // In the 1D data case, PointValues must make a single in-order sweep through all values, and tie-break by
       // increasing docID:
-      if (numIndexDims == 1) {
+      // for data dimension > 1, leaves are sorted by the dimension with the lowest cardinality to improve block compression
+      if (numDataDims == 1) {
         int cmp = FutureArrays.compareUnsigned(lastPackedValue, 0, bytesPerDim, packedValue, 0, bytesPerDim);
         if (cmp > 0) {
           throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
