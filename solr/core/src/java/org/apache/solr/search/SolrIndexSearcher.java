@@ -157,24 +157,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) throws IOException {
     assert reader != null;
     return ExitableDirectoryReader.wrap(
-        wrapUninvertingReaderPerSegment(core, reader),
+        UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper()),
         SolrQueryTimeoutImpl.getInstance());
   }
-
-  /**
-   * If docvalues are enabled or disabled after data has already been indexed for a field, such that
-   * only some segments have docvalues, uninverting on the top level reader will cause 
-   * IllegalStateException to be thrown when trying to use a field with such mixed data. This is because
-   * the {@link IndexSchema#getUninversionMap(IndexReader)} method decides to put a field 
-   * into the uninverteding map only if *NO* segment in the index contains docvalues for that field.
-   * 
-   * Therefore, this class provides a uninverting map per segment such that for any field, 
-   * DocValues are used from segments if they exist and uninversion of the field is performed on the rest
-   * of the segments.
-   */
-   private static DirectoryReader wrapUninvertingReaderPerSegment(SolrCore core, DirectoryReader reader) throws IOException {
-     return UninvertingReader.wrap(reader, r -> core.getLatestSchema().getUninversionMap(r));
-   }
 
   /**
    * Builds the necessary collector chain (via delegate wrapping) and executes the query against it. This method takes
