@@ -169,8 +169,13 @@ Bug Fixes
 
 Improvements
 ----------------------
+
 * SOLR-12767: Solr now always includes in the response of update requests the achieved replication factor
    (Tomás Fernández Löbbe)
+
+* SOLR-12782: UninvertingReader wrapping is now a bit more lightweight: Does not create FieldInfo for fields that
+  can't be uninverted (saves mem) and can avoid wrapping the reader altogether if there's nothing to uninvert.
+  IndexSchema.getUninversionMap refactored to getUninversionMapper and no longer merges FieldInfos. (David Smiley)
 
 ==================  7.5.0 ==================
 

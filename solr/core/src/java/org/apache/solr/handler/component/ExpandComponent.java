@@ -19,10 +19,9 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntObjectHashMap;
@@ -215,10 +214,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        Map<String, UninvertingReader.Type> mapping = new HashMap();
-        mapping.put(field, UninvertingReader.Type.SORTED);
-        @SuppressWarnings("resource")
-        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
+        @SuppressWarnings("resource") LeafReader uninvertingReader = UninvertingReader.wrap(
+            new ReaderWrapper(searcher.getSlowAtomicReader(), field),
+            Collections.singletonMap(field, UninvertingReader.Type.SORTED)::get);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
         values = DocValues.getSorted(reader, field);
@@ -386,10 +384,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(values != null) {
       //Get The Top Level SortedDocValues again so we can re-iterate:
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        Map<String, UninvertingReader.Type> mapping = new HashMap();
-        mapping.put(field, UninvertingReader.Type.SORTED);
-        @SuppressWarnings("resource")
-        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
+        @SuppressWarnings("resource") LeafReader uninvertingReader = UninvertingReader.wrap(
+            new ReaderWrapper(searcher.getSlowAtomicReader(), field),
+            Collections.singletonMap(field, UninvertingReader.Type.SORTED)::get);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
         values = DocValues.getSorted(reader, field);
