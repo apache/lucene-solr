@@ -148,6 +148,8 @@ Other Changes
 Bug Fixes
 ----------------------
 
+* SOLR-12803: Ensure ConcurrentUpdateSolrClient sends documents to correct collection (Jason Gerlowski)
+
 * SOLR-11836: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
   (Alfonso Muñoz-Pomer Fuentes, Amrit Sarkar via Varun Thacker)
 
