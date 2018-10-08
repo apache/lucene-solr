@@ -29,8 +29,7 @@ Solr 8 is a major new release of Solr which introduces new features and a number
 Due to the introduction of LIR redesign since Solr 7.3 (SOLR-11702) and the removing of old LIR implementation in Solr 8.
 Rolling updates are not possible unless all nodes must be on Solr 7.3 or higher. If not updates can be lost.
 
-Solr nodes can now listen and serve HTTP/2 and HTTP/1 requests. However  nodes with HTTPS setup still can only serve
-HTTP/1.1 requests. By default, most of internal requests are sent by using HTTP/2 (except for HTTPS case as mentioned above),
+Solr nodes can now listen and serve HTTP/2 and HTTP/1 requests. By default, most of internal requests are sent by using HTTP/2
 therefore Solr 8.0 nodes can't talk to old nodes (7.x).
 
 However we can follow these steps to do rolling updates:

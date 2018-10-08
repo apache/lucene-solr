@@ -31,10 +31,9 @@ Jetty 9.4.11.v20180605
 Upgrade Notes
 ----------------------
 
-* Solr nodes can now listen and serve HTTP/2 requests. However nodes with HTTPS setup still only serve HTTP/1.1 requests.
-  Most of internal requests (sent by UpdateShardHandler, HttpShardHandler) Http2SolrClient is used.
-  Since by default, internal requests are sent by using HTTP/2 (except for HTTPS case as mentioned above),
-  therefore Solr 8.0 nodes can't talk to old nodes (7.x). However we can follow these steps to do rolling updates:
+* Solr nodes can now listen and serve HTTP/2 requests. Most of internal requests (sent by UpdateShardHandler, HttpShardHandler)
+  Http2SolrClient is used. Since by default, internal requests are sent by using HTTP/2,
+  Solr 8.0 nodes can't talk to old nodes (7.x). However we can follow these steps to do rolling updates:
   - Do rolling updates as normally, but the Solr 8.0 nodes must start with -Dsolr.http1=true as startup parameter.
     By using this parameter internal requests are sent by using HTTP/1.1
   - When all nodes are upgraded to 8.0, restart them, this time -Dsolr.http1 parameter should be removed.
