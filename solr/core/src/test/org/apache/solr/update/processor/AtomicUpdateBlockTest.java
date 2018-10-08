@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -81,8 +80,8 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
     SolrInputDocument newChildDoc = sdoc("id", "3", "cat_ss", "child");
     SolrInputDocument addedDoc = sdoc("id", "1",
-        "cat_ss", ImmutableMap.of("add", "bbb"),
-        "child", ImmutableMap.of("add", sdocs(newChildDoc)));
+        "cat_ss", Collections.singletonMap("add", "bbb"),
+        "child", Collections.singletonMap("add", sdocs(newChildDoc)));
     block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
     block.removeField(VERSION);
     SolrInputDocument preMergeDoc = new SolrInputDocument(block);
@@ -128,8 +127,8 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     );
 
     doc = sdoc("id", "1",
-        "cat_ss", ImmutableMap.of("add", "bbb"),
-        "child2", ImmutableMap.of("add", sdoc("id", "3", "cat_ss", "child")));
+        "cat_ss", Collections.singletonMap("add", "bbb"),
+        "child2", Collections.singletonMap("add", sdoc("id", "3", "cat_ss", "child")));
     addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
 
 
@@ -150,7 +149,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     );
 
     doc = sdoc("id", "2",
-        "child3", ImmutableMap.of("add", sdoc("id", "4", "cat_ss", "child")));
+        "child3", Collections.singletonMap("add", sdoc("id", "4", "cat_ss", "child")));
     addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
 
     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child3, [child]")
@@ -228,8 +227,8 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     );
 
     doc = sdoc("id", "1",
-        "cat_ss", ImmutableMap.of("set", Arrays.asList("aaa", "bbb")),
-        "child1", ImmutableMap.of("set", sdoc("id", "3", "cat_ss", "child")));
+        "cat_ss", Collections.singletonMap("set", Arrays.asList("aaa", "bbb")),
+        "child1", Collections.singletonMap("set", sdoc("id", "3", "cat_ss", "child")));
     addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
 
 
@@ -250,7 +249,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     );
 
     doc = sdoc("id", "3",
-        "child2", ImmutableMap.of("set", sdoc("id", "4", "cat_ss", "child")));
+        "child2", Collections.singletonMap("set", sdoc("id", "4", "cat_ss", "child")));
     addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
 
     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child2, [child]")
@@ -325,7 +324,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     );
 
     doc = sdoc("id", "1",
-        "child1", ImmutableMap.of("remove", sdoc("id", "3", "cat_ss", "child")));
+        "child1", Collections.singletonMap("remove", sdoc("id", "3", "cat_ss", "child")));
     addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
 
 
