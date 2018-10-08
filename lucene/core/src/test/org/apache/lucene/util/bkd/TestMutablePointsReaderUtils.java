@@ -232,7 +232,12 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
     }
 
     @Override
-    public int getNumDimensions() throws IOException {
+    public int getNumDataDimensions() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getNumIndexDimensions() throws IOException {
       throw new UnsupportedOperationException();
     }
 

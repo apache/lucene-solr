@@ -234,8 +234,8 @@ public abstract class PointRangeQuery extends Query {
           return null;
         }
 
-        if (values.getNumDimensions() != numDims) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + values.getNumDimensions() + " but this query has numDims=" + numDims);
+        if (values.getNumIndexDimensions() != numDims) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numIndexDimensions=" + values.getNumIndexDimensions() + " but this query has numDims=" + numDims);
         }
         if (bytesPerDim != values.getBytesPerDimension()) {
           throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + values.getBytesPerDimension() + " but this query has bytesPerDim=" + bytesPerDim);

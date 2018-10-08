@@ -124,8 +124,8 @@ public final class BinaryPoint extends Field {
   /** Expert API */
   public BinaryPoint(String name, byte[] packedPoint, IndexableFieldType type) {
     super(name, packedPoint, type);
-    if (packedPoint.length != type.pointDimensionCount() * type.pointNumBytes()) {
-      throw new IllegalArgumentException("packedPoint is length=" + packedPoint.length + " but type.pointDimensionCount()=" + type.pointDimensionCount() + " and type.pointNumBytes()=" + type.pointNumBytes());
+    if (packedPoint.length != type.pointDataDimensionCount() * type.pointNumBytes()) {
+      throw new IllegalArgumentException("packedPoint is length=" + packedPoint.length + " but type.pointDimensionCount()=" + type.pointDataDimensionCount() + " and type.pointNumBytes()=" + type.pointNumBytes());
     }
   }
   

@@ -1095,7 +1095,7 @@ public class TestPointQueries extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       s.count(BinaryPoint.newRangeQuery("value", point, point));
     });
-    assertEquals("field=\"value\" was indexed with numDims=1 but this query has numDims=2", expected.getMessage());
+    assertEquals("field=\"value\" was indexed with numIndexDimensions=1 but this query has numDims=2", expected.getMessage());
 
     IOUtils.close(r, w, dir);
   }

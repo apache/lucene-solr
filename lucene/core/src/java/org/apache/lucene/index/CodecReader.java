@@ -194,7 +194,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   public final PointValues getPointValues(String field) throws IOException {
     ensureOpen();
     FieldInfo fi = getFieldInfos().fieldInfo(field);
-    if (fi == null || fi.getPointDimensionCount() == 0) {
+    if (fi == null || fi.getPointDataDimensionCount() == 0) {
       // Field does not exist or does not index points
       return null;
     }
