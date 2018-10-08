@@ -47,19 +47,16 @@ multiple requests can be sent in parallel using a same TCP connection.
 
 {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`]
 with HTTP/2 and async capabilities based on Jetty Client is introduced. This client replaced
-{solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] and
-{solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`]
-for sending most of internal requests (sent by
-{solr-javadocs}/solr-core/org/apache/solr/update/UpdateShardHandler.html[`UpdateShardHandler`],
-{solr-javadocs}/solr-core/org/apache/solr/handler/component/HttpShardHandler.html[`HttpShardHandler`]).
-An interesting benchmark result showing gain of using {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] had been posted
+`HttpSolrClient`] and `ConcurrentUpdateSolrClient` for sending most of internal requests (sent by
+`UpdateShardHandler`, `HttpShardHandler`).
+An interesting benchmark result showing gain of using `Http2SolrClient` had been posted
 https://issues.apache.org/jira/browse/SOLR-12642?focusedCommentId=16606648&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-16606648[here].
 However this leads to several changes in configuration and authentication setup
 
 * {solr-javadocs}/solr-core/org/apache/solr/update/UpdateShardHandler.html[`UpdateShardHandler.maxConnections`] parameter is no longer being used
 * {solr-javadocs}/solr-core/org/apache/solr/handler/component/HttpShardHandler.html[`HttpShardHandlerFactory.maxConnections`] parameter is no longer being used
 *  Custom {solr-javadocs}/solr-core/org/apache/solr/security/AuthenticationPlugin.html[`AuthenticationPlugin`] must provide its own setup for
-   {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] through
+   `Http2SolrClient` through
    {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/SolrHttpClientBuilder.html[`SolrHttpClientBuilder.setHttp2Configurator`],
    if not internal requests can't be authenticated
 
