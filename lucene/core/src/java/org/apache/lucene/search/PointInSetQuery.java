@@ -123,8 +123,8 @@ public abstract class PointInSetQuery extends Query {
           return null;
         }
 
-        if (values.getNumDimensions() != numDims) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + values.getNumDimensions() + " but this query has numDims=" + numDims);
+        if (values.getNumIndexDimensions() != numDims) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numIndexDims=" + values.getNumIndexDimensions() + " but this query has numIndexDims=" + numDims);
         }
         if (values.getBytesPerDimension() != bytesPerDim) {
           throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + values.getBytesPerDimension() + " but this query has bytesPerDim=" + bytesPerDim);
