@@ -481,8 +481,8 @@ public class AtomicUpdateDocumentMerger {
 
   /**
    *
-   * @param fullDoc
-   * @param subDoc
+   * @param fullDoc the document to be tested
+   * @param subDoc the sub document that should be a subset of fullDoc
    * @return whether subDoc is a subset of fullDoc
    */
   private static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument subDoc) {
