@@ -136,7 +136,7 @@ public abstract class PointValues {
       if (minValue == null) {
         minValue = leafMinValue.clone();
       } else {
-        final int numDimensions = values.getNumDimensions();
+        final int numDimensions = values.getNumIndexDimensions();
         final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
@@ -167,7 +167,7 @@ public abstract class PointValues {
       if (maxValue == null) {
         maxValue = leafMaxValue.clone();
       } else {
-        final int numDimensions = values.getNumDimensions();
+        final int numDimensions = values.getNumIndexDimensions();
         final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
@@ -233,8 +233,11 @@ public abstract class PointValues {
   /** Returns maximum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMaxPackedValue() throws IOException;
 
-  /** Returns how many dimensions were indexed */
-  public abstract int getNumDimensions() throws IOException;
+  /** Returns how many data dimensions are represented in the values */
+  public abstract int getNumDataDimensions() throws IOException;
+
+  /** Returns how many dimensions are used for the index */
+  public abstract int getNumIndexDimensions() throws IOException;
 
   /** Returns the number of bytes per dimension */
   public abstract int getBytesPerDimension() throws IOException;

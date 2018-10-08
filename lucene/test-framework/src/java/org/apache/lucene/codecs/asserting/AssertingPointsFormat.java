@@ -131,8 +131,8 @@ public final class AssertingPointsFormat extends PointsFormat {
     
     @Override
     public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
-      if (fieldInfo.getPointDimensionCount() == 0) {
-        throw new IllegalArgumentException("writing field=\"" + fieldInfo.name + "\" but pointDimensionalCount is 0");
+      if (fieldInfo.getPointDataDimensionCount() == 0) {
+        throw new IllegalArgumentException("writing field=\"" + fieldInfo.name + "\" but pointDataDimensionalCount is 0");
       }
       in.writeField(fieldInfo, values);
     }

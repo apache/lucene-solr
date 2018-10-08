@@ -122,7 +122,7 @@ public class RandomPostingsTester {
       fieldInfoArray[fieldUpto] = new FieldInfo(field, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
                                                 DocValuesType.NONE, -1, new HashMap<>(),
-                                                0, 0, false);
+                                                0, 0, 0, false);
       fieldUpto++;
 
       SortedMap<BytesRef,SeedAndOrd> postings = new TreeMap<>();
@@ -638,7 +638,7 @@ public class RandomPostingsTester {
                                                    DocValuesType.NONE,
                                                    -1,
                                                    new HashMap<>(),
-                                                   0, 0, false);
+                                                   0, 0, 0, false);
     }
 
     FieldInfos newFieldInfos = new FieldInfos(newFieldInfoArray);

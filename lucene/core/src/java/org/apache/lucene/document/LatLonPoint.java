@@ -145,9 +145,9 @@ public class LatLonPoint extends Field {
   /** helper: checks a fieldinfo and throws exception if its definitely not a LatLonPoint */
   static void checkCompatible(FieldInfo fieldInfo) {
     // point/dv properties could be "unset", if you e.g. used only StoredField with this same name in the segment.
-    if (fieldInfo.getPointDimensionCount() != 0 && fieldInfo.getPointDimensionCount() != TYPE.pointDimensionCount()) {
-      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() + 
-                                         " but this point type has numDims=" + TYPE.pointDimensionCount() + 
+    if (fieldInfo.getPointDataDimensionCount() != 0 && fieldInfo.getPointDataDimensionCount() != TYPE.pointDataDimensionCount()) {
+      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with numDims=" + fieldInfo.getPointDataDimensionCount() +
+          " but this point type has numDims=" + TYPE.pointDataDimensionCount() +
                                          ", is the field really a LatLonPoint?");
     }
     if (fieldInfo.getPointNumBytes() != 0 && fieldInfo.getPointNumBytes() != TYPE.pointNumBytes()) {
