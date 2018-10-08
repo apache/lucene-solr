@@ -1154,6 +1154,38 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).doubleValue() == 500.23D);
   }
 
+  @Test
+  public void testPairSort() throws Exception {
+    String cexpr = "let(a=array(4.5, 7.7, 2.1, 2.1, 6.3)," +
+        "               b=array(1, 2, 3, 4, 5)," +
+        "               c=pairSort(a, b))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("c");
+    System.out.println("###### out:"+out);
+    assertEquals(out.size(), 2);
+    List<Number> row1 = out.get(0);
+    assertEquals(row1.get(0).doubleValue(), 2.1, 0);
+    assertEquals(row1.get(1).doubleValue(), 2.1, 0);
+    assertEquals(row1.get(2).doubleValue(), 4.5, 0);
+    assertEquals(row1.get(3).doubleValue(), 6.3, 0);
+    assertEquals(row1.get(4).doubleValue(), 7.7, 0);
+
+    List<Number> row2 = out.get(1);
+    assertEquals(row2.get(0).doubleValue(), 3, 0);
+    assertEquals(row2.get(1).doubleValue(), 4, 0);
+    assertEquals(row2.get(2).doubleValue(), 1, 0);
+    assertEquals(row2.get(3).doubleValue(), 5, 0);
+    assertEquals(row2.get(4).doubleValue(), 2, 0);
+  }
+
 
   @Test
   public void testOnes() throws Exception {
