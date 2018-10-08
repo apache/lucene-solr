@@ -479,11 +479,17 @@ public class AtomicUpdateDocumentMerger {
     }
   }
 
+  /**
+   *
+   * @param fullDoc
+   * @param subDoc
+   * @return whether subDoc is a subset of fullDoc
+   */
   private static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument subDoc) {
     for(SolrInputField subSif: subDoc) {
       String fieldName = subSif.getName();
       if(!fullDoc.containsKey(fieldName)) return false;
-      Collection<Object> fieldValues = subDoc.getFieldValues(fieldName);
+      Collection<Object> fieldValues = fullDoc.getFieldValues(fieldName);
       if(fieldValues.size() < subSif.getValueCount()) return false;
       if(!fullDoc.getFieldValues(fieldName).containsAll(subSif.getValues())) return false;
     }
