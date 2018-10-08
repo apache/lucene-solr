@@ -285,7 +285,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     ignoreException("ignore_exception");
     newRandomConfig();
 
-    Security.insertProviderAt(new OpenSSLProvider(), 1);
+    // Set Conscrypt as default OpenSSLProvider for all clients
+    if (Security.getProvider("Conscrypt") == null) {
+      Security.insertProviderAt(new OpenSSLProvider(), 1);
+    }
 
     sslConfig = buildSSLConfig();
     // based on randomized SSL config, set SchemaRegistryProvider appropriately
