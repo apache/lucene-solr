@@ -436,6 +436,8 @@ Bug Fixes
 
 * SOLR-12765: Incorrect format of JMX cache stats. (Bojan Smid, ab)
 
+* SOLR-12749: timeseries() expression missing sum() results for empty buckets (Joel Bernstein)
+
 Optimizations
 ----------------------
 
