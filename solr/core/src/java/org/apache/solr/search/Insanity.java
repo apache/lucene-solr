@@ -49,8 +49,9 @@ public class Insanity {
    * instead of a numeric.
    */
   public static LeafReader wrapInsanity(LeafReader sane, String insaneField) {
-    return new UninvertingReader(new InsaneReader(sane, insaneField),
-                                 Collections.singletonMap(insaneField, UninvertingReader.Type.SORTED));
+    return UninvertingReader.wrap(
+        new InsaneReader(sane, insaneField),
+        Collections.singletonMap(insaneField, UninvertingReader.Type.SORTED)::get);
   }
   
   /** Hides the proper numeric dv type for the field */

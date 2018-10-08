@@ -36,13 +36,16 @@ public class Suggestion {
     public Policy.Session session;
     public Violation violation;
     private List<Suggester.SuggestionInfo> suggestions = new ArrayList<>();
-
     SolrRequest addSuggestion(Suggester suggester) {
+      return addSuggestion(suggester, "violation");
+    }
+
+    SolrRequest addSuggestion(Suggester suggester, String type) {
       SolrRequest op = suggester.getSuggestion();
       if (op != null) {
         session = suggester.getSession();
         suggestions.add(new Suggester.SuggestionInfo(violation,
-            ((V2RequestSupport) op.setUseV2(true)).getV2Request()));
+            ((V2RequestSupport) op.setUseV2(true)).getV2Request(), type));
       }
       return op;
     }

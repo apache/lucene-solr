@@ -84,6 +84,9 @@ API Changes
 * LUCENE-8498: LowerCaseTokenizer has been removed, and CharTokenizer no longer
   takes a normalizer function. (Alan Woodward)
 
+* LUCENE-8513: MultiFields.getFields is now removed.  Please avoid this class,
+  and Fields in general, when possible. (David Smiley)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -178,11 +181,16 @@ Optimizations
 
 ======================= Lucene 7.6.0 =======================
 
-Build
+Build:
 
 * LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
 
 * LUCENE-8493: Stop publishing insecure .sha1 files with releases (janhoy)
+
+Bug fixes:
+
+* LUCENE-8479: QueryBuilder#analyzeGraphPhrase now throws TooManyClause exception
+  if the number of expanded path reaches the BooleanQuery#maxClause limit. (Jim Ferenczi)
 
 ======================= Lucene 7.5.1 =======================
 

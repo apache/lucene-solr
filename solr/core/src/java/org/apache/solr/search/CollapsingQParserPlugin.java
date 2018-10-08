@@ -19,8 +19,8 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -1256,15 +1256,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(collapseFieldType instanceof StrField) {
         if(HINT_TOP_FC.equals(hint)) {
 
-            /*
-            * This hint forces the use of the top level field cache for String fields.
-            * This is VERY fast at query time but slower to warm and causes insanity.
-            */
-
-          Map<String, UninvertingReader.Type> mapping = new HashMap();
-          mapping.put(collapseField, UninvertingReader.Type.SORTED);
-          @SuppressWarnings("resource") final UninvertingReader uninvertingReader =
-              new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField), mapping);
+          /*
+          * This hint forces the use of the top level field cache for String fields.
+          * This is VERY fast at query time but slower to warm and causes insanity.
+          */
+          @SuppressWarnings("resource") final LeafReader uninvertingReader = UninvertingReader.wrap(
+                  new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField),
+                  Collections.singletonMap(collapseField, UninvertingReader.Type.SORTED)::get);
 
           docValuesProducer = new EmptyDocValuesProducer() {
               @Override

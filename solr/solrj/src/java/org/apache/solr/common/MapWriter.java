@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import org.apache.solr.common.util.Utils;
@@ -43,7 +44,7 @@ public interface MapWriter extends MapSerializable {
     try {
       writeMap(new EntryWriter() {
         @Override
-        public EntryWriter put(String k, Object v) throws IOException {
+        public EntryWriter put(String k, Object v) {
           if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
           if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
           if (v instanceof Iterable) {
@@ -90,6 +91,41 @@ public interface MapWriter extends MapSerializable {
     Object v = Utils.getObjectByPath(this, false, path);
     return v == null ? def : v;
   }
+
+  default String _getStr(String path, String def) {
+    Object v = Utils.getObjectByPath(this, false, path);
+    return v == null ? def : String.valueOf(v);
+  }
+
+  default void _forEachEntry(String path, BiConsumer fun) {
+    Utils.forEachMapEntry(this, path, fun);
+  }
+
+  default void _forEachEntry(List<String> path, BiConsumer fun) {
+    Utils.forEachMapEntry(this, path, fun);
+  }
+
+  default void _forEachEntry(BiConsumer fun) {
+    Utils.forEachMapEntry(this, fun);
+  }
+
+  /**
+   * Get a child object value using json path
+   *
+   * @param path the full path to that object such as ["a","b","c[4]","d"] etc
+   * @param def  the default
+   * @return the found value or default
+   */
+  default Object _get(List<String> path, Object def) {
+    Object v = Utils.getObjectByPath(this, false, path);
+    return v == null ? def : v;
+  }
+
+  default String _getStr(List<String> path, String def) {
+    Object v = Utils.getObjectByPath(this, false, path);
+    return v == null ? def : String.valueOf(v);
+  }
+
   /**
    * An interface to push one entry at a time to the output.
    * The order of the keys is not defined, but we assume they are distinct -- don't call {@code put} more than once

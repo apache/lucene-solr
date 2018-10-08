@@ -301,7 +301,7 @@ public class SolrCmdDistributor {
     // the final response to check both the rollup and leader trackers on the aggrator node.
     public void trackRequestResult(NamedList resp, boolean success) {
 
-      // Returing Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just need to increment
+      // Returning Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just need to increment
       // our achieved rf if we are a leader, i.e. have a leaderTracker.
       int rfFromResp = getRfFromResponse(resp);
 
