@@ -138,6 +138,8 @@ New Features
 
 * SOLR-12815: Implement maxOps limit for IndexSizeTrigger. (ab)
 
+* SOLR-12843: Implement a MultiContentWriter in SolrJ to post multiple files/payload at once (noble)
+
 Other Changes
 ----------------------
 
