@@ -232,6 +232,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       @Override
       public void onQueued(Request request) {
         generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
+        if (log.isDebugEnabled()) {
+          log.debug("Add token {} for request {}", request.getHeaders().get(HEADER), request);
+        }
       }
     };
     builder.setHttp2Configurator(client -> {
