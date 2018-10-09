@@ -607,9 +607,7 @@ public abstract class LBSolrClient extends SolrClient {
         break;
       }
 
-      int count = counter.incrementAndGet() & Integer.MAX_VALUE;
-      ServerWrapper wrapper = serverList[count % serverList.length];
-
+      ServerWrapper wrapper = pickServer(serverList, request);
       try {
         ++numServersTried;
         request.setBasePath(wrapper.baseUrl);
@@ -679,6 +677,19 @@ public abstract class LBSolrClient extends SolrClient {
     } else {
       throw new SolrServerException(solrServerExceptionMessage, ex);
     }
+  }
+
+  /**
+   * Pick a server from list to execute request.
+   * By default servers are picked in round-robin manner,
+   * custom classes can override this method for more advance logic
+   * @param aliveServerList list of currently alive servers
+   * @param request the request will be sent to the picked server
+   * @return the picked server
+   */
+  protected ServerWrapper pickServer(ServerWrapper[] aliveServerList, SolrRequest request) {
+    int count = counter.incrementAndGet() & Integer.MAX_VALUE;
+    return aliveServerList[count % aliveServerList.length];
   }
 
   private void moveAliveToDead(ServerWrapper wrapper) {
