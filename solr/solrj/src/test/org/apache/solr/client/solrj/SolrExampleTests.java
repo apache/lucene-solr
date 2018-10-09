@@ -69,7 +69,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
