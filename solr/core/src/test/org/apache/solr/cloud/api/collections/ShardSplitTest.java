@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -60,10 +61,12 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -537,6 +540,64 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
     } finally {
       stop.set(true);
       monkeyThread.join();
+    }
+  }
+
+  @Test
+  public void testSplitLocking() throws Exception {
+    waitForThingsToLevelOut(15);
+    String collectionName = "testSplitLocking";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2);
+    create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
+    create.process(cloudClient);
+    waitForRecoveriesToFinish(collectionName, false);
+
+    TestInjection.splitLatch = new CountDownLatch(1); // simulate a long split operation
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/" + SHARD1 + "-splitting";
+    final AtomicReference<Exception> exc = new AtomicReference<>();
+    try {
+      Runnable r = () -> {
+        try {
+          trySplit(collectionName, null, SHARD1, 1);
+        } catch (Exception e) {
+          exc.set(e);
+        }
+      };
+      Thread t = new Thread(r);
+      t.start();
+      // wait for the split to start executing
+      TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      while (!timeOut.hasTimedOut()) {
+        timeOut.sleep(500);
+        if (cloudClient.getZkStateReader().getZkClient().exists(path, true)) {
+          log.info("=== found lock node");
+          break;
+        }
+      }
+      assertFalse("timed out waiting for the lock znode to appear", timeOut.hasTimedOut());
+      assertNull("unexpected exception: " + exc.get(), exc.get());
+      log.info("=== trying second split");
+      try {
+        trySplit(collectionName, null, SHARD1, 1);
+        fail("expected to fail due to locking but succeeded");
+      } catch (Exception e) {
+        log.info("Expected failure: " + e.toString());
+      }
+
+      // make sure the lock still exists
+      assertTrue("lock znode expected but missing", cloudClient.getZkStateReader().getZkClient().exists(path, true));
+      // let the first split proceed
+      TestInjection.splitLatch.countDown();
+      timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      while (!timeOut.hasTimedOut()) {
+        timeOut.sleep(500);
+        if (!cloudClient.getZkStateReader().getZkClient().exists(path, true)) {
+          break;
+        }
+      }
+      assertFalse("timed out waiting for the lock znode to disappear", timeOut.hasTimedOut());
+    } finally {
+      TestInjection.reset();
     }
   }
 

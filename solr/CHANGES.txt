@@ -182,6 +182,8 @@ Bug Fixes
 * SOLR-12836: ZkController creates a cloud solr client with no connection or read timeouts. Now the http client
   created by the update shard handler is used instead. (shalin)
 
+* SOLR-12729: SplitShardCmd should lock the parent shard to prevent parallel splitting requests. (ab)
+
 Improvements
 ----------------------
 

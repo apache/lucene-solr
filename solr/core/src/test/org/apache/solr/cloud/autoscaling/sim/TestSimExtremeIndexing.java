@@ -66,6 +66,9 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
   // tweak this threshold to test the number of splits
   private static final long ABOVE_SIZE = 20000000;
 
+  // tweak this to allow more operations in one event
+  private static final int MAX_OPS = 100;
+
 
   private static TimeSource timeSource;
   private static SolrClient solrClient;
@@ -100,6 +103,7 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
         "'event' : 'indexSize'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'aboveDocs' : " + ABOVE_SIZE + "," +
+        "'maxOps' : " + MAX_OPS + "," +
         "'enabled' : true," +
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
