@@ -99,6 +99,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -787,7 +788,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
     // fail fast if parameters are wrong or incomplete
     List<String> shardNames = CreateCollectionCmd.populateShardNames(props, router);
-    CreateCollectionCmd.checkMaxShardsPerNode(props, usePolicyFramework);
+    int maxShardsPerNode = props.getInt(MAX_SHARDS_PER_NODE, 1);
+    if (maxShardsPerNode == -1) maxShardsPerNode = Integer.MAX_VALUE;
     CreateCollectionCmd.checkReplicaTypes(props);
 
     // always force getting fresh state

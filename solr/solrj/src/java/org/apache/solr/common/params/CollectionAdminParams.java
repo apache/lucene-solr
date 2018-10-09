@@ -92,7 +92,15 @@ public interface CollectionAdminParams {
   String COLOCATED_WITH = "COLOCATED_WITH";
 
   /**
-   * Used by cluster properties API to provide defaults for collection, cluster etc.
+   * Used by cluster properties API as a wrapper key to provide defaults for collection, cluster etc.
+   *
+   * e.g. {defaults:{collection:{useLegacyReplicaAssignment:false}}}
    */
   String DEFAULTS = "defaults";
+
+  /**
+   * This cluster property decides whether Solr should use the legacy round-robin replica placement strategy
+   * or the autoscaling policy based strategy to assign replicas to nodes. The default is false.
+   */
+  String USE_LEGACY_REPLICA_ASSIGNMENT = "useLegacyReplicaAssignment";
 }

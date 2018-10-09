@@ -38,10 +38,8 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
-import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -132,12 +130,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     ocmh.validateConfigOrThrowSolrException(configName);
 
     String router = message.getStr("router.name", DocRouter.DEFAULT_NAME);
-    String policy = message.getStr(Policy.POLICY);
-    boolean usePolicyFramework = CloudUtil.usePolicyFramework(ocmh.cloudManager) || policy != null;
 
     // fail fast if parameters are wrong or incomplete
     List<String> shardNames = populateShardNames(message, router);
-    checkMaxShardsPerNode(message, usePolicyFramework);
     checkReplicaTypes(message);
 
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
@@ -343,10 +338,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
     int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
-    boolean usePolicyFramework = CloudUtil.usePolicyFramework(docCollection, cloudManager);
 
     int numSlices = shardNames.size();
-    int maxShardsPerNode = checkMaxShardsPerNode(message, usePolicyFramework);
+    int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
+    if (maxShardsPerNode == -1) maxShardsPerNode = Integer.MAX_VALUE;
 
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
@@ -400,16 +395,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
     }
     return replicaPositions;
-  }
-
-  public static int checkMaxShardsPerNode(ZkNodeProps message, boolean usePolicyFramework) {
-    int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
-    if (usePolicyFramework && message.getStr(MAX_SHARDS_PER_NODE) != null && maxShardsPerNode > 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "'maxShardsPerNode>0' is not supported when autoScaling policies are used");
-    }
-    if (maxShardsPerNode == -1 || usePolicyFramework) maxShardsPerNode = Integer.MAX_VALUE;
-
-    return maxShardsPerNode;
   }
 
   public static void checkReplicaTypes(ZkNodeProps message) {
