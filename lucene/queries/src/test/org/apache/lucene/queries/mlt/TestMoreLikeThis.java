@@ -61,10 +61,21 @@ public class TestMoreLikeThis extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     
     // Add series of docs with specific information for MoreLikeThis
-    addDoc(writer, "lucene");
-    addDoc(writer, "lucene release");
-    addDoc(writer, "apache");
-    addDoc(writer, "apache lucene");
+    addDoc(writer, "text", "lucene");
+    addDoc(writer, "text", "lucene release");
+    addDoc(writer, "text", "apache");
+    addDoc(writer, "text", "apache lucene");
+
+    // one more time to increase the doc frequencies
+    addDoc(writer, "text","lucene2");
+    addDoc(writer, "text", "lucene2 release2");
+    addDoc(writer, "text", "apache2");
+    addDoc(writer, "text", "apache2 lucene2");
+
+    addDoc(writer, "text2","lucene2");
+    addDoc(writer, "text2", "lucene2 release2");
+    addDoc(writer, "text2", "apache2");
+    addDoc(writer, "text2", "apache2 lucene2");
 
     reader = writer.getReader();
     writer.close();
@@ -78,16 +89,16 @@ public class TestMoreLikeThis extends LuceneTestCase {
     super.tearDown();
   }
   
-  private void addDoc(RandomIndexWriter writer, String text) throws IOException {
+  private void addDoc(RandomIndexWriter writer, String fieldName, String text) throws IOException {
     Document doc = new Document();
-    doc.add(newTextField("text", text, Field.Store.YES));
+    doc.add(newTextField(fieldName, text, Field.Store.YES));
     writer.addDocument(doc);
   }
 
-  private void addDoc(RandomIndexWriter writer, String[] texts) throws IOException {
+  private void addDoc(RandomIndexWriter writer, String fieldName, String[] texts) throws IOException {
     Document doc = new Document();
     for (String text : texts) {
-      doc.add(newTextField("text", text, Field.Store.YES));
+      doc.add(newTextField(fieldName, text, Field.Store.YES));
     }
     writer.addDocument(doc);
   }
@@ -253,7 +264,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < numDocs; i++) {
-      addDoc(writer, generateStrSeq(0, i + 1));
+      addDoc(writer, "text", generateStrSeq(0, i + 1));
     }
     IndexReader reader = writer.getReader();
     writer.close();
