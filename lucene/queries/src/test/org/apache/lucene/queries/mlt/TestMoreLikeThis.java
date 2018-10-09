@@ -244,6 +244,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
     BooleanQuery query = (BooleanQuery) mlt.like(filteredDocument);
     Collection<BooleanClause> clauses = query.clauses();
+    // Because "text2" was not added to the list of field names, we don't expect any results even though the min tf for field "text2" is above the threshold
     assertEquals("Expected 0 clauses only!", 0, clauses.size());
     analyzer.close();
   }
