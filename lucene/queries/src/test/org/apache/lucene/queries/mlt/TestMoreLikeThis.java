@@ -247,11 +247,12 @@ public class TestMoreLikeThis extends LuceneTestCase {
     Collection<BooleanClause> clauses = query.clauses();
 
     HashSet<Term> unexpectedTerms = new HashSet<>();
-    unexpectedTerms.add(new Term("text", "apache"));
-    unexpectedTerms.add(new Term("text", "lucene"));
-    unexpectedTerms.add(new Term("text", "apache2"));
-    unexpectedTerms.add(new Term("text", "lucene2"));
+    unexpectedTerms.add(new Term("text", "apache"));//Term Frequency < Minimum Accepted Term Frequency
+    unexpectedTerms.add(new Term("text", "lucene"));//Term Frequency < Minimum Accepted Term Frequency
+    unexpectedTerms.add(new Term("text", "apache2"));//Term Frequency < Minimum Accepted Term Frequency
+    unexpectedTerms.add(new Term("text", "lucene2"));//Wrong Field
 
+    //None of the Not Expected terms is in the query
     for (BooleanClause clause : clauses) {
       Term term = ((TermQuery) clause.getQuery()).getTerm();
       assertFalse("Unexpected term '" + term + "' found in query terms", unexpectedTerms.contains(term));
@@ -262,7 +263,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     analyzer.close();
   }
 
-  public void testLiveMapDocument_minTermFrequencySet_shouldBuildQueryWithSpecifiedFieldnamesOnly() throws Exception {
+  public void testLiveMapDocument_queryFieldsSet_shouldBuildQueryFromSpecifiedFieldnamesOnly() throws Exception {
     MoreLikeThis mlt = new MoreLikeThis(reader);
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     mlt.setAnalyzer(analyzer);
@@ -281,6 +282,11 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
     BooleanQuery query = (BooleanQuery) mlt.like(filteredDocument);
     Collection<BooleanClause> clauses = query.clauses();
+    HashSet<Term> clausesTerms = new HashSet<>();
+    for (BooleanClause clause : clauses) {
+      Term term = ((TermQuery) clause.getQuery()).getTerm();
+      clausesTerms.add(term);
+    }
     assertEquals("Expected 2 clauses only!", 2, clauses.size());
 
     HashSet<Term> expectedTerms = new HashSet<>();
@@ -291,11 +297,17 @@ public class TestMoreLikeThis extends LuceneTestCase {
     unexpectedTerms.add(new Term("text", "apache2"));
     unexpectedTerms.add(new Term("text", "lucene2"));
 
+    //None of the Not Expected terms is in the query
     for (BooleanClause clause : clauses) {
       Term term = ((TermQuery) clause.getQuery()).getTerm();
-      assertTrue("Unexpected term '" + term + "' found in query terms", expectedTerms.contains(term));
-      assertFalse("Expected term '" + term + "' not found in query terms", unexpectedTerms.contains(term));
+      assertFalse("Unexpected term '" + term + "' found in query terms", unexpectedTerms.contains(term));
     }
+
+    //All of the Expected terms are in the query
+    for (Term expectedTerm : expectedTerms) {
+      assertTrue("Expected term '" + expectedTerm + "' is not found in query terms", clausesTerms.contains(expectedTerm));
+    }
+
     analyzer.close();
   }
 
