@@ -65,6 +65,8 @@ New Features
   locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
 
+* SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
+
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
 Optimizations

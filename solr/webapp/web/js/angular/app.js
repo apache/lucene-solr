@@ -31,6 +31,10 @@ solrAdminApp.config([
         templateUrl: 'partials/index.html',
         controller: 'IndexController'
       }).
+      when('/login', {
+        templateUrl: 'partials/login.html',
+        controller: 'LoginController'
+      }).
       when('/~logging', {
         templateUrl: 'partials/logging.html',
         controller: 'LoggingController'
@@ -365,12 +369,62 @@ solrAdminApp.config([
       $rootScope.exceptions[rejection.config.url] = rejection.data.error;
     }
     return $q.reject(rejection);
-  }
+  };
+
+  return {request: started, response: ended, responseError: failed};
+})
+// Intercept authentication request from Solr and forward to /solr/#/login    
+.factory('authInterceptor', function($q, $rootScope, $location, $timeout, $injector) {
+  var started = function(config) {
+    if (sessionStorage.getItem("auth.header")) {
+      config.headers['Authorization'] = sessionStorage.getItem("auth.header");
+    }
+    return config || $q.when(config);
+  };
+
+  var ended = function(response) {
+    if ($location.path() !== '/login') {
+      sessionStorage.removeItem("http401");
+      sessionStorage.removeItem("auth.statusText");
+    }
+    return response || $q.when(response);
+  };
+
+  var failed = function(rejection) {
+    if (rejection.status === 401) {
+      var headers = rejection.headers();
+      var wwwAuthHeader = headers['www-authenticate'];
+      sessionStorage.setItem("auth.wwwAuthHeader", wwwAuthHeader);
+      sessionStorage.setItem("auth.statusText", rejection.statusText);
+      var authDataHeader = headers['X-Solr-AuthData'];
+      if (authDataHeader !== null) {
+        sessionStorage.setItem("auth.config", authDataHeader);
+      }
+      if ($location.path() === '/login') {
+        sessionStorage.setItem("auth.location", "/");
+      } else {
+        sessionStorage.setItem("auth.location", $location.path());
+      }
+      sessionStorage.setItem("http401", "true");
+      sessionStorage.removeItem("auth.scheme");
+      sessionStorage.removeItem("auth.realm");
+      sessionStorage.removeItem("auth.username");
+      sessionStorage.removeItem("auth.header");
+      $location.path('/login');
+      return $q.reject(rejection);
+    } else {
+      $rootScope.$broadcast('loadingStatusInactive');
+      return $q.reject(rejection);    
+    }
+  };
 
   return {request: started, response: ended, responseError: failed};
 })
 .config(function($httpProvider) {
   $httpProvider.interceptors.push("httpInterceptor");
+  $httpProvider.interceptors.push("authInterceptor");
+  // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so browser will not pop up login dialogue
+  $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 })
 .directive('fileModel', function ($parse) {
     return {
@@ -441,6 +495,8 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
+    $scope.currentUser = sessionStorage.getItem("auth.username");
+    $scope.http401 = sessionStorage.getItem("http401");
   };
 
   $scope.ping = function() {
