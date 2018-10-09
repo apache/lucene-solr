@@ -214,6 +214,29 @@ public class TestMoreLikeThis extends LuceneTestCase {
     analyzer.close();
   }
 
+  public void testLiveMapDocument_minTermFrequencySet_shouldBuildQueryWithCorrectTerms() throws Exception {
+    MoreLikeThis mlt = new MoreLikeThis(reader);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt.setAnalyzer(analyzer);
+    mlt.setMinDocFreq(0);
+    mlt.setMinTermFreq(3);
+    mlt.setMinWordLen(1);
+    String sampleField1 = "text";
+    String sampleField2 = "text2";
+    mlt.setFieldNames(new String[]{sampleField1});
+
+    Map<String, Collection<Object>> filteredDocument = new HashMap<>();
+    String textValue1 = "apache apache lucene lucene";
+    String textValue2 = "apache2 apache2 lucene2 lucene2 lucene2";
+    filteredDocument.put(sampleField1, Arrays.asList(textValue1));
+    filteredDocument.put(sampleField2, Arrays.asList(textValue2));
+
+    BooleanQuery query = (BooleanQuery) mlt.like(filteredDocument);
+    Collection<BooleanClause> clauses = query.clauses();
+    assertEquals("Expected 0 clauses only!", 0, clauses.size());
+    analyzer.close();
+  }
+
   // just basic equals/hashcode etc
   public void testMoreLikeThisQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
