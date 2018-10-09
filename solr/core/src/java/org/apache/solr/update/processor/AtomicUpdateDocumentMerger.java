@@ -482,11 +482,11 @@ public class AtomicUpdateDocumentMerger {
   /**
    *
    * @param fullDoc the full doc to  be compared against
-   * @param subDoc the sub document to be tested
-   * @return whether subDoc is derived from fullDoc
+   * @param partialDoc the sub document to be tested
+   * @return whether partialDoc is derived from fullDoc
    */
-  private static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument subDoc) {
-    for(SolrInputField subSif: subDoc) {
+  private static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument partialDoc) {
+    for(SolrInputField subSif: partialDoc) {
       String fieldName = subSif.getName();
       if(!fullDoc.containsKey(fieldName)) return false;
       Collection<Object> fieldValues = fullDoc.getFieldValues(fieldName);
