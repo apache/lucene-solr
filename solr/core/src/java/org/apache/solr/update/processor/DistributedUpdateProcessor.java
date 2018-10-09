@@ -207,10 +207,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final boolean cloneRequiredOnLeader;
   private final Replica.Type replicaType;
 
-  @Deprecated
-  // this flag, used for testing rolling updates, should be removed by SOLR-11812
-  private final boolean isOldLIRMode;
-
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
   }
@@ -229,7 +225,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     this.ulog = req.getCore().getUpdateHandler().getUpdateLog();
     this.vinfo = ulog == null ? null : ulog.getVersionInfo();
-    this.isOldLIRMode = !"new".equals(req.getCore().getCoreDescriptor().getCoreProperty("lirVersion", "new"));
     versionsStored = this.vinfo != null && this.vinfo.getVersionField() != null;
     returnVersions = req.getParams().getBool(UpdateParams.VERSIONS ,false);
 
@@ -381,7 +376,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           String coreNodeName = replica.getName();
           if (skipList != null && skipListSet.contains(replica.getCoreUrl())) {
             log.info("check url:" + replica.getCoreUrl() + " against:" + skipListSet + " result:true");
-          } else if(!isOldLIRMode && zkShardTerms.registered(coreNodeName) && zkShardTerms.skipSendingUpdatesTo(coreNodeName)) {
+          } else if(zkShardTerms.registered(coreNodeName) && zkShardTerms.skipSendingUpdatesTo(coreNodeName)) {
             log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
             skippedCoreNodeNames.add(replica.getName());
           } else if (!clusterState.getLiveNodes().contains(replica.getNodeName()) || replica.getState() == Replica.State.DOWN) {
@@ -769,7 +764,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
  
   // TODO: optionally fail if n replicas are not reached...
   private void doFinish() {
-    boolean shouldUpdateTerms = isLeader && !isOldLIRMode && isIndexChanged;
+    boolean shouldUpdateTerms = isLeader && isIndexChanged;
     if (shouldUpdateTerms) {
       ZkShardTerms zkShardTerms = zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId());
       if (skippedCoreNodeNames != null) {
@@ -875,21 +870,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // if false, then the node is probably not "live" anymore
             // and we do not need to send a recovery message
             Throwable rootCause = SolrException.getRootCause(error.e);
-            if (!isOldLIRMode && zkController.getShardTerms(collection, shardId).registered(coreNodeName)) {
-              log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
-              replicasShouldBeInLowerTerms.add(coreNodeName);
-            } else {
-              // The replica did not registered its term, so it must run with old LIR implementation
-              log.error("Setting up to try to start recovery on replica {}", replicaUrl, rootCause);
-              zkController.ensureReplicaInLeaderInitiatedRecovery(
-                  req.getCore().getCoreContainer(),
-                  collection,
-                  shardId,
-                  stdNode.getNodeProps(),
-                  req.getCore().getCoreDescriptor(),
-                  false /* forcePublishState */
-              );
-            }
+            log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
+            replicasShouldBeInLowerTerms.add(coreNodeName);
           } catch (Exception exc) {
             Throwable setLirZnodeFailedCause = SolrException.getRootCause(exc);
             log.error("Leader failed to set replica " +
@@ -913,7 +895,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
     }
-    if (!isOldLIRMode && !replicasShouldBeInLowerTerms.isEmpty()) {
+    if (!replicasShouldBeInLowerTerms.isEmpty()) {
       zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId())
           .ensureTermsIsHigher(cloudDesc.getCoreNodeName(), replicasShouldBeInLowerTerms);
     }

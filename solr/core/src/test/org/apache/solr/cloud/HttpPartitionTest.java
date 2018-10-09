@@ -129,8 +129,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   public void test() throws Exception {
     waitForThingsToLevelOut(30000);
 
-    testLeaderInitiatedRecoveryCRUD();
-
     testDoRecoveryOnRestart();
 
     // test a 1x2 collection
@@ -150,62 +148,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     waitForThingsToLevelOut(30000);
 
     log.info("HttpPartitionTest succeeded ... shutting down now!");
-  }
-
-  /**
-   * Tests handling of different format of lir nodes
-   */
-  //TODO remove in SOLR-11812
-  protected void testLeaderInitiatedRecoveryCRUD() throws Exception {
-    String testCollectionName = "c8n_crud_1x2";
-    String shardId = "shard1";
-    createCollectionRetry(testCollectionName, "conf1", 1, 2, 1);
-    cloudClient.setDefaultCollection(testCollectionName);
-
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
-    JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
-
-    CoreContainer cores = leaderJetty.getCoreContainer();
-    ZkController zkController = cores.getZkController();
-    assertNotNull("ZkController is null", zkController);
-
-    Replica notLeader =
-        ensureAllReplicasAreActive(testCollectionName, shardId, 1, 2, maxWaitSecsToSeeAllActive).get(0);
-
-    ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
-    String replicaUrl = replicaCoreNodeProps.getCoreUrl();
-
-    MockCoreDescriptor cd = new MockCoreDescriptor() {
-      public CloudDescriptor getCloudDescriptor() {
-        return new CloudDescriptor(leader.getStr(ZkStateReader.CORE_NAME_PROP), new Properties(), this) {
-          @Override
-          public String getCoreNodeName() {
-            return leader.getName();
-          }
-          @Override
-          public boolean isLeader() {
-            return true;
-          }
-        };
-      }
-    };
-
-    zkController.updateLeaderInitiatedRecoveryState(testCollectionName, shardId, notLeader.getName(), DOWN, cd, true);
-    Map<String,Object> lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
-    assertNotNull(lirStateMap);
-    assertSame(DOWN, Replica.State.getState((String) lirStateMap.get(ZkStateReader.STATE_PROP)));
-
-    // test old non-json format handling
-    SolrZkClient zkClient = zkController.getZkClient();
-    String znodePath = zkController.getLeaderInitiatedRecoveryZnodePath(testCollectionName, shardId, notLeader.getName());
-    zkClient.setData(znodePath, "down".getBytes(StandardCharsets.UTF_8), true);
-    lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
-    assertNotNull(lirStateMap);
-    assertSame(DOWN, Replica.State.getState((String) lirStateMap.get(ZkStateReader.STATE_PROP)));
-    zkClient.delete(znodePath, -1, false);
-
-    // try to clean up
-    attemptCollectionDelete(cloudClient, testCollectionName);
   }
 
   private void testDoRecoveryOnRestart() throws Exception {

@@ -1193,15 +1193,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             "The shard already has an active leader. Force leader is not applicable. State: " + slice);
       }
 
-      // Clear out any LIR state
-      String lirPath = handler.coreContainer.getZkController().getLeaderInitiatedRecoveryZnodePath(collectionName, sliceId);
-      if (handler.coreContainer.getZkController().getZkClient().exists(lirPath, true)) {
-        StringBuilder sb = new StringBuilder();
-        handler.coreContainer.getZkController().getZkClient().printLayout(lirPath, 4, sb);
-        log.info("Cleaning out LIR data, which was: {}", sb);
-        handler.coreContainer.getZkController().getZkClient().clean(lirPath);
-      }
-
       final Set<String> liveNodes = clusterState.getLiveNodes();
       List<Replica> liveReplicas = slice.getReplicas().stream()
           .filter(rep -> liveNodes.contains(rep.getNodeName())).collect(Collectors.toList());

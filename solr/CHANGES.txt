@@ -89,6 +89,8 @@ Other Changes
 
 * LUCENE-8513: SlowCompositeReaderWrapper now uses MultiTerms directly instead of MultiFields (David Smiley)
 
+* SOLR-11812: Remove backward compatibility of old LIR implementation in 8.0 (Cao Manh Dat)
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

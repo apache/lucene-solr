@@ -392,19 +392,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       log.info("Timeout wait for state {}", getCollectionState(collectionName));
       throw e;
     }
-
-    TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    timeOut.waitFor("Time out waiting for LIR state get removed", () -> {
-      String lirPath = ZkController.getLeaderInitiatedRecoveryZnodePath(collectionName, "shard1");
-      try {
-        List<String> children = zkClient().getChildren(lirPath, null, true);
-        return children.size() == 0;
-      } catch (KeeperException.NoNodeException e) {
-        return true;
-      } catch (Exception e) {
-        throw new AssertionError(e);
-      }
-    });
   }
 }
 
