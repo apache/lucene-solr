@@ -25,7 +25,7 @@ You configure the tokenizer for a text field type in `schema.xml` with a `<token
 <fieldType name="text" class="solr.TextField">
   <analyzer type="index">
     <tokenizer class="solr.StandardTokenizerFactory"/>
-    <filter class="solr.StandardFilterFactory"/>
+    <filter class="solr.LowerCaseFilterFactory"/>
   </analyzer>
 </fieldType>
 ----
@@ -288,7 +288,7 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
 [IMPORTANT]
 ====
 
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add.
 
 ====
 

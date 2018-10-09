@@ -37,7 +37,7 @@ let(a=random(collection1, q="*:*", rows="1500", fl="price_f"),
     c=describe(b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -90,7 +90,7 @@ let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
     c=hist(b, 5))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -179,7 +179,7 @@ let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
      d=col(c, N))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -228,7 +228,7 @@ let(a=random(collection1, q="*:*", rows="15000", fl="day_i"),
      c=freqTable(b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -302,7 +302,7 @@ let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
      c=percentile(b, 95))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -344,7 +344,7 @@ let(a=array(1, 2, 3, 4, 5),
     c=cov(a, b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -380,7 +380,7 @@ let(a=array(1, 2, 3, 4, 5),
      e=cov(d))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -437,7 +437,7 @@ let(a=array(1, 2, 3, 4, 5),
     c=corr(a, b, type=spearmans))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -504,7 +504,7 @@ let(a=random(collection1, q="*:*", rows="1500", fl="price_f"),
     e=ttest(c, d))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -552,7 +552,7 @@ let(a=random(collection1, q="*:*", rows="1500", fl="price_f"),
     e=ttest(c, d))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -573,3 +573,41 @@ When this expression is sent to the /stream handler it responds with:
   }
 }
 ----
+
+== Z-scores
+
+The `zscores` function converts a numeric array to an array of z-scores. The z-score
+is the number of standard deviations a number is from the mean.
+
+The example below computes the z-scores for the values in an array.
+
+
+[source,text]
+----
+let(a=array(1,2,3),
+    b=zscores(a))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          -1,
+          0,
+          1
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 27
+      }
+    ]
+  }
+}
+----
+

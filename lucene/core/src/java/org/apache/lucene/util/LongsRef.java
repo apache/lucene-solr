@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.util;
 
-import java.util.Arrays;
-
 
 /** Represents long[], as a slice (offset + length) into an
  *  existing long[].  The {@link #longs} member should never be null; use
@@ -126,7 +124,7 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
    * and an offset of zero.
    */
   public static LongsRef deepCopyOf(LongsRef other) {
-    return new LongsRef(Arrays.copyOfRange(other.longs, other.offset, other.offset + other.length), 0, other.length);
+    return new LongsRef(ArrayUtil.copyOfSubArray(other.longs, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

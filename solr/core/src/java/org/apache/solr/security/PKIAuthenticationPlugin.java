@@ -47,11 +47,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +58,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
-  private final CryptoKeys.RSAKeyPair keyPair = new CryptoKeys.RSAKeyPair();
+  private final PublicKeyHandler publicKeyHandler;
   private final CoreContainer cores;
   private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "10000"));
   private final String myNodeName;
@@ -77,7 +73,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     return interceptorRegistered;
   }
 
-  public PKIAuthenticationPlugin(CoreContainer cores, String nodeName) {
+  public PKIAuthenticationPlugin(CoreContainer cores, String nodeName, PublicKeyHandler publicKeyHandler) {
+    this.publicKeyHandler = publicKeyHandler;
     this.cores = cores;
     myNodeName = nodeName;
   }
@@ -92,7 +89,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
 
     String requestURI = ((HttpServletRequest) request).getRequestURI();
-    if (requestURI.endsWith(PATH)) {
+    if (requestURI.endsWith(PublicKeyHandler.PATH)) {
       filterChain.doFilter(request, response);
       return true;
     }
@@ -198,7 +195,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     HttpEntity entity = null;
     try {
-      String uri = url + PATH + "?wt=json&omitHeader=true";
+      String uri = url + PublicKeyHandler.PATH + "?wt=json&omitHeader=true";
       log.debug("Fetching fresh public key from : {}",uri);
       HttpResponse rsp = cores.getUpdateShardHandler().getDefaultHttpClient()
           .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
@@ -207,7 +204,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       Map m = (Map) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
       if (key == null) {
-        log.error("No key available from " + url + PATH);
+        log.error("No key available from " + url + PublicKeyHandler.PATH);
         return null;
       } else {
         log.info("New Key obtained from  node: {} / {}", nodename, key);
@@ -228,26 +225,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     HttpClientUtil.addRequestInterceptor(interceptor);
     return builder;
-  }
-
-  public SolrRequestHandler getRequestHandler() {
-    return new RequestHandlerBase() {
-      @Override
-      public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        rsp.add("key", keyPair.getPublicKeyStr());
-      }
-
-      @Override
-      public String getDescription() {
-        return "Return the public key of this server";
-      }
-
-      @Override
-      public Category getCategory() {
-        return Category.ADMIN;
-      }
-
-    };
   }
 
   public boolean needsAuthorization(HttpServletRequest req) {
@@ -292,7 +269,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     String s = usr + " " + System.currentTimeMillis();
 
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = keyPair.encrypt(ByteBuffer.wrap(payload));
+    byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
     httpRequest.setHeader(HEADER, myNodeName + " " + base64Cipher);
   }
@@ -316,11 +293,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   public String getPublicKey() {
-    return keyPair.getPublicKeyStr();
+    return publicKeyHandler.getPublicKey();
   }
 
   public static final String HEADER = "SolrAuth";
-  public static final String PATH = "/admin/info/key";
   public static final String NODE_IS_USER = "$";
   // special principal to denote the cluster member
   private static final Principal SU = new BasicUserPrincipal("$");

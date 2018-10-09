@@ -151,7 +151,7 @@ final class BooleanWeight extends Weight {
     if (shouldMatchCount < minShouldMatch) {
       return null;
     }
-    return Matches.fromSubMatches(matches);
+    return MatchesUtils.fromSubMatches(matches);
   }
 
   static BulkScorer disableScoring(final BulkScorer scorer) {
@@ -160,10 +160,10 @@ final class BooleanWeight extends Weight {
       @Override
       public int score(final LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
         final LeafCollector noScoreCollector = new LeafCollector() {
-          FakeScorer fake = new FakeScorer();
+          ScoreAndDoc fake = new ScoreAndDoc();
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorable scorer) throws IOException {
             collector.setScorer(fake);
           }
 
@@ -309,7 +309,7 @@ final class BooleanWeight extends Weight {
     } else {
       Scorer prohibitedScorer = prohibited.size() == 1
           ? prohibited.get(0)
-          : new DisjunctionSumScorer(this, prohibited, false);
+          : new DisjunctionSumScorer(this, prohibited, ScoreMode.COMPLETE_NO_SCORES);
       if (prohibitedScorer.twoPhaseIterator() != null) {
         // ReqExclBulkScorer can't deal efficiently with two-phased prohibited clauses
         return null;

@@ -190,7 +190,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testSignificantTermsQuery() throws Exception {
     SolrQueryRequest req = req("q", "*:*");
     try {
-      assertQueryEquals("sigificantTerms", req, "{!sigificantTerms}");
+      assertQueryEquals(SignificantTermsQParserPlugin.NAME,
+          req, "{!"+SignificantTermsQParserPlugin.NAME+"}");
     } finally {
       req.close();
     }
@@ -274,7 +275,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testQueryCollapse() throws Exception {
-    SolrQueryRequest req = req("myField","foo_s",
+    SolrQueryRequest req = req("myField","foo_s1",
                                "g_sort","foo_s1 asc, foo_i desc");
 
     try {

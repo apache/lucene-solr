@@ -344,8 +344,13 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int getNumDimensions() throws IOException {
-      return in.getNumDimensions();
+    public int getNumDataDimensions() throws IOException {
+      return in.getNumDataDimensions();
+    }
+
+    @Override
+    public int getNumIndexDimensions() throws IOException {
+      return in.getNumIndexDimensions();
     }
 
     @Override
@@ -890,8 +895,8 @@ class SortingLeafReader extends FilterLeafReader {
       while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         if (i == docs.length) {
           final int newLength = ArrayUtil.oversize(i + 1, 4);
-          docs = Arrays.copyOf(docs, newLength);
-          offsets = Arrays.copyOf(offsets, newLength);
+          docs = ArrayUtil.growExact(docs, newLength);
+          offsets = ArrayUtil.growExact(offsets, newLength);
         }
         docs[i] = docMap.oldToNew(doc);
         offsets[i] = out.getFilePointer();
@@ -1230,7 +1235,7 @@ class SortingLeafReader extends FilterLeafReader {
             }
             docOrds[upto++] = ord;
           }
-          ords[newDocID] = Arrays.copyOfRange(docOrds, 0, upto);
+          ords[newDocID] = ArrayUtil.copyOfSubArray(docOrds, 0, upto);
         }
         cachedSortedSetDVs.put(field, ords);
       }

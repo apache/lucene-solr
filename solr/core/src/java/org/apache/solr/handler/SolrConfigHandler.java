@@ -425,8 +425,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        resp.add(CommandOperation.ERR_MSGS, errs);
-        return;
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing params", errs);
       }
 
       SolrResourceLoader loader = req.getCore().getResourceLoader();
@@ -489,9 +488,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        log.info("Failed to run commands. errors are {}", StrUtils.join(errs, ','));
-        resp.add(CommandOperation.ERR_MSGS, errs);
-        return;
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
       }
 
       SolrResourceLoader loader = req.getCore().getResourceLoader();
@@ -633,7 +630,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             try {
               val = Integer.parseInt(val.toString());
             } catch (Exception exp) {
-              op.addError(formatString(typeErr, typ.getSimpleName()));
+              op.addError(formatString(typeErr, name, typ.getSimpleName()));
               continue;
             }
 
@@ -641,7 +638,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             try {
               val = Float.parseFloat(val.toString());
             } catch (Exception exp) {
-              op.addError(formatString(typeErr, typ.getSimpleName()));
+              op.addError(formatString(typeErr, name, typ.getSimpleName()));
               continue;
             }
 

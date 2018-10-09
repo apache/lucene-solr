@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -460,14 +461,27 @@ final class DocumentsWriterPerThread {
     }
     final Sorter.DocMap sortMap;
     try {
+      DocIdSetIterator softDeletedDocs;
+      if (indexWriterConfig.getSoftDeletesField() != null) {
+        softDeletedDocs = consumer.getHasDocValues(indexWriterConfig.getSoftDeletesField());
+      } else {
+        softDeletedDocs = null;
+      }
       sortMap = consumer.flush(flushState);
+      if (softDeletedDocs == null) {
+        flushState.softDelCountOnFlush = 0;
+      } else {
+        flushState.softDelCountOnFlush = PendingSoftDeletes.countSoftDeletes(softDeletedDocs, flushState.liveDocs);
+        assert flushState.segmentInfo.maxDoc() >= flushState.softDelCountOnFlush + flushState.delCountOnFlush;
+      }
       // We clear this here because we already resolved them (private to this segment) when writing postings:
       pendingUpdates.clearDeleteTerms();
       segmentInfo.setFiles(new HashSet<>(directory.getCreatedFiles()));
 
-      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, -1L, -1L, -1L);
+      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, flushState.softDelCountOnFlush, -1L, -1L, -1L);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : flushState.delCountOnFlush) + " deleted docs");
+        infoStream.message("DWPT", "new segment has " + flushState.softDelCountOnFlush + " soft-deleted docs");
         infoStream.message("DWPT", "new segment has " +
             (flushState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
             (flushState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " +
@@ -497,8 +511,7 @@ final class DocumentsWriterPerThread {
       assert segmentInfo != null;
 
       FlushedSegment fs = new FlushedSegment(infoStream, segmentInfoPerCommit, flushState.fieldInfos,
-          segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush,
-          sortMap);
+          segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush, sortMap);
       sealFlushedSegment(fs, sortMap, flushNotifications);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0) / 1000000.0) + " msec");

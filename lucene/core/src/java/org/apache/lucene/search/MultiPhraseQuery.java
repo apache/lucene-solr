@@ -269,7 +269,7 @@ public class MultiPhraseQuery extends Query {
             TermState termState = termStates.get(term).get(context);
             if (termState != null) {
               termsEnum.seekExact(term.bytes(), termState);
-              postings.add(termsEnum.postings(null, exposeOffsets ? PostingsEnum.OFFSETS : PostingsEnum.POSITIONS));
+              postings.add(termsEnum.postings(null, exposeOffsets ? PostingsEnum.ALL : PostingsEnum.POSITIONS));
               totalMatchCost += PhraseQuery.termPositionsCost(termsEnum);
             }
           }
@@ -294,7 +294,7 @@ public class MultiPhraseQuery extends Query {
           return new ExactPhraseMatcher(postingsFreqs, totalMatchCost);
         }
         else {
-          return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost);
+          return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost, exposeOffsets);
         }
 
       }
@@ -647,5 +647,6 @@ public class MultiPhraseQuery extends Query {
     public BytesRef getPayload() throws IOException {
       return posQueue.top().pe.getPayload();
     }
+
   }
 }

@@ -49,8 +49,9 @@ public class Insanity {
    * instead of a numeric.
    */
   public static LeafReader wrapInsanity(LeafReader sane, String insaneField) {
-    return new UninvertingReader(new InsaneReader(sane, insaneField),
-                                 Collections.singletonMap(insaneField, UninvertingReader.Type.SORTED));
+    return UninvertingReader.wrap(
+        new InsaneReader(sane, insaneField),
+        Collections.singletonMap(insaneField, UninvertingReader.Type.SORTED)::get);
   }
   
   /** Hides the proper numeric dv type for the field */
@@ -66,7 +67,7 @@ public class Insanity {
         if (fi.name.equals(insaneField)) {
           filteredInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
                                           fi.hasPayloads(), fi.getIndexOptions(), DocValuesType.NONE, -1, Collections.emptyMap(),
-                                          fi.getPointDimensionCount(), fi.getPointNumBytes()));
+                                          fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField()));
         } else {
           filteredInfos.add(fi);
         }

@@ -135,7 +135,7 @@ public abstract class QueryRescorer extends Rescorer {
       hits = subset;
     }
 
-    return new TopDocs(firstPassTopDocs.totalHits, hits, hits[0].score);
+    return new TopDocs(firstPassTopDocs.totalHits, hits);
   }
 
   @Override

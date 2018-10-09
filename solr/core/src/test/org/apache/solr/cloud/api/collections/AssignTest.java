@@ -18,14 +18,21 @@ package org.apache.solr.cloud.api.collections;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ZkDistribStateManager;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.DocCollection;
@@ -34,6 +41,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
@@ -152,5 +160,34 @@ public class AssignTest extends SolrTestCaseJ4 {
       server.shutdown();
     }
   }
-  
+
+  @Test
+  public void testUsePolicyByDefault() throws Exception {
+    assumeWorkingMockito();
+
+    SolrCloudManager solrCloudManager = mock(SolrCloudManager.class);
+    ClusterStateProvider clusterStateProvider = mock(ClusterStateProvider.class);
+    when(solrCloudManager.getClusterStateProvider()).thenReturn(clusterStateProvider);
+    // first we set useLegacyReplicaAssignment=false, so autoscaling should always be used
+    when(clusterStateProvider.getClusterProperties()).thenReturn(Utils.makeMap("defaults", Utils.makeMap("collection", Utils.makeMap("useLegacyReplicaAssignment", false))));
+    // verify
+    boolean usePolicyFramework = Assign.usePolicyFramework(solrCloudManager);
+    assertTrue(usePolicyFramework);
+
+    // now we set useLegacyReplicaAssignment=true, so autoscaling can only be used if an explicit policy or preference exists
+    when(clusterStateProvider.getClusterProperties()).thenReturn(Utils.makeMap("defaults", Utils.makeMap("collection", Utils.makeMap("useLegacyReplicaAssignment", true))));
+    DistribStateManager distribStateManager = mock(DistribStateManager.class);
+    when(solrCloudManager.getDistribStateManager()).thenReturn(distribStateManager);
+    when(distribStateManager.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));
+    assertFalse(Assign.usePolicyFramework(solrCloudManager));
+
+    // lets provide a custom preference and assert that autoscaling is used even if useLegacyReplicaAssignment=false
+    // our custom preferences are exactly the same as the default ones
+    // but because we are providing them explicitly, they must cause autoscaling to turn on
+    List<Map> customPreferences = Policy.DEFAULT_PREFERENCES
+        .stream().map(preference -> preference.getOriginal()).collect(Collectors.toList());
+
+    when(distribStateManager.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Utils.makeMap("cluster-preferences", customPreferences)));
+    assertTrue(Assign.usePolicyFramework(solrCloudManager));
+  }
 }

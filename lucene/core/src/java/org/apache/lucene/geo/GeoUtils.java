@@ -174,4 +174,42 @@ public final class GeoUtils {
     return maxLon - lon < 90 && lon - minLon < 90;
   }
 
+  /**
+   * Returns a positive value if points a, b, and c are arranged in counter-clockwise order,
+   * negative value if clockwise, zero if collinear.
+   */
+  // see the "Orient2D" method described here:
+  // http://www.cs.berkeley.edu/~jrs/meshpapers/robnotes.pdf
+  // https://www.cs.cmu.edu/~quake/robust.html
+  // Note that this one does not yet have the floating point tricks to be exact!
+  public static int orient(double ax, double ay, double bx, double by, double cx, double cy) {
+    double v1 = (bx - ax) * (cy - ay);
+    double v2 = (cx - ax) * (by - ay);
+    if (v1 > v2) {
+      return 1;
+    } else if (v1 < v2) {
+      return -1;
+    } else {
+      return 0;
+    }
+  }
+
+  /**
+   * used to define the orientation of 3 points
+   * -1 = Clockwise
+   * 0 = Colinear
+   * 1 = Counter-clockwise
+   **/
+  public enum WindingOrder {
+    CW(-1), COLINEAR(0), CCW(1);
+    private final int sign;
+    WindingOrder(int sign) { this.sign = sign; }
+    public int sign() {return sign;}
+    public static WindingOrder fromSign(final int sign) {
+      if (sign == CW.sign) return CW;
+      if (sign == COLINEAR.sign) return COLINEAR;
+      if (sign == CCW.sign) return CCW;
+      throw new IllegalArgumentException("Invalid WindingOrder sign: " + sign);
+    }
+  }
 }

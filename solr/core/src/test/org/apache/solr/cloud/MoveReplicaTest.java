@@ -236,7 +236,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   //Commented out 5-Dec-2017
   // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018 This JIRA is fixed, but this test still fails
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018 This JIRA is fixed, but this test still fails
+  //17-Aug-2018 commented  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testFailedMove() throws Exception {
     String coll = getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;
@@ -249,13 +250,22 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     addDocs(coll, 100);
 
-    Replica replica = getRandomReplica(coll, cloudClient);
+    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+    String overseerLeader = (String) overSeerStatus.get("leader");
+
+    // don't kill overseer in this test
+    Replica replica;
+    int count = 10;
+    do {
+      replica = getRandomReplica(coll, cloudClient);
+    } while (!replica.getNodeName().equals(overseerLeader) && count-- > 0);
+    assertNotNull("could not find non-overseer replica???", replica);
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;
     for (String node : liveNodes) {
-      if (!replica.getNodeName().equals(node)) {
+      if (!replica.getNodeName().equals(node) && !overseerLeader.equals(node)) {
         targetNode = node;
         break;
       }
@@ -270,6 +280,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       if (cluster.getJettySolrRunner(i).getNodeName().equals(targetNode)) {
         cluster.stopJettySolrRunner(i);
+        break;
       }
     }
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);

@@ -49,7 +49,7 @@ import org.apache.solr.util.DateMathParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -75,7 +75,12 @@ public class MaintainRoutedAliasCmd implements OverseerCollectionMessageHandler.
     this.ocmh = ocmh;
   }
 
-  /** Invokes this command from the client.  If there's a problem it will throw an exception. */
+  /**
+   * Invokes this command from the client.  If there's a problem it will throw an exception.
+   * Please note that is important to never add async to this invocation. This method must
+   * block (up to the standard OCP timeout) to prevent large batches of add's from sending a message
+   * to the overseer for every document added in TimeRoutedAliasUpdateProcessor.
+   */
   public static NamedList remoteInvoke(CollectionsHandler collHandler, String aliasName, String mostRecentCollName)
       throws Exception {
     final String operation = CollectionParams.CollectionAction.MAINTAINROUTEDALIAS.toLower();

@@ -39,10 +39,10 @@ public class Aliases {
   /**
    * An empty, minimal Aliases primarily used to support the non-cloud solr use cases. Not normally useful
    * in cloud situations where the version of the node needs to be tracked even if all aliases are removed.
-   * A version of 0 is provided rather than -1 to minimize the possibility that if this is used in a cloud
-   * instance data is written without version checking.
+   * The -1 version makes it subordinate to any real version, and furthermore we never "set" this EMPTY instance
+   * into ZK.
    */
-  public static final Aliases EMPTY = new Aliases(Collections.emptyMap(), Collections.emptyMap(), 0);
+  public static final Aliases EMPTY = new Aliases(Collections.emptyMap(), Collections.emptyMap(), -1);
 
   // These two constants correspond to the top level elements in aliases.json. The first one denotes
   // a section containing a list of aliases and their attendant collections, the second contains a list of

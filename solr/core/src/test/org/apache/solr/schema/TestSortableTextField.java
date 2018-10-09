@@ -295,7 +295,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     for (String searchF : Arrays.asList("whitespace_stxt", "whitespace_plain_txt",
                                         "whitespace_max3_stxt", "whitespace_max6_stxt",
                                         "whitespace_max0_stxt", "whitespace_maxNeg_stxt")) {
-      //  maxChars of 0 or neg should be equivilent to no max at all
+      //  maxChars of 0 or neg should be equivalent to no max at all
       for (String sortF : Arrays.asList("whitespace_stxt", "whitespace_plain_str", 
                                         "whitespace_max0_stxt", "whitespace_maxNeg_stxt")) {
         
@@ -484,7 +484,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
    * tests that a SortableTextField using KeywordTokenzier (w/docValues) behaves exactly the same as 
    * StrFields that it's copied to for quering and sorting
    */
-  public void testRandomStrEquivilentBehavior() throws Exception {
+  public void testRandomStrEquivalentBehavior() throws Exception {
     final List<String> test_fields = Arrays.asList("keyword_stxt", "keyword_dv_stxt",
                                                    "keyword_s_dv", "keyword_s");
     // we use embedded client instead of assertQ: we want to compare the responses from multiple requests

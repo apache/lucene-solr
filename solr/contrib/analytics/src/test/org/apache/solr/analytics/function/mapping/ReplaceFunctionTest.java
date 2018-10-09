@@ -484,7 +484,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     assertFalse(func.exists());
 
     val.setExists(false);
-    comp.setValue(new Boolean(true)).setExists(true);
+    comp.setValue(Boolean.TRUE).setExists(true);
     fill.setValue("abc").setExists(true);
     func.getObject();
     assertFalse(func.exists());
@@ -499,7 +499,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     // Value exists
     // Comp != Val
     val.setValue(new Date(1234)).setExists(true);
-    comp.setValue(new Integer(1234)).setExists(true);
+    comp.setValue(1234).setExists(true);
     
     fill.setValue("not used").setExists(true);
     assertEquals(new Date(1234), func.getObject());
@@ -510,8 +510,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     assertTrue(func.exists());
     
     // Comp == Val
-    val.setValue(new Float(2342.324F)).setExists(true);
-    comp.setValue(new Float(2342.324F)).setExists(true);
+    val.setValue(2342.324F).setExists(true);
+    comp.setValue(2342.324F).setExists(true);
     
     fill.setExists(false);
     func.getObject();
@@ -956,10 +956,10 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     });
     
     // Comp doesn't exist
-    val.setValues("asdfs", new Date(12312), new Long(213123L), new Date(12312));
+    val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     comp.setExists(false);
     fill.setValue("won't show up").setExists(true);
-    Iterator<Object> values1 = Arrays.<Object>asList("asdfs", new Date(12312), new Long(213123L), new Date(12312)).iterator();
+    Iterator<Object> values1 = Arrays.<Object>asList("asdfs", new Date(12312), 213123L, new Date(12312)).iterator();
     func.streamObjects( value -> {
       assertTrue(values1.hasNext());
       assertEquals(values1.next(), value);
@@ -967,20 +967,20 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     assertFalse(values1.hasNext());
     
     // Values exist
-    val.setValues("asdfs", new Date(12312), new Long(213123L), new Date(12312));
+    val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     comp.setValue("asdfs").setExists(true);
     fill.setExists(false);
-    Iterator<Object> values2 = Arrays.<Object>asList(new Date(12312), new Long(213123L), new Date(12312)).iterator();
+    Iterator<Object> values2 = Arrays.<Object>asList(new Date(12312), 213123L, new Date(12312)).iterator();
     func.streamObjects( value -> {
       assertTrue(values2.hasNext());
       assertEquals(values2.next(), value);
     });
     assertFalse(values2.hasNext());
 
-    val.setValues("asdfs", new Date(12312), new Long(213123L), new Date(12312));
+    val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     comp.setValue(new Date(12312)).setExists(true);
-    fill.setValue(new Boolean(false)).setExists(true);
-    Iterator<Object> values3 = Arrays.<Object>asList("asdfs", new Boolean(false), new Long(213123L), new Boolean(false)).iterator();
+    fill.setValue(Boolean.FALSE).setExists(true);
+    Iterator<Object> values3 = Arrays.<Object>asList("asdfs", Boolean.FALSE, 213123L, Boolean.FALSE).iterator();
     func.streamObjects( value -> {
       assertTrue(values3.hasNext());
       assertEquals(values3.next(), value);

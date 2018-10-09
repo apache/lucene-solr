@@ -36,6 +36,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -367,24 +368,31 @@ public class TestUninvertingReader extends LuceneTestCase {
     uninvertingMap.put("dv", Type.LEGACY_INTEGER);
     uninvertingMap.put("dint", Type.INTEGER_POINT);
 
-    DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
-                         uninvertingMap);
+    DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), uninvertingMap);
     LeafReader leafReader = ir.leaves().get(0).reader();
+    FieldInfos fieldInfos = leafReader.getFieldInfos();
+    LeafReader originalLeafReader = ((UninvertingReader)leafReader).getDelegate();
 
-    FieldInfo intFInfo = leafReader.getFieldInfos().fieldInfo("int");
+    assertNotSame(originalLeafReader.getFieldInfos(), fieldInfos);
+    assertSame("do not rebuild FieldInfo for unaffected fields",
+        originalLeafReader.getFieldInfos().fieldInfo("id"), fieldInfos.fieldInfo("id"));
+
+    FieldInfo intFInfo = fieldInfos.fieldInfo("int");
     assertEquals(DocValuesType.NUMERIC, intFInfo.getDocValuesType());
-    assertEquals(0, intFInfo.getPointDimensionCount());
+    assertEquals(0, intFInfo.getPointDataDimensionCount());
+    assertEquals(0, intFInfo.getPointIndexDimensionCount());
     assertEquals(0, intFInfo.getPointNumBytes());
 
-    FieldInfo dintFInfo = leafReader.getFieldInfos().fieldInfo("dint");
+    FieldInfo dintFInfo = fieldInfos.fieldInfo("dint");
     assertEquals(DocValuesType.NUMERIC, dintFInfo.getDocValuesType());
-    assertEquals(1, dintFInfo.getPointDimensionCount());
+    assertEquals(1, dintFInfo.getPointDataDimensionCount());
+    assertEquals(1, dintFInfo.getPointIndexDimensionCount());
     assertEquals(4, dintFInfo.getPointNumBytes());
 
-    FieldInfo dvFInfo = leafReader.getFieldInfos().fieldInfo("dv");
+    FieldInfo dvFInfo = fieldInfos.fieldInfo("dv");
     assertEquals(DocValuesType.NUMERIC, dvFInfo.getDocValuesType());
 
-    FieldInfo storedFInfo = leafReader.getFieldInfos().fieldInfo("stored");
+    FieldInfo storedFInfo = fieldInfos.fieldInfo("stored");
     assertEquals(DocValuesType.NONE, storedFInfo.getDocValuesType());
 
     TestUtil.checkReader(ir);

@@ -19,28 +19,28 @@
 This section of the user guide explores functions that are commonly used in the field of
 Digital Signal Processing (DSP).
 
-== Dot product
+== Dot Product
 
 The `dotProduct` function is used to calculate the dot product of two arrays.
 The dot product is a fundamental calculation for the DSP functions discussed in this section. Before diving into
 the more advanced DSP functions, its useful to get a better understanding of how the dot product calculation works.
 
-=== Combining two arrays
+=== Combining Two Arrays
 
 The `dotProduct` function can be used to combine two arrays into a single product. A simple example can help
 illustrate this concept.
 
-In the example below two arrays are set to variables *a* and *b* and then operated on by the `dotProduct` function.
-The output of the `dotProduct` function is set to variable *c*.
+In the example below two arrays are set to variables *`a`* and *`b`* and then operated on by the `dotProduct` function.
+The output of the `dotProduct` function is set to variable *`c`*.
 
-Then the `mean` function is then used to compute the mean of the first array which is set to the variable `d`.
+Then the `mean` function is then used to compute the mean of the first array which is set to the variable *`d`*.
 
-Both the *dot product* and the *mean* are included in the output.
+Both the dot product and the mean are included in the output.
 
-When we look at the output of this expression we see that the *dot product* and the *mean* of the first array
+When we look at the output of this expression we see that the dot product and the mean of the first array
 are both 30.
 
-The dot product function *calculated the mean* of the first array.
+The `dotProduct` function calculated the mean of the first array.
 
 [source,text]
 ----
@@ -51,7 +51,7 @@ let(echo="c, d",
     d=mean(a))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -76,9 +76,9 @@ calculation using vector math and look at the output of each step.
 
 In the example below the `ebeMultiply` function performs an element-by-element multiplication of
 two arrays. This is the first step of the dot product calculation. The result of the element-by-element
-multiplication is assigned to variable *c*.
+multiplication is assigned to variable *`c`*.
 
-In the next step the `add` function adds all the elements of the array in variable *c*.
+In the next step the `add` function adds all the elements of the array in variable *`c`*.
 
 Notice that multiplying each element of the first array by .2 and then adding the results is
 equivalent to the formula for computing the mean of the first array. The formula for computing the mean
@@ -95,7 +95,7 @@ let(echo="c, d",
     d=add(c))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -122,11 +122,13 @@ When this expression is sent to the /stream handler it responds with:
 ----
 
 In the example above two arrays were combined in a way that produced the mean of the first. In the second array
-each value was set to .2. Another way of looking at this is that each value in the second array has the same weight.
-By varying the weights in the second array we can produce a different result. For example if the first array represents a time series,
+each value was set to ".2". Another way of looking at this is that each value in the second array has the same weight.
+By varying the weights in the second array we can produce a different result.
+For example if the first array represents a time series,
 the weights in the second array can be set to add more weight to a particular element in the first array.
 
-The example below creates a weighted average with the weight decreasing from right to left. Notice that the weighted mean
+The example below creates a weighted average with the weight decreasing from right to left.
+Notice that the weighted mean
 of 36.666 is larger than the previous mean which was 30. This is because more weight was given to last element in the
 array.
 
@@ -139,7 +141,7 @@ let(echo="c, d",
     d=add(c))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -167,13 +169,13 @@ When this expression is sent to the /stream handler it responds with:
 
 === Representing Correlation
 
-Often when we think of correlation, we are thinking of *Pearsons* correlation in the field of statistics. But the definition of
+Often when we think of correlation, we are thinking of _Pearson correlation_ in the field of statistics. But the definition of
 correlation is actually more general: a mutual relationship or connection between two or more things.
 In the field of digital signal processing the dot product is used to represent correlation. The examples below demonstrates
 how the dot product can be used to represent correlation.
 
 In the example below the dot product is computed for two vectors. Notice that the vectors have different values that fluctuate
-together. The output of the dot product is 190, which is hard to reason about because because its not scaled.
+together. The output of the dot product is 190, which is hard to reason about because it's not scaled.
 
 [source,text]
 ----
@@ -183,7 +185,7 @@ let(echo="c, d",
     c=dotProduct(a, b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -206,9 +208,9 @@ One approach to scaling the dot product is to first scale the vectors so that bo
 magnitude of 1, also called unit vectors, are used when comparing only the angle between vectors rather then the magnitude.
 The `unitize` function can be used to unitize the vectors before calculating the dot product.
 
-Notice in the example below the dot product result, set to variable *e*, is effectively 1. When applied to unit vectors the dot product
-will be scaled between 1 and -1. Also notice in the example `cosineSimilarity` is calculated on the *unscaled* vectors and the
-answer is also effectively 1. This is because *cosine similarity* is a scaled *dot product*.
+Notice in the example below the dot product result, set to variable *`e`*, is effectively 1. When applied to unit vectors the dot product
+will be scaled between 1 and -1. Also notice in the example `cosineSimilarity` is calculated on the unscaled vectors and the
+answer is also effectively 1. This is because cosine similarity is a scaled dot product.
 
 
 [source,text]
@@ -222,7 +224,7 @@ let(echo="e, f",
     f=cosineSimilarity(a, b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -254,7 +256,7 @@ let(echo="c, d",
     c=cosineSimilarity(a, b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -275,12 +277,12 @@ When this expression is sent to the /stream handler it responds with:
 
 == Convolution
 
-The `conv` function calculates the convolution of two vectors. The convolution is calculated by *reversing*
-the second vector and sliding it across the first vector. The *dot product* of the two vectors
+The `conv` function calculates the convolution of two vectors. The convolution is calculated by reversing
+the second vector and sliding it across the first vector. The dot product of the two vectors
 is calculated at each point as the second vector is slid across the first vector.
-The dot products are collected in a *third vector* which is the *convolution* of the two vectors.
+The dot products are collected in a third vector which is the convolution of the two vectors.
 
-=== Moving Average function
+=== Moving Average Function
 
 Before looking at an example of convolution its useful to review the `movingAvg` function. The moving average
 function computes a moving average by sliding a window across a vector and computing
@@ -290,7 +292,7 @@ is syntactic sugar for convolution.
 Below is an example of a moving average with a window size of 5. Notice that original vector has 13 elements
 but the result of the moving average has only 9 elements. This is because the `movingAvg` function
 only begins generating results when it has a full window. In this case because the window size is 5 so the
-moving average starts generating results from the 4th index of the original array.
+moving average starts generating results from the 4^th^ index of the original array.
 
 [source,text]
 ----
@@ -298,7 +300,7 @@ let(a=array(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1),
     b=movingAvg(a, 5))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -344,7 +346,7 @@ let(a=array(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1),
     c=conv(a, b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -381,7 +383,7 @@ When this expression is sent to the /stream handler it responds with:
 }
 ----
 
-We achieve the same result as the `movingAvg` gunction by using the `copyOfRange` function to copy a range of
+We achieve the same result as the `movingAvg` function by using the `copyOfRange` function to copy a range of
 the result that drops the first and last 4 values of
 the convolution result. In the example below the `precision` function is also also used to remove floating point errors from the
 convolution result. When this is added the output is exactly the same as the `movingAvg` function.
@@ -395,7 +397,7 @@ let(a=array(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1),
     e=precision(d, 2))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -446,7 +448,7 @@ let(a=array(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1),
     c=conv(a, rev(b)))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -504,7 +506,7 @@ let(a=array(1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1),
     c=finddelay(a, b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -715,5 +717,3 @@ let(a=sin(sequence(256, 0, 6)),
 ----
 
 image::images/math-expressions/hidden-signal-fft.png[]
-
-

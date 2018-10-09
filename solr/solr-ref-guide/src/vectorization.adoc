@@ -18,11 +18,10 @@
 
 This section of the user guide explores techniques
 for retrieving streams of data from Solr and vectorizing the
-*numeric* fields.
+numeric fields.
 
-The next chapter of the user guide covers
-Text Analysis and Term Vectors which describes how to
-vectorize *text* fields.
+See the section <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> which describes how to
+vectorize text fields.
 
 == Streams
 
@@ -32,42 +31,42 @@ to vectorize and analyze the results sets.
 
 Below are some of the key stream sources:
 
-* *random*: Random sampling is widely used in statistics, probability and machine learning.
+* *`random`*: Random sampling is widely used in statistics, probability and machine learning.
 The `random` function returns a random sample of search results that match a
 query. The random samples can be vectorized and operated on by math expressions and the results
 can be used to describe and make inferences about the entire population.
 
-* *timeseries*: The `timeseries`
+* *`timeseries`*: The `timeseries`
 expression provides fast distributed time series aggregations, which can be
 vectorized and analyzed with math expressions.
 
-* *knnSearch*: K-nearest neighbor is a core machine learning algorithm. The `knnSearch`
+* *`knnSearch`*: K-nearest neighbor is a core machine learning algorithm. The `knnSearch`
 function is a specialized knn algorithm optimized to find the k-nearest neighbors of a document in
 a distributed index. Once the nearest neighbors are retrieved they can be vectorized
 and operated on by machine learning and text mining algorithms.
 
-* *sql*: SQL is the primary query language used by data scientists. The `sql` function supports
+* *`sql`*: SQL is the primary query language used by data scientists. The `sql` function supports
 data retrieval using a subset of SQL which includes both full text search and
 fast distributed aggregations. The result sets can then be vectorized and operated
 on by math expressions.
 
-* *jdbc*: The `jdbc` function allows data from any JDBC compliant data source to be combined with
+* *`jdbc`*: The `jdbc` function allows data from any JDBC compliant data source to be combined with
 streams originating from Solr. Result sets from outside data sources can be vectorized and operated
 on by math expressions in the same manner as result sets originating from Solr.
 
-* *topic*: Messaging is an important foundational technology for large scale computing. The `topic`
+* *`topic`*: Messaging is an important foundational technology for large scale computing. The `topic`
 function provides publish/subscribe messaging capabilities by treating
 Solr Cloud as a distributed message queue. Topics are extremely powerful
 because they allow subscription by query. Topics can be use to support a broad set of
 use cases including bulk text mining operations and AI alerting.
 
-* *nodes*: Graph queries are frequently used by recommendation engines and are an important
+* *`nodes`*: Graph queries are frequently used by recommendation engines and are an important
 machine learning tool. The `nodes` function provides fast, distributed, breadth
 first graph traversal over documents in a Solr Cloud collection. The node sets collected
 by the `nodes` function can be operated on by statistical and machine learning expressions to
 gain more insight into the graph.
 
-* *search*: Ranked search results are a powerful tool for finding the most relevant
+* *`search`*: Ranked search results are a powerful tool for finding the most relevant
 documents from a large document corpus. The `search` expression
 returns the top N ranked search results that match any
 Solr query, including geo-spatial queries. The smaller set of relevant
@@ -79,7 +78,7 @@ text mining expressions to gather insights about the data set.
 The output of any streaming expression can be set to a variable.
 Below is a very simple example using the `random` function to fetch
 three random samples from collection1. The random samples are returned
-as *tuples*, which contain name/value pairs.
+as tuples which contain name/value pairs.
 
 
 [source,text]
@@ -87,7 +86,7 @@ as *tuples*, which contain name/value pairs.
 let(a=random(collection1, q="*:*", rows="3", fl="price_f"))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -116,10 +115,10 @@ When this expression is sent to the /stream handler it responds with:
 }
 ----
 
-== Creating a Vector with the *col* Function
+== Creating a Vector with the col Function
 
 The `col` function iterates over a list of tuples and copies the values
-from a specific column into an *array*.
+from a specific column into an array.
 
 The output of the `col` function is an numeric array that can be set to a
 variable and operated on by math expressions.
@@ -157,7 +156,7 @@ let(a=random(collection1, q="*:*", rows="3", fl="price_f"),
 
 Once a vector has been created any math expression that operates on vectors
 can be applied. In the example below the `mean` function is applied to
-the vector assigned to variable *b*.
+the vector assigned to variable *`b`*.
 
 [source,text]
 ----
@@ -166,7 +165,7 @@ let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
     c=mean(b))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -191,13 +190,14 @@ Matrices can be created by vectorizing multiple numeric fields
 and adding them to a matrix. The matrices can then be operated on by
 any math expression that operates on matrices.
 
+[TIP]
+====
 Note that this section deals with the creation of matrices
-from numeric data. The next chapter of the user guide covers
-Text Analysis and Term Vectors which describes how to build TF-IDF
-term vector matrices from text fields.
+from numeric data. The section <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> describes how to build TF-IDF term vector matrices from text fields.
+====
 
 Below is a simple example where four random samples are taken
-from different sub-populations in the data. The *price_f* field of
+from different sub-populations in the data. The `price_f` field of
 each random sample is
 vectorized and the vectors are added as rows to a matrix.
 Then the `sumRows`
@@ -218,7 +218,7 @@ let(a=random(collection1, q="market:A", rows="5000", fl="price_f"),
     j=sumRows(i))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -236,6 +236,66 @@ When this expression is sent to the /stream handler it responds with:
       {
         "EOF": true,
         "RESPONSE_TIME": 9
+      }
+    ]
+  }
+}
+----
+
+== Latitude / Longitude Vectors
+
+The `latlonVectors` function wraps a list of tuples and parses a lat/lon location field into
+a matrix of lat/long vectors. Each row in the matrix is a vector that contains the lat/long
+pair for the corresponding tuple in the list. The row labels for the matrix are
+automatically set to the `id` field in the tuples. The lat/lon matrix can then be operated
+on by distance-based machine learning functions using the `haversineMeters` distance measure.
+
+The `latlonVectors` function takes two parameters: a list of tuples and a named parameter called
+`field`, which tells the `latlonVectors` function which field to parse the lat/lon
+vectors from.
+
+Below is an example of the `latlonVectors`.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", fl="id, loc_p", rows="5"),
+    b=latlonVectors(a, field="loc_p"))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          [
+            42.87183530723629,
+            76.74102353397778
+          ],
+          [
+            42.91372904094898,
+            76.72874889228416
+          ],
+          [
+            42.911528804897564,
+            76.70537292977619
+          ],
+          [
+            42.91143870500213,
+            76.74749913047408
+          ],
+          [
+            42.904666267479705,
+            76.73933236046092
+          ]
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 21
       }
     ]
   }

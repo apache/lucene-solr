@@ -196,18 +196,18 @@ final class FrozenBufferedUpdates {
    *  if the private segment was already merged away. */
   private List<SegmentCommitInfo> getInfosToApply(IndexWriter writer) {
     assert Thread.holdsLock(writer);
-    List<SegmentCommitInfo> infos;
+    final List<SegmentCommitInfo> infos;
     if (privateSegment != null) {
-      if (writer.segmentInfos.indexOf(privateSegment) == -1) {
+      if (writer.segmentCommitInfoExist(privateSegment)) {
+        infos = Collections.singletonList(privateSegment);
+      }else {
         if (infoStream.isEnabled("BD")) {
           infoStream.message("BD", "private segment already gone; skip processing updates");
         }
-        return null;
-      } else {
-        infos = Collections.singletonList(privateSegment);
+        infos = null;
       }
     } else {
-      infos = writer.segmentInfos.asList();
+      infos = writer.listOfSegmentCommitInfos();
     }
     return infos;
   }
@@ -707,11 +707,24 @@ final class FrozenBufferedUpdates {
         final Scorer scorer = weight.scorer(readerContext);
         if (scorer != null) {
           final DocIdSetIterator it = scorer.iterator();
-
-          int docID;
-          while ((docID = it.nextDoc()) < limit)  {
-            if (segState.rld.delete(docID)) {
-              delCount++;
+          if (segState.rld.sortMap != null && limit != Integer.MAX_VALUE) {
+            assert privateSegment != null;
+            // This segment was sorted on flush; we must apply seg-private deletes carefully in this case:
+            int docID;
+            while ((docID = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              // The limit is in the pre-sorted doc space:
+              if (segState.rld.sortMap.newToOld(docID) < limit) {
+                if (segState.rld.delete(docID)) {
+                  delCount++;
+                }
+              }
+            }
+          } else {
+            int docID;
+            while ((docID = it.nextDoc()) < limit) {
+              if (segState.rld.delete(docID)) {
+                delCount++;
+              }
             }
           }
         }

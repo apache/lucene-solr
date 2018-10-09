@@ -57,7 +57,7 @@ import static org.apache.solr.common.cloud.Replica.State.DOWN;
 
 public class DeleteReplicaTest extends SolrCloudTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -144,20 +144,16 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 2).process(cluster.getSolrClient());
     waitForState("Expected a single shard with a single replica", collectionName, clusterShape(1, 1));
-    
-    try {
-      CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 1).process(cluster.getSolrClient());
-      fail("Expected Exception, Can't delete the last replica by count");
-    } catch (SolrException e) {
-      // expected
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-      assertTrue(e.getMessage().contains("There is only one replica available"));
-    }
+
+    SolrException e = expectThrows(SolrException.class,
+        "Can't delete the last replica by count",
+        () -> CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 1).process(cluster.getSolrClient())
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("There is only one replica available"));
     DocCollection docCollection = getCollectionState(collectionName);
     // We know that since leaders are preserved, PULL replicas should not be left alone in the shard
     assertEquals(0, docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).size());
-    
-
   }
 
   @Test
@@ -173,6 +169,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
+  //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void deleteReplicaFromClusterState() throws Exception {
     deleteReplicaFromClusterState("true");
     deleteReplicaFromClusterState("false");
@@ -221,7 +218,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   @Slow
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  //28-June-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  // commented 15-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     raceConditionOnDeleteAndRegisterReplica("true");
     raceConditionOnDeleteAndRegisterReplica("false");
@@ -255,7 +253,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         if (times.incrementAndGet() > 1) {
           return false;
         }
-        LOG.info("Running delete core {}",cd);
+        log.info("Running delete core {}",cd);
+
         try {
           ZkNodeProps m = new ZkNodeProps(
               Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
@@ -356,7 +355,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void deleteReplicaOnIndexing() throws Exception {
     final String collectionName = "deleteReplicaOnIndexing";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
@@ -372,7 +371,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
           try {
             cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", String.valueOf(doc++)));
           } catch (Exception e) {
-            LOG.error("Failed on adding document to {}", collectionName, e);
+            log.error("Failed on adding document to {}", collectionName, e);
           }
         }
       });
@@ -390,7 +389,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     try {
       cluster.getSolrClient().waitForState(collectionName, 20, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
     } catch (TimeoutException e) {
-      LOG.info("Timeout wait for state {}", getCollectionState(collectionName));
+      log.info("Timeout wait for state {}", getCollectionState(collectionName));
       throw e;
     }
 

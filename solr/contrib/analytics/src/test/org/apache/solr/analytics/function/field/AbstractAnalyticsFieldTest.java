@@ -27,14 +27,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.util.Bits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.ExpressionFactory;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.Filter;
-import org.apache.solr.search.QueryWrapperFilter;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
@@ -266,31 +262,24 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
   
   protected Set<String> collectFieldValues(AnalyticsField testField, Predicate<String> valuesFiller) throws IOException {
     StringField idField = new StringField("id");
-    Filter filter = new QueryWrapperFilter(new MatchAllDocsQuery());
     Set<String> missing = new HashSet<>();
     
     List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
-    for (int leafNum = 0; leafNum < contexts.size(); leafNum++) {
-      LeafReaderContext context = contexts.get(leafNum);
-      DocIdSet dis = filter.getDocIdSet(context, null); // solr docsets already exclude any deleted docs
-      if (dis == null) {
-        continue;
-      }
-      DocIdSetIterator disi = dis.iterator();
-      if (disi != null) {
-        testField.doSetNextReader(context);
-        idField.doSetNextReader(context);
-        int doc = disi.nextDoc();
-        while( doc != DocIdSetIterator.NO_MORE_DOCS){
-          // Add a document to the statistics being generated
-          testField.collect(doc);
-          idField.collect(doc);
+    for (LeafReaderContext context : contexts) {
+      testField.doSetNextReader(context);
+      idField.doSetNextReader(context);
+      Bits liveDocs = context.reader().getLiveDocs();
+      for (int doc = 0; doc < context.reader().maxDoc(); doc++) {
+        if (liveDocs != null && !liveDocs.get(doc)) {
+          continue;
+        }
+        // Add a document to the statistics being generated
+        testField.collect(doc);
+        idField.collect(doc);
 
-          String id = idField.getString();
-          if (!valuesFiller.test(id)) {
-            missing.add(id);
-          }
-          doc = disi.nextDoc();
+        String id = idField.getString();
+        if (!valuesFiller.test(id)) {
+          missing.add(id);
         }
       }
     }

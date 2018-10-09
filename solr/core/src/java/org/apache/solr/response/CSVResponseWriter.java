@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.internal.csv.CSVPrinter;
 import org.apache.solr.internal.csv.CSVStrategy;
@@ -45,7 +46,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.util.FastWriter;
 
 /**
  *

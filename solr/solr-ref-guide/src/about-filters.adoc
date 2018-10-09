@@ -27,14 +27,13 @@ Because filters consume one `TokenStream` and produce a new `TokenStream`, they 
 <fieldType name="text" class="solr.TextField">
   <analyzer>
     <tokenizer class="solr.StandardTokenizerFactory"/>
-    <filter class="solr.StandardFilterFactory"/>
     <filter class="solr.LowerCaseFilterFactory"/>
     <filter class="solr.EnglishPorterFilterFactory"/>
   </analyzer>
 </fieldType>
 ----
 
-This example starts with Solr's standard tokenizer, which breaks the field's text into tokens. Those tokens then pass through Solr's standard filter, which removes dots from acronyms, and performs a few other common operations. All the tokens are then set to lowercase, which will facilitate case-insensitive matching at query time.
+This example starts with Solr's standard tokenizer, which breaks the field's text into tokens. All the tokens are then set to lowercase, which will facilitate case-insensitive matching at query time.
 
 The last filter in the above example is a stemmer filter that uses the Porter stemming algorithm. A stemmer is basically a set of mapping rules that maps the various forms of a word back to the base, or _stem_, word from which they derive. For example, in English the words "hugs", "hugging" and "hugged" are all forms of the stem word "hug". The stemmer will replace all of these terms with "hug", which is what will be indexed. This means that a query for "hug" will match the term "hugged", but not "huge".
 

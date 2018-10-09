@@ -341,7 +341,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     try {
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
-      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
+      Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();

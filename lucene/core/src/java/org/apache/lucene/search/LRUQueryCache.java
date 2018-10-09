@@ -503,7 +503,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     scorer.score(new LeafCollector() {
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {}
+      public void setScorer(Scorable scorer) throws IOException {}
 
       @Override
       public void collect(int doc) throws IOException {
@@ -520,7 +520,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     scorer.score(new LeafCollector() {
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {}
+      public void setScorer(Scorable scorer) throws IOException {}
 
       @Override
       public void collect(int doc) throws IOException {

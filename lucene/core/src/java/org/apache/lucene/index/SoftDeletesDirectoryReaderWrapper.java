@@ -19,8 +19,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -62,6 +64,8 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
       // we try to reuse the life docs instances here if the reader cache key didn't change
       if (reader instanceof SoftDeletesFilterLeafReader && reader.getReaderCacheHelper() != null) {
         readerCache.put(((SoftDeletesFilterLeafReader) reader).reader.getReaderCacheHelper().getKey(), reader);
+      } else if (reader instanceof SoftDeletesFilterCodecReader && reader.getReaderCacheHelper() != null) {
+        readerCache.put(((SoftDeletesFilterCodecReader) reader).reader.getReaderCacheHelper().getKey(), reader);
       }
 
     }
@@ -82,6 +86,18 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
       assert oldReadersCache != null;
       this.mapping = oldReadersCache;
       this.field = field;
+    }
+
+    protected LeafReader[] wrap(List<? extends LeafReader> readers) {
+      List<LeafReader> wrapped = new ArrayList<>(readers.size());
+      for (LeafReader reader : readers) {
+        LeafReader wrap = wrap(reader);
+        assert wrap != null;
+        if (wrap.numDocs() != 0) {
+          wrapped.add(wrap);
+        }
+      }
+      return wrapped.toArray(new LeafReader[0]);
     }
 
     @Override
@@ -107,14 +123,40 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
       Bits liveDocs = reader.getLiveDocs();
       final FixedBitSet bits;
       if (liveDocs != null) {
-        bits = SoftDeletesRetentionMergePolicy.cloneLiveDocs(liveDocs);
+        bits = FixedBitSet.copyOf(liveDocs);
       } else {
         bits = new FixedBitSet(reader.maxDoc());
         bits.set(0, reader.maxDoc());
       }
-      int numDeletes = reader.numDeletedDocs() + PendingSoftDeletes.applySoftDeletes(iterator, bits);
+      int numSoftDeletes = PendingSoftDeletes.applySoftDeletes(iterator, bits);
+      int numDeletes = reader.numDeletedDocs() + numSoftDeletes;
       int numDocs = reader.maxDoc() - numDeletes;
-      return new SoftDeletesFilterLeafReader(reader, bits, numDocs);
+      assert assertDocCounts(numDocs, numSoftDeletes, reader);
+      return reader instanceof CodecReader ? new SoftDeletesFilterCodecReader((CodecReader) reader, bits, numDocs)
+          : new SoftDeletesFilterLeafReader(reader, bits, numDocs);
+  }
+
+  private static boolean assertDocCounts(int expectedNumDocs, int numSoftDeletes, LeafReader reader) {
+    if (reader instanceof SegmentReader) {
+      SegmentReader segmentReader = (SegmentReader) reader;
+      SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
+      if (segmentReader.isNRT == false) {
+        int numDocs = segmentInfo.info.maxDoc() - segmentInfo.getSoftDelCount() - segmentInfo.getDelCount();
+        assert numDocs == expectedNumDocs : "numDocs: " + numDocs + " expected: " + expectedNumDocs
+            + " maxDoc: " + segmentInfo.info.maxDoc()
+            + " getDelCount: " + segmentInfo.getDelCount()
+            + " getSoftDelCount: " + segmentInfo.getSoftDelCount()
+            + " numSoftDeletes: " + numSoftDeletes
+            + " reader.numDeletedDocs(): " + reader.numDeletedDocs();
+      }
+      // in the NRT case we don't have accurate numbers for getDelCount and getSoftDelCount since they might not be
+      // flushed to disk when this reader is opened. We don't necessarily flush deleted doc on reopen but
+      // we do for docValues.
+
+
+    }
+
+    return true;
   }
 
   static final class SoftDeletesFilterLeafReader extends FilterLeafReader {
@@ -124,6 +166,42 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
     private final CacheHelper readerCacheHelper;
 
     private SoftDeletesFilterLeafReader(LeafReader reader, FixedBitSet bits, int numDocs) {
+      super(reader);
+      this.reader = reader;
+      this.bits = bits;
+      this.numDocs = numDocs;
+      this.readerCacheHelper = reader.getReaderCacheHelper() == null ? null :
+          new DelegatingCacheHelper(reader.getReaderCacheHelper());
+    }
+
+    @Override
+    public Bits getLiveDocs() {
+      return bits;
+    }
+
+    @Override
+    public int numDocs() {
+      return numDocs;
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return reader.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return readerCacheHelper;
+    }
+  }
+
+  final static class SoftDeletesFilterCodecReader extends FilterCodecReader {
+    private final LeafReader reader;
+    private final FixedBitSet bits;
+    private final int numDocs;
+    private final CacheHelper readerCacheHelper;
+
+    private SoftDeletesFilterCodecReader(CodecReader reader, FixedBitSet bits, int numDocs) {
       super(reader);
       this.reader = reader;
       this.bits = bits;

@@ -64,12 +64,12 @@ def runAndSendGPGPassword(command, password):
     print(msg)
     raise RuntimeError(msg)
 
-def load(urlString):
+def load(urlString, encoding="utf-8"):
   try:
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    content = urllib.request.urlopen(urlString).read().decode(encoding)
   except Exception as e:
     print('Retrying download of url %s after exception: %s' % (urlString, e))
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    content = urllib.request.urlopen(urlString).read().decode(encoding)
   return content
 
 def getGitRev():
@@ -78,9 +78,12 @@ def getGitRev():
     raise RuntimeError('git clone is dirty:\n\n%s' % status)
   branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
   command = 'git log origin/%s..' % branch
-  unpushedCommits = os.popen(command).read().strip()
-  if len(unpushedCommits) > 0:
-    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, unpushedCommits))
+  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  stdout, stderr = p.communicate()
+  if len(stdout.strip()) > 0:
+    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, stdout.decode('utf-8')))
+  if len(stderr.strip()) > 0:
+    raise RuntimeError('Command "%s" failed:\n\n%s' % (command, stderr.decode('utf-8')))
 
   print('  git clone is clean')
   return os.popen('git rev-parse HEAD').read().strip()
@@ -218,12 +221,6 @@ def pushLocal(version, root, rev, rcNum, localDir):
   run('tar xjf "%s/solr/package/solr.tar.bz2"' % root)
   os.remove('%s/solr/package/solr.tar.bz2' % root)
 
-  print('  KEYS')
-  run('wget http://home.apache.org/keys/group/lucene.asc')
-  os.rename('lucene.asc', 'KEYS')
-  run('chmod a+r-w KEYS')
-  run('cp KEYS ../lucene')
-
   print('  chmod...')
   os.chdir('..')
   run('chmod -R a+rX-w .')
@@ -245,6 +242,8 @@ def parse_config():
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--no-prepare', dest='prepare', default=True, action='store_false',
                       help='Use the already built release in the provided checkout')
+  parser.add_argument('--local-keys', metavar='PATH',
+                      help='Uses local KEYS file to validate presence of RM\'s gpg key')
   parser.add_argument('--push-local', metavar='PATH',
                       help='Push the release to the local path')
   parser.add_argument('--sign', metavar='KEYID',
@@ -263,6 +262,8 @@ def parse_config():
     parser.error('Release Candidate number must be a positive integer')
   if not os.path.isdir(config.root):
     parser.error('Root path "%s" is not a directory' % config.root)
+  if config.local_keys is not None and not os.path.exists(config.local_keys):
+    parser.error('Local KEYS file "%s" not found' % config.local_keys)
   cwd = os.getcwd()
   os.chdir(config.root)
   config.root = os.getcwd() # Absolutize root dir
@@ -272,14 +273,6 @@ def parse_config():
 
   config.version = read_version(config.root)
   print('Building version: %s' % config.version)
-
-  if config.sign:
-    sys.stdout.flush()
-    import getpass
-    config.key_id = config.sign
-    config.key_password = getpass.getpass('Enter GPG keystore password: ')
-  else:
-    config.gpg_password = None
 
   return config
 
@@ -298,11 +291,57 @@ def check_ant():
     return
   raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
   
+def check_key_in_keys(gpgKeyID, local_keys):
+  if gpgKeyID is not None:
+    print('  Verify your gpg key is in the main KEYS file')
+    if local_keys is not None:
+      print("    Using local KEYS file %s" % local_keys)
+      keysFileText = open(local_keys, encoding='iso-8859-1').read()
+      keysFileLocation = local_keys
+    else:
+      keysFileURL = "https://archive.apache.org/dist/lucene/KEYS"
+      keysFileLocation = keysFileURL
+      print("    Using online KEYS file %s" % keysFileURL)
+      keysFileText = load(keysFileURL, encoding='iso-8859-1')
+    if len(gpgKeyID) > 2 and gpgKeyID[0:2] == '0x':
+      gpgKeyID = gpgKeyID[2:]
+    if len(gpgKeyID) > 40:
+      gpgKeyID = gpgKeyID.replace(" ", "")
+    if len(gpgKeyID) == 8:
+      gpgKeyID8Char = "%s %s" % (gpgKeyID[0:4], gpgKeyID[4:8])
+      re_to_match = r"^pub .*\n\s+\w{4} \w{4} \w{4} \w{4} \w{4}  \w{4} \w{4} \w{4} %s" % gpgKeyID8Char
+    elif len(gpgKeyID) == 40:
+      gpgKeyID40Char = "%s %s %s %s %s  %s %s %s %s %s" % \
+                       (gpgKeyID[0:4], gpgKeyID[4:8], gpgKeyID[8:12], gpgKeyID[12:16], gpgKeyID[16:20],
+                       gpgKeyID[20:24], gpgKeyID[24:28], gpgKeyID[28:32], gpgKeyID[32:36], gpgKeyID[36:])
+      re_to_match = r"^pub .*\n\s+%s" % gpgKeyID40Char
+    else:
+      print('Invalid gpg key id format. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.')
+      exit(2)
+    if re.search(re_to_match, keysFileText, re.MULTILINE):
+      print('    Found key %s in KEYS file at %s' % (gpgKeyID, keysFileLocation))
+    else:
+      print('    ERROR: Did not find your key %s in KEYS file at %s. Please add it and try again.' % (gpgKeyID, keysFileLocation))
+      if local_keys is not None:
+        print('           You are using a local KEYS file. Make sure it is up to date or validate against the online version')
+      exit(2)
+
+
 def main():
   check_cmdline_tools()
 
   c = parse_config()
 
+  if c.sign:
+    sys.stdout.flush()
+    c.key_id = c.sign
+    check_key_in_keys(c.key_id, c.local_keys)
+    import getpass
+    c.key_password = getpass.getpass('Enter GPG keystore password: ')
+  else:
+    c.key_id = None
+    c.key_password = None
+  
   if c.prepare:
     rev = prepare(c.root, c.version, c.key_id, c.key_password)
   else:

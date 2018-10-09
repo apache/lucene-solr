@@ -164,7 +164,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
         }
         docOrds[upto++] = ord;
       }
-      ords[newDocID] = Arrays.copyOfRange(docOrds, 0, upto);
+      ords[newDocID] = ArrayUtil.copyOfSubArray(docOrds, 0, upto);
     }
     return ords;
   }
@@ -314,5 +314,9 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
       hash.get(sortedValues[Math.toIntExact(ord)], scratch);
       return scratch;
     }
+  }
+  @Override
+  DocIdSetIterator getDocIdSet() {
+    return docsWithField.iterator();
   }
 }

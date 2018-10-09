@@ -458,11 +458,16 @@ public class GeoPolygonFactory {
       // Is it inside or outside?
       final Boolean isTestPointInside = isInsidePolygon(testPoint, points);
       if (isTestPointInside != null) {
-        // Legal pole
-        if (isTestPointInside == poleMustBeInside) {
-          return new GeoComplexPolygon(planetModel, pointsList, testPoint, isTestPointInside);
-        } else {
-          return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-testPoint.x, -testPoint.y, -testPoint.z), !isTestPointInside);
+        try {
+          // Legal pole
+          if (isTestPointInside == poleMustBeInside) {
+            return new GeoComplexPolygon(planetModel, pointsList, testPoint, isTestPointInside);
+          } else {
+            return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-testPoint.x, -testPoint.y, -testPoint.z), !isTestPointInside);
+          }
+        } catch (IllegalArgumentException e) {
+          // Probably bad choice of test point.
+          return null;
         }
       }
       // If pole choice was illegal, try another one
@@ -1443,23 +1448,30 @@ public class GeoPolygonFactory {
     }
     
     // Now, construct the polygon
-    if (testPoint != null && holes != null && holes.size() > 0) {
-      // No holes, for test
-      final GeoPolygon testPolygon = new GeoConvexPolygon(planetModel, points, null, internalEdges, returnIsInternal);
-      if (testPolygon.isWithin(testPoint)) {
-        return null;
+    // Failures in construction mean we have a polygon that is too large (>180 degrees)
+    try {
+      if (testPoint != null && holes != null && holes.size() > 0) {
+        // No holes, for test
+        final GeoPolygon testPolygon = new GeoConvexPolygon(planetModel, points, null, internalEdges, returnIsInternal);
+        if (testPolygon.isWithin(testPoint)) {
+          return null;
+        }
       }
+      
+      final GeoPolygon realPolygon = new GeoConvexPolygon(planetModel, points, holes, internalEdges, returnIsInternal);
+      if (testPoint != null && (holes == null || holes.size() == 0)) {
+        if (realPolygon.isWithin(testPoint)) {
+          return null;
+        }
+      }
+      
+      rval.addShape(realPolygon);
+      return true;
+
+    } catch (IllegalArgumentException e) {
+      throw new TileException(e.getMessage());
     }
     
-    final GeoPolygon realPolygon = new GeoConvexPolygon(planetModel, points, holes, internalEdges, returnIsInternal);
-    if (testPoint != null && (holes == null || holes.size() == 0)) {
-      if (realPolygon.isWithin(testPoint)) {
-        return null;
-      }
-    }
-    
-    rval.addShape(realPolygon);
-    return true;
   }
   
   /** Check if a point is within a set of edges.

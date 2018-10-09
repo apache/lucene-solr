@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
  * @see DirectSpellChecker
  */
 public class DirectSolrSpellChecker extends SolrSpellChecker {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // configuration params shared with other spellcheckers
   public static final String COMPARATOR_CLASS = AbstractLuceneSpellChecker.COMPARATOR_CLASS;
@@ -96,7 +96,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
 
     SolrParams params = config.toSolrParams();
 
-    LOG.info("init: " + config);
+    log.info("init: " + config);
     String name = super.init(config, core);
     
     Comparator<SuggestWord> comp = SuggestWordQueue.DEFAULT_COMPARATOR;
@@ -173,7 +173,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   @Override
   public SpellingResult getSuggestions(SpellingOptions options)
       throws IOException {
-    LOG.debug("getSuggestions: " + options.tokens);
+    log.debug("getSuggestions: " + options.tokens);
         
     SpellingResult result = new SpellingResult();
     float accuracy = (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;

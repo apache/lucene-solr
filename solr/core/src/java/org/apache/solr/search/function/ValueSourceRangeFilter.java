@@ -21,7 +21,9 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.search.BitsFilteredDocIdSet;
 import org.apache.solr.search.SolrFilter;
@@ -77,10 +79,13 @@ public class ValueSourceRangeFilter extends SolrFilter {
 
   @Override
   public DocIdSet getDocIdSet(final Map context, final LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
-     return BitsFilteredDocIdSet.wrap(new DocIdSet() {
+    // NB the IndexSearcher parameter here can be null because Filter Weights don't
+    // actually use it.
+    Weight weight = createWeight(null, ScoreMode.COMPLETE, 1);
+    return BitsFilteredDocIdSet.wrap(new DocIdSet() {
        @Override
        public DocIdSetIterator iterator() throws IOException {
-         Scorer scorer = valueSource.getValues(context, readerContext).getRangeScorer(readerContext, lowerVal, upperVal, includeLower, includeUpper);
+         Scorer scorer = valueSource.getValues(context, readerContext).getRangeScorer(weight, readerContext, lowerVal, upperVal, includeLower, includeUpper);
          return scorer == null ? null : scorer.iterator();
        }
        @Override

@@ -271,6 +271,19 @@ public final class FunctionScoreQuery extends Query {
     }
 
     @Override
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+      if (scoreExplanation.isMatch() == false) {
+        return scoreExplanation;
+      }
+      Explanation boostExpl = boost.explain(ctx, docId, scoreExplanation);
+      if (boostExpl.isMatch() == false) {
+        return scoreExplanation;
+      }
+      return Explanation.match(scoreExplanation.getValue().doubleValue() * boostExpl.getValue().doubleValue(),
+          "product of:", scoreExplanation, boostExpl);
+    }
+
+    @Override
     public int hashCode() {
       return Objects.hash(boost);
     }
@@ -344,6 +357,15 @@ public final class FunctionScoreQuery extends Query {
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       return query.isCacheable(ctx);
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+      Explanation inner = query.explain(ctx, docId, scoreExplanation);
+      if (inner.isMatch() == false) {
+        return inner;
+      }
+      return Explanation.match(boost, "Matched boosting query " + query.toString());
     }
   }
 }

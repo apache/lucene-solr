@@ -487,13 +487,13 @@ public class ZkShardTerms implements AutoCloseable{
 
       HashMap<String, Long> newValues = new HashMap<>(values);
       long leaderTerm = newValues.get(leader);
-      for (String replica : newValues.keySet()) {
-        if (replicasNeedingRecovery.contains(replica)) foundReplicasInLowerTerms = true;
-        if (Objects.equals(newValues.get(replica), leaderTerm)) {
-          if(replicasNeedingRecovery.contains(replica)) {
+      for (String key : newValues.keySet()) {
+        if (replicasNeedingRecovery.contains(key)) foundReplicasInLowerTerms = true;
+        if (Objects.equals(newValues.get(key), leaderTerm)) {
+          if(skipIncreaseTermOf(key, replicasNeedingRecovery)) {
             changed = true;
           } else {
-            newValues.put(replica, leaderTerm+1);
+            newValues.put(key, leaderTerm+1);
           }
         }
       }
@@ -502,6 +502,14 @@ public class ZkShardTerms implements AutoCloseable{
       // this may indicate that the current value is stale
       if (!changed && foundReplicasInLowerTerms) return null;
       return new Terms(newValues, version);
+    }
+
+    private boolean skipIncreaseTermOf(String key, Set<String> replicasNeedingRecovery) {
+      if (key.endsWith("_recovering")) {
+        key = key.substring(0, key.length() - "_recovering".length());
+        return replicasNeedingRecovery.contains(key);
+      }
+      return replicasNeedingRecovery.contains(key);
     }
 
     /**
@@ -580,12 +588,16 @@ public class ZkShardTerms implements AutoCloseable{
      */
     Terms startRecovering(String coreNodeName) {
       long maxTerm = getMaxTerm();
-      if (values.get(coreNodeName) == maxTerm && values.getOrDefault(coreNodeName+"_recovering", -1L) == maxTerm)
+      if (values.get(coreNodeName) == maxTerm)
         return null;
 
       HashMap<String, Long> newValues = new HashMap<>(values);
+      if (!newValues.containsKey(coreNodeName+"_recovering")) {
+        long currentTerm = newValues.getOrDefault(coreNodeName, 0L);
+        // by keeping old term, we will have more information in leader election
+        newValues.put(coreNodeName+"_recovering", currentTerm);
+      }
       newValues.put(coreNodeName, maxTerm);
-      newValues.put(coreNodeName+"_recovering", maxTerm);
       return new Terms(newValues, version);
     }
 

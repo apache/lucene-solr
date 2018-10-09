@@ -59,7 +59,8 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
 
   @Test
   // This apparently fails in both subclasses.
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
     JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);

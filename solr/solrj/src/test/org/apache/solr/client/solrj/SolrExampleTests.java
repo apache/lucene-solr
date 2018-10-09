@@ -17,8 +17,11 @@
 package org.apache.solr.client.solrj;
 
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +46,9 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -63,11 +68,14 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
 import static org.junit.internal.matchers.StringContains.containsString;
 
 /**
@@ -655,8 +663,54 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
  }
+  @Test
+  public void testStreamingRequest() throws Exception {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    QueryResponse rsp = client.query( new SolrQuery( "*:*") );
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
+    NamedList<Object> result = client.request(new StreamingUpdateRequest("/update",
+        getFile("solrj/books.csv"), "application/csv")
+        .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
+    assertNotNull("Couldn't upload books.csv", result);
+    rsp = client.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 10, rsp.getResults().getNumFound() );
+  }
 
- @Test
+  @Test
+  public void testMultiContentWriterRequest() throws Exception {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    QueryResponse rsp = client.query(new SolrQuery("*:*"));
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
+
+    List<Pair<NamedList, Object>> docs = new ArrayList<>();
+    NamedList params = new NamedList();
+    docs.add(new Pair(params, getFileContent(params, "solrj/docs1.xml")));
+
+    params = new NamedList();
+    params.add(ASSUME_CONTENT_TYPE, "application/csv");
+    docs.add(new Pair(params, getFileContent(params, "solrj/books.csv")));
+
+    MultiContentWriterRequest up = new MultiContentWriterRequest(SolrRequest.METHOD.POST, "/update", docs.iterator());
+    up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+    NamedList<Object> result = client.request(up);
+    System.out.println(result.jsonStr());
+    rsp = client.query(new SolrQuery("*:*"));
+    Assert.assertEquals(12, rsp.getResults().getNumFound());
+
+  }
+
+  private ByteBuffer getFileContent(NamedList nl, String name) throws IOException {
+    try (InputStream is = new FileInputStream(getFile(name))) {
+      return MultiContentWriterRequest.readByteBuffer(is);
+    }
+  }
+
+
+  @Test
  public void testMultiContentStreamRequest() throws Exception {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");// delete everything!
@@ -743,8 +797,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     assertEquals( 23.0, ((Double)stats.getMin()).doubleValue(), 0 );
     assertEquals(94.0, ((Double) stats.getMax()).doubleValue(), 0);
-    assertEquals( new Long(nums.length), stats.getCount() );
-    assertEquals( new Long(0), stats.getMissing() );
+    assertEquals(Long.valueOf(nums.length), stats.getCount() );
+    assertEquals(Long.valueOf(0), stats.getMissing() );
     assertEquals( "26.4", stats.getStddev().toString().substring(0, 4) );
     
     // now lets try again with a new set...  (odd median)
@@ -769,8 +823,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     assertEquals(5.0, ((Double) stats.getMin()).doubleValue(), 0);
     assertEquals( 20.0, ((Double)stats.getMax()).doubleValue(), 0 );
-    assertEquals(new Long(nums.length), stats.getCount());
-    assertEquals( new Long(0), stats.getMissing() );
+    assertEquals(Long.valueOf(nums.length), stats.getCount());
+    assertEquals(Long.valueOf(0), stats.getMissing() );
     
     // Now try again with faceting
     //---------------------------------
@@ -1816,7 +1870,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       
       q = new SolrQuery("q", "*:*", "indent", "true");
       q.setFilterQueries(parentFilter);
-      q.setFields("id,[child parentFilter=\"" + parentFilter +
+      q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
                   "\" limit=\"" + maxKidCount + "\"], name");
       resp = client.query(q);
@@ -1901,7 +1955,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         q = new SolrQuery("q", "name:" + name, "indent", "true");
       }
       q.setFilterQueries(parentFilter);
-      q.setFields("id,[child parentFilter=\"" + parentFilter +
+      q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
                   "\" limit=\"" + maxKidCount + "\"],name");
       resp = client.query(q);

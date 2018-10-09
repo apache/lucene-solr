@@ -658,10 +658,18 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     d.close();
   }
 
-  public void testUpdateSingleDocWithThreads() throws IOException, BrokenBarrierException, InterruptedException {
+  public void testUpdateSingleDocWithThreads() throws Exception {
+    stressUpdateSingleDocWithThreads(false, rarely());
+  }
+
+  public void testSoftUpdateSingleDocWithThreads() throws Exception {
+    stressUpdateSingleDocWithThreads(true, rarely());
+  }
+
+  public void stressUpdateSingleDocWithThreads(boolean useSoftDeletes, boolean forceMerge) throws Exception{
     try (Directory dir = newDirectory();
          RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-             newIndexWriterConfig().setMaxBufferedDocs(-1).setRAMBufferSizeMB(0.00001))) {
+             newIndexWriterConfig().setMaxBufferedDocs(-1).setRAMBufferSizeMB(0.00001), useSoftDeletes)) {
       Thread[] threads = new Thread[3 + random().nextInt(3)];
       AtomicInteger done = new AtomicInteger(0);
       CyclicBarrier barrier = new CyclicBarrier(threads.length + 1);
@@ -691,6 +699,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       barrier.await();
       try {
         do {
+          if (forceMerge && random().nextBoolean()) {
+            writer.forceMerge(1);
+          }
           DirectoryReader newReader = DirectoryReader.openIfChanged(open);
           if (newReader != null) {
             open.close();

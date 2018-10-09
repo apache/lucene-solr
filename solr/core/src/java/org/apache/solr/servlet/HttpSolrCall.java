@@ -97,7 +97,7 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationResponse;
-import org.apache.solr.security.PKIAuthenticationPlugin;
+import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
@@ -547,7 +547,7 @@ public class HttpSolrCall {
   }
 
   private boolean shouldAuthorize() {
-    if(PKIAuthenticationPlugin.PATH.equals(path)) return false;
+    if(PublicKeyHandler.PATH.equals(path)) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
     if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {
       boolean b = cores.getPkiAuthenticationPlugin().needsAuthorization(req);
@@ -862,9 +862,9 @@ public class HttpSolrCall {
                                        Collection<Slice> slices, boolean activeSlices) {
     if (activeSlices) {
       for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
-        final Collection<Slice> activeCollectionSlices = entry.getValue().getActiveSlices();
-        if (activeCollectionSlices != null) {
-          slices.addAll(activeCollectionSlices);
+        final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
+        for (Slice s : activeCollectionSlices) {
+          slices.add(s);
         }
       }
     } else {
@@ -880,45 +880,48 @@ public class HttpSolrCall {
   private String getRemotCoreUrl(String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
-    Collection<Slice> slices = (docCollection != null) ? docCollection.getActiveSlices() : null;
+    Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
+    List<Slice> activeSlices = new ArrayList<>();
     boolean byCoreName = false;
 
     if (slices == null) {
-      slices = new ArrayList<>();
+      activeSlices = new ArrayList<>();
       // look by core name
       byCoreName = true;
-      getSlicesForCollections(clusterState, slices, true);
-      if (slices.isEmpty()) {
-        getSlicesForCollections(clusterState, slices, false);
+      getSlicesForCollections(clusterState, activeSlices, true);
+      if (activeSlices.isEmpty()) {
+        getSlicesForCollections(clusterState, activeSlices, false);
+      }
+    } else {
+      for (Slice s : slices) {
+        activeSlices.add(s);
       }
     }
 
-    if (slices.isEmpty()) {
+    if (activeSlices.isEmpty()) {
       return null;
     }
 
     collectionsList.add(collectionName);
     String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
-        slices, byCoreName, true);
+        activeSlices, byCoreName, true);
 
     if (coreUrl == null) {
       coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
-          slices, byCoreName, false);
+          activeSlices, byCoreName, false);
     }
 
     return coreUrl;
   }
 
   private String getCoreUrl(String collectionName,
-                            String origCorename, ClusterState clusterState, Collection<Slice> slices,
+                            String origCorename, ClusterState clusterState, List<Slice> slices,
                             boolean byCoreName, boolean activeReplicas) {
     String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
-    List<Slice> randomizedSlices = new ArrayList<>(slices.size());
-    randomizedSlices.addAll(slices);
-    Collections.shuffle(randomizedSlices, random);
+    Collections.shuffle(slices, random);
 
-    for (Slice slice : randomizedSlices) {
+    for (Slice slice : slices) {
       List<Replica> randomizedReplicas = new ArrayList<>();
       randomizedReplicas.addAll(slice.getReplicas());
       Collections.shuffle(randomizedReplicas, random);

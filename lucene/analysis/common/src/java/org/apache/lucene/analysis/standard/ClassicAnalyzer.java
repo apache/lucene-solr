@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 
 /**
  * Filters {@link ClassicTokenizer} with {@link ClassicFilter}, {@link
@@ -46,7 +46,7 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
 
   /** An unmodifiable set containing some common English words that are usually not
   useful for searching. */
-  public static final CharArraySet STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET; 
+  public static final CharArraySet STOP_WORDS_SET = EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
 
   /** Builds an analyzer with the given stop words.
    * @param stopWords stop words */
@@ -92,13 +92,10 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
     TokenStream tok = new ClassicFilter(src);
     tok = new LowerCaseFilter(tok);
     tok = new StopFilter(tok, stopwords);
-    return new TokenStreamComponents(src, tok) {
-      @Override
-      protected void setReader(final Reader reader) {
-        src.setMaxTokenLength(ClassicAnalyzer.this.maxTokenLength);
-        super.setReader(reader);
-      }
-    };
+    return new TokenStreamComponents(r -> {
+      src.setMaxTokenLength(ClassicAnalyzer.this.maxTokenLength);
+      src.setReader(r);
+    }, tok);
   }
 
   @Override

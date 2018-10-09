@@ -429,11 +429,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     Directory dir;
     long size = 0;
     try {
-      dir = directoryFactory.get(getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
-      try {
-        size = DirectoryFactory.sizeOfDirectory(dir);
-      } finally {
-        directoryFactory.release(dir);
+      if (directoryFactory.exists(getIndexDir())) {
+        dir = directoryFactory.get(getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
+        try {
+          size = DirectoryFactory.sizeOfDirectory(dir);
+        } finally {
+          directoryFactory.release(dir);
+        }
       }
     } catch (IOException e) {
       SolrException.log(log, "IO error while trying to get the size of the Directory", e);
@@ -689,7 +691,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       log.info(info.className);
       rsBuilder = getResourceLoader().newInstance(info.className, RecoveryStrategy.Builder.class);
     } else {
-      log.info("solr.RecoveryStrategy.Builder");
+      log.debug("solr.RecoveryStrategy.Builder");
       rsBuilder = new RecoveryStrategy.Builder();
     }
     if (info != null) {
@@ -958,7 +960,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       initIndex(prev != null, reload);
 
       initWriters();
-      qParserPlugins.init(createInstances(QParserPlugin.standardPlugins), this);
+      qParserPlugins.init(QParserPlugin.standardPlugins, this);
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       loadSearchComponents();
@@ -1907,7 +1909,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       f = IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
       // cache fingerprint for the segment only if all the versions in the segment are included in the fingerprint
       if (f.getMaxVersionEncountered() == f.getMaxInHash()) {
-        log.info("Caching fingerprint for searcher:{} leafReaderContext:{} mavVersion:{}", searcher, ctx, maxVersion);
+        log.debug("Caching fingerprint for searcher:{} leafReaderContext:{} mavVersion:{}", searcher, ctx, maxVersion);
         perSegmentFingerprintCache.put(cacheHelper.getKey(), f);
       }
 

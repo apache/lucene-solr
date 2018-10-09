@@ -24,16 +24,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 
 /**
  * Trigger for the {@link TriggerEventType#NODEADDED} event
@@ -45,8 +51,11 @@ public class NodeAddedTrigger extends TriggerBase {
 
   private Map<String, Long> nodeNameVsTimeAdded = new HashMap<>();
 
+  private String preferredOp;
+
   public NodeAddedTrigger(String name) {
     super(TriggerEventType.NODEADDED, name);
+    TriggerUtils.validProperties(validProperties, PREFERRED_OP);
   }
 
   @Override
@@ -71,7 +80,23 @@ public class NodeAddedTrigger extends TriggerBase {
     } catch (Exception e) {
       log.warn("Exception retrieving nodeLost markers", e);
     }
+  }
 
+  @Override
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+    super.configure(loader, cloudManager, properties);
+    preferredOp = (String) properties.getOrDefault(PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+    preferredOp = preferredOp.toLowerCase(Locale.ROOT);
+    // verify
+    CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+    switch (action) {
+      case ADDREPLICA:
+      case MOVEREPLICA:
+      case NONE:
+        break;
+      default:
+        throw new TriggerValidationException("Unsupported preferredOperation=" + preferredOp + " specified for node added trigger");
+    }
   }
 
   @Override
@@ -158,7 +183,7 @@ public class NodeAddedTrigger extends TriggerBase {
         if (processor != null) {
           log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}, now={}", name,
               nodeNames, times, cloudManager.getTimeSource().getTimeNs());
-          if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames))) {
+          if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames, preferredOp))) {
             // remove from tracking set only if the fire was accepted
             nodeNames.forEach(n -> {
               nodeNameVsTimeAdded.remove(n);
@@ -195,11 +220,12 @@ public class NodeAddedTrigger extends TriggerBase {
 
   public static class NodeAddedEvent extends TriggerEvent {
 
-    public NodeAddedEvent(TriggerEventType eventType, String source, List<Long> times, List<String> nodeNames) {
+    public NodeAddedEvent(TriggerEventType eventType, String source, List<Long> times, List<String> nodeNames, String preferredOp) {
       // use the oldest time as the time of the event
       super(eventType, source, times.get(0), null);
       properties.put(NODE_NAMES, nodeNames);
       properties.put(EVENT_TIMES, times);
+      properties.put(PREFERRED_OP, preferredOp);
     }
   }
 }

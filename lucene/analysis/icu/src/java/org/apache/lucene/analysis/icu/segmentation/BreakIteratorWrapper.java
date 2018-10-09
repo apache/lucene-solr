@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.analysis.icu.segmentation;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.text.BreakIterator;
 import com.ibm.icu.text.RuleBasedBreakIterator;
 import com.ibm.icu.text.UTF16;
@@ -65,18 +63,18 @@ final class BreakIteratorWrapper {
     }
   }
   
-  // See unicode doc L2/16-315 and also the RBBI rules for rationale.
-  // we don't include regional indicators here, because they aren't ambiguous for tagging,
-  // they need only be treated special for segmentation.
+  // See unicode doc L2/16-315 for rationale.
+  // basically for us the ambiguous cases (keycap/etc) as far as types go.
   static final UnicodeSet EMOJI_RK = new UnicodeSet("[\u002a\u00230-9©®™〰〽]").freeze();
+  // faster than doing hasBinaryProperty() checks, at the cost of 1KB ram
+  static final UnicodeSet EMOJI = new UnicodeSet("[[:Emoji:][:Extended_Pictographic:]]").freeze();
 
   /** Returns true if the current text represents emoji character or sequence */
   private boolean isEmoji(int current, int next) {
     int begin = start + current;
     int end = start + next;
     int codepoint = UTF16.charAt(text, 0, end, begin);
-    // TODO: this can be made more aggressive and future-proof if it uses [:Extended_Pictographic:]
-    if (UCharacter.hasBinaryProperty(codepoint, UProperty.EMOJI)) {
+    if (EMOJI.contains(codepoint)) {
       if (EMOJI_RK.contains(codepoint)) {
         // if its in EmojiRK, we don't treat it as emoji unless there is evidence it forms emoji sequence,
         // an emoji presentation selector or keycap follows.

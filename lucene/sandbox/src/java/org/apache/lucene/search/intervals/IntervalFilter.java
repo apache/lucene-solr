@@ -25,7 +25,7 @@ import java.util.Objects;
  */
 public abstract class IntervalFilter extends IntervalIterator {
 
-  private final IntervalIterator in;
+  protected final IntervalIterator in;
 
   /**
    * Create a new filter

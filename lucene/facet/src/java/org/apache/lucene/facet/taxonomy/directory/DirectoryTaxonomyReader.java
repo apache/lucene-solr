@@ -60,12 +60,12 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountable {
 
-  private static final Logger logger = Logger.getLogger(DirectoryTaxonomyReader.class.getName());
+  private static final Logger log = Logger.getLogger(DirectoryTaxonomyReader.class.getName());
 
   private static final int DEFAULT_CACHE_VALUE = 4000;
 
   // NOTE: very coarse estimate!
-  private static final int BYTES_PER_CACHE_ENTRY = 4 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 4 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 8 * RamUsageEstimator.NUM_BYTES_CHAR;
+  private static final int BYTES_PER_CACHE_ENTRY = 4 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 4 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 8 * Character.BYTES;
   
   private final DirectoryTaxonomyWriter taxoWriter;
   private final long taxoEpoch; // used in doOpenIfChanged 
@@ -421,8 +421,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
         }
         sb.append(i +": "+category.toString()+"\n");
       } catch (IOException e) {
-        if (logger.isLoggable(Level.FINEST)) {
-          logger.log(Level.FINEST, e.getMessage(), e);
+        if (log.isLoggable(Level.FINEST)) {
+          log.log(Level.FINEST, e.getMessage(), e);
         }
       }
     }

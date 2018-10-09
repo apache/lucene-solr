@@ -1,5 +1,5 @@
 = Configuring solrconfig.xml
-:page-children: datadir-and-directoryfactory-in-solrconfig, lib-directives-in-solrconfig, schema-factory-definition-in-solrconfig, indexconfig-in-solrconfig, requesthandlers-and-searchcomponents-in-solrconfig, initparams-in-solrconfig, updatehandlers-in-solrconfig, query-settings-in-solrconfig, requestdispatcher-in-solrconfig, update-request-processors, codec-factory
+:page-children: datadir-and-directoryfactory-in-solrconfig, resource-and-plugin-loading, schema-factory-definition-in-solrconfig, indexconfig-in-solrconfig, requesthandlers-and-searchcomponents-in-solrconfig, initparams-in-solrconfig, updatehandlers-in-solrconfig, query-settings-in-solrconfig, requestdispatcher-in-solrconfig, update-request-processors, codec-factory
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -38,7 +38,7 @@ The `solrconfig.xml` file is located in the `conf/` directory for each collectio
 We've covered the options in the following sections:
 
 * <<datadir-and-directoryfactory-in-solrconfig.adoc#datadir-and-directoryfactory-in-solrconfig,DataDir and DirectoryFactory in SolrConfig>>
-* <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>
+* <<resource-and-plugin-loading.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>
 * <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>>
 * <<indexconfig-in-solrconfig.adoc#indexconfig-in-solrconfig,IndexConfig in SolrConfig>>
 * <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,RequestHandlers and SearchComponents in SolrConfig>>

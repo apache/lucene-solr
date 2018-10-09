@@ -459,7 +459,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
       QParser parser = QParser.getParser(req.getParams().get("q"), null, req);
       query = parser.getQuery();
       final TopDocs topDocs = req.getSearcher().search(query, 10);
-      assertEquals(1, topDocs.totalHits);
+      assertEquals(1, topDocs.totalHits.value);
     }
     assertU(adoc("id", "12275", 
         "child_s", "l", "childparent_s", "e"));
@@ -469,8 +469,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
           req(elFilterQuery), "//*[@numFound='2']");
 
     try(final SolrQueryRequest req = req()) {
-        final TopDocs topDocs = req.getSearcher().search(query, 10);
-        assertEquals("expecting new doc is visible to old query", 2, topDocs.totalHits);
+        final int count = req.getSearcher().count(query);
+        assertEquals("expecting new doc is visible to old query", 2, count);
     }
   }
 

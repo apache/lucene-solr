@@ -218,6 +218,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
   }
 
+  /** Returns the {@link TaxonomyWriterCache} in use by this writer. */
+  public TaxonomyWriterCache getCache() {
+    return cache;
+  }
+
   /**
    * Open internal index writer, which contains the taxonomy data.
    * <p>

@@ -1076,6 +1076,15 @@ public void testParallelRankStream() throws Exception {
       assertEquals(7.5, avgi.doubleValue(), 0.1);
       assertEquals(5.5, avgf.doubleValue(), 0.1);
       assertEquals(2, count.doubleValue(), 0.1);
+
+      sorts[0] = new FieldComparator("a_s", ComparatorOrder.ASCENDING);
+
+      facetStream = new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, -1);
+      facetStream.setStreamContext(streamContext);
+      tuples = getTuples(facetStream);
+
+      assertEquals(3, tuples.size());
+
     } finally {
       solrClientCache.close();
     }
@@ -1785,6 +1794,63 @@ public void testParallelRankStream() throws Exception {
   }
 
   @Test
+  public void testRollupWithNoParallel() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    try {
+      //Intentionally adding partitionKeys to trigger SOLR-12674
+      SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc", "partitionKeys", "a_s");
+      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+
+      Bucket[] buckets = {new Bucket("a_s")};
+
+      Metric[] metrics = {new SumMetric("a_i"),
+          new SumMetric("a_f"),
+          new MinMetric("a_i"),
+          new MinMetric("a_f"),
+          new MaxMetric("a_i"),
+          new MaxMetric("a_f"),
+          new MeanMetric("a_i"),
+          new MeanMetric("a_f"),
+          new CountMetric()};
+
+      RollupStream rollupStream = new RollupStream(stream, buckets, metrics);
+      rollupStream.setStreamContext(streamContext);
+      List<Tuple> tuples = getTuples(rollupStream);
+      assertEquals(3, tuples.size());
+
+
+      List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+      ModifiableSolrParams solrParams = new ModifiableSolrParams();
+      solrParams.add("qt", "/stream");
+      solrParams.add("expr", "rollup(search(" + COLLECTIONORALIAS + ",q=\"*:*\",fl=\"a_s,a_i,a_f\",sort=\"a_s desc\",partitionKeys=\"a_s\"),over=\"a_s\")\n");
+      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      streamContext = new StreamContext();
+      solrStream.setStreamContext(streamContext);
+      tuples = getTuples(solrStream);
+      assert (tuples.size() == 3);
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
   public void testParallelRollupStream() throws Exception {
 
     new UpdateRequest()
@@ -1904,6 +1970,7 @@ public void testParallelRankStream() throws Exception {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testZeroParallelReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -2062,6 +2129,7 @@ public void testParallelRankStream() throws Exception {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testParallelMergeStream() throws Exception {
 
     new UpdateRequest()

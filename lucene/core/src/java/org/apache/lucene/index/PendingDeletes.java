@@ -39,7 +39,7 @@ class PendingDeletes {
   // case getMutableBits needs to be called
   private FixedBitSet writeableLiveDocs;
   protected int pendingDeleteCount;
-  private boolean liveDocsInitialized;
+  boolean liveDocsInitialized;
 
   PendingDeletes(SegmentReader reader, SegmentCommitInfo info) {
     this(info, reader.getLiveDocs(), true);
@@ -53,7 +53,7 @@ class PendingDeletes {
     // For segments that were published we enforce a reader in the BufferedUpdatesStream.SegmentState ctor
   }
 
-  private PendingDeletes(SegmentCommitInfo info, Bits liveDocs, boolean liveDocsInitialized) {
+  PendingDeletes(SegmentCommitInfo info, Bits liveDocs, boolean liveDocsInitialized) {
     this.info = info;
     this.liveDocs = liveDocs;
     pendingDeleteCount = 0;
@@ -220,7 +220,7 @@ class PendingDeletes {
    * Returns <code>true</code> iff the segment represented by this {@link PendingDeletes} is fully deleted
    */
   boolean isFullyDeleted(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
-    return info.getDelCount() + numPendingDeletes() == info.info.maxDoc();
+    return getDelCount() == info.info.maxDoc();
   }
 
   /**
@@ -246,7 +246,8 @@ class PendingDeletes {
    * Returns the number of deleted docs in the segment.
    */
   final int getDelCount() {
-    return info.getDelCount() + numPendingDeletes();
+    int delCount = info.getDelCount() + info.getSoftDelCount() + numPendingDeletes();
+    return delCount;
   }
 
   /**
@@ -270,11 +271,21 @@ class PendingDeletes {
       count = info.info.maxDoc();
     }
     assert numDocs() == count: "info.maxDoc=" + info.info.maxDoc() + " info.getDelCount()=" + info.getDelCount() +
-        " pendingDeletes=" + toString() + " count=" + count;
+        " info.getSoftDelCount()=" + info.getSoftDelCount() +
+        " pendingDeletes=" + toString() + " count=" + count + " numDocs: " + numDocs();
     assert reader.numDocs() == numDocs() : "reader.numDocs() = " + reader.numDocs() + " numDocs() " + numDocs();
     assert reader.numDeletedDocs() <= info.info.maxDoc(): "delCount=" + reader.numDeletedDocs() + " info.maxDoc=" +
         info.info.maxDoc() + " rld.pendingDeleteCount=" + numPendingDeletes() +
         " info.getDelCount()=" + info.getDelCount();
     return true;
+  }
+
+  /**
+   * Returns {@code true} if we have to initialize this PendingDeletes before {@link #delete(int)};
+   * otherwise this PendingDeletes is ready to accept deletes. A PendingDeletes can be initialized
+   * by providing it a reader via {@link #onNewReader(CodecReader, SegmentCommitInfo)}.
+   */
+  boolean mustInitOnDelete() {
+    return false;
   }
 }

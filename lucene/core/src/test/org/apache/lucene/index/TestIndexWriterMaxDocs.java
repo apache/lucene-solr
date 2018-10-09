@@ -29,6 +29,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -67,12 +68,14 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       assertEquals(IndexWriter.MAX_DOCS, ir.maxDoc());
       assertEquals(IndexWriter.MAX_DOCS, ir.numDocs());
       IndexSearcher searcher = new IndexSearcher(ir);
-      TopDocs hits = searcher.search(new TermQuery(new Term("field", "text")), 10);
-      assertEquals(IndexWriter.MAX_DOCS, hits.totalHits);
+      TopScoreDocCollector collector = TopScoreDocCollector.create(10, Integer.MAX_VALUE);
+      searcher.search(new TermQuery(new Term("field", "text")), collector);
+      TopDocs hits = collector.topDocs();
+      assertEquals(IndexWriter.MAX_DOCS, hits.totalHits.value);
 
       // Sort by docID reversed:
       hits = searcher.search(new TermQuery(new Term("field", "text")), 10, new Sort(new SortField(null, SortField.Type.DOC, true)));
-      assertEquals(IndexWriter.MAX_DOCS, hits.totalHits);
+      assertEquals(IndexWriter.MAX_DOCS, hits.totalHits.value);
       assertEquals(10, hits.scoreDocs.length);
       assertEquals(IndexWriter.MAX_DOCS-1, hits.scoreDocs[0].doc);
       ir.close();

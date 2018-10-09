@@ -45,6 +45,8 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/segments.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/threads.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/chosen.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/jquery-ui.min.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/jquery-ui.structure.min.css?_=${version}">
 
   <meta http-equiv="x-ua-compatible" content="IE=9">
   <script src="libs/jquery-2.1.3.min.js"></script>
@@ -58,6 +60,7 @@ limitations under the License.
   <script src="libs/ngtimeago.js"></script>
   <script src="libs/highlight.js"></script>
   <script src="libs/d3.js"></script>
+  <script src="libs/jquery-ui.min.js"></script>
   <script src="js/angular/app.js"></script>
   <script src="js/angular/services.js"></script>
   <script src="js/angular/controllers/index.js"></script>
@@ -147,10 +150,11 @@ limitations under the License.
 
             <li id="cloud" class="global optional" ng-show="isCloudEnabled" ng-class="{active:showingCloud}"><p><a href="#/~cloud">Cloud</a></p>
               <ul ng-show="showingCloud">
+                <li class="nodes" ng-class="{active:page=='cloud-nodes'}"><a href="#/~cloud?view=nodes">Nodes</a></li>
                 <li class="tree" ng-class="{active:page=='cloud-tree'}"><a href="#/~cloud?view=tree">Tree</a></li>
-                <li class="graph" ng-class="{active:page=='cloud-graph'}"><a href="#/~cloud">Graph</a></li>
+                <li class="zkstatus" ng-class="{active:page=='cloud-zkstatus'}"><a href="#/~cloud?view=zkstatus">ZK Status</a></li>
+                <li class="graph" ng-class="{active:page=='cloud-graph'}"><a href="#/~cloud?view=graph">Graph</a></li>
                 <li class="rgraph" ng-class="{active:page=='cloud-rgraph'}"><a href="#/~cloud?view=rgraph">Graph (Radial)</a></li>
-                <!--<li class="dump" ng-class="{active:page=='cloud-dump'}"><a ng-click="dumpCloud()">Dump</a></li>-->
               </ul>
             </li>
 

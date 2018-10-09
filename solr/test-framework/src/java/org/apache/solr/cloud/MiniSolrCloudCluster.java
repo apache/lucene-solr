@@ -423,12 +423,19 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
     jetty.start(false);
-    jettys.add(jetty);
+    if (!jettys.contains(jetty)) jettys.add(jetty);
     return jetty;
   }
 
+  /**
+   * Stop the given Solr instance. It will be removed from the cluster's list of running instances.
+   * @param jetty a {@link JettySolrRunner} to be stopped
+   * @return the same {@link JettySolrRunner} instance provided to this method
+   * @throws Exception on error
+   */
   public JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
     jetty.stop();
+    jettys.remove(jetty);
     return jetty;
   }
 
@@ -536,6 +543,7 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner getReplicaJetty(Replica replica) {
     for (JettySolrRunner jetty : jettys) {
+      if (jetty.isStopped()) continue;
       if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString()))
         return jetty;
     }

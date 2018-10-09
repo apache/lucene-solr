@@ -71,6 +71,7 @@ final class SegmentMerger {
       if (minVersion.onOrAfter(leafMinVersion)) {
         minVersion = leafMinVersion;
       }
+
     }
     assert segmentInfo.minVersion == null : "The min version should be set by SegmentMerger for merged segments";
     segmentInfo.minVersion = minVersion;
