@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -244,8 +245,57 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
     BooleanQuery query = (BooleanQuery) mlt.like(filteredDocument);
     Collection<BooleanClause> clauses = query.clauses();
-    // Because "text2" was not added to the list of field names, we don't expect any results even though the min tf for field "text2" is above the threshold
+
+    HashSet<Term> unexpectedTerms = new HashSet<>();
+    unexpectedTerms.add(new Term("text", "apache"));
+    unexpectedTerms.add(new Term("text", "lucene"));
+    unexpectedTerms.add(new Term("text", "apache2"));
+    unexpectedTerms.add(new Term("text", "lucene2"));
+
+    for (BooleanClause clause : clauses) {
+      Term term = ((TermQuery) clause.getQuery()).getTerm();
+      assertFalse("Unexpected term '" + term + "' found in query terms", unexpectedTerms.contains(term));
+    }
+
     assertEquals("Expected 0 clauses only!", 0, clauses.size());
+
+    analyzer.close();
+  }
+
+  public void testLiveMapDocument_minTermFrequencySet_shouldBuildQueryWithSpecifiedFieldnamesOnly() throws Exception {
+    MoreLikeThis mlt = new MoreLikeThis(reader);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt.setAnalyzer(analyzer);
+    mlt.setMinDocFreq(1);
+    mlt.setMinTermFreq(2);
+    mlt.setMinWordLen(1);
+    String sampleField1 = "text";
+    String sampleField2 = "text2";
+    mlt.setFieldNames(new String[]{sampleField1});
+
+    Map<String, Collection<Object>> filteredDocument = new HashMap<>();
+    String textValue1 = "apache apache lucene lucene";
+    String textValue2 = "apache2 apache2 lucene2 lucene2 lucene2";
+    filteredDocument.put(sampleField1, Arrays.asList(textValue1));
+    filteredDocument.put(sampleField2, Arrays.asList(textValue2));
+
+    BooleanQuery query = (BooleanQuery) mlt.like(filteredDocument);
+    Collection<BooleanClause> clauses = query.clauses();
+    assertEquals("Expected 2 clauses only!", 2, clauses.size());
+
+    HashSet<Term> expectedTerms = new HashSet<>();
+    expectedTerms.add(new Term("text", "apache"));
+    expectedTerms.add(new Term("text", "lucene"));
+
+    HashSet<Term> unexpectedTerms = new HashSet<>();
+    unexpectedTerms.add(new Term("text", "apache2"));
+    unexpectedTerms.add(new Term("text", "lucene2"));
+
+    for (BooleanClause clause : clauses) {
+      Term term = ((TermQuery) clause.getQuery()).getTerm();
+      assertTrue("Unexpected term '" + term + "' found in query terms", expectedTerms.contains(term));
+      assertFalse("Expected term '" + term + "' not found in query terms", unexpectedTerms.contains(term));
+    }
     analyzer.close();
   }
 
