@@ -18,8 +18,8 @@ limitations under the License.
 
   <div ng-show="authScheme === 'Basic'">
     <h1>Basic Authentication</h1>
-    <div class="login-error" ng-show="statusText !== 'require authentication'">
-      {{statusText}}
+    <div class="login-error" ng-show="statusText !== 'require authentication' || authParamsError !== null">
+      {{statusText}}{{authParamsError}}
     </div>
     <div ng-show="!isLoggedIn()">
       <p>

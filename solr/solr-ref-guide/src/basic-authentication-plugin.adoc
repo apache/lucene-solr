@@ -147,7 +147,7 @@ Set properties for the authentication plugin. The currently supported properties
 
 [.dynamic-tabs]
 --
-[example.tab-pane#v1set-property]
+[example.tab-pane#v1set-property-blockUnknown]
 ====
 [.tab-label]*V1 API*
 
@@ -157,7 +157,7 @@ curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'C
 ----
 ====
 
-[example.tab-pane#v2set-property]
+[example.tab-pane#v2set-property-blockUnknown]
 ====
 [.tab-label]*V2 API*
 
@@ -172,7 +172,7 @@ The authentication realm defaults to `solr` and is displayed in the `WWW-Authent
 
 [.dynamic-tabs]
 --
-[example.tab-pane#v1set-property]
+[example.tab-pane#v1set-property-realm]
 ====
 [.tab-label]*V1 API*
 
@@ -182,7 +182,7 @@ curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'C
 ----
 ====
 
-[example.tab-pane#v2set-property]
+[example.tab-pane#v2set-property-realm]
 ====
 [.tab-label]*V2 API*
 

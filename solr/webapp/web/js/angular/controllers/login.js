@@ -28,9 +28,10 @@ solrAdminApp.controller('LoginController',
         var wwwHeader = wwwAuthHeader.match(/(\w+)\s+(.*)/);
         var authScheme= wwwHeader[1];
         var authParams= www_auth_parse_params(wwwHeader[2]);
-        var authParamsError = "";
         if (typeof authParams === 'string' || authParams instanceof String) {
-          authParamsError = " - " + authParams;
+          $scope.authParamsError = authParams; 
+        } else {
+          $scope.authParamsError = null;
         }
         var realm = authParams['realm'];
         sessionStorage.setItem("auth.realm", realm);
@@ -45,7 +46,7 @@ solrAdminApp.controller('LoginController',
 
         $scope.authScheme = sessionStorage.getItem("auth.scheme");
         $scope.wwwAuthHeader = sessionStorage.getItem("auth.wwwAuthHeader");
-        $scope.statusText = sessionStorage.getItem("auth.statusText") + authParamsError;
+        $scope.statusText = sessionStorage.getItem("auth.statusText");
         $scope.authConfig = sessionStorage.getItem("auth.config");
         $scope.authLocation = sessionStorage.getItem("auth.location");
         $scope.authLoggedinUser = sessionStorage.getItem("auth.username");

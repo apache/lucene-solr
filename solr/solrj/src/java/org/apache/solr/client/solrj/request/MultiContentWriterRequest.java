@@ -92,7 +92,7 @@ public class MultiContentWriterRequest extends AbstractUpdateRequest {
     byte[] bytes = null;
     if (o instanceof byte[]) bytes = (byte[]) o;
     else if (o instanceof ByteBuffer) bytes = ((ByteBuffer) o).array();
-    rdr = new InputStreamReader(new ByteArrayInputStream(bytes));
+    rdr = new InputStreamReader(new ByteArrayInputStream(bytes), "UTF-8");
     String detectedContentType = null;
     for (;;) {
       int ch = rdr.read();

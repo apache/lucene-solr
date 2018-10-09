@@ -21,7 +21,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ngCookies",
   "ngtimeago",
   "solrAdminServices",
-  "localytics.directives"
+  "localytics.directives",
+  "ab-base64"
 ]);
 
 solrAdminApp.config([
