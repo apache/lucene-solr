@@ -22,7 +22,6 @@ solrAdminApp.controller('LoginController',
 
         // Session variables set in app.js 401 interceptor
         var wwwAuthHeader = sessionStorage.getItem("auth.wwwAuthHeader");
-        var authDataHeader = sessionStorage.getItem("auth.config");
         
         // Parse www-authenticate header
         var wwwHeader = wwwAuthHeader.match(/(\w+)\s+(.*)/);
@@ -39,7 +38,7 @@ solrAdminApp.controller('LoginController',
         if (authScheme === 'Basic' || authScheme === 'xBasic') {
           authScheme = 'Basic';
         }
-        var supportedSchemes = ['Basic', 'Foo'];
+        var supportedSchemes = ['Basic'];
         $scope.authSchemeSupported = supportedSchemes.includes(authScheme);
         
         sessionStorage.setItem("auth.scheme", authScheme);

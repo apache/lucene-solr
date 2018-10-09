@@ -397,10 +397,6 @@ solrAdminApp.config([
       var wwwAuthHeader = headers['www-authenticate'];
       sessionStorage.setItem("auth.wwwAuthHeader", wwwAuthHeader);
       sessionStorage.setItem("auth.statusText", rejection.statusText);
-      var authDataHeader = headers['X-Solr-AuthData'];
-      if (authDataHeader !== null) {
-        sessionStorage.setItem("auth.config", authDataHeader);
-      }
       if ($location.path() === '/login') {
         sessionStorage.setItem("auth.location", "/");
       } else {
