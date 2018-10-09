@@ -93,6 +93,15 @@
         "defaults" : {
           "type" : "object",
           "properties": {
+            "cluster": {
+              "type" : "object",
+              "properties": {
+                "useLegacyReplicaAssignment": {
+                  "type" : "boolean",
+                  "description" : "Decides wheyher to use the deprecated legacy replica assignment strategy or not"
+                }
+              }
+            },
             "collection": {
               "type": "object",
               "properties": {

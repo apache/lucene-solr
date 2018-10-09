@@ -111,6 +111,15 @@ Upgrade Notes
   ZK as well as written using the V2 set-obj-property syntax but it is deprecated and will be removed in Solr 9.
   We recommend that users change their API calls to use the new format going forward.
 
+* SOLR-12739: Autoscaling policy framework is now used as the default strategy to select the nodes on which
+  new replicas or replicas of new collections are created. Previously, the maxShardsPerNode parameter was not allowed
+  on collections when autoscaling policy was configured. Also if an autoscaling policy was configured then the default
+  was to set an unlimited maxShardsPerNode automatically. Now the maxShardsPerNode parameter is always
+  allowed during collection creation and maxShardsPerNode should be set correctly (if required) regardless of whether
+  autoscaling policies are in effect or not. The default value of maxShardsPerNode continues to be 1 as before. It can
+  be set to -1 during collection creation to fall back to the old behavior of unlimited maxShardsPerNode when using
+  autoscaling policy.
+
 New Features
 ----------------------
 
@@ -178,6 +187,8 @@ Improvements
 * SOLR-12782: UninvertingReader wrapping is now a bit more lightweight: Does not create FieldInfo for fields that
   can't be uninverted (saves mem) and can avoid wrapping the reader altogether if there's nothing to uninvert.
   IndexSchema.getUninversionMap refactored to getUninversionMapper and no longer merges FieldInfos. (David Smiley)
+
+* SOLR-12739: Make autoscaling policy based replica placement the default strategy for placing replicas. (shalin)
 
 ==================  7.5.0 ==================
 

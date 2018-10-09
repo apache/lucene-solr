@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -180,6 +181,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   private String referencedByAlias(String collection, Aliases aliases) {
+    Objects.requireNonNull(aliases);
     return aliases.getCollectionAliasListMap().entrySet().stream()
         .filter(e -> e.getValue().contains(collection))
         .map(Map.Entry::getKey) // alias name

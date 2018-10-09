@@ -53,7 +53,7 @@ Cluster preferences allow you to tell Solr how to assess system load on each nod
 
 In general, when an operation increases replica counts, the *least loaded* <<solrcloud-autoscaling-policy-preferences.adoc#node-selector,qualified node>> will be chosen, and when the operation reduces replica counts, the *most loaded* qualified node will be chosen. 
 
-The default cluster preferences are `[{minimize:cores}]`, which tells Solr to minimize the number of cores on all nodes.  In this case, the least loaded node is the one with the fewest cores.
+The default cluster preferences are `[{minimize:cores},{maximize:freedisk}]`, which tells Solr to minimize the number of cores on all nodes and if number of cores are equal, maximize the free disk space available.  In this case, the least loaded node is the one with the fewest cores or if two nodes have an equal number of cores, the node with the most free disk space.
 
 You can learn more about preferences in the <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Cluster Preferences>> section.
 

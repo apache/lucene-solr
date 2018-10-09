@@ -80,6 +80,8 @@ public class Policy implements MapWriter {
   public static final Set<String> GLOBAL_ONLY_TAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("cores", CollectionAdminParams.WITH_COLLECTION)));
   public static final List<Preference> DEFAULT_PREFERENCES = Collections.unmodifiableList(
       Arrays.asList(
+          // NOTE - if you change this, make sure to update the solrcloud-autoscaling-overview.adoc which
+          // lists the default preferences
           new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")),
           new Preference((Map<String, Object>) Utils.fromJSONString("{maximize : freedisk}"))));
 

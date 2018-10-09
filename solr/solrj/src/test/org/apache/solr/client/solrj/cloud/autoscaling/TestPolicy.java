@@ -49,7 +49,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
@@ -57,7 +56,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionParams;
@@ -81,9 +79,6 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.CLUSTER_PREF
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
@@ -3091,13 +3086,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      'totaldisk': 1700," +
         "      'port': 8985" +
         "    }" +
-        "  }," +
-        "  'autoscalingJson': {" +
-        "     'cluster-preferences': [" +
-        "       { 'maximize': 'freedisk'}," +
-        "       { 'minimize': 'cores', 'precision': 3}" +
-        "     ]" +
-        "   }" +
+        "  }" +
         "}";
 
     String clusterState = "{\n" +
@@ -3161,7 +3150,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
       });
     });
-    AutoScalingConfig asc = m.containsKey("autoscalingJson") ? new AutoScalingConfig((Map<String, Object>) m.get("autoscalingJson")) : null;
+    AutoScalingConfig asc = m.containsKey("autoscalingJson") ? new AutoScalingConfig((Map<String, Object>) m.get("autoscalingJson")) : new AutoScalingConfig(Collections.emptyMap());
     DelegatingCloudManager cloudManager = new DelegatingCloudManager(null) {
 
       @Override
@@ -3207,13 +3196,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     };
 
-    ZkNodeProps message = new ZkNodeProps(
-        Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(),
-        COLLECTION_PROP, "c1",
-        SHARD_ID_PROP, "s1",
-        REPLICA_TYPE, Replica.Type.NRT.toString()
-    );
-
     Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
         .forCollection("c1")
         .forShard(Collections.singletonList("s1"))
@@ -3237,7 +3219,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
    * The reason behind doing this is to ensure that implicitly added cluster preferences do not ever
    * go to ZooKeeper so that we can decide whether to enable autoscaling policy framework or not.
    *
-   * @see org.apache.solr.cloud.CloudUtil#usePolicyFramework(DocCollection, SolrCloudManager)
+   * @see Assign#usePolicyFramework(DocCollection, SolrCloudManager)
    */
   public void testPolicyMapWriterWithEmptyPreferences() throws IOException {
     List<Map> defaultPreferences = Policy.DEFAULT_PREFERENCES
