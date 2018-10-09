@@ -1151,12 +1151,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Shard " + collectionName +
           " /  " + sliceName.get() + " has no leader and can't be split");
     }
+    SplitShardCmd.lockForSplit(cloudManager, collectionName, sliceName.get());
     // start counting buffered updates
     Map<String, Object> props = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
         .computeIfAbsent(sliceName.get(), ss -> new ConcurrentHashMap<>());
     if (props.containsKey(BUFFERED_UPDATES)) {
-      log.debug("--- SOLR-12729: Overlapping splitShard commands for {} / {}", collectionName, sliceName.get());
-      return;
+      throw new Exception("--- SOLR-12729: Overlapping splitShard commands for " + collectionName + "/" + sliceName.get());
     }
     props.put(BUFFERED_UPDATES, new AtomicLong());
 
@@ -1240,20 +1240,28 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     // delay it once again to better simulate replica recoveries
     //opDelay(collectionName, CollectionParams.CollectionAction.SPLITSHARD.name());
 
-    CloudTestUtils.waitForState(cloudManager, collectionName, 30, TimeUnit.SECONDS, (liveNodes, state) -> {
-      for (String subSlice : subSlices) {
-        Slice s = state.getSlice(subSlice);
-        if (s.getLeader() == null) {
-          log.debug("** no leader in {} / {}", collectionName, s);
-          return false;
+    boolean success = false;
+    try {
+      CloudTestUtils.waitForState(cloudManager, collectionName, 30, TimeUnit.SECONDS, (liveNodes, state) -> {
+        for (String subSlice : subSlices) {
+          Slice s = state.getSlice(subSlice);
+          if (s.getLeader() == null) {
+            log.debug("** no leader in {} / {}", collectionName, s);
+            return false;
+          }
+          if (s.getReplicas().size() < repFactor) {
+            log.debug("** expected {} repFactor but there are {} replicas", repFactor, s.getReplicas().size());
+            return false;
+          }
         }
-        if (s.getReplicas().size() < repFactor) {
-          log.debug("** expected {} repFactor but there are {} replicas", repFactor, s.getReplicas().size());
-          return false;
-        }
+        return true;
+      });
+      success = true;
+    } finally {
+      if (!success) {
+        SplitShardCmd.unlockForSplit(cloudManager, collectionName, sliceName.get());
       }
-      return true;
-    });
+    }
     // mark the new slices as active and the old slice as inactive
     log.trace("-- switching slice states after split shard: collection={}, parent={}, subSlices={}", collectionName,
         sliceName.get(), subSlices);
@@ -1292,6 +1300,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       // invalidate cached state
       collectionsStatesRef.set(null);
     } finally {
+      SplitShardCmd.unlockForSplit(cloudManager, collectionName, sliceName.get());
       lock.unlock();
     }
     results.add("success", "");

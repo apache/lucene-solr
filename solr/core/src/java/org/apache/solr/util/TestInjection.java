@@ -24,6 +24,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -135,6 +137,8 @@ public class TestInjection {
 
   public static String splitFailureAfterReplicaCreation = null;
 
+  public static CountDownLatch splitLatch = null;
+
   public static String waitForReplicasInSync = "true:60";
 
   public static String failIndexFingerprintRequests = null;
@@ -159,6 +163,7 @@ public class TestInjection {
     randomDelayInCoreCreation = null;
     splitFailureBeforeReplicaCreation = null;
     splitFailureAfterReplicaCreation = null;
+    splitLatch = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     waitForReplicasInSync = "true:60";
@@ -411,6 +416,18 @@ public class TestInjection {
 
   public static boolean injectSplitFailureAfterReplicaCreation() {
     return injectSplitFailure(splitFailureAfterReplicaCreation, "after creating replica for sub-shard");
+  }
+
+  public static boolean injectSplitLatch() {
+    if (splitLatch != null) {
+      try {
+        log.info("Waiting in ReplicaMutator for up to 60s");
+        return splitLatch.await(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
   }
 
   @SuppressForbidden(reason = "Need currentTimeMillis, because COMMIT_TIME_MSEC_KEY use currentTimeMillis as value")
