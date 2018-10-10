@@ -77,6 +77,7 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CLUSTER;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
 import static org.apache.solr.common.params.CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT;
@@ -331,7 +332,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(cloudDataProviderMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
     when(clusterStateProviderMock.getClusterState()).thenReturn(clusterStateMock);
     when(clusterStateProviderMock.getLiveNodes()).thenReturn(liveNodes);
-    when(clusterStateProviderMock.getClusterProperties()).thenReturn(Utils.makeMap(DEFAULTS, Utils.makeMap(COLLECTION, Utils.makeMap(USE_LEGACY_REPLICA_ASSIGNMENT, true))));
+    when(clusterStateProviderMock.getClusterProperties()).thenReturn(Utils.makeMap(DEFAULTS, Utils.makeMap(CLUSTER, Utils.makeMap(USE_LEGACY_REPLICA_ASSIGNMENT, true))));
     when(cloudDataProviderMock.getDistribStateManager()).thenReturn(stateManagerMock);
     when(stateManagerMock.hasData(anyString())).thenAnswer(invocation -> zkMap.containsKey(invocation.getArgument(0)));
     when(stateManagerMock.getAutoScalingConfig()).thenReturn(autoScalingConfig);
