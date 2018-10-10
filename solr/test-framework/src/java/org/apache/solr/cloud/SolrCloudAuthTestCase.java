@@ -31,30 +31,30 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 
 public class SolrCloudAuthTestCase extends SolrCloudTestCase {
-  private static final List<String> AUTH_METRICS_KEYS = Arrays.asList("errors", "timeouts", "requests", "authenticated", 
+  private static final List<String> AUTH_METRICS_KEYS = Arrays.asList("errors", "requests", "authenticated", 
       "passThrough", "failWrongCredentials", "failMissingCredentials", "failInvalidCredentials", "requestTimes", "totalTime");
-  private static final List<String> AUTH_METRICS_METER_KEYS = Arrays.asList("errors", "timeouts");
+  private static final List<String> AUTH_METRICS_METER_KEYS = Arrays.asList("errors");
   private static final List<String> AUTH_METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
 
   /**
    * Used to check metric counts for PKI auth
    */
-  protected static void assertPkiAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
-    assertAuthMetrics("SECURITY./authentication/pki.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
+  protected static void assertPkiAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors) {
+    assertAuthMetrics("SECURITY./authentication/pki.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors);
   }
   
   /**
    * Used to check metric counts for the AuthPlugin in use (except PKI)
    */
-  protected static void assertAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
-    assertAuthMetrics("SECURITY./authentication.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors, timeouts);
+  protected static void assertAuthMetrics(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors) {
+    assertAuthMetrics("SECURITY./authentication.", requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, failInvalidCredentials, errors);
   }  
   
   /**
    * Common test method to be able to check security from any authentication plugin
    * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
    */
-  private static void assertAuthMetrics(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors, int timeouts) {
+  private static void assertAuthMetrics(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int failInvalidCredentials, int errors) {
     List<Map<String, Metric>> metrics = new ArrayList<>();
     cluster.getJettySolrRunners().forEach(r -> {
       MetricRegistry registry = r.getCoreContainer().getMetricManager().registry("solr.node");
@@ -75,7 +75,6 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     assertEquals("Metrics were: " + counts, failMissingCredentials, counts.get("failMissingCredentials").intValue());
     assertEquals("Metrics were: " + counts, failInvalidCredentials, counts.get("failInvalidCredentials").intValue());
     assertEquals("Metrics were: " + counts, errors, counts.get("errors").intValue());
-    assertEquals("Metrics were: " + counts, timeouts, counts.get("timeouts").intValue());
     if (counts.get("requests") > 0) {
       assertTrue("Metrics were: " + counts, counts.get("requestTimes") > 1);
       assertTrue("Metrics were: " + counts, counts.get("totalTime") > 0);

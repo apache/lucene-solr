@@ -104,7 +104,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       JettySolrRunner randomJetty = cluster.getRandomJetty(random());
       String baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
-      assertNumberOfMetrics(10); // Only pki plugin registered
+      assertNumberOfMetrics(9); // Only pki plugin registered
       zkClient().setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
@@ -112,9 +112,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       randomJetty.start(false);
       baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
-      assertNumberOfMetrics(20); // Basic auth metrics available
-      assertAuthMetrics(1, 0, 1, 0, 0, 0, 0, 0);
-      assertPkiAuthMetrics(0, 0, 0, 0, 0, 0, 0, 0);
+      assertNumberOfMetrics(18); // Basic auth metrics available
+      assertAuthMetrics(1, 0, 1, 0, 0, 0, 0);
+      assertPkiAuthMetrics(0, 0, 0, 0, 0, 0, 0);
       
       String command = "{\n" +
           "'set-user': {'harry':'HarryIsCool'}\n" +
@@ -133,8 +133,8 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         cluster.getSolrClient().request(genericReq);
       });
       assertEquals(401, exp.code());
-      assertAuthMetrics(2, 0, 2, 0, 0, 0, 0, 0);
-      assertPkiAuthMetrics(0, 0, 0, 0, 0, 0, 0, 0);
+      assertAuthMetrics(2, 0, 2, 0, 0, 0, 0);
+      assertPkiAuthMetrics(0, 0, 0, 0, 0, 0, 0);
       
       command = "{\n" +
           "'set-user': {'harry':'HarryIsUberCool'}\n" +
@@ -149,7 +149,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       int statusCode = r.getStatusLine().getStatusCode();
       Utils.consumeFully(r.getEntity());
       assertEquals("proper_cred sent, but access denied", 200, statusCode);
-      assertAuthMetrics(4, 1, 3, 0, 0, 0, 0, 0);
+      assertAuthMetrics(4, 1, 3, 0, 0, 0, 0);
 
       baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
 
@@ -159,7 +159,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
           "}";
 
       executeCommand(baseUrl + authzPrefix, cl,command, "solr", "SolrRocks");
-      assertAuthMetrics(6, 2, 4, 0, 0, 0, 0, 0);
+      assertAuthMetrics(6, 2, 4, 0, 0, 0, 0);
 
       baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
@@ -170,12 +170,12 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
               "role", "dev"))), "harry", "HarryIsUberCool" );
 
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/collection", "x", 20);
-      assertAuthMetrics(9, 3, 6, 0, 0, 0, 0, 0);
+      assertAuthMetrics(9, 3, 6, 0, 0, 0, 0);
 
       executeCommand(baseUrl + authzPrefix, cl,Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
           ("name", "collection-admin-edit", "role", "admin"))), "harry", "HarryIsUberCool"  );
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
-      assertAuthMetrics(11, 4, 7, 0, 0, 0, 0, 0);
+      assertAuthMetrics(11, 4, 7, 0, 0, 0, 0);
 
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
@@ -202,7 +202,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
             .setBasicAuthCredentials("harry", "Cool12345"));
         fail("This should not succeed");
       } catch (HttpSolrClient.RemoteSolrException e) {
-        assertAuthMetrics(15, 5, 9, 1, 0, 0, 0, 0);
+        assertAuthMetrics(15, 5, 9, 1, 0, 0, 0);
       }
 
       executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
@@ -219,7 +219,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
-      assertAuthMetrics(18, 8, 9, 1, 0, 0, 0, 0);
+      assertAuthMetrics(18, 8, 9, 1, 0, 0, 0);
 
       String[] toolArgs = new String[]{
           "status", "-solr", baseUrl};
@@ -245,16 +245,16 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         cluster.getSolrClient().query(COLLECTION, params);
       });
       assertEquals(401, exp.code());
-      assertAuthMetrics(20, 8, 9, 1, 2, 0, 0, 0);
-      assertPkiAuthMetrics(4, 4, 0, 0, 0, 0, 0, 0);
+      assertAuthMetrics(20, 8, 9, 1, 2, 0, 0);
+      assertPkiAuthMetrics(4, 4, 0, 0, 0, 0, 0);
 
       // Query that succeeds
       GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params);
       req.setBasicAuthCredentials("harry", "HarryIsUberCool");
       cluster.getSolrClient().request(req, COLLECTION);
       
-      assertAuthMetrics(21, 9, 9, 1, 2, 0, 0, 0);
-      assertPkiAuthMetrics(7, 7, 0, 0, 0, 0, 0, 0);
+      assertAuthMetrics(21, 9, 9, 1, 2, 0, 0);
+      assertPkiAuthMetrics(7, 7, 0, 0, 0, 0, 0);
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
     } finally {

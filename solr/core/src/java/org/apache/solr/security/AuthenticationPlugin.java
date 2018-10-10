@@ -48,7 +48,6 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
   protected String registryName;
   protected SolrMetricManager metricManager;
   protected Meter numErrors = new Meter();
-  protected Meter numTimeouts = new Meter();
   protected Counter requests = new Counter();
   protected Timer requestTimes = new Timer();
   protected Counter totalTime = new Counter();
@@ -111,7 +110,6 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
     // Metrics
     registry = manager.registry(registryName);
     numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
-    numTimeouts = manager.meter(this, registryName, "timeouts", getCategory().toString(), scope);
     requests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
     numAuthenticated = manager.counter(this, registryName, "authenticated", getCategory().toString(), scope);
     numPassThrough = manager.counter(this, registryName, "passThrough", getCategory().toString(), scope);
@@ -131,7 +129,7 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
 
   @Override
   public String getDescription() {
-    return this.getClass().getName();
+    return "Authentication Plugin " + this.getClass().getName();
   }
 
   @Override
