@@ -55,7 +55,6 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
   protected Counter numPassThrough = new Counter();
   protected Counter numWrongCredentials = new Counter();
   protected Counter numMissingCredentials = new Counter();
-  protected Counter numInvalidCredentials = new Counter();
 
   /**
    * This is called upon loading up of a plugin, used for setting it up.
@@ -114,7 +113,6 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
     numAuthenticated = manager.counter(this, registryName, "authenticated", getCategory().toString(), scope);
     numPassThrough = manager.counter(this, registryName, "passThrough", getCategory().toString(), scope);
     numWrongCredentials = manager.counter(this, registryName, "failWrongCredentials", getCategory().toString(), scope);
-    numInvalidCredentials = manager.counter(this, registryName, "failInvalidCredentials", getCategory().toString(), scope);
     numMissingCredentials = manager.counter(this, registryName, "failMissingCredentials", getCategory().toString(), scope);
     requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
     totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);

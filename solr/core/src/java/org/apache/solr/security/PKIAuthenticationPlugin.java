@@ -107,7 +107,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     List<String> authInfo = StrUtils.splitWS(header, false);
     if (authInfo.size() < 2) {
       log.error("Invalid SolrAuth Header {}", header);
-      numInvalidCredentials.inc();
+      numErrors.mark();
       filterChain.doFilter(request, response);
       return true;
     }
@@ -124,7 +124,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     }
     if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
       log.error("Invalid key request timestamp: {} , received timestamp: {} , TTL: {}", decipher.timestamp, receivedTime, MAX_VALIDITY);
-      numInvalidCredentials.inc();
+      numErrors.mark();
       filterChain.doFilter(request, response);
       return true;
     }

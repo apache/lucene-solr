@@ -137,7 +137,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
                   return true;
                 }
               } else {
-                numInvalidCredentials.inc();
+                numErrors.mark();
                 authenticationFailure(response, "Invalid authentication token");
                 return false;
               }
@@ -145,7 +145,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
               throw new Error("Couldn't retrieve authentication", e);
             }
           } else {
-            numInvalidCredentials.inc();
+            numErrors.mark();
             authenticationFailure(response, "Malformed Basic Auth header");
             return false;
           }
