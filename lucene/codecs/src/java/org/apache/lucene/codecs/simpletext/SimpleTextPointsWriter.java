@@ -35,8 +35,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 
 class SimpleTextPointsWriter extends PointsWriter {
 
-  public final static BytesRef NUM_DATA_DIMS  = new BytesRef("num data dims ");
-  public final static BytesRef NUM_INDEX_DIMS = new BytesRef("num index dims ");
+  public final static BytesRef NUM_DIMS      = new BytesRef("num dims ");
   public final static BytesRef BYTES_PER_DIM = new BytesRef("bytes per dim ");
   public final static BytesRef MAX_LEAF_POINTS = new BytesRef("max leaf points ");
   public final static BytesRef INDEX_COUNT = new BytesRef("index count ");
@@ -77,8 +76,7 @@ class SimpleTextPointsWriter extends PointsWriter {
     try (SimpleTextBKDWriter writer = new SimpleTextBKDWriter(writeState.segmentInfo.maxDoc(),
                                                               writeState.directory,
                                                               writeState.segmentInfo.name,
-                                                              fieldInfo.getPointDataDimensionCount(),
-                                                              fieldInfo.getPointIndexDimensionCount(),
+                                                              fieldInfo.getPointDimensionCount(),
                                                               fieldInfo.getPointNumBytes(),
                                                               SimpleTextBKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
                                                               SimpleTextBKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,

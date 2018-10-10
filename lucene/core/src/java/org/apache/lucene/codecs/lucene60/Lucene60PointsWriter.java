@@ -94,8 +94,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
     try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
                                           writeState.directory,
                                           writeState.segmentInfo.name,
-                                          fieldInfo.getPointDataDimensionCount(),
-                                          fieldInfo.getPointIndexDimensionCount(),
+                                          fieldInfo.getPointDimensionCount(),
                                           fieldInfo.getPointNumBytes(),
                                           maxPointsInLeafNode,
                                           maxMBSortInHeap,
@@ -153,8 +152,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
     }
 
     for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
-      if (fieldInfo.getPointDataDimensionCount() != 0) {
-        if (fieldInfo.getPointDataDimensionCount() == 1) {
+      if (fieldInfo.getPointDimensionCount() != 0) {
+        if (fieldInfo.getPointDimensionCount() == 1) {
 
           boolean singleValuePerDoc = true;
 
@@ -165,7 +164,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
             if (reader != null) {
               FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
               FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-              if (readerFieldInfo != null && readerFieldInfo.getPointDataDimensionCount() > 0) {
+              if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
                 PointValues values = reader.getValues(fieldInfo.name);
                 if (values != null) {
                   totMaxSize += values.size();
@@ -182,8 +181,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
           try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
                                                 writeState.directory,
                                                 writeState.segmentInfo.name,
-                                                fieldInfo.getPointDataDimensionCount(),
-                                                fieldInfo.getPointIndexDimensionCount(),
+                                                fieldInfo.getPointDimensionCount(),
                                                 fieldInfo.getPointNumBytes(),
                                                 maxPointsInLeafNode,
                                                 maxMBSortInHeap,
@@ -206,7 +204,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
                 FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
                 FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-                if (readerFieldInfo != null && readerFieldInfo.getPointDataDimensionCount() > 0) {
+                if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
                   BKDReader bkdReader = reader60.readers.get(readerFieldInfo.number);
                   if (bkdReader != null) {
                     bkdReaders.add(bkdReader);

@@ -91,12 +91,7 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public int pointDataDimensionCount() {
-        return 0;
-      }
-
-      @Override
-      public int pointIndexDimensionCount() {
+      public int pointDimensionCount() {
         return 0;
       }
 

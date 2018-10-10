@@ -155,19 +155,11 @@ class CrankyPointsFormat extends PointsFormat {
         }
 
         @Override
-        public int getNumDataDimensions() throws IOException {
+        public int getNumDimensions() throws IOException {
           if (random.nextInt(100) == 0) {
             throw new IOException("Fake IOException");
           }
-          return delegate.getNumDataDimensions();
-        }
-
-        @Override
-        public int getNumIndexDimensions() throws IOException {
-          if (random.nextInt(100) == 0) {
-            throw new IOException("Fake IOException");
-          }
-          return delegate.getNumIndexDimensions();
+          return delegate.getNumDimensions();
         }
 
         @Override
