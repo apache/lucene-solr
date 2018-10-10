@@ -91,6 +91,8 @@ Other Changes
 
 * SOLR-11812: Remove backward compatibility of old LIR implementation in 8.0 (Cao Manh Dat)
 
+* SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy) 
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
