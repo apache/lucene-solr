@@ -343,7 +343,7 @@ final class SimpleTextBKDWriter implements Closeable {
     public MergeReader(SimpleTextBKDReader bkd, MergeState.DocMap docMap) throws IOException {
       this.bkd = bkd;
       state = new SimpleTextBKDReader.IntersectState(bkd.in.clone(),
-                                                     bkd.numDims,
+                                                     bkd.numDataDims,
                                                      bkd.packedBytesLength,
                                                      bkd.maxPointsInLeafNode,
                                                      null);
