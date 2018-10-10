@@ -59,7 +59,7 @@ Upgrade Notes
 New Features
 ----------------------
 
-SOLR-12591: Expand the set of recognized date format patterns of schemaless mode to subsume those handled by the
+* SOLR-12591: Expand the set of recognized date format patterns of schemaless mode to subsume those handled by the
   "extract" contrib (Solr Cell / Tika).  This is primarily a change in configuration of the default configSet for more
   patterns, but also included enabling "lenient" parsing in ParseDateFieldUpdateProcessorFactory.  The default
   locale was changed from ROOT to en_US since well-known patterns assume this locale.
@@ -67,7 +67,12 @@ SOLR-12591: Expand the set of recognized date format patterns of schemaless mode
 
 * SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis (janhoy) 
 
-SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
+* SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
+
+Optimizations
+----------------------
+
+* SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition. (ab)
 
 Other Changes
 ----------------------
@@ -86,6 +91,8 @@ Other Changes
 
 * LUCENE-8513: SlowCompositeReaderWrapper now uses MultiTerms directly instead of MultiFields (David Smiley)
 
+* SOLR-11812: Remove backward compatibility of old LIR implementation in 8.0 (Cao Manh Dat)
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -97,6 +104,25 @@ Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
 Jetty 9.4.11.v20180605
+
+Upgrade Notes
+----------------------
+* SOLR-12767: The min_rf parameter is no longer needed, Solr will always return the achieved replication factor (rf)
+  in the response header.
+
+* SOLR-12827: The cluster wide defaults structure has changed from {collectionDefaults: {nrtReplicas : 2}} to
+  {defaults : {collection : {nrtReplicas : 2}}}.  The old format continues to be supported and can be read from
+  ZK as well as written using the V2 set-obj-property syntax but it is deprecated and will be removed in Solr 9.
+  We recommend that users change their API calls to use the new format going forward.
+
+* SOLR-12739: Autoscaling policy framework is now used as the default strategy to select the nodes on which
+  new replicas or replicas of new collections are created. Previously, the maxShardsPerNode parameter was not allowed
+  on collections when autoscaling policy was configured. Also if an autoscaling policy was configured then the default
+  was to set an unlimited maxShardsPerNode automatically. Now the maxShardsPerNode parameter is always
+  allowed during collection creation and maxShardsPerNode should be set correctly (if required) regardless of whether
+  autoscaling policies are in effect or not. The default value of maxShardsPerNode continues to be 1 as before. It can
+  be set to -1 during collection creation to fall back to the old behavior of unlimited maxShardsPerNode when using
+  autoscaling policy.
 
 New Features
 ----------------------
@@ -112,6 +138,12 @@ New Features
 
 * SOLR-11522: /autoscaling/suggestions now include rebalance options as well even if there are no violations (noble)
 
+* SOLR-12822: /autoscaling/suggestions to include suggestion to add-replica for lost replicas (noble)
+
+* SOLR-12815: Implement maxOps limit for IndexSizeTrigger. (ab)
+
+* SOLR-12843: Implement a MultiContentWriter in SolrJ to post multiple files/payload at once (noble)
+
 Other Changes
 ----------------------
 
@@ -122,13 +154,49 @@ Other Changes
   of a builder class instead of calling a method with large number of arguments. The number of special cases that had
   to be handled have been cut down as well. (shalin)
 
+* SOLR-12827: Migrate cluster wide defaults syntax in cluster properties to a nested structure. The structure has
+  changed from {collectionDefaults: {nrtReplicas : 2}} to {defaults : {collection : {nrtReplicas : 2}}}.
+  (ab, shalin)
+
+* SOLR-12835: Document statistics exposed by the Query Result Cache when maxRamMB is configured. (shalin)
+
 Bug Fixes
 ----------------------
+
+* SOLR-12803: Ensure ConcurrentUpdateSolrClient sends documents to correct collection (Jason Gerlowski)
 
 * SOLR-11836: FacetStream works with bucketSizeLimit of -1 which will fetch all the buckets.
   (Alfonso Muñoz-Pomer Fuentes, Amrit Sarkar via Varun Thacker)
 
 * SOLR-12776: Setting of TMP in solr.cmd causes invisibility of Solr to JDK tools (Petr Bodnar via Erick Erickson)
+
+* SOLR-12648: Autoscaling framework based replica placement is not used unless a policy is specified or
+  non-empty cluster policy exists. (shalin)
+
+* SOLR-12750: Migrate API should lock the collection instead of shard. (shalin)
+
+* SOLR-12767: When using min_rf, shard leader skipped bad replicas instead of marking them for recovery, this could
+  create inconsistencies between replicas of the same shard. min_rf parameter is now deprecated, and even if provided
+  replicas that don't ack an update from the leader will be marked for recovery. (Tomás Fernández Löbbe)
+
+* SOLR-12814: Metrics history causing "HttpParser URI is too large >8192" when many collections (janhoy)
+
+* SOLR-12836: ZkController creates a cloud solr client with no connection or read timeouts. Now the http client
+  created by the update shard handler is used instead. (shalin)
+
+* SOLR-12729: SplitShardCmd should lock the parent shard to prevent parallel splitting requests. (ab)
+
+Improvements
+----------------------
+
+* SOLR-12767: Solr now always includes in the response of update requests the achieved replication factor
+   (Tomás Fernández Löbbe)
+
+* SOLR-12782: UninvertingReader wrapping is now a bit more lightweight: Does not create FieldInfo for fields that
+  can't be uninverted (saves mem) and can avoid wrapping the reader altogether if there's nothing to uninvert.
+  IndexSchema.getUninversionMap refactored to getUninversionMapper and no longer merges FieldInfos. (David Smiley)
+
+* SOLR-12739: Make autoscaling policy based replica placement the default strategy for placing replicas. (shalin)
 
 ==================  7.5.0 ==================
 
@@ -386,6 +454,8 @@ Bug Fixes
 * SOLR-12733: SolrMetricReporterTest failure (Erick Erickson, David Smiley)
 
 * SOLR-12765: Incorrect format of JMX cache stats. (Bojan Smid, ab)
+
+* SOLR-12749: timeseries() expression missing sum() results for empty buckets (Joel Bernstein)
 
 Optimizations
 ----------------------

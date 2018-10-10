@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -136,5 +137,12 @@ public class Preference implements MapWriter {
   @Override
   public String toString() {
     return Utils.toJSONString(this);
+  }
+
+  /**
+   * @return an unmodifiable copy of the original map from which this object was constructed
+   */
+  public Map getOriginal() {
+    return Collections.unmodifiableMap(original);
   }
 }

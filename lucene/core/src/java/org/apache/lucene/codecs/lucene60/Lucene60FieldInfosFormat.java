@@ -114,7 +114,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
       Throwable priorE = null;
       FieldInfo infos[] = null;
       try {
-        CodecUtil.checkIndexHeader(input,
+        int version = CodecUtil.checkIndexHeader(input,
                                    Lucene60FieldInfosFormat.CODEC_NAME, 
                                    Lucene60FieldInfosFormat.FORMAT_START, 
                                    Lucene60FieldInfosFormat.FORMAT_CURRENT,
@@ -149,9 +149,13 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
             attributes = lastAttributes;
           }
           lastAttributes = attributes;
-          int pointDimensionCount = input.readVInt();
+          int pointDataDimensionCount = input.readVInt();
           int pointNumBytes;
-          if (pointDimensionCount != 0) {
+          int pointIndexDimensionCount = pointDataDimensionCount;
+          if (pointDataDimensionCount != 0) {
+            if (version >= Lucene60FieldInfosFormat.FORMAT_SELECTIVE_INDEXING) {
+              pointIndexDimensionCount = input.readVInt();
+            }
             pointNumBytes = input.readVInt();
           } else {
             pointNumBytes = 0;
@@ -160,7 +164,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
           try {
             infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
                                      indexOptions, docValuesType, dvGen, attributes,
-                                     pointDimensionCount, pointNumBytes, isSoftDeletesField);
+                                     pointDataDimensionCount, pointIndexDimensionCount, pointNumBytes, isSoftDeletesField);
             infos[i].checkConsistency();
           } catch (IllegalStateException e) {
             throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
@@ -287,9 +291,9 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
         output.writeByte(docValuesByte(fi.getDocValuesType()));
         output.writeLong(fi.getDocValuesGen());
         output.writeMapOfStrings(fi.attributes());
-        int pointDimensionCount = fi.getPointDimensionCount();
-        output.writeVInt(pointDimensionCount);
-        if (pointDimensionCount != 0) {
+        output.writeVInt(fi.getPointDataDimensionCount());
+        if (fi.getPointDataDimensionCount() != 0) {
+          output.writeVInt(fi.getPointIndexDimensionCount());
           output.writeVInt(fi.getPointNumBytes());
         }
       }
@@ -304,7 +308,8 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
   static final String CODEC_NAME = "Lucene60FieldInfos";
   static final int FORMAT_START = 0;
   static final int FORMAT_SOFT_DELETES = 1;
-  static final int FORMAT_CURRENT = FORMAT_SOFT_DELETES;
+  static final int FORMAT_SELECTIVE_INDEXING = 2;
+  static final int FORMAT_CURRENT = FORMAT_SELECTIVE_INDEXING;
   
   // Field flags
   static final byte STORE_TERMVECTOR = 0x1;

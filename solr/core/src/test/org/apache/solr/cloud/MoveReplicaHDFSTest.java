@@ -76,6 +76,12 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
     testFailedMove();
   }
 
+  @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12080") // added 03-Oct-2018
+  public void testFailedMove() throws Exception {
+    super.testFailedMove();
+  }
+
   public static class ForkJoinThreadsFilter implements ThreadFilter {
 
     @Override
