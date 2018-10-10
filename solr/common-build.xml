@@ -240,7 +240,7 @@
     <solr-jarify/>
   </target>
 
-  <target name="compile-core" depends="prep-lucene-jars,resolve-example,resolve-server,common.compile-core"/>
+  <target name="compile-core" depends="prep-lucene-jars,resolve-base-deps,resolve-example,resolve-server,common.compile-core"/>
   <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
 
   <target name="dist" depends="jar-core">
@@ -471,6 +471,14 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="server.libs.uptodate" value="true"/>
+  </target>
+
+  <!-- resolve dependencies in the server directory (relied upon by compile/tests) -->
+  <target name="resolve-base-deps" unless="base.deps.libs.uptodate">
+    <ant dir="${common-solr.dir}/base-deps" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="base.deps.libs.uptodate" value="true"/>
   </target>
 
   <macrodef name="contrib-crawl">
