@@ -96,7 +96,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
     QueryRequest query = new QueryRequest(params);
     query.process(cluster.getSolrClient(), "collection");
     assertTrue("all nodes must get the user solr , no:of nodes got solr : " + count.get(), count.get() > 2);
-    assertPkiAuthMetrics(2, 2, 0, 0, 0, 0, 0);
+    assertPkiAuthMetrics(2, 2, 0, 0, 0, 0);
   }
 
   @After
