@@ -94,9 +94,15 @@ public interface CollectionAdminParams {
   /**
    * Used by cluster properties API as a wrapper key to provide defaults for collection, cluster etc.
    *
-   * e.g. {defaults:{collection:{useLegacyReplicaAssignment:false}}}
+   * e.g. {defaults:{collection:{replicationFactor:2}}}
    */
   String DEFAULTS = "defaults";
+
+  /**
+   * Cluster wide defaults can be nested under this key e.g.
+   * {defaults: {cluster:{useLegacyReplicaAssignment:false}}}
+   */
+  String CLUSTER = "cluster";
 
   /**
    * This cluster property decides whether Solr should use the legacy round-robin replica placement strategy
