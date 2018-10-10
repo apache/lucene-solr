@@ -24,6 +24,7 @@
 
   <!-- Specialized compile classpath: to only depend on what solrj should depend on (e.g. not lucene) -->
   <path id="classpath">
+    <fileset dir="${common-solr.dir}/base-deps/lib" excludes="${common.classpath.excludes}"/>
     <fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
   </path>
 
@@ -77,6 +78,9 @@
     <mkdir  dir="${dist}/solrj-lib" />
     <copy todir="${dist}/solrj-lib">
       <fileset dir="${common-solr.dir}/solrj/lib">
+        <include name="*.jar"/>
+      </fileset>
+      <fileset dir="${common-solr.dir}/base-deps/lib">
         <include name="*.jar"/>
       </fileset>
     </copy>

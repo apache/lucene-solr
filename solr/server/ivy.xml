@@ -45,24 +45,18 @@
 
     <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${/org.eclipse.jetty/jetty-continuation}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-deploy" rev="${/org.eclipse.jetty/jetty-deploy}" conf="jetty"/>
-    <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" conf="jetty"/>
-    <dependency org="org.eclipse.jetty" name="jetty-io" rev="${/org.eclipse.jetty/jetty-io}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-jmx" rev="${/org.eclipse.jetty/jetty-jmx}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-rewrite" rev="${/org.eclipse.jetty/jetty-rewrite}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-security" rev="${/org.eclipse.jetty/jetty-security}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-server" rev="${/org.eclipse.jetty/jetty-server}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="${/org.eclipse.jetty/jetty-servlet}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-servlets" rev="${/org.eclipse.jetty/jetty-servlets}" conf="jetty"/>
-    <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${/org.eclipse.jetty/jetty-webapp}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-xml" rev="${/org.eclipse.jetty/jetty-xml}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-alpn-conscrypt-server" rev="${/org.eclipse.jetty/jetty-alpn-conscrypt-server}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-alpn-server" rev="${/org.eclipse.jetty/jetty-alpn-server}" conf="jetty"/>
 
     <dependency org="org.eclipse.jetty.http2" name="http2-server" rev="${/org.eclipse.jetty.http2/http2-server}" conf="jetty"/>
-    <dependency org="org.eclipse.jetty.http2" name="http2-common" rev="${/org.eclipse.jetty.http2/http2-common}" conf="jetty"/>
-    <dependency org="org.eclipse.jetty.http2" name="http2-hpack" rev="${/org.eclipse.jetty.http2/http2-hpack}" conf="jetty"/>
-    <dependency org="org.conscrypt" name="conscrypt-openjdk-uber" rev="${/org.conscrypt/conscrypt-openjdk-uber}" conf="jetty"/>
 
     <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="jetty"/>
 

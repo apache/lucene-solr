@@ -77,6 +77,7 @@
 
   <path id="additional.dependencies">
     <fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/base-deps/lib" excludes="${common.classpath.excludes}"/>
     <fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
     <fileset dir="${common-solr.dir}/server/lib" excludes="${common.classpath.excludes}"/>
     <fileset dir="${common-solr.dir}/example/example-DIH/solr/db/lib" excludes="${common.classpath.excludes}"/>    

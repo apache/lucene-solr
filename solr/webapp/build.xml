@@ -46,6 +46,9 @@
       <fileset dir="web" excludes="${exclude.from.webapp}"/>
       <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
     </copy>
+    <!--<copy todir="${server.dir}/lib">-->
+      <!--<fileset dir="${common-solr.dir}/base-deps/lib" excludes="${exclude.from.webapp}"/>-->
+    <!--</copy>-->
     <mkdir dir="${server.dir}/solr-webapp/webapp/WEB-INF/lib"/>
     <copy todir="${server.dir}/solr-webapp/webapp/WEB-INF/lib">
       <fileset dir="${common-solr.dir}/core/lib" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
