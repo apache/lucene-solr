@@ -428,6 +428,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Integer nrtReplicas;
     protected Integer pullReplicas;
     protected Integer tlogReplicas;
+    protected Boolean createNodeSetShuffle = null;
 
     protected Properties properties;
     protected Boolean autoAddReplicas;
@@ -468,6 +469,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas = nrtReplicas; return this;}
     public Create setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this;}
     public Create setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this;}
+    public Create setCreateNodeSetShuffle(boolean createNodeSetShuffle) { this.createNodeSetShuffle = createNodeSetShuffle; return this; }
 
     public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
@@ -480,7 +482,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public String getShards() { return  shards; }
     public Integer getNumShards() { return numShards; }
     public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
-    
+    public Boolean getCreateNodeSetShuffle() { return createNodeSetShuffle; }
+
     public Integer getReplicationFactor() { return getNumNrtReplicas(); }
     public Integer getNumNrtReplicas() { return nrtReplicas; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
@@ -536,6 +539,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set("collection.configName", configName);
       if (createNodeSet != null)
         params.set(CREATE_NODE_SET_PARAM, createNodeSet);
+      if (createNodeSetShuffle != null)
+        params.set(CREATE_NODE_SET_SHUFFLE_PARAM, createNodeSetShuffle);
       if (numShards != null) {
         params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
       }
