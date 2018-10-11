@@ -42,10 +42,16 @@
 
     <dependency org="org.eclipse.jetty.http2" name="http2-client" rev="${/org.eclipse.jetty.http2/http2-client}" conf="compile"/>
     <dependency org="org.eclipse.jetty.http2" name="http2-http-client-transport" rev="${/org.eclipse.jetty.http2/http2-http-client-transport}" conf="compile"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-common" rev="${/org.eclipse.jetty.http2/http2-common}" conf="compile"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-hpack" rev="${/org.eclipse.jetty.http2/http2-hpack}" conf="compile"/>
 
     <dependency org="org.eclipse.jetty" name="jetty-client" rev="${/org.eclipse.jetty/jetty-client}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-io" rev="${/org.eclipse.jetty/jetty-io}" conf="compile"/>
     <dependency org="org.eclipse.jetty" name="jetty-alpn-conscrypt-client" rev="${/org.eclipse.jetty/jetty-alpn-conscrypt-client}" conf="compile"/>
     <dependency org="org.eclipse.jetty" name="jetty-alpn-client" rev="${/org.eclipse.jetty/jetty-alpn-client}" conf="compile"/>
+    <dependency org="org.conscrypt" name="conscrypt-openjdk-uber" rev="${/org.conscrypt/conscrypt-openjdk-uber}" conf="compile"/>
 
     <dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="${/org.apache.logging.log4j/log4j-slf4j-impl}" conf="test"/>
 

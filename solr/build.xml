@@ -635,12 +635,9 @@
  
   <target name="resolve" depends="resolve-example,resolve-server">
      <sequential>
-     <ant dir="base-deps" target="resolve" inheritall="false">
-       <propertyset refid="uptodate.and.compiled.properties"/>
-     </ant>
      <ant dir="core" target="resolve" inheritall="false">
        <propertyset refid="uptodate.and.compiled.properties"/>
-     </ant>     
+     </ant>
      <ant dir="solrj" target="resolve" inheritall="false">
         <propertyset refid="uptodate.and.compiled.properties"/>
      </ant>
