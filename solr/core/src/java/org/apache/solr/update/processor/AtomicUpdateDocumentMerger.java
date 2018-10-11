@@ -488,10 +488,10 @@ public class AtomicUpdateDocumentMerger {
   private static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument partialDoc) {
     for(SolrInputField subSif: partialDoc) {
       String fieldName = subSif.getName();
-      if(!fullDoc.containsKey(fieldName)) return false;
       Collection<Object> fieldValues = fullDoc.getFieldValues(fieldName);
+      if(fieldValues == null) return false;
       if(fieldValues.size() < subSif.getValueCount()) return false;
-      if(!fullDoc.getFieldValues(fieldName).containsAll(subSif.getValues())) return false;
+      if(!fieldValues.containsAll(subSif.getValues())) return false;
     }
     return true;
   }
