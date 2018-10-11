@@ -186,6 +186,8 @@ Bug Fixes
 
 * SOLR-12729: SplitShardCmd should lock the parent shard to prevent parallel splitting requests. (ab)
 
+* SOLR-12851: Improvements and fixes to let and select Streaming Expressions (Joel Bernstein)
+
 Improvements
 ----------------------
 
