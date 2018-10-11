@@ -17,6 +17,7 @@
 
 package org.apache.solr.update.processor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -59,39 +60,24 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMergeChildDoc() throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.setField("id", "1");
-    doc.setField("cat_ss", new String[]{"aaa", "ccc"});
-    doc.setField("child", Collections.singletonList(sdoc("id", "2", "cat_ss", "child")));
-    addDoc(adoc(doc), "nested-rtg");
-
-    BytesRef rootDocId = new BytesRef("1");
-    SolrCore core = h.getCore();
-    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
-    // assert block doc has child docs
-    assertTrue(block.containsKey("child"));
-
-    assertJQ(req("q","id:1")
-        ,"/response/numFound==0"
-    );
-
-    // commit the changes
-    assertU(commit());
-
     SolrInputDocument newChildDoc = sdoc("id", "3", "cat_ss", "child");
     SolrInputDocument addedDoc = sdoc("id", "1",
         "cat_ss", Collections.singletonMap("add", "bbb"),
         "child", Collections.singletonMap("add", sdocs(newChildDoc)));
-    block = RealTimeGetComponent.getInputDocument(core, rootDocId, true);
-    block.removeField(VERSION);
-    SolrInputDocument preMergeDoc = new SolrInputDocument(block);
+
+    SolrInputDocument dummyBlock = sdoc("id", "1",
+        "cat_ss", new ArrayList<>(Arrays.asList("aaa", "ccc")),
+        "_root_", "1", "child", new ArrayList<>(sdocs(addedDoc)));
+    dummyBlock.removeField(VERSION);
+
+    SolrInputDocument preMergeDoc = new SolrInputDocument(dummyBlock);
     AtomicUpdateDocumentMerger docMerger = new AtomicUpdateDocumentMerger(req());
-    docMerger.merge(addedDoc, block);
-    assertEquals("merged document should have the same id", preMergeDoc.getFieldValue("id"), block.getFieldValue("id"));
-    assertDocContainsSubset(preMergeDoc, block);
-    assertDocContainsSubset(addedDoc, block);
-    assertDocContainsSubset(newChildDoc, (SolrInputDocument) ((List) block.getFieldValues("child")).get(1));
-    assertEquals(doc.getFieldValue("id"), block.getFieldValue("id"));
+    docMerger.merge(addedDoc, dummyBlock);
+    assertEquals("merged document should have the same id", preMergeDoc.getFieldValue("id"), dummyBlock.getFieldValue("id"));
+    assertDocContainsSubset(preMergeDoc, dummyBlock);
+    assertDocContainsSubset(addedDoc, dummyBlock);
+    assertDocContainsSubset(newChildDoc, (SolrInputDocument) ((List) dummyBlock.getFieldValues("child")).get(1));
+    assertEquals(dummyBlock.getFieldValue("id"), dummyBlock.getFieldValue("id"));
   }
 
   @Test
