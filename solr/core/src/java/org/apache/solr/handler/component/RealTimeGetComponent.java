@@ -595,7 +595,7 @@ public class RealTimeGetComponent extends SearchComponent
    * Obtains the latest document for a given id from the tlog or index (if not found in the tlog).
    * 
    * NOTE: This method uses the effective value for avoidRetrievingStoredFields param as false and
-   * for nonStoredDVs as null in the call to @see {@link RealTimeGetComponent#getInputDocument(SolrCore, BytesRef, AtomicLong, boolean, Set, boolean, boolean)},
+   * for nonStoredDVs as null in the call to @see {@link RealTimeGetComponent#getInputDocument(SolrCore, BytesRef, AtomicLong, boolean, Set, boolean, boolean, boolean)},
    * so as to retrieve all stored and non-stored DV fields from all documents. Also, it uses the effective value of
    * resolveFullDocument param as true, i.e. it resolves any partial documents (in-place updates), in case the 
    * document is fetched from the tlog, to a full document.
