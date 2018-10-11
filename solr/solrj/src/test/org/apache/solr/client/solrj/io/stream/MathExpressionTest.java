@@ -1169,7 +1169,6 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("c");
-    System.out.println("###### out:"+out);
     assertEquals(out.size(), 2);
     List<Number> row1 = out.get(0);
     assertEquals(row1.get(0).doubleValue(), 2.1, 0);
@@ -1719,6 +1718,46 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     double sd = tuples.get(0).getDouble("return-value");
     assertEquals(sd, 3.5, 0.0);
+  }
+
+  @Test
+  public void testSelectWithSequentialEvaluators() throws Exception {
+    String cexpr = "select(list(tuple(a=add(1,2)), tuple(a=add(2,2))), " +
+        "                  add(1, a) as blah, " +
+        "                  add(1, blah) as blah1)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 2);
+    Tuple tuple0 = tuples.get(0);
+    assertEquals(tuple0.getLong("blah").longValue(), 4L);
+    assertEquals(tuple0.getLong("blah1").longValue(), 5L);
+
+    Tuple tuple1 = tuples.get(1);
+    assertEquals(tuple1.getLong("blah").longValue(), 5L);
+    assertEquals(tuple1.getLong("blah1").longValue(), 6L);
+  }
+
+  @Test
+  public void testLetWithNumericVariables() throws Exception {
+    String cexpr = "let(echo=true, a=1.88888, b=8888888888.98)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+    Tuple tuple = tuples.get(0);
+    assertEquals(tuple.getDouble("a").doubleValue(), 1.88888, 0.0);
+    assertEquals(tuple.getDouble("b").doubleValue(), 8888888888.98, 0.0);
   }
 
   @Test
