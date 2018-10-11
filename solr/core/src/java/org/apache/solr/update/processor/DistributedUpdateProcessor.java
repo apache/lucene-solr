@@ -1406,7 +1406,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
     SolrInputDocument blockDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
-        false, null, true, true);
+        false, null, true, true, true);
 
     if (blockDoc == null) {
       if (versionOnUpdate > 0) {
@@ -1426,14 +1426,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if(isNestedSchema && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
           blockDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) && !id.utf8ToString().equals(blockDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
         SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
-            false, null, true, false);
+            false, null, true, false, true);
         mergedDoc = docMerger.merge(sdoc, oldDoc);
         String docPath = (String) mergedDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
         List<String> docPaths = StrUtils.splitSmart(docPath, PATH_SEP_CHAR);
         SolrInputField replaceDoc = blockDoc.getField(docPaths.remove(0).replaceAll(PATH_SEP_CHAR + "|" + NUM_SEP_CHAR, ""));
         for(String subPath: docPaths) {
           subPath = subPath.replaceAll(PATH_SEP_CHAR + "|" + NUM_SEP_CHAR, "");
-          replaceDoc = blockDoc.getField(subPath);
+          replaceDoc = ((SolrInputDocument)replaceDoc.getValue()).getField(subPath);
         }
         replaceDoc.setValue(mergedDoc);
         mergedDoc = blockDoc;

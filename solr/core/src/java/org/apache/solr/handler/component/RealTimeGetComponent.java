@@ -357,7 +357,7 @@ public class RealTimeGetComponent extends SearchComponent
     String idStr = params.get("getInputDocument", null);
     if (idStr == null) return;
     AtomicLong version = new AtomicLong();
-    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, false, null, true, false);
+    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, false, null, true, false, false);
     log.info("getInputDocument called for id="+idStr+", returning: "+doc);
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
@@ -602,7 +602,7 @@ public class RealTimeGetComponent extends SearchComponent
    */
 
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, boolean resolveBlock) throws IOException {
-    return getInputDocument (core, idBytes, null, false, null, true, resolveBlock);
+    return getInputDocument (core, idBytes, null, false, null, true, resolveBlock, false);
   }
   
   /**
@@ -619,9 +619,10 @@ public class RealTimeGetComponent extends SearchComponent
    *                  was an in-place update. In that case, should this partial document be resolved to a full document (by following
    *                  back prevPointer/prevVersion)?
    * @param resolveBlock Check whether the document is part of a block. If so, return the whole block.
+   * @param resolveChildren Check whether the document has child documents. If so, return the document including its children.
    */
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, AtomicLong versionReturned, boolean avoidRetrievingStoredFields,
-      Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument, boolean resolveBlock) throws IOException {
+      Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument, boolean resolveBlock, boolean resolveChildren) throws IOException {
     SolrInputDocument sid = null;
     RefCounted<SolrIndexSearcher> searcherHolder = null;
     try {
@@ -652,21 +653,23 @@ public class RealTimeGetComponent extends SearchComponent
           Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, schema);
         }
-        ensureDocDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, resolveBlock || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
+        ensureDocDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, resolveBlock ||
+            resolveChildren || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
         SolrInputField rootField;
-        if(resolveBlock && schema.isUsableForChildDocs() && (rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME))!=null) {
+        if((resolveChildren || resolveBlock) && schema.isUsableForChildDocs() && (rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME))!=null) {
           // doc is part of a nested structure
+          String id = resolveBlock? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
           ModifiableSolrParams params = new ModifiableSolrParams()
-              .set("q", core.getLatestSchema().getUniqueKeyField().getName()+ ":" +rootField.getFirstValue())
+              .set("q", core.getLatestSchema().getUniqueKeyField().getName()+ ":" + id)
               .set("fl", "*, _nest_path_, [child]");
           SolrQueryRequest blockReq = new LocalSolrQueryRequest(core, params);
-          final BytesRef rootIdBytes = new BytesRef(rootField.getFirstValue().toString());
+          final BytesRef rootIdBytes = new BytesRef(id);
           final int rootDocId = searcher.getFirstMatch(new Term(idField.getName(), rootIdBytes));
           final DocTransformer childDocTransformer = TransformerFactory.defaultFactories.get("child").create("child", params, blockReq);
           final ResultContext resultContext = new RTGResultContext(new SolrReturnFields(blockReq), searcher, blockReq);
           childDocTransformer.setContext(resultContext);
           final SolrDocument blockDoc;
-          if(rootIdBytes.equals(idBytes)) {
+          if(resolveBlock && rootIdBytes.equals(idBytes)) {
             blockDoc = toSolrDoc(sid, schema);
           } else {
             blockDoc = toSolrDoc(docFetcher.doc(rootDocId), schema);
