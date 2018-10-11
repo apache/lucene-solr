@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterStateUtil;
@@ -51,6 +52,12 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+
+    new V2Request.Builder("/cluster")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{set-obj-property:{defaults : {cluster: {useLegacyReplicaAssignment:true}}}}}")
+        .build()
+        .process(cluster.getSolrClient());
   }
 
   @Test
