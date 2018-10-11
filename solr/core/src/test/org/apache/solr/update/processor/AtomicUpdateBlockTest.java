@@ -135,21 +135,48 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     );
 
     doc = sdoc("id", "2",
-        "child3", Collections.singletonMap("add", sdoc("id", "4", "cat_ss", "child")));
+        "child3", Collections.singletonMap("add", sdoc("id", "4", "cat_ss", "grandChild")));
     addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
 
     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child3, [child]")
         ,"=={'doc':{'id':'1'" +
-            ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child1:{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:{\"id\":\"4\",\"cat_ss\":[\"child\"]}}" +
+            ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child1:{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:{\"id\":\"4\",\"cat_ss\":[\"grandChild\"]}}" +
             "       }}"
     );
 
     assertJQ(req("qt","/get", "id","2", "fl","id, cat_ss, child, child3, [child]")
-        ,"=={'doc':{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:{\"id\":\"4\",\"cat_ss\":[\"child\"]}}" +
+        ,"=={'doc':{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:{\"id\":\"4\",\"cat_ss\":[\"grandChild\"]}}" +
             "       }}"
     );
 
     assertU(commit());
+
+    //add greatGrandChild
+    doc = sdoc("id", "4",
+        "child4", Collections.singletonMap("add", sdoc("id", "5", "cat_ss", "greatGrandChild")));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+    assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child3, child4, [child]")
+        ,"=={'doc':{'id':'1'" +
+            ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child1:{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:{\"id\":\"4\",\"cat_ss\":[\"grandChild\"]," +
+            " child4:{\"id\":\"5\",\"cat_ss\":[\"greatGrandChild\"]}}}" +
+            "       }}"
+    );
+
+    assertJQ(req("qt","/get", "id","4", "fl","id, cat_ss, child4, [child]")
+        ,"=={'doc':{\"id\":\"4\",\"cat_ss\":[\"grandChild\"], child4:{\"id\":\"5\",\"cat_ss\":[\"greatGrandChild\"]}}" +
+            "       }}"
+    );
+
+    assertU(commit());
+
+    //add another greatGrandChild
+    doc = sdoc("id", "4",
+        "child4", Collections.singletonMap("add", sdoc("id", "6", "cat_ss", "greatGrandChild")));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+    assertU(commit());
+
 
     // ensure the whole block has been committed correctly to the index.
     assertJQ(req("q","id:1", "fl", "*, [child]"),
@@ -161,7 +188,11 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/child1/id=='2'",
         "/response/docs/[0]/child1/cat_ss/[0]=='child'",
         "/response/docs/[0]/child1/child3/id=='4'",
-        "/response/docs/[0]/child1/child3/cat_ss/[0]=='child'",
+        "/response/docs/[0]/child1/child3/cat_ss/[0]=='grandChild'",
+        "/response/docs/[0]/child1/child3/child4/[0]/id=='5'",
+        "/response/docs/[0]/child1/child3/child4/[0]/cat_ss/[0]=='greatGrandChild'",
+        "/response/docs/[0]/child1/child3/child4/[1]/id=='6'",
+        "/response/docs/[0]/child1/child3/child4/[1]/cat_ss/[0]=='greatGrandChild'",
         "/response/docs/[0]/child2/id=='3'",
         "/response/docs/[0]/child2/cat_ss/[0]=='child'"
     );
