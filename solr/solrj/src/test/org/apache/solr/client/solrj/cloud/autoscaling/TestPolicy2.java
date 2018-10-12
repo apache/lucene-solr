@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -338,6 +339,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
       }
     };
     return new DelegatingCloudManager(null) {
+      ClusterState clusterState = null;
       @Override
       public NodeStateProvider getNodeStateProvider() {
         return nodeStateProvider;
@@ -345,7 +347,24 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
       @Override
       public ClusterStateProvider getClusterStateProvider() {
+        if (clusterState == null) {
+          Map map = (Map) Utils.getObjectByPath (m, false, "cluster/collections");
+          if (map == null) map = new HashMap<>();
+          clusterState = ClusterState.load(0, map, liveNodes, "/clusterstate.json");
+        }
+
         return new DelegatingClusterStateProvider(null) {
+
+          @Override
+          public ClusterState getClusterState() throws IOException {
+            return clusterState;
+          }
+
+          @Override
+          public ClusterState.CollectionRef getState(String collection) {
+            return clusterState.getCollectionRef(collection);
+          }
+
           @Override
           public Set<String> getLiveNodes() {
             return liveNodes;
@@ -411,6 +430,21 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
       assertEquals("improvement", suggestion._get("type", null));
       assertEquals("10.0.0.79:8983_solr", suggestion._get("operation/command/move-replica/targetNode",null));
     }
+
+  }
+
+  public void testAddMissingReplica() throws IOException {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testAddMissingReplica.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
+
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
+
+    assertEquals(1, suggestions.size());
+    assertEquals("repair", suggestions.get(0)._get("type",null));
+    assertEquals("add-replica", suggestions.get(0)._get("operation/command[0]/key",null));
+    assertEquals("shard2", suggestions.get(0)._get("operation/command/add-replica/shard",null));
+    assertEquals("NRT", suggestions.get(0)._get("operation/command/add-replica/type",null));
 
   }
 

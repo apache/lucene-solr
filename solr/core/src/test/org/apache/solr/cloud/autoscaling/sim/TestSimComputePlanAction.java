@@ -205,7 +205,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
         "conf",2, 3);
-//    create.setMaxShardsPerNode(2);
+    create.setMaxShardsPerNode(2);
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
@@ -283,7 +283,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
-        "conf",1, 4);
+        "conf",1, 4).setMaxShardsPerNode(-1);
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",

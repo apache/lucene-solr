@@ -2627,10 +2627,12 @@ public abstract class LuceneTestCase extends Assert {
     FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(leftReader);
     FieldInfos fieldInfos2 = MultiFields.getMergedFieldInfos(rightReader);
     for(FieldInfo fieldInfo1 : fieldInfos1) {
-      if (fieldInfo1.getPointDimensionCount() != 0) {
+      if (fieldInfo1.getPointDataDimensionCount() != 0) {
         FieldInfo fieldInfo2 = fieldInfos2.fieldInfo(fieldInfo1.name);
-        // same dimension count?
-        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo2.getPointDimensionCount());
+        // same data dimension count?
+        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo2.getPointDataDimensionCount());
+        // same index dimension count?
+        assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo2.getPointIndexDimensionCount());
         // same bytes per dimension?
         assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo2.getPointNumBytes());
 
@@ -2642,10 +2644,12 @@ public abstract class LuceneTestCase extends Assert {
 
     // make sure FieldInfos2 doesn't have any point fields that FieldInfo1 didn't have
     for(FieldInfo fieldInfo2 : fieldInfos2) {
-      if (fieldInfo2.getPointDimensionCount() != 0) {
+      if (fieldInfo2.getPointDataDimensionCount() != 0) {
         FieldInfo fieldInfo1 = fieldInfos1.fieldInfo(fieldInfo2.name);
-        // same dimension count?
-        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo1.getPointDimensionCount());
+        // same data dimension count?
+        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo1.getPointDataDimensionCount());
+        // same index dimension count?
+        assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo1.getPointIndexDimensionCount());
         // same bytes per dimension?
         assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo1.getPointNumBytes());
 

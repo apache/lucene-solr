@@ -1900,7 +1900,7 @@ public final class CheckIndex implements Closeable {
           throw new RuntimeException("there are fields with points, but reader.getPointsReader() is null");
         }
         for (FieldInfo fieldInfo : fieldInfos) {
-          if (fieldInfo.getPointDimensionCount() > 0) {
+          if (fieldInfo.getPointDataDimensionCount() > 0) {
             PointValues values = pointsReader.getValues(fieldInfo.name);
             if (values == null) {
               continue;
@@ -1970,7 +1970,9 @@ public final class CheckIndex implements Closeable {
     private final byte[] globalMinPackedValue;
     private final byte[] globalMaxPackedValue;
     private final int packedBytesCount;
-    private final int numDims;
+    private final int packedIndexBytesCount;
+    private final int numDataDims;
+    private final int numIndexDims;
     private final int bytesPerDim;
     private final String fieldName;
 
@@ -1978,14 +1980,16 @@ public final class CheckIndex implements Closeable {
     public VerifyPointsVisitor(String fieldName, int maxDoc, PointValues values) throws IOException {
       this.maxDoc = maxDoc;
       this.fieldName = fieldName;
-      numDims = values.getNumDimensions();
+      numDataDims = values.getNumDataDimensions();
+      numIndexDims = values.getNumIndexDimensions();
       bytesPerDim = values.getBytesPerDimension();
-      packedBytesCount = numDims * bytesPerDim;
+      packedBytesCount = numDataDims * bytesPerDim;
+      packedIndexBytesCount = numIndexDims * bytesPerDim;
       globalMinPackedValue = values.getMinPackedValue();
       globalMaxPackedValue = values.getMaxPackedValue();
       docsSeen = new FixedBitSet(maxDoc);
-      lastMinPackedValue = new byte[packedBytesCount];
-      lastMaxPackedValue = new byte[packedBytesCount];
+      lastMinPackedValue = new byte[packedIndexBytesCount];
+      lastMaxPackedValue = new byte[packedIndexBytesCount];
       lastPackedValue = new byte[packedBytesCount];
 
       if (values.getDocCount() > values.size()) {
@@ -2000,14 +2004,14 @@ public final class CheckIndex implements Closeable {
         if (values.size() != 0) {
           throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
         }
-      } else if (globalMinPackedValue.length != packedBytesCount) {
+      } else if (globalMinPackedValue.length != packedIndexBytesCount) {
         throw new RuntimeException("getMinPackedValue for field \"" + fieldName + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
       }
       if (globalMaxPackedValue == null) {
         if (values.size() != 0) {
           throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
         }
-      } else if (globalMaxPackedValue.length != packedBytesCount) {
+      } else if (globalMaxPackedValue.length != packedIndexBytesCount) {
         throw new RuntimeException("getMaxPackedValue for field \"" + fieldName + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);
       }
     }
@@ -2033,7 +2037,7 @@ public final class CheckIndex implements Closeable {
       pointCountSeen++;
       docsSeen.set(docID);
 
-      for(int dim=0;dim<numDims;dim++) {
+      for(int dim=0;dim<numIndexDims;dim++) {
         int offset = bytesPerDim * dim;
 
         // Compare to last cell:
@@ -2048,9 +2052,10 @@ public final class CheckIndex implements Closeable {
         }
       }
 
-      // In the 1D case, PointValues must make a single in-order sweep through all values, and tie-break by
+      // In the 1D data case, PointValues must make a single in-order sweep through all values, and tie-break by
       // increasing docID:
-      if (numDims == 1) {
+      // for data dimension > 1, leaves are sorted by the dimension with the lowest cardinality to improve block compression
+      if (numDataDims == 1) {
         int cmp = FutureArrays.compareUnsigned(lastPackedValue, 0, bytesPerDim, packedValue, 0, bytesPerDim);
         if (cmp > 0) {
           throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
@@ -2067,11 +2072,11 @@ public final class CheckIndex implements Closeable {
     @Override
     public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
       checkPackedValue("min packed value", minPackedValue, -1);
-      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, packedBytesCount);
+      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, packedIndexBytesCount);
       checkPackedValue("max packed value", maxPackedValue, -1);
-      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, packedBytesCount);
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, packedIndexBytesCount);
 
-      for(int dim=0;dim<numDims;dim++) {
+      for(int dim=0;dim<numIndexDims;dim++) {
         int offset = bytesPerDim * dim;
 
         if (FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
@@ -2110,8 +2115,8 @@ public final class CheckIndex implements Closeable {
         throw new RuntimeException(desc + " is null for docID=" + docID + " field=\"" + fieldName + "\"");
       }
 
-      if (packedValue.length != packedBytesCount) {
-        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
+      if (packedValue.length != (docID < 0 ? packedIndexBytesCount : packedBytesCount)) {
+        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedIndexBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
       }
     }
   }

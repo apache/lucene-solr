@@ -84,7 +84,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       zkShardTerms.registerTerm("replica1");
       zkShardTerms.registerTerm("replica2");
 
-      // normal case when leader start lir process
+      // normal case when leader failed to send an update to replica
       zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       zkShardTerms.startRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica2"), 1);
@@ -95,7 +95,6 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       assertEquals(zkShardTerms.getTerm("replica2"), 1);
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
 
-      // stack of lir processes
       zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       assertEquals(zkShardTerms.getTerm("replica1"), 2);
       assertEquals(zkShardTerms.getTerm("replica2"), 1);

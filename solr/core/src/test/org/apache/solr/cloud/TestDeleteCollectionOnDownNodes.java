@@ -17,11 +17,13 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12845")
 public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
 
   @BeforeClass
