@@ -102,13 +102,15 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
-    
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
     httpBasedCloudSolrClient = new CloudSolrClient.Builder(solrUrls).build();
+  }
+  
+  @Before
+  public void setUp() throws Exception  {
+    super.setUp();
+    cluster.deleteAllCollections();
   }
 
   @AfterClass
@@ -123,13 +125,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Before
-  public void cleanIndex() throws Exception {
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTION);
-  }
-
   /**
    * Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC.
    */
@@ -139,6 +134,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelUpdateQTime() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
     UpdateRequest req = new UpdateRequest();
     for (int i=0; i<10; i++)  {
       SolrInputDocument doc = new SolrInputDocument();
@@ -177,6 +175,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testAliasHandling() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
 
     CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 1).process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION2, cluster.getSolrClient().getZkStateReader(),
@@ -224,6 +225,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testRouting() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
     
     AbstractUpdateRequest request = new UpdateRequest()
         .add(id, "0", "a_t", "hello1")
@@ -603,6 +607,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void stateVersionParamTest() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
 
     DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION);
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
@@ -705,6 +712,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testVersionsAreReturned() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
     
     // assert that "adds" are returned
     UpdateRequest updateRequest = new UpdateRequest()
@@ -751,6 +761,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   
   @Test
   public void testInitializationWithSolrUrls() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
     CloudSolrClient client = httpBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     client.add(COLLECTION, doc);

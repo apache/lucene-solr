@@ -269,7 +269,7 @@ public class Assign {
     Map<String, Object> clusterProperties = cloudManager.getClusterStateProvider().getClusterProperties();
     if (clusterProperties.containsKey(CollectionAdminParams.DEFAULTS))  {
       Map<String, Object> defaults = (Map<String, Object>) clusterProperties.get(CollectionAdminParams.DEFAULTS);
-      Map<String, Object> collectionDefaults = (Map<String, Object>) defaults.getOrDefault(CollectionAdminParams.COLLECTION, Collections.emptyMap());
+      Map<String, Object> collectionDefaults = (Map<String, Object>) defaults.getOrDefault(CollectionAdminParams.CLUSTER, Collections.emptyMap());
       useLegacyAssignment = (boolean) collectionDefaults.getOrDefault(CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT, false);
     }
 
