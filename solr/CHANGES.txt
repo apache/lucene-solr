@@ -144,6 +144,9 @@ New Features
 
 * SOLR-12843: Implement a MultiContentWriter in SolrJ to post multiple files/payload at once (noble)
 
+* SOLR-12780: Add support for Leaky ReLU and TanH activations in contrib/ltr NeuralNetworkModel class.
+  (Kamuela Lau, Christine Poerschke)
+
 Other Changes
 ----------------------
 
