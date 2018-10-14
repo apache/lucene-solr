@@ -200,6 +200,11 @@ New Features
   may be used to determine how to split the inner nodes, and dimensions N+1 to D
   are ignored and stored as data dimensions at the leaves. (Nick Knize)
 
+Other:
+
+* LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
+  via Alan Woodward)
+
 ======================= Lucene 7.5.1 =======================
 
 Bug Fixes:
