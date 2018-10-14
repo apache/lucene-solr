@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -119,8 +120,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public static final String DISTRIB_FROM = "distrib.from";
   public static final String DISTRIB_INPLACE_PREVVERSION = "distrib.inplace.prevversion";
   private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
-  private static final char PATH_SEP_CHAR = '/';
-  private static final char NUM_SEP_CHAR = '#';
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -1218,7 +1217,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         if(lastKnownVersion != null && isNestedSchema &&
             req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
             cmd.solrDoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) {
-          dmd = new DeleteUpdateCommand(new LocalSolrQueryRequest(req.getCore(), new ModifiableSolrParams().set("q", IndexSchema.ROOT_FIELD_NAME + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) + " AND " + CommonParams.VERSION_FIELD + ": [* TO " + Long.toString(lastKnownVersion) + "]")));
+          dmd = new DeleteUpdateCommand(new LocalSolrQueryRequest(req.getCore(), new ModifiableSolrParams()
+              .set("q", IndexSchema.ROOT_FIELD_NAME + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) +
+                  " AND " + CommonParams.VERSION_FIELD + ": [* TO " + Long.toString(lastKnownVersion) + "]")));
           dmd.query = dmd.getReq().getParams().get("q");
           doLocalDelete(dmd);
         }
@@ -1427,15 +1428,24 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           blockDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) && !id.utf8ToString().equals(blockDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
         SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
             false, null, true, false, true);
-        mergedDoc = docMerger.merge(sdoc, oldDoc);
-        String docPath = (String) mergedDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
-        List<String> docPaths = StrUtils.splitSmart(docPath, PATH_SEP_CHAR);
-        SolrInputField replaceDoc = blockDoc.getField(docPaths.remove(0).replaceAll(PATH_SEP_CHAR + "|" + NUM_SEP_CHAR, ""));
-        for(String subPath: docPaths) {
-          subPath = subPath.replaceAll(PATH_SEP_CHAR + "|" + NUM_SEP_CHAR, "");
-          replaceDoc = ((SolrInputDocument)replaceDoc.getValue()).getField(subPath);
+        String docPath = (String) oldDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
+        List<String> docPaths = StrUtils.splitSmart(docPath, '/');
+        Pair<String, Integer> subPath = getPathAndIndexFromNestPath(docPaths.remove(0));
+        SolrInputField replaceDoc = blockDoc.getField(subPath.getLeft());
+        for(String subPathString: docPaths) {
+          SolrInputDocument currDoc = (SolrInputDocument) ((List)replaceDoc.getValues()).get(subPath.getRight());
+          subPath = getPathAndIndexFromNestPath(subPathString);
+          replaceDoc = currDoc.getField(subPath.getLeft());
         }
-        replaceDoc.setValue(mergedDoc);
+        final boolean wasArray = replaceDoc.getValue() instanceof Collection;
+        List vals = (List) replaceDoc.getValues();
+        int index = getDocIndexFromCollection(oldDoc, vals);
+        if(index == -1) {
+          vals.add(docMerger.merge(sdoc, oldDoc));
+        } else {
+          vals.set(index, docMerger.merge(sdoc, oldDoc));
+        }
+        replaceDoc.setValue(!wasArray && vals.size() <= 1? vals.iterator().next(): vals);
         mergedDoc = blockDoc;
         // TODO: replace current doc in block with the merged doc
       } else {
@@ -1444,6 +1454,23 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     cmd.solrDoc = mergedDoc;
     return true;
+  }
+
+  private static int getDocIndexFromCollection(SolrInputDocument doc, List<SolrInputDocument> col) {
+    for(int i = 0; i < col.size(); ++i) {
+      if(AtomicUpdateDocumentMerger.isDerivedFromDoc(col.get(i), doc)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  private static Pair<String, Integer> getPathAndIndexFromNestPath(String nestPath) {
+    List<String> splitPath = StrUtils.splitSmart(nestPath, '#');
+    if(splitPath.size() == 1) {
+      return Pair.of(splitPath.get(0), 1);
+    }
+    return Pair.of(splitPath.get(0), Integer.parseInt(splitPath.get(1)));
   }
 
   @Override

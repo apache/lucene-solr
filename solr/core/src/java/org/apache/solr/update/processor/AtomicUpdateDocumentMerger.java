@@ -486,13 +486,23 @@ public class AtomicUpdateDocumentMerger {
    * @param partialDoc the sub document to be tested
    * @return whether partialDoc is derived from fullDoc
    */
-  private static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument partialDoc) {
+  public static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument partialDoc) {
     for(SolrInputField subSif: partialDoc) {
       String fieldName = subSif.getName();
       Collection<Object> fieldValues = fullDoc.getFieldValues(fieldName);
       if(fieldValues == null) return false;
       if(fieldValues.size() < subSif.getValueCount()) return false;
-      if(!fieldValues.containsAll(subSif.getValues())) return false;
+      Collection<Object> partialFieldValues = subSif.getValues();
+      // remove all derived child docs from partial field values since they fail List#containsAll check (uses SolrInputDocument#equals).
+      // If a child doc exists in partialDoc but not in full doc, it will not be removed and therefore List#containsAll will return false
+      partialFieldValues.removeIf(x -> (x instanceof SolrInputDocument &&
+          fieldValues.stream().anyMatch(y ->
+              (y instanceof SolrInputDocument &&
+                  isDerivedFromDoc((SolrInputDocument) y, (SolrInputDocument) x)
+              )
+          )
+      ));
+      if(!fieldValues.containsAll(partialFieldValues)) return false;
     }
     return true;
   }

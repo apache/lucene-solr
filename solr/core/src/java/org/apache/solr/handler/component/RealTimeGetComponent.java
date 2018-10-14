@@ -661,7 +661,7 @@ public class RealTimeGetComponent extends SearchComponent
           String id = resolveBlock? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
           ModifiableSolrParams params = new ModifiableSolrParams()
               .set("q", core.getLatestSchema().getUniqueKeyField().getName()+ ":" + id)
-              .set("fl", "*, _nest_path_, [child]");
+              .set("fl", "*, _nest_path_, [child limit='-1']");
           SolrQueryRequest blockReq = new LocalSolrQueryRequest(core, params);
           final BytesRef rootIdBytes = new BytesRef(id);
           final int rootDocId = searcher.getFirstMatch(new Term(idField.getName(), rootIdBytes));
@@ -733,6 +733,7 @@ public class RealTimeGetComponent extends SearchComponent
   private static SolrInputDocument toSolrInputDocument(SolrDocument doc, IndexSchema schema) {
     SolrInputDocument out = new SolrInputDocument();
     for( String fname : doc.getFieldNames() ) {
+      boolean fieldArrayListCreated = false;
       SchemaField sf = schema.getFieldOrNull(fname);
       if (sf != null) {
         if ((!sf.hasDocValues() && !sf.stored()) || schema.isCopyFieldTarget(sf)) continue;
@@ -750,6 +751,12 @@ public class RealTimeGetComponent extends SearchComponent
           }
         } else if(val instanceof SolrDocument) {
           val = toSolrInputDocument((SolrDocument) val, schema);
+          if(!fieldArrayListCreated && doc.getFieldValue(fname) instanceof Collection) {
+            // previous value was array so we must return as an array even if was a single value array
+            out.setField(fname, Lists.newArrayList(val));
+            fieldArrayListCreated = true;
+            continue;
+          }
         }
         out.addField(fname, val);
       }
