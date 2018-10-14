@@ -290,7 +290,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     assertEquals(3, coll.getSlice("s3").getReplicas().size());
     coll.forEachReplica(verifyReplicas);
   }
-
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testCreateCollectionAddShardUsingPolicy() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode();

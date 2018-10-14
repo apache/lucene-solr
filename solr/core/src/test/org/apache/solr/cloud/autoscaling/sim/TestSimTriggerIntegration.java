@@ -290,6 +290,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   @Test
   // commented 20-July-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeLostTriggerRestoreState() throws Exception {
     // for this test we want to update the trigger so we must assert that the actions were created twice
     TestSimTriggerIntegration.actionInitCalled = new CountDownLatch(2);
@@ -464,6 +465,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeLostTrigger() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
@@ -638,6 +640,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 16-Apr-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testEventQueue() throws Exception {
     waitForSeconds = 1;
     SolrClient solrClient = cluster.simGetSolrClient();
@@ -694,6 +697,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //2018-03-10
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testEventFromRestoredState() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String setTriggerCommand = "{" +
@@ -1215,6 +1219,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
   @Test
   //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String COLL1 = "collection1";

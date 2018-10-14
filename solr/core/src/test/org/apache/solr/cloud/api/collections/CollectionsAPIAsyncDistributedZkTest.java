@@ -192,6 +192,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
   }
   // commented 4-Sep-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testAsyncIdRaceCondition() throws Exception {
     SolrClient[] clients = new SolrClient[cluster.getJettySolrRunners().size()];
     int j = 0;

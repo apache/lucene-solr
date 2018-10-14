@@ -32,6 +32,7 @@ public class TestSimGenericDistributedQueue extends TestSimDistributedQueue {
   }
 
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testDistributedQueue() throws Exception {
     super.testDistributedQueue();
   }
