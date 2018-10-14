@@ -655,8 +655,8 @@ public class RealTimeGetComponent extends SearchComponent
         }
         ensureDocDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, resolveBlock ||
             resolveChildren || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
-        SolrInputField rootField;
-        if((resolveChildren || resolveBlock) && schema.isUsableForChildDocs() && (rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME))!=null) {
+        SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
+        if((resolveChildren || resolveBlock) && schema.isUsableForChildDocs() && rootField!=null) {
           // doc is part of a nested structure
           String id = resolveBlock? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
           ModifiableSolrParams params = new ModifiableSolrParams()

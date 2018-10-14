@@ -29,7 +29,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,19 +36,10 @@ import org.junit.Test;
 public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
   private final static String VERSION = "_version_";
-  private static String PREVIOUS_ENABLE_UPDATE_LOG_VALUE;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    PREVIOUS_ENABLE_UPDATE_LOG_VALUE = System.getProperty("enable.update.log");
-    System.setProperty("enable.update.log", "true");
     initCore("solrconfig-block-atomic-update.xml", "schema-nest.xml"); // use "nest" schema
-  }
-
-  @AfterClass
-  public static void afterTests() throws Exception {
-    // restore enable.update.log
-    System.setProperty("enable.update.log", PREVIOUS_ENABLE_UPDATE_LOG_VALUE);
   }
 
   @Before
