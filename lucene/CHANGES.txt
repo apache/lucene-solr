@@ -192,6 +192,9 @@ Bug fixes:
 * LUCENE-8479: QueryBuilder#analyzeGraphPhrase now throws TooManyClause exception
   if the number of expanded path reaches the BooleanQuery#maxClause limit. (Jim Ferenczi)
 
+* LUCENE-8522: throw InvalidShapeException when constructing a polygon and
+  all points are coplanar. (Ignacio Vera)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
