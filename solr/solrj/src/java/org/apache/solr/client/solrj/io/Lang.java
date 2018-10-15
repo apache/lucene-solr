@@ -303,6 +303,7 @@ public class Lang {
         .withFunctionName("mult", MultiplyEvaluator.class)
         .withFunctionName("sub", SubtractEvaluator.class)
         .withFunctionName("log", NaturalLogEvaluator.class)
+        .withFunctionName("log10", Log10Evaluator.class)
         .withFunctionName("pow", PowerEvaluator.class)
         .withFunctionName("mod", ModuloEvaluator.class)
         .withFunctionName("ceil", CeilingEvaluator.class)
