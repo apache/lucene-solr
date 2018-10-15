@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.OutputStreamWriter;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
@@ -205,7 +206,8 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       props.setProperty("name", "collection1");
       OutputStreamWriter writer = null;
       try {
-        writer = new OutputStreamWriter(FileUtils.openOutputStream(new File(collection1Dir, "core.properties")), "UTF-8");
+        writer = new OutputStreamWriter(FileUtils.openOutputStream(
+            new File(collection1Dir, "core.properties")), StandardCharsets.UTF_8);
         props.store(writer, null);
       } finally {
         if (writer != null) {

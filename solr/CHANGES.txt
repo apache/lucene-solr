@@ -91,7 +91,9 @@ Other Changes
 
 * SOLR-11812: Remove backward compatibility of old LIR implementation in 8.0 (Cao Manh Dat)
 
-* SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy) 
+* SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy)
+
+* SOLR-12870: Use StandardCharsets instead of String values (Peter Somogyi)
 
 ==================  7.6.0 ==================
 

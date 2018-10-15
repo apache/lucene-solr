@@ -126,7 +126,6 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
@@ -2892,7 +2891,7 @@ public class SolrCLI {
       
       echo("\nWelcome to the SolrCloud example!\n");
 
-      Scanner readInput = prompt ? new Scanner(userInput, UTF_8.name()) : null;
+      Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8.name()) : null;
       if (prompt) {
         echo("This interactive session will help you launch a SolrCloud cluster on your local workstation.");
 
@@ -3894,7 +3893,8 @@ public class SolrCLI {
           String config = StrUtils.join(Arrays.asList(cli.getOptionValues("config")), ' ');
           // config is base64 encoded (to get around parsing problems), decode it
           config = config.replaceAll(" ", "");
-          config = new String(Base64.getDecoder().decode(config.getBytes("UTF-8")), "UTF-8");
+          config = new String(Base64.getDecoder()
+              .decode(config.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
           config = config.replaceAll("\n", "").replaceAll("\r", "");
 
           String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");

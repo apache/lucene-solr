@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -115,7 +116,8 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         String basic = st.nextToken();
         if (basic.equalsIgnoreCase("Basic")) {
           try {
-            String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
+            String credentials =
+                new String(Base64.decodeBase64(st.nextToken()), StandardCharsets.UTF_8);
             int p = credentials.indexOf(":");
             if (p != -1) {
               final String username = credentials.substring(0, p).trim();

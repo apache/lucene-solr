@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -96,7 +97,8 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       while (!stop) {
         try {
           Socket s = server.accept();
-          BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream(), "UTF-8"));
+          BufferedReader br = new BufferedReader(
+              new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
           String line;
           while ((line = br.readLine()) != null) {
             lines.add(line);

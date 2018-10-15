@@ -587,9 +587,8 @@ public class ZkTestServer {
       // this replicates NC - close the output stream before reading
       sock.shutdownOutput();
 
-      reader =
-          new BufferedReader(
-              new InputStreamReader(sock.getInputStream(), "US-ASCII"));
+      reader = new BufferedReader(
+          new InputStreamReader(sock.getInputStream(), StandardCharsets.US_ASCII));
       StringBuilder sb = new StringBuilder();
       String line;
       while ((line = reader.readLine()) != null) {

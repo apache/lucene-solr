@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.io.graph;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -883,7 +884,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
 
     InputStream stream = (InputStream)genericResponse.get("stream");
-    InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+    InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     String xml = readString(reader);
     //Validate the nodes
     String error = h.validateXPath(xml,
