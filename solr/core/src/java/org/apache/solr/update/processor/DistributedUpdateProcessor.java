@@ -1218,8 +1218,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
             cmd.solrDoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) {
           dmd = new DeleteUpdateCommand(new LocalSolrQueryRequest(req.getCore(), new ModifiableSolrParams()
-              .set("q", IndexSchema.ROOT_FIELD_NAME + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) +
-                  " AND " + CommonParams.VERSION_FIELD + ": [* TO " + Long.toString(lastKnownVersion) + "]")));
+              .set("q", "(" + IndexSchema.ROOT_FIELD_NAME + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) +
+                  " OR " + idField.getName() + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) +
+                  ") AND " + CommonParams.VERSION_FIELD + ": [* TO " + Long.toString(lastKnownVersion) + "]")));
           dmd.query = dmd.getReq().getParams().get("q");
           doLocalDelete(dmd);
         }

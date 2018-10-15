@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
@@ -488,21 +489,20 @@ public class AtomicUpdateDocumentMerger {
    */
   public static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument partialDoc) {
     for(SolrInputField subSif: partialDoc) {
-      String fieldName = subSif.getName();
-      Collection<Object> fieldValues = fullDoc.getFieldValues(fieldName);
-      if(fieldValues == null) return false;
-      if(fieldValues.size() < subSif.getValueCount()) return false;
+      Collection<Object> fieldValues = fullDoc.getFieldValues(subSif.getName());
+      if (fieldValues == null) return false;
+      if (fieldValues.size() < subSif.getValueCount()) return false;
       Collection<Object> partialFieldValues = subSif.getValues();
-      // remove all derived child docs from partial field values since they fail List#containsAll check (uses SolrInputDocument#equals).
-      // If a child doc exists in partialDoc but not in full doc, it will not be removed and therefore List#containsAll will return false
-      partialFieldValues.removeIf(x -> (x instanceof SolrInputDocument &&
-          fieldValues.stream().anyMatch(y ->
-              (y instanceof SolrInputDocument &&
+      // filter all derived child docs from partial field values since they fail List#containsAll check (uses SolrInputDocument#equals which fails).
+      // If a child doc exists in partialDoc but not in full doc, it will not be filtered, and therefore List#containsAll will return false
+      Stream<Object> nonChildDocElements = partialFieldValues.stream().filter(x -> !(isChildDoc(x) &&
+          (fieldValues.stream().anyMatch(y ->
+              (isChildDoc(x) &&
                   isDerivedFromDoc((SolrInputDocument) y, (SolrInputDocument) x)
               )
           )
-      ));
-      if(!fieldValues.containsAll(partialFieldValues)) return false;
+      )));
+      if (!nonChildDocElements.allMatch(fieldValues::contains)) return false;
     }
     return true;
   }

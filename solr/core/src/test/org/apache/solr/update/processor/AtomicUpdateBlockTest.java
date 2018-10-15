@@ -402,6 +402,46 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testAtomicUpdateNoRootField() throws Exception {
+    SolrInputDocument doc = sdoc("id", "1",
+        "cat_ss", new String[]{"aaa", "bbb"});
+    addDoc(adoc(doc), "nested-rtg");
+
+    assertJQ(req("q", "id:1")
+        , "/response/numFound==0"
+    );
+
+    // commit the changes
+    assertU(commit());
+
+    assertJQ(req("q", "id:1"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='1'",
+        "/response/docs/[0]/cat_ss/[0]==\"aaa\"",
+        "/response/docs/[0]/cat_ss/[1]==\"bbb\""
+    );
+
+    doc = sdoc("id", "1",
+        "child1", Collections.singletonMap("add", sdoc("id", "2", "cat_ss", "child")));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+    // commit the changes
+    assertU(commit());
+
+    // assert that doc with id:1 was removed even though it did not have _root_:1 since it was not indexed with child documents.
+    assertJQ(req("q", "id:1", "fl", "*, [child]"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='1'",
+        "/response/docs/[0]/cat_ss/[0]==\"aaa\"",
+        "/response/docs/[0]/cat_ss/[1]==\"bbb\"",
+        "/response/docs/[0]/child1/id==\"2\"",
+        "/response/docs/[0]/child1/cat_ss/[0]==\"child\""
+    );
+
+
+  }
+
+  @Test
   public void testBlockAtomicRemove() throws Exception {
     SolrInputDocument doc = sdoc("id", "1",
         "cat_ss", new String[] {"aaa", "ccc"},
