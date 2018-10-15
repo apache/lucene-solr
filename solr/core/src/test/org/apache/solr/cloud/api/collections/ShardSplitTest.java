@@ -337,6 +337,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testSplitMixedReplicaTypesLink() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.LINK);
   }

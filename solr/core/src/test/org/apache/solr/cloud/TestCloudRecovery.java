@@ -145,6 +145,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void corruptedLogTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     DirectUpdateHandler2.commitOnClose = false;
