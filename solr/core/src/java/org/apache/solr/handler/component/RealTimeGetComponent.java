@@ -661,7 +661,8 @@ public class RealTimeGetComponent extends SearchComponent
           String id = resolveBlock? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
           ModifiableSolrParams params = new ModifiableSolrParams()
               .set("q", core.getLatestSchema().getUniqueKeyField().getName()+ ":" + id)
-              .set("fl", "*, _nest_path_, [child limit='-1']");
+              .set("fl", "*, _nest_path_, [child]")
+              .set("limit", "-1");
           SolrQueryRequest blockReq = new LocalSolrQueryRequest(core, params);
           final BytesRef rootIdBytes = new BytesRef(id);
           final int rootDocId = searcher.getFirstMatch(new Term(idField.getName(), rootIdBytes));

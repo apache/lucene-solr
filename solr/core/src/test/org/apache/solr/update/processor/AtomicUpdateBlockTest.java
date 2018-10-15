@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
@@ -68,6 +70,42 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     assertDocContainsSubset(addedDoc, dummyBlock);
     assertDocContainsSubset(newChildDoc, (SolrInputDocument) ((List) dummyBlock.getFieldValues("child")).get(1));
     assertEquals(dummyBlock.getFieldValue("id"), dummyBlock.getFieldValue("id"));
+  }
+
+  @Test
+  public void testBlockAtomicQuantities() throws Exception {
+    SolrInputDocument doc = sdoc("id", "1", "string_s", "root");
+    addDoc(adoc(doc), "nested-rtg");
+
+    List<SolrInputDocument> docs = IntStream.range(10, 20).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "child")).collect(Collectors.toList());
+    doc = sdoc("id", "1", "children", Collections.singletonMap("add", docs));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+    assertU(commit());
+
+    assertJQ(req("q", "_root_:1"),
+        "/response/numFound==11");
+
+    assertJQ(req("q", "string_s:child", "fl", "*", "rows", "1000000"),
+        "/response/numFound==10");
+
+    // ensure updates work when block has more than 10 children
+    for(int i = 10; i < 20; ++i) {
+      System.out.println("indexing " + i);
+      docs = IntStream.range(i * 10, (i * 10) + 5).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild")).collect(Collectors.toList());
+      doc = sdoc("id", String.valueOf(i), "grandChildren", Collections.singletonMap("add", docs));
+      addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+      assertU(commit());
+    }
+
+    assertJQ(req("q", "id:114", "fl", "*", "rows", "1000000"),
+        "/response/numFound==1");
+
+    assertJQ(req("q", "string_s:grandChild", "fl", "*", "rows", "1000000"),
+        "/response/numFound==50");
+
+    assertJQ(req("q", "string_s:child", "fl", "*", "rows", "1000000"),
+        "/response/numFound==10");
   }
 
   @Test
