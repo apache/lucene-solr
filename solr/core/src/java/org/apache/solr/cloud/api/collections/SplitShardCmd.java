@@ -361,12 +361,17 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       t = timings.sub("identifyNodesForReplicas");
-      List<ReplicaPosition> replicaPositions = Assign.identifyNodes(ocmh.cloudManager,
-          clusterState,
-          new ArrayList<>(clusterState.getLiveNodes()),
-          collectionName,
-          new ZkNodeProps(collection.getProperties()),
-          subSlices, numNrt.get(), numTlog.get(), numPull.get());
+      Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+          .forCollection(collectionName)
+          .forShard(subSlices)
+          .assignNrtReplicas(numNrt.get())
+          .assignTlogReplicas(numTlog.get())
+          .assignPullReplicas(numPull.get())
+          .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
+          .build();
+      Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
+      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, collection);
+      List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
       sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
       t.stop();
 

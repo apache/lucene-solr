@@ -30,7 +30,10 @@ import org.apache.lucene.util.AttributeFactory;
  * Note: this does a decent job for most European languages, but does a terrible
  * job for some Asian languages, where words are not separated by spaces.
  * </p>
+ *
+ * @deprecated Use {@link LetterTokenizer} followed by {@link LowerCaseFilter}
  */
+@Deprecated
 public final class LowerCaseTokenizer extends LetterTokenizer {
   
   /**

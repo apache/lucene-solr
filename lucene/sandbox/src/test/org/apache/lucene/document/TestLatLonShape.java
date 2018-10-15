@@ -200,4 +200,27 @@ public class TestLatLonShape extends LuceneTestCase {
 
     IOUtils.close(reader, dir);
   }
+
+  public void testLUCENE8454() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    Polygon poly = new Polygon(new double[] {-1.490648725633769E-132d, 90d, 90d, -1.490648725633769E-132d},
+        new double[] {0d, 0d, 180d, 0d});
+
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, poly);
+    writer.addDocument(document);
+
+    ///// search //////
+    IndexReader reader = writer.getReader();
+    writer.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    // search a bbox in the hole
+    Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.DISJOINT,-29.46555603761226d, 0.0d, 8.381903171539307E-8d, 0.9999999403953552d);
+    assertEquals(0, searcher.count(q));
+
+    IOUtils.close(reader, dir);
+  }
 }

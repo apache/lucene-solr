@@ -20,7 +20,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +46,7 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.RANGE_EQUAL
 import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.WILDCARD;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.common.util.StrUtils.formatString;
@@ -168,7 +169,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return globalTag;
   }
 
-  private Condition evaluateValue(Condition condition, Function<Condition, Object> computedValueEvaluator) {
+  Condition evaluateValue(Condition condition, Function<Condition, Object> computedValueEvaluator) {
     if (condition == null) return null;
     if (condition.computedType == null) return condition;
     Object val = computedValueEvaluator.apply(condition);
@@ -358,106 +359,183 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return operand;
   }
 
-  public List<Violation> test(Policy.Session session, double[] deviations) {
-    ComputedValueEvaluator computedValueEvaluator = new ComputedValueEvaluator(session);
-    Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, computedValueEvaluator);
-    if (isPerCollectiontag()) {
-      Map<String, Map<String, Map<String, ReplicaCount>>> replicaCounts = computeReplicaCounts(session.matrix, computedValueEvaluator);
-      for (Map.Entry<String, Map<String, Map<String, ReplicaCount>>> e : replicaCounts.entrySet()) {
-        computedValueEvaluator.collName = e.getKey();
-        if (!collection.isPass(computedValueEvaluator.collName)) continue;
-        for (Map.Entry<String, Map<String, ReplicaCount>> shardVsCount : e.getValue().entrySet()) {
-          computedValueEvaluator.shardName = shardVsCount.getKey();
-          if (!shard.isPass(computedValueEvaluator.shardName)) continue;
-          for (Map.Entry<String, ReplicaCount> counts : shardVsCount.getValue().entrySet()) {
-            if (tag.varType.meta.isNodeSpecificVal()) computedValueEvaluator.node = counts.getKey();
-            SealedClause sealedClause = getSealedClause(computedValueEvaluator);
-            ReplicaCount replicas = counts.getValue();
-            if (!sealedClause.replica.isPass(replicas)) {
-              Violation violation = new Violation(sealedClause,
-                  computedValueEvaluator.collName,
-                  computedValueEvaluator.shardName,
-                  tag.varType.meta.isNodeSpecificVal() ? computedValueEvaluator.node : null,
-                  counts.getValue(),
-                  sealedClause.getReplica().delta(replicas),
-                  tag.varType.meta.isNodeSpecificVal() ? null : counts.getKey());
-              tag.varType.addViolatingReplicas(ctx.reset(counts.getKey(), replicas, violation));
-            } else {
-              if (deviations != null && sealedClause.replica.op == RANGE_EQUAL) {
-                Number actualCount = replicas.getVal(type);
-                Double realDelta = ((RangeVal) sealedClause.replica.val).realDelta(actualCount.doubleValue());
-                realDelta = this.isReplicaZero() ? -1 * realDelta : realDelta;
-                deviations[0] += Math.abs(realDelta);
-              }
-            }
-          }
+  List<Violation> testGroupNodes(Policy.Session session, double[] deviations) {
+    //e.g:  {replica:'#EQUAL', shard:'#EACH',  sysprop.zone:'#EACH'}
+    ComputedValueEvaluator eval = new ComputedValueEvaluator(session);
+    eval.collName = (String) collection.getValue();
+    Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, eval);
+
+    Set tags = new HashSet();
+    for (Row row : session.matrix) {
+      eval.node = row.node;
+      Condition tag = this.tag;
+      if (tag.computedType != null) tag = evaluateValue(tag, eval);
+      Object val = row.getVal(tag.name);
+      if (val != null && tag.isPass(val)) {
+        if (tag.op == LESS_THAN || tag.op == GREATER_THAN) {
+          tags.add(this.tag);
+        } else {
+          tags.add(val);
         }
       }
-    } else {
-      for (Row r : session.matrix) {
-        computedValueEvaluator.node = r.node;
-        SealedClause sealedClause = getSealedClause(computedValueEvaluator);
-        if (!sealedClause.getGlobalTag().isPass(r)) {
-          sealedClause.getGlobalTag().varType.addViolatingReplicas(ctx.reset(null, null,
-              new Violation(sealedClause, null, null, r.node, r.getVal(sealedClause.globalTag.name),
-                  sealedClause.globalTag.delta(r.getVal(globalTag.name)), null)));
+    }
+    if (tags.isEmpty()) return Collections.emptyList();
+
+    Set<String> shards = getShardNames(session, eval);
+
+    for (String s : shards) {
+      final ReplicaCount replicaCount = new ReplicaCount();
+      eval.shardName = s;
+
+      for (Object t : tags) {
+        replicaCount.reset();
+        for (Row row : session.matrix) {
+          eval.node = row.node;
+          if (t instanceof Condition) {
+            Condition tag = (Condition) t;
+            if (tag.computedType != null) tag = evaluateValue(tag, eval);
+            if (!tag.isPass(row)) continue;
+          } else {
+            if (!t.equals(row.getVal(tag.name))) continue;
+          }
+          addReplicaCountsForNode(eval, replicaCount, row);
+        }
+
+        SealedClause sealedClause = this.getSealedClause(eval);
+        if (!sealedClause.replica.isPass(replicaCount)) {
+          ReplicaCount replicaCountCopy = replicaCount.copy();
+          Violation violation = new Violation(sealedClause,
+              eval.collName,
+              eval.shardName,
+              null,
+              replicaCountCopy,
+              sealedClause.getReplica().replicaCountDelta(replicaCountCopy),
+              t);
+          ctx.resetAndAddViolation(t, replicaCountCopy, violation);
+          sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, tag.name, t, violation, session);
+        } else {
+          computeDeviation(deviations, replicaCount, sealedClause);
         }
       }
     }
     return ctx.allViolations;
-
   }
 
-  private Map<String, Map<String, Map<String, ReplicaCount>>> computeReplicaCounts(List<Row> allRows,
-                                                                                   ComputedValueEvaluator computedValueEvaluator) {
-    Map<String, Map<String, Map<String, ReplicaCount>>> collVsShardVsTagVsCount = new HashMap<>();
-    for (Row row : allRows) {
-      computedValueEvaluator.node = row.node;
-      for (Map.Entry<String, Map<String, List<ReplicaInfo>>> colls : row.collectionVsShardVsReplicas.entrySet()) {
-        String collectionName = colls.getKey();
-        if (!collection.isPass(collectionName)) continue;
-        Map<String, Map<String, ReplicaCount>> collMap = collVsShardVsTagVsCount.computeIfAbsent(collectionName, s -> new HashMap<>());
-        for (Map.Entry<String, List<ReplicaInfo>> shards : colls.getValue().entrySet()) {
-          String shardName = shards.getKey();
-          if (ANY.equals(shard.val)) shardName = ANY;
-          if (!shard.isPass(shardName)) break;
-          Map<String, ReplicaCount> tagVsCount = collMap.computeIfAbsent(shardName, s -> new HashMap<>());
-          Object tagVal = row.getVal(tag.name);
-          computedValueEvaluator.collName = collectionName;
-          computedValueEvaluator.shardName = shardName;
-          SealedClause sealedClause = getSealedClause(computedValueEvaluator);
-          Condition t = sealedClause.getTag();
-          if (t.varType.meta.isNodeSpecificVal()) {
-            boolean pass = t.getOperand().match(t.val, tagVal) == TestStatus.PASS;
-            tagVsCount.computeIfAbsent(row.node, s -> new ReplicaCount());
-            if(pass) {
-              tagVsCount.get(row.node).increment(shards.getValue());
-            }
-          } else {
-            tagVsCount.computeIfAbsent(String.valueOf(t.getValue()), s -> new ReplicaCount());
-            boolean pass = sealedClause.getTag().isPass(tagVal);
-            if(!pass && !isReplicaZero()) continue;
-            tagVsCount.computeIfAbsent(pass ? String.valueOf(tagVal) : "", s -> new ReplicaCount());
-            if (pass) {
-              tagVsCount.get(String.valueOf(tagVal)).increment(shards.getValue());
-            }
-          }
-        }
+  private void computeDeviation(double[] deviations, ReplicaCount replicaCount, SealedClause sealedClause) {
+    if (deviations != null && sealedClause.replica.op == RANGE_EQUAL) {
+      Number actualCount = replicaCount.getVal(type);
+      Double realDelta = ((RangeVal) sealedClause.replica.val).realDelta(actualCount.doubleValue());
+      realDelta = this.isReplicaZero() ? -1 * realDelta : realDelta;
+      deviations[0] += Math.abs(realDelta);
+    }
+  }
+
+  void addViolatingReplicas(Condition tag,
+                            ComputedValueEvaluator eval,
+                            Violation.Ctx ctx, String tagName, Object tagVal,
+                            Violation violation,
+                            Policy.Session session) {
+    if (tag.varType.addViolatingReplicas(ctx)) return;
+    for (Row row : session.matrix) {
+      if (tagVal.equals(row.getVal(tagName))) {
+        row.forEachReplica(eval.collName, ri -> {
+          if (Policy.ANY.equals(eval.shardName)
+              || eval.shardName.equals(ri.getShard()))
+            violation.addReplica(new Violation.ReplicaInfoAndErr(ri).withDelta(tag.delta(row.getVal(tag.name))));
+        });
       }
     }
 
-    if (this.getTag().op != LESS_THAN && this.getTag().varType == Type.NODE) {
-      collVsShardVsTagVsCount.forEach((coll, shardVsNodeVsCount) ->
-          shardVsNodeVsCount.forEach((shard, nodeVsCount) -> {
-            for (Row row : allRows) {
-              if (!nodeVsCount.containsKey(row.node)) {
-                nodeVsCount.put(row.node, new ReplicaCount());
-              }
-            }
-          }));
-    }
-    return collVsShardVsTagVsCount;
   }
+
+  private void addReplicaCountsForNode(ComputedValueEvaluator computedValueEvaluator, ReplicaCount replicaCount, Row node) {
+    node.forEachReplica((String) collection.getValue(), ri -> {
+      if (Policy.ANY.equals(computedValueEvaluator.shardName)
+          || computedValueEvaluator.shardName.equals(ri.getShard()))
+        replicaCount.increment(ri);
+    });
+  }
+
+  List<Violation> testPerNode(Policy.Session session, double[] deviations) {
+    ComputedValueEvaluator eval = new ComputedValueEvaluator(session);
+    eval.collName = (String) collection.getValue();
+    Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, eval);
+    Set<String> shards = getShardNames(session, eval);
+    for (String s : shards) {
+      final ReplicaCount replicaCount = new ReplicaCount();
+      eval.shardName = s;
+      for (Row row : session.matrix) {
+        replicaCount.reset();
+        eval.node = row.node;
+        Condition tag = this.tag;
+        if (tag.computedType != null) {
+          tag = evaluateValue(tag, eval);
+        }
+        if (!tag.isPass(row)) continue;
+        addReplicaCountsForNode(eval, replicaCount, row);
+        SealedClause sealedClause = this.getSealedClause(eval);
+        if (!sealedClause.replica.isPass(replicaCount)) {
+          ReplicaCount replicaCountCopy = replicaCount.copy();
+          Violation violation = new Violation(sealedClause,
+              eval.collName,
+              eval.shardName,
+              eval.node,
+              replicaCountCopy,
+              sealedClause.getReplica().replicaCountDelta(replicaCountCopy),
+              eval.node);
+          ctx.resetAndAddViolation(row.node, replicaCountCopy, violation);
+          sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, NODE, row.node, violation, session);
+        } else {
+          computeDeviation(deviations, replicaCount, sealedClause);
+        }
+      }
+    }
+    return ctx.allViolations;
+  }
+
+  private Set<String> getShardNames(Policy.Session session,
+                                    ComputedValueEvaluator eval) {
+    Set<String> shards = new HashSet<>();
+    if (isShardAbsent()) {
+      shards.add(Policy.ANY); //consider the entire collection is a single shard
+    } else {
+      for (Row row : session.matrix) {
+        row.forEachShard(eval.collName, (shard, r) -> {
+          if (this.shard.isPass(shard)) shards.add(shard); // add relevant shards
+        });
+      }
+    }
+    return shards;
+  }
+
+  boolean isShardAbsent() {
+    return Policy.ANY.equals(shard.val);
+  }
+
+  public List<Violation> test(Policy.Session session, double[] deviations) {
+    if (isPerCollectiontag()) {
+      return tag.varType == Type.NODE ||
+          (tag.varType.meta.isNodeSpecificVal() && replica.computedType == null) ?
+          testPerNode(session, deviations) :
+          testGroupNodes(session, deviations);
+    } else {
+      ComputedValueEvaluator computedValueEvaluator = new ComputedValueEvaluator(session);
+      Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, computedValueEvaluator);
+      for (Row r : session.matrix) {
+        computedValueEvaluator.node = r.node;
+        SealedClause sealedClause = getSealedClause(computedValueEvaluator);
+        if (!sealedClause.getGlobalTag().isPass(r)) {
+          ctx.resetAndAddViolation(r.node, null, new Violation(sealedClause, null, null, r.node, r.getVal(sealedClause.globalTag.name),
+              sealedClause.globalTag.delta(r.getVal(globalTag.name)), r.node));
+          addViolatingReplicas(sealedClause.globalTag, computedValueEvaluator, ctx, Type.CORES.tagName, r.node, ctx.currentViolation, session);
+
+        }
+      }
+      return ctx.allViolations;
+
+    }
+  }
+
 
   public boolean isMatch(ReplicaInfo r, String collection, String shard) {
     if (type != null && r.getType() != type) return false;

@@ -48,9 +48,6 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final boolean testPoint1InSet;
   private final GeoPoint testPoint1;
 
-  private final boolean testPoint2InSet;
-  private final GeoPoint testPoint2;
-    
   private final Plane testPoint1FixedYPlane;
   private final Plane testPoint1FixedYAbovePlane;
   private final Plane testPoint1FixedYBelowPlane;
@@ -61,16 +58,6 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final Plane testPoint1FixedZAbovePlane;
   private final Plane testPoint1FixedZBelowPlane;
 
-  private final Plane testPoint2FixedYPlane;
-  private final Plane testPoint2FixedYAbovePlane;
-  private final Plane testPoint2FixedYBelowPlane;
-  private final Plane testPoint2FixedXPlane;
-  private final Plane testPoint2FixedXAbovePlane;
-  private final Plane testPoint2FixedXBelowPlane;
-  private final Plane testPoint2FixedZPlane;
-  private final Plane testPoint2FixedZAbovePlane;
-  private final Plane testPoint2FixedZBelowPlane;
-  
   private final GeoPoint[] edgePoints;
   private final Edge[] shapeStartEdges;
   
@@ -108,6 +95,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
       for (final GeoPoint thisGeoPoint : shapePoints) {
         assert planetModel.pointOnSurface(thisGeoPoint) : "Polygon edge point must be on surface; "+thisGeoPoint+" is not";
         final Edge edge = new Edge(planetModel, lastGeoPoint, thisGeoPoint);
+        if (edge.isWithin(testPoint.x, testPoint.y, testPoint.z)) {
+          throw new IllegalArgumentException("Test point is on polygon edge: not allowed");
+        }
         allEdges.add(edge);
         // Now, link
         if (firstEdge == null) {
@@ -132,10 +122,6 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
     // Record testPoint1 as-is
     this.testPoint1 = testPoint;
-    // Pick the antipodes for testPoint2
-    this.testPoint2 = new GeoPoint(-testPoint.x, -testPoint.y, -testPoint.z);
-    
-    assert planetModel.pointOnSurface(testPoint2.x, testPoint2.y, testPoint2.z) : "Test point 2 is off of ellipsoid";
 
     // Construct fixed planes for testPoint1
     this.testPoint1FixedYPlane = new Plane(0.0, 1.0, 0.0, -testPoint1.y);
@@ -181,69 +167,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
     this.testPoint1FixedZBelowPlane = testPoint1FixedZBelowPlane;
 
-    // Construct fixed planes for testPoint2
-    this.testPoint2FixedYPlane = new Plane(0.0, 1.0, 0.0, -testPoint2.y);
-    this.testPoint2FixedXPlane = new Plane(1.0, 0.0, 0.0, -testPoint2.x);
-    this.testPoint2FixedZPlane = new Plane(0.0, 0.0, 1.0, -testPoint2.z);
-    
-    Plane testPoint2FixedYAbovePlane = new Plane(testPoint2FixedYPlane, true);
-    if (-testPoint2FixedYAbovePlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumYValue() + testPoint2FixedYAbovePlane.D > NEAR_EDGE_CUTOFF) {
-        testPoint2FixedYAbovePlane = null;
-    }
-    this.testPoint2FixedYAbovePlane = testPoint2FixedYAbovePlane;
-    
-    Plane testPoint2FixedYBelowPlane = new Plane(testPoint2FixedYPlane, false);
-    if (-testPoint2FixedYBelowPlane.D - planetModel.getMaximumYValue() > NEAR_EDGE_CUTOFF ||  planetModel.getMinimumYValue() + testPoint2FixedYBelowPlane.D > NEAR_EDGE_CUTOFF) {
-        testPoint2FixedYBelowPlane = null;
-    }
-    this.testPoint2FixedYBelowPlane = testPoint2FixedYBelowPlane;
-    
-    Plane testPoint2FixedXAbovePlane = new Plane(testPoint2FixedXPlane, true);
-    if (-testPoint2FixedXAbovePlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() + testPoint2FixedXAbovePlane.D > NEAR_EDGE_CUTOFF) {
-        testPoint2FixedXAbovePlane = null;
-    }
-    this.testPoint2FixedXAbovePlane = testPoint2FixedXAbovePlane;
-    
-    Plane testPoint2FixedXBelowPlane = new Plane(testPoint2FixedXPlane, false);
-    if (-testPoint2FixedXBelowPlane.D - planetModel.getMaximumXValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumXValue() + testPoint2FixedXBelowPlane.D > NEAR_EDGE_CUTOFF) {
-        testPoint2FixedXBelowPlane = null;
-    }
-    this.testPoint2FixedXBelowPlane = testPoint2FixedXBelowPlane;
-    
-    Plane testPoint2FixedZAbovePlane = new Plane(testPoint2FixedZPlane, true);
-    if (-testPoint2FixedZAbovePlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF ||planetModel.getMinimumZValue() + testPoint2FixedZAbovePlane.D > NEAR_EDGE_CUTOFF) {
-        testPoint2FixedZAbovePlane = null;
-    }
-    this.testPoint2FixedZAbovePlane = testPoint2FixedZAbovePlane;
-    
-    Plane testPoint2FixedZBelowPlane = new Plane(testPoint2FixedZPlane, false);
-    if (-testPoint2FixedZBelowPlane.D - planetModel.getMaximumZValue() > NEAR_EDGE_CUTOFF || planetModel.getMinimumZValue() + testPoint2FixedZBelowPlane.D > NEAR_EDGE_CUTOFF) {
-        testPoint2FixedZBelowPlane = null;
-    }
-    this.testPoint2FixedZBelowPlane = testPoint2FixedZBelowPlane;
-
     // We know inset/out-of-set for testPoint1 only right now
     this.testPoint1InSet = testPointInSet;
-
-    //System.out.println("Determining in-set-ness of test point2 ("+testPoint2+"):");
-    // We must compute the crossings from testPoint1 to testPoint2 in order to figure out whether testPoint2 is in-set or out
-    this.testPoint2InSet = isInSet(testPoint2.x, testPoint2.y, testPoint2.z,
-      testPoint1, 
-      testPoint1InSet,
-      testPoint1FixedXPlane, testPoint1FixedXAbovePlane, testPoint1FixedXBelowPlane,
-      testPoint1FixedYPlane, testPoint1FixedYAbovePlane, testPoint1FixedYBelowPlane,
-      testPoint1FixedZPlane, testPoint1FixedZAbovePlane, testPoint1FixedZBelowPlane);
-    
-    //System.out.println("\n... done.  Checking against test point1 ("+testPoint1+"):");
-    
-    assert isInSet(testPoint1.x, testPoint1.y, testPoint1.z,
-      testPoint2,
-      testPoint2InSet,
-      testPoint2FixedXPlane, testPoint2FixedXAbovePlane, testPoint2FixedXBelowPlane,
-      testPoint2FixedYPlane, testPoint2FixedYAbovePlane, testPoint2FixedYBelowPlane,
-      testPoint2FixedZPlane, testPoint2FixedZAbovePlane, testPoint2FixedZBelowPlane) == testPoint1InSet : "Test point1 not correctly in/out of set according to test point2";
-
-    //System.out.println("\n... done");
   }
 
   /**
@@ -284,27 +209,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
     //System.out.println("IsWithin() for ["+x+","+y+","+z+"]");
-    try {
-      // Try with the primary test point
-      //if (true) throw new IllegalArgumentException("use second point as exercise");
-      //System.out.println(" Trying testPoint1...");
-      return isInSet(x, y, z,
-        testPoint1,
-        testPoint1InSet,
-        testPoint1FixedXPlane, testPoint1FixedXAbovePlane, testPoint1FixedXBelowPlane,
-        testPoint1FixedYPlane, testPoint1FixedYAbovePlane, testPoint1FixedYBelowPlane,
-        testPoint1FixedZPlane, testPoint1FixedZAbovePlane, testPoint1FixedZBelowPlane);
-    } catch (IllegalArgumentException e) {
-      // Try with an alternate test point
-      //e.printStackTrace(System.out);
-      //System.out.println(" Trying testPoint2...");
-      return isInSet(x, y, z,
-        testPoint2,
-        testPoint2InSet,
-        testPoint2FixedXPlane, testPoint2FixedXAbovePlane, testPoint2FixedXBelowPlane,
-        testPoint2FixedYPlane, testPoint2FixedYAbovePlane, testPoint2FixedYBelowPlane,
-        testPoint2FixedZPlane, testPoint2FixedZAbovePlane, testPoint2FixedZBelowPlane);
-    }
+    return isInSet(x, y, z,
+      testPoint1,
+      testPoint1InSet,
+      testPoint1FixedXPlane, testPoint1FixedXAbovePlane, testPoint1FixedXBelowPlane,
+      testPoint1FixedYPlane, testPoint1FixedYAbovePlane, testPoint1FixedYBelowPlane,
+      testPoint1FixedZPlane, testPoint1FixedZAbovePlane, testPoint1FixedZBelowPlane);
   }
   
   /** Given a test point, whether it is in set, and the associated planes, figure out if another point
@@ -805,7 +715,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
         return edgeIterator.isOnEdge() || (((edgeIterator.getCrossingCount() & 1) == 0)?testPointInSet:!testPointInSet);
       }
     }
-    
+
+    @Override
+    public String toString() {
+      return "{firstLegValue="+firstLegValue+"; secondLegValue="+secondLegValue+"; firstLegPlane="+firstLegPlane+"; secondLegPlane="+secondLegPlane+"; intersectionPoint="+intersectionPoint+"}";
+    }
+
     @Override
     public int compareTo(final TraversalStrategy other) {
       if (traversalDistance < other.traversalDistance) {

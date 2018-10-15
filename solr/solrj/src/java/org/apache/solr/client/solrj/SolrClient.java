@@ -775,7 +775,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Deletes a list of documents by unique ID
    *
    * @param collection the Solr collection to delete the documents from
-   * @param ids  the list of document IDs to delete
+   * @param ids  the list of document IDs to delete; must be non-null and contain elements
    *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
    *         from the server
@@ -790,7 +790,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Deletes a list of documents by unique ID
    *
-   * @param ids  the list of document IDs to delete
+   * @param ids  the list of document IDs to delete; must be non-null and contain elements
    *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
    *         from the server
@@ -806,7 +806,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Deletes a list of documents by unique ID, specifying max time before commit
    *
    * @param collection the Solr collection to delete the documents from
-   * @param ids  the list of document IDs to delete 
+   * @param ids  the list of document IDs to delete; must be non-null and contain elements
    * @param commitWithinMs  max time (in ms) before a commit will happen
    *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
@@ -818,6 +818,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @since 5.1
    */
   public UpdateResponse deleteById(String collection, List<String> ids, int commitWithinMs) throws SolrServerException, IOException {
+    if (ids == null) throw new IllegalArgumentException("'ids' parameter must be non-null");
+    if (ids.isEmpty()) throw new IllegalArgumentException("'ids' parameter must not be empty; should contain IDs to delete");
+
     UpdateRequest req = new UpdateRequest();
     req.deleteById(ids);
     req.setCommitWithin(commitWithinMs);

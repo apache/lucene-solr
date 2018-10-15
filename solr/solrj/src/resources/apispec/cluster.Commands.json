@@ -90,24 +90,59 @@
         "location": {
           "type": "string"
         },
+        "defaults" : {
+          "type" : "object",
+          "properties": {
+            "cluster": {
+              "type" : "object",
+              "properties": {
+                "useLegacyReplicaAssignment": {
+                  "type" : "boolean",
+                  "description" : "Decides wheyher to use the deprecated legacy replica assignment strategy or not"
+                }
+              }
+            },
+            "collection": {
+              "type": "object",
+              "properties": {
+                "numShards": {
+                  "type": "integer",
+                  "description": "Default number of shards for a collection"
+                },
+                "tlogReplicas": {
+                  "type": "integer",
+                  "description": "Default number of TLOG replicas"
+                },
+                "pullReplicas": {
+                  "type": "integer",
+                  "description": "Default number of PULL replicas"
+                },
+                "nrtReplicas": {
+                  "type": "integer",
+                  "description": "Default number of NRT replicas"
+                }
+              }
+            }
+          }
+        },
         "collectionDefaults": {
           "type": "object",
           "properties": {
             "numShards": {
               "type": "integer",
-              "description": "Default no:of shards for a collection"
+              "description": "Default number of shards for a collection"
             },
             "tlogReplicas": {
               "type": "integer",
-              "description": "Default no:of TLOG replicas"
+              "description": "Default number of TLOG replicas"
             },
             "pullReplicas": {
               "type": "integer",
-              "description": "Default no:of PULL replicas"
+              "description": "Default number of PULL replicas"
             },
             "nrtReplicas": {
               "type": "integer",
-              "description": "Default no:of NRT replicas"
+              "description": "Default number of NRT replicas"
             }
           }
         }

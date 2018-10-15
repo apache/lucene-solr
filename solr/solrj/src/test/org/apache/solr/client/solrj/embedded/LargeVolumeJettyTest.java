@@ -20,7 +20,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.junit.BeforeClass;
 
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+// commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
 public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {

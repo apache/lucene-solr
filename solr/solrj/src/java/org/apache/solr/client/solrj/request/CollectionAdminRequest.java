@@ -57,7 +57,10 @@ import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
@@ -133,6 +136,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         }
       }
     }
+  }
+
+  @Override
+  public String toString() {
+    return jsonStr();
   }
 
   /**
@@ -1508,6 +1516,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public static final String ROUTER_START = "router.start";
     public static final String ROUTER_INTERVAL = "router.interval";
     public static final String ROUTER_MAX_FUTURE = "router.maxFutureMs";
+    public static final String ROUTER_PREEMPTIVE_CREATE_WINDOW = "router.preemptiveCreateMath";
 
     private final String aliasName;
     private final String routerField;
@@ -1516,6 +1525,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     //Optional:
     private TimeZone tz;
     private Integer maxFutureMs;
+    private String preemptiveCreateMath;
 
     private final Create createCollTemplate;
 
@@ -1540,6 +1550,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public CreateTimeRoutedAlias setPreemptiveCreateWindow(String preemptiveCreateMath) {
+      this.preemptiveCreateMath = preemptiveCreateMath;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1553,6 +1568,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (maxFutureMs != null) {
         params.add(ROUTER_MAX_FUTURE, ""+maxFutureMs);
+      }
+      if (preemptiveCreateMath != null) {
+        params.add(ROUTER_PREEMPTIVE_CREATE_WINDOW, preemptiveCreateMath);
       }
 
       // merge the above with collectionParams.  Above takes precedence.
@@ -1633,6 +1651,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String ulogDir;
     protected Properties properties;
     protected Replica.Type type;
+    protected Integer nrtReplicas, tlogReplicas, pullReplicas;
+    protected String createNodeSet;
 
     private AddReplica(String collection, String shard, String routeKey, Replica.Type type) {
       super(CollectionAction.ADDREPLICA);
@@ -1712,6 +1732,42 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return shard;
     }
 
+    public Integer getNrtReplicas() {
+      return nrtReplicas;
+    }
+
+    public AddReplica setNrtReplicas(Integer nrtReplicas) {
+      this.nrtReplicas = nrtReplicas;
+      return this;
+    }
+
+    public Integer getTlogReplicas() {
+      return tlogReplicas;
+    }
+
+    public AddReplica setTlogReplicas(Integer tlogReplicas) {
+      this.tlogReplicas = tlogReplicas;
+      return this;
+    }
+
+    public Integer getPullReplicas() {
+      return pullReplicas;
+    }
+
+    public AddReplica setPullReplicas(Integer pullReplicas) {
+      this.pullReplicas = pullReplicas;
+      return this;
+    }
+
+    public String getCreateNodeSet() {
+      return createNodeSet;
+    }
+
+    public AddReplica setCreateNodeSet(String createNodeSet) {
+      this.createNodeSet = createNodeSet;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
@@ -1743,6 +1799,18 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (properties != null) {
         addProperties(params, properties);
+      }
+      if (nrtReplicas != null)  {
+        params.add(NRT_REPLICAS, String.valueOf(nrtReplicas));
+      }
+      if (tlogReplicas != null)  {
+        params.add(TLOG_REPLICAS, String.valueOf(tlogReplicas));
+      }
+      if (pullReplicas != null)  {
+        params.add(PULL_REPLICAS, String.valueOf(pullReplicas));
+      }
+      if (createNodeSet != null)  {
+        params.add(CREATE_NODE_SET_PARAM, createNodeSet);
       }
       return params;
     }

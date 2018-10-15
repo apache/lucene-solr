@@ -97,4 +97,10 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
     }
   }
+
+  @Nightly
+  @Override
+  public void testRandomBig() throws Exception {
+    doTestRandom(25000);
+  }
 }

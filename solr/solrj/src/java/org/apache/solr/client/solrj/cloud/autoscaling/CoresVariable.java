@@ -33,8 +33,7 @@ public class CoresVariable extends VariableBase {
     return VariableBase.getOperandAdjustedValue(super.validate(name, val, isRuleVal), val);
   }
 
-  @Override
-  public void addViolatingReplicas(Violation.Ctx ctx) {
+  public boolean addViolatingReplicas(Violation.Ctx ctx) {
     for (Row row : ctx.allRows) {
       if (row.node.equals(ctx.currentViolation.node)) {
         row.forEachReplica(replicaInfo -> ctx.currentViolation
@@ -42,7 +41,7 @@ public class CoresVariable extends VariableBase {
                 .withDelta(ctx.currentViolation.replicaCountDelta)));
       }
     }
-
+    return true;
 
   }
 

@@ -41,6 +41,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -76,6 +77,11 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
       solrClient = ((SimCloudManager)cloudManager).simGetSolrClient();
     }
     timeSource = cloudManager.getTimeSource();
+  }
+
+  @Before
+  public void initTest() {
+    triggerFired = new CountDownLatch(1);
   }
 
   @After
@@ -138,7 +144,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     }
   }
 
-  static CountDownLatch triggerFired = new CountDownLatch(1);
+  static CountDownLatch triggerFired;
 
   public static class TestTriggerAction extends TriggerActionBase {
 
@@ -160,12 +166,6 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     create1.process(solrClient);
     CloudTestUtils.waitForState(cloudManager, "failed to create " + collection1, collection1,
         CloudTestUtils.clusterShape(1, 1));
-
-    CollectionAdminRequest.SplitShard split1 = CollectionAdminRequest.splitShard(collection1)
-        .setShardName("shard1");
-    split1.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, "failed to split " + collection1, collection1,
-        CloudTestUtils.clusterShape(3, 1, true, true));
 
     String setListenerCommand = "{" +
         "'set-listener' : " +
@@ -197,8 +197,17 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+
     boolean await = listenerCreated.await(10, TimeUnit.SECONDS);
     assertTrue("listener not created in time", await);
+
+    CollectionAdminRequest.SplitShard split1 = CollectionAdminRequest.splitShard(collection1)
+        .setShardName("shard1");
+    split1.process(solrClient);
+    CloudTestUtils.waitForState(cloudManager, "failed to split " + collection1, collection1,
+        CloudTestUtils.clusterShape(3, 1, true, true));
+
+
     await = triggerFired.await(60, TimeUnit.SECONDS);
     assertTrue("cleanup action didn't run", await);
 

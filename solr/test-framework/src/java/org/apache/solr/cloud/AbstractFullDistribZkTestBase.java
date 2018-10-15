@@ -794,7 +794,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   @SuppressWarnings("rawtypes")
   protected static int sendDocsWithRetry(CloudSolrClient cloudClient, String collection, List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry) throws Exception {
     UpdateRequest up = new UpdateRequest();
-    up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
     up.add(batch);
     NamedList resp = null;
     int numRetries = 0;

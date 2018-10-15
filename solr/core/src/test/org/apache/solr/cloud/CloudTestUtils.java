@@ -97,19 +97,19 @@ public class CloudTestUtils {
       // due to the way we manage collections in SimClusterStateProvider a null here
       // can mean that a collection is still being created but has no replicas
       if (coll == null) { // does not yet exist?
-        timeout.sleep(50);
+        timeout.sleep(100);
         continue;
       }
       if (predicate.matches(state.getLiveNodes(), coll)) {
         log.trace("-- predicate matched with state {}", state);
         return timeout.timeElapsed(TimeUnit.MILLISECONDS);
       }
-      timeout.sleep(50);
+      timeout.sleep(100);
       if (timeout.timeLeft(TimeUnit.MILLISECONDS) < timeWarn) {
         log.trace("-- still not matching predicate: {}", state);
       }
     }
-    throw new TimeoutException("last state: " + coll);
+    throw new TimeoutException("last ClusterState: " + state + ", last coll state: " + coll);
   }
 
   /**
@@ -139,13 +139,13 @@ public class CloudTestUtils {
       }
       Collection<Slice> slices = withInactive ? collectionState.getSlices() : collectionState.getActiveSlices();
       if (slices.size() != expectedShards) {
-        log.trace("-- wrong number of active slices, expected={}, found={}", expectedShards, collectionState.getSlices().size());
+        log.trace("-- wrong number of slices, expected={}, found={}: {}", expectedShards, collectionState.getSlices().size(), collectionState.getSlices());
         return false;
       }
       Set<String> leaderless = new HashSet<>();
       for (Slice slice : slices) {
         int activeReplicas = 0;
-        if (requireLeaders && slice.getLeader() == null) {
+        if (requireLeaders && slice.getState() != Slice.State.INACTIVE && slice.getLeader() == null) {
           leaderless.add(slice.getName());
           continue;
         }

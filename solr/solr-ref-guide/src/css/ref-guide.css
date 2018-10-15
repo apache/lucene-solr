@@ -885,6 +885,11 @@ h6 strong
     line-height: 1.45;
 }
 
+p strong code,
+td strong code {
+  font-weight: bold;
+}
+
 pre,
 pre > code
 {

@@ -26,7 +26,7 @@ For example the expression below adds two numbers together:
 add(1, 1)
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -98,7 +98,7 @@ select(search(collection2, q="*:*", fl="price_f", sort="price_f desc", rows="3")
        mult(price_f, 10) as newPrice)
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----

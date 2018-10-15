@@ -18,11 +18,13 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -57,13 +60,13 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
         "      'shard1': {" +
         "        'range': '80000000-ffffffff'," +
         "        'replicas': {" +
-        "          'r1': {" +
+        "          'r1': {" +//east
         "            'core': 'r1'," +
         "            'base_url': 'http://10.0.0.4:8983/solr'," +
         "            'node_name': 'node1'," +
         "            'state': 'active'" +
         "          }," +
-        "          'r2': {" +
+        "          'r2': {" +//west
         "            'core': 'r2'," +
         "            'base_url': 'http://10.0.0.4:7574/solr'," +
         "            'node_name': 'node2'," +
@@ -74,25 +77,25 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
         "      'shard2': {" +
         "        'range': '0-7fffffff'," +
         "        'replicas': {" +
-        "          'r3': {" +
+        "          'r3': {" +//east
         "            'core': 'r3'," +
         "            'base_url': 'http://10.0.0.4:8983/solr'," +
         "            'node_name': 'node1'," +
         "            'state': 'active'" +
         "          }," +
-        "          'r4': {" +
+        "          'r4': {" +//west
         "            'core': 'r4'," +
         "            'base_url': 'http://10.0.0.4:8987/solr'," +
         "            'node_name': 'node4'," +
         "            'state': 'active'" +
         "          }," +
-        "          'r6': {" +
+        "          'r6': {" +//east
         "            'core': 'r6'," +
         "            'base_url': 'http://10.0.0.4:8989/solr'," +
         "            'node_name': 'node3'," +
         "            'state': 'active'" +
         "          }," +
-        "          'r5': {" +
+        "          'r5': {" +//east
         "            'core': 'r5'," +
         "            'base_url': 'http://10.0.0.4:8983/solr'," +
         "            'node_name': 'node1'," +
@@ -126,7 +129,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     Policy.Session session = policy.createSession(createCloudManager(state, metaData));
     List<Violation> violations = session.getViolations();
     assertEquals(1, violations.size());
-    assertEquals(4, violations.get(0).getViolatingReplicas().size());
+    assertEquals(3, violations.get(0).getViolatingReplicas().size());
     assertEquals(1.0, violations.get(0).replicaCountDelta, 0.01);
     for (Violation.ReplicaInfoAndErr r : violations.get(0).getViolatingReplicas()) {
       assertEquals("shard2", r.replicaInfo.getShard());
@@ -139,7 +142,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     session = policy.createSession(createCloudManager(state, metaData));
     violations = session.getViolations();
     assertEquals(1, violations.size());
-    assertEquals(4, violations.get(0).getViolatingReplicas().size());
+    assertEquals(3, violations.get(0).getViolatingReplicas().size());
     assertEquals(1.0, violations.get(0).replicaCountDelta, 0.01);
     for (Violation.ReplicaInfoAndErr r : violations.get(0).getViolatingReplicas()) {
       assertEquals("shard2", r.replicaInfo.getShard());
@@ -166,7 +169,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson))
         , createCloudManager(state, metaData));
     assertEquals(1, suggestions.size());
-    String repName = (String) Utils.getObjectByPath(suggestions.get(0).operation, true, "command/move-replica/replica");
+    String repName = (String) suggestions.get(0)._get("operation/command/move-replica/replica", null);
 
     AtomicBoolean found = new AtomicBoolean(false);
     session.getNode("node1").forEachReplica(replicaInfo -> {
@@ -199,9 +202,9 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson)),
         createCloudManager(state, metaData));
     assertEquals(1, suggestions.size());
-    assertEquals("node5", Utils.getObjectByPath(suggestions.get(0).operation, true, "command/move-replica/targetNode"));
+    assertEquals("node5", suggestions.get(0)._get("operation/command/move-replica/targetNode", null));
 
-    String rName = (String) Utils.getObjectByPath(suggestions.get(0).operation, true, "command/move-replica/replica");
+    String rName = (String) suggestions.get(0)._get("operation/command/move-replica/replica", null);
 
     found.set(false);
     session.getNode("node1").forEachReplica(replicaInfo -> {
@@ -289,182 +292,8 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     };
   }
 
-  public void testAutoScalingHandlerFailure() {
-    String diagnostics = "{" +
-        "  'diagnostics': {" +
-        "    'sortedNodes': [" +
-        "      {" +
-        "        'node': '127.0.0.1:63191_solr'," +
-        "        'isLive': true," +
-        "        'cores': 3.0," +
-        "        'freedisk': 680.908073425293," +
-        "        'heapUsage': 24.97510064011647," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {" +
-        "          'readApiTestViolations': {" +
-        "            'shard1': [" +
-        "              {" +
-        "                'core_node5': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n2'," +
-        "                  'leader': 'true'," +
-        "                  'base_url': 'https://127.0.0.1:63191/solr'," +
-        "                  'node_name': '127.0.0.1:63191_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node7': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n4'," +
-        "                  'base_url': 'https://127.0.0.1:63191/solr'," +
-        "                  'node_name': '127.0.0.1:63191_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node12': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n10'," +
-        "                  'base_url': 'https://127.0.0.1:63191/solr'," +
-        "                  'node_name': '127.0.0.1:63191_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }" +
-        "            ]" +
-        "          }" +
-        "        }" +
-        "      }," +
-        "      {" +
-        "        'node': '127.0.0.1:63192_solr'," +
-        "        'isLive': true," +
-        "        'cores': 3.0," +
-        "        'freedisk': 680.908073425293," +
-        "        'heapUsage': 24.98878807983566," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {" +
-        "          'readApiTestViolations': {" +
-        "            'shard1': [" +
-        "              {" +
-        "                'core_node3': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n1'," +
-        "                  'base_url': 'https://127.0.0.1:63192/solr'," +
-        "                  'node_name': '127.0.0.1:63192_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node9': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n6'," +
-        "                  'base_url': 'https://127.0.0.1:63192/solr'," +
-        "                  'node_name': '127.0.0.1:63192_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }," +
-        "              {" +
-        "                'core_node11': {" +
-        "                  'core': 'readApiTestViolations_shard1_replica_n8'," +
-        "                  'base_url': 'https://127.0.0.1:63192/solr'," +
-        "                  'node_name': '127.0.0.1:63192_solr'," +
-        "                  'state': 'active'," +
-        "                  'type': 'NRT'," +
-        "                  'force_set_state': 'false'," +
-        "                  'INDEX.sizeInGB': 6.426125764846802E-8," +
-        "                  'shard': 'shard1'," +
-        "                  'collection': 'readApiTestViolations'" +
-        "                }" +
-        "              }" +
-        "            ]" +
-        "          }" +
-        "        }" +
-        "      }," +
-        "      {" +
-        "        'node': '127.0.0.1:63219_solr'," +
-        "        'isLive': true," +
-        "        'cores': 0.0," +
-        "        'freedisk': 680.908073425293," +
-        "        'heapUsage': 24.98878807983566," +
-        "        'sysLoadAvg': 272.75390625," +
-        "        'totaldisk': 1037.938980102539," +
-        "        'replicas': {}" +
-        "      }" +
-        "    ]," +
-        "    'liveNodes': [" +
-        "      '127.0.0.1:63191_solr'," +
-        "      '127.0.0.1:63192_solr'," +
-        "      '127.0.0.1:63219_solr'" +
-        "    ]," +
-        "    'violations': [" +
-        "      {" +
-        "        'collection': 'readApiTestViolations'," +
-        "        'shard': 'shard1'," +
-        "        'node': '127.0.0.1:63191_solr'," +
-        "        'violation': {" +
-        "          'replica': {'NRT': 3, 'count': 3}," +
-        "          'delta': 2.0" +
-        "        }," +
-        "        'clause': {" +
-        "          'replica': '<3'," +
-        "          'shard': '#EACH'," +
-        "          'node': '#ANY'," +
-        "          'collection': 'readApiTestViolations'" +
-        "        }" +
-        "      }," +
-        "      {" +
-        "        'collection': 'readApiTestViolations'," +
-        "        'shard': 'shard1'," +
-        "        'node': '127.0.0.1:63192_solr'," +
-        "        'violation': {" +
-        "          'replica': {'NRT': 3, 'count': 3}," +
-        "          'delta': 2.0" +
-        "        }," +
-        "        'clause': {" +
-        "          'replica': '<2'," +
-        "          'shard': '#EACH'," +
-        "          'node': '#ANY'," +
-        "          'collection': 'readApiTestViolations'" +
-        "        }" +
-        "      }" +
-        "    ]," +
-        "    'config': {" +
-        "      'cluster-preferences': [" +
-        "        {'minimize': 'cores', 'precision': 3}," +
-        "        {'maximize': 'freedisk', 'precision': 100}," +
-        "        {'minimize': 'sysLoadAvg', 'precision': 10}," +
-        "        {'minimize': 'heapUsage', 'precision': 10}" +
-        "      ]," +
-        "      'cluster-policy': [" +
-        "        {'cores': '<10', 'node': '#ANY'}," +
-        "        {'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "        {'nodeRole': 'overseer', 'replica': 0}" +
-        "      ]" +
-        "    }" +
-        "  }}";
-    Map<String, Object> m = (Map<String, Object>) Utils.fromJSONString(diagnostics);
+  public void testAutoScalingHandlerFailure() throws IOException {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testAutoScalingHandlerFailure.json");
 
     Policy policy = new Policy((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
@@ -510,6 +339,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
       }
     };
     return new DelegatingCloudManager(null) {
+      ClusterState clusterState = null;
       @Override
       public NodeStateProvider getNodeStateProvider() {
         return nodeStateProvider;
@@ -517,7 +347,24 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
       @Override
       public ClusterStateProvider getClusterStateProvider() {
+        if (clusterState == null) {
+          Map map = (Map) Utils.getObjectByPath (m, false, "cluster/collections");
+          if (map == null) map = new HashMap<>();
+          clusterState = ClusterState.load(0, map, liveNodes, "/clusterstate.json");
+        }
+
         return new DelegatingClusterStateProvider(null) {
+
+          @Override
+          public ClusterState getClusterState() throws IOException {
+            return clusterState;
+          }
+
+          @Override
+          public ClusterState.CollectionRef getState(String collection) {
+            return clusterState.getCollectionRef(collection);
+          }
+
           @Override
           public Set<String> getLiveNodes() {
             return liveNodes;
@@ -527,5 +374,84 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     };
   }
 
+  public void testSysPropSuggestions() throws IOException {
+
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testSysPropSuggestions.json");
+
+    Map<String, Object> conf = (Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config");
+    Policy policy = new Policy(conf);
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    Policy.Session session = policy.createSession(cloudManagerFromDiagnostics);
+    List<Violation> violations = session.getViolations();
+    for (Violation violation : violations) {
+      assertEquals(1.0d, violation.replicaCountDelta.doubleValue(), 0.0001);
+    }
+    assertEquals(2, violations.size());
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig(conf), cloudManagerFromDiagnostics);
+    assertEquals(2, suggestions.size());
+    for (Suggester.SuggestionInfo suggestion : suggestions) {
+      assertTrue(ImmutableSet.of("127.0.0.1:63219_solr", "127.0.0.1:63229_solr").contains(
+          suggestion._get("operation/command/move-replica/targetNode", null)));
+
+    }
+  }
+
+  public void testSuggestionsRebalanceOnly() throws IOException {
+    String conf = " {" +
+        "    'cluster-preferences':[{" +
+        "      'minimize':'cores'," +
+        "      'precision':1}," +
+        "      {'maximize':'freedisk','precision':100}," +
+        "      {'minimize':'sysLoadAvg','precision':10}]," +
+        "    'cluster-policy':[" +
+        "{'replica':'<5','shard':'#EACH','sysprop.zone':['east','west']}]}";
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testSuggestionsRebalanceOnly.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(conf));
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
+
+    assertEquals(2, suggestions.size());
+    assertEquals("improvement", suggestions.get(0)._get("type",null));
+    assertEquals("127.0.0.1:63229_solr", suggestions.get(0)._get("operation/command/move-replica/targetNode", null));
+    assertEquals("improvement", suggestions.get(1)._get( "type",null));
+    assertEquals("127.0.0.1:63219_solr", suggestions.get(1)._get("operation/command/move-replica/targetNode", null));
+  }
+
+  public void testSuggestionsRebalance2() throws IOException {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testSuggestionsRebalance2.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
+
+    assertEquals(3, suggestions.size());
+
+    for (Suggester.SuggestionInfo suggestion : suggestions) {
+      assertEquals("improvement", suggestion._get("type", null));
+      assertEquals("10.0.0.79:8983_solr", suggestion._get("operation/command/move-replica/targetNode",null));
+    }
+
+  }
+
+  public void testAddMissingReplica() throws IOException {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testAddMissingReplica.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
+
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
+
+    assertEquals(1, suggestions.size());
+    assertEquals("repair", suggestions.get(0)._get("type",null));
+    assertEquals("add-replica", suggestions.get(0)._get("operation/command[0]/key",null));
+    assertEquals("shard2", suggestions.get(0)._get("operation/command/add-replica/shard",null));
+    assertEquals("NRT", suggestions.get(0)._get("operation/command/add-replica/type",null));
+
+  }
+
+  public static Object loadFromResource(String file) throws IOException {
+    try (InputStream is = TestPolicy2.class.getResourceAsStream("/solrj/solr/autoscaling/" + file)) {
+      return Utils.fromJSON(is);
+    }
+  }
 
 }

@@ -174,6 +174,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void deleteReplicaFromClusterState() throws Exception {
     deleteReplicaFromClusterState("true");
     deleteReplicaFromClusterState("false");
@@ -223,7 +224,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Test
   @Slow
   //28-June-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
+  // commented 15-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     raceConditionOnDeleteAndRegisterReplica("true");
     raceConditionOnDeleteAndRegisterReplica("false");

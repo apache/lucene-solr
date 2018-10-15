@@ -461,8 +461,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       AddUpdateCommand cmd = new AddUpdateCommand(null);
       cmd.solrDoc = sdoc("id", id.incrementAndGet());
       ModifiableSolrParams params = new ModifiableSolrParams();
-      RollupRequestReplicationTracker rollupReqTracker = new RollupRequestReplicationTracker("2");
-      LeaderRequestReplicationTracker leaderReqTracker = new LeaderRequestReplicationTracker("shard1", 2);
+      RollupRequestReplicationTracker rollupReqTracker = new RollupRequestReplicationTracker();
+      LeaderRequestReplicationTracker leaderReqTracker = new LeaderRequestReplicationTracker("shard1");
 
       cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReqTracker, leaderReqTracker);
       cmdDistrib.finish();

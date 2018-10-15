@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -90,6 +89,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
   @Test
   //commented 9-Aug-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testAsyncRequests() throws Exception {
 
     final String collection = "testAsyncOperations";
@@ -191,7 +191,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
   }
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented 4-Sep-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testAsyncIdRaceCondition() throws Exception {
     SolrClient[] clients = new SolrClient[cluster.getJettySolrRunners().size()];
     int j = 0;

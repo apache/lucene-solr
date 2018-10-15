@@ -127,6 +127,11 @@ public class ZkStateReader implements Closeable {
   public final static String CONFIGNAME_PROP="configName";
 
   public static final String LEGACY_CLOUD = "legacyCloud";
+
+  /**
+   * @deprecated use {@link org.apache.solr.common.params.CollectionAdminParams#DEFAULTS} instead.
+   */
+  @Deprecated
   public static final String COLLECTION_DEF = "collectionDefaults";
 
   public static final String URL_SCHEME = "urlScheme";
@@ -1001,7 +1006,7 @@ public class ZkStateReader implements Closeable {
       while (true) {
         try {
           byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
-          this.clusterProperties = (Map<String, Object>) Utils.fromJSON(data);
+          this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
           return;
         } catch (KeeperException.NoNodeException e) {
