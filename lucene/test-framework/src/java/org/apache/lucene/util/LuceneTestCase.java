@@ -894,7 +894,7 @@ public abstract class LuceneTestCase extends Assert {
    * Convenience method for logging an iterator.
    *
    * @param label  String logged before/after the items in the iterator
-   * @param iter   Each next() is toString()ed and logged on it's own line. If iter is null this is logged differnetly then an empty iterator.
+   * @param iter   Each next() is toString()ed and logged on its own line. If iter is null this is logged differently then an empty iterator.
    * @param stream Stream to log messages to.
    */
   public static void dumpIterator(String label, Iterator<?> iter,

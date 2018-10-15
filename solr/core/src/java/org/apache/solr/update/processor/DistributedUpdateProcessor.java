@@ -2064,7 +2064,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   //    persist across sub-requests.
   //
   //   Note that the replica that receives the original request has the only RollupReplicationTracker that exists for the
-  //   lifetime of the batch. The leader for each shard keeps track of it's own achieved replicaiton for its shard
+  //   lifetime of the batch. The leader for each shard keeps track of its own achieved replication for its shard
   //   and attaches that to the response to the originating node (i.e. the one with the RollupReplicationTracker).
   //   Followers in general do not need a tracker of any sort with the sole exception of the RollupReplicationTracker
   //   allocated on the original node that receives the top-level request.

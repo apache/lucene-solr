@@ -379,7 +379,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         params.add("ids", idsToRequest.get(0));
       } else {
         if (random().nextBoolean()) {
-          // each id in it's own param
+          // each id in its own param
           for (String id : idsToRequest) {
             params.add("id",id);
           }
