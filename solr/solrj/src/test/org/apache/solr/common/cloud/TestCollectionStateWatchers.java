@@ -62,6 +62,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   @Before
   public void prepareCluster() throws Exception {
+    cluster.deleteAllCollections();
     int missingServers = CLUSTER_SIZE - cluster.getJettySolrRunners().size();
     for (int i = 0; i < missingServers; i++) {
       cluster.startJettySolrRunner();
