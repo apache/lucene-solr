@@ -203,6 +203,8 @@ Improvements
 
 * SOLR-12739: Make autoscaling policy based replica placement the default strategy for placing replicas. (shalin)
 
+* SOLR-12806: use autoscaling policies with strict=false to prioritize node allocation (noble)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

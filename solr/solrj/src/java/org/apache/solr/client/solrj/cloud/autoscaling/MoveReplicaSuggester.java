@@ -49,6 +49,7 @@ public class MoveReplicaSuggester extends Suggester {
     List<Pair<ReplicaInfo, Row>> validReplicas = getValidReplicas(true, true, -1);
     validReplicas.sort(leaderLast);
     for (int i1 = 0; i1 < validReplicas.size(); i1++) {
+      lastBestDeviation = null;
       Pair<ReplicaInfo, Row> fromReplica = validReplicas.get(i1);
       Row fromRow = fromReplica.second();
       ReplicaInfo ri = fromReplica.first();
@@ -62,8 +63,7 @@ public class MoveReplicaSuggester extends Suggester {
         if (!isNodeSuitableForReplicaAddition(targetRow)) continue;
         targetRow = targetRow.addReplica(ri.getCollection(), ri.getShard(), ri.getType(), strict); // add replica to target first
         Row srcRowModified = targetRow.session.getNode(fromRow.node).removeReplica(ri.getCollection(), ri.getShard(), ri.getType());//then remove replica from source node
-        double[] deviation = new double[1];
-        List<Violation> errs = testChangedMatrix(strict, srcRowModified.session, deviation);
+        List<Violation> errs = testChangedMatrix(strict, srcRowModified.session);
         srcRowModified.session.applyRules(); // now resort the nodes with the new values
         Policy.Session tmpSession = srcRowModified.session;
 
