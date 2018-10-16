@@ -170,11 +170,13 @@ public class TestUtilizeNode extends SolrCloudTestCase {
       .getClusterState().getCollectionOrNull(collectionName, false);
     
     List<Replica> results = new ArrayList<>(3);
-    collection.forEachReplica((s, replica) -> {
+    if (collection != null) {
+      collection.forEachReplica((s, replica) -> {
         if (replica.getNodeName().equals(jettyNode.getNodeName())) {
-        results.add(replica);
-      }
-    });
+          results.add(replica);
+        }
+      });
+    }
     return results;
   }
 
