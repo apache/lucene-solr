@@ -52,7 +52,6 @@ public class ShardParamsTest extends LuceneTestCase
   public void testDistribSinglePass() { assertEquals(ShardParams.DISTRIB_SINGLE_PASS, "distrib.singlePass"); }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testGetShardsTolerantAsBool() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     // shards.tolerant param is not set; default should be false
