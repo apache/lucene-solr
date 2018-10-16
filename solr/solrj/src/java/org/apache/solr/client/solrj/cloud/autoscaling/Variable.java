@@ -59,8 +59,22 @@ public interface Variable {
 
   void getSuggestions(Suggestion.Ctx ctx);
 
+  /**When a non constant value is used in a variable, the actual value needs to be computed at the runtime
+   *
+   */
   default Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
     return condition.val;
+  }
+
+  default void computeDeviation(Policy.Session session, double[] deviations, ReplicaCount replicaCount, SealedClause sealedClause) {
+    if (deviations != null) {
+      Number actualCount = replicaCount.getVal(sealedClause.type);
+      if(sealedClause.replica.val instanceof RangeVal) {
+        Double realDelta = ((RangeVal) sealedClause.replica.val).realDelta(actualCount.doubleValue());
+        realDelta = sealedClause.isReplicaZero() ? -1 * realDelta : realDelta;
+        deviations[0] += Math.abs(realDelta);
+      }
+    }
   }
 
   int compareViolation(Violation v1, Violation v2);
@@ -326,6 +340,12 @@ public interface Variable {
     public Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
       return impl.computeValue(session, condition, collection, shard, node);
     }
+
+    @Override
+    public void computeDeviation(Policy.Session session, double[] deviations, ReplicaCount replicaCount, SealedClause sealedClause) {
+      impl.computeDeviation(session, deviations, replicaCount, sealedClause);
+    }
+
 
     @Override
     public boolean match(Object inputVal, Operand op, Object val, String name, Row row) {

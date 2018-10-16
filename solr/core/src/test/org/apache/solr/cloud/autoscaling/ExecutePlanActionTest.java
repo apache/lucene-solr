@@ -88,6 +88,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     cluster.waitForAllNodes(30);
     loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    cluster.deleteAllCollections();
   }
 
   @Test

@@ -342,6 +342,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient = cluster.getSolrClient().getById(collectionName, String.valueOf(id));
+      assertNotNull(docCloudClient);
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet:slice.getReplicas()) {
         try (HttpSolrClient client = getHttpSolrClient(rGet.getCoreUrl(), httpClient)) {

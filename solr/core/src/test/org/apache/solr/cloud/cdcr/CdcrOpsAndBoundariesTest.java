@@ -63,6 +63,7 @@ public class CdcrOpsAndBoundariesTest extends SolrTestCaseJ4 {
    * Check the ops statistics.
    */
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testOps() throws Exception {
     createCollections();
 

@@ -35,6 +35,7 @@ import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -43,6 +44,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -475,6 +477,13 @@ public class ReplicaMutator {
               for (Slice subShardSlice : subShardSlices) {
                 propMap.put(subShardSlice.getName(), Slice.State.RECOVERY_FAILED.toString());
               }
+            }
+            TestInjection.injectSplitLatch();
+            try {
+              SplitShardCmd.unlockForSplit(cloudManager, collection.getName(), parentSliceName);
+            } catch (Exception e) {
+              log.warn("Failed to unlock shard after " + (isLeaderSame ? "" : "un") + "successful split: {} / {}",
+                  collection.getName(), parentSliceName);
             }
             ZkNodeProps m = new ZkNodeProps(propMap);
             return new SliceMutator(cloudManager).updateShardState(prevState, m).collection;

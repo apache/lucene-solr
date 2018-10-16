@@ -1154,6 +1154,37 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).doubleValue() == 500.23D);
   }
 
+  @Test
+  public void testPairSort() throws Exception {
+    String cexpr = "let(a=array(4.5, 7.7, 2.1, 2.1, 6.3)," +
+        "               b=array(1, 2, 3, 4, 5)," +
+        "               c=pairSort(a, b))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("c");
+    assertEquals(out.size(), 2);
+    List<Number> row1 = out.get(0);
+    assertEquals(row1.get(0).doubleValue(), 2.1, 0);
+    assertEquals(row1.get(1).doubleValue(), 2.1, 0);
+    assertEquals(row1.get(2).doubleValue(), 4.5, 0);
+    assertEquals(row1.get(3).doubleValue(), 6.3, 0);
+    assertEquals(row1.get(4).doubleValue(), 7.7, 0);
+
+    List<Number> row2 = out.get(1);
+    assertEquals(row2.get(0).doubleValue(), 3, 0);
+    assertEquals(row2.get(1).doubleValue(), 4, 0);
+    assertEquals(row2.get(2).doubleValue(), 1, 0);
+    assertEquals(row2.get(3).doubleValue(), 5, 0);
+    assertEquals(row2.get(4).doubleValue(), 2, 0);
+  }
+
 
   @Test
   public void testOnes() throws Exception {
@@ -1687,6 +1718,105 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     double sd = tuples.get(0).getDouble("return-value");
     assertEquals(sd, 3.5, 0.0);
+  }
+
+  @Test
+  public void testSelectWithSequentialEvaluators() throws Exception {
+    String cexpr = "select(list(tuple(a=add(1,2)), tuple(a=add(2,2))), " +
+        "                  add(1, a) as blah, " +
+        "                  add(1, blah) as blah1)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 2);
+    Tuple tuple0 = tuples.get(0);
+    assertEquals(tuple0.getLong("blah").longValue(), 4L);
+    assertEquals(tuple0.getLong("blah1").longValue(), 5L);
+
+    Tuple tuple1 = tuples.get(1);
+    assertEquals(tuple1.getLong("blah").longValue(), 5L);
+    assertEquals(tuple1.getLong("blah1").longValue(), 6L);
+  }
+
+  @Test
+  public void testLetWithNumericVariables() throws Exception {
+    String cexpr = "let(echo=true, a=1.88888, b=8888888888.98)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+    Tuple tuple = tuples.get(0);
+    assertEquals(tuple.getDouble("a").doubleValue(), 1.88888, 0.0);
+    assertEquals(tuple.getDouble("b").doubleValue(), 8888888888.98, 0.0);
+  }
+
+  @Test
+  public void testLog10() throws Exception {
+    String cexpr = "let(echo=true, a=array(10, 20, 30), b=log10(a), c=log10(30.5))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+    Tuple tuple = tuples.get(0);
+    List<Number> logs = (List<Number>)tuple.get("b");
+    assertEquals(logs.size(), 3);
+    assertEquals(logs.get(0).doubleValue(), 1, 0.0);
+    assertEquals(logs.get(1).doubleValue(), 1.3010299956639813, 0.0);
+    assertEquals(logs.get(2).doubleValue(), 1.4771212547196624, 0.0);
+
+    Number log = (Number)tuple.get("c");
+    assertEquals(log.doubleValue(), 1.4842998393467859, 0.0);
+  }
+
+  @Test
+  public void testPow() throws Exception {
+    String cexpr = "let(echo=true, a=array(10, 20, 30), b=pow(a, 2), c=pow(2, a), d=pow(10, 3), e=pow(a, array(1, 2, 3)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+    Tuple tuple = tuples.get(0);
+    List<Number> pows = (List<Number>)tuple.get("b");
+    assertEquals(pows.size(), 3);
+    assertEquals(pows.get(0).doubleValue(), 100, 0.0);
+    assertEquals(pows.get(1).doubleValue(), 400, 0.0);
+    assertEquals(pows.get(2).doubleValue(), 900, 0.0);
+
+    pows = (List<Number>)tuple.get("c");
+    assertEquals(pows.size(), 3);
+    assertEquals(pows.get(0).doubleValue(), 1024, 0.0);
+    assertEquals(pows.get(1).doubleValue(), 1048576, 0.0);
+    assertEquals(pows.get(2).doubleValue(), 1073741824, 0.0);
+
+    double p = tuple.getDouble("d");
+    assertEquals(p, 1000, 0.0);
+
+    pows = (List<Number>)tuple.get("e");
+    assertEquals(pows.size(), 3);
+    assertEquals(pows.get(0).doubleValue(), 10, 0.0);
+    assertEquals(pows.get(1).doubleValue(), 400, 0.0);
+    assertEquals(pows.get(2).doubleValue(), 27000, 0.0);
+
   }
 
   @Test

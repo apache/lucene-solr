@@ -130,7 +130,7 @@ public class PolicyHelper {
         if (coll != null) {
           for (String shardName : shardNames) {
             Replica ldr = coll.getLeader(shardName);
-            if (ldr != null) {
+            if (ldr != null && cloudManager.getClusterStateProvider().getLiveNodes().contains(ldr.getNodeName())) {
               Map<String, Map<String, List<ReplicaInfo>>> details = cloudManager.getNodeStateProvider().getReplicaInfo(ldr.getNodeName(),
                   Collections.singleton(FREEDISK.perReplicaValue));
               ReplicaInfo replicaInfo = details.getOrDefault(collName, emptyMap()).getOrDefault(shardName, singletonList(null)).get(0);

@@ -828,7 +828,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     //   - why aren't we just specifying all the buckets (and child buckets) chosen in phase#1 using "_p" ?
     //   - or at the very least, if the purpose of "_l" is to give other buckets a chance to "bubble up"
     //     in phase#2, then shouldn't a "_l" refinement requests still include the buckets choosen in
-    //     phase#1, and request that the shard fill them in in addition to returning it's own top buckets?
+    //     phase#1, and request that the shard fill them in in addition to returning its own top buckets?
     client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
                          + "processEmpty:true,"
                          + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, refine:true, facet:{"

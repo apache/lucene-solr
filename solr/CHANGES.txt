@@ -86,13 +86,13 @@ Upgrade Notes
 New Features
 ----------------------
 
-SOLR-12591: Expand the set of recognized date format patterns of schemaless mode to subsume those handled by the
+* SOLR-12591: Expand the set of recognized date format patterns of schemaless mode to subsume those handled by the
   "extract" contrib (Solr Cell / Tika).  This is primarily a change in configuration of the default configSet for more
   patterns, but also included enabling "lenient" parsing in ParseDateFieldUpdateProcessorFactory.  The default
   locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
 
-SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
+* SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
 Optimizations
 ----------------------
@@ -116,6 +116,10 @@ Other Changes
 
 * LUCENE-8513: SlowCompositeReaderWrapper now uses MultiTerms directly instead of MultiFields (David Smiley)
 
+* SOLR-11812: Remove backward compatibility of old LIR implementation in 8.0 (Cao Manh Dat)
+
+* SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy) 
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -138,6 +142,15 @@ Upgrade Notes
   ZK as well as written using the V2 set-obj-property syntax but it is deprecated and will be removed in Solr 9.
   We recommend that users change their API calls to use the new format going forward.
 
+* SOLR-12739: Autoscaling policy framework is now used as the default strategy to select the nodes on which
+  new replicas or replicas of new collections are created. Previously, the maxShardsPerNode parameter was not allowed
+  on collections when autoscaling policy was configured. Also if an autoscaling policy was configured then the default
+  was to set an unlimited maxShardsPerNode automatically. Now the maxShardsPerNode parameter is always
+  allowed during collection creation and maxShardsPerNode should be set correctly (if required) regardless of whether
+  autoscaling policies are in effect or not. The default value of maxShardsPerNode continues to be 1 as before. It can
+  be set to -1 during collection creation to fall back to the old behavior of unlimited maxShardsPerNode when using
+  autoscaling policy.
+
 New Features
 ----------------------
 
@@ -155,6 +168,11 @@ New Features
 * SOLR-12822: /autoscaling/suggestions to include suggestion to add-replica for lost replicas (noble)
 
 * SOLR-12815: Implement maxOps limit for IndexSizeTrigger. (ab)
+
+* SOLR-12843: Implement a MultiContentWriter in SolrJ to post multiple files/payload at once (noble)
+
+* SOLR-12780: Add support for Leaky ReLU and TanH activations in contrib/ltr NeuralNetworkModel class.
+  (Kamuela Lau, Christine Poerschke)
 
 Other Changes
 ----------------------
@@ -196,6 +214,10 @@ Bug Fixes
 * SOLR-12836: ZkController creates a cloud solr client with no connection or read timeouts. Now the http client
   created by the update shard handler is used instead. (shalin)
 
+* SOLR-12729: SplitShardCmd should lock the parent shard to prevent parallel splitting requests. (ab)
+
+* SOLR-12851: Improvements and fixes to let and select Streaming Expressions (Joel Bernstein)
+
 Improvements
 ----------------------
 
@@ -205,6 +227,10 @@ Improvements
 * SOLR-12782: UninvertingReader wrapping is now a bit more lightweight: Does not create FieldInfo for fields that
   can't be uninverted (saves mem) and can avoid wrapping the reader altogether if there's nothing to uninvert.
   IndexSchema.getUninversionMap refactored to getUninversionMapper and no longer merges FieldInfos. (David Smiley)
+
+* SOLR-12739: Make autoscaling policy based replica placement the default strategy for placing replicas. (shalin)
+
+* SOLR-12806: use autoscaling policies with strict=false to prioritize node allocation (noble)
 
 ==================  7.5.0 ==================
 
@@ -462,6 +488,8 @@ Bug Fixes
 * SOLR-12733: SolrMetricReporterTest failure (Erick Erickson, David Smiley)
 
 * SOLR-12765: Incorrect format of JMX cache stats. (Bojan Smid, ab)
+
+* SOLR-12749: timeseries() expression missing sum() results for empty buckets (Joel Bernstein)
 
 Optimizations
 ----------------------

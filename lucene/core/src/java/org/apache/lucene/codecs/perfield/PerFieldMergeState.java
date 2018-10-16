@@ -134,7 +134,7 @@ final class PerFieldMergeState {
           hasNorms |= fi.hasNorms();
           hasDocValues |= fi.getDocValuesType() != DocValuesType.NONE;
           hasPayloads |= fi.hasPayloads();
-          hasPointValues |= (fi.getPointDimensionCount() != 0);
+          hasPointValues |= (fi.getPointDataDimensionCount() != 0);
         }
       }
 

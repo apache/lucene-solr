@@ -23,12 +23,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -146,37 +142,4 @@ public class CloudUtil {
 
   }
 
-  /**
-   * <b>Note:</b> where possible, the {@link #usePolicyFramework(DocCollection, SolrCloudManager)} method should
-   * be used instead of this method
-   *
-   * @return true if autoscaling policy framework should be used for replica placement
-   */
-  public static boolean usePolicyFramework(SolrCloudManager cloudManager) throws IOException, InterruptedException {
-    Objects.requireNonNull(cloudManager, "The SolrCloudManager instance cannot be null");
-    return usePolicyFramework(Optional.empty(), cloudManager);
-  }
-
-  /**
-   * @return true if auto scaling policy framework should be used for replica placement
-   * for this collection, otherwise false
-   */
-  public static boolean usePolicyFramework(DocCollection collection, SolrCloudManager cloudManager)
-      throws IOException, InterruptedException {
-    Objects.requireNonNull(collection, "The DocCollection instance cannot be null");
-    Objects.requireNonNull(cloudManager, "The SolrCloudManager instance cannot be null");
-    return usePolicyFramework(Optional.of(collection), cloudManager);
-  }
-
-  private static boolean usePolicyFramework(Optional<DocCollection> collection, SolrCloudManager cloudManager) throws IOException, InterruptedException {
-    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-    // if no autoscaling configuration exists then obviously we cannot use the policy framework
-    if (autoScalingConfig.getPolicy().isEmpty()) return false;
-    // do custom preferences exist
-    if (!autoScalingConfig.getPolicy().isEmptyPreferences()) return true;
-    // does a cluster policy exist
-    if (!autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) return true;
-    // finally we check if the current collection has a policy
-    return !collection.isPresent() || collection.get().getPolicyName() != null;
-  }
 }

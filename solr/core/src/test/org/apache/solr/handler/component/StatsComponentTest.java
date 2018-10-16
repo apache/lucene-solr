@@ -1779,7 +1779,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test user input errors (split into it's own test to isolate ignored exceptions
+   * Test user input errors (split into its own test to isolate ignored exceptions)
    * @see #testCardinality 
    * @see #testHllOptions
    */

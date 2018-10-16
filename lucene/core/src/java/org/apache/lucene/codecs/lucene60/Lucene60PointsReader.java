@@ -124,7 +124,7 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
     if (fieldInfo == null) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" is unrecognized");
     }
-    if (fieldInfo.getPointDimensionCount() == 0) {
+    if (fieldInfo.getPointDataDimensionCount() == 0) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index point values");
     }
 

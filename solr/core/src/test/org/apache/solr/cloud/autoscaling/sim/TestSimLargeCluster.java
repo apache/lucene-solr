@@ -390,6 +390,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeLost() throws Exception {
     doTestNodeLost(waitForSeconds, 5000, 0);
   }
@@ -634,6 +635,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
 
   @Test
   //commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String collectionName = "testSearchRate";
