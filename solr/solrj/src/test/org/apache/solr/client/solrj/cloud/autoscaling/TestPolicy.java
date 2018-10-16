@@ -41,6 +41,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -2445,6 +2446,38 @@ public class TestPolicy extends SolrTestCaseJ4 {
     count.set(0);
     latestSession.matrix.get(1).forEachReplica(replicaInfo -> count.incrementAndGet());
     assertEquals(4, count.get());
+
+  }
+  public void testFreeDiskDeviation() throws IOException {
+    Map map = (Map) TestPolicy2.loadFromResource("testFreeDiskDeviation.json");
+    AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) map.get("config"));
+    SolrCloudManager scm = cloudManagerWithData(map);
+    Suggester suggester = cfg.getPolicy()
+        .createSession(scm)
+        .getSuggester(ADDREPLICA);
+
+    MapWriter v2Request = (MapWriter) ((V2RequestSupport) suggester
+        .hint(Hint.COLL_SHARD, new Pair<>("mycoll2", "shard1"))
+        .getSuggestion()
+        .setUseV2(true))
+        .getV2Request();
+    assertEquals("/c/mycoll2/shards", v2Request._get("path",null));
+    assertEquals("add-replica", v2Request._get("command[0]/key",null));
+    assertEquals("node1", v2Request._get("command/add-replica/node",null));
+
+
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA);
+    v2Request = (MapWriter) ((V2RequestSupport) suggester
+        .hint(Hint.COLL_SHARD, new Pair<>("mycoll2", "shard1"))
+        .getSuggestion()
+        .setUseV2(true))
+        .getV2Request();
+
+    assertEquals("/c/mycoll2/shards", v2Request._get("path",null));
+    assertEquals("add-replica", v2Request._get("command[0]/key",null));
+    assertEquals("node2", v2Request._get("command/add-replica/node",null));
+
 
   }
 

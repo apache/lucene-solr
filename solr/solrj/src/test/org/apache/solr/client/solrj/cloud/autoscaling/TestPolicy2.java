@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
@@ -40,10 +41,12 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
 
@@ -445,6 +448,22 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     assertEquals("add-replica", suggestions.get(0)._get("operation/command[0]/key",null));
     assertEquals("shard2", suggestions.get(0)._get("operation/command/add-replica/shard",null));
     assertEquals("NRT", suggestions.get(0)._get("operation/command/add-replica/type",null));
+
+  }
+
+  public void testCreateCollectionWithEmptyPolicy() throws IOException {
+    Map m = (Map) loadFromResource("testCreateCollectionWithEmptyPolicy.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig(new HashMap());
+    ///Users/noble/work/4solr/solr/core/src/test/org/apache/solr/handler/V2ApiIntegrationTest.java
+    //POSITIONS : [shard1:1[NRT] @127.0.0.1:49469_solr, shard1:2[NRT] @127.0.0.1:49469_solr]
+    List<ReplicaPosition> positions = PolicyHelper.getReplicaLocations("coll_new", autoScalingConfig, cloudManagerFromDiagnostics,
+        EMPTY_MAP, Collections.singletonList("shard1"), 2, 0, 0, null);
+
+    List<String> nodes = positions.stream().map(count -> count.node).collect(Collectors.toList());
+    assertTrue(nodes.contains("127.0.0.1:49469_solr"));
+    assertTrue(nodes.contains("127.0.0.1:49470_solr"));
+
 
   }
 
