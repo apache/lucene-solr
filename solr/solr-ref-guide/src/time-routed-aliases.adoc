@@ -60,6 +60,8 @@ TRUP first reads TRA configuration from the alias properties when it is initiali
 Each time a new collection is added, the oldest collections in the TRA are examined for possible deletion, if that has
     been configured.
 All this happens synchronously, potentially adding seconds to the update request and indexing latency.
+If `router.preemptiveCreateMath` is configured and if the document arrives within this window then it will occur
+asynchronously.
 
 Any other type of update like a commit or delete is routed by TRUP to all collections.
 Generally speaking, this is not a performance concern. When Solr receives a delete or commit wherein nothing is deleted
@@ -78,11 +80,10 @@ Some _potential_ areas for improvement that _are not implemented yet_ are:
 * Ways to automatically optimize (or reduce the resources of) older collections that aren't expected to receive more
   updates, and might have less search demand.
 
-* New collections ought to be created preemptively, as an option, to avoid delaying a document that does not yet have
-  a collection to go to.
-
 * CloudSolrClient could route documents to the correct collection based on a timestamp instead always picking the
   latest.
+
+* Compatibility with CDCR.
 
 == Limitations & Assumptions
 
