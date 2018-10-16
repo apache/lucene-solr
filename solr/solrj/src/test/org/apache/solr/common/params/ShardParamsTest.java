@@ -77,6 +77,6 @@ public class ShardParamsTest extends LuceneTestCase
     // values that aren't "requireZkConnected" or boolean should throw an exception
     params.set(ShardParams.SHARDS_TOLERANT, "bogusValue");
     Exception exception = expectThrows(SolrException.class, () -> ShardParams.getShardsTolerantAsBool(params));
-    assertTrue(exception.getMessage().startsWith("invalid boolean value: "));
+    assertTrue(exception.getMessage(), exception.getMessage().startsWith("invalid boolean value: "));
   }
 }
