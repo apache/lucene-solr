@@ -107,6 +107,21 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   }
 
   @Override
+  public void setup(Http2SolrClient client) {
+    final String basicAuthUser = defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
+    final String basicAuthPass = defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
+    if(basicAuthUser == null || basicAuthPass == null) {
+      throw new IllegalArgumentException("username & password must be specified with " + getClass().getName());
+    }
+
+    HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
+    authenticationStore.addAuthentication(new SolrBasicAuthentication(basicAuthUser, basicAuthPass));
+    client.getHttpClient().setAuthenticationStore(authenticationStore);
+    client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client.getHttpClient()));
+    client.getProtocolHandlers().put(new ProxyAuthenticationProtocolHandler(client.getHttpClient()));
+  }
+
+  @Override
   public SolrHttpClientBuilder getHttpClientBuilder(Optional<SolrHttpClientBuilder> optionalBuilder) {
     final String basicAuthUser = defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     final String basicAuthPass = defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
@@ -117,14 +132,6 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
     SolrHttpClientBuilder builder = optionalBuilder.isPresent() ?
         initHttpClientBuilder(optionalBuilder.get(), basicAuthUser, basicAuthPass)
         : initHttpClientBuilder(SolrHttpClientBuilder.create(), basicAuthUser, basicAuthPass);
-
-    HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
-    authenticationStore.addAuthentication(new SolrBasicAuthentication(basicAuthUser, basicAuthPass));
-    builder.setHttp2Configurator(http2Client -> {
-      http2Client.getHttpClient().setAuthenticationStore(authenticationStore);
-      http2Client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
-      http2Client.getProtocolHandlers().put(new ProxyAuthenticationProtocolHandler(http2Client.getHttpClient()));
-    });
     return builder;
   }
 

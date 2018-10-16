@@ -56,7 +56,7 @@ However this leads to several changes in configuration and authentication setup
 * {solr-javadocs}/solr-core/org/apache/solr/update/UpdateShardHandler.html[`UpdateShardHandler.maxConnections`] parameter is no longer being used
 * {solr-javadocs}/solr-core/org/apache/solr/handler/component/HttpShardHandler.html[`HttpShardHandlerFactory.maxConnections`] parameter is no longer being used
 *  Custom {solr-javadocs}/solr-core/org/apache/solr/security/AuthenticationPlugin.html[`AuthenticationPlugin`] must provide its own setup for
-   `Http2SolrClient` through
-   {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/SolrHttpClientBuilder.html[`SolrHttpClientBuilder.setHttp2Configurator`],
+   `Http2SolrClient` through implementing
+   {solr-javadocs}/solr-core/org/apache/solr/security/HttpClientBuilderPlugin.html[`HttpClientBuilderPlugin.setup`],
    if not internal requests can't be authenticated
 

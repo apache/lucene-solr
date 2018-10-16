@@ -228,10 +228,9 @@ public class Http2SolrClient extends SolrClient {
     setBasicAuthHeader(solrRequest, req);
     for (HttpListenerFactory factory : listenerFactory) {
       HttpListenerFactory.RequestResponseListener listener = factory.get();
-      //By calling onBegin here, we will make sure that SolrRequestInfo can be get the request from the same thread
-      listener.onBegin(req);
-      req.onComplete(listener);
       req.onRequestQueued(listener);
+      req.onRequestBegin(listener);
+      req.onComplete(listener);
     }
 
     try {

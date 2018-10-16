@@ -96,6 +96,68 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     return builder.isPresent() ? getBuilder(builder.get()) : getBuilder();
   }
 
+  @Override
+  public void setup(Http2SolrClient http2Client) {
+    HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
+    authenticationStore.addAuthentication(new Authentication() {
+      @Override
+      public boolean matches(String type, URI uri, String realm) {
+        return "Negotiate".equals(type);
+      }
+
+      @Override
+      public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context) {
+        String challenge = headerInfo.getBase64();
+        if (challenge == null) challenge = "";
+        byte[] input = java.util.Base64.getDecoder().decode(challenge);
+        byte[] token;
+        String authServer = request.getHost();
+        final GSSManager manager = GSSManager.getInstance();
+        try {
+          GSSName serverName = manager.createName("HTTP@" + authServer, GSSName.NT_HOSTBASED_SERVICE);
+          final GSSContext gssContext = createGSSContext(manager, new Oid(SPNEGO_OID), serverName, null);
+          if (input != null) {
+            token = gssContext.initSecContext(input, 0, input.length);
+          } else {
+            token = gssContext.initSecContext(new byte[] {}, 0, 0);
+          }
+        } catch (GSSException e) {
+          throw new IllegalArgumentException("Unable to init GSSContext", e);
+        }
+        return new Result() {
+          AtomicBoolean sentToken = new AtomicBoolean(false);
+          @Override
+          public URI getURI() {
+            // Since Kerberos is connection based authentication, sub-sequence requests won't need to resend the token in header
+            // by return null, the ProtocolHandler won't try to apply this result on sequence requests
+            return null;
+          }
+
+          @Override
+          public void apply(Request request) {
+            if (sentToken.get()) return;
+
+            final String tokenstr = java.util.Base64.getEncoder().encodeToString(token);
+            if (log.isDebugEnabled()) {
+              log.info("Sending response '" + tokenstr + "' back to the auth server");
+            }
+            request.header(headerInfo.getHeader().asString(), "Negotiate "+tokenstr);
+          }
+        };
+      }
+
+      private GSSContext createGSSContext(GSSManager manager, Oid oid, GSSName serverName, final GSSCredential gssCredential) throws GSSException {
+        // Get the credentials from the JAAS configuration rather than here
+        final GSSContext gssContext = manager.createContext(serverName.canonicalize(oid), oid, gssCredential,
+            GSSContext.DEFAULT_LIFETIME);
+        gssContext.requestMutualAuth(true);
+        return gssContext;
+      }
+    });
+    http2Client.getHttpClient().setAuthenticationStore(authenticationStore);
+    http2Client.getProtocolHandlers().put(new SolrWWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
+  }
+
   public SolrHttpClientBuilder getBuilder(SolrHttpClientBuilder builder) {
     if (System.getProperty(LOGIN_CONFIG_PROP) != null) {
       String configValue = System.getProperty(LOGIN_CONFIG_PROP);
@@ -152,68 +214,6 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
           return credentialsProvider;
         });
         HttpClientUtil.addRequestInterceptor(bufferedEntityInterceptor);
-
-        //setup for http2
-        builder.setHttp2Configurator(http2Client -> {
-          HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
-          authenticationStore.addAuthentication(new Authentication() {
-            @Override
-            public boolean matches(String type, URI uri, String realm) {
-              return "Negotiate".equals(type);
-            }
-
-            @Override
-            public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context) {
-              String challenge = headerInfo.getBase64();
-              if (challenge == null) challenge = "";
-              byte[] input = java.util.Base64.getDecoder().decode(challenge);
-              byte[] token;
-              String authServer = request.getHost();
-              final GSSManager manager = GSSManager.getInstance();
-              try {
-                GSSName serverName = manager.createName("HTTP@" + authServer, GSSName.NT_HOSTBASED_SERVICE);
-                final GSSContext gssContext = createGSSContext(manager, new Oid(SPNEGO_OID), serverName, null);
-                if (input != null) {
-                  token = gssContext.initSecContext(input, 0, input.length);
-                } else {
-                  token = gssContext.initSecContext(new byte[] {}, 0, 0);
-                }
-              } catch (GSSException e) {
-                throw new IllegalArgumentException("Unable to init GSSContext", e);
-              }
-              return new Result() {
-                AtomicBoolean sentToken = new AtomicBoolean(false);
-                @Override
-                public URI getURI() {
-                  // Since Kerberos is connection based authentication, sub-sequence requests won't need to resend the token in header
-                  // by return null, the ProtocolHandler won't try to apply this result on sequence requests
-                  return null;
-                }
-
-                @Override
-                public void apply(Request request) {
-                  if (sentToken.get()) return;
-
-                  final String tokenstr = java.util.Base64.getEncoder().encodeToString(token);
-                  if (log.isDebugEnabled()) {
-                    log.info("Sending response '" + tokenstr + "' back to the auth server");
-                  }
-                  request.header(headerInfo.getHeader().asString(), "Negotiate "+tokenstr);
-                }
-              };
-            }
-
-            private GSSContext createGSSContext(GSSManager manager, Oid oid, GSSName serverName, final GSSCredential gssCredential) throws GSSException {
-              // Get the credentials from the JAAS configuration rather than here
-              final GSSContext gssContext = manager.createContext(serverName.canonicalize(oid), oid, gssCredential,
-                  GSSContext.DEFAULT_LIFETIME);
-              gssContext.requestMutualAuth(true);
-              return gssContext;
-            }
-          });
-          http2Client.getHttpClient().setAuthenticationStore(authenticationStore);
-          http2Client.getProtocolHandlers().put(new SolrWWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
-        });
       }
     } else {
       log.warn("{} is configured without specifying system property '{}'",

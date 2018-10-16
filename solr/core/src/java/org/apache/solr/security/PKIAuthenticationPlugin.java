@@ -40,6 +40,7 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -226,20 +227,19 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   @Override
-  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
-    HttpClientUtil.addRequestInterceptor(interceptor);
+  public void setup(Http2SolrClient client) {
     final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
       @Override
       public void onQueued(Request request) {
         generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
-        if (log.isDebugEnabled()) {
-          log.debug("Add token {} for request {}", request.getHeaders().get(HEADER), request);
-        }
       }
     };
-    builder.setHttp2Configurator(client -> {
-      client.addListenerFactory(() -> listener);
-    });
+    client.addListenerFactory(() -> listener);
+  }
+
+  @Override
+  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
+    HttpClientUtil.addRequestInterceptor(interceptor);
     return builder;
   }
 

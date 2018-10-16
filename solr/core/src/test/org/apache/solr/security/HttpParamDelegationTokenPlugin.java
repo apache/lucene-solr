@@ -50,6 +50,7 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -147,18 +148,20 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
   }
 
   @Override
-  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
-    HttpClientUtil.addRequestInterceptor(interceptor);
-    builder = super.getHttpClientBuilder(builder);
+  public void setup(Http2SolrClient client) {
     final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
       @Override
       public void onQueued(Request request) {
         getPrincipal().ifPresent(usr -> request.header(INTERNAL_REQUEST_HEADER, usr));
       }
     };
-    builder.setHttp2Configurator(client -> {
-      client.addListenerFactory(() -> listener);
-    });
+    client.addListenerFactory(() -> listener);
+  }
+
+  @Override
+  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
+    HttpClientUtil.addRequestInterceptor(interceptor);
+    builder = super.getHttpClientBuilder(builder);
     return builder;
   }
 

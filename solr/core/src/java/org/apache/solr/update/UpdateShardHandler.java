@@ -40,6 +40,7 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
@@ -247,9 +248,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     return connectionTimeout;
   }
 
-  public void setSecurityBuilder(SolrHttpClientBuilder builder) {
-    if (builder != null) {
-      builder.applyHttp2Configurator(updateOnlyClient);
-    }
+  public void setSecurityBuilder(HttpClientBuilderPlugin builder) {
+    builder.setup(updateOnlyClient);
   }
 }

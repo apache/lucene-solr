@@ -195,6 +195,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   
   private static String initialRootLogLevel;
 
+  static {
+    // Set Conscrypt as default OpenSSLProvider for all clients
+    if (Security.getProvider("Conscrypt") == null) {
+      Security.insertProviderAt(new OpenSSLProvider(), 1);
+    }
+  }
+
   protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
     Properties props = new Properties();
     props.setProperty("name", corename);
@@ -284,11 +291,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
-
-    // Set Conscrypt as default OpenSSLProvider for all clients
-    if (Security.getProvider("Conscrypt") == null) {
-      Security.insertProviderAt(new OpenSSLProvider(), 1);
-    }
 
     sslConfig = buildSSLConfig();
     // based on randomized SSL config, set SchemaRegistryProvider appropriately

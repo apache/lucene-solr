@@ -55,6 +55,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
@@ -213,10 +214,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   @Override
-  public void setSecurityBuilder(SolrHttpClientBuilder securityBuilder) {
-    if (securityBuilder != null) {
-      securityBuilder.applyHttp2Configurator(defaultClient);
-    }
+  public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
+    clientBuilderPlugin.setup(defaultClient);
   }
 
   protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {

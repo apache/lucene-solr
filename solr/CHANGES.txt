@@ -81,7 +81,7 @@ Upgrade Notes
   are marked as deprecated, uses LBSolrClient.Req and LBSolrClient.Rsp instead.
 
 * SOLR-12644: Custom AuthenticationPlugin must provide its own setup for Http2SolrClient through
-  SolrHttpClientBuilder.setHttp2Configurator, if not internal requests can't be authenticated. (Cao Manh Dat)
+  implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated. (Cao Manh Dat)
 
 New Features
 ----------------------

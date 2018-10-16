@@ -68,7 +68,6 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
 
-@LogLevel("org.apache.solr.security=DEBUG;org.eclipse.jetty=DEBUG")
 public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 import java.util.Collections;
@@ -32,7 +33,7 @@ public abstract class ShardHandlerFactory {
 
   public abstract void close();
 
-  public void setSecurityBuilder(SolrHttpClientBuilder securityBuilder){};
+  public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin){};
 
   /**
    * Create a new ShardHandlerFactory instance
