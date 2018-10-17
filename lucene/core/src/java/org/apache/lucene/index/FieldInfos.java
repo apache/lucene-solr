@@ -126,6 +126,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
     values = Collections.unmodifiableCollection(Arrays.asList(valuesTemp.toArray(new FieldInfo[0])));
   }
 
+  public final static FieldInfos EMPTY = new FieldInfos(new FieldInfo[0]);
+
   /** Call this to get the (merged) FieldInfos for a
    *  composite reader.
    *  <p>
