@@ -53,12 +53,10 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -243,6 +241,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     return builder;
   }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
   private Optional<String> generateToken() {
     if (disabled()) return Optional.empty();
 
@@ -295,8 +294,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       generateToken().ifPresent(s -> httpRequest.setHeader(HEADER, myNodeName + " " + s));
     }
   }
-
-  @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
+  
   void setHeader(HttpRequest httpRequest) {
     generateToken().ifPresent(s -> httpRequest.setHeader(HEADER, myNodeName + " " + s));
   }

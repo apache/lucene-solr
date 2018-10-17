@@ -44,7 +44,6 @@ import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
-import org.eclipse.jetty.client.SolrProxyAuthenticationProtocolHandler;
 import org.eclipse.jetty.client.SolrWWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;

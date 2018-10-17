@@ -19,6 +19,7 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -48,7 +49,7 @@ public class SolrBasicAuthentication implements Authentication {
       @Override
       public URI getURI() {
         // cache result by host and port
-        return URI.create(String.format("%s://%s:%d", request.getScheme(), request.getHost(), request.getPort()));
+        return URI.create(String.format(Locale.ROOT, "%s://%s:%d", request.getScheme(), request.getHost(), request.getPort()));
       }
 
       @Override

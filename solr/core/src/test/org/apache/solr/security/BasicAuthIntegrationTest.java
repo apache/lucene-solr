@@ -58,7 +58,6 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrCLI;
 import org.junit.BeforeClass;
 import org.junit.Test;

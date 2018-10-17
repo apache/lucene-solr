@@ -93,7 +93,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 public class Http2SolrClient extends SolrClient {
   private static volatile SSLConfig defaultSSLConfig;
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
   private static final String DEFAULT_PATH = "/select";
@@ -172,11 +172,11 @@ public class Http2SolrClient extends SolrClient {
 
     HttpClientTransport transport;
     if (builder.useHttp1_1) {
-      LOG.debug("Create Http2SolrClient with HTTP/1.1 transport");
+      log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       transport = new HttpClientTransportOverHTTP(2);
       httpClient = new HttpClient(transport, sslContextFactory);
     } else {
-      LOG.debug("Create Http2SolrClient with HTTP/2 transport");
+      log.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new HttpClient(transport, sslContextFactory);
