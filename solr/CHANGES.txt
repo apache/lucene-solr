@@ -193,6 +193,8 @@ Bug Fixes
 
 * SOLR-12851: Improvements and fixes to let and select Streaming Expressions (Joel Bernstein)
 
+* SOLR-12874: Java 9+ GC Logging filesize parameter should use a unit.  (Tim Underwood via Uwe Schindler)
+
 Improvements
 ----------------------
 
