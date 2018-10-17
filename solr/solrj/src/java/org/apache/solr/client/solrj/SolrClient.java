@@ -141,6 +141,10 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Adds a single document
    *
+   * Many {@link SolrClient} implementations have drastically slower indexing performance when documents are added
+   * individually.  Document batching generally leads to better indexing performance and should be used whenever
+   * possible.
+   *
    * @param doc  the input document
    *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
@@ -229,6 +233,10 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * The bean is converted to a {@link SolrInputDocument} by the client's
    * {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder}
+   * <p>
+   * Many {@link SolrClient} implementations have drastically slower indexing performance when documents are added
+   * individually.  Document batching generally leads to better indexing performance and should be used whenever
+   * possible.
    *
    * @param collection to Solr collection to add documents to
    * @param obj  the input bean
@@ -435,6 +443,10 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
    * waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * <p>
+   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
+   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
+   * or rely on your core's/collection's 'autoCommit' settings.
    *
    * @param collection the Solr collection to send the commit to
    *
@@ -452,6 +464,10 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
    * waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * <p>
+   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
+   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
+   * or rely on your core's/collection's 'autoCommit' settings.
    *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
    *         from the server
@@ -465,6 +481,10 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
+   *
+   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
+   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
+   * or rely on your core's/collection's 'autoCommit' settings.
    *
    * @param collection the Solr collection to send the commit to
    * @param waitFlush  block until index changes are flushed to disk
@@ -487,6 +507,10 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
+   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
+   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
+   * or rely on your core's/collection's 'autoCommit' settings.
+   *
    * @param waitFlush  block until index changes are flushed to disk
    * @param waitSearcher  block until a new searcher is opened and registered as the
    *                      main query searcher, making the changes visible
@@ -503,6 +527,10 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
+   *
+   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
+   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
+   * or rely on your core's/collection's 'autoCommit' settings.
    *
    * @param collection the Solr collection to send the commit to
    * @param waitFlush  block until index changes are flushed to disk
@@ -526,6 +554,10 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
+   *
+   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
+   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
+   * or rely on your core's/collection's 'autoCommit' settings.
    *
    * @param waitFlush  block until index changes are flushed to disk
    * @param waitSearcher  block until a new searcher is opened and registered as the
@@ -670,6 +702,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Note that this is not a true rollback as in databases. Content you have previously
    * added may have been committed due to autoCommit, buffer full, other client performing
    * a commit etc.
+   * <p>
+   * Also note that rollbacks reset changes made by <i>all</i> clients.  Use this method carefully when multiple clients,
+   * or multithreaded clients are in use.
    *
    * @param collection the Solr collection to send the rollback to
    *
@@ -689,6 +724,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Note that this is not a true rollback as in databases. Content you have previously
    * added may have been committed due to autoCommit, buffer full, other client performing
    * a commit etc.
+   * <p>
+   * Also note that rollbacks reset changes made by <i>all</i> clients.  Use this method carefully when multiple clients,
+   * or multithreaded clients are in use.
    *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
    *         from the server
