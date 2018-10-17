@@ -86,6 +86,8 @@ Other Changes
 
 * SOLR-12835: Document statistics exposed by the Query Result Cache when maxRamMB is configured. (shalin)
 
+* SOLR-12423: Upgrade to Tika 1.19.1 when available (Tim Allison via Erick Erickson)
+
 Bug Fixes
 ----------------------
 
