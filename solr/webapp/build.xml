@@ -24,6 +24,7 @@
   <import file="../common-build.xml"/>
 
   <property name="exclude.from.webapp" value="*slf4j*,log4j-*,*javax.servlet*" />
+  <property name="exclude.from.sorlj" value="conscrypt-openjdk*,http2-common*,http2-hpack*,jetty-util*,jetty-http*,jetty-io*" />
   
   <!-- this module has no javadocs -->
   <target name="javadocs"/>
@@ -49,7 +50,7 @@
     <mkdir dir="${server.dir}/solr-webapp/webapp/WEB-INF/lib"/>
     <copy todir="${server.dir}/solr-webapp/webapp/WEB-INF/lib">
       <fileset dir="${common-solr.dir}/core/lib" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
-      <fileset dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
+      <fileset dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.webapp},${exclude.from.sorlj},${common.classpath.excludes}"/>
       <fileset dir="${lucene-libs}" excludes="${exclude.from.webapp},${common.classpath.excludes}" />
       <fileset dir="${dist}" excludes="${exclude.from.webapp},${common.classpath.excludes}">
         <include name="solr-solrj-${version}.jar" />
