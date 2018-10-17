@@ -98,6 +98,8 @@ Other Changes
 
 * SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy)
 
+* SOLR-12881: Remove unneeded import statements (Peter Somogyi)
+
 ==================  7.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

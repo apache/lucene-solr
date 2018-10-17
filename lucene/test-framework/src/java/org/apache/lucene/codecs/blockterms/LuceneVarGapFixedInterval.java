@@ -23,13 +23,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.blockterms.BlockTermsReader;
-import org.apache.lucene.codecs.blockterms.BlockTermsWriter;
-import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexWriter;
-import org.apache.lucene.codecs.blockterms.TermsIndexReaderBase;
-import org.apache.lucene.codecs.blockterms.TermsIndexWriterBase;
-import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexReader;
-import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexWriter;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat; // javadocs
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;

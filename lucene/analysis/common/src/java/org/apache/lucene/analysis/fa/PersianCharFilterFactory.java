@@ -21,7 +21,6 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.fa.PersianCharFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
