@@ -22,7 +22,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.18
+Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
@@ -162,6 +162,8 @@ Other Changes
   (ab, shalin)
 
 * SOLR-12835: Document statistics exposed by the Query Result Cache when maxRamMB is configured. (shalin)
+
+* SOLR-12423: Upgrade to Tika 1.19.1 when available (Tim Allison via Erick Erickson)
 
 Bug Fixes
 ----------------------
