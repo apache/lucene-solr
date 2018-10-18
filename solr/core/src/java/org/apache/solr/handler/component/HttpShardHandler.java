@@ -56,6 +56,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -154,6 +155,8 @@ public class HttpShardHandler extends ShardHandler {
 
         QueryRequest req = makeQueryRequest(sreq, params, shard);
         req.setMethod(SolrRequest.METHOD.POST);
+        SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+        if (requestInfo != null) req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
 
         // no need to set the response parser as binary is the default
         // req.setResponseParser(new BinaryResponseParser());

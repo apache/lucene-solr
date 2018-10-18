@@ -72,6 +72,8 @@ Optimizations
 
 * SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition. (ab)
 
+* SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis (janhoy) 
+
 Other Changes
 ----------------------
 
