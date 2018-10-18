@@ -183,6 +183,9 @@ Optimizations
 * LUCENE-8511: MultiFields.getIndexedFields is now optimized; does not call getMergedFieldInfos
   (David Smiley)
 
+* LUCENE-8507: TopFieldCollector can now update the minimum competitive score if the primary sort
+  is by relevancy and the total hit count is not required. (Jim Ferenczi)
+
 ======================= Lucene 7.6.0 =======================
 
 Build:
