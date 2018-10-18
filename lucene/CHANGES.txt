@@ -208,6 +208,9 @@ Other:
 * LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
   via Alan Woodward)
 
+* LUCENE-8533: Fix Javadocs of DataInput#readVInt(): Negative numbers are
+  supported, but should be avoided. (Vladimir Dolzhenko via Uwe Schindler)
+
 ======================= Lucene 7.5.1 =======================
 
 Bug Fixes:
