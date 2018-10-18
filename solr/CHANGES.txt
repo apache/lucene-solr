@@ -67,12 +67,14 @@ New Features
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
+* SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis.
+  The BasicAuth plugin now supports a new parameter 'forwardCredentials', and when set to 'true',
+  user's BasicAuth credentials will be used instead of PKI for client initiated internode requests. (janhoy) 
+
 Optimizations
 ----------------------
 
 * SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition. (ab)
-
-* SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis (janhoy) 
 
 Other Changes
 ----------------------
