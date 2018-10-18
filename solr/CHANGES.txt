@@ -132,6 +132,9 @@ Improvements
 
 * SOLR-12806: use autoscaling policies with strict=false to prioritize node allocation (noble)
 
+* SOLR-10981: Support for stream.url or stream.file pointing to gzipped data.  It's detected by either a content
+  encoding header or file extension. (Andrew Lundgren via David Smiley, Jan Høydahl)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
