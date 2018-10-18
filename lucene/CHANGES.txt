@@ -186,6 +186,10 @@ Optimizations
 * LUCENE-8507: TopFieldCollector can now update the minimum competitive score if the primary sort
   is by relevancy and the total hit count is not required. (Jim Ferenczi)
 
+Build:
+
+* LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
+
 ======================= Lucene 7.6.0 =======================
 
 Build:
