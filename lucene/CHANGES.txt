@@ -123,6 +123,10 @@ Changes in Runtime Behavior
 * LUCENE-8505: IndexWriter#addIndices will now fail if the target index is sorted but
   the candidate is not. (Jim Ferenczi)
 
+* LUCENE-8535: Highlighter and FVH doesn't support ToParent and ToChildBlockJoinQuery out of the
+  box anymore. In order to highlight on Block-Join Queries a custom WeightedSpanTermExtractor / FieldQuery
+  should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshiran)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
