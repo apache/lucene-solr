@@ -55,7 +55,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
@@ -1507,7 +1507,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
       final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
-        Terms terms = MultiFields.getTerms(topLevelReader, toField);
+        Terms terms = MultiTerms.getTerms(topLevelReader, toField);
         if (terms != null) {
           PostingsEnum postingsEnum = null;
           SortedSet<BytesRef> joinValues = new TreeSet<>();
@@ -1674,7 +1674,7 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
         for (RandomDoc otherSideDoc : otherMatchingDocs) {
-          PostingsEnum postingsEnum = MultiFields.getTermDocsEnum(topLevelReader, "id", new BytesRef(otherSideDoc.id), 0);
+          PostingsEnum postingsEnum = MultiTerms.getTermPostingsEnum(topLevelReader, "id", new BytesRef(otherSideDoc.id), 0);
           assert postingsEnum != null;
           int doc = postingsEnum.nextDoc();
           expectedResult.set(doc);

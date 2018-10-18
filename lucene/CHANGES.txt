@@ -127,6 +127,12 @@ Changes in Runtime Behavior
   box anymore. In order to highlight on Block-Join Queries a custom WeightedSpanTermExtractor / FieldQuery
   should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshiran)
 
+* LUCENE-7875: Moved MultiFields static methods out of the class.  getLiveDocs is now
+  in MultiBits which is now public.  getMergedFieldInfos and getIndexedFields are now in
+  FieldInfos.  getTerms is now in MultiTerms.  getTermPositionsEnum and getTermDocsEnum
+  were collapsed and renamed to just getTermPostingsEnum and moved to MultiTerms.
+  (David Smiley)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on

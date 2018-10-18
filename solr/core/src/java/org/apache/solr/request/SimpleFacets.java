@@ -40,8 +40,8 @@ import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiPostingsEnum;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -954,7 +954,7 @@ public class SimpleFacets {
       prefixTermBytes = new BytesRef(indexedPrefix);
     }
 
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), field);
+    Terms terms = MultiTerms.getTerms(searcher.getIndexReader(), field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;
