@@ -37,7 +37,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FutureArrays;
 
 /**
  * Base LatLonShape Query class providing common query logic for
@@ -78,41 +77,7 @@ abstract class LatLonShapeQuery extends Query {
   /** relates a range of triangles (internal node) to the query */
   protected Relation relateRangeToQuery(byte[] minTriangle, byte[] maxTriangle) {
     // compute bounding box of internal node
-    int minXOfs = 0;
-    int minYOfs = 0;
-    int maxXOfs = 0;
-    int maxYOfs = 0;
-    for (int d = 1; d < 3; ++d) {
-      // check minX
-      int aOfs = (minXOfs * 2 * LatLonPoint.BYTES) + LatLonPoint.BYTES;
-      int bOfs = (d * 2 * LatLonPoint.BYTES) + LatLonPoint.BYTES;
-      if (FutureArrays.compareUnsigned(minTriangle, bOfs, bOfs + LatLonPoint.BYTES, minTriangle, aOfs, aOfs + LatLonPoint.BYTES) < 0) {
-        minXOfs = d;
-      }
-      // check maxX
-      aOfs = (maxXOfs * 2 * LatLonPoint.BYTES) + LatLonPoint.BYTES;
-      if (FutureArrays.compareUnsigned(maxTriangle, bOfs, bOfs + LatLonPoint.BYTES, maxTriangle, aOfs, aOfs + LatLonPoint.BYTES) > 0) {
-        maxXOfs = d;
-      }
-      // check minY
-      aOfs = minYOfs * 2 * LatLonPoint.BYTES;
-      bOfs = d * 2 * LatLonPoint.BYTES;
-      if (FutureArrays.compareUnsigned(minTriangle, bOfs, bOfs + LatLonPoint.BYTES, minTriangle, aOfs, aOfs + LatLonPoint.BYTES) < 0) {
-        minYOfs = d;
-      }
-      // check maxY
-      aOfs = maxYOfs * 2 * LatLonPoint.BYTES;
-      if (FutureArrays.compareUnsigned(maxTriangle, bOfs, bOfs + LatLonPoint.BYTES, maxTriangle, aOfs, aOfs + LatLonPoint.BYTES) > 0) {
-        maxYOfs = d;
-      }
-    }
-    minXOfs = (minXOfs * 2 * LatLonPoint.BYTES) + LatLonPoint.BYTES;
-    maxXOfs = (maxXOfs * 2 * LatLonPoint.BYTES) + LatLonPoint.BYTES;
-    minYOfs *= 2 * LatLonPoint.BYTES;
-    maxYOfs *= 2 * LatLonPoint.BYTES;
-
-    Relation r = relateRangeBBoxToQuery(minXOfs, minYOfs, minTriangle, maxXOfs, maxYOfs, maxTriangle);
-
+    Relation r = relateRangeBBoxToQuery(LatLonShape.BYTES, 0, minTriangle, 3 * LatLonShape.BYTES, 2 * LatLonShape.BYTES, maxTriangle);
     if (queryRelation == QueryRelation.DISJOINT) {
       return transposeRelation(r);
     }

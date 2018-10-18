@@ -17,6 +17,7 @@
 package org.apache.lucene.geo;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.geo.GeoUtils.WindingOrder;
@@ -819,13 +820,17 @@ final public class Tessellator {
     }
 
     /** compare nodes by y then x */
-    public int compare(Node other) {
-      if (this.getLat() > other.getLat()) {
+    public int compareLat(Node other) {
+      return compare(this.getLat(), this.getLon(), other.getLat(), other.getLon());
+    }
+
+    public int compare(double aX, double aY, double bX, double bY) {
+      if (aX > bX) {
         return 1;
-      } else if (this.getLat() == other.getLat()) {
-        if (this.getLon() > other.getLon()) {
+      } else if (aX == bX) {
+        if (aY > bY) {
           return 1;
-        } else if (this.getLon() == other.getLon()) {
+        } else if (aY == bY) {
           return 0;
         }
       }
@@ -850,32 +855,12 @@ final public class Tessellator {
 
   /** Triangle in the tessellated mesh */
   public final static class Triangle {
-    Node[] vertex = new Node[3];
+    Node[] vertex;
 
     protected Triangle(Node a, Node b, Node c) {
+      this.vertex = new Node[] {a, b, c};
       // sort nodes by morton value
-      Node tA = a;
-      Node tB = b;
-      Node tC = c;
-      Node temp;
-      if (a.compare(b) > 0) {
-        temp = tA;
-        tA = tB;
-        tB = temp;
-      }
-      if (b.compare(c) > 0) {
-        temp = tB;
-        tB = tC;
-        tC = temp;
-      }
-      if (a.compare(b) > 0) {
-        temp = tA;
-        tA = tB;
-        tB = temp;
-      }
-      this.vertex[0] = tA;
-      this.vertex[1] = tB;
-      this.vertex[2] = tC;
+      Arrays.sort(this.vertex, (x, y) -> x.compareLat(y));
     }
 
     /** get quantized x value for the given vertex */

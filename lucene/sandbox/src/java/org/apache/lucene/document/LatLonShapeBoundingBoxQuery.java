@@ -24,6 +24,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
 
+import static org.apache.lucene.document.LatLonShape.BYTES;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
@@ -52,32 +53,32 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     if (minLon > maxLon) {
       throw new IllegalArgumentException("dateline crossing bounding box queries are not supported for [" + field + "]");
     }
-    this.bbox = new byte[4 * LatLonPoint.BYTES];
+    this.bbox = new byte[4 * LatLonShape.BYTES];
     this.minX = encodeLongitudeCeil(minLon);
     this.maxX = encodeLongitude(maxLon);
     this.minY = encodeLatitudeCeil(minLat);
     this.maxY = encodeLatitude(maxLat);
-    NumericUtils.intToSortableBytes(this.minY, this.bbox, 0);
-    NumericUtils.intToSortableBytes(this.minX, this.bbox, LatLonPoint.BYTES);
-    NumericUtils.intToSortableBytes(this.maxY, this.bbox, 2 * LatLonPoint.BYTES);
-    NumericUtils.intToSortableBytes(this.maxX, this.bbox, 3 * LatLonPoint.BYTES);
+    LatLonShape.encodeTriangleBoxVal(this.minY, bbox, 0);
+    LatLonShape.encodeTriangleBoxVal(this.minX, bbox, BYTES);
+    LatLonShape.encodeTriangleBoxVal(this.maxY, bbox, 2 * BYTES);
+    LatLonShape.encodeTriangleBoxVal(this.maxX, bbox, 3 * BYTES);
   }
 
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     // check bounding box (DISJOINT)
-    if (FutureArrays.compareUnsigned(minTriangle, minXOffset, minXOffset + LatLonPoint.BYTES, bbox, 3 * LatLonPoint.BYTES, 4 * LatLonPoint.BYTES) > 0 ||
-        FutureArrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + LatLonPoint.BYTES, bbox, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES) < 0 ||
-        FutureArrays.compareUnsigned(minTriangle, minYOffset, minYOffset + LatLonPoint.BYTES, bbox, 2 * LatLonPoint.BYTES, 3 * LatLonPoint.BYTES) > 0 ||
-        FutureArrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + LatLonPoint.BYTES, bbox, 0, LatLonPoint.BYTES) < 0) {
+    if (FutureArrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
+        FutureArrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
+        FutureArrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
+        FutureArrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0) {
       return Relation.CELL_OUTSIDE_QUERY;
     }
 
-    if (FutureArrays.compareUnsigned(minTriangle, minXOffset, minXOffset + LatLonPoint.BYTES, bbox, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES) > 0 &&
-        FutureArrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + LatLonPoint.BYTES, bbox, 3 * LatLonPoint.BYTES, 4 * LatLonPoint.BYTES) < 0 &&
-        FutureArrays.compareUnsigned(minTriangle, minYOffset, minYOffset + LatLonPoint.BYTES, bbox, 0, LatLonPoint.BYTES) > 0 &&
-        FutureArrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + LatLonPoint.BYTES, bbox, 2 * LatLonPoint.BYTES, 2 * LatLonPoint.BYTES) < 0) {
+    if (FutureArrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+        FutureArrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+        FutureArrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
+        FutureArrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
       return Relation.CELL_INSIDE_QUERY;
     }
     return Relation.CELL_CROSSES_QUERY;
@@ -86,26 +87,36 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
   /** returns true if the query matches the encoded triangle */
   @Override
   protected boolean queryMatches(byte[] t) {
+    long a = NumericUtils.sortableBytesToLong(t, 4 * LatLonShape.BYTES);
+    long b = NumericUtils.sortableBytesToLong(t, 5 * LatLonShape.BYTES);
+    long c = NumericUtils.sortableBytesToLong(t, 6 * LatLonShape.BYTES);
+
+    int aX = (int)((a >>> 32) & 0x00000000FFFFFFFFL);
+    int bX = (int)((b >>> 32) & 0x00000000FFFFFFFFL);
+    int cX = (int)((c >>> 32) & 0x00000000FFFFFFFFL);
+    int aY = (int)(a & 0x00000000FFFFFFFFL);
+    int bY = (int)(b & 0x00000000FFFFFFFFL);
+    int cY = (int)(c & 0x00000000FFFFFFFFL);
+
     if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
-      return queryContains(t, 0) && queryContains(t, 1) && queryContains(t, 2);
+      return queryContains(aX, aY) && queryContains(bX, bY) && queryContains(cX, cY);
     }
-    return queryIntersects(t);
+    return queryMatches(aX, aY, bX, bY, cX, cY);
   }
 
-  /** returns true if the query intersects the encoded triangle */
-  protected boolean queryIntersects(byte[] t) {
+  private boolean queryContains(int x, int y) {
+    return (x < minX || x > maxX || y < minY || y > maxY) == false;
+  }
 
+  private boolean queryContains(int ax, int ay, int bx, int by, int cx, int cy) {
+    return queryContains(ax, ay) || queryContains(bx, by) || queryContains(cx, cy);
+  }
+
+  protected boolean queryMatches(int aX, int aY, int bX, int bY, int cX, int cY) {
     // 1. query contains any triangle points
-    if (queryContains(t, 0) || queryContains(t, 1) || queryContains(t, 2)) {
+    if (queryContains(aX, aY, bX, bY, cX, cY)) {
       return true;
     }
-
-    int aY = NumericUtils.sortableBytesToInt(t, 0);
-    int aX = NumericUtils.sortableBytesToInt(t, LatLonPoint.BYTES);
-    int bY = NumericUtils.sortableBytesToInt(t, 2 * LatLonPoint.BYTES);
-    int bX = NumericUtils.sortableBytesToInt(t, 3 * LatLonPoint.BYTES);
-    int cY = NumericUtils.sortableBytesToInt(t, 4 * LatLonPoint.BYTES);
-    int cX = NumericUtils.sortableBytesToInt(t, 5 * LatLonPoint.BYTES);
 
     int tMinX = StrictMath.min(StrictMath.min(aX, bX), cX);
     int tMaxX = StrictMath.max(StrictMath.max(aX, bX), cX);
@@ -162,20 +173,6 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
       return true;
     }
     return false;
-  }
-
-  /** returns true if the query contains the triangle vertex */
-  private boolean queryContains(byte[] t, int point) {
-    final int yIdx = 2 * LatLonPoint.BYTES * point;
-    final int xIdx = yIdx + LatLonPoint.BYTES;
-
-    if (FutureArrays.compareUnsigned(t, yIdx, xIdx, bbox, 0, LatLonPoint.BYTES) < 0 ||                     //minY
-        FutureArrays.compareUnsigned(t, yIdx, xIdx, bbox, 2 * LatLonPoint.BYTES, 3 * LatLonPoint.BYTES) > 0 ||  //maxY
-        FutureArrays.compareUnsigned(t, xIdx, xIdx + LatLonPoint.BYTES, bbox, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES) < 0 || // minX
-        FutureArrays.compareUnsigned(t, xIdx, xIdx + LatLonPoint.BYTES, bbox, 3 * LatLonPoint.BYTES, bbox.length) > 0) {
-      return false;
-    }
-    return true;
   }
 
   /** returns true if the query intersects the provided triangle (in encoded space) */

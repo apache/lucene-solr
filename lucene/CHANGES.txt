@@ -30,6 +30,12 @@ New Features
   may be used to determine how to split the inner nodes, and dimensions N+1 to D
   are ignored and stored as data dimensions at the leaves. (Nick Knize)
 
+Improvements:
+
+* LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the
+  first 4 are index dimensions defining the bounding box of the Triangle and the
+  remaining 3 data dimensions define the vertices of the triangle. (Nick Knize)
+
 Other:
 
 * LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
