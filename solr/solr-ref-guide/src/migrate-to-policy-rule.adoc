@@ -18,7 +18,8 @@
 
 Replica placement rules (legacy) are deprecated in favor of the new policy and preferences syntax (new). This document helps you to migrate your existing replica placement rules to the new syntax.
 
-Every rule in the legacy framework can be expressed in the new syntax. Please refer to <<solrcloud-autoscaling-policy-preferences.adoc ,Autoscaling Policy & Preferences>> document for more details.
+
+Every rule in the legacy framework can be expressed in the new syntax. Please refer to <<solrcloud-autoscaling-policy-preferences.adoc#cluster-preferences-specification,Cluster Preferences Specification>> document for more details.
 
 
 The following is the legacy syntax for a rule that limits maximum one replica for each shard in any Solr node
@@ -34,9 +35,9 @@ The equivalent new syntax is
 {"replica":"<2","node":"#ANY","shard":"#EACH"}
 ----
 
-The new policy rules have to be created separately using an API call  <<solrcloud-autoscaling-api.adoc#Create and Modify Cluster Policies, See examples>>
+The new policy rules have to be created separately using an API call  <<solrcloud-autoscaling-api.adoc#cluster-specific-policies, See examples>>
 
-
+[[rule-operators1]]
 == Rule Operators
 
 All the following operators can be directly used in the new policy syntax and they mean the same.
@@ -46,6 +47,7 @@ All the following operators can be directly used in the new policy syntax and th
 * *less than (<)*: `tag:<x` means tag value less than ‘x’. x must be a number
 * *not equal (!)*: `tag:!x` means tag value MUST NOT be equal to ‘x’. The equals check is performed on String value
 
+[[fuzzy-operator1]]
 === Fuzzy Operator (~)
 There is no `~` operator in the new syntax. Please use the attribute `"strict":false` instead
 
@@ -55,7 +57,7 @@ example:
 {"replica":"<2","node":"#ANY","shard":"#EACH", "strict": false}
 ----
 
-
+[[tag-names1]]
 == Tag names
 
 Tag values are provided by the framework and these tags mean the same the new syntax as well
@@ -70,11 +72,12 @@ Tag values are provided by the framework and these tags mean the same the new sy
 * *ip_1, ip_2, ip_3, ip_4*: These are ip fragments for each node. For example, in a host with ip `192.168.1.2`, `ip_1 = 2`, `ip_2 =1`, `ip_3 = 168` and` ip_4 = 192`
 * *sysprop.\{PROPERTY_NAME}*: These are values available from system properties. `sysprop.key` means a value that is passed to the node as `-Dkey=keyValue` during the node startup. It is possible to use rules like `sysprop.key:expectedVal,shard:*`
 
+[[snitches1]]
 == Snitches
 There is no equivalent for a snitch in the new policy framework
 
 == Porting existing Replica placement rules
-
+[[keep-less-than-2-replicas]]
 === Keep less than 2 replicas (at most 1 replica) of this collection on any node
 
 For this rule, we define the `replica` condition with operators for "less than 2", and use a pre-defined tag named `node` to define nodes with any name.
@@ -92,6 +95,7 @@ replica:<2,node:*
 ----
 {"replica":"<2","node":"#ANY"}
 ----
+[[keep-less-than-2-replicas--per-shard]]
 === For a given shard, keep less than 2 replicas on any node
 
 For this rule, we use the `shard` condition to define any shard, the `replica` condition with operators for "less than 2", and finally a pre-defined tag named `node` to define nodes with any name.
@@ -109,6 +113,8 @@ shard:*,replica:<2,node:*
 ----
 {"replica":"<2","shard":"#EACH", "node":"#ANY"}
 ----
+
+[[all-replicas-on-shard-730]]
 === Assign all replicas in shard1 to rack 730
 
 This rule limits the `shard` condition to 'shard1', but any number of replicas. We're also referencing a custom tag named `rack`. Before defining this rule, we will need to configure a custom Snitch which provides values for the tag `rack`.
@@ -129,7 +135,7 @@ shard:shard1,replica:*,rack:730
 
 Please note that all your nodes must be started with a system property `-Drack=<rack-number>`
 
-
+[[less-than-5-cores]]
 === Create replicas in nodes with less than 5 cores only
 
 This rule uses the `replica` condition to define any number of replicas, but adds a pre-defined tag named `core` and uses operators for "less than 5".
@@ -147,7 +153,7 @@ cores:<5
 ----
 {"cores":"<5", "node":"#ANY"}
 ----
-
+[[do-not-create-on-host]]
 === Do not create any replicas in host 192.45.67.3
 
 *legacy:*
@@ -164,7 +170,7 @@ host:!192.45.67.3
 {"replica": 0, "host":"192.45.67.3"}
 ----
 
-
+[[defining-rules1]]
 == Defining Rules
 
 Rules are always defined in along with the collection in the legacy system. The new syntax allows you to specify rules globally as well as on a <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, per collection basis>>

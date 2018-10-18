@@ -387,7 +387,7 @@ We can remove all cluster preferences by setting preferences to an empty list.
   "set-cluster-preferences": []
 }
 ----
-
+[[cluster-specific-policies]]
 === Create and Modify Cluster Policies
 
 Cluster policies are set using the `set-cluster-policy` command.

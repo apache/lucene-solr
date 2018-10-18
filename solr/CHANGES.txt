@@ -22,7 +22,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.18
+Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
@@ -190,6 +190,8 @@ Other Changes
 
 * SOLR-12835: Document statistics exposed by the Query Result Cache when maxRamMB is configured. (shalin)
 
+* SOLR-12423: Upgrade to Tika 1.19.1 when available (Tim Allison via Erick Erickson)
+
 Bug Fixes
 ----------------------
 
@@ -217,6 +219,8 @@ Bug Fixes
 * SOLR-12729: SplitShardCmd should lock the parent shard to prevent parallel splitting requests. (ab)
 
 * SOLR-12851: Improvements and fixes to let and select Streaming Expressions (Joel Bernstein)
+
+* SOLR-12874: Java 9+ GC Logging filesize parameter should use a unit.  (Tim Underwood via Uwe Schindler)
 
 Improvements
 ----------------------
