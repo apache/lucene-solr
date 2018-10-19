@@ -24,7 +24,7 @@
 
 Solr 8 is a major new release of Solr which introduces new features and a number of other changes that may impact your existing installation.
 
-== Upgrade Planning
+== Solr 8 Upgrade Planning
 
 Due to the introduction of LIR redesign since Solr 7.3 (SOLR-11702) and the removing of old LIR implementation in Solr 8.
 Rolling updates are not possible unless all nodes must be on Solr 7.3 or higher. If not updates can be lost.
