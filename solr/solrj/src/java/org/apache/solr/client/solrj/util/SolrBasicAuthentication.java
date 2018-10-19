@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.eclipse.jetty.client;
+package org.apache.solr.client.solrj.util;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;

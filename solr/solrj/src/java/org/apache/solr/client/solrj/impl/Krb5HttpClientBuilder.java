@@ -44,7 +44,7 @@ import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
-import org.eclipse.jetty.client.SolrWWWAuthenticationProtocolHandler;
+import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -137,9 +137,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
             if (sentToken.get()) return;
 
             final String tokenstr = java.util.Base64.getEncoder().encodeToString(token);
-            if (log.isDebugEnabled()) {
-              log.info("Sending response '" + tokenstr + "' back to the auth server");
-            }
+            log.info("Sending response with token:{} back to the auth server", tokenstr);
             request.header(headerInfo.getHeader().asString(), "Negotiate "+tokenstr);
           }
         };
@@ -154,7 +152,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
       }
     });
     http2Client.getHttpClient().setAuthenticationStore(authenticationStore);
-    http2Client.getProtocolHandlers().put(new SolrWWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
+    http2Client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
   }
 
   public SolrHttpClientBuilder getBuilder(SolrHttpClientBuilder builder) {

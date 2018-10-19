@@ -36,7 +36,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
 import org.eclipse.jetty.client.ProxyAuthenticationProtocolHandler;
-import org.eclipse.jetty.client.SolrBasicAuthentication;
+import org.apache.solr.client.solrj.util.SolrBasicAuthentication;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 
 /**
