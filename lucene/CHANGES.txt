@@ -22,6 +22,10 @@ Bug fixes:
 * LUCENE-8522: throw InvalidShapeException when constructing a polygon and
   all points are coplanar. (Ignacio Vera)
 
+* LUCENE-8531: QueryBuilder#analyzeGraphPhrase now creates one phrase query per finite strings
+  in the graph if the slop is greater than 0. Span queries cannot be used in this case because
+  they don't handle slop the same way than phrase queries. (Steve Rowe, Uwe Schindler, Jim Ferenczi)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
