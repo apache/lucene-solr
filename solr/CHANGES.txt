@@ -65,6 +65,8 @@ New Features
   locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
 
+* SOLR-12879: MinHash query parser that builds queries providing a measure of Jaccard similarity
+
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
 Optimizations
