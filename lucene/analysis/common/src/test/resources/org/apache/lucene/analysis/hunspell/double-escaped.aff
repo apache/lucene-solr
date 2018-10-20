@@ -1,0 +1,5 @@
+SET UTF-8
+
+SFX X Y 1
+SFX X   ar         o          [^\-]ar
+

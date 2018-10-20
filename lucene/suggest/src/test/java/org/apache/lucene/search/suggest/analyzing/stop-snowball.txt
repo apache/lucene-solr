@@ -1,0 +1,10 @@
+ | This is a file in snowball format, empty lines are ignored, '|' is a comment
+ | Additionally, multiple words can be on the same line, allowing stopwords to be
+ | arranged in tables (useful in some languages where they might inflect)
+
+ | fictitious table below
+
+|third person singular
+|Subject Object Possessive Reflexive
+he       him    his        himself| masculine
+she      her    hers       herself| feminine

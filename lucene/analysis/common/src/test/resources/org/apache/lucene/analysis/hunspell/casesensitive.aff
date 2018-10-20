@@ -1,0 +1,16 @@
+SET UTF-8
+
+PFX A Y 1
+PFX A 0 good . +good
+
+PFX B Y 1
+PFX B 0 Good . +Good
+
+PFX C Y 1
+PFX C 0 GOOD . +GOOD
+
+SFX X Y 1
+SFX X 0 s . +s
+
+SFX Y Y 1
+SFX Y 0 S . +S

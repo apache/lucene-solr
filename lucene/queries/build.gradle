@@ -1,0 +1,8 @@
+apply plugin: 'java'
+
+dependencies {
+	compile project(':lucene:core')
+	
+	testCompile project(':lucene:test-framework')
+	testCompile project(':lucene:expressions')
+}    

@@ -1,0 +1,144 @@
+#
+# Tests for norwegian Bokmål light stemmer
+# It should tackle nouns, adjectives, genitiv and some general endings
+#
+# Nouns masculine
+bil	bil
+bilen	bil
+biler	bil
+bilene	bil
+bilens	bil
+bilenes	bil
+sekretæren	sekretær
+sekretær	sekretær
+sekretærene	sekretær
+kaker	kak
+kaken	kak
+kakene	kak
+kakenes	kak
+bibliotekar	bibliotekar
+bibliotekarer	bibliotekar
+bibliotekaren	bibliotekar
+bibliotekarens	bibliotekar
+bibliotekarene	bibliotekar
+bibliotekarenes	bibliotekar
+# Nouns feminine
+veske	vesk
+veska	vesk
+vesken	vesk
+veskene	vesk
+veskas	vesk
+# Nouns neutral
+huset	hus
+husene	hus
+husets	hus
+hus	hus
+huset	hus
+husene	hus
+husenes	hus
+flagg	flagg
+flagga	flagg
+flaggene	flagg
+flaggets	flagg
+flaggenes	flagg
+politi	politi
+politiet	politi
+politiets	politi
+politienes	politi
+# General endings
+god	god
+godhet	god
+godheten	god
+forelskelse	forelsk
+forelsket	forelsk
+forelskelsen	forelsk
+forelske	forelsk
+kristen	krist
+kristendom	kristen
+kristendommen	kristendomm
+kristendommens	kristendomm
+fattig	fattig
+fattigdom	fattig
+fattigdommen	fattigdomm
+fattigdommens	fattigdomm
+# -het (see http://no.wiktionary.org/wiki/Kategori:Ord_som_ender_p%C3%A5_%C2%AB-het%C2%BB)
+hemmelig	hemmelig
+hemmelighet	hemmelig
+hemmelighets	hemmelig
+hemmeligheter	hemmelig
+hemmeligheten	hemmelig
+hemmelighetens	hemmelig
+kjærlig	kjærlig
+kjærlighet	kjærlig
+kjærligheter	kjærlig
+kjærligheten	kjærlig
+forlegen	forleg
+forlegenhet	forlegen
+forlegenheten	forlegen
+forlegenhetens	forlegen
+tvetydig	tvetydig
+tvetydighet	tvetydig
+tvetydigheter	tvetydig
+tvetydigheten	tvetydig
+tvetydighetens	tvetydig
+virkelig	virkelig
+virkelighet	virkelig
+virkeligheten	virkelig
+virkelighetens	virkelig
+# Adjectives
+billig	billig
+billigere	billig
+billigst	billig
+billige	billig
+frisk	frisk
+friskere	frisk
+friskest	frisk
+syk	syk
+sykere	syk
+sykest	syk
+#########################################
+# Words that should not be stemmed
+#
+# Irregular masculine nouns (not supposed to be handled correctly)
+# Fetched from http://no.wiktionary.org/wiki/Kategori:Substantiv_i_norsk_med_uregelrett_flertallsb%C3%B8yning
+vaffel	vaffel
+vafler	vafl
+vaflene	vafl
+tittel	tittel
+titler	titl
+titlene	titl
+kam	kam
+kammer	kamm
+kammene	kamm
+kamrene	kamr
+# Irregular feminine nouns, not handled
+ku	ku
+ku	ku
+kyr	kyr
+kuer	kuer
+kyrne	kyrn
+kuene	kuen
+datter	datt
+døtre	døtr
+døtrene	døtr
+# Other words that should not be touched
+abc	abc
+123	123
+Jens	Jens
+# Adjectives
+billig	billig
+billigere	billig
+billigst	billig
+billige	billig
+frisk	frisk
+friskere	frisk
+friskest	frisk
+# Irregular adjectives that should not be stemmed
+god	god
+bedre	bedr
+best	best
+# Verbs, should not be stemmed
+føle	føl
+følte	føl
+følt	følt
+

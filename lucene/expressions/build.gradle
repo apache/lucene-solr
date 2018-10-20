@@ -1,0 +1,10 @@
+apply plugin: 'java'
+
+dependencies {
+	compile project(':lucene:core')
+	compile library.antlr4_runtime
+	compile library.asm
+	compile library.asm_commons
+
+	testCompile project(':lucene:test-framework')
+}    

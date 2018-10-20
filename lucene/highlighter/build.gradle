@@ -1,0 +1,9 @@
+apply plugin: 'java'
+
+dependencies {
+    compile project(':lucene:core')
+    compile project(':lucene:queries')
+    compile project(':lucene:memory')
+    testCompile project(':lucene:test-framework')
+    testCompile project(':lucene:analysis:common')
+}

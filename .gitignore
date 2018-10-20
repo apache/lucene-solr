@@ -1,4 +1,6 @@
 # .
+.DS_Store
+.gradle
 /eclipse-build
 /maven-build
 /classes

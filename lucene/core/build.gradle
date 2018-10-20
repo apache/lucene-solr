@@ -1,0 +1,9 @@
+apply plugin: 'java'
+
+group = 'org.apache.lucene'
+archivesBaseName = 'core'
+
+dependencies {
+    testCompile project(':lucene:codecs')
+    testCompile project(':lucene:test-framework')
+}

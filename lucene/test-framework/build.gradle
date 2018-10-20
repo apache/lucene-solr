@@ -1,0 +1,8 @@
+apply plugin: 'java'
+
+dependencies {
+	compile project(':lucene:core')
+	compile project(':lucene:codecs')
+	compile "junit:junit:4.10"
+	compile "com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.6.4"
+}    
