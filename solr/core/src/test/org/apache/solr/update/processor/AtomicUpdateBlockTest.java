@@ -77,17 +77,29 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     SolrInputDocument doc = sdoc("id", "1", "string_s", "root");
     addDoc(adoc(doc), "nested-rtg");
 
+    assertU(commit());
+
+    assertQ(req("q", "id:1", "fl", "*"),
+        "//*[@numFound='1']",
+        "//doc[1]/str[@name='id']=1"
+    );
+
     List<SolrInputDocument> docs = IntStream.range(10, 20).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "child")).collect(Collectors.toList());
     doc = sdoc("id", "1", "children", Collections.singletonMap("add", docs));
     addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
 
     assertU(commit());
 
-    assertJQ(req("q", "_root_:1"),
-        "/response/numFound==11");
 
-    assertJQ(req("q", "string_s:child", "fl", "*", "rows", "1000000"),
-        "/response/numFound==10");
+    assertQ(req("q", "_root_:1", "fl", "*", "rows", "11"),
+        "//*[@numFound='11']",
+        "*[count(//str[@name='_root_'][.='1'])=11]"
+    );
+
+    assertQ(req("q", "string_s:child", "fl", "*"),
+        "//*[@numFound='10']",
+        "*[count(//str[@name='string_s'][.='child'])=10]"
+    );
 
     // ensure updates work when block has more than 10 children
     for(int i = 10; i < 20; ++i) {
@@ -98,14 +110,13 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
       assertU(commit());
     }
 
-    assertJQ(req("q", "id:114", "fl", "*", "rows", "1000000"),
-        "/response/numFound==1");
+    assertQ(req("q", "string_s:grandChild", "fl", "*", "rows", "50"),
+        "//*[@numFound='50']",
+        "*[count(//str[@name='string_s'][.='grandChild'])=50]");
 
-    assertJQ(req("q", "string_s:grandChild", "fl", "*", "rows", "1000000"),
-        "/response/numFound==50");
-
-    assertJQ(req("q", "string_s:child", "fl", "*", "rows", "1000000"),
-        "/response/numFound==10");
+    assertQ(req("q", "string_s:child", "fl", "*"),
+        "//*[@numFound='10']",
+        "*[count(//str[@name='string_s'][.='child'])=10]");
   }
 
   @Test
