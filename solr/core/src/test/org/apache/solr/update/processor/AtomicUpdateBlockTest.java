@@ -450,7 +450,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAtomicUpdateNoRootField() throws Exception {
+  public void testAtomicUpdateDeleteNoRootField() throws Exception {
     SolrInputDocument doc = sdoc("id", "1",
         "cat_ss", new String[]{"aaa", "bbb"});
     addDoc(adoc(doc), "nested-rtg");

@@ -244,7 +244,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
-      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD);
+      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD, ShardParams._ROUTE_);
 
     CoreContainer cc = req.getCore().getCoreContainer();
 
@@ -674,7 +674,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (zkEnabled) {
       zkCheck();
-      nodes = setupRequest(cmd.getHashableId(), cmd.getSolrInputDocument());
+      nodes = setupRequest(cmd.getRouteFieldVal(), cmd.getSolrInputDocument());
     } else {
       isLeader = getNonZkLeaderAssumption(req);
     }
@@ -703,7 +703,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (zkEnabled && isLeader && !isSubShardLeader)  {
       DocCollection coll = zkController.getClusterState().getCollection(collection);
-      List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getHashableId(), cmd.getSolrInputDocument());
+      List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getRouteFieldVal(), cmd.getSolrInputDocument());
       // the list<node> will actually have only one element for an add request
       if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
@@ -713,7 +713,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
         cmdDistrib.distribAdd(cmd, subShardLeaders, params, true);
       }
-      final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getHashableId(), cmd.getSolrInputDocument());
+      final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll,
+          cmd.getRouteFieldVal(), cmd.getSolrInputDocument());
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -1831,7 +1832,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       zkCheck();
       if (cmd instanceof AddUpdateCommand) {
         AddUpdateCommand acmd = (AddUpdateCommand)cmd;
-        nodes = setupRequest(acmd.getHashableId(), acmd.getSolrInputDocument());
+        nodes = setupRequest(acmd.getRouteFieldVal(), acmd.getSolrInputDocument());
       } else if (cmd instanceof DeleteUpdateCommand) {
         DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
         nodes = setupRequest(dcmd.getId(), null);

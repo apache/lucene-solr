@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -275,6 +276,11 @@ public class AddUpdateCommand extends UpdateCommand {
 
   private void flattenAnonymous(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
     flattenAnonymous(unwrappedDocs, currentDoc, false);
+  }
+
+  public String getRouteFieldVal() {
+    final String routeParam = this.getReq().getParams().get(ShardParams._ROUTE_);
+    return routeParam != null? routeParam: this.getHashableId();
   }
 
   @Override
