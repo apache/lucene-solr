@@ -405,42 +405,42 @@ public class JavaBinCodec implements PushWriter {
 
   private final MapWriter.EntryWriter ew = new MapWriter.EntryWriter() {
     @Override
-    public MapWriter.EntryWriter put(String k, Object v) throws IOException {
+    public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
       writeExternString(k);
       JavaBinCodec.this.writeVal(v);
       return this;
     }
 
     @Override
-    public MapWriter.EntryWriter put(String k, int v) throws IOException {
+    public MapWriter.EntryWriter put(CharSequence k, int v) throws IOException {
       writeExternString(k);
       JavaBinCodec.this.writeInt(v);
       return this;
     }
 
     @Override
-    public MapWriter.EntryWriter put(String k, long v) throws IOException {
+    public MapWriter.EntryWriter put(CharSequence k, long v) throws IOException {
       writeExternString(k);
       JavaBinCodec.this.writeLong(v);
       return this;
     }
 
     @Override
-    public MapWriter.EntryWriter put(String k, float v) throws IOException {
+    public MapWriter.EntryWriter put(CharSequence k, float v) throws IOException {
       writeExternString(k);
       JavaBinCodec.this.writeFloat(v);
       return this;
     }
 
     @Override
-    public MapWriter.EntryWriter put(String k, double v) throws IOException {
+    public MapWriter.EntryWriter put(CharSequence k, double v) throws IOException {
       writeExternString(k);
       JavaBinCodec.this.writeDouble(v);
       return this;
     }
 
     @Override
-    public MapWriter.EntryWriter put(String k, boolean v) throws IOException {
+    public MapWriter.EntryWriter put(CharSequence k, boolean v) throws IOException {
       writeExternString(k);
       writeBoolean(v);
       return this;
@@ -1062,7 +1062,7 @@ public class JavaBinCodec implements PushWriter {
   private Map<String, Integer> stringsMap;
   private List<String> stringsList;
 
-  public void writeExternString(String s) throws IOException {
+  public void writeExternString(CharSequence s) throws IOException {
     if (s == null) {
       writeTag(NULL);
       return;
@@ -1073,7 +1073,7 @@ public class JavaBinCodec implements PushWriter {
     if (idx == 0) {
       writeStr(s);
       if (stringsMap == null) stringsMap = new HashMap<>();
-      stringsMap.put(s, ++stringsCount);
+      stringsMap.put(s.toString(), ++stringsCount);
     }
 
   }

@@ -124,8 +124,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           autoScalingConf.writeMap(new MapWriter.EntryWriter() {
 
             @Override
-            public MapWriter.EntryWriter put(String k, Object v) throws IOException {
-              rsp.getValues().add(k, v);
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              rsp.getValues().add(k.toString(), v);
               return this;
             }
           });

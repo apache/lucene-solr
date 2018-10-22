@@ -135,6 +135,8 @@ Improvements
 * SOLR-10981: Support for stream.url or stream.file pointing to gzipped data.  It's detected by either a content
   encoding header or file extension. (Andrew Lundgren via David Smiley, Jan Høydahl)
 
+* SOLR-12892: MapWriter to use CharSequence instead of String (noble)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

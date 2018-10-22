@@ -2661,8 +2661,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Set<String> writtenKeys = new HashSet<>();
     policy.writeMap(new MapWriter.EntryWriter() {
       @Override
-      public MapWriter.EntryWriter put(String k, Object v) throws IOException {
-        writtenKeys.add(k);
+      public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
+        writtenKeys.add(k.toString());
         return this;
       }
     });
@@ -2679,8 +2679,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals(policy.getClusterPreferences().size(), defaultPreferences.size());
     policy.writeMap(new MapWriter.EntryWriter() {
       @Override
-      public MapWriter.EntryWriter put(String k, Object v) throws IOException {
-        writtenKeys.add(k);
+      public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
+        writtenKeys.add(k.toString());
         return this;
       }
     });
