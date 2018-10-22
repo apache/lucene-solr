@@ -74,10 +74,15 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
 
 public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final int MIN_NUM_SUB_SHARDS = 2;
+  // This is an arbitrary number that seems reasonable at this time.
+  private static final int MAX_NUM_SUB_SHARDS = 8;
+  private static final int DEFAULT_NUM_SUB_SHARDS = 2;
 
   private final OverseerCollectionMessageHandler ocmh;
 
@@ -122,7 +127,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     // find the leader for the shard
-    Replica parentShardLeader = null;
+    Replica parentShardLeader;
     try {
       parentShardLeader = zkStateReader.getLeaderRetry(collectionName, slice.get(), 10000);
     } catch (InterruptedException e) {
@@ -326,7 +331,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           requestMap);
       t.stop();
 
-      log.debug("Index on shard: " + nodeName + " split into two successfully");
+      log.debug("Index on shard: {} split into {} successfully", nodeName, subShardNames.size());
 
       t = timings.sub("applyBufferedUpdates");
       // apply buffered updates on sub-shards
@@ -680,13 +685,13 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
                                 List<DocRouter.Range> subRanges, List<String> subSlices, List<String> subShardNames,
                                   boolean firstReplicaNrt) {
     String splitKey = message.getStr("split.key");
+    String rangesStr = message.getStr(CoreAdminParams.RANGES);
+
     DocRouter.Range range = parentSlice.getRange();
     if (range == null) {
       range = new PlainIdRouter().fullRange();
     }
     DocRouter router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
-
-    String rangesStr = message.getStr(CoreAdminParams.RANGES);
     if (rangesStr != null) {
       String[] ranges = rangesStr.split(",");
       if (ranges.length == 0 || ranges.length == 1) {
@@ -740,8 +745,14 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       }
     } else {
-      // todo: fixed to two partitions?
-      subRanges.addAll(router.partitionRange(2, range));
+      int numSubShards = message.getInt(NUM_SUB_SHARDS, DEFAULT_NUM_SUB_SHARDS);
+      log.info("{} set at: {}", NUM_SUB_SHARDS, numSubShards);
+
+      if(numSubShards < MIN_NUM_SUB_SHARDS || numSubShards > MAX_NUM_SUB_SHARDS)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "A shard can only be split into "+MIN_NUM_SUB_SHARDS+" to " + MAX_NUM_SUB_SHARDS
+            + " subshards in one split request. Provided "+NUM_SUB_SHARDS+"=" + numSubShards);
+      subRanges.addAll(router.partitionRange(numSubShards, range));
     }
 
     for (int i = 0; i < subRanges.size(); i++) {
