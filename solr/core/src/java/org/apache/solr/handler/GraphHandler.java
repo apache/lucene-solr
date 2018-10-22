@@ -116,8 +116,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       return;
     }
 
-    StreamContext context = new StreamContext();
-    context.setSolrClientCache(StreamHandler.clientCache);
+    StreamContext context = new StreamContext(StreamHandler.clientCache);
     context.put("core", this.coreName);
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);

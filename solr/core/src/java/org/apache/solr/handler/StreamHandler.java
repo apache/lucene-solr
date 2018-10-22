@@ -161,11 +161,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     int worker = params.getInt("workerID", 0);
     int numWorkers = params.getInt("numWorkers", 1);
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(clientCache);
     context.put("shards", getCollectionShards(params));
     context.workerID = worker;
     context.numWorkers = numWorkers;
-    context.setSolrClientCache(clientCache);
     context.setModelCache(modelCache);
     context.setObjectCache(objectCache);
     context.put("core", this.coreName);

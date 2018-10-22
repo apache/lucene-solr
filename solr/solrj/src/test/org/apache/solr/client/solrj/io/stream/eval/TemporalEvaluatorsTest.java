@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import org.apache.commons.collections.map.HashedMap;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
@@ -90,7 +91,7 @@ public class TemporalEvaluatorsTest {
 
     try {
       evaluator = factory.constructEvaluator("week()");
-      StreamContext streamContext = new StreamContext();
+      StreamContext streamContext = new StreamContext(new SolrClientCache());
       evaluator.setStreamContext(streamContext);
       assertTrue(false);
     } catch (IOException e) {
@@ -99,7 +100,7 @@ public class TemporalEvaluatorsTest {
 
     try {
       evaluator = factory.constructEvaluator("week(a, b)");
-      StreamContext streamContext = new StreamContext();
+      StreamContext streamContext = new StreamContext(new SolrClientCache());
       evaluator.setStreamContext(streamContext);
       assertTrue(false);
     } catch (IOException e) {
@@ -108,7 +109,7 @@ public class TemporalEvaluatorsTest {
 
     try {
       evaluator = factory.constructEvaluator("Week()");
-      StreamContext streamContext = new StreamContext();
+      StreamContext streamContext = new StreamContext(new SolrClientCache());
       evaluator.setStreamContext(streamContext);
       assertTrue(false);
     } catch (IOException e) {
@@ -125,7 +126,7 @@ public class TemporalEvaluatorsTest {
     try {
       values.clear();
       values.put("a", 12);
-      StreamContext streamContext = new StreamContext();
+      StreamContext streamContext = new StreamContext(new SolrClientCache());
       evaluator.setStreamContext(streamContext);
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
@@ -136,7 +137,7 @@ public class TemporalEvaluatorsTest {
     try {
       values.clear();
       values.put("a", "1995-12-31");
-      StreamContext streamContext = new StreamContext();
+      StreamContext streamContext = new StreamContext(new SolrClientCache());
       evaluator.setStreamContext(streamContext);
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
@@ -147,7 +148,7 @@ public class TemporalEvaluatorsTest {
     try {
       values.clear();
       values.put("a", "");
-      StreamContext streamContext = new StreamContext();
+      StreamContext streamContext = new StreamContext(new SolrClientCache());
       evaluator.setStreamContext(streamContext);
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
@@ -278,7 +279,7 @@ public class TemporalEvaluatorsTest {
 
   public void testFunction(String expression, Object value, Number expected) throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator(expression);
-    StreamContext streamContext = new StreamContext();
+    StreamContext streamContext = new StreamContext(new SolrClientCache());
     evaluator.setStreamContext(streamContext);
     values.clear();
     values.put("a", value);

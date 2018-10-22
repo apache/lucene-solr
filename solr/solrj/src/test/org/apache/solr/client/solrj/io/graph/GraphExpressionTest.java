@@ -121,9 +121,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = null;
     Set<String> paths = null;
     ShortestPathStream stream = null;
-    StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
-    context.setSolrClientCache(cache);
+    StreamContext context = new StreamContext(cache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -264,9 +263,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = null;
     Set<String> paths = null;
     GatherNodesStream stream = null;
-    StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
-    context.setSolrClientCache(cache);
+    StreamContext context = new StreamContext(cache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -319,8 +317,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
 
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
 
     stream.setStreamContext(context);
 
@@ -357,8 +354,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
     stream.setStreamContext(context);
     tuples = getTuples(stream);
     Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
@@ -375,8 +371,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
@@ -415,9 +410,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     List<Tuple> tuples = null;
     TupleStream stream = null;
-    StreamContext context = new StreamContext();
-    SolrClientCache cache = new SolrClientCache();
-    context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -450,8 +442,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     stream = factory.constructStream(expr2);
 
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    SolrClientCache cache = new SolrClientCache();
+    StreamContext context = new StreamContext(cache);
 
     stream.setStreamContext(context);
 
@@ -487,8 +479,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     stream = factory.constructStream(expr2);
 
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
 
     stream.setStreamContext(context);
 
@@ -530,9 +521,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     List<Tuple> tuples = null;
     TupleStream stream = null;
-    StreamContext context = new StreamContext();
-    SolrClientCache cache = new SolrClientCache();
-    context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -552,8 +540,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     stream = factory.constructStream(expr);
 
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    SolrClientCache cache = new SolrClientCache();
+    StreamContext context = new StreamContext(cache);
 
     stream.setStreamContext(context);
     tuples = getTuples(stream);
@@ -600,9 +588,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     List<Tuple> tuples = null;
     GatherNodesStream stream = null;
-    StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
-    context.setSolrClientCache(cache);
+    StreamContext context = new StreamContext(cache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -638,8 +625,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "scatter=\"branches, leaves\", trackTraversal=\"true\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);
@@ -676,8 +662,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "gather=\"to_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);
@@ -697,8 +682,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "gather=\"to_s\", scatter=\"branches, leaves\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);
@@ -725,8 +709,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "gather=\"to_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);
@@ -742,8 +725,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     String expr3 = "hashJoin("+expr2+", hashed="+expr2+", on=\"node\")";
 
     HashJoinStream hstream = (HashJoinStream)factory.constructStream(expr3);
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
     hstream.setStreamContext(context);
 
     tuples = getTuples(hstream);
@@ -768,8 +750,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "gather=\"to_s\", scatter=\"branches, leaves\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);
@@ -809,8 +790,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "gather=\"to_s\", scatter=\"branches, leaves\", trackTraversal=\"true\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
-    context = new StreamContext();
-    context.setSolrClientCache(cache);
+    context = new StreamContext(cache);
     stream.setStreamContext(context);
 
     tuples = getTuples(stream);

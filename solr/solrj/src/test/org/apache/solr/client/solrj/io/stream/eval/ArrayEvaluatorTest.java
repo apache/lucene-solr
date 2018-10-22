@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ArrayEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -47,7 +48,7 @@ public class ArrayEvaluatorTest extends LuceneTestCase {
   @Test
   public void arrayLongSortAscTest() throws IOException{
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=asc)");
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     evaluator.setStreamContext(context);
     Object result;
     
@@ -68,7 +69,7 @@ public class ArrayEvaluatorTest extends LuceneTestCase {
   @Test
   public void arrayLongSortDescTest() throws IOException{
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=desc)");
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     evaluator.setStreamContext(context);
     Object result;
     
@@ -89,7 +90,7 @@ public class ArrayEvaluatorTest extends LuceneTestCase {
   @Test
   public void arrayStringSortAscTest() throws IOException{
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=asc)");
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     evaluator.setStreamContext(context);
     Object result;
     
@@ -110,7 +111,7 @@ public class ArrayEvaluatorTest extends LuceneTestCase {
   @Test
   public void arrayStringSortDescTest() throws IOException{
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=desc)");
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     evaluator.setStreamContext(context);
     Object result;
     
@@ -131,7 +132,7 @@ public class ArrayEvaluatorTest extends LuceneTestCase {
   @Test
   public void arrayStringUnsortedTest() throws IOException{
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c)");
-    StreamContext context = new StreamContext();
+    StreamContext context = new StreamContext(new SolrClientCache());
     evaluator.setStreamContext(context);
     Object result;
     

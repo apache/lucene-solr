@@ -519,6 +519,14 @@ Optimizations
 Other Changes
 ----------------------
 
+* SOLR-12718: StreamContext ctor should always take a SolrClientCache (gezapeti)
+
+* SOLR-12361: Allow nested child documents to be in field values of a SolrInputDocument as an alternative to
+  add/get ChildDocuments off to the side.  The latter is now referred to as "anonymous" child documents as opposed to
+  "labelled" (by the field name).  Anonymous child docs might be deprecated in the future.
+  This is an internal change not yet plumbed into /update formats.
+  AddUpdateCommand and it's relationship with DirectUpdateHandler2 was reworked substantially. (Moshe Bla, David Smiley)
+
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
 
 * SOLR-12523: Improve error reporting and docs regarding Collection backup feature shared-fs requirement (janhoy)
