@@ -34,6 +34,9 @@ New Features
   may be used to determine how to split the inner nodes, and dimensions N+1 to D
   are ignored and stored as data dimensions at the leaves. (Nick Knize)
 
+* LUCENE-8538: Add a Simple WKT Shape Parser for creating Lucene Geometries (Polygon, Line,
+  Rectangle) from WKT format. (Nick Knize)
+
 Improvements:
 
 * LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the
