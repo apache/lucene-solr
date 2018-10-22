@@ -14,12 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -29,22 +33,21 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
-/**
- * @since 6.6.0
- */
-public class ListStream extends TupleStream implements Expressible {
+public class ParallelListStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
   private TupleStream[] streams;
   private TupleStream currentStream;
   private int streamIndex;
 
-  public ListStream(TupleStream... streams) throws IOException {
+  public ParallelListStream(TupleStream... streams) throws IOException {
     init(streams);
   }
 
-  public ListStream(StreamExpression expression, StreamFactory factory) throws IOException {
+  public ParallelListStream(StreamExpression expression, StreamFactory factory) throws IOException {
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
     TupleStream[] streams = new TupleStream[streamExpressions.size()];
     for(int idx = 0; idx < streamExpressions.size(); ++idx){
@@ -108,11 +111,6 @@ public class ListStream extends TupleStream implements Expressible {
       if (currentStream == null) {
         if (streamIndex < streams.length) {
           currentStream = streams[streamIndex];
-          // Set the stream to null in the array of streams once its been set to the current stream.
-          // This will remove the reference to the stream
-          // and should allow it to be garbage collected once it's no longer the current stream.
-          streams[streamIndex] = null;
-          currentStream.open();
         } else {
           HashMap map = new HashMap();
           map.put("EOF", true);
@@ -135,8 +133,63 @@ public class ListStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
+    openStreams();
+  }
 
+  private void openStreams() throws IOException {
+    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("ParallelListStream"));
+    try {
+      List<Future<StreamIndex>> futures = new ArrayList();
+      int i=0;
+      for (TupleStream tupleStream : streams) {
+        StreamOpener so = new StreamOpener(new StreamIndex(tupleStream, i++));
+        Future<StreamIndex> future = service.submit(so);
+        futures.add(future);
+      }
 
+      try {
+        for (Future<StreamIndex> f : futures) {
+          StreamIndex streamIndex = f.get();
+          this.streams[streamIndex.getIndex()] = streamIndex.getTupleStream();
+        }
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
+    } finally {
+      service.shutdown();
+    }
+  }
+
+  protected class StreamOpener implements Callable<StreamIndex> {
+
+    private StreamIndex streamIndex;
+
+    public StreamOpener(StreamIndex streamIndex) {
+      this.streamIndex = streamIndex;
+    }
+
+    public StreamIndex call() throws Exception {
+      streamIndex.getTupleStream().open();
+      return streamIndex;
+    }
+  }
+
+  protected class StreamIndex {
+    private TupleStream tupleStream;
+    private int index;
+
+    public StreamIndex(TupleStream tupleStream, int index) {
+      this.tupleStream = tupleStream;
+      this.index = index;
+    }
+
+    public int getIndex() {
+      return this.index;
+    }
+
+    public TupleStream getTupleStream() {
+      return this.tupleStream;
+    }
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
