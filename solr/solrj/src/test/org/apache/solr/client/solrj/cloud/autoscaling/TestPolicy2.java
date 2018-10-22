@@ -291,7 +291,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
         return new DelegatingClusterStateProvider(null) {
 
           @Override
-          public ClusterState getClusterState() throws IOException {
+          public ClusterState getClusterState() {
             return clusterState;
           }
 
@@ -309,7 +309,25 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     };
   }
 
-  public void testSysPropSuggestions() throws IOException {
+  public void testHostAttribute() {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testHostAttribute.json");
+    Map<String, Object> conf = (Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config");
+    Policy policy = new Policy(conf);
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    Policy.Session session = policy.createSession(cloudManagerFromDiagnostics);
+    List<Violation> violations = session.getViolations();
+    for (Violation violation : violations) {
+      assertEquals(1.0d, violation.replicaCountDelta.doubleValue(), 0.0001);
+    }
+    assertEquals(2, violations.size());
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig(conf), cloudManagerFromDiagnostics);
+    assertEquals(2, suggestions.size());
+    for (Suggester.SuggestionInfo suggestion : suggestions) {
+      assertTrue(ImmutableSet.of("127.0.0.219:63219_solr", "127.0.0.219:63229_solr").contains(
+          suggestion._get("operation/command/move-replica/targetNode", null)));
+    }
+  }
+  public void testSysPropSuggestions() {
 
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testSysPropSuggestions.json");
 
