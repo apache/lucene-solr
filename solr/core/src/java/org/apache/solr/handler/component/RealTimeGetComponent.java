@@ -653,7 +653,7 @@ public class RealTimeGetComponent extends SearchComponent
           Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, schema);
         }
-        ensureDocDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, resolveBlock ||
+        ensureDocFieldsDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, resolveBlock ||
             resolveChildren || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
         SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
         if((resolveChildren || resolveBlock) && schema.isUsableForChildDocs() && rootField!=null) {
@@ -674,7 +674,7 @@ public class RealTimeGetComponent extends SearchComponent
             blockDoc = toSolrDoc(sid, schema);
           } else {
             blockDoc = toSolrDoc(docFetcher.doc(rootDocId), schema);
-            ensureDocDecorated(onlyTheseNonStoredDVs, blockDoc, rootDocId, docFetcher, true);
+            ensureDocFieldsDecorated(onlyTheseNonStoredDVs, blockDoc, rootDocId, docFetcher, true);
           }
           childDocTransformer.transform(blockDoc, rootDocId);
           sid = toSolrInputDocument(blockDoc, schema);
@@ -694,11 +694,7 @@ public class RealTimeGetComponent extends SearchComponent
     return sid;
   }
 
-  private static void ensureDocDecorated(Set<String> onlyTheseNonStoredDVs, SolrDocumentBase doc, int docid, SolrDocumentFetcher docFetcher) throws IOException {
-    ensureDocDecorated(onlyTheseNonStoredDVs, doc, docid, docFetcher, false);
-  }
-
-  private static void ensureDocDecorated(Set<String> onlyTheseNonStoredDVs, SolrDocumentBase doc, int docid, SolrDocumentFetcher docFetcher, boolean resolveNestedFields) throws IOException {
+  private static void ensureDocFieldsDecorated(Set<String> onlyTheseNonStoredDVs, SolrDocumentBase doc, int docid, SolrDocumentFetcher docFetcher, boolean resolveNestedFields) throws IOException {
     if (onlyTheseNonStoredDVs != null) {
       docFetcher.decorateDocValueFields(doc, docid, onlyTheseNonStoredDVs);
     } else {

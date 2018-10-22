@@ -103,7 +103,6 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
     // ensure updates work when block has more than 10 children
     for(int i = 10; i < 20; ++i) {
-      System.out.println("indexing " + i);
       docs = IntStream.range(i * 10, (i * 10) + 5).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild")).collect(Collectors.toList());
       doc = sdoc("id", String.valueOf(i), "grandChildren", Collections.singletonMap("add", docs));
       addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));

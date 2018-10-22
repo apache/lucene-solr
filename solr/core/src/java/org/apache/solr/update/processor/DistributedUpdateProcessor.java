@@ -1407,50 +1407,51 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     final boolean isNestedSchema = req.getSchema().isUsableForChildDocs();
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
-    SolrInputDocument blockDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
+    SolrInputDocument nestedDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
         false, null, true, true, true);
 
-    if (blockDoc == null) {
+    if (nestedDoc == null) {
       if (versionOnUpdate > 0) {
         // could just let the optimistic locking throw the error
         throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + cmd.getPrintableId());
       }
     } else {
-      blockDoc.remove(CommonParams.VERSION_FIELD);
+      nestedDoc.remove(CommonParams.VERSION_FIELD);
     }
 
 
     SolrInputDocument mergedDoc;
-    if(idField == null || blockDoc == null) {
+    if(idField == null || nestedDoc == null) {
       // create a new doc by default if an old one wasn't found
       mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
     } else {
       if(isNestedSchema && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
-          blockDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) && !id.utf8ToString().equals(blockDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
+          nestedDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) &&
+          !sdoc.getField(idField.getName()).getFirstValue().toString().equals((String) nestedDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
         SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
             false, null, true, false, true);
         String docPath = (String) oldDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
         List<String> docPaths = StrUtils.splitSmart(docPath, '/');
         Pair<String, Integer> subPath = getPathAndIndexFromNestPath(docPaths.remove(0));
-        SolrInputField replaceDoc = blockDoc.getField(subPath.getLeft());
+        SolrInputField sifToReplace = nestedDoc.getField(subPath.getLeft());
         for(String subPathString: docPaths) {
-          SolrInputDocument currDoc = (SolrInputDocument) ((List)replaceDoc.getValues()).get(subPath.getRight());
+          SolrInputDocument currDoc = (SolrInputDocument) ((List)sifToReplace.getValues()).get(subPath.getRight());
           subPath = getPathAndIndexFromNestPath(subPathString);
-          replaceDoc = currDoc.getField(subPath.getLeft());
+          sifToReplace = currDoc.getField(subPath.getLeft());
         }
-        final boolean wasArray = replaceDoc.getValue() instanceof Collection;
-        List vals = (List) replaceDoc.getValues();
-        int index = getDocIndexFromCollection(oldDoc, vals);
+        final boolean wasArray = sifToReplace.getValue() instanceof Collection;
+        List sifToReplaceValues = (List) sifToReplace.getValues();
+        int index = getDocIndexFromCollection(oldDoc, sifToReplaceValues);
         if(index == -1) {
-          vals.add(docMerger.merge(sdoc, oldDoc));
+          sifToReplaceValues.add(docMerger.merge(sdoc, oldDoc));
         } else {
-          vals.set(index, docMerger.merge(sdoc, oldDoc));
+          sifToReplaceValues.set(index, docMerger.merge(sdoc, oldDoc));
         }
-        replaceDoc.setValue(!wasArray && vals.size() <= 1? vals.iterator().next(): vals);
-        mergedDoc = blockDoc;
+        sifToReplace.setValue(!wasArray && sifToReplaceValues.size() <= 1? sifToReplaceValues.iterator().next(): sifToReplaceValues);
+        mergedDoc = nestedDoc;
         // TODO: replace current doc in block with the merged doc
       } else {
-        mergedDoc = docMerger.merge(sdoc, blockDoc);
+        mergedDoc = docMerger.merge(sdoc, nestedDoc);
       }
     }
     cmd.solrDoc = mergedDoc;
