@@ -92,6 +92,8 @@ New Features
   locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
 
+* SOLR-12879: MinHash query parser that builds queries providing a measure of Jaccard similarity
+
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
 Optimizations
@@ -235,6 +237,11 @@ Improvements
 * SOLR-12739: Make autoscaling policy based replica placement the default strategy for placing replicas. (shalin)
 
 * SOLR-12806: use autoscaling policies with strict=false to prioritize node allocation (noble)
+
+* SOLR-10981: Support for stream.url or stream.file pointing to gzipped data.  It's detected by either a content
+  encoding header or file extension. (Andrew Lundgren via David Smiley, Jan Høydahl)
+
+* SOLR-12892: MapWriter to use CharSequence instead of String (noble)
 
 ==================  7.5.0 ==================
 

@@ -33,7 +33,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -101,14 +101,14 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     IndexSearcher searcher = newSearcher(reader);
     
-    PostingsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
+    PostingsEnum pos = MultiTerms.getTermPostingsEnum(searcher.getIndexReader(),
                                                                 "field",
                                                                 new BytesRef("1"));
     pos.nextDoc();
     // first token should be at position 0
     assertEquals(0, pos.nextPosition());
     
-    pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
+    pos = MultiTerms.getTermPostingsEnum(searcher.getIndexReader(),
                                            "field",
                                            new BytesRef("2"));
     pos.nextDoc();

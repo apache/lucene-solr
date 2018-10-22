@@ -33,8 +33,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiBits;
 import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
@@ -232,7 +232,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
     final int iters = atLeast(75);
 
-    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
+    Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
     int maxDoc = s.getIndexReader().maxDoc();
 
     for (int iter = 0; iter < iters; ++iter) {
@@ -328,7 +328,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
     final int iters = atLeast(75);
 
-    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
+    Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
     int maxDoc = s.getIndexReader().maxDoc();
 
     for (int iter = 0; iter < iters; ++iter) {

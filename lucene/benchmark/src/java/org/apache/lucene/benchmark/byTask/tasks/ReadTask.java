@@ -24,7 +24,7 @@ import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiBits;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -88,7 +88,7 @@ public abstract class ReadTask extends PerfTask {
     // optionally warm and add num docs traversed to count
     if (withWarm()) {
       Document doc = null;
-      Bits liveDocs = MultiFields.getLiveDocs(reader);
+      Bits liveDocs = MultiBits.getLiveDocs(reader);
       for (int m = 0; m < reader.maxDoc(); m++) {
         if (null == liveDocs || liveDocs.get(m)) {
           doc = reader.document(m);

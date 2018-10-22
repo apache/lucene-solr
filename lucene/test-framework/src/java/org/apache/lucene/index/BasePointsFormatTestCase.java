@@ -167,7 +167,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     w.close();
     DirectoryReader r = DirectoryReader.open(dir);
     assertEquals(1, r.numDocs());
-    Bits liveDocs = MultiFields.getLiveDocs(r);
+    Bits liveDocs = MultiBits.getLiveDocs(r);
 
     for(LeafReaderContext ctx : r.leaves()) {
       PointValues values = ctx.reader().getPointValues("dim");
@@ -756,7 +756,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         }
       }
 
-      Bits liveDocs = MultiFields.getLiveDocs(r);
+      Bits liveDocs = MultiBits.getLiveDocs(r);
 
       // Verify min/max values are correct:
       byte[] minValues = new byte[numIndexDims*numBytesPerDim];

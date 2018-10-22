@@ -536,7 +536,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         null,
         0);
 
-    final Bits liveDocs = MultiFields.getLiveDocs(reader);
+    final Bits liveDocs = MultiBits.getLiveDocs(reader);
     int count = 0;
     while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       if (liveDocs == null || liveDocs.get(tdocs.docID())) {
@@ -671,7 +671,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         assertEquals(expected, reader.docFreq(new Term("contents", "here")));
         assertEquals(expected, reader.maxDoc());
         int numDel = 0;
-        final Bits liveDocs = MultiFields.getLiveDocs(reader);
+        final Bits liveDocs = MultiBits.getLiveDocs(reader);
         assertNotNull(liveDocs);
         for(int j=0;j<reader.maxDoc();j++) {
           if (!liveDocs.get(j))
@@ -699,7 +699,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
-      assertNull(MultiFields.getLiveDocs(reader));
+      assertNull(MultiBits.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
         reader.getTermVectors(j);
@@ -827,7 +827,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals("i=" + i, expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
-      final Bits liveDocs = MultiFields.getLiveDocs(reader);
+      final Bits liveDocs = MultiBits.getLiveDocs(reader);
       assertNotNull(liveDocs);
       for(int j=0;j<reader.maxDoc();j++) {
         if (!liveDocs.get(j))
@@ -854,7 +854,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       expected += 17-NUM_THREAD*NUM_ITER;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
-      assertNull(MultiFields.getLiveDocs(reader));
+      assertNull(MultiBits.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
         reader.getTermVectors(j);

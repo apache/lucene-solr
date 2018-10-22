@@ -32,7 +32,7 @@ import org.apache.lucene.util.Version;
  * MultiReader} or {@link DirectoryReader}) to emulate a
  * {@link LeafReader}.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
- * MultiFields}, {@link MultiDocValues}, by stepping through
+ * MultiTerms}, {@link MultiDocValues}, by stepping through
  * the sub-readers to merge fields/terms, appending docs, etc.
  *
  * <p><b>NOTE</b>: this class almost always results in a
@@ -112,7 +112,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     try {
       return cachedTerms.computeIfAbsent(field, f -> {
         try {
-          return MultiFields.getTerms(in, f);
+          return MultiTerms.getTerms(in, f);
         } catch (IOException e) { // yuck!  ...sigh... checked exceptions with built-in lambdas are a pain
           throw new RuntimeException("unwrapMe", e);
         }
@@ -262,7 +262,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
-    return MultiFields.getLiveDocs(in); // TODO cache?
+    return MultiBits.getLiveDocs(in); // TODO cache?
   }
 
   @Override
@@ -274,7 +274,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public FieldInfos getFieldInfos() {
     ensureOpen();
-    return MultiFields.getMergedFieldInfos(in); // TODO cache?
+    return FieldInfos.getMergedFieldInfos(in); // TODO cache?
   }
 
   @Override

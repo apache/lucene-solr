@@ -360,7 +360,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     };
     try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState)) {
       final Fields fields = new Fields() {
-        TreeSet<String> indexedFields = new TreeSet<>(MultiFields.getIndexedFields(oneDocReader));
+        TreeSet<String> indexedFields = new TreeSet<>(FieldInfos.getIndexedFields(oneDocReader));
 
         @Override
         public Iterator<String> iterator() {
