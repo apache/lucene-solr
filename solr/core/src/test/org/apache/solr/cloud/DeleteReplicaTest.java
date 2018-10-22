@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +45,6 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ZkContainer;
 import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -170,6 +168,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void deleteReplicaFromClusterState() throws Exception {
     deleteReplicaFromClusterState("true");
     deleteReplicaFromClusterState("false");
@@ -219,7 +218,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Test
   @Slow
   //28-June-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
+  // commented 15-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     raceConditionOnDeleteAndRegisterReplica("true");
     raceConditionOnDeleteAndRegisterReplica("false");
@@ -392,19 +391,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       log.info("Timeout wait for state {}", getCollectionState(collectionName));
       throw e;
     }
-
-    TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    timeOut.waitFor("Time out waiting for LIR state get removed", () -> {
-      String lirPath = ZkController.getLeaderInitiatedRecoveryZnodePath(collectionName, "shard1");
-      try {
-        List<String> children = zkClient().getChildren(lirPath, null, true);
-        return children.size() == 0;
-      } catch (KeeperException.NoNodeException e) {
-        return true;
-      } catch (Exception e) {
-        throw new AssertionError(e);
-      }
-    });
   }
 }
 

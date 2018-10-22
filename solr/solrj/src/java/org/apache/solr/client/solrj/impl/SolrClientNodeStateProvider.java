@@ -333,7 +333,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         throws IOException, SolrServerException {
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
-      GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
+      GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
       try (HttpSolrClient client = new HttpSolrClient.Builder()
           .withHttpClient(solrClient.getHttpClient())
           .withBaseSolrUrl(url)

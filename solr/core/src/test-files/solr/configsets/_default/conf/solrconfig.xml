@@ -797,7 +797,6 @@
                   class="solr.extraction.ExtractingRequestHandler" >
     <lst name="defaults">
       <str name="lowernames">true</str>
-      <str name="fmap.meta">ignored_</str>
       <str name="fmap.content">_text_</str>
     </lst>
   </requestHandler>

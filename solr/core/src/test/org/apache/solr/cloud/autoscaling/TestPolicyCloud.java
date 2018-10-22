@@ -325,6 +325,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
+        .setMaxShardsPerNode(-1)
         .process(cluster.getSolrClient());
 
     DocCollection coll = getCollectionState("policiesTest");
@@ -388,9 +389,11 @@ public class TestPolicyCloud extends SolrCloudTestCase {
       Map<String, Object> val = cloudManager.getNodeStateProvider().getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
           "freedisk",
           "cores",
+          "host",
           "heapUsage",
           "sysLoadAvg"));
       assertNotNull(val.get("freedisk"));
+      assertNotNull(val.get("host"));
       assertNotNull(val.get("heapUsage"));
       assertNotNull(val.get("sysLoadAvg"));
       assertTrue(((Number) val.get("cores")).intValue() > 0);

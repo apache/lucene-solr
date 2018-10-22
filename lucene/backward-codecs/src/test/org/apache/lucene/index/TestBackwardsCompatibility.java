@@ -302,7 +302,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "7.3.1-cfs",
     "7.3.1-nocfs",
     "7.4.0-cfs",
-    "7.4.0-nocfs"
+    "7.4.0-nocfs",
+    "7.5.0-cfs",
+    "7.5.0-nocfs"
   };
 
   public static String[] getOldNames() {
@@ -317,7 +319,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "sorted.7.2.1",
     "sorted.7.3.0",
     "sorted.7.3.1",
-    "sorted.7.4.0"
+    "sorted.7.4.0",
+    "sorted.7.5.0"
   };
 
   public static String[] getOldSortedNames() {
@@ -878,17 +881,17 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     TestUtil.checkIndex(dir);
     
     // true if this is a 4.0+ index
-    final boolean is40Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("content5") != null;
+    final boolean is40Index = FieldInfos.getMergedFieldInfos(reader).fieldInfo("content5") != null;
     // true if this is a 4.2+ index
-    final boolean is42Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("dvSortedSet") != null;
+    final boolean is42Index = FieldInfos.getMergedFieldInfos(reader).fieldInfo("dvSortedSet") != null;
     // true if this is a 4.9+ index
-    final boolean is49Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("dvSortedNumeric") != null;
+    final boolean is49Index = FieldInfos.getMergedFieldInfos(reader).fieldInfo("dvSortedNumeric") != null;
     // true if this index has points (>= 6.0)
-    final boolean hasPoints = MultiFields.getMergedFieldInfos(reader).fieldInfo("intPoint1d") != null;
+    final boolean hasPoints = FieldInfos.getMergedFieldInfos(reader).fieldInfo("intPoint1d") != null;
 
     assert is40Index;
 
-    final Bits liveDocs = MultiFields.getLiveDocs(reader);
+    final Bits liveDocs = MultiBits.getLiveDocs(reader);
 
     for(int i=0;i<35;i++) {
       if (liveDocs.get(i)) {
@@ -1254,7 +1257,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       Directory dir = oldIndexDirs.get(name);
       IndexReader r = DirectoryReader.open(dir);
-      TermsEnum terms = MultiFields.getTerms(r, "content").iterator();
+      TermsEnum terms = MultiTerms.getTerms(r, "content").iterator();
       BytesRef t = terms.next();
       assertNotNull(t);
 

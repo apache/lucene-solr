@@ -59,7 +59,7 @@ public final class LimitTokenCountAnalyzer extends AnalyzerWrapper {
 
   @Override
   protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-    return new TokenStreamComponents(components.getTokenizer(),
+    return new TokenStreamComponents(components.getSource(),
       new LimitTokenCountFilter(components.getTokenStream(), maxTokenCount, consumeAllTokens));
   }
   

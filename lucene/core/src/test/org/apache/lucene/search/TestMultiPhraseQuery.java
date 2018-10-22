@@ -29,7 +29,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
@@ -71,7 +71,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     
     // this TermEnum gives "piccadilly", "pie" and "pizza".
     String prefix = "pi";
-    TermsEnum te = MultiFields.getTerms(reader,"body").iterator();
+    TermsEnum te = MultiTerms.getTerms(reader,"body").iterator();
     te.seekCeil(new BytesRef(prefix));
     do {
       String s = te.term().utf8ToString();

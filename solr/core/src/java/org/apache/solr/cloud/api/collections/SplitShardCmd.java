@@ -61,6 +61,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TestInjection;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -116,7 +117,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
     Slice parentSlice = getParentSlice(clusterState, collectionName, slice, splitKey);
     if (parentSlice.getState() != Slice.State.ACTIVE) {
-      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Parent slice is not active: " + parentSlice.getState());
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Parent slice is not active: " +
+          collectionName + "/ " + parentSlice.getName() + ", state=" + parentSlice.getState());
     }
 
     // find the leader for the shard
@@ -170,6 +172,14 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "aborting split - inconsistent replica types in collection " + collectionName +
             ": nrt=" + numNrt.get() + ", tlog=" + numTlog.get() + ", pull=" + numPull.get() + ", shard leader type is " +
             parentShardLeader.getType());
+      }
+
+      // check for the lock
+      if (!lockForSplit(ocmh.cloudManager, collectionName, parentSlice.getName())) {
+        // mark as success to avoid clearing the lock in the "finally" block
+        success = true;
+        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Can't lock parent slice for splitting (another split operation running?): " +
+            collectionName + "/" + parentSlice.getName());
       }
 
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
@@ -361,12 +371,17 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       t = timings.sub("identifyNodesForReplicas");
-      List<ReplicaPosition> replicaPositions = Assign.identifyNodes(ocmh.cloudManager,
-          clusterState,
-          new ArrayList<>(clusterState.getLiveNodes()),
-          collectionName,
-          new ZkNodeProps(collection.getProperties()),
-          subSlices, numNrt.get(), numTlog.get(), numPull.get());
+      Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+          .forCollection(collectionName)
+          .forShard(subSlices)
+          .assignNrtReplicas(numNrt.get())
+          .assignTlogReplicas(numTlog.get())
+          .assignPullReplicas(numPull.get())
+          .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
+          .build();
+      Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
+      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, collection);
+      List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
       sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
       t.stop();
 
@@ -497,6 +512,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         results.add(CommonParams.TIMING, timings.asNamedList());
       }
       success = true;
+      // don't unlock the shard yet - only do this if the final switch-over in
+      // ReplicaMutator succeeds (or fails)
       return true;
     } catch (SolrException e) {
       throw e;
@@ -507,6 +524,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       if (sessionWrapper != null) sessionWrapper.release();
       if (!success) {
         cleanupAfterFailure(zkStateReader, collectionName, parentSlice.getName(), subSlices, offlineSlices);
+        unlockForSplit(ocmh.cloudManager, collectionName, parentSlice.getName());
       }
     }
   }
@@ -734,5 +752,27 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       subShardNames.add(subShardName);
     }
     return rangesStr;
+  }
+
+  public static boolean lockForSplit(SolrCloudManager cloudManager, String collection, String shard) throws Exception {
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/" + shard + "-splitting";
+    if (cloudManager.getDistribStateManager().hasData(path)) {
+      return false;
+    }
+    Map<String, Object> map = new HashMap<>();
+    map.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
+    byte[] data = Utils.toJSON(map);
+    try {
+      cloudManager.getDistribStateManager().makePath(path, data, CreateMode.EPHEMERAL, true);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Can't lock parent slice for splitting (another split operation running?): " +
+          collection + "/" + shard, e);
+    }
+    return true;
+  }
+
+  public static void unlockForSplit(SolrCloudManager cloudManager, String collection, String shard) throws Exception {
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/" + shard + "-splitting";
+    cloudManager.getDistribStateManager().removeRecursively(path, true, true);
   }
 }

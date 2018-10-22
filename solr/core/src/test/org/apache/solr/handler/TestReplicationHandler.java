@@ -832,7 +832,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
+  //commented 20-Sep-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void doTestStressReplication() throws Exception {
     // change solrconfig on slave
     // this has no entry for pollinginterval

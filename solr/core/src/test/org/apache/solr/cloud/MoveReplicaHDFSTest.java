@@ -69,10 +69,18 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
   //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   //commented 23-AUG-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+  //commented 20-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNormalFailedMove() throws Exception {
     inPlaceMove = false;
     testFailedMove();
+  }
+
+  @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12080") // added 03-Oct-2018
+  public void testFailedMove() throws Exception {
+    super.testFailedMove();
   }
 
   public static class ForkJoinThreadsFilter implements ThreadFilter {

@@ -161,8 +161,8 @@ public class FacetStream extends TupleStream implements Expressible  {
     int limitInt = 0;
     try{
       limitInt = Integer.parseInt(limitStr);
-      if(limitInt <= 0){
-        throw new IOException(String.format(Locale.ROOT,"invalid expression %s - limit '%s' must be greater than 0.",expression, limitStr));
+      if(limitInt <= 0 && limitInt != -1){
+        throw new IOException(String.format(Locale.ROOT,"invalid expression %s - limit '%s' must be greater than 0 or -1.",expression, limitStr));
       }
     }
     catch(NumberFormatException e){
@@ -223,6 +223,9 @@ public class FacetStream extends TupleStream implements Expressible  {
     this.buckets = buckets;
     this.metrics = metrics;
     this.bucketSizeLimit   = bucketSizeLimit;
+    if (this.bucketSizeLimit == -1) {
+      this.bucketSizeLimit = Integer.MAX_VALUE;
+    }
     this.collection = collection;
     this.bucketSorts = bucketSorts;
     

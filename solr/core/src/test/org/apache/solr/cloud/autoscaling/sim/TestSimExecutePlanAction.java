@@ -92,7 +92,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     log.info("Collection ready after " + CloudTestUtils.waitForState(cluster, collectionName, 120, TimeUnit.SECONDS,
         CloudTestUtils.clusterShape(1, 2, false, true)) + "ms");
 
-    String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode();
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
     DocCollection docCollection = clusterState.getCollection(collectionName);
     List<Replica> replicas = docCollection.getReplicas(sourceNodeName);
@@ -156,6 +156,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testIntegration() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
 
@@ -181,7 +182,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
         collectionName, CloudTestUtils.clusterShape(1, 2, false, true));
 
-    String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode();
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
     DocCollection docCollection = clusterState.getCollection(collectionName);
     List<Replica> replicas = docCollection.getReplicas(sourceNodeName);

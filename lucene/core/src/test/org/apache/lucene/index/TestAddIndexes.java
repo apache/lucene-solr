@@ -1448,6 +1448,8 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory dir3 = newDirectory();
     iwc1 = newIndexWriterConfig(new MockAnalyzer(random())).setSoftDeletesField("soft_delete");
     writer = new IndexWriter(dir3, iwc1);
+    // Resize as some fully deleted sub-readers might be dropped in the wrappedReader
+    readers = new CodecReader[(wrappedReader.leaves().size())];
     for (int i = 0; i < readers.length; i++) {
       readers[i] = (CodecReader)wrappedReader.leaves().get(i).reader();
     }

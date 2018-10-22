@@ -122,6 +122,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeLost() throws Exception  {
     // let's start a node so that we have at least two
     String node = cluster.simAddNode();
@@ -205,7 +206,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
         "conf",2, 3);
-//    create.setMaxShardsPerNode(2);
+    create.setMaxShardsPerNode(2);
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
@@ -254,6 +255,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
 
   @Test
   //17-Aug-2018 commented @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeAdded() throws Exception {
     AssertingTriggerAction.expectedNode = null;
     SolrClient solrClient = cluster.simGetSolrClient();
@@ -283,7 +285,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
-        "conf",1, 4);
+        "conf",1, 4).setMaxShardsPerNode(-1);
     create.process(solrClient);
 
     CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",

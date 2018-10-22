@@ -115,6 +115,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   @Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TimeRoutedAlias=DEBUG;org.apache.solr.cloud=DEBUG")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void test() throws Exception {
     String configName = TimeRoutedAliasUpdateProcessorTest.configName + getTestName();
     createConfigSet(configName);

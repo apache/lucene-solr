@@ -93,7 +93,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean() || true) {
+    if (random().nextBoolean()) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -190,7 +190,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
       assertNotNull("should have fired an event", ev);
       List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>) ev.getProperty(TriggerEvent.REQUESTED_OPS);
       assertNotNull("should contain requestedOps", ops);
-      assertEquals("number of ops", 2, ops.size());
+      assertEquals("number of ops: " + ops, 2, ops.size());
       boolean shard1 = false;
       boolean shard2 = false;
       for (TriggerEvent.Op op : ops) {
@@ -361,7 +361,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
         CloudTestUtils.clusterShape(2, 2, false, true));
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 20; i++) {
       SolrInputDocument doc = new SolrInputDocument("id", "id-" + (i * 100));
       solrClient.add(collectionName, doc);
     }
@@ -412,7 +412,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     // delete some docs to trigger a merge
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 15; i++) {
       solrClient.deleteById(collectionName, "id-" + (i * 100));
     }
     solrClient.commit(collectionName);
@@ -425,7 +425,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertEquals("success", response.get("result").toString());
 
     timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
 
@@ -679,6 +679,147 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertNotNull("should have unsupportedOps", unsupportedOps);
     assertEquals(unsupportedOps.toString() + "\n" + ops, ops.size(), unsupportedOps.size());
     unsupportedOps.forEach(op -> assertEquals(CollectionParams.CollectionAction.MERGESHARDS, op.getAction()));
+  }
+
+  @Test
+  public void testMaxOps() throws Exception {
+    String collectionName = "testMaxOps_collection";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
+        "conf", 5, 2).setMaxShardsPerNode(10);
+    create.process(solrClient);
+    CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
+        CloudTestUtils.clusterShape(5, 2, false, true));
+
+    long waitForSeconds = 3 + random().nextInt(5);
+    // add disabled trigger
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'index_size_trigger5'," +
+        "'event' : 'indexSize'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'aboveDocs' : 10," +
+        "'enabled' : false," +
+        "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setListenerCommand = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'capturing5'," +
+        "'trigger' : 'index_size_trigger5'," +
+        "'stage' : ['STARTED','ABORTED','SUCCEEDED','FAILED']," +
+        "'beforeAction' : ['compute_plan']," +
+        "'afterAction' : ['compute_plan']," +
+        "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    setListenerCommand = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'finished'," +
+        "'trigger' : 'index_size_trigger5'," +
+        "'stage' : ['SUCCEEDED']," +
+        "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+
+    for (int i = 0; i < 200; i++) {
+      SolrInputDocument doc = new SolrInputDocument("id", "id-" + i);
+      solrClient.add(collectionName, doc);
+    }
+    solrClient.commit(collectionName);
+
+    // enable the trigger
+    String resumeTriggerCommand = "{" +
+        "'resume-trigger' : {" +
+        "'name' : 'index_size_trigger5'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
+
+    boolean await = finished.await(60000 / SPEED, TimeUnit.MILLISECONDS);
+    assertTrue("did not finish processing in time", await);
+
+    // suspend the trigger
+    String suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {" +
+        "'name' : 'index_size_trigger5'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    assertEquals(1, listenerEvents.size());
+    List<CapturedEvent> events = listenerEvents.get("capturing5");
+    assertNotNull("'capturing5' events not found", events);
+    assertEquals("events: " + events, 4, events.size());
+    assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
+    assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
+    assertEquals(TriggerEventProcessorStage.AFTER_ACTION, events.get(2).stage);
+    assertEquals(TriggerEventProcessorStage.SUCCEEDED, events.get(3).stage);
+    // check ops
+    List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>) events.get(2).event.getProperty(TriggerEvent.REQUESTED_OPS);
+    assertNotNull("should contain requestedOps", ops);
+    assertEquals("number of ops: " + ops, 5, ops.size());
+
+    listenerEvents.clear();
+    finished = new CountDownLatch(1);
+
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'index_size_trigger5'," +
+        "'event' : 'indexSize'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'aboveDocs' : 10," +
+        "'maxOps' : 3," +
+        "'enabled' : true," +
+        "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}]" +
+        "}}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    await = finished.await(60000 / SPEED, TimeUnit.MILLISECONDS);
+    assertTrue("did not finish processing in time", await);
+
+    // suspend the trigger
+    suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {" +
+        "'name' : 'index_size_trigger5'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    assertEquals(1, listenerEvents.size());
+    events = listenerEvents.get("capturing5");
+    assertNotNull("'capturing5' events not found", events);
+    assertEquals("events: " + events, 4, events.size());
+    assertEquals(TriggerEventProcessorStage.STARTED, events.get(0).stage);
+    assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, events.get(1).stage);
+    assertEquals(TriggerEventProcessorStage.AFTER_ACTION, events.get(2).stage);
+    assertEquals(TriggerEventProcessorStage.SUCCEEDED, events.get(3).stage);
+    // check ops
+    ops = (List<TriggerEvent.Op>) events.get(2).event.getProperty(TriggerEvent.REQUESTED_OPS);
+    assertNotNull("should contain requestedOps", ops);
+    assertEquals("number of ops: " + ops, 3, ops.size());
   }
 
   private Map<String, Object> createTriggerProps(long waitForSeconds) {

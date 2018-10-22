@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * Tests randomized JSON Facets, sometimes using query 'join' domain transfers and/or domain 'filter' options
  * </p>
  * <p>
- * The results of each facet constraint count will be compared with a verification query using an equivilent filter
+ * The results of each facet constraint count will be compared with a verification query using an equivalent filter
  * </p>
  * 
  * @see TestCloudPivotFacet
@@ -422,7 +422,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   /**
    * Given a set of (potentially nested) term facets, and a base query string, asserts that 
    * the actual counts returned when executing that query with those facets match the expected results
-   * of filtering on the equivilent facet terms+domain
+   * of filtering on the equivalent facet terms+domain
    */
   private void assertFacetCountsAreCorrect(final AtomicInteger maxBucketsToCheck,
                                            Map<String,TermFacet> expected,
@@ -465,7 +465,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   /** 
    * Recursive Helper method that walks the actual facet response, comparing the counts to the expected output 
-   * based on the equivilent filters generated from the original TermFacet.
+   * based on the equivalent filters generated from the original TermFacet.
    */
   private void assertFacetCountsAreCorrect(final AtomicInteger maxBucketsToCheck,
                                            final Map<String,TermFacet> expected,
@@ -781,7 +781,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
     /** 
      * Given some original SolrParams, returns new SolrParams where the original "q" param is wrapped
-     * as needed to apply the equivilent transformation to a query as this domain would to a facet
+     * as needed to apply the equivalent transformation to a query as this domain would to a facet
      */
     public SolrParams applyDomainToQuery(String safeKey, SolrParams in) {
       assert null == in.get(safeKey); // shouldn't be possible if every facet uses a unique key string

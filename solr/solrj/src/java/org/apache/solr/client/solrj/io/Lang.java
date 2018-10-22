@@ -90,6 +90,7 @@ public class Lang {
         .withFunctionName("timeseries", TimeSeriesStream.class)
         .withFunctionName("tuple", TupStream.class)
         .withFunctionName("sql", SqlStream.class)
+        .withFunctionName("plist", ParallelListStream.class)
 
             // metrics
         .withFunctionName("min", MinMetric.class)
@@ -174,6 +175,7 @@ public class Lang {
         .withFunctionName("betaDistribution", BetaDistributionEvaluator.class)
         .withFunctionName("polyfit", PolyFitEvaluator.class)
         .withFunctionName("harmonicFit", HarmonicFitEvaluator.class)
+        .withFunctionName("harmfit", HarmonicFitEvaluator.class)
         .withFunctionName("loess", LoessEvaluator.class)
         .withFunctionName("matrix", MatrixEvaluator.class)
         .withFunctionName("transpose", TransposeEvaluator.class)
@@ -256,7 +258,20 @@ public class Lang {
         .withFunctionName("listCache", ListCacheEvaluator.class)
         .withFunctionName("zscores", NormalizeEvaluator.class)
         .withFunctionName("latlonVectors", LatLonVectorsEvaluator.class)
-
+        .withFunctionName("convexHull", ConvexHullEvaluator.class)
+        .withFunctionName("getVertices", GetVerticesEvaluator.class)
+        .withFunctionName("getBaryCenter", GetBaryCenterEvaluator.class)
+        .withFunctionName("getArea", GetAreaEvaluator.class)
+        .withFunctionName("getBoundarySize", GetBoundarySizeEvaluator.class)
+        .withFunctionName("oscillate", OscillateEvaluator.class)
+        .withFunctionName("getAmplitude", GetAmplitudeEvaluator.class)
+        .withFunctionName("getPhase", GetPhaseEvaluator.class)
+        .withFunctionName("getAngularFrequency", GetAngularFrequencyEvaluator.class)
+        .withFunctionName("enclosingDisk", EnclosingDiskEvaluator.class)
+        .withFunctionName("getCenter", GetCenterEvaluator.class)
+        .withFunctionName("getRadius", GetRadiusEvaluator.class)
+        .withFunctionName("getSupportPoints", GetSupportPointsEvaluator.class)
+        .withFunctionName("pairSort", PairSortEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)
@@ -289,6 +304,7 @@ public class Lang {
         .withFunctionName("mult", MultiplyEvaluator.class)
         .withFunctionName("sub", SubtractEvaluator.class)
         .withFunctionName("log", NaturalLogEvaluator.class)
+        .withFunctionName("log10", Log10Evaluator.class)
         .withFunctionName("pow", PowerEvaluator.class)
         .withFunctionName("mod", ModuloEvaluator.class)
         .withFunctionName("ceil", CeilingEvaluator.class)

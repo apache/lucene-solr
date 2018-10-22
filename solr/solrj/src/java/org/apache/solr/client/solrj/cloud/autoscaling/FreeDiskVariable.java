@@ -18,20 +18,21 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.Pair;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.suggestNegativeViolations;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORE_IDX;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.TOTALDISK;
+import static org.apache.solr.common.cloud.rule.ImplicitSnitch.DISK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class FreeDiskVariable extends VariableBase {
@@ -42,7 +43,7 @@ public class FreeDiskVariable extends VariableBase {
 
   @Override
   public Object convertVal(Object val) {
-    Number value = (Number) super.validate(ImplicitSnitch.DISK, val, false);
+    Number value = (Number) super.validate(FREEDISK.tagName, val, false);
     if (value != null) {
       value = value.doubleValue() / 1024.0d / 1024.0d / 1024.0d;
     }
@@ -70,6 +71,19 @@ public class FreeDiskVariable extends VariableBase {
   }
 
   @Override
+  public void computeDeviation(Policy.Session session, double[] deviation, ReplicaCount replicaCount,
+                               SealedClause sealedClause) {
+    if (deviation == null) return;
+    for (Row node : session.matrix) {
+      Object val = node.getVal(sealedClause.tag.name);
+      Double delta = sealedClause.tag.delta(val);
+      if (delta != null) {
+        deviation[0] += Math.abs(delta);
+      }
+    }
+  }
+
+  @Override
   public void getSuggestions(Suggestion.Ctx ctx) {
     if (ctx.violation == null) return;
     if (ctx.violation.replicaCountDelta > 0) {
@@ -77,7 +91,7 @@ public class FreeDiskVariable extends VariableBase {
           row -> ctx.violation.getViolatingReplicas()
               .stream()
               .anyMatch(p -> row.node.equals(p.replicaInfo.getNode())))
-          .sorted(Comparator.comparing(r -> ((Double) r.getVal(ImplicitSnitch.DISK, 0d))))
+          .sorted(Comparator.comparing(r -> ((Double) r.getVal(DISK, 0d))))
           .collect(Collectors.toList());
 
 
@@ -91,7 +105,7 @@ public class FreeDiskVariable extends VariableBase {
           if (s1 != null && s2 != null) return s1.compareTo(s2);
           return 0;
         });
-        double currentDelta = ctx.violation.getClause().tag.delta(node.getVal(ImplicitSnitch.DISK));
+        double currentDelta = ctx.violation.getClause().tag.delta(node.getVal(DISK));
         for (ReplicaInfo replica : replicas) {
           if (currentDelta < 1) break;
           if (replica.getVariables().get(CORE_IDX.tagName) == null) continue;
@@ -104,19 +118,17 @@ public class FreeDiskVariable extends VariableBase {
         }
       }
     } else if (ctx.violation.replicaCountDelta < 0) {
-      suggestNegativeViolations(ctx, shards -> getSortedShards(ctx,shards));
+      suggestNegativeViolations(ctx, shards -> getSortedShards(ctx.session.matrix, shards, ctx.violation.coll));
     }
   }
 
 
-
-
-  private List<String> getSortedShards(Suggestion.Ctx ctx, Set<String> shardSet) {
+  static List<String> getSortedShards(List<Row> matrix, Collection<String> shardSet, String coll) {
     return  shardSet.stream()
         .map(shard1 -> {
           AtomicReference<Pair<String, Long>> result = new AtomicReference<>();
-          for (Row node : ctx.session.matrix) {
-            node.forEachShard(ctx.violation.coll, (s, ri) -> {
+          for (Row node : matrix) {
+            node.forEachShard(coll, (s, ri) -> {
               if (result.get() != null) return;
               if (s.equals(shard1) && ri.size() > 0) {
                 Number sz = ((Number) ri.get(0).getVariable(CORE_IDX.tagName));

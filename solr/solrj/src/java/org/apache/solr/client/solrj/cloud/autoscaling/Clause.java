@@ -60,6 +60,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   final boolean hasComputedValue;
   final Map<String, Object> original;
+  final Clause derivedFrom;
   Condition collection, shard, replica, tag, globalTag;
   final Replica.Type type;
   boolean strict;
@@ -74,6 +75,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.globalTag = evaluateValue(clause.globalTag, computedValueEvaluator);
     this.hasComputedValue = clause.hasComputedValue;
     this.strict = clause.strict;
+    derivedFrom = clause.derivedFrom;
   }
 
   // internal use only
@@ -85,9 +87,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.type = null;
     this.hasComputedValue = false;
     this.strict = isStrict;
+    derivedFrom = null;
   }
 
   private Clause(Map<String, Object> m) {
+    derivedFrom = (Clause) m.remove(Clause.class.getName());
     this.original = Utils.getDeepCopy(m, 10);
     String type = (String) m.get("type");
     this.type = type == null || ANY.equals(type) ? null : Replica.Type.valueOf(type.toUpperCase(Locale.ROOT));
@@ -371,10 +375,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
       Condition tag = this.tag;
       if (tag.computedType != null) tag = evaluateValue(tag, eval);
       Object val = row.getVal(tag.name);
-      if (val != null && tag.isPass(val)) {
+      if (val != null) {
         if (tag.op == LESS_THAN || tag.op == GREATER_THAN) {
           tags.add(this.tag);
-        } else {
+        } else if (tag.isPass(val)) {
           tags.add(val);
         }
       }
@@ -413,21 +417,15 @@ public class Clause implements MapWriter, Comparable<Clause> {
               t);
           ctx.resetAndAddViolation(t, replicaCountCopy, violation);
           sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, tag.name, t, violation, session);
+          if (!this.strict && deviations != null) {
+            tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
+          }
         } else {
-          computeDeviation(deviations, replicaCount, sealedClause);
+          if (replica.op == RANGE_EQUAL) tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
         }
       }
     }
     return ctx.allViolations;
-  }
-
-  private void computeDeviation(double[] deviations, ReplicaCount replicaCount, SealedClause sealedClause) {
-    if (deviations != null && sealedClause.replica.op == RANGE_EQUAL) {
-      Number actualCount = replicaCount.getVal(type);
-      Double realDelta = ((RangeVal) sealedClause.replica.val).realDelta(actualCount.doubleValue());
-      realDelta = this.isReplicaZero() ? -1 * realDelta : realDelta;
-      deviations[0] += Math.abs(realDelta);
-    }
   }
 
   void addViolatingReplicas(Condition tag,
@@ -485,8 +483,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
               eval.node);
           ctx.resetAndAddViolation(row.node, replicaCountCopy, violation);
           sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, NODE, row.node, violation, session);
+          if (!this.strict && deviations != null) {
+            tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
+          }
         } else {
-          computeDeviation(deviations, replicaCount, sealedClause);
+          if (replica.op == RANGE_EQUAL) tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
         }
       }
     }
@@ -627,6 +628,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
     throw new RuntimeException(name + ": " + val + "not a valid number");
   }
 
+  @Override
+  public int hashCode() {
+    return original.hashCode();
+  }
 
   public static Double parseDouble(String name, Object val) {
     if (val == null) return null;

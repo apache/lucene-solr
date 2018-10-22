@@ -1,0 +1,15 @@
+{
+  "liveNodes":["10.0.0.6:7574_solr",
+    "10.0.0.6:8983_solr"],
+  "replicaInfo":{
+    "10.0.0.6:7574_solr":{},
+    "10.0.0.6:8983_solr":{"mycoll1":{
+      "shard2":[{"core_node2":{"type":"NRT"}}],
+      "shard1":[{"core_node1":{"type":"NRT"}}]}}},
+  "nodeValues":{
+    "10.0.0.6:7574_solr":{
+      "node":"10.0.0.6:7574_solr",
+      "cores":0},
+    "10.0.0.6:8983_solr":{
+      "node":"10.0.0.6:8983_solr",
+      "cores":2}}}

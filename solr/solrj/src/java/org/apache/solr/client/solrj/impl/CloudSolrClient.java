@@ -1510,6 +1510,8 @@ public class CloudSolrClient extends SolrClient {
 
     /**
      * Tells {@link Builder} that created clients should send updates only to shard leaders.
+     *
+     * WARNING: This method currently has no effect.  See SOLR-6312 for more information.
      */
     public Builder sendUpdatesOnlyToShardLeaders() {
       shardLeadersOnly = true;
@@ -1518,6 +1520,8 @@ public class CloudSolrClient extends SolrClient {
     
     /**
      * Tells {@link Builder} that created clients should send updates to all replicas for a shard.
+     *
+     * WARNING: This method currently has no effect.  See SOLR-6312 for more information.
      */
     public Builder sendUpdatesToAllReplicasInShard() {
       shardLeadersOnly = false;
@@ -1526,6 +1530,8 @@ public class CloudSolrClient extends SolrClient {
 
     /**
      * Tells {@link Builder} that created clients should send direct updates to shard leaders only.
+     *
+     * UpdateRequests whose leaders cannot be found will "fail fast" on the client side with a {@link SolrException}
      */
     public Builder sendDirectUpdatesToShardLeadersOnly() {
       directUpdatesToLeadersOnly = true;
@@ -1533,15 +1539,24 @@ public class CloudSolrClient extends SolrClient {
     }
 
     /**
-     * Tells {@link Builder} that created clients can send updates
-     * to any shard replica (shard leaders and non-leaders).
+     * Tells {@link Builder} that created clients can send updates to any shard replica (shard leaders and non-leaders).
+     *
+     * Shard leaders are still preferred, but the created clients will fallback to using other replicas if a leader
+     * cannot be found.
      */
     public Builder sendDirectUpdatesToAnyShardReplica() {
       directUpdatesToLeadersOnly = false;
       return this;
     }
 
-    /** Should direct updates to shards be done in parallel (the default) or if not then synchronously? */
+    /**
+     * Tells {@link Builder} whether created clients should send shard updates serially or in parallel
+     *
+     * When an {@link UpdateRequest} affects multiple shards, {@link CloudSolrClient} splits it up and sends a request
+     * to each affected shard.  This setting chooses whether those sub-requests are sent serially or in parallel.
+     * <p>
+     * If not set, this defaults to 'true' and sends sub-requests in parallel.
+     */
     public Builder withParallelUpdates(boolean parallelUpdates) {
       this.parallelUpdates = parallelUpdates;
       return this;

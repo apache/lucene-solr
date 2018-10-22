@@ -283,7 +283,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     this.eofTuples = Collections.synchronizedMap(new HashMap());
 
     if(checkpoints.size() == 0 && streamContext.numWorkers > 1) {
-      //Each worker must maintain it's own checkpoints
+      //Each worker must maintain its own checkpoints
       this.id = this.id+"_"+streamContext.workerID;
     }
 

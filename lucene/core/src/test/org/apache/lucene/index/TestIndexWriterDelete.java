@@ -1215,7 +1215,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     r = DirectoryReader.open(d);
     assertEquals(2, r.numDeletedDocs());
-    assertNotNull(MultiFields.getLiveDocs(r));
+    assertNotNull(MultiBits.getLiveDocs(r));
     r.close();
     d.close();
   }

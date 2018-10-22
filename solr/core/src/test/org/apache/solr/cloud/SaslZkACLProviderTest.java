@@ -115,6 +115,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
   @Test
   //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testSaslZkACLProvider() throws Exception {
     // Test with Sasl enabled
     SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);

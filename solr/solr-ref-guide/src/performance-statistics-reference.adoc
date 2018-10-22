@@ -192,8 +192,18 @@ The following statistics are available for each of the caches mentioned above:
 |hits |Number of hits for the current index searcher.
 |inserts |Number of inserts into the cache.
 |lookups |Number of lookups against the cache.
-|size |Size of the cache at that particular instance (in KBs).
+|size |Number of entries in the cache at that particular instance.
 |warmupTime |Warm-up time for the registered index searcher. This time is taken in account for the “auto-warming” of caches.
+|===
+
+When eviction by heap usage is enabled, the following additional statistics are available for the Query Result Cache:
+
+[cols="25,75",options="header"]
+|===
+|Attribute |Description
+|maxRamMB |Maximum heap that should be used by the cache beyond which keys will be evicted.
+|ramBytesUsed| Actual heap usage of the cache at that particular instance.
+|evictionsRamUsage| Number of cache evictions for the current index searcher because heap usage exceeded maxRamMB.
 |===
 
 More information on Solr caches is available in the section <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,Query Settings in SolrConfig>>.

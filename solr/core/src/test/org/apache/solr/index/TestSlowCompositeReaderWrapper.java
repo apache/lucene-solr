@@ -22,15 +22,18 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -116,6 +119,30 @@ public class TestSlowCompositeReaderWrapper extends LuceneTestCase {
     assertEquals(1, slowWrapper.cachedOrdMaps.size());
     assertEquals(MultiSortedSetDocValues.class, slowWrapper.getSortedSetDocValues("sorted_set").getClass());
     assertEquals(2, slowWrapper.cachedOrdMaps.size());
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testTermsAreCached() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    Document doc = new Document();
+    doc.add(new TextField("text", "hello world", Field.Store.NO));
+    w.addDocument(doc);
+    w.getReader().close();
+    doc = new Document();
+    doc.add(new TextField("text", "cruel world", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader reader = w.getReader();
+    assertTrue(reader.leaves().size() > 1);
+    SlowCompositeReaderWrapper slowWrapper = (SlowCompositeReaderWrapper) SlowCompositeReaderWrapper.wrap(reader);
+    assertEquals(0, slowWrapper.cachedTerms.size());
+    assertEquals(MultiTerms.class, slowWrapper.terms("text").getClass());
+    assertEquals(1, slowWrapper.cachedTerms.size());
+    assertNull(slowWrapper.terms("bogusField"));
+    assertEquals(1, slowWrapper.cachedTerms.size());//bogus field isn't cached
     reader.close();
     w.close();
     dir.close();

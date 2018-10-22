@@ -17,7 +17,7 @@
 package org.apache.lucene.search.spell;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.BoostAttribute;
@@ -402,7 +402,7 @@ public class DirectSpellChecker {
     AttributeSource atts = new AttributeSource();
     MaxNonCompetitiveBoostAttribute maxBoostAtt =
       atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
-    Terms terms = MultiFields.getTerms(ir, term.field());
+    Terms terms = MultiTerms.getTerms(ir, term.field());
     if (terms == null) {
       return Collections.emptyList();
     }

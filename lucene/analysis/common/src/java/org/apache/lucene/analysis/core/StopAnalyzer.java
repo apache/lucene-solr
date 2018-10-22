@@ -60,13 +60,13 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
    * used to tokenize all the text in the provided {@link Reader}.
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from a {@link LowerCaseTokenizer} filtered with
+   *         built from a {@link LetterTokenizer} filtered with
    *         {@link StopFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new LowerCaseTokenizer();
-    return new TokenStreamComponents(source, new StopFilter(source, stopwords));
+    final Tokenizer source = new LetterTokenizer();
+    return new TokenStreamComponents(source, new StopFilter(new LowerCaseFilter(source), stopwords));
   }
 
   @Override

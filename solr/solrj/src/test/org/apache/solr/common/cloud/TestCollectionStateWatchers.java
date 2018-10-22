@@ -26,7 +26,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -63,6 +62,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   @Before
   public void prepareCluster() throws Exception {
+    cluster.deleteAllCollections();
     int missingServers = CLUSTER_SIZE - cluster.getJettySolrRunners().size();
     for (int i = 0; i < missingServers; i++) {
       cluster.startJettySolrRunner();
@@ -109,7 +109,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testSimpleCollectionWatch() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -224,7 +224,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testWaitForStateWatcherIsRetainedOnPredicateFailure() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -286,7 +286,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testWatchesWorkForStateFormat1() throws Exception {
 
     final CloudSolrClient client = cluster.getSolrClient();

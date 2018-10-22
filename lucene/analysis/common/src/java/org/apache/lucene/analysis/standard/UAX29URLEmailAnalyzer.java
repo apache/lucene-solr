@@ -88,15 +88,10 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
     src.setMaxTokenLength(maxTokenLength);
     TokenStream tok = new LowerCaseFilter(src);
     tok = new StopFilter(tok, stopwords);
-    return new TokenStreamComponents(src, tok) {
-      @Override
-      protected void setReader(final Reader reader) {
-        // So that if maxTokenLength was changed, the change takes
-        // effect next time tokenStream is called:
-        src.setMaxTokenLength(UAX29URLEmailAnalyzer.this.maxTokenLength);
-        super.setReader(reader);
-      }
-    };
+    return new TokenStreamComponents(r -> {
+      src.setMaxTokenLength(UAX29URLEmailAnalyzer.this.maxTokenLength);
+      src.setReader(r);
+    }, tok);
   }
 
   @Override

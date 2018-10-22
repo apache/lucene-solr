@@ -147,7 +147,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
         }
       }
     } else {
-      //It doesn't have it's own logger yet so let's create one
+      //It doesn't have its own logger yet so let's create one
       LoggerConfig explicitConfig = new LoggerConfig(loggerName, Level.valueOf(level), true);
       explicitConfig.setParent(loggerConfig);
       config.addLogger(loggerName, explicitConfig);

@@ -78,6 +78,15 @@ API Changes
 
 * LUCENE-8483: Scorers may no longer take null as a Weight (Alan Woodward)
 
+* LUCENE-8352: TokenStreamComponents is now final, and can take a Consumer<Reader>
+  in its constructor (Mark Harwood, Alan Woodward, Adrien Grand)
+
+* LUCENE-8498: LowerCaseTokenizer has been removed, and CharTokenizer no longer
+  takes a normalizer function. (Alan Woodward)
+
+* LUCENE-8513: MultiFields.getFields is now removed.  Please avoid this class,
+  and Fields in general, when possible. (David Smiley)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -111,11 +120,28 @@ Changes in Runtime Behavior
   total hit counts accurately up to 1,000 in order to enable top-hits
   optimizations such as block-max WAND (LUCENE-8135). (Adrien Grand)
 
+* LUCENE-8505: IndexWriter#addIndices will now fail if the target index is sorted but
+  the candidate is not. (Jim Ferenczi)
+
+* LUCENE-8535: Highlighter and FVH doesn't support ToParent and ToChildBlockJoinQuery out of the
+  box anymore. In order to highlight on Block-Join Queries a custom WeightedSpanTermExtractor / FieldQuery
+  should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshiran)
+
+* LUCENE-7875: Moved MultiFields static methods out of the class.  getLiveDocs is now
+  in MultiBits which is now public.  getMergedFieldInfos and getIndexedFields are now in
+  FieldInfos.  getTerms is now in MultiTerms.  getTermPositionsEnum and getTermDocsEnum
+  were collapsed and renamed to just getTermPostingsEnum and moved to MultiTerms.
+  (David Smiley)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
   how close a value of a long field is from an configurable origin. This is
   typically useful to boost by recency. (Adrien Grand)
+
+* LUCENE-8482: LatLonPoint#newDistanceFeatureQuery may be used to boost scores
+  based on the haversine distance of a LatLonPoint field to a provided point. This is
+  typically useful to boost by distance. (Ignacio Vera)
 
 Improvements
 
@@ -160,8 +186,60 @@ Optimizations
 * LUCENE-8448: Boolean queries now propagates the mininum score to their sub-scorers.
   (Jim Ferenczi, Adrien Grand)
 
+* LUCENE-8511: MultiFields.getIndexedFields is now optimized; does not call getMergedFieldInfos
+  (David Smiley)
+
+* LUCENE-8507: TopFieldCollector can now update the minimum competitive score if the primary sort
+  is by relevancy and the total hit count is not required. (Jim Ferenczi)
+
 ======================= Lucene 7.6.0 =======================
-(No Changes)
+
+Build:
+
+* LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
+
+* LUCENE-8493: Stop publishing insecure .sha1 files with releases (janhoy)
+
+Bug fixes:
+
+* LUCENE-8479: QueryBuilder#analyzeGraphPhrase now throws TooManyClause exception
+  if the number of expanded path reaches the BooleanQuery#maxClause limit. (Jim Ferenczi)
+
+* LUCENE-8522: throw InvalidShapeException when constructing a polygon and
+  all points are coplanar. (Ignacio Vera)
+
+* LUCENE-8531: QueryBuilder#analyzeGraphPhrase now creates one phrase query per finite strings
+  in the graph if the slop is greater than 0. Span queries cannot be used in this case because
+  they don't handle slop the same way than phrase queries. (Steve Rowe, Uwe Schindler, Jim Ferenczi)
+
+New Features
+
+* LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
+  to select a fewer number of dimensions to be used for creating the index than
+  the total number of dimensions used for field encoding. i.e., dimensions 0 to N
+  may be used to determine how to split the inner nodes, and dimensions N+1 to D
+  are ignored and stored as data dimensions at the leaves. (Nick Knize)
+
+Improvements:
+
+* LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the
+  first 4 are index dimensions defining the bounding box of the Triangle and the
+  remaining 3 data dimensions define the vertices of the triangle. (Nick Knize)
+
+Other:
+
+* LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
+  via Alan Woodward)
+
+* LUCENE-8533: Fix Javadocs of DataInput#readVInt(): Negative numbers are
+  supported, but should be avoided. (Vladimir Dolzhenko via Uwe Schindler)
+
+======================= Lucene 7.5.1 =======================
+
+Bug Fixes:
+
+* LUCENE-8454: Fix incorrect vertex indexing and other computation errors in
+  shape tessellation that would sometimes cause an infinite loop. (Nick Knize)
 
 ======================= Lucene 7.5.0 =======================
 
@@ -219,6 +297,14 @@ API Changes:
 * LUCENE-8422: Static helper functions for Matches and MatchesIterator implementations
   have been moved from Matches to MatchesUtils (Alan Woodward)
 
+* LUCENE-8343: Suggesters now require Long (versus long, previously) from weight() method
+  while indexing, and provide double (versus long, previously) scores at lookup time
+  (Alessandro Benedetti)
+
+* LUCENE-8459: SearcherTaxonomyManager now has a constructor taking already opened
+  IndexReaders, allowing the caller to pass a FilterDirectoryReader, for example.
+  (Mike McCandless)
+
 Bug Fixes:
 
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
@@ -259,6 +345,10 @@ Bug Fixes:
 * LUCENE-8466: IndexWriter.deleteDocs(Query... query) incorrectly applies deletes on flush
   if the index is sorted. (Adrien Grand, Jim Ferenczi, Vish Ramachandran)
 
+* LUCENE-8502: Allow access to delegate in FilterCodecReader. FilterCodecReader didn't 
+  allow access to it's delegate like other filter readers. This adds a new #getDelegate method
+  to access the wrapped reader. (Simon Willnauer)
+
 Changes in Runtime Behavior:
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
@@ -267,6 +357,11 @@ Changes in Runtime Behavior:
 * LUCENE-8263: TieredMergePolicy now reclaims deleted documents more
   aggressively by default ensuring that no more than ~1/3 of the index size is
   used by deleted documents. (Adrien Grand)
+
+* LUCENE-8503: Call #getDelegate instead of direct member access during unwrap. 
+  Filter*Reader instances access the member or the delegate directly instead of 
+  calling getDelegate(). In order to track access of the delegate these methods
+  should call #getDelegate() (Simon Willnauer)
 
 Improvements
 
@@ -304,6 +399,12 @@ Improvements
 * LUCENE-7862: Store the real bounds of the leaf cells in the BKD index when the
   number of dimensions is bigger than 1. It improves performance when there is
   correlation between the dimensions, for example ranges. (Ignacio Vera, Adrien Grand)
+
+Build
+
+* LUCENE-5143: Stop publishing KEYS file with each version, use topmost lucene/KEYS file only. 
+  The buildAndPushRelease.py script validates that RM's PGP key is in the KEYS file.
+  Remove unused 'copy-to-stage' and '-dist-keys' targets from ant build. (janhoy)
 
 Other:
 
@@ -3185,7 +3286,7 @@ Other
 
 * LUCENE-6845: SpanScorer is now merged into Spans (Alan Woodward, David Smiley)
 
-* LUCENE-6887: DefaultSimilarity is deprecated, use ClassicSimilarity for equivilent behavior,
+* LUCENE-6887: DefaultSimilarity is deprecated, use ClassicSimilarity for equivalent behavior,
   or consider switching to BM25Similarity which will become the new default in Lucene 6.0 (hossman)
 
 * LUCENE-6893: factor out CorePlusQueriesParser from CorePlusExtensionsParser

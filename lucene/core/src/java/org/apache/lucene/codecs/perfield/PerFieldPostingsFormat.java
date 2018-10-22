@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.perfield;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,7 +28,7 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader; // javadocs
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -41,13 +42,13 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader.FilterFields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.MergedIterator;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -150,7 +151,10 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public void merge(MergeState mergeState, NormsProducer norms) throws IOException {
-      Map<PostingsFormat, FieldsGroup> formatToGroups = buildFieldsGroupMapping(new MultiFields(mergeState.fieldsProducers, null));
+      @SuppressWarnings("unchecked") Iterable<String> indexedFieldNames = () ->
+          new MergedIterator<>(true,
+              Arrays.stream(mergeState.fieldsProducers).map(FieldsProducer::iterator).toArray(Iterator[]::new));
+      Map<PostingsFormat, FieldsGroup> formatToGroups = buildFieldsGroupMapping(indexedFieldNames);
 
       // Merge postings
       PerFieldMergeState pfMergeState = new PerFieldMergeState(mergeState);
@@ -173,7 +177,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
     }
 
-    private Map<PostingsFormat, FieldsGroup> buildFieldsGroupMapping(Fields fields) {
+    private Map<PostingsFormat, FieldsGroup> buildFieldsGroupMapping(Iterable<String> indexedFieldNames) {
       // Maps a PostingsFormat instance to the suffix it
       // should use
       Map<PostingsFormat,FieldsGroup> formatToGroups = new HashMap<>();
@@ -182,7 +186,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       Map<String,Integer> suffixes = new HashMap<>();
 
       // Assign field -> PostingsFormat
-      for(String field : fields) {
+      for(String field : indexedFieldNames) {
         FieldInfo fieldInfo = writeState.fieldInfos.fieldInfo(field);
 
         final PostingsFormat format = getPostingsFormatForField(field);

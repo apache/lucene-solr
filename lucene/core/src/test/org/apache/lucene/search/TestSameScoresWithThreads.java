@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -61,7 +61,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     w.close();
 
     final IndexSearcher s = newSearcher(r);
-    Terms terms = MultiFields.getTerms(r, "body");
+    Terms terms = MultiTerms.getTerms(r, "body");
     int termCount = 0;
     TermsEnum termsEnum = terms.iterator();
     while(termsEnum.next() != null) {

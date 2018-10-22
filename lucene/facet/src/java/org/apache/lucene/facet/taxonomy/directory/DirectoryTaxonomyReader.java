@@ -35,7 +35,7 @@ import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -284,7 +284,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
     // If we're still here, we have a cache miss. We need to fetch the
     // value from disk, and then also put it in the cache:
     int ret = TaxonomyReader.INVALID_ORDINAL;
-    PostingsEnum docs = MultiFields.getTermDocsEnum(indexReader, Consts.FULL, new BytesRef(FacetsConfig.pathToString(cp.components, cp.length)), 0);
+    PostingsEnum docs = MultiTerms.getTermPostingsEnum(indexReader, Consts.FULL, new BytesRef(FacetsConfig.pathToString(cp.components, cp.length)), 0);
     if (docs != null && docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       ret = docs.docID();
       

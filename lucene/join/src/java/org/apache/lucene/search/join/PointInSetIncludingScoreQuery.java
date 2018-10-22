@@ -146,8 +146,8 @@ abstract class PointInSetIncludingScoreQuery extends Query {
         if (fieldInfo == null) {
           return null;
         }
-        if (fieldInfo.getPointDimensionCount() != 1) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() + " but this query has numDims=1");
+        if (fieldInfo.getPointDataDimensionCount() != 1) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + fieldInfo.getPointDataDimensionCount() + " but this query has numDims=1");
         }
         if (fieldInfo.getPointNumBytes() != bytesPerDim) {
           throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);

@@ -54,8 +54,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.join.ToChildBlockJoinQuery;
-import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
 import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -71,6 +69,31 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether 
  * {@link Term}s from the {@link Query} are contained in a supplied {@link TokenStream}.
+ *
+ * In order to support additional, by default unsupported queries, subclasses can override
+ * {@link #extract(Query, float, Map)} for extracting wrapped or delegate queries and
+ * {@link #extractUnknownQuery(Query, Map)} to process custom leaf queries:
+ * <pre>
+ * <code>
+ *    WeightedSpanTermExtractor extractor = new WeightedSpanTermExtractor() {
+ *        protected void extract(Query query, float boost, Map&lt;String, WeightedSpanTerm&gt;terms) throws IOException {
+ *          if (query instanceof QueryWrapper) {
+ *            extract(((QueryWrapper)query).getQuery(), boost, terms);
+ *          } else {
+ *            super.extract(query, boost, terms);
+ *          }
+ *        }
+ *
+ *        protected void extractUnknownQuery(Query query, Map&lt;String, WeightedSpanTerm&gt; terms) throws IOException {
+ *          if (query instanceOf CustomTermQuery) {
+ *            Term term = ((CustomTermQuery) query).getTerm();
+ *            terms.put(term.field(), new WeightedSpanTerm(1, term.text()));
+ *          }
+ *        }
+ *    };
+ * }
+ * </code>
+ * </pre>
  */
 public class WeightedSpanTermExtractor {
 
@@ -85,12 +108,11 @@ public class WeightedSpanTermExtractor {
   private LeafReader internalReader = null;
 
   public WeightedSpanTermExtractor() {
+    this(null);
   }
 
   public WeightedSpanTermExtractor(String defaultField) {
-    if (defaultField != null) {
-      this.defaultField = defaultField;
-    }
+    this.defaultField = defaultField;
   }
 
   /**
@@ -154,10 +176,6 @@ public class WeightedSpanTermExtractor {
       for (Query clause : ((DisjunctionMaxQuery) query)) {
         extract(clause, boost, terms);
       }
-    } else if (query instanceof ToParentBlockJoinQuery) {
-      extract(((ToParentBlockJoinQuery) query).getChildQuery(), boost, terms);
-    } else if (query instanceof ToChildBlockJoinQuery) {
-      extract(((ToChildBlockJoinQuery) query).getParentQuery(), boost, terms);
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
       final Term[][] termArrays = mpq.getTermArrays();

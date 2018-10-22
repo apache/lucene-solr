@@ -19,8 +19,8 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +73,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.uninverting.UninvertingReader;
 
@@ -270,10 +271,17 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return s;
     }
 
-    public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) throws IOException {
+    public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) {
       this.collapseField = localParams.get("field");
       if (this.collapseField == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Required 'field' param is missing.");
+      }
+
+      // if unknown field, this would fail fast
+      SchemaField collapseFieldSf = request.getSchema().getField(this.collapseField);
+      // collapseFieldSf won't be null
+      if (collapseFieldSf.multiValued()) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collapsing not supported on multivalued fields");
       }
 
       this.groupHeadSelector = GroupHeadSelector.build(localParams);
@@ -334,7 +342,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else if(nPolicy.equals((NULL_EXPAND))) {
         this.nullPolicy = NULL_POLICY_EXPAND;
       } else {
-        throw new IOException("Invalid nullPolicy:"+nPolicy);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy:"+nPolicy);
       }
     }
 
@@ -369,6 +377,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                              boostDocsMap,
                                              searcher);
 
+      } catch (SolrException e) {
+        // handle SolrException separately
+        throw e;
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -420,7 +431,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                       DocValuesType.NONE,
                                       fieldInfo.getDocValuesGen(),
                                       fieldInfo.attributes(),
-                                      0, 0, fieldInfo.isSoftDeletesField());
+                                      0, 0, 0, fieldInfo.isSoftDeletesField());
           newInfos.add(f);
 
         } else {
@@ -1245,15 +1256,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(collapseFieldType instanceof StrField) {
         if(HINT_TOP_FC.equals(hint)) {
 
-            /*
-            * This hint forces the use of the top level field cache for String fields.
-            * This is VERY fast at query time but slower to warm and causes insanity.
-            */
-
-          Map<String, UninvertingReader.Type> mapping = new HashMap();
-          mapping.put(collapseField, UninvertingReader.Type.SORTED);
-          @SuppressWarnings("resource") final UninvertingReader uninvertingReader =
-              new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField), mapping);
+          /*
+          * This hint forces the use of the top level field cache for String fields.
+          * This is VERY fast at query time but slower to warm and causes insanity.
+          */
+          @SuppressWarnings("resource") final LeafReader uninvertingReader = UninvertingReader.wrap(
+                  new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField),
+                  Collections.singletonMap(collapseField, UninvertingReader.Type.SORTED)::get);
 
           docValuesProducer = new EmptyDocValuesProducer() {
               @Override

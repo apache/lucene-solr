@@ -131,7 +131,7 @@ The `facet` function provides aggregations that are rolled up over buckets. Unde
 * `q`: (Mandatory) The query to build the aggregations from.
 * `buckets`: (Mandatory) Comma separated list of fields to rollup over. The comma separated list represents the dimensions in a multi-dimensional rollup.
 * `bucketSorts`: Comma separated list of sorts to apply to each dimension in the buckets parameters. Sorts can be on the computed metrics or on the bucket values.
-* `bucketSizeLimit`: The number of buckets to include. This value is applied to each dimension.
+* `bucketSizeLimit`: The number of buckets to include. This value is applied to each dimension. '-1' will fetch all the buckets.
 * `metrics`: List of metrics to compute for the buckets. Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`.
 
 === facet Syntax
@@ -216,8 +216,8 @@ The `nodes` function provides breadth-first graph traversal. For details, see th
 
 == knnSearch
 
-The `knnSearch` function returns the K nearest neighbors for a document based on text similarity. Under the covers the `knnSearch` function
-use the More Like This query parser plugin.
+The `knnSearch` function returns the k-nearest neighbors for a document based on text similarity. Under the covers the `knnSearch` function
+uses the More Like This query parser plugin.
 
 === knnSearch Parameters
 

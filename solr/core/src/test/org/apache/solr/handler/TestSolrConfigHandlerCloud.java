@@ -39,7 +39,6 @@ import org.apache.solr.util.RestTestHarness;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
-import static org.apache.solr.handler.TestBlobHandler.getAsString;
 
 public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
@@ -266,7 +265,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
   public static void compareValues(Map result, Object expected, List<String> jsonPath) {
     Object val = Utils.getObjectByPath(result, false, jsonPath);
-    assertTrue(StrUtils.formatString("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(result)),
+    assertTrue(StrUtils.formatString("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, result.toString()),
         expected instanceof Predicate ?
             ((Predicate)expected ).test(val) :
             Objects.equals(expected, val)

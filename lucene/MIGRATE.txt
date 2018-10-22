@@ -118,3 +118,30 @@ docId() and score() (LUCENE-6228)
 
 If a custom Scorer implementation does not have an associated Weight, it can probably
 be replaced with a Scorable instead.
+
+## Suggesters now return Long instead of long for weight() during indexing, and double
+instead of long at suggest time ##
+
+Most code should just require recompilation, though possibly requiring some added casts.
+
+## TokenStreamComponents is now final ##
+
+Instead of overriding TokenStreamComponents#setReader() to customise analyzer
+initialisation, you should now pass a Consumer&lt;Reader> instance to the
+TokenStreamComponents constructor.
+
+## LowerCaseTokenizer and LowerCaseTokenizerFactory have been removed ##
+
+LowerCaseTokenizer combined tokenization and filtering in a way that broke token
+normalization, so they have been removed. Instead, use a LetterTokenizer followed by
+a LowerCaseFilter
+
+## CharTokenizer no longer takes a normalizer function ##
+
+CharTokenizer now only performs tokenization. To perform any type of filtering
+use a TokenFilter chain as you would with any other Tokenizer.
+
+## Highlighter and FastVectorHighlighter no longer support ToParent/ToChildBlockJoinQuery
+
+Both Highlighter and FastVectorHighlighter need a custom WeightedSpanTermExtractor or FieldQuery respectively
+in order to support ToParent/ToChildBlockJoinQuery.

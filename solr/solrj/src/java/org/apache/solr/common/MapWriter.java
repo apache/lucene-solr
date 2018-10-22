@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import org.apache.solr.common.util.Utils;
@@ -43,7 +44,7 @@ public interface MapWriter extends MapSerializable {
     try {
       writeMap(new EntryWriter() {
         @Override
-        public EntryWriter put(String k, Object v) throws IOException {
+        public EntryWriter put(CharSequence k, Object v) {
           if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
           if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
           if (v instanceof Iterable) {
@@ -65,7 +66,7 @@ public interface MapWriter extends MapSerializable {
             }
             v = map;
           }
-          map.put(k, v);
+          map.put(k==null? null : k.toString(), v);
           // note: It'd be nice to assert that there is no previous value at 'k' but it's possible the passed in
           // map is already populated and the intention is to overwrite.
           return this;
@@ -80,6 +81,51 @@ public interface MapWriter extends MapSerializable {
 
   void writeMap(EntryWriter ew) throws IOException;
 
+  /**Get a child object value using json path
+   *
+   * @param path the full path to that object such as a/b/c[4]/d etc
+   * @param def the default
+   * @return the found value or default
+   */
+  default Object _get(String path, Object def) {
+    Object v = Utils.getObjectByPath(this, false, path);
+    return v == null ? def : v;
+  }
+
+  default String _getStr(String path, String def) {
+    Object v = Utils.getObjectByPath(this, false, path);
+    return v == null ? def : String.valueOf(v);
+  }
+
+  default void _forEachEntry(String path, BiConsumer fun) {
+    Utils.forEachMapEntry(this, path, fun);
+  }
+
+  default void _forEachEntry(List<String> path, BiConsumer fun) {
+    Utils.forEachMapEntry(this, path, fun);
+  }
+
+  default void _forEachEntry(BiConsumer fun) {
+    Utils.forEachMapEntry(this, fun);
+  }
+
+  /**
+   * Get a child object value using json path
+   *
+   * @param path the full path to that object such as ["a","b","c[4]","d"] etc
+   * @param def  the default
+   * @return the found value or default
+   */
+  default Object _get(List<String> path, Object def) {
+    Object v = Utils.getObjectByPath(this, false, path);
+    return v == null ? def : v;
+  }
+
+  default String _getStr(List<String> path, String def) {
+    Object v = Utils.getObjectByPath(this, false, path);
+    return v == null ? def : String.valueOf(v);
+  }
+
   /**
    * An interface to push one entry at a time to the output.
    * The order of the keys is not defined, but we assume they are distinct -- don't call {@code put} more than once
@@ -93,8 +139,8 @@ public interface MapWriter extends MapSerializable {
      * @param k The key
      * @param v The value can be any supported object
      */
-    EntryWriter put(String k, Object v) throws IOException;
-    default EntryWriter putNoEx(String k, Object v) {
+    EntryWriter put(CharSequence k, Object v) throws IOException;
+    default EntryWriter putNoEx(CharSequence k, Object v) {
       try {
         put(k,v);
       } catch (IOException e) {
@@ -103,45 +149,45 @@ public interface MapWriter extends MapSerializable {
       return this;
     }
 
-    default EntryWriter put(String k, Object v, BiPredicate<String, Object> p) throws IOException {
+    default EntryWriter put(CharSequence k, Object v, BiPredicate<CharSequence, Object> p) throws IOException {
       if (p.test(k,v)) put(k, v);
       return this;
     }
 
-    default EntryWriter putIfNotNull(String k, Object v) throws IOException {
+    default EntryWriter putIfNotNull(CharSequence k, Object v) throws IOException {
       if(v != null) put(k,v);
       return this;
     }
 
-    default EntryWriter putStringIfNotNull(String k, Object v) throws IOException {
+    default EntryWriter putStringIfNotNull(CharSequence k, Object v) throws IOException {
       if(v != null) put(k,String.valueOf(v));
       return this;
     }
 
 
-    default EntryWriter put(String k, int v) throws IOException {
+    default EntryWriter put(CharSequence k, int v) throws IOException {
       put(k, (Integer) v);
       return this;
     }
 
 
-    default EntryWriter put(String k, long v) throws IOException {
+    default EntryWriter put(CharSequence k, long v) throws IOException {
       put(k, (Long) v);
       return this;
     }
 
 
-    default EntryWriter put(String k, float v) throws IOException {
+    default EntryWriter put(CharSequence k, float v) throws IOException {
       put(k, (Float) v);
       return this;
     }
 
-    default EntryWriter put(String k, double v) throws IOException {
+    default EntryWriter put(CharSequence k, double v) throws IOException {
       put(k, (Double) v);
       return this;
     }
 
-    default EntryWriter put(String k, boolean v) throws IOException {
+    default EntryWriter put(CharSequence k, boolean v) throws IOException {
       put(k, (Boolean) v);
       return this;
     }
