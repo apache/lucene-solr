@@ -1,1 +1,11 @@
 apply plugin: 'java'
+
+dependencies {
+	compile project(':lucene:analysis:common')
+	compile library.morfologik_polish
+	compile library.morfologik_fsa
+	compile library.morfologik_stemming
+	compile library.morfologik_ukrainian_search
+
+	testCompile project(':lucene:test-framework')
+}

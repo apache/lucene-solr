@@ -1,1 +1,8 @@
 apply plugin: 'java'
+
+dependencies {
+	compile project(':lucene:analysis:common')
+	compile library.opennlp_tools
+
+	testCompile project(':lucene:test-framework')
+}

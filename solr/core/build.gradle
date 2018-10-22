@@ -1,0 +1,140 @@
+apply plugin: 'java'
+
+
+task printClasspath {
+    doLast {
+        configurations.testRuntime.each { println it }
+    }
+}
+
+dependencies {
+	compile project(':solr:server')
+	compile project(':solr:solrj')
+	compile project(':lucene:analysis:common')
+	compile project(':lucene:suggest')
+	compile project(':lucene:queries')
+	compile project(':lucene:highlighter')
+	compile project(':lucene:spatial-extras')
+	compile project(':lucene:grouping')
+	compile project(':lucene:classification')
+	compile project(':lucene:expressions')
+	compile project(':lucene:sandbox')
+	compile project(':lucene:queryparser')
+	compile project(':lucene:misc')
+	compile project(':lucene:join')
+	compile project(':lucene:codecs')
+	compile project(':lucene:backward-codecs')
+
+	compile library.commons_codec
+	compile library.commons_io
+	compile library.commons_exec
+	compile library.commons_fileupload
+	compile library.commons_cli
+	compile library.commons_lang
+	compile (library.guava) {
+		force = true
+	}
+	compile library.spatial4j
+	compile library.antlr4_runtime
+	compile library.commons_math3
+	compile library.asm
+	compile library.asm_commons
+	compile library.org_restlet
+	compile library.org_restlet_ext_servlet
+	compile library.dom4j
+	compile library.hppc
+
+	compile library.log4j_api
+	compile library.log4j_core
+	compile library.log4j_slf4j_impl	
+	compile library.log4j_1_2_api
+	compile library.disruptor
+	compile library.jcl_over_slf4j
+
+	compile library.jackson_core
+	compile library.jackson_databind
+	compile library.jackson_annotations
+	compile library.jackson_dataformat_smile
+
+	compile (library.curator_framework)
+	compile (library.curator_client)
+	compile (library.curator_recipes)
+	compile library.t_digest
+
+	compile (library.calcite_core)
+	compile (library.calcite_linq4j)
+	compile library.avatica_core
+	compile library.commons_lang3
+	compile library.eigenbase_properties
+	compile library.janino
+	compile library.commons_compiler
+	compile library.protobuf_java
+	compile library.rrd4j
+
+	//compile.hadoop
+	compile (library.hadoop_common)
+	compile (library.hadoop_hdfs)
+	compile library.hadoop_annotations	
+	compile library.hadoop_auth
+	compile library.commons_configuration
+	compile library.commons_collections
+	compile library.caffeine
+	compile library.htrace_core
+
+	testCompile library.mockito_core
+	testCompile library.byte_buddy
+	testCompile library.objenesis
+
+	//test.DfsMiniCluster
+	//TODO datcm verify this
+	testCompile "$library.hadoop_common:tests"
+	testCompile "$library.hadoop_hdfs:tests"
+	testCompile library.mortbay_jetty
+	testCompile library.mortbay_jetty_util
+	testCompile library.mortbay_jetty_sslengine
+	testCompile library.jersey_core
+	testCompile library.jersey_server
+	testCompile library.netty_all
+	testCompile library.jackson_core_asl
+	testCompile library.jackson_mapper_asl
+
+	//test.MiniKdc
+	testCompile library.hadoop_minikdc
+	testCompile library.apacheds_core
+	testCompile library.apacheds_core_api
+	testCompile library.apacheds_core_avl
+	testCompile library.apacheds_core_shared
+	testCompile library.apacheds_interceptor_kerberos
+	testCompile library.apacheds_interceptors_admin
+	testCompile library.apacheds_interceptors_authn
+	testCompile library.apacheds_interceptors_authz
+	testCompile library.apacheds_interceptors_changelog
+	testCompile library.apacheds_interceptors_collective
+	testCompile library.apacheds_interceptors_event
+	testCompile library.apacheds_interceptors_exception
+	testCompile library.apacheds_interceptors_journal
+	testCompile library.apacheds_interceptors_normalization
+	testCompile library.apacheds_interceptors_operational
+	testCompile library.apacheds_interceptors_referral
+	testCompile library.apacheds_interceptors_schema
+	testCompile library.apacheds_interceptors_subtree
+	testCompile library.apacheds_interceptors_trigger
+	testCompile library.apacheds_i18n
+	testCompile library.apacheds_jdbm_partition
+	testCompile library.apacheds_kerberos_codec
+	testCompile library.apacheds_ldif_partition
+	testCompile library.apacheds_mavibot_partition
+	testCompile library.apacheds_protocol_kerberos
+	testCompile library.apacheds_protocol_ldap
+	testCompile library.apacheds_protocol_shared
+	testCompile library.apacheds_xdbm_partition
+	testCompile library.api_all
+	testCompile library.apacheds_jdbm1
+	testCompile library.mina_core
+	testCompile library.bcprov_jdk15on
+	testCompile library.antlr
+	testCompile library.ehcache_core
+	testCompile project(':solr:test-framework')
+	testCompile project(path: ':lucene:backward-codecs', configuration: 'testOutput')
+	testCompile project(path: ':lucene:queryparser', configuration: 'testOutput')
+}

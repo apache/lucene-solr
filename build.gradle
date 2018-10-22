@@ -7,8 +7,26 @@
 allprojects {
     repositories {
     	mavenCentral()
+        maven {
+            url "https://oss.sonatype.org/content/repositories/releases"
+        }
+        maven {
+            url "http://maven.restlet.org"
+        }
+        maven {
+            url "http://repository.cloudera.com/content/repositories/releases"
+        }
+        // chinese mirror
+        maven {
+            url "http://uk.maven.org/maven2"
+        }
         jcenter() 
     }
+    configurations {
+	    all {
+	        // exclude group: 'com.google.guava', module: 'guava'
+	    }
+	}
 }
 
 
@@ -33,6 +51,7 @@ def tika_version = '1.19.1'
 def bouncycastle_version = '1.60'
 def morfologik_version = '2.1.5'
 def codehaus_jackson_version = '1.9.13'
+def codehaus_janino_version = '2.7.6'
 def jetty_version = '9.4.11.v20180605'
 def vorbis_java_version = '0.8'
 def mortbay_jetty_version = '6.1.26'
@@ -47,15 +66,15 @@ ext.library = [
 	randomizedtesting_junit4: "com.carrotsearch.randomizedtesting:junit4-ant:$randomizedtesting_version",
 	randomizedtesting_runner: "com.carrotsearch.randomizedtesting:randomizedtesting-runner:$randomizedtesting_version",
 
-	hppc: "com.carrotsearch.hppc:0.8.1",
+	hppc: "com.carrotsearch:hppc:0.8.1",
 	langdetect: "com.cybozu.labs:langdetect:1.1-20120112",
 	metadata_extractor: "com.drewnoakes:metadata-extractor:2.11.0",
 	parso: "com.epam:parso:2.0.9",
 
-	jackson_annotations: "com.fasterxml.jackson.core:$jackson_version",
-	jackson_core: "com.fasterxml.jackson.core:$jackson_version",
-	jackson_databind: "com.fasterxml.jackson.core:$jackson_version",
-	jackson_dataformat_smile: "com.fasterxml.jackson.dataformat:$jackson_version",
+	jackson_annotations: "com.fasterxml.jackson.core:jackson-annotations:$jackson_version",
+	jackson_core: "com.fasterxml.jackson.core:jackson-core:$jackson_version",
+	jackson_databind: "com.fasterxml.jackson.core:jackson-databind:$jackson_version",
+	jackson_dataformat_smile: "com.fasterxml.jackson.dataformat:jackson-dataformat-smile:$jackson_version",
 
 	caffeine: "com.github.ben-manes.caffeine:caffeine:2.4.0",
 	curvesapi: "com.github.virtuald:curvesapi:1.04",
@@ -230,9 +249,10 @@ ext.library = [
 
 	jackson_core_asl: "org.codehaus.jackson:jackson-core-asl:$codehaus_jackson_version",
 	jackson_mapper_asl: "org.codehaus.jackson:jackson-mapper-asl:$codehaus_jackson_version",
-	commons_compiler: "org.codehaus.janino:commons-compiler:$codehaus_jackson_version",
 
-	janino: "org.codehaus.janino:janino:2.7.6",
+	commons_compiler: "org.codehaus.janino:commons-compiler:$codehaus_janino_version",
+	janino: "org.codehaus.janino:janino:$codehaus_janino_version",
+
 	stax2_api: "org.codehaus.woodstox:stax2-api:3.1.4",
 	woodstox_core_asl: "org.codehaus.woodstox:woodstox-core-asl:4.4.1",
 
@@ -261,9 +281,9 @@ ext.library = [
 	spatial4j: "org.locationtech.spatial4j:spatial4j:0.7",
 	mockito_core: "org.mockito:mockito-core:2.6.2",
 
-	jetty: "org.mortbay.jetty:jetty:$mortbay_jetty_version",
-	jetty_sslengine: "org.mortbay.jetty:jetty-sslengine:$mortbay_jetty_version",
-	jetty_util: "org.mortbay.jetty:jetty-util:$mortbay_jetty_version",
+	mortbay_jetty: "org.mortbay.jetty:jetty:$mortbay_jetty_version",
+	mortbay_jetty_sslengine: "org.mortbay.jetty:jetty-sslengine:$mortbay_jetty_version",
+	mortbay_jetty_util: "org.mortbay.jetty:jetty-util:$mortbay_jetty_version",
 
 	noggit: "org.noggit:noggit:0.8",
 	objenesis: "org.objenesis:objenesis:2.5",

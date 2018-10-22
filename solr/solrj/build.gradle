@@ -1,0 +1,21 @@
+apply plugin: 'java'
+
+dependencies {
+	compile library.zookeeper
+	compile library.httpclient
+	compile library.httpmime
+	compile library.httpcore
+	compile library.commons_io
+	compile library.commons_math3
+	compile library.woodstox_core_asl
+	compile library.stax2_api
+	compile library.noggit
+	compile library.slf4j_api
+	compile library.jcl_over_slf4j
+
+	testCompile library.log4j_slf4j_impl
+	testCompile library.mockito_core
+	testCompile library.byte_buddy
+	testCompile library.objenesis
+	testCompile project(':solr:test-framework')
+}

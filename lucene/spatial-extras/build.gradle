@@ -1,8 +1,14 @@
 apply plugin: 'java'
 
 dependencies {
-    // compile project(':lucene:core')
-    // compile project(':lucene:queries')
-    // compile project(':lucene:sandbox')
-    // testCompile project(':lucene:test-framework')
+    compile project(':lucene:spatial')
+    compile project(':lucene:spatial3d')
+    compile library.spatial4j
+    compile library.s2_geometry_library_java
+
+    testCompile project(':lucene:test-framework')    
+    testCompile library.jts_core 
+    testCompile library.slf4j_api
+    testCompile "$library.spatial4j:tests"
+    testCompile project(path: ':lucene:spatial3d', configuration: 'testOutput')
 }

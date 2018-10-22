@@ -1,0 +1,36 @@
+apply plugin: 'java'
+
+dependencies {
+	compile library.log4j_api
+	compile library.log4j_core
+	compile library.log4j_slf4j_impl
+	compile library.log4j_1_2_api
+
+	compile library.disruptor
+	compile library.slf4j_api
+	compile library.jcl_over_slf4j
+	compile library.jul_to_slf4j
+
+	compile library.metrics_core
+	compile library.metrics_jetty9
+	compile library.metrics_jvm
+	compile library.metrics_ganglia
+	compile library.gmetric4j
+	compile library.metrics_graphite
+
+	compile library.jetty_continuation
+	compile library.jetty_deploy
+	compile library.jetty_http
+	compile library.jetty_continuation
+	compile library.jetty_jmx
+	compile library.jetty_rewrite
+	compile library.jetty_security
+	compile library.jetty_server
+	compile library.jetty_servlet
+	compile library.jetty_servlets
+	compile library.jetty_util
+	compile library.jetty_webapp
+	compile library.jetty_xml
+
+	compile library.javax_servlet_api
+}

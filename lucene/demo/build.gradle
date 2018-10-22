@@ -8,4 +8,6 @@ dependencies {
     compile project(':lucene:analysis:common')
     compile project(':lucene:queryparser')
     compile project(':lucene:expressions')
+
+    testCompile project(':lucene:test-framework')
 }

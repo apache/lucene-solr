@@ -1,8 +1,17 @@
 apply plugin: 'java'
 
 dependencies {
-    // compile project(':lucene:core')
-    // compile project(':lucene:queries')
-    // compile project(':lucene:sandbox')
-    // testCompile project(':lucene:test-framework')
+    compile project(':lucene:core')
+    compile project(':lucene:facet')
+    compile library.httpclient
+    compile library.httpcore
+    compile library.jetty_server
+    compile library.javax_servlet_api
+    compile library.jetty_servlet
+    compile library.jetty_util
+    compile library.jetty_io
+    compile library.jetty_continuation
+    compile library.jetty_http
+    
+    testCompile project(':lucene:test-framework')
 }

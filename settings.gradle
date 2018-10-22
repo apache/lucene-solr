@@ -41,5 +41,7 @@ include 'lucene:spatial3d'
 include 'lucene:suggest'
 include 'lucene:test-framework'
 
-
-include 'solr'
+include 'solr:core'
+include 'solr:server'
+include 'solr:solrj'
+include 'solr:test-framework'

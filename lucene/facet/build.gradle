@@ -4,5 +4,7 @@ apply plugin: 'java'
 dependencies {
     compile project(':lucene:core')
     compile 'com.carrotsearch:hppc:0.8.1'
+
     testCompile project(':lucene:test-framework')
+    testCompile project(':lucene:queries')
 }

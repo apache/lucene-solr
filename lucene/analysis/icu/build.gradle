@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 dependencies {
-	compile project(':lucene:core')
+	compile project(':lucene:analysis:common')
 	compile library.icu4j
     testCompile project(':lucene:codecs')
     testCompile project(':lucene:test-framework')

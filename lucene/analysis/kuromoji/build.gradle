@@ -1,1 +1,20 @@
 apply plugin: 'java'
+
+// def urlFile = { url, name ->
+//     File file = new File("$buildDir/download/${name}.jar")
+//     file.parentFile.mkdirs()
+//     if (!file.exists()) {
+//         new URL(url).withInputStream { downloadStream ->
+//             file.withOutputStream { fileOut ->
+//                 fileOut << downloadStream
+//             }
+//         }
+//     }
+//     files(file.absolutePath)
+// }
+
+dependencies {
+	compile project(':lucene:analysis:common')
+
+	testCompile project(':lucene:test-framework')
+}

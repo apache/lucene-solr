@@ -1,5 +1,18 @@
 apply plugin: 'java'
 
+task jarTest (type: Jar) {
+    from sourceSets.test.output
+    classifier = 'test'
+}
+
+configurations {
+    testOutput
+}
+
+artifacts {
+    testOutput jarTest
+}
+
 dependencies {
     compile project(':lucene:core')
     compile project(':lucene:queries')

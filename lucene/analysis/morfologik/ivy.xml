@@ -21,7 +21,7 @@
   <configurations defaultconfmapping="compile->master">
     <conf name="compile" transitive="false"/>
   </configurations>
-  <dependencies>
+  <dependencies> 
     <dependency org="org.carrot2" name="morfologik-polish" rev="${/org.carrot2/morfologik-polish}" conf="compile"/>
     <dependency org="org.carrot2" name="morfologik-fsa" rev="${/org.carrot2/morfologik-fsa}" conf="compile"/>
     <dependency org="org.carrot2" name="morfologik-stemming" rev="${/org.carrot2/morfologik-stemming}" conf="compile"/>

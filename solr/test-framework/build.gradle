@@ -1,0 +1,13 @@
+apply plugin: 'java'
+
+dependencies {
+	compile project(':lucene:test-framework')
+	compile project(':solr:solrj')
+	compile project(':solr:core')
+	compile (library.junit) {
+		exclude group: 'org.hamcrest', module: 'hamcrest-core'
+		force = true
+	}
+	compile library.randomizedtesting_junit4
+	compile library.randomizedtesting_runner
+}
