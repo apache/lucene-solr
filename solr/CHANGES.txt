@@ -70,6 +70,9 @@ New Features
 * SOLR-12780: Add support for Leaky ReLU and TanH activations in contrib/ltr NeuralNetworkModel class.
   (Kamuela Lau, Christine Poerschke)
 
+* SOLR-12846: Added support for "host" variable in autoscaling policy rules (noble)
+
+
 Other Changes
 ----------------------
 
