@@ -18,4 +18,5 @@ dependencies {
 	testCompile library.byte_buddy
 	testCompile library.objenesis
 	testCompile project(':solr:test-framework')
+	testCompile project(':solr:example:example-DIH')
 }

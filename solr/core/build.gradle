@@ -1,16 +1,12 @@
 apply plugin: 'java'
 
-
-task printClasspath {
-    doLast {
-        configurations.testRuntime.each { println it }
-    }
-}
-
 dependencies {
 	compile project(':solr:server')
 	compile project(':solr:solrj')
 	compile project(':lucene:analysis:common')
+	compile project(':lucene:analysis:phonetic')
+	compile project(':lucene:analysis:kuromoji')
+	compile project(':lucene:analysis:nori')
 	compile project(':lucene:suggest')
 	compile project(':lucene:queries')
 	compile project(':lucene:highlighter')

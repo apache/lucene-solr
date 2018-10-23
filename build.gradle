@@ -22,13 +22,15 @@ allprojects {
         }
         jcenter() 
     }
-    configurations {
-	    all {
-	        // exclude group: 'com.google.guava', module: 'guava'
-	    }
-	}
 }
 
+subprojects {
+	plugins.withType(JavaPlugin) {
+		test {
+			systemProperty 'java.security.egd', 'file:/dev/./urandom'
+		}
+	}
+}
 
 // These versions are defined here because they represent
 // a dependency version which should match across multiple
