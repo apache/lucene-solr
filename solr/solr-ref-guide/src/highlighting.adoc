@@ -155,6 +155,7 @@ It can handle typical requirements and others possibly via plugins/extension.
 We recommend that you try this highlighter even though it isn't the default (yet).
 +
 The UH highlights a query very _accurately_ and thus is true to what the underlying Lucene query actually matches.
+This is especially true when `hl.weightMatches` is enabled.
 Other highlighters highlight terms more liberally (over-highlight).
 A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis.
 There is little or no such flexibility of offset sources for the other highlighters.
@@ -261,7 +262,7 @@ Tells the UH to use Lucene's new "Weight Matches" API instead of doing SpanQuery
 This is the most accurate highlighting mode reflecting the query.
 Furthermore, phrases will be highlighted as a whole instead of word by word.
 +
-The default is `true`.
+The default is `false` (will change to `true` in 8.0).
 However if either `hl.usePhraseHighlighter` or `hl.multiTermQuery` are set to false, then this setting is effectively false no matter what you set it to.
 
 == The Original Highlighter

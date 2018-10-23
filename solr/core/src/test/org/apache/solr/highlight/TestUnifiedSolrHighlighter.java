@@ -103,7 +103,7 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertQ("strict phrase handling",
         req("q", "text:\"strict phrases\"", "sort", "id asc", "hl", "true"),
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
-        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict phrases</em> should be enabled for phrases'");
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict</em> <em>phrases</em> should be enabled for phrases'");
   }
 
   public void testStrictPhrasesCanBeDisabled() {
@@ -292,14 +292,14 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0");
   }
 
-  public void testWeightMatchesDisabled() {
+  public void testWeightMatchesEnabled() {
     clearIndex();
     assertU(adoc("text", "alpha bravo charlie", "id", "101"));
     assertU(commit());
-    assertQ("weight matches disabled, phrase highlights separately",
-        req("q", "text:\"alpha bravo\"", "hl", "true", "hl.weightMatches", "false"),
+    assertQ("weight matches enabled, phrase highlights separately",
+        req("q", "text:\"alpha bravo\"", "hl", "true", "hl.weightMatches", "true"),
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
-        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>alpha</em> <em>bravo</em> charlie'");
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>alpha bravo</em> charlie'");
   }
 
 }

@@ -80,7 +80,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * &lt;bool name="hl.usePhraseHighlighter"&gt;true&lt;/bool&gt;
  * &lt;int name="hl.cacheFieldValCharsThreshold"&gt;524288&lt;/int&gt;
  * &lt;str name="hl.offsetSource"&gt;&lt;/str&gt;
- * &lt;bool name="hl.weightMatches"&gt;true&lt;/bool&gt;
+ * &lt;bool name="hl.weightMatches"&gt;false&lt;/bool&gt;
  * &lt;/lst&gt;
  * &lt;/requestHandler&gt;
  * </pre>
@@ -403,7 +403,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       }
       flags.add(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED);
 
-      if (params.getFieldBool(field, HighlightParams.WEIGHT_MATCHES, true)
+      if (params.getFieldBool(field, HighlightParams.WEIGHT_MATCHES, false) // true in 8.0
           && flags.contains(HighlightFlag.PHRASES) && flags.contains(HighlightFlag.MULTI_TERM_QUERY)) {
         flags.add(HighlightFlag.WEIGHT_MATCHES);
       }
