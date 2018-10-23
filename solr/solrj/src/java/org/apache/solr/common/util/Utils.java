@@ -107,14 +107,14 @@ public class Utils {
     return mutable ? copy : Collections.unmodifiableMap(copy);
   }
 
-  public static void forEachMapEntry(MapWriter mw, String path, BiConsumer fun) {
-    Object o = Utils.getObjectByPath(mw, false, path);
-    forEachMapEntry(o, fun);
+  public static void forEachMapEntry(Object o, String path, BiConsumer fun) {
+    Object val = Utils.getObjectByPath(o, false, path);
+    forEachMapEntry(val, fun);
   }
 
-  public static void forEachMapEntry(MapWriter mw, List<String> path, BiConsumer fun) {
-    Object o = Utils.getObjectByPath(mw, false, path);
-    forEachMapEntry(o, fun);
+  public static void forEachMapEntry(Object o, List<String> path, BiConsumer fun) {
+    Object val = Utils.getObjectByPath(o, false, path);
+    forEachMapEntry(val, fun);
   }
 
   public static void forEachMapEntry(Object o, BiConsumer fun) {
