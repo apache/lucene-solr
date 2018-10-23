@@ -67,6 +67,10 @@
     <Logger name="org.apache.solr.core.SolrCore.SlowRequest" level="info" additivity="false">
       <AppenderRef ref="SlowFile"/>
     </Logger>
+    <Logger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="warn"/>
+    <Logger name="org.apache.solr.update.processor.LogUpdateProcessorFactory.delete" level="info" additivity="false">
+      <AppenderRef ref="DeleteFile"/>
+    </Logger>
 
     <Root level="info">
       <AppenderRef ref="RollingFile"/>
