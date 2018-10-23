@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import org.apache.solr.common.util.Utils;
@@ -33,7 +32,7 @@ import org.apache.solr.common.util.Utils;
  * This avoids creating map instances and is supposed to be memory efficient.
  * If the entries are primitives, unnecessary boxing is also avoided.
  */
-public interface MapWriter extends MapSerializable {
+public interface MapWriter extends MapSerializable , NavigableObject {
 
   default String jsonStr(){
     return Utils.toJSONString(this);
@@ -80,51 +79,6 @@ public interface MapWriter extends MapSerializable {
   }
 
   void writeMap(EntryWriter ew) throws IOException;
-
-  /**Get a child object value using json path
-   *
-   * @param path the full path to that object such as a/b/c[4]/d etc
-   * @param def the default
-   * @return the found value or default
-   */
-  default Object _get(String path, Object def) {
-    Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : v;
-  }
-
-  default String _getStr(String path, String def) {
-    Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : String.valueOf(v);
-  }
-
-  default void _forEachEntry(String path, BiConsumer fun) {
-    Utils.forEachMapEntry(this, path, fun);
-  }
-
-  default void _forEachEntry(List<String> path, BiConsumer fun) {
-    Utils.forEachMapEntry(this, path, fun);
-  }
-
-  default void _forEachEntry(BiConsumer fun) {
-    Utils.forEachMapEntry(this, fun);
-  }
-
-  /**
-   * Get a child object value using json path
-   *
-   * @param path the full path to that object such as ["a","b","c[4]","d"] etc
-   * @param def  the default
-   * @return the found value or default
-   */
-  default Object _get(List<String> path, Object def) {
-    Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : v;
-  }
-
-  default String _getStr(List<String> path, String def) {
-    Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : String.valueOf(v);
-  }
 
   /**
    * An interface to push one entry at a time to the output.
