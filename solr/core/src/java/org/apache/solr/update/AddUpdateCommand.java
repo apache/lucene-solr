@@ -279,8 +279,7 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   public String getRouteFieldVal() {
-    final String routeParam = this.getReq().getParams().get(ShardParams._ROUTE_);
-    return routeParam != null? routeParam: this.getHashableId();
+    return this.getReq().getParams().get(ShardParams._ROUTE_, this.getHashableId());
   }
 
   @Override
