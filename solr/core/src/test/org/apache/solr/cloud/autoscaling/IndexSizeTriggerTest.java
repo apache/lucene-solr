@@ -93,7 +93,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean()) {
+    if (random().nextBoolean() || true) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -501,7 +501,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     }
     assertTrue("maxSize should be non-zero", maxSize > 0);
 
-    int aboveBytes = maxSize * 2 / 3;
+    int aboveBytes = maxSize * 9 / 10;
 
     long waitForSeconds = 3 + random().nextInt(5);
 
@@ -570,6 +570,16 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
+    // suspend the trigger to avoid generating more events
+    String suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {" +
+        "'name' : 'index_size_trigger4'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
     assertEquals(1, listenerEvents.size());
     List<CapturedEvent> events = listenerEvents.get("capturing4");
     assertNotNull("'capturing4' events not found", events);
@@ -613,15 +623,6 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     listenerEvents.clear();
     finished = new CountDownLatch(1);
 
-    // suspend the trigger first so that we can safely delete all docs
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {" +
-        "'name' : 'index_size_trigger4'" +
-        "}" +
-        "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
 
     for (int j = 0; j < 10; j++) {
       UpdateRequest ureq = new UpdateRequest();
@@ -641,7 +642,12 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     ur.setParam(UpdateParams.OPEN_SEARCHER, "true");
     solrClient.request(ur, collectionName);
 
-    // resume trigger
+    // wait for the segments to merge to reduce the index size
+    cloudManager.getTimeSource().sleep(50000);
+
+    solrClient.commit(collectionName, true, true);
+
+    // resume the trigger
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");

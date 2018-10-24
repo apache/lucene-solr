@@ -686,6 +686,13 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
                                   boolean firstReplicaNrt) {
     String splitKey = message.getStr("split.key");
     String rangesStr = message.getStr(CoreAdminParams.RANGES);
+    String fuzzStr = message.getStr(CommonAdminParams.SPLIT_FUZZ, "0");
+    float fuzz = 0.0f;
+    try {
+      fuzz = Float.parseFloat(fuzzStr);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "?Invalid numeric value of 'fuzz': " + fuzzStr);
+    }
 
     DocRouter.Range range = parentSlice.getRange();
     if (range == null) {
@@ -752,7 +759,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "A shard can only be split into "+MIN_NUM_SUB_SHARDS+" to " + MAX_NUM_SUB_SHARDS
             + " subshards in one split request. Provided "+NUM_SUB_SHARDS+"=" + numSubShards);
-      subRanges.addAll(router.partitionRange(numSubShards, range));
+      subRanges.addAll(router.partitionRange(numSubShards, range, fuzz));
     }
 
     for (int i = 0; i < subRanges.size(); i++) {
