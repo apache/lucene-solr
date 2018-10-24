@@ -1056,14 +1056,14 @@ If the exact shard name is not known, users may pass the `\_route_` value and th
 Ignored if the `shard` parameter is also specified.
 
 `node`::
-The name of the node where the replica should be created (optional)
+The name of the node where the replica should be created (optional).
 
 `createNodeSet`::
 A comma-separated list of nodes among which the best ones will be chosen to place the replicas (optional)
 +
 The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 
-If neither `node`, nor `createNodeSet` is specified then the best node(s) from among all the live nodes in the cluster are chosen.
+NOTE: If neither `node` nor `createNodeSet` are specified then the best node(s) from among all the live nodes in the cluster are chosen.
 
 `instanceDir`::
 The instanceDir for the core that will be created.
@@ -1074,11 +1074,9 @@ The directory in which the core should be created.
 `type`::
 The type of replica to create. These possible values are allowed:
 +
---
 * `nrt`: The NRT type maintains a transaction log and updates its index locally. This is the default and the most commonly used.
 * `tlog`: The TLOG type maintains a transaction log but only updates its index via replication.
 * `pull`: The PULL type does not maintain a transaction log and only updates its index via replication. This type is not eligible to become a leader.
---
 +
 See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
 
@@ -1103,6 +1101,8 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 === Examples using ADDREPLICA
 
 *Input*
+
+Create a replica for the "test" collection on the node "192.167.1.2:8983_solr".
 
 [source,text]
 ----
@@ -1129,6 +1129,10 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&
   </lst>
 </response>
 ----
+
+*Input*
+
+Create a replica for the "gettingstarted" collection with one PULL replica and one TLOG replica.
 
 [source,text]
 ----
