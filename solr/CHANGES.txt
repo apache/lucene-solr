@@ -96,6 +96,8 @@ Other Changes
 
 * SOLR-12423: Upgrade to Tika 1.19.1 when available (Tim Allison via Erick Erickson)
 
+* SOLR-12793: Move TestCloudJSONFacetJoinDomain amd TestCloudJSONFacetSKG to the facet test package (Varun Thacker)
+
 Bug Fixes
 ----------------------
 
