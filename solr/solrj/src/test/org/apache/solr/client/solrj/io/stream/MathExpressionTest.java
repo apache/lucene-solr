@@ -235,7 +235,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   @Test
   public void testMemsetSize() throws Exception {
     String expr = "let(echo=\"b, c\"," +
-        "              a=memset(list(tuple(field1=val(1), field2=val(10)), tuple(field1=val(2), field2=val(20))), " +
+        "              a=memset(plist(tuple(field1=val(1), field2=val(10)), tuple(field1=val(2), field2=val(20))), " +
         "                       cols=\"field1, field2\", " +
         "                       vars=\"f1, f2\"," +
         "                       size=1)," +
@@ -1974,7 +1974,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     //Test exclude. This should drop off the term jim
 
     cexpr = "let(echo=true," +
-        "        a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "        a=select(plist(tuple(id=\"1\", text=\"hello world\"), " +
         "                      tuple(id=\"2\", text=\"hello steve\"), " +
         "                      tuple(id=\"3\", text=\"hello jim jim\"), " +
         "                      tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
@@ -2046,7 +2046,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     //Test minDocFreq attribute at .5. This should eliminate all but the term hello
 
     cexpr = "let(echo=true," +
-        "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "a=select(plist(tuple(id=\"1\", text=\"hello world\"), " +
         "tuple(id=\"2\", text=\"hello steve\"), " +
         "tuple(id=\"3\", text=\"hello jim jim\"), " +
         "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
@@ -2100,7 +2100,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     //Test maxDocFreq attribute at 0. This should eliminate all terms
 
     cexpr = "let(echo=true," +
-        "a=select(list(tuple(id=\"1\", text=\"hello world\"), " +
+        "a=select(plist(tuple(id=\"1\", text=\"hello world\"), " +
         "tuple(id=\"2\", text=\"hello steve\"), " +
         "tuple(id=\"3\", text=\"hello jim jim\"), " +
         "tuple(id=\"4\", text=\"hello jack\")), id, analyze(text, test_t) as terms)," +
