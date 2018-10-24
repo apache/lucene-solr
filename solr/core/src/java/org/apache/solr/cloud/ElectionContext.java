@@ -522,6 +522,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
     while (!isClosed && !cc.isShutDown()) {
       if (System.nanoTime() > timeoutAt) {
+        log.warn("After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (" +
+                "core_term:{}, highest_term:{})",
+            timeout, coreNodeName, zkShardTerms.getTerm(coreNodeName), zkShardTerms.getHighestTerm());
         return true;
       }
       if (replicasWithHigherTermParticipated(zkShardTerms, coreNodeName)) {
