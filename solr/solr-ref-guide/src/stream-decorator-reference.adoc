@@ -612,7 +612,7 @@ eval(expr)
 ----
 
 In the example above the `eval` expression reads the first tuple from the underlying expression. It then compiles and
-executes the string Streaming Expression in the epxr_s field.
+executes the string Streaming Expression in the expr_s field.
 
 == executor
 
