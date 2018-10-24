@@ -1153,6 +1153,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String splitKey;
     protected String shard;
     protected String splitMethod;
+    protected Integer numSubShards;
 
     private Properties properties;
 
@@ -1163,6 +1164,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public SplitShard setRanges(String ranges) { this.ranges = ranges; return this; }
     public String getRanges() { return ranges; }
+
+    public Integer getNumSubShards() {
+      return numSubShards;
+    }
+
+    public SplitShard setNumSubShards(Integer numSubShards) {
+      this.numSubShards = numSubShards;
+      return this;
+    }
 
     public SplitShard setSplitMethod(String splitMethod) {
       this.splitMethod = splitMethod;
@@ -1210,6 +1220,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set("split.key", this.splitKey);
       params.set(CoreAdminParams.RANGES, ranges);
       params.set(CommonAdminParams.SPLIT_METHOD, splitMethod);
+      if(numSubShards != null)
+        params.set("numSubShards", numSubShards);
 
       if(properties != null) {
         addProperties(params, properties);

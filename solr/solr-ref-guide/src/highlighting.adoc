@@ -147,19 +147,32 @@ There are many parameters supported by more than one highlighter, and sometimes 
 
 There are four highlighters available that can be chosen at runtime with the `hl.method` parameter, in order of general recommendation:
 
+
 <<The Unified Highlighter,Unified Highlighter>>:: (`hl.method=unified`)
 +
-The Unified Highlighter is the newest highlighter (as of Solr 6.4), which stands out as the most flexible and performant of the options. We recommend that you try this highlighter even though it isn't the default (yet).
+The Unified Highlighter is the newest highlighter (as of Solr 6.4), which stands out as the most performant and accurate of the options.
+It can handle typical requirements and others possibly via plugins/extension.
+We recommend that you try this highlighter even though it isn't the default (yet).
 +
-This highlighter supports the most common highlighting parameters and can handle just about any query accurately, even SpanQueries (e.g., as seen from the `surround` parser). A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis. There is little or no such flexibility for the other highlighters. More on this below.
+The UH highlights a query very _accurately_ and thus is true to what the underlying Lucene query actually matches.
+Other highlighters highlight terms more liberally (over-highlight).
+A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis.
+There is little or no such flexibility of offset sources for the other highlighters.
+More on this below.
++
+There are some reasons not to choose this highlighter: The `surround` query parser doesn't yet work here -- SOLR-12895.
+Passage scoring does not consider boosts in the query.
+Some people want more/better passage breaking flexibility.
 
 <<The Original Highlighter,Original Highlighter>>:: (`hl.method=original`, the default)
 +
-The Original Highlighter, sometimes called the "Standard Highlighter" or "Default Highlighter", is Lucene's original highlighter – a venerable option with a high degree of customization options. Its ability to highlight just about any query accurately is a strength shared with the Unified Highlighter (they share some code for this in fact).
+The Original Highlighter, sometimes called the "Standard Highlighter" or "Default Highlighter", is Lucene's original highlighter – a venerable option with a high degree of customization options.
+It's query accuracy is good enough for most needs, although it's not quite as good/perfect as the Unified Highlighter.
 +
-The Original Highlighter will normally analyze stored text on the fly in order to highlight. It will use full term vectors if available, however in this mode it isn't as fast as the Unified Highlighter or FastVector Highlighter.
+The Original Highlighter will normally analyze stored text on the fly in order to highlight. It will use full term vectors if available.
 +
-This highlighter is a good choice for a wide variety of search use-cases. Where it falls short is performance; it's often twice as slow as the Unified Highlighter. And despite being the most customizable, it doesn't have a BreakIterator based fragmenter (all the others do), which could pose a challenge for some languages.
+Where this highlighter falls short is performance; it's often twice as slow as the Unified Highlighter. And despite being the most customizable, it doesn't have a BreakIterator based fragmenter (all the others do), which could pose a challenge for some languages.
+
 
 <<The FastVector Highlighter,FastVector Highlighter>>:: (`hl.method=fastVector`)
 +
@@ -170,6 +183,7 @@ This highlighter notably supports multi-colored highlighting such that different
 This highlighter's query-representation is less advanced than the Original or Unified Highlighters: for example it will not work well with the `surround` parser, and there are multiple reported bugs pertaining to queries with stop-words.
 +
 Note that both the FastVector and Original Highlighters can be used in conjunction in a search request to highlight some fields with one and some the other. In contrast, the other highlighters can only be chosen exclusively.
+
 
 The Unified Highlighter is exclusively configured via search parameters. In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`. There's a robust example of the latter in the "```techproducts```" configset.
 
@@ -242,6 +256,13 @@ Indicates which character to break the text on. Use only if you have defined `hl
 +
 This is useful when the text has already been manipulated in advance to have a special delineation character at desired highlight passage boundaries. This character will still appear in the text as the last character of a passage.
 
+`hl.weightMatches`::
+Tells the UH to use Lucene's new "Weight Matches" API instead of doing SpanQuery conversion.
+This is the most accurate highlighting mode reflecting the query.
+Furthermore, phrases will be highlighted as a whole instead of word by word.
++
+The default is `true`.
+However if either `hl.usePhraseHighlighter` or `hl.multiTermQuery` are set to false, then this setting is effectively false no matter what you set it to.
 
 == The Original Highlighter
 

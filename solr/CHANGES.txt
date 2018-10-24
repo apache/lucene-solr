@@ -83,6 +83,9 @@ Upgrade Notes
 * SOLR-12644: Custom AuthenticationPlugin must provide its own setup for Http2SolrClient through
   implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated. (Cao Manh Dat)
 
+* SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true.  If there are unforseen highlight problems,
+  this may be the culprit.
+
 New Features
 ----------------------
 
@@ -91,6 +94,8 @@ New Features
   patterns, but also included enabling "lenient" parsing in ParseDateFieldUpdateProcessorFactory.  The default
   locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
+
+* SOLR-12879: MinHash query parser that builds queries providing a measure of Jaccard similarity (Andy Hind via Tommaso Teofili)
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
@@ -174,6 +179,14 @@ New Features
 * SOLR-12780: Add support for Leaky ReLU and TanH activations in contrib/ltr NeuralNetworkModel class.
   (Kamuela Lau, Christine Poerschke)
 
+* SOLR-12846: Added support for "host" variable in autoscaling policy rules (noble)
+
+* SOLR-5004: Splitshard collections API now supports splitting into more than 2 sub-shards directly i.e. by providing a
+  numSubShards parameter (Christine Poerschke, Anshum Gupta)
+
+* SOLR-12754: The UnifiedHighlighter has a new hl.weightMatches param defaulting to false (will be true in 8.0).  It's
+  the highest query accuracy mode, and furthermore phrase queries are highlighted as one.  (David Smiley)
+
 Other Changes
 ----------------------
 
@@ -235,6 +248,11 @@ Improvements
 * SOLR-12739: Make autoscaling policy based replica placement the default strategy for placing replicas. (shalin)
 
 * SOLR-12806: use autoscaling policies with strict=false to prioritize node allocation (noble)
+
+* SOLR-10981: Support for stream.url or stream.file pointing to gzipped data.  It's detected by either a content
+  encoding header or file extension. (Andrew Lundgren via David Smiley, Jan Høydahl)
+
+* SOLR-12892: MapWriter to use CharSequence instead of String (noble)
 
 ==================  7.5.0 ==================
 

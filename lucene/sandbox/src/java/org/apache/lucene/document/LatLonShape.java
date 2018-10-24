@@ -54,11 +54,11 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  * @lucene.experimental
  */
 public class LatLonShape {
-  public static final int BYTES = LatLonPoint.BYTES;
+  public static final int BYTES = 2 * LatLonPoint.BYTES;
 
   protected static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDimensions(6, BYTES);
+    TYPE.setDimensions(7, 4, BYTES);
     TYPE.freeze();
   }
 
@@ -72,8 +72,7 @@ public class LatLonShape {
     List<Triangle> tessellation = Tessellator.tessellate(polygon);
     List<LatLonTriangle> fields = new ArrayList<>();
     for (Triangle t : tessellation) {
-      fields.add(new LatLonTriangle(fieldName, t.getEncodedX(0), t.getEncodedY(0),
-          t.getEncodedX(1), t.getEncodedY(1), t.getEncodedX(2), t.getEncodedY(2)));
+      fields.add(new LatLonTriangle(fieldName, t));
     }
     return fields.toArray(new Field[fields.size()]);
   }
@@ -83,21 +82,14 @@ public class LatLonShape {
     int numPoints = line.numPoints();
     List<LatLonTriangle> fields = new ArrayList<>(numPoints - 1);
 
-    // encode the line vertices
-    int[] encodedLats = new int[numPoints];
-    int[] encodedLons = new int[numPoints];
-    for (int i = 0; i < numPoints; ++i) {
-      encodedLats[i] = encodeLatitude(line.getLat(i));
-      encodedLons[i] = encodeLongitude(line.getLon(i));
-    }
-
     // create "flat" triangles
-    int aLat, bLat, aLon, bLon, temp;
+    double aLat, bLat, aLon, bLon, temp;
+    double size;
     for (int i = 0, j = 1; j < numPoints; ++i, ++j) {
-      aLat = encodedLats[i];
-      aLon = encodedLons[i];
-      bLat = encodedLats[j];
-      bLon = encodedLons[j];
+      aLat = line.getLat(i);
+      aLon = line.getLon(i);
+      bLat = line.getLat(j);
+      bLon = line.getLon(j);
       if (aLat > bLat) {
         temp = aLat;
         aLat = bLat;
@@ -115,16 +107,15 @@ public class LatLonShape {
           bLon = temp;
         }
       }
-      fields.add(new LatLonTriangle(fieldName, aLon, aLat, bLon, bLat, aLon, aLat));
+      size = StrictMath.sqrt(StrictMath.pow(aLat - bLat, 2d) + StrictMath.pow(aLon - bLon, 2d));
+      fields.add(new LatLonTriangle(fieldName, aLat, aLon, bLat, bLon, aLat, aLon, size));
     }
     return fields.toArray(new Field[fields.size()]);
   }
 
   /** create indexable fields for point geometry */
   public static Field[] createIndexableFields(String fieldName, double lat, double lon) {
-    final int encodedLat = encodeLatitude(lat);
-    final int encodedLon = encodeLongitude(lon);
-    return new Field[] {new LatLonTriangle(fieldName, encodedLon, encodedLat, encodedLon, encodedLat, encodedLon, encodedLat)};
+    return new Field[] {new LatLonTriangle(fieldName, lat, lon, lat, lon, lat, lon, 0d)};
   }
 
   /** create a query to find all polygons that intersect a defined bounding box
@@ -144,28 +135,60 @@ public class LatLonShape {
    */
   private static class LatLonTriangle extends Field {
 
-    LatLonTriangle(String name, int ax, int ay, int bx, int by, int cx, int cy) {
+    LatLonTriangle(String name, double aLat, double aLon, double bLat, double bLon, double cLat, double cLon, double size) {
       super(name, TYPE);
-      setTriangleValue(ax, ay, bx, by, cx, cy);
+      setTriangleValue(encodeLongitude(aLon), encodeLatitude(aLat), encodeLongitude(bLon), encodeLatitude(bLat), encodeLongitude(cLon), encodeLatitude(cLat));
+    }
+
+    LatLonTriangle(String name, Triangle t) {
+      super(name, TYPE);
+      setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.getEncodedX(1), t.getEncodedY(1), t.getEncodedX(2), t.getEncodedY(2));
     }
 
     public void setTriangleValue(int aX, int aY, int bX, int bY, int cX, int cY) {
       final byte[] bytes;
 
       if (fieldsData == null) {
-        bytes = new byte[24];
+        bytes = new byte[7 * BYTES];
         fieldsData = new BytesRef(bytes);
       } else {
         bytes = ((BytesRef) fieldsData).bytes;
       }
 
-      NumericUtils.intToSortableBytes(aY, bytes, 0);
-      NumericUtils.intToSortableBytes(aX, bytes, BYTES);
-      NumericUtils.intToSortableBytes(bY, bytes, BYTES * 2);
-      NumericUtils.intToSortableBytes(bX, bytes, BYTES * 3);
-      NumericUtils.intToSortableBytes(cY, bytes, BYTES * 4);
-      NumericUtils.intToSortableBytes(cX, bytes, BYTES * 5);
+      int minX = StrictMath.min(aX, StrictMath.min(bX, cX));
+      int minY = StrictMath.min(aY, StrictMath.min(bY, cY));
+      int maxX = StrictMath.max(aX, StrictMath.max(bX, cX));
+      int maxY = StrictMath.max(aY, StrictMath.max(bY, cY));
+
+      encodeTriangle(bytes, minY, minX, maxY, maxX, aX, aY, bX, bY, cX, cY);
     }
+
+    private void encodeTriangle(byte[] bytes, int minY, int minX, int maxY, int maxX, int aX, int aY, int bX, int bY, int cX, int cY) {
+      encodeTriangleBoxVal(minY, bytes, 0);
+      encodeTriangleBoxVal(minX, bytes, BYTES);
+      encodeTriangleBoxVal(maxY, bytes, 2 * BYTES);
+      encodeTriangleBoxVal(maxX, bytes, 3 * BYTES);
+
+      long a = (((long)aX) << 32) | (((long)aY) & 0x00000000FFFFFFFFL);
+      long b = (((long)bX) << 32) | (((long)bY) & 0x00000000FFFFFFFFL);
+      long c = (((long)cX) << 32) | (((long)cY) & 0x00000000FFFFFFFFL);
+      NumericUtils.longToSortableBytes(a, bytes, 4 * BYTES);
+      NumericUtils.longToSortableBytes(b, bytes, 5 * BYTES);
+      NumericUtils.longToSortableBytes(c, bytes, 6 * BYTES);
+    }
+  }
+
+  public static void encodeTriangleBoxVal(int encodedVal, byte[] bytes, int offset) {
+    long val = (long)(encodedVal ^ 0x80000000);
+    val &= 0x00000000FFFFFFFFL;
+    val ^= 0x8000000000000000L;
+    NumericUtils.longToSortableBytes(val, bytes, offset);
+  }
+
+  public static int decodeTriangleBoxVal(byte[] encoded, int offset) {
+    long val = NumericUtils.sortableBytesToLong(encoded, offset);
+    int result = (int)(val & 0x00000000FFFFFFFF);
+    return result ^ 0x80000000;
   }
 
   /** Query Relation Types **/

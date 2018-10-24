@@ -31,14 +31,12 @@
   <path id="classpath">
     <pathelement path="${memory.jar}"/>
     <pathelement path="${queries.jar}"/>
-    <pathelement path="${join.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
   <path id="test.classpath">
     <pathelement path="${memory.jar}"/>
     <pathelement path="${queries.jar}"/>
-    <pathelement path="${join.jar}"/>
     <pathelement path="${analyzers-common.jar}"/>
     <path refid="test.base.classpath"/>
   </path>

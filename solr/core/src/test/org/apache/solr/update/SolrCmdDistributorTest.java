@@ -559,12 +559,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private Error getError(Exception e) {
-    Error err = new Error();
-    err.t = e;
-    if (e instanceof SolrException) {
-      err.statusCode = ((SolrException)e).code();
-    }
-    return err;
+    return new Error(null, e);
   }
 
   private void testOneRetry(NodeType nodeType) throws Exception {

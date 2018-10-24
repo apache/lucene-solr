@@ -1156,6 +1156,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     Map<String, Object> props = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
         .computeIfAbsent(sliceName.get(), ss -> new ConcurrentHashMap<>());
     if (props.containsKey(BUFFERED_UPDATES)) {
+      SplitShardCmd.unlockForSplit(cloudManager, collectionName, sliceName.get());
       throw new Exception("--- SOLR-12729: Overlapping splitShard commands for " + collectionName + "/" + sliceName.get());
     }
     props.put(BUFFERED_UPDATES, new AtomicLong());

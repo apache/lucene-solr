@@ -128,7 +128,7 @@ public class TestMultiFields extends LuceneTestCase {
         System.out.println("TEST: reader=" + reader);
       }
 
-      Bits liveDocs = MultiFields.getLiveDocs(reader);
+      Bits liveDocs = MultiBits.getLiveDocs(reader);
       for(int delDoc : deleted) {
         assertFalse(liveDocs.get(delDoc));
       }
@@ -158,7 +158,7 @@ public class TestMultiFields extends LuceneTestCase {
     DocsEnum docs = _TestUtil.docs(random, r,
                                    "field",
                                    new BytesRef(term),
-                                   MultiFields.getLiveDocs(r),
+                                   MultiLeafReader.getLiveDocs(r),
                                    null,
                                    false);
     for(int docID : expected) {
@@ -196,7 +196,7 @@ public class TestMultiFields extends LuceneTestCase {
     w.addDocument(d);
     IndexReader r = w.getReader();
     w.close();
-    PostingsEnum de = MultiFields.getTermDocsEnum(r, "f", new BytesRef("j"));
+    PostingsEnum de = MultiTerms.getTermPostingsEnum(r, "f", new BytesRef("j"), (int) PostingsEnum.FREQS);
     assertEquals(0, de.nextDoc());
     assertEquals(1, de.nextDoc());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());

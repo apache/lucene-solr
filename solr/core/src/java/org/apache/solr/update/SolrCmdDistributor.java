@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update;
 
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
@@ -188,12 +187,7 @@ public class SolrCmdDistributor {
 
   private void handleAndRetry(Req req, Throwable t, boolean isCommit) {
     SolrException.log(log, t);
-    Error error = new Error();
-    error.t = t;
-    error.req = req;
-    if (t instanceof SolrException) {
-      error.statusCode = ((SolrException) t).code();
-    }
+    Error error = new Error(req, t);
     if (checkRetry(error)) {
       submit0(req, isCommit);
     } else {
@@ -249,13 +243,14 @@ public class SolrCmdDistributor {
   }
 
   public static class Req {
-    public Node node;
-    public UpdateRequest uReq;
-    public int retries;
-    public UpdateCommand cmd;
+    public final Node node;
+    public final UpdateRequest uReq;
+    public final UpdateCommand cmd;
     private final boolean synchronous;
     private final RollupRequestReplicationTracker rollupTracker;
     private final LeaderRequestReplicationTracker leaderTracker;
+
+    public int retries;
 
     public Req(UpdateCommand cmd, Node node, UpdateRequest uReq, boolean synchronous) {
       this(cmd, node, uReq, synchronous, null, null);
@@ -335,12 +330,22 @@ public class SolrCmdDistributor {
   public static class Response {
     public List<Error> errors = new ArrayList<>();
   }
-  
-  public static class Error {
-    public Throwable t;
-    public int statusCode = -1;
 
-    public Req req;
+  // Immutable
+  public final static class Error {
+    public final Throwable t;
+    public final int statusCode;
+    public final Req req;
+
+    public Error(Req req, Throwable t) {
+      this.req = req;
+      this.t = t;
+      if (t instanceof SolrException) {
+        statusCode = ((SolrException) t).code();
+      } else {
+        statusCode = -1;
+      }
+    }
     
     public String toString() {
       StringBuilder sb = new StringBuilder();

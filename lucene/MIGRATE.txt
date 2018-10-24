@@ -140,3 +140,8 @@ a LowerCaseFilter
 
 CharTokenizer now only performs tokenization. To perform any type of filtering
 use a TokenFilter chain as you would with any other Tokenizer.
+
+## Highlighter and FastVectorHighlighter no longer support ToParent/ToChildBlockJoinQuery
+
+Both Highlighter and FastVectorHighlighter need a custom WeightedSpanTermExtractor or FieldQuery respectively
+in order to support ToParent/ToChildBlockJoinQuery.
