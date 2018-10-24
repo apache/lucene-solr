@@ -626,10 +626,11 @@ div(fieldA,add(fieldA,fieldB)) // fieldA / (fieldA + fieldB)
 
 == dotProduct
 
-The `dotProduct` function returns the https://en.wikipedia.org/wiki/Dot_product[dotproduct] of a numeric array.
+The `dotProduct` function returns the https://en.wikipedia.org/wiki/Dot_product[dotproduct] of two numeric arrays.
 
 === dotProduct Parameters
 
+* `numeric array`
 * `numeric array`
 
 === dotProduct Returns
@@ -639,7 +640,7 @@ A number.
 === dotProduct Syntax
 
 [source,text]
-dotProduct(numericArray)
+dotProduct(numericArray, numericArray)
 
 == ebeAdd
 
