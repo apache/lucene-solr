@@ -1208,13 +1208,11 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 </response>
 ----
 
-=== Deeply Nested Cluster Properties ===
+=== Setting Cluster-Wide Defaults
 
-==== `defaults` ====
-It is possible to set cluster-wide default values for certain attributes of a collection.
+It is possible to set cluster-wide default values for certain attributes of a collection, using the `defaults` parameter.
 
-
-*Example 1: Set/update default values*
+*Set/update default values*
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
@@ -1232,7 +1230,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-*Example 2: Unset the value of `nrtReplicas` alone*
+*Unset the only value of `nrtReplicas`*
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
@@ -1247,7 +1245,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-*Example 2: Unset all values in `defaults`*
+*Unset all values in `defaults`*
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
@@ -1256,10 +1254,10 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-NOTE: Until Solr 7.5, cluster properties supported a "collectionDefaults" key which is now deprecated. Using the API
-structure for Solr 7.4 or Solr 7.5 with "collectionDefaults" will continue to work but the format of the properties
-will automatically be converted to the new nested structure. Support for the "collectionDefaults" key will be
-removed in Solr 9.
+NOTE: Until Solr 7.5, cluster properties supported a `collectionDefaults` key which is now deprecated and
+replaced with `defaults`. Using the `collectionDefaults` parameter in Solr 7.4 or 7.5 will continue to work
+ but the format of the properties will automatically be converted to the new nested structure.
+Support for the "collectionDefaults" key will be removed in Solr 9.
 
 [[collectionprop]]
 == COLLECTIONPROP: Collection Properties
