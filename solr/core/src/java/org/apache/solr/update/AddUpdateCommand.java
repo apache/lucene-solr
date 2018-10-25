@@ -155,6 +155,10 @@ public class AddUpdateCommand extends UpdateCommand {
    * @return String id to hash
    */
   public String getHashableId() {
+    String routeParam = this.getReq().getParams().get(ShardParams._ROUTE_);
+    if (routeParam != null) {
+      return routeParam;
+    }
     IndexSchema schema = req.getSchema();
     SchemaField sf = schema.getUniqueKeyField();
     if (sf != null) {
@@ -276,10 +280,6 @@ public class AddUpdateCommand extends UpdateCommand {
 
   private void flattenAnonymous(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
     flattenAnonymous(unwrappedDocs, currentDoc, false);
-  }
-
-  public String getRouteFieldVal() {
-    return this.getReq().getParams().get(ShardParams._ROUTE_, this.getHashableId());
   }
 
   @Override

@@ -601,8 +601,8 @@ public class RealTimeGetComponent extends SearchComponent
    * document is fetched from the tlog, to a full document.
    */
 
-  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, boolean resolveBlock) throws IOException {
-    return getInputDocument (core, idBytes, null, false, null, true, resolveBlock, false);
+  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, boolean resolveRootDoc) throws IOException {
+    return getInputDocument (core, idBytes, null, false, null, true, resolveRootDoc, false);
   }
   
   /**
@@ -618,11 +618,11 @@ public class RealTimeGetComponent extends SearchComponent
    * @param resolveFullDocument In case the document is fetched from the tlog, it could only be a partial document if the last update
    *                  was an in-place update. In that case, should this partial document be resolved to a full document (by following
    *                  back prevPointer/prevVersion)?
-   * @param resolveBlock Check whether the document is part of a block. If so, return the whole block.
+   * @param resolveRootDoc Check whether the document is part of a nested hierarchy. If so, return the whole hierarchy.
    * @param resolveChildren Check whether the document has child documents. If so, return the document including its children.
    */
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, AtomicLong versionReturned, boolean avoidRetrievingStoredFields,
-      Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument, boolean resolveBlock, boolean resolveChildren) throws IOException {
+      Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument, boolean resolveRootDoc, boolean resolveChildren) throws IOException {
     SolrInputDocument sid = null;
     RefCounted<SolrIndexSearcher> searcherHolder = null;
     try {
@@ -653,31 +653,30 @@ public class RealTimeGetComponent extends SearchComponent
           Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, schema);
         }
-        ensureDocFieldsDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, resolveBlock ||
+        ensureDocFieldsDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, resolveRootDoc ||
             resolveChildren || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
         SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
-        if((resolveChildren || resolveBlock) && schema.isUsableForChildDocs() && rootField!=null) {
+        if((resolveChildren || resolveRootDoc) && schema.isUsableForChildDocs() && rootField!=null) {
           // doc is part of a nested structure
-          String id = resolveBlock? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
+          String id = resolveRootDoc? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
           ModifiableSolrParams params = new ModifiableSolrParams()
-              .set("q", core.getLatestSchema().getUniqueKeyField().getName()+ ":" + id)
               .set("fl", "*, _nest_path_, [child]")
               .set("limit", "-1");
-          SolrQueryRequest blockReq = new LocalSolrQueryRequest(core, params);
+          SolrQueryRequest nestedReq = new LocalSolrQueryRequest(core, params);
           final BytesRef rootIdBytes = new BytesRef(id);
           final int rootDocId = searcher.getFirstMatch(new Term(idField.getName(), rootIdBytes));
-          final DocTransformer childDocTransformer = TransformerFactory.defaultFactories.get("child").create("child", params, blockReq);
-          final ResultContext resultContext = new RTGResultContext(new SolrReturnFields(blockReq), searcher, blockReq);
+          final DocTransformer childDocTransformer = TransformerFactory.defaultFactories.get("child").create("child", params, nestedReq);
+          final ResultContext resultContext = new RTGResultContext(new SolrReturnFields(nestedReq), searcher, nestedReq);
           childDocTransformer.setContext(resultContext);
-          final SolrDocument blockDoc;
-          if(resolveBlock && rootIdBytes.equals(idBytes)) {
-            blockDoc = toSolrDoc(sid, schema);
+          final SolrDocument nestedDoc;
+          if(resolveRootDoc && rootIdBytes.equals(idBytes)) {
+            nestedDoc = toSolrDoc(sid, schema);
           } else {
-            blockDoc = toSolrDoc(docFetcher.doc(rootDocId), schema);
-            ensureDocFieldsDecorated(onlyTheseNonStoredDVs, blockDoc, rootDocId, docFetcher, true);
+            nestedDoc = toSolrDoc(docFetcher.doc(rootDocId), schema);
+            ensureDocFieldsDecorated(onlyTheseNonStoredDVs, nestedDoc, rootDocId, docFetcher, true);
           }
-          childDocTransformer.transform(blockDoc, rootDocId);
-          sid = toSolrInputDocument(blockDoc, schema);
+          childDocTransformer.transform(nestedDoc, rootDocId);
+          sid = toSolrInputDocument(nestedDoc, schema);
         }
       }
     } finally {
