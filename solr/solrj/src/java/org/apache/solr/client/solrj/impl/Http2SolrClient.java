@@ -69,6 +69,7 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartContentProvider;
@@ -271,7 +272,7 @@ public class Http2SolrClient extends SolrClient {
           // TODO: process response
           arsp.stream = listener.getInputStream();
         } else {
-          ContentResponse response = req.send();
+          ContentResponse response = senReqSync(req);
           ByteArrayInputStream is = new ByteArrayInputStream(response.getContent());
           arsp.response = processErrorsAndResponse(response, parser,
               is, response.getEncoding(), isV2ApiRequest(solrRequest));
@@ -298,6 +299,30 @@ public class Http2SolrClient extends SolrClient {
             "IOException occured when talking to server at: " + getBaseURL(), cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
+    }
+  }
+
+  private ContentResponse senReqSync(Request req) throws InterruptedException, TimeoutException, ExecutionException {
+    // req.send() method will throw exception when response is more than 2MB,
+    // by passing a responseListener we can overcome the problem, default buffer size is 20MB
+    FutureResponseListener listener = new FutureResponseListener(req, 20*1024*1024);
+    req.send(listener);
+    try {
+      return listener.get();
+    } catch (ExecutionException x) {
+      // the exception handling is copied from HttpRequest.send()
+      if (x.getCause() instanceof TimeoutException)
+      {
+        TimeoutException t = (TimeoutException) (x.getCause());
+        req.abort(t);
+        throw t;
+      }
+
+      req.abort(x);
+      throw x;
+    } catch (Throwable x) {
+      req.abort(x);
+      throw x;
     }
   }
 
