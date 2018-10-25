@@ -143,6 +143,42 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+== Vector Sorting
+
+An array can be sorted in natural ascending order with `asc` function.
+
+[source,text]
+----
+asc(array(10,1,2,3,4,5,6))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "return-value": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          10
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 1
+      }
+    ]
+  }
+}
+----
+
 == Vector Summarizations and Norms
 
 There are a set of functions that perform summarizations and return norms of arrays. These functions
