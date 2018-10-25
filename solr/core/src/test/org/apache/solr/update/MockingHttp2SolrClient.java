@@ -118,22 +118,20 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
     return super.request(request, collection);
   }
 
-  public void request(SolrRequest request, String collection, OnComplete onComplete)
+  public NamedList<Object> request(SolrRequest request, String collection, OnComplete onComplete)
       throws SolrServerException, IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
       // won't throw exception if request is DBQ
       if (ur.getDeleteQuery() != null && !ur.getDeleteQuery().isEmpty()) {
-        super.request(request, collection, onComplete);
-        return;
+        return super.request(request, collection, onComplete);
       }
     }
 
     if (exp != null) {
       if (oneExpPerReq) {
         if (reqGotException.contains(request)) {
-          super.request(request, collection, onComplete);
-          return;
+          return super.request(request, collection, onComplete);
         }
         else
           reqGotException.add(request);
@@ -153,6 +151,6 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
       }
     }
 
-    super.request(request, collection, onComplete);
+    return super.request(request, collection, onComplete);
   }
 }
