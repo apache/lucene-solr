@@ -327,6 +327,18 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testMinHash() throws Exception {
+    SolrQueryRequest req = req("q","apache lucene is a search library",
+        "df", "min_hash_analyzed");
+
+    try {
+      assertQueryEquals("min_hash", req,
+          "{!min_hash field=\"min_hash_analysed\"}apache lucene is a search library");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQueryNested() throws Exception {
     SolrQueryRequest req = req("df", "foo_s");
     try {
