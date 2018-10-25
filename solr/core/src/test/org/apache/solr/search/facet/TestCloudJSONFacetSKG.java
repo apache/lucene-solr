@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -40,10 +40,11 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.search.facet.FacetField;
 import static org.apache.solr.search.facet.RelatednessAgg.computeRelatedness;
 import static org.apache.solr.search.facet.RelatednessAgg.roundTo5Digits;
 
@@ -91,7 +92,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   private static final String[] STR_FIELD_SUFFIXES = new String[] { "_ss", "_sds", "_sdsS" };
   /** Multivalued int field suffixes that can be randomized for testing diff facet/join code paths */
   private static final String[] INT_FIELD_SUFFIXES = new String[] { "_is", "_ids", "_idsS" };
-  
+
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
