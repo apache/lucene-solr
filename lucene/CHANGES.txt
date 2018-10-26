@@ -26,6 +26,9 @@ Bug fixes:
   in the graph if the slop is greater than 0. Span queries cannot be used in this case because
   they don't handle slop the same way than phrase queries. (Steve Rowe, Uwe Schindler, Jim Ferenczi)
 
+* LUCENE-8524: Add the Hangul Letter Araea (interpunct) as a separator in Nori's tokenizer.
+  This change also removes empty terms and trim surface form in Nori's Korean dictionary. (Trey Jones, Jim Ferenczi)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
