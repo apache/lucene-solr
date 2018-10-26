@@ -255,7 +255,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     });
     assertEquals(10, cnt.get());
   }
-  
+
   protected QueryResponse assertNumFound(String query, int num)
       throws SolrServerException, IOException {
     QueryResponse rsp = getSolrClient().query(new SolrQuery(query));
