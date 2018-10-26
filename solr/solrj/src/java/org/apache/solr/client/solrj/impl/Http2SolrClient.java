@@ -225,9 +225,9 @@ public class Http2SolrClient extends SolrClient {
     }
 
     if (onComplete != null) {
-      // This async call only suitable for indexing since the response size is limited by 3MB
+      // This async call only suitable for indexing since the response size is limited by 5MB
       req.onRequestQueued(asyncTracker.queuedListener)
-          .onComplete(asyncTracker.completeListener).send(new BufferingResponseListener(3 * 1024 * 1024) {
+          .onComplete(asyncTracker.completeListener).send(new BufferingResponseListener(5 * 1024 * 1024) {
 
         @Override
         public void onComplete(Result result) {
