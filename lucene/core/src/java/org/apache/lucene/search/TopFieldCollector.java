@@ -27,7 +27,6 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.util.FutureObjects;
-import org.apache.lucene.util.PriorityQueue;
 
 /**
  * A {@link Collector} that sorts by {@link SortField} using
@@ -86,13 +85,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     final Sort sort;
     final FieldValueHitQueue<Entry> queue;
-    final int totalHitsThreshold;
 
     public SimpleFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, int totalHitsThreshold) {
-      super(queue, numHits, sort.needsScores());
+      super(queue, numHits, totalHitsThreshold, sort.needsScores());
       this.sort = sort;
       this.queue = queue;
-      this.totalHitsThreshold = totalHitsThreshold;
     }
 
     @Override
@@ -110,6 +107,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         boolean collectedAllCompetitiveHits = false;
 
         @Override
+        public void setScorer(Scorable scorer) throws IOException {
+          super.setScorer(scorer);
+          updateMinCompetitiveScore(scorer);
+        }
+
+        @Override
         public void collect(int doc) throws IOException {
           ++totalHits;
           if (queueFull) {
@@ -124,6 +127,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
+              } else if (totalHitsRelation == Relation.EQUAL_TO) {
+                // we just reached totalHitsThreshold, we can start setting the min
+                // competitive score now
+                updateMinCompetitiveScore(scorer);
               }
               return;
             }
@@ -132,6 +139,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             comparator.copy(bottom.slot, doc);
             updateBottom(doc);
             comparator.setBottom(bottom.slot);
+            updateMinCompetitiveScore(scorer);
           } else {
             // Startup transient: queue hasn't gathered numHits yet
             final int slot = totalHits - 1;
@@ -141,6 +149,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             add(slot, doc);
             if (queueFull) {
               comparator.setBottom(bottom.slot);
+              updateMinCompetitiveScore(scorer);
             }
           }
         }
@@ -163,7 +172,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     public PagingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits,
                                 int totalHitsThreshold) {
-      super(queue, numHits, sort.needsScores());
+      super(queue, numHits, totalHitsThreshold, sort.needsScores());
       this.sort = sort;
       this.queue = queue;
       this.after = after;
@@ -190,6 +199,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         boolean collectedAllCompetitiveHits = false;
 
         @Override
+        public void setScorer(Scorable scorer) throws IOException {
+          super.setScorer(scorer);
+          updateMinCompetitiveScore(scorer);
+        }
+
+        @Override
         public void collect(int doc) throws IOException {
           //System.out.println("  collect doc=" + doc);
 
@@ -209,6 +224,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
+              } else if (totalHitsRelation == Relation.GREATER_THAN_OR_EQUAL_TO) {
+                  updateMinCompetitiveScore(scorer);
               }
               return;
             }
@@ -227,6 +244,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             updateBottom(doc);
 
             comparator.setBottom(bottom.slot);
+            updateMinCompetitiveScore(scorer);
           } else {
             collectedHits++;
 
@@ -240,6 +258,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             queueFull = collectedHits == numHits;
             if (queueFull) {
               comparator.setBottom(bottom.slot);
+              updateMinCompetitiveScore(scorer);
             }
           }
         }
@@ -251,25 +270,54 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
 
   final int numHits;
+  final int totalHitsThreshold;
+  final FieldComparator.RelevanceComparator firstComparator;
+  final boolean canSetMinScore;
+  final int numComparators;
   FieldValueHitQueue.Entry bottom = null;
   boolean queueFull;
   int docBase;
   final boolean needsScores;
+  final ScoreMode scoreMode;
 
   // Declaring the constructor private prevents extending this class by anyone
   // else. Note that the class cannot be final since it's extended by the
   // internal versions. If someone will define a constructor with any other
   // visibility, then anyone will be able to extend the class, which is not what
   // we want.
-  private TopFieldCollector(PriorityQueue<Entry> pq, int numHits, boolean needsScores) {
+  private TopFieldCollector(FieldValueHitQueue<Entry> pq, int numHits, int totalHitsThreshold, boolean needsScores) {
     super(pq);
     this.needsScores = needsScores;
     this.numHits = numHits;
+    this.totalHitsThreshold = totalHitsThreshold;
+    this.numComparators = pq.getComparators().length;
+    FieldComparator<?> fieldComparator = pq.getComparators()[0];
+    int reverseMul = pq.reverseMul[0];
+    if (fieldComparator.getClass().equals(FieldComparator.RelevanceComparator.class)
+          && reverseMul == 1 // if the natural sort is preserved (sort by descending relevance)
+          && totalHitsThreshold != Integer.MAX_VALUE) {
+      firstComparator = (FieldComparator.RelevanceComparator) fieldComparator;
+      scoreMode = ScoreMode.TOP_SCORES;
+      canSetMinScore = true;
+    } else {
+      firstComparator = null;
+      scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
+      canSetMinScore = false;
+    }
   }
 
   @Override
   public ScoreMode scoreMode() {
-    return needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
+    return scoreMode;
+  }
+
+  protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
+    if (canSetMinScore && totalHits >= totalHitsThreshold && queueFull) {
+      assert bottom != null && firstComparator != null;
+      float minScore = firstComparator.value(bottom.slot);
+      scorer.setMinCompetitiveScore(minScore);
+      totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+    }
   }
 
   /**

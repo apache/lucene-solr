@@ -612,7 +612,7 @@ eval(expr)
 ----
 
 In the example above the `eval` expression reads the first tuple from the underlying expression. It then compiles and
-executes the string Streaming Expression in the epxr_s field.
+executes the string Streaming Expression in the expr_s field.
 
 == executor
 
@@ -733,6 +733,29 @@ leftOuterJoin(
   ),
   on="personId=ownerId"
 )
+----
+
+[#list_expression]
+== list
+
+The `list` function wraps N Stream Expressions and opens and iterates each stream sequentially.
+This has the effect of concatenating the results of multiple Streaming Expressions.
+
+=== list Parameters
+
+* StreamExpressions ...: N Streaming Expressions
+
+=== list Syntax
+
+[source,text]
+----
+list(tuple(a="hello world"), tuple(a="HELLO WORLD"))
+
+list(search(collection1, q="*:*", fl="id, prod_ss", sort="id asc"),
+     search(collection2, q="*:*", fl="id, prod_ss", sort="id asc"))
+
+list(tuple(a=search(collection1, q="*:*", fl="id, prod_ss", sort="id asc")),
+     tuple(a=search(collection2, q="*:*", fl="id, prod_ss", sort="id asc")))
 ----
 
 == hashJoin
@@ -1027,6 +1050,31 @@ The following is a `solrconfig.xml` snippet for 2 workers and "year_i" as the `p
 </listener>
 ----
 ====
+
+== plist
+
+The `plist` function wraps N Stream Expressions and opens the streams in parallel
+and iterates each stream sequentially. The difference between the `list` and `plist` is that
+the streams are opened in parallel. Since many streams such as
+`facet`, `stats` and `significantTerms` push down heavy operations to Solr when they are opened,
+the plist function can dramatically improve performance by doing these operations in parallel.
+
+=== plist Parameters
+
+* StreamExpressions ...: N Streaming Expressions
+
+=== plist Syntax
+
+[source,text]
+----
+plist(tuple(a="hello world"), tuple(a="HELLO WORLD"))
+
+plist(search(collection1, q="*:*", fl="id, prod_ss", sort="id asc"),
+      search(collection2, q="*:*", fl="id, prod_ss", sort="id asc"))
+
+plist(tuple(a=search(collection1, q="*:*", fl="id, prod_ss", sort="id asc")),
+      tuple(a=search(collection2, q="*:*", fl="id, prod_ss", sort="id asc")))
+----
 
 == priority
 

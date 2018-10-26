@@ -23,7 +23,6 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.index.NoMergePolicyFactory;
@@ -97,7 +96,7 @@ public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
         assertEquals(3, topReader.numDocs());
         assertEquals(3, topReader.leaves().size());
 
-        final FieldInfos infos = MultiFields.getMergedFieldInfos(topReader);
+        final FieldInfos infos = FieldInfos.getMergedFieldInfos(topReader);
         //The global field type should have docValues because a document with dvs was added
         assertEquals(DocValuesType.SORTED, infos.fieldInfo(fieldname).getDocValuesType());
 

@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -210,7 +210,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     // build the cache for the word
     Map<String, Long> frequencyMap = new HashMap<>();
     for (String textFieldName : textFieldNames) {
-      TermsEnum termsEnum = MultiFields.getTerms(indexReader, textFieldName).iterator();
+      TermsEnum termsEnum = MultiTerms.getTerms(indexReader, textFieldName).iterator();
       while (termsEnum.next() != null) {
         BytesRef term = termsEnum.term();
         String termText = term.utf8ToString();
@@ -227,7 +227,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     }
 
     // fill the class list
-    Terms terms = MultiFields.getTerms(indexReader, classFieldName);
+    Terms terms = MultiTerms.getTerms(indexReader, classFieldName);
     TermsEnum termsEnum = terms.iterator();
     while ((termsEnum.next()) != null) {
       cclasses.add(BytesRef.deepCopyOf(termsEnum.term()));
@@ -236,7 +236,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     for (BytesRef cclass : cclasses) {
       double avgNumberOfUniqueTerms = 0;
       for (String textFieldName : textFieldNames) {
-        terms = MultiFields.getTerms(indexReader, textFieldName);
+        terms = MultiTerms.getTerms(indexReader, textFieldName);
         long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
         avgNumberOfUniqueTerms += numPostings / (double) terms.getDocCount();
       }

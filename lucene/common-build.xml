@@ -1349,7 +1349,7 @@ ant test "-Dtests.class=*.ClassName"
 ant test -Dtestcase=ClassName
 
 # Run all tests in a package and sub-packages
-ant test "-Dtests.class=org.apache.lucene.package.*"
+ant test "-Dtests.class=org.apache.lucene.package.Test*|org.apache.lucene.package.*Test"
 
 # Run any test methods that contain 'esi' (like: ...r*esi*ze...).
 ant test "-Dtests.method=*esi*"

@@ -205,6 +205,12 @@ public interface Variable {
         min = 0)
     NUMBER,
 
+    @Meta(name = "host",
+        type = String.class,
+        wildCards = Policy.EACH,
+        supportArrayVals = true)
+    HOST,
+
     @Meta(name = "STRING",
         type = String.class,
         wildCards = Policy.EACH,

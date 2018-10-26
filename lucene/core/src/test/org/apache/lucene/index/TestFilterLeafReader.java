@@ -164,7 +164,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     writer.close();
     IndexReader reader = DirectoryReader.open(target);
     
-    TermsEnum terms = MultiFields.getTerms(reader, "default").iterator();
+    TermsEnum terms = MultiTerms.getTerms(reader, "default").iterator();
     while (terms.next() != null) {
       assertTrue(terms.term().utf8ToString().indexOf('e') != -1);
     }

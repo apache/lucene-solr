@@ -23,6 +23,7 @@ import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.NumericUtils;
 
 /**
  * Finds all previously indexed shapes that intersect the specified arbitrary.
@@ -61,29 +62,40 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    double minLat = GeoEncodingUtils.decodeLatitude(minTriangle, minYOffset);
-    double minLon = GeoEncodingUtils.decodeLongitude(minTriangle, minXOffset);
-    double maxLat = GeoEncodingUtils.decodeLatitude(maxTriangle, maxYOffset);
-    double maxLon = GeoEncodingUtils.decodeLongitude(maxTriangle, maxXOffset);
+    double minLat = GeoEncodingUtils.decodeLatitude(LatLonShape.decodeTriangleBoxVal(minTriangle, minYOffset));
+    double minLon = GeoEncodingUtils.decodeLongitude(LatLonShape.decodeTriangleBoxVal(minTriangle, minXOffset));
+    double maxLat = GeoEncodingUtils.decodeLatitude(LatLonShape.decodeTriangleBoxVal(maxTriangle, maxYOffset));
+    double maxLon = GeoEncodingUtils.decodeLongitude(LatLonShape.decodeTriangleBoxVal(maxTriangle, maxXOffset));
 
     // check internal node against query
     return poly2D.relate(minLat, maxLat, minLon, maxLon);
   }
 
   @Override
-  protected boolean queryMatches(byte[] triangle) {
-    double ay = GeoEncodingUtils.decodeLatitude(triangle, 0);
-    double ax = GeoEncodingUtils.decodeLongitude(triangle, LatLonPoint.BYTES);
-    double by = GeoEncodingUtils.decodeLatitude(triangle, 2 * LatLonPoint.BYTES);
-    double bx = GeoEncodingUtils.decodeLongitude(triangle, 3 * LatLonPoint.BYTES);
-    double cy = GeoEncodingUtils.decodeLatitude(triangle, 4 * LatLonPoint.BYTES);
-    double cx = GeoEncodingUtils.decodeLongitude(triangle, 5 * LatLonPoint.BYTES);
+  protected boolean queryMatches(byte[] t) {
+    long a = NumericUtils.sortableBytesToLong(t, 4 * LatLonShape.BYTES);
+    long b = NumericUtils.sortableBytesToLong(t, 5 * LatLonShape.BYTES);
+    long c = NumericUtils.sortableBytesToLong(t, 6 * LatLonShape.BYTES);
+
+    int aX = (int)((a >>> 32) & 0x00000000FFFFFFFFL);
+    int bX = (int)((b >>> 32) & 0x00000000FFFFFFFFL);
+    int cX = (int)((c >>> 32) & 0x00000000FFFFFFFFL);
+    int aY = (int)(a & 0x00000000FFFFFFFFL);
+    int bY = (int)(b & 0x00000000FFFFFFFFL);
+    int cY = (int)(c & 0x00000000FFFFFFFFL);
+
+    double alat = GeoEncodingUtils.decodeLatitude(aY);
+    double alon = GeoEncodingUtils.decodeLongitude(aX);
+    double blat = GeoEncodingUtils.decodeLatitude(bY);
+    double blon = GeoEncodingUtils.decodeLongitude(bX);
+    double clat = GeoEncodingUtils.decodeLatitude(cY);
+    double clon = GeoEncodingUtils.decodeLongitude(cX);
 
     if (queryRelation == QueryRelation.WITHIN) {
-      return poly2D.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_INSIDE_QUERY;
+      return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
     }
     // INTERSECTS
-    return poly2D.relateTriangle(ax, ay, bx, by, cx, cy) != Relation.CELL_OUTSIDE_QUERY;
+    return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override

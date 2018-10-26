@@ -46,7 +46,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -337,7 +337,7 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("FST stores docFreq");
       }
     }
-    Terms terms = MultiFields.getTerms(r, "body");
+    Terms terms = MultiTerms.getTerms(r, "body");
     if (terms != null) {
       final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
       final TermsEnum termsEnum = terms.iterator();
@@ -917,7 +917,7 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       // Verify w/ MultiTermsEnum
-      final TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator();
+      final TermsEnum termsEnum = MultiTerms.getTerms(r, "id").iterator();
       for(int iter=0;iter<2*NUM_IDS;iter++) {
         final String id;
         final String nextID;

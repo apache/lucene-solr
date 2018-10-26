@@ -203,8 +203,8 @@ public class PolicyHelper {
 
   public static MapWriter getDiagnostics(Policy.Session session) {
     List<Row> sorted = session.getSortedNodes();
-    Set<String> alreadyWritten = new HashSet<>();
-    BiPredicate<String, Object> p = dedupeKeyPredicate(alreadyWritten)
+    Set<CharSequence> alreadyWritten = new HashSet<>();
+    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(alreadyWritten)
         .and(ConditionalMapWriter.NON_NULL_VAL)
         .and((s, o) -> !(o instanceof Map) || !((Map) o).isEmpty());
 

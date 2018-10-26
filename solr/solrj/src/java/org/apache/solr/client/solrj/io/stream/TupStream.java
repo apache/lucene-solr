@@ -51,6 +51,7 @@ public class TupStream extends TupleStream implements Expressible {
   private Map<String,TupleStream> streamParams = new HashMap<>();
   private List<String> fieldNames = new ArrayList();
   private Map<String, String> fieldLabels = new HashMap();
+  private Tuple tup = null;
   
   private boolean finished;
 
@@ -151,50 +152,6 @@ public class TupStream extends TupleStream implements Expressible {
       return new Tuple(m);
     } else {
       finished = true;
-      Map<String, Object> values = new HashMap<>();
-      
-      // add all string based params
-      // these could come from the context, or they will just be treated as straight strings
-      for(Entry<String,String> param : stringParams.entrySet()){
-        if(streamContext.getLets().containsKey(param.getValue())){
-          values.put(param.getKey(), streamContext.getLets().get(param.getValue()));
-        }
-        else{
-          values.put(param.getKey(), param.getValue());
-        }
-      }
-      
-      // add all evaluators
-      for(Entry<String,StreamEvaluator> param : evaluatorParams.entrySet()){
-        values.put(param.getKey(), param.getValue().evaluateOverContext());
-      }
-      
-      // Add all streams
-      for(Entry<String,TupleStream> param : streamParams.entrySet()){
-        
-        try{
-          List<Tuple> streamTuples = new ArrayList();
-          // open the stream, closed in finally block
-          param.getValue().open();
-          
-          // read all values from stream (memory expensive)
-          Tuple streamTuple = param.getValue().read();
-          while(!streamTuple.EOF){
-            streamTuples.add(streamTuple);
-            streamTuple = param.getValue().read();
-          }
-          
-          values.put(param.getKey(), streamTuples);
-        }
-        finally{
-          // safely close the stream
-          param.getValue().close();
-        }        
-      }
-
-      Tuple tup = new Tuple(values);
-      tup.fieldNames = fieldNames;
-      tup.fieldLabels = fieldLabels;
       return tup;
     }
   }
@@ -204,6 +161,50 @@ public class TupStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
+    Map<String, Object> values = new HashMap<>();
+
+    // add all string based params
+    // these could come from the context, or they will just be treated as straight strings
+    for(Entry<String,String> param : stringParams.entrySet()){
+      if(streamContext.getLets().containsKey(param.getValue())){
+        values.put(param.getKey(), streamContext.getLets().get(param.getValue()));
+      }
+      else{
+        values.put(param.getKey(), param.getValue());
+      }
+    }
+
+    // add all evaluators
+    for(Entry<String,StreamEvaluator> param : evaluatorParams.entrySet()){
+      values.put(param.getKey(), param.getValue().evaluateOverContext());
+    }
+
+    // Add all streams
+    for(Entry<String,TupleStream> param : streamParams.entrySet()){
+
+      try{
+        List<Tuple> streamTuples = new ArrayList();
+        // open the stream, closed in finally block
+        param.getValue().open();
+
+        // read all values from stream (memory expensive)
+        Tuple streamTuple = param.getValue().read();
+        while(!streamTuple.EOF){
+          streamTuples.add(streamTuple);
+          streamTuple = param.getValue().read();
+        }
+
+        values.put(param.getKey(), streamTuples);
+      }
+      finally{
+        // safely close the stream
+        param.getValue().close();
+      }
+    }
+
+    this.tup = new Tuple(values);
+    tup.fieldNames = fieldNames;
+    tup.fieldLabels = fieldLabels;
     // nothing to do here
   }
 

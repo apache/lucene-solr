@@ -56,6 +56,9 @@ Upgrade Notes
   "date.formats" configuration.  To ensure date strings are properly parsed, use ParseDateFieldUpdateProcessorFactory
   (an URP) commonly registered with the name "parse-date" in "schemaless mode".  (David Smiley, Bar Rotstein)
 
+* SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true.  If there are unforseen highlight problems,
+  this may be the culprit.
+
 New Features
 ----------------------
 
@@ -64,6 +67,8 @@ New Features
   patterns, but also included enabling "lenient" parsing in ParseDateFieldUpdateProcessorFactory.  The default
   locale was changed from ROOT to en_US since well-known patterns assume this locale.
   (David Smiley, Bar Rotstein)
+
+* SOLR-12879: MinHash query parser that builds queries providing a measure of Jaccard similarity (Andy Hind via Tommaso Teofili)
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
@@ -84,7 +89,7 @@ Other Changes
 * SOLR-12586: Upgrade ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") to use Java 8's
   java.time.DateTimeFormatter instead of Joda time (see upgrade notes).  "Lenient" is enabled.  Removed Joda Time dependency.
   (David Smiley, Bar Rotstein)
-  
+
 * SOLR-5163: edismax now throws an exception when qf refers to a nonexistent field (Charles Sanders, David Smiley)
 
 * SOLR-12805: Store previous term (generation) of replica when start recovery process (Cao Manh Dat)
@@ -95,7 +100,7 @@ Other Changes
 
 * SOLR-11812: Remove backward compatibility of old LIR implementation in 8.0 (Cao Manh Dat)
 
-* SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy) 
+* SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy)
 
 ==================  7.6.0 ==================
 
@@ -103,7 +108,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.18
+Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
@@ -151,6 +156,14 @@ New Features
 * SOLR-12780: Add support for Leaky ReLU and TanH activations in contrib/ltr NeuralNetworkModel class.
   (Kamuela Lau, Christine Poerschke)
 
+* SOLR-12846: Added support for "host" variable in autoscaling policy rules (noble)
+
+* SOLR-5004: Splitshard collections API now supports splitting into more than 2 sub-shards directly i.e. by providing a
+  numSubShards parameter (Christine Poerschke, Anshum Gupta)
+
+* SOLR-12754: The UnifiedHighlighter has a new hl.weightMatches param defaulting to false (will be true in 8.0).  It's
+  the highest query accuracy mode, and furthermore phrase queries are highlighted as one.  (David Smiley)
+
 Other Changes
 ----------------------
 
@@ -168,6 +181,8 @@ Other Changes
 * SOLR-12835: Document statistics exposed by the Query Result Cache when maxRamMB is configured. (shalin)
 
 * SOLR-12423: Upgrade to Tika 1.19.1 when available (Tim Allison via Erick Erickson)
+
+* SOLR-12793: Move TestCloudJSONFacetJoinDomain amd TestCloudJSONFacetSKG to the facet test package (Varun Thacker)
 
 Bug Fixes
 ----------------------
@@ -199,6 +214,10 @@ Bug Fixes
 
 * SOLR-12874: Java 9+ GC Logging filesize parameter should use a unit.  (Tim Underwood via Uwe Schindler)
 
+* SOLR-12868: Request forwarding for v2 API is broken (noble)
+
+* SOLR-7557: Fix parsing of child documents using queryAndStreamResponse (Marvin Bredal Lillehaug/Stian Østerhaug via janhoy)
+
 Improvements
 ----------------------
 
@@ -212,6 +231,11 @@ Improvements
 * SOLR-12739: Make autoscaling policy based replica placement the default strategy for placing replicas. (shalin)
 
 * SOLR-12806: use autoscaling policies with strict=false to prioritize node allocation (noble)
+
+* SOLR-10981: Support for stream.url or stream.file pointing to gzipped data.  It's detected by either a content
+  encoding header or file extension. (Andrew Lundgren via David Smiley, Jan Høydahl)
+
+* SOLR-12892: MapWriter to use CharSequence instead of String (noble)
 
 ==================  7.5.0 ==================
 
@@ -566,7 +590,7 @@ Other Changes
 
 * SOLR-8742: In HdfsDirectoryTest replace RAMDirectory usages with ByteBuffersDirectory.
   (hossman, Mark Miller, Andrzej Bialecki, Steve Rowe)
-  
+
 * SOLR-12771: Improve Autoscaling Policy and Preferences documentation. (hossman, Steve Rowe)
 
 ==================  7.4.0 ==================

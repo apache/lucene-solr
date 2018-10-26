@@ -331,7 +331,7 @@ public abstract class IndexReader implements Closeable {
    * requested document is deleted, and therefore asking for a deleted document
    * may yield unspecified results. Usually this is not required, however you
    * can test if the doc is deleted by checking the {@link
-   * Bits} returned from {@link MultiFields#getLiveDocs}.
+   * Bits} returned from {@link MultiBits#getLiveDocs}.
    *
    * <b>NOTE:</b> only the content of a field is returned,
    * if that field was stored during indexing.  Metadata
