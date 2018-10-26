@@ -75,6 +75,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -157,7 +158,8 @@ public class Http2SolrClient extends SolrClient {
   private HttpClient createHttpClient(Builder builder) {
     HttpClient httpClient;
 
-    QueuedThreadPool httpClientExecutor = new QueuedThreadPool(150, 4);
+    BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(128, 128);
+    QueuedThreadPool httpClientExecutor = new QueuedThreadPool(128, 4, 60000, queue);
     httpClientExecutor.setDaemon(true);
 
     SslContextFactory sslContextFactory;
@@ -238,8 +240,10 @@ public class Http2SolrClient extends SolrClient {
 
           NamedList<Object> rsp;
           try {
+            InputStream is = getContentAsInputStream();
+            assert ObjectReleaseTracker.track(is);
             rsp = processErrorsAndResponse(result.getResponse(),
-                parser, getContentAsInputStream(), getEncoding(), isV2ApiRequest(solrRequest));
+                parser, is, getEncoding(), isV2ApiRequest(solrRequest));
             onComplete.onSuccess(rsp);
           } catch (Exception e) {
             onComplete.onFailure(e);
@@ -252,7 +256,9 @@ public class Http2SolrClient extends SolrClient {
         InputStreamResponseListener listener = new InputStreamResponseListener();
         req.send(listener);
         Response response = listener.get(idleTimeout, TimeUnit.SECONDS);
-        return processErrorsAndResponse(response, parser, listener.getInputStream(), getEncoding(response), isV2ApiRequest(solrRequest));
+        InputStream is = listener.getInputStream();
+        assert ObjectReleaseTracker.track(is);
+        return processErrorsAndResponse(response, parser, is, getEncoding(response), isV2ApiRequest(solrRequest));
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new RuntimeException(e);
@@ -447,6 +453,10 @@ public class Http2SolrClient extends SolrClient {
     return req;
   }
 
+  private boolean wantStream(final ResponseParser processor) {
+    return processor == null || processor instanceof InputStreamResponseParser;
+  }
+
   private NamedList<Object> processErrorsAndResponse(Response response,
                                                      final ResponseParser processor,
                                                      InputStream is,
@@ -482,7 +492,7 @@ public class Http2SolrClient extends SolrClient {
           }
       }
 
-      if (processor == null || processor instanceof InputStreamResponseParser) {
+      if (wantStream(parser)) {
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", is);
@@ -551,6 +561,7 @@ public class Http2SolrClient extends SolrClient {
       if (shouldClose) {
         try {
           is.close();
+          assert ObjectReleaseTracker.release(is);
         } catch (IOException e) {
           // quitely
         }
