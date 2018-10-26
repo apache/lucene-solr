@@ -42,7 +42,7 @@
     <!-- jetty libs in lib/ -->
     <ivy:retrieve conf="jetty,servlet,metrics" type="jar,bundle" log="download-only" symlink="${ivy.symlink}"
                   pattern="lib/[artifact]-[revision].[ext]" sync="${ivy.sync}"/>
-    <ivy:retrieve conf="logging" type="jar,bundle" log="download-only" symlink="${ivy.symlink}"
+    <ivy:retrieve conf="logging,shared_lib" type="jar,bundle" log="download-only" symlink="${ivy.symlink}"
                   pattern="lib/ext/[artifact]-[revision].[ext]" sync="${ivy.sync}"/>
     <!-- start.jar - we don't use sync=true here, we don't own the dir, but
          it's one jar with a constant name and we don't need it -->

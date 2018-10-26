@@ -24,7 +24,7 @@
   <import file="../common-build.xml"/>
 
   <property name="exclude.from.webapp" value="*slf4j*,log4j-*,*javax.servlet*" />
-  <property name="exclude.from.sorlj" value="conscrypt-openjdk*,http2-common*,http2-hpack*,jetty-util*,jetty-http*,jetty-io*" />
+  <property name="exclude.from.sorlj" value="conscrypt-openjdk*" />
   
   <!-- this module has no javadocs -->
   <target name="javadocs"/>

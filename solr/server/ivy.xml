@@ -18,12 +18,13 @@
 -->
 <ivy-module version="2.0" xmlns:maven="http://ant.apache.org/ivy/maven">
   <info organisation="org.apache.solr" module="server"/>
-  <configurations defaultconfmapping="metrics->master;jetty->master;start->master;servlet->master;logging->master">
+  <configurations defaultconfmapping="metrics->master;jetty->master;start->master;servlet->master;logging->master;shared_lib->master">
     <conf name="metrics" description="metrics jars" transitive="true"/>
     <conf name="jetty" description="jetty jars" transitive="false"/>
     <conf name="start" description="jetty start jar" transitive="false"/>
     <conf name="servlet" description="servlet-api jar" transitive="false"/>
     <conf name="logging" description="logging setup" transitive="false"/>
+    <conf name="shared_lib" description="shared library with solrj" transitive="false"/>
   </configurations>
 
   <dependencies>
@@ -62,7 +63,7 @@
     <dependency org="org.eclipse.jetty.http2" name="http2-server" rev="${/org.eclipse.jetty.http2/http2-server}" conf="jetty"/>
     <dependency org="org.eclipse.jetty.http2" name="http2-common" rev="${/org.eclipse.jetty.http2/http2-common}" conf="jetty"/>
     <dependency org="org.eclipse.jetty.http2" name="http2-hpack" rev="${/org.eclipse.jetty.http2/http2-hpack}" conf="jetty"/>
-    <dependency org="org.conscrypt" name="conscrypt-openjdk-uber" rev="${/org.conscrypt/conscrypt-openjdk-uber}" conf="jetty"/>
+    <dependency org="org.conscrypt" name="conscrypt-openjdk-uber" rev="${/org.conscrypt/conscrypt-openjdk-uber}" conf="shared_lib"/>
 
     <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="jetty"/>
 
