@@ -28,6 +28,7 @@ the more advanced DSP functions its useful to develop a deeper intuition of the 
 The dot product operation is performed in two steps:
 
 1) Element-by-element multiplication of two vectors which produces a vector of products.
+
 2) Sum the vector of products to produce a scalar result.
 
 This simple bit of math has a number of important applications.
@@ -146,7 +147,8 @@ When this expression is sent to the `/stream` handler it responds with:
 ----
 
 In the example above two arrays were combined in a way that produced the mean of the first. In the second array
-each value was set to ".2". Another way of looking at this is that each value in the second array has the same weight.
+each value was set to .2. Another way of looking at this is that each value in the second array is
+applying the same weight to the values in the first array.
 By varying the weights in the second array we can produce a different result.
 For example if the first array represents a time series,
 the weights in the second array can be set to add more weight to a particular element in the first array.
