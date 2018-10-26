@@ -130,6 +130,8 @@ Bug Fixes
 
 * SOLR-12868: Request forwarding for v2 API is broken (noble)
 
+* SOLR-7557: Fix parsing of child documents using queryAndStreamResponse (Marvin Bredal Lillehaug/Stian Østerhaug via janhoy)
+
 Improvements
 ----------------------
 
