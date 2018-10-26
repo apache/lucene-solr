@@ -210,6 +210,8 @@ Bug Fixes
 
 * SOLR-12874: Java 9+ GC Logging filesize parameter should use a unit.  (Tim Underwood via Uwe Schindler)
 
+* SOLR-12868: Request forwarding for v2 API is broken (noble)
+
 Improvements
 ----------------------
 
