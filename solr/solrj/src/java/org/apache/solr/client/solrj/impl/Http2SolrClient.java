@@ -61,7 +61,9 @@ import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.FormContentProvider;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
@@ -222,26 +224,33 @@ public class Http2SolrClient extends SolrClient {
       req.onComplete(listener);
     }
 
-    InputStreamResponseListener listener = new InputStreamResponseListener();
-    req.onRequestQueued(asyncTracker.queuedListener)
-        .onComplete(asyncTracker.completeListener).send(listener);
     if (onComplete != null) {
-      httpClient.getExecutor().execute(() -> {
-        try {
-          Response response = listener.get(idleTimeout, TimeUnit.SECONDS);
-          onComplete.onSuccess(
-              processErrorsAndResponse(response, parser, listener.getInputStream(), getEncoding(response), isV2ApiRequest(solrRequest))
-          );
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          onComplete.onFailure(new RuntimeException(e));
-        } catch (Exception e) {
-          onComplete.onFailure(e);
+      // This async call only suitable for indexing since the response size is limited by 3MB
+      req.onRequestQueued(asyncTracker.queuedListener)
+          .onComplete(asyncTracker.completeListener).send(new BufferingResponseListener(3 * 1024 * 1024) {
+
+        @Override
+        public void onComplete(Result result) {
+          if (result.isFailed()) {
+            onComplete.onFailure(result.getFailure());
+            return;
+          }
+
+          NamedList<Object> rsp;
+          try {
+            rsp = processErrorsAndResponse(result.getResponse(),
+                parser, getContentAsInputStream(), getEncoding(), isV2ApiRequest(solrRequest));
+            onComplete.onSuccess(rsp);
+          } catch (Exception e) {
+            onComplete.onFailure(e);
+          }
         }
       });
       return null;
     } else {
       try {
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        req.send(listener);
         Response response = listener.get(idleTimeout, TimeUnit.SECONDS);
         return processErrorsAndResponse(response, parser, listener.getInputStream(), getEncoding(response), isV2ApiRequest(solrRequest));
       } catch (InterruptedException e) {
