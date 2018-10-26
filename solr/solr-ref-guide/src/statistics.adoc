@@ -578,7 +578,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Back Transformations
 
-Vectors that have been transformed with `log`, `log10`, `sqrt` and `cbrt` functions
+Vectors that have been transformed with the `log`, `log10`, `sqrt` and `cbrt` functions
 can be back transformed using the `pow` function.
 
 The example below shows how to back transform data that has been transformed by the
