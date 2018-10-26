@@ -230,10 +230,11 @@ for the x-axis.
 
 The example below shows `harmfit` fitting a single oscillation of a sine wave. `harmfit`
 returns the smoothed values at each control point. The return value is also a model which can be used by
-the `predict`, `derivative` and `integrate` function. There are also three helper functions that can be used to
-retrieve the estimated parameters of the fitted model:
+the `predict`, `derivative` and `integrate` functions.
 
-* `getAmplitude`: Returns the amplitude of sine wave.
+There are also three helper functions that can be used to retrieve the estimated parameters of the fitted model:
+
+* `getAmplitude`: Returns the amplitude of the sine wave.
 * `getAngularFrequency`: Returns the angular frequency of the sine wave.
 * `getPhase`: Returns the phase of the sine wave.
 
@@ -241,7 +242,7 @@ retrieve the estimated parameters of the fitted model:
 oscillations. This is particularly true if the sine wave has noise. After the curve has been fit it can be
 extrapolated to any point in time in the past or future.
 
-In example below the `harmfit` function fits control points, provided as x and y axes and the
+In the example below the `harmfit` function fits control points, provided as x and y axes, and then the
 angular frequency, phase and amplitude are retrieved from the fitted model.
 
 [source,text]

@@ -735,29 +735,6 @@ leftOuterJoin(
 )
 ----
 
-[#list_expression]
-== list
-
-The `list` function wraps N Stream Expressions and opens and iterates each stream sequentially.
-This has the effect of concatenating the results of multiple Streaming Expressions.
-
-=== list Parameters
-
-* StreamExpressions ...: N Streaming Expressions
-
-=== list Syntax
-
-[source,text]
-----
-list(tuple(a="hello world"), tuple(a="HELLO WORLD"))
-
-list(search(collection1, q="*:*", fl="id, prod_ss", sort="id asc"),
-     search(collection2, q="*:*", fl="id, prod_ss", sort="id asc"))
-
-list(tuple(a=search(collection1, q="*:*", fl="id, prod_ss", sort="id asc")),
-     tuple(a=search(collection2, q="*:*", fl="id, prod_ss", sort="id asc")))
-----
-
 == hashJoin
 
 The `hashJoin` function wraps two streams, Left and Right, and for every tuple in Left which exists in Right will emit a tuple containing the fields of both tuples. This supports one-to-one, one-to-many, many-to-one, and many-to-many inner join scenarios. The tuples are emitted in the order in which they appear in the Left stream. The order of the streams does not matter. If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
@@ -861,6 +838,29 @@ intersect(
   search(collection1, q="a_s:(setB || setAB)", qt="/export", fl="id,a_s,a_i", sort="a_i asc, a_s asc"),
   on="a_i,a_s"
 )
+----
+
+[#list_expression]
+== list
+
+The `list` function wraps N Stream Expressions and opens and iterates each stream sequentially.
+This has the effect of concatenating the results of multiple Streaming Expressions.
+
+=== list Parameters
+
+* StreamExpressions ...: N Streaming Expressions
+
+=== list Syntax
+
+[source,text]
+----
+list(tuple(a="hello world"), tuple(a="HELLO WORLD"))
+
+list(search(collection1, q="*:*", fl="id, prod_ss", sort="id asc"),
+     search(collection2, q="*:*", fl="id, prod_ss", sort="id asc"))
+
+list(tuple(a=search(collection1, q="*:*", fl="id, prod_ss", sort="id asc")),
+     tuple(a=search(collection2, q="*:*", fl="id, prod_ss", sort="id asc")))
 ----
 
 == merge
