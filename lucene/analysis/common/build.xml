@@ -17,10 +17,10 @@
     limitations under the License.
  -->
 
-<project name="analyzers-common" default="default" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
+<project name="analyzers-common" default="default">
 
   <description>
-    Analyzers for indexing content in different languages and domains.
+   Analyzers for indexing content in different languages and domains.
   </description>
 
   <!-- some files for testing that do not have license headers -->
@@ -88,7 +88,7 @@
   <target xmlns:ivy="antlib:org.apache.ivy.ant" name="-resolve-icu4j" unless="icu4j.resolved" depends="ivy-availability-check,ivy-configure">
     <loadproperties prefix="ivyversions" srcFile="${common.dir}/ivy-versions.properties"/>
     <ivy:cachepath organisation="com.ibm.icu" module="icu4j" revision="${ivyversions./com.ibm.icu/icu4j}"
-                   inline="true" conf="default" transitive="true" pathid="icu4j.classpath"/>
+      inline="true" conf="default" transitive="true" pathid="icu4j.classpath"/>
     <property name="icu4j.resolved" value="true"/>
   </target>
 
@@ -102,10 +102,10 @@
 
   <target name="gen-tlds" depends="compile-tools">
     <java
-        classname="org.apache.lucene.analysis.standard.GenerateJflexTLDMacros"
-        dir="."
-        fork="true"
-        failonerror="true">
+      classname="org.apache.lucene.analysis.standard.GenerateJflexTLDMacros"
+      dir="."
+      fork="true"
+      failonerror="true">
       <classpath>
         <pathelement location="${build.dir}/classes/tools"/>
       </classpath>
@@ -117,8 +117,8 @@
 
   <target name="compile-tools" depends="common.compile-tools">
     <compile
-        srcdir="src/tools/java"
-        destdir="${build.dir}/classes/tools">
+      srcdir="src/tools/java"
+      destdir="${build.dir}/classes/tools">
       <classpath refid="classpath"/>
     </compile>
   </target>
@@ -128,71 +128,13 @@
   <target name="regenerate" depends="jflex,unicode-data"/>
 
   <target name="patch-snowball" description="Patches all snowball programs in '${snowball.programs.dir}' to make them work with MethodHandles">
-    <fileset id="snowball.programs" dir="${snowball.programs.dir}" includes="*Stemmer.java"/>
-
-    <replaceregexp match="^public class \w+Stemmer\b" replace="@SuppressWarnings(&quot;unused&quot;) \0" flags="m" encoding="UTF-8">
-      <restrict>
+      <fileset id="snowball.programs" dir="${snowball.programs.dir}" includes="*Stemmer.java"/>
+      <replaceregexp match="^public class \w+Stemmer\b" replace="@SuppressWarnings(&quot;unused&quot;) \0" flags="m" encoding="UTF-8">
         <fileset refid="snowball.programs"/>
-        <rsel:not>
-          <rsel:contains text="patched"/>
-        </rsel:not>
-      </restrict>
-    </replaceregexp>
-
-    <replaceregexp match="new Among\(([^,]*,[^,]*,[^,]*?)(?=\))" replace="\0, &quot;&quot;, methodObject" flags="g" encoding="UTF-8">
-      <restrict>
+      </replaceregexp>
+      <replaceregexp match="private final static \w+Stemmer methodObject\b.*$" replace="/* patched */ private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();" flags="m" encoding="UTF-8">
         <fileset refid="snowball.programs"/>
-        <rsel:not>
-          <rsel:contains text="patched"/>
-        </rsel:not>
-      </restrict>
-    </replaceregexp>
-
-    <replaceregexp match="(new Among\([^,]*,[^,]*,[^,]*,[^,]*,)[^,]*?(?=\))" replace="\1 methodObject" flags="g" encoding="UTF-8">
-      <restrict>
-        <fileset refid="snowball.programs"/>
-        <rsel:not>
-          <rsel:contains text="patched"/>
-        </rsel:not>
-      </restrict>
-    </replaceregexp>
-
-    <replaceregexp match="(?:find_among(?:|_b)\()(.*?)(?=\))" replace="\0, \1.length" flags="g" encoding="UTF-8">
-      <restrict>
-        <fileset refid="snowball.programs"/>
-        <rsel:not>
-          <rsel:contains text="patched"/>
-        </rsel:not>
-      </restrict>
-    </replaceregexp>
-
-    <replaceregexp match="current" replace="getCurrent()" flags="g" encoding="UTF-8">
-      <restrict>
-        <fileset refid="snowball.programs"/>
-        <rsel:not>
-          <rsel:contains text="patched"/>
-        </rsel:not>
-      </restrict>
-    </replaceregexp>
-
-    <replaceregexp match="(?:eq_s(?:|_b)\()(.*?)(?=\))" replace="\0.length(),\1" flags="g" encoding="UTF-8">
-      <restrict>
-        <fileset refid="snowball.programs"/>
-        <rsel:not>
-          <rsel:contains text="patched"/>
-        </rsel:not>
-      </restrict>
-    </replaceregexp>
-
-    <replaceregexp match="private static final long serialVersionUID(.*)" replace="private static final long serialVersionUID = 1L; ${line.separator}${line.separator} /* patched */ private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();" flags="m" encoding="UTF-8">
-      <restrict>
-        <fileset refid="snowball.programs"/>
-        <rsel:not>
-          <rsel:contains text="patched"/>
-        </rsel:not>
-      </restrict>
-    </replaceregexp>
-
-    <fixcrlf srcdir="${snowball.programs.dir}" includes="*Stemmer.java" tab="remove" tablength="2" encoding="UTF-8" javafiles="yes" fixlast="yes"/>
+      </replaceregexp>
+      <fixcrlf srcdir="${snowball.programs.dir}" includes="*Stemmer.java" tab="remove" tablength="2" encoding="UTF-8" javafiles="yes" fixlast="yes"/>
   </target>
 </project>
