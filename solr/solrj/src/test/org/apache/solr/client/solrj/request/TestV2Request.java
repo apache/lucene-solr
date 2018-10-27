@@ -102,7 +102,7 @@ public class TestV2Request extends SolrCloudTestCase {
     assertSuccess(client, new V2Request.Builder("/c/test").withMethod(SolrRequest.METHOD.DELETE).build());
     NamedList<Object> res = client.request(new V2Request.Builder("/c").build());
     List collections = (List) res.get("collections");
-    assertEquals(0, collections.size());
+    assertFalse( collections.contains("test"));
 
   }
 
