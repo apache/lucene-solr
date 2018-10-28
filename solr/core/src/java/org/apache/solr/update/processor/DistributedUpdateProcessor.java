@@ -1086,9 +1086,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
 
           long bucketVersion = bucket.highest;
-          if(isNestedSchema) {
-            lastKnownVersion = vinfo.lookupVersion(cmd.getIndexedId());
-          }
 
           if (leaderLogic) {
 
@@ -1101,6 +1098,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             }
 
             boolean updated = getUpdatedDocument(cmd, versionOnUpdate);
+
+            if(isNestedSchema && cmd.isNestedAtomicUpdate()) {
+              lastKnownVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            }
 
             // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
             if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE

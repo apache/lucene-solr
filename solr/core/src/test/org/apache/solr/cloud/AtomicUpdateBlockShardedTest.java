@@ -81,6 +81,8 @@ public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase 
 
     indexDoc(aClient, params, doc);
 
+    aClient.commit();
+
     doc = sdoc("id", "a", "children", map("add", sdocs(sdoc("id", "b", "level_s", "child"))));
 
     indexDoc(aClient, params, doc);
