@@ -164,6 +164,8 @@ New Features
 
 * SOLR-11907: Add convexHull and associated geometric Stream Evaluators. (Joel Bernstein)
 
+* SOLR-12811: Add enclosingDisk and associated geometric Stream Evaluators. (Joel Bernstein)
+
 Other Changes
 ----------------------
 
