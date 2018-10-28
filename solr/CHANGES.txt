@@ -162,6 +162,8 @@ New Features
 
 * SOLR-12828: Add oscillate Stream Evaluator to support sine wave analysis. (Joel Bernstein)
 
+* SOLR-11907: Add convexHull and associated geometric Stream Evaluators. (Joel Bernstein)
+
 Other Changes
 ----------------------
 
