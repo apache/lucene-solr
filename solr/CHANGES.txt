@@ -84,6 +84,8 @@ New Features
 
 * SOLR-12811: Add enclosingDisk and associated geometric Stream Evaluators. (Joel Bernstein)
 
+* SOLR-12840: Add pairSort Stream Evaluator (Joel Bernstein)
+
 Other Changes
 ----------------------
 
