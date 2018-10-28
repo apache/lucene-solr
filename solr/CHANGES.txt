@@ -160,6 +160,8 @@ New Features
 * SOLR-12754: The UnifiedHighlighter has a new hl.weightMatches param defaulting to false (will be true in 8.0).  It's
   the highest query accuracy mode, and furthermore phrase queries are highlighted as one.  (David Smiley)
 
+* SOLR-12828: Add oscillate Stream Evaluator to support sine wave analysis. (Joel Bernstein)
+
 Other Changes
 ----------------------
 
