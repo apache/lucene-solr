@@ -129,6 +129,9 @@ Upgrade Notes
   be set to -1 during collection creation to fall back to the old behavior of unlimited maxShardsPerNode when using
   autoscaling policy.
 
+* SOLR-12861: Added a Solr factory for ByteBuffersDirectory, which will replace deprecated RAMDirectory in
+  a future version of Solr.
+
 New Features
 ----------------------
 
@@ -189,6 +192,8 @@ Other Changes
 * SOLR-12423: Upgrade to Tika 1.19.1 when available (Tim Allison via Erick Erickson)
 
 * SOLR-12793: Move TestCloudJSONFacetJoinDomain amd TestCloudJSONFacetSKG to the facet test package (Varun Thacker)
+
+* SOLR-12861: Add Solr factory for ByteBuffersDirectory.
 
 Bug Fixes
 ----------------------
