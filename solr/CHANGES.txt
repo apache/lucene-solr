@@ -47,8 +47,7 @@ Upgrade Notes
   be set to -1 during collection creation to fall back to the old behavior of unlimited maxShardsPerNode when using
   autoscaling policy.
 
-* SOLR-12861: Added a Solr factory for ByteBuffersDirectory, which will replace deprecated RAMDirectory in
-  a future version of Solr.
+* SOLR-12861: Added a Solr factory for ByteBuffersDirectory, which will replace deprecated RAMDirectory in Solr 9.0.
 
 New Features
 ----------------------
