@@ -443,6 +443,31 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return size;
   }
 
+  String getIndexSizeDetails() {
+    Directory dir;
+    StringBuilder sb = new StringBuilder();
+    try {
+      if (directoryFactory.exists(getIndexDir())) {
+        dir = directoryFactory.get(getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
+        try {
+          String[] files = dir.listAll();
+          Arrays.sort(files);
+          for (String file : files) {
+            sb.append('\n');
+            sb.append(file);
+            sb.append('\t');
+            sb.append(String.valueOf(dir.fileLength(file)));
+          }
+        } finally {
+          directoryFactory.release(dir);
+        }
+      }
+    } catch (IOException e) {
+      SolrException.log(log, "IO error while trying to get the details of the Directory", e);
+    }
+    return sb.toString();
+  }
+
   @Override
   public String getName() {
     return name;
@@ -1161,6 +1186,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     manager.registerGauge(this, registry, () -> resourceLoader.getInstancePath().toString(), getMetricTag(), true, "instanceDir", Category.CORE.toString());
     manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : getIndexDir(), getMetricTag(), true, "indexDir", Category.CORE.toString());
     manager.registerGauge(this, registry, () -> isClosed() ? 0 : getIndexSize(), getMetricTag(), true, "sizeInBytes", Category.INDEX.toString());
+    manager.registerGauge(this, registry, () -> isClosed() ? "" : getIndexSizeDetails(), getMetricTag(), true, "sizeDetails", Category.INDEX.toString());
     manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), getMetricTag(), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
       manager.registerGauge(this, registry, () -> coreContainer.getNamesForCore(this), getMetricTag(), true, "aliases", Category.CORE.toString());

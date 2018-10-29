@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -41,6 +42,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -49,11 +51,15 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.stats.MetricUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Request handler to return metrics
  */
 public class MetricsHandler extends RequestHandlerBase implements PermissionNameProvider {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final SolrMetricManager metricManager;
 
   public static final String COMPACT_PARAM = "compact";
@@ -99,6 +105,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
 
     handleRequest(req.getParams(), (k, v) -> rsp.add(k, v));
+    log.debug("##== Req: {}", req);
+    log.debug("##== Rsp: {}", Utils.toJSONString(rsp.getValues()));
   }
   
   public void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) throws Exception {

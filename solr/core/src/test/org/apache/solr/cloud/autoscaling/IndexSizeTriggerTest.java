@@ -67,7 +67,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 /**
  *
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.handler.admin.MetricsHandler=DEBUG")
 public class IndexSizeTriggerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -90,6 +90,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -503,7 +504,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     int aboveBytes = maxSize * 9 / 10;
 
-    long waitForSeconds = 3 + random().nextInt(5);
+    // need to wait for recovery after splitting
+    long waitForSeconds = 10 + random().nextInt(5);
 
     // the trigger is initially disabled so that we have time to add listeners
     // and have them capture all events once the trigger is enabled
@@ -562,6 +564,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'name' : 'index_size_trigger4'" +
         "}" +
         "}";
+    log.info("-- resuming trigger");
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -570,6 +573,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
+    log.info("-- suspending trigger");
     // suspend the trigger to avoid generating more events
     String suspendTriggerCommand = "{" +
         "'suspend-trigger' : {" +
@@ -624,6 +628,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     finished = new CountDownLatch(1);
 
 
+    log.info("-- deleting documents");
     for (int j = 0; j < 10; j++) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParam("collection", collectionName);
@@ -632,6 +637,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
       }
       solrClient.request(ureq);
     }
+    cloudManager.getTimeSource().sleep(5000);
     // make sure the actual index size is reduced by deletions, otherwise we may still violate aboveBytes
     UpdateRequest ur = new UpdateRequest();
     ur.setParam(UpdateParams.COMMIT, "true");
@@ -640,14 +646,17 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     ur.setParam(UpdateParams.MAX_OPTIMIZE_SEGMENTS, "1");
     ur.setParam(UpdateParams.WAIT_SEARCHER, "true");
     ur.setParam(UpdateParams.OPEN_SEARCHER, "true");
+    log.info("-- requesting optimize / expungeDeletes / commit");
     solrClient.request(ur, collectionName);
 
     // wait for the segments to merge to reduce the index size
     cloudManager.getTimeSource().sleep(50000);
 
+    log.info("-- requesting commit");
     solrClient.commit(collectionName, true, true);
 
     // resume the trigger
+    log.info("-- resuming trigger");
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -656,6 +665,12 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
+    log.info("-- suspending trigger");
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    System.exit(-1);
+
     assertEquals(1, listenerEvents.size());
     events = listenerEvents.get("capturing4");
     assertNotNull("'capturing4' events not found", events);

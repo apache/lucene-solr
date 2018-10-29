@@ -252,7 +252,7 @@ public class IndexSizeTrigger extends TriggerBase {
           DocCollection docCollection = clusterState.getCollection(coll);
 
           shards.forEach((sh, replicas) -> {
-            // check only the leader of a replica in active shard
+            // check only the leader replica in an active shard
             Slice s = docCollection.getSlice(sh);
             if (s.getState() != Slice.State.ACTIVE) {
               return;
@@ -260,6 +260,10 @@ public class IndexSizeTrigger extends TriggerBase {
             Replica r = s.getLeader();
             // no leader - don't do anything
             if (r == null) {
+              return;
+            }
+            // not on this node
+            if (!r.getNodeName().equals(node)) {
               return;
             }
             // find ReplicaInfo
@@ -282,6 +286,7 @@ public class IndexSizeTrigger extends TriggerBase {
             String registry = SolrCoreMetricManager.createRegistryName(true, coll, sh, replicaName, null);
             String tag = "metrics:" + registry + ":INDEX.sizeInBytes";
             metricTags.put(tag, info);
+            metricTags.put("metrics:" + registry + ":INDEX.sizeDetails", info);
             tag = "metrics:" + registry + ":SEARCHER.searcher.numDocs";
             metricTags.put(tag, info);
           });
@@ -297,14 +302,14 @@ public class IndexSizeTrigger extends TriggerBase {
           } else {
             // verify that it's a Number
             if (!(size instanceof Number)) {
-              log.warn("invalid size value - not a number: '" + size + "' is " + size.getClass().getName());
+              log.warn("invalid size value for tag " + tag + " - not a number: '" + size + "' is " + size.getClass().getName());
               return;
             }
 
             ReplicaInfo currentInfo = currentSizes.computeIfAbsent(info.getCore(), k -> (ReplicaInfo)info.clone());
             if (tag.contains("INDEX")) {
               currentInfo.getVariables().put(BYTES_SIZE_PROP, ((Number) size).longValue());
-            } else {
+            } else if (tag.contains("SEARCHER")) {
               currentInfo.getVariables().put(DOCS_SIZE_PROP, ((Number) size).longValue());
             }
           }
@@ -457,6 +462,14 @@ public class IndexSizeTrigger extends TriggerBase {
 
     if (ops.isEmpty()) {
       return;
+    }
+    try {
+      ClusterState cs = cloudManager.getClusterStateProvider().getClusterState();
+      cs.forEachCollection(coll -> {
+        log.debug("##== Collection: {}", coll);
+      });
+    } catch (IOException e) {
+      throw new RuntimeException("oops: ", e);
     }
     if (processor.process(new IndexSizeEvent(getName(), eventTime.get(), ops, aboveSize, belowSize))) {
       // update last event times
