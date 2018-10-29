@@ -24,14 +24,14 @@ functions.
 
 A convex hull is the smallest convex set of points that encloses a data set. Math expressions has support for computing
 the convex hull of a 2D data set. Once a convex hull has been calculated, a set of math expression functions
-can be used to geometrically describe the convex hull.
+can be applied to geometrically describe the convex hull.
 
 The `convexHull` function finds the convex hull of an observation matrix of 2D vectors.
-Each row of the matrix contains a 2D observation.
+Each row of the matrix is a 2D observation.
 
 In the example below a convex hull is calculated for a randomly generated set of 100 2D observations.
 
-Then the following functions are called on the convex result:
+Then the following functions are called on the convex hull:
 
 -`getBaryCenter`: Returns the 2D point that is the bary center of the convex hull.
 
@@ -39,7 +39,7 @@ Then the following functions are called on the convex result:
 
 -`getBoundarySize`: Returns the boundary size of the convex hull.
 
--`getVertices`: Returns 2D points that are the vertices of the convex hull.
+-`getVertices`: Returns a set of 2D points that are the vertices of the convex hull.
 
 
 [source,text]
@@ -126,11 +126,11 @@ When this expression is sent to the `/stream` handler it responds with:
 
 The `enclosingDisk` function finds the smallest enclosing circle the encloses a 2D data set.
 Once an enclosing disk has been calculated, a set of math expression functions
-can be used to geometrically describe the enclosing disk.
+can be applied to geometrically describe the enclosing disk.
 
 In the example below an enclosing disk is calculated for a randomly generated set of 1000 2D observations.
 
-Then the following functions are called on the enclosing disk result:
+Then the following functions are called on the enclosing disk:
 
 -`getCenter`: Returns the 2D point that is the center of the disk.
 
