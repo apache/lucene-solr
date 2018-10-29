@@ -143,6 +143,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTIO
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
+import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -638,6 +639,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String shard = req.getParams().get(SHARD_ID_PROP);
       String rangesStr = req.getParams().get(CoreAdminParams.RANGES);
       String splitKey = req.getParams().get("split.key");
+      String numSubShards = req.getParams().get(NUM_SUB_SHARDS);
 
       if (splitKey == null && shard == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "At least one of shard, or split.key should be specified.");
@@ -650,6 +652,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "Only one of 'ranges' or 'split.key' should be specified");
       }
+      if (numSubShards != null && (splitKey != null || rangesStr != null)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "numSubShards can not be specified with split.key or ranges parameters");
+      }
 
       Map<String, Object> map = copy(req.getParams(), null,
           COLLECTION_PROP,
@@ -658,7 +664,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           CoreAdminParams.RANGES,
           WAIT_FOR_FINAL_STATE,
           TIMING,
-          SPLIT_METHOD);
+          SPLIT_METHOD,
+          NUM_SUB_SHARDS);
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
     }),
     DELETESHARD_OP(DELETESHARD, (req, rsp, h) -> {
@@ -1191,15 +1198,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (leader != null && leader.getState() == State.ACTIVE) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "The shard already has an active leader. Force leader is not applicable. State: " + slice);
-      }
-
-      // Clear out any LIR state
-      String lirPath = handler.coreContainer.getZkController().getLeaderInitiatedRecoveryZnodePath(collectionName, sliceId);
-      if (handler.coreContainer.getZkController().getZkClient().exists(lirPath, true)) {
-        StringBuilder sb = new StringBuilder();
-        handler.coreContainer.getZkController().getZkClient().printLayout(lirPath, 4, sb);
-        log.info("Cleaning out LIR data, which was: {}", sb);
-        handler.coreContainer.getZkController().getZkClient().clean(lirPath);
       }
 
       final Set<String> liveNodes = clusterState.getLiveNodes();

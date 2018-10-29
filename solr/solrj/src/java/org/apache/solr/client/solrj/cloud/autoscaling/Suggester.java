@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -66,14 +67,27 @@ public abstract class Suggester implements MapWriter {
   boolean force;
   protected List<Violation> originalViolations = new ArrayList<>();
   private boolean isInitialized = false;
+  LinkedHashMap<Clause, double[]> deviations, lastBestDeviation;
+
 
   void _init(Policy.Session session) {
     this.session = session.copy();
   }
 
-  boolean isLessDeviant(double[] previousBest, double[] newDeviation) {
-    if (previousBest == null) return true;
-    return newDeviation[0] < previousBest[0];
+  boolean isLessDeviant() {
+    if (lastBestDeviation == null && deviations == null) return false;
+    if (deviations == null) return true;
+    if (lastBestDeviation == null) return false;
+    if (lastBestDeviation.size() < deviations.size()) return true;
+    for (Map.Entry<Clause, double[]> currentDeviation : deviations.entrySet()) {
+      double[] lastDeviation = lastBestDeviation.get(currentDeviation.getKey());
+      if (lastDeviation == null) return false;
+      int result = Preference.compareWithTolerance(currentDeviation.getValue()[0],
+          lastDeviation[0], 1);
+      if (result < 0) return true;
+      if (result > 0) return false;
+    }
+    return false;
   }
   public Suggester hint(Hint hint, Object value) {
     hint.validator.accept(value);
@@ -282,17 +296,22 @@ public abstract class Suggester implements MapWriter {
     }
   }
 
-  List<Violation> testChangedMatrix(boolean strict, Policy.Session session, double[] deviation) {
+  List<Violation> testChangedMatrix(boolean executeInStrictMode, Policy.Session session) {
+    if (this.deviations != null) this.lastBestDeviation = this.deviations;
+    this.deviations = null;
     Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
-      if (strict || clause.strict) {
-        List<Violation> errs = clause.test(session, deviation);
-        if (!errs.isEmpty()) {
-          errors.addAll(errs);
-        }
-      }
+      Clause originalClause = clause.derivedFrom == null ? clause : clause.derivedFrom;
+//      if (!executeInStrictMode && !clause.strict) {
+      if (this.deviations == null) this.deviations = new LinkedHashMap<>();
+      this.deviations.put(originalClause, new double[1]);
+//      }
+      List<Violation> errs = clause.test(session, this.deviations == null ? null : this.deviations.get(originalClause));
+      if (!errs.isEmpty() &&
+          (executeInStrictMode || clause.strict)) errors.addAll(errs);
     }
+    if (!errors.isEmpty()) deviations = null;
     return errors;
   }
 

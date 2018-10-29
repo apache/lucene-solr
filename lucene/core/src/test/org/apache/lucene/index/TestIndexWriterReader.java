@@ -59,7 +59,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
         0);
 
     if (td != null) {
-      final Bits liveDocs = MultiFields.getLiveDocs(r);
+      final Bits liveDocs = MultiBits.getLiveDocs(r);
       while (td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         td.docID();
         if (liveDocs == null || liveDocs.get(td.docID())) {

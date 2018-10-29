@@ -67,6 +67,8 @@
     <dependency org="com.adobe.xmp" name="xmpcore" rev="${/com.adobe.xmp/xmpcore}" conf="compile"/>
     <dependency org="com.pff" name="java-libpst" rev="${/com.pff/java-libpst}" conf="compile"/>
     <dependency org="org.tallison" name="jmatio" rev="${/org.tallison/jmatio}" conf="compile"/>
+    <dependency org="com.epam" name="parso" rev="${/com.epam/parso}" conf="compile"/>
+    <dependency org="org.brotli" name="dec" rev="${/org.brotli/dec}" conf="compile"/>
 
     <!-- Other ExtractingRequestHandler dependencies -->
     <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" conf="compile"/>

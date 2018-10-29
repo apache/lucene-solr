@@ -38,6 +38,7 @@ import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -45,7 +46,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
@@ -374,13 +375,13 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     int totalTokenCount2 = 0;
 
-    Collection<String> fields = MultiFields.getIndexedFields(reader);
+    Collection<String> fields = FieldInfos.getIndexedFields(reader);
 
     for (String fieldName : fields) {
       if (fieldName.equals(DocMaker.ID_FIELD) || fieldName.equals(DocMaker.DATE_MSEC_FIELD) || fieldName.equals(DocMaker.TIME_SEC_FIELD)) {
         continue;
       }
-      Terms terms = MultiFields.getTerms(reader, fieldName);
+      Terms terms = MultiTerms.getTerms(reader, fieldName);
       if (terms == null) {
         continue;
       }

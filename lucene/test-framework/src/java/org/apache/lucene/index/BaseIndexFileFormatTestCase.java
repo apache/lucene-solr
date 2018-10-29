@@ -325,7 +325,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     FieldInfo proto = oneDocReader.getFieldInfos().fieldInfo("field");
     FieldInfo field = new FieldInfo(proto.name, proto.number, proto.hasVectors(), proto.omitsNorms(), proto.hasPayloads(), 
                                     proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), new HashMap<>(),
-                                    proto.getPointDimensionCount(), proto.getPointNumBytes(), proto.isSoftDeletesField());
+                                    proto.getPointDataDimensionCount(), proto.getPointIndexDimensionCount(), proto.getPointNumBytes(), proto.isSoftDeletesField());
 
     FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { field } );
 
@@ -360,7 +360,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     };
     try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState)) {
       final Fields fields = new Fields() {
-        TreeSet<String> indexedFields = new TreeSet<>(MultiFields.getIndexedFields(oneDocReader));
+        TreeSet<String> indexedFields = new TreeSet<>(FieldInfos.getIndexedFields(oneDocReader));
 
         @Override
         public Iterator<String> iterator() {

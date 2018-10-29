@@ -49,7 +49,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.suggest.InputIterator;
@@ -295,7 +295,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       }
       reader = DirectoryReader.open(writer);
 
-      Terms terms = MultiFields.getTerms(reader, "body");
+      Terms terms = MultiTerms.getTerms(reader, "body");
       if (terms == null) {
         throw new IllegalArgumentException("need at least one suggestion");
       }

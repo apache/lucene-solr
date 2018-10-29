@@ -70,7 +70,7 @@ When creating collections, the shards and/or replicas are spread across all avai
 +
 If a node is not live when the CREATE action is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas the CREATE action will spread to each node.
 +
-If the entire collection can not be fit into the live nodes, no collection will be created at all. The default `maxShardsPerNode` value is `1`.
+If the entire collection can not be fit into the live nodes, no collection will be created at all. The default `maxShardsPerNode` value is `1`. A value of `-1` means unlimited. If a `policy` is also specified then the stricter of `maxShardsPerNode` and policy rules apply.
 
 `createNodeSet`::
 Allows defining the nodes to spread the new collection across. The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
@@ -80,7 +80,7 @@ If not provided, the CREATE operation will create shard-replicas spread across a
 Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the <<addreplica,ADDREPLICA>> operation to add shard-replicas when and where required.
 
 `createNodeSet.shuffle`::
-Controls wether or not the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
+Controls whether or not the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
 +
 A `false` value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but `true` can be a better choice for ensuring replicas are distributed evenly across nodes. The default is `true`.
 +
@@ -286,6 +286,11 @@ The key to use for splitting the index.
 This parameter can be used to split a shard using a route key such that all documents of the specified route key end up in a single dedicated sub-shard. Providing the `shard` parameter is not required in this case because the route key is enough to figure out the right shard. A route key which spans more than one shard is not supported.
 +
 For example, suppose `split.key=A!` hashes to the range `12-15` and belongs to shard 'shard1' with range `0-20`. Splitting by this route key would yield three sub-shards with ranges `0-11`, `12-15` and `16-20`. Note that the sub-shard with the hash range of the route key may also contain documents for other route keys whose hash ranges overlap.
+
+`numSubShards`::
+The number of sub-shards to split the parent shard into. Allowed values for this are in the range of `2`-`8` and defaults to `2`.
++
+This parameter can only be used when `ranges` or `split.key` are not specified.
 
 `splitMethod`::
 Currently two methods of shard splitting are supported:
@@ -1051,14 +1056,14 @@ If the exact shard name is not known, users may pass the `\_route_` value and th
 Ignored if the `shard` parameter is also specified.
 
 `node`::
-The name of the node where the replica should be created (optional)
+The name of the node where the replica should be created (optional).
 
 `createNodeSet`::
 A comma-separated list of nodes among which the best ones will be chosen to place the replicas (optional)
 +
 The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 
-If neither `node`, nor `createNodeSet` is specified then the best node(s) from among all the live nodes in the cluster are chosen.
+NOTE: If neither `node` nor `createNodeSet` are specified then the best node(s) from among all the live nodes in the cluster are chosen.
 
 `instanceDir`::
 The instanceDir for the core that will be created.
@@ -1069,11 +1074,9 @@ The directory in which the core should be created.
 `type`::
 The type of replica to create. These possible values are allowed:
 +
---
 * `nrt`: The NRT type maintains a transaction log and updates its index locally. This is the default and the most commonly used.
 * `tlog`: The TLOG type maintains a transaction log but only updates its index via replication.
 * `pull`: The PULL type does not maintain a transaction log and only updates its index via replication. This type is not eligible to become a leader.
---
 +
 See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
 
@@ -1098,6 +1101,8 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 === Examples using ADDREPLICA
 
 *Input*
+
+Create a replica for the "test" collection on the node "192.167.1.2:8983_solr".
 
 [source,text]
 ----
@@ -1124,6 +1129,10 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&
   </lst>
 </response>
 ----
+
+*Input*
+
+Create a replica for the "gettingstarted" collection with one PULL replica and one TLOG replica.
 
 [source,text]
 ----
@@ -1199,13 +1208,11 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 </response>
 ----
 
-=== Deeply Nested Cluster Properties ===
+=== Setting Cluster-Wide Defaults
 
-==== `defaults` ====
-It is possible to set cluster-wide default values for certain attributes of a collection.
+It is possible to set cluster-wide default values for certain attributes of a collection, using the `defaults` parameter.
 
-
-*Example 1: Set/update default values*
+*Set/update default values*
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
@@ -1223,7 +1230,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-*Example 2: Unset the value of `nrtReplicas` alone*
+*Unset the only value of `nrtReplicas`*
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
@@ -1238,7 +1245,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-*Example 2: Unset all values in `defaults`*
+*Unset all values in `defaults`*
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
@@ -1247,10 +1254,10 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-NOTE: Until Solr 7.5, cluster properties supported a "collectionDefaults" key which is now deprecated. Using the API
-structure for Solr 7.4 or Solr 7.5 with "collectionDefaults" will continue to work but the format of the properties
-will automatically be converted to the new nested structure. Support for the "collectionDefaults" key will be
-removed in Solr 9.
+NOTE: Until Solr 7.5, cluster properties supported a `collectionDefaults` key which is now deprecated and
+replaced with `defaults`. Using the `collectionDefaults` parameter in Solr 7.4 or 7.5 will continue to work
+ but the format of the properties will automatically be converted to the new nested structure.
+Support for the "collectionDefaults" key will be removed in Solr 9.
 
 [[collectionprop]]
 == COLLECTIONPROP: Collection Properties

@@ -44,11 +44,7 @@ import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
@@ -150,7 +146,7 @@ public class IndexSchema {
 
   protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>();
   public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
-  
+
   protected DynamicCopy[] dynamicCopyFields;
   public DynamicCopy[] getDynamicCopyFields() { return dynamicCopyFields; }
 
@@ -183,14 +179,14 @@ public class IndexSchema {
       throw new RuntimeException(e);
     }
   }
-  
+
   /**
    * @since solr 1.4
    */
   public SolrResourceLoader getResourceLoader() {
     return loader;
   }
-  
+
   /** Gets the name of the resource used to instantiate this schema. */
   public String getResourceName() {
     return resourceName;
@@ -205,7 +201,7 @@ public class IndexSchema {
   public String getSchemaName() {
     return name;
   }
-  
+
   /** The Default Lucene Match Version for this IndexSchema */
   public Version getDefaultLuceneMatchVersion() {
     return solrConfig.luceneMatchVersion;
@@ -223,7 +219,7 @@ public class IndexSchema {
    * <p>
    * Modifying this Map (or any item in it) will affect the real schema
    * </p>
-   * 
+   *
    * <p>
    * NOTE: this function is not thread safe.  However, it is safe to use within the standard
    * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
@@ -237,11 +233,11 @@ public class IndexSchema {
    * in the index, keyed on field type name.
    *
    * <p>
-   * Modifying this Map (or any item in it) will affect the real schema.  However if you 
+   * Modifying this Map (or any item in it) will affect the real schema.  However if you
    * make any modifications, be sure to call {@link IndexSchema#refreshAnalyzers()} to
    * update the Analyzers for the registered fields.
    * </p>
-   * 
+   *
    * <p>
    * NOTE: this function is not thread safe.  However, it is safe to use within the standard
    * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
@@ -270,7 +266,7 @@ public class IndexSchema {
     if (null == similarity) {
       similarity = similarityFactory.getSimilarity();
     }
-    return similarity; 
+    return similarity;
   }
 
   protected SimilarityFactory similarityFactory;
@@ -279,7 +275,7 @@ public class IndexSchema {
 
   /** Returns the SimilarityFactory that constructed the Similarity for this index */
   public SimilarityFactory getSimilarityFactory() { return similarityFactory; }
-  
+
   /**
    * Returns the Analyzer used when indexing documents for this index
    *
@@ -300,7 +296,7 @@ public class IndexSchema {
    */
   public Analyzer getQueryAnalyzer() { return queryAnalyzer; }
 
-  
+
   protected SchemaField uniqueKeyField;
 
   /**
@@ -342,35 +338,28 @@ public class IndexSchema {
     }
     return f;
   }
-  
+
   /**
    * This will re-create the Analyzers.  If you make any modifications to
    * the Field map ({@link IndexSchema#getFields()}, this function is required
    * to synch the internally cached field analyzers.
-   * 
+   *
    * @since solr 1.3
    */
   public void refreshAnalyzers() {
     indexAnalyzer = new SolrIndexAnalyzer();
     queryAnalyzer = new SolrQueryAnalyzer();
   }
-  
-  public Map<String,UninvertingReader.Type> getUninversionMap(IndexReader reader) {
-    final Map<String,UninvertingReader.Type> map = new HashMap<>();
-    for (FieldInfo f : MultiFields.getMergedFieldInfos(reader)) {
-      if (f.getDocValuesType() == DocValuesType.NONE) {
-        // we have a field (of some kind) in the reader w/o DocValues
-        // if we have an equivalent indexed=true field in the schema, trust it's uninversion type (if any)
-        final SchemaField sf = getFieldOrNull(f.name);
-        if (sf != null && sf.indexed()) {
-          final UninvertingReader.Type type = sf.getType().getUninversionType(sf);
-          if (type != null) {
-            map.put(f.name, type);
-          }
-        }
+
+  /** @see UninvertingReader */
+  public Function<String, UninvertingReader.Type> getUninversionMapper() {
+    return name -> {
+      SchemaField sf = getFieldOrNull(name);
+      if (sf == null) {
+        return null;
       }
-    }
-    return map;
+      return sf.getType().getUninversionType(sf);
+    };
   }
 
   /**

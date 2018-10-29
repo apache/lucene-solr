@@ -1,0 +1,20 @@
+{
+  "diagnostics":{
+    "sortedNodes":[{
+      "node":"127.0.0.1:49469_solr",
+      "isLive":true,
+      "cores":0.0,
+      "freedisk":672.6827087402344,
+      "totaldisk":1037.938980102539,
+      "replicas":{}}
+    ,{
+        "node":"127.0.0.1:49470_solr",
+        "isLive":true,
+        "cores":0.0,
+        "freedisk":672.6827087402344,
+        "totaldisk":1037.938980102539,
+        "replicas":{}}],
+    "liveNodes":["127.0.0.1:49469_solr",
+      "127.0.0.1:49470_solr"],
+    "violations":[],
+    "config":{}}}

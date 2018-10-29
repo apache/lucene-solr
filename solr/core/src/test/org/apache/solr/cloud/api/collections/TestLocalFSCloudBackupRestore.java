@@ -59,7 +59,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
 
   @Override
   @Test
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  //Commented 14-Oct-2018 @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void test() throws Exception {
     super.test();
   }

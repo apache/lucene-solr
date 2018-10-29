@@ -90,6 +90,7 @@ public class Lang {
         .withFunctionName("timeseries", TimeSeriesStream.class)
         .withFunctionName("tuple", TupStream.class)
         .withFunctionName("sql", SqlStream.class)
+        .withFunctionName("plist", ParallelListStream.class)
 
             // metrics
         .withFunctionName("min", MinMetric.class)
@@ -270,6 +271,7 @@ public class Lang {
         .withFunctionName("getCenter", GetCenterEvaluator.class)
         .withFunctionName("getRadius", GetRadiusEvaluator.class)
         .withFunctionName("getSupportPoints", GetSupportPointsEvaluator.class)
+        .withFunctionName("pairSort", PairSortEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)
@@ -302,6 +304,7 @@ public class Lang {
         .withFunctionName("mult", MultiplyEvaluator.class)
         .withFunctionName("sub", SubtractEvaluator.class)
         .withFunctionName("log", NaturalLogEvaluator.class)
+        .withFunctionName("log10", Log10Evaluator.class)
         .withFunctionName("pow", PowerEvaluator.class)
         .withFunctionName("mod", ModuloEvaluator.class)
         .withFunctionName("ceil", CeilingEvaluator.class)

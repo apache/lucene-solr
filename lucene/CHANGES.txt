@@ -123,6 +123,16 @@ Changes in Runtime Behavior
 * LUCENE-8505: IndexWriter#addIndices will now fail if the target index is sorted but
   the candidate is not. (Jim Ferenczi)
 
+* LUCENE-8535: Highlighter and FVH doesn't support ToParent and ToChildBlockJoinQuery out of the
+  box anymore. In order to highlight on Block-Join Queries a custom WeightedSpanTermExtractor / FieldQuery
+  should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshiran)
+
+* LUCENE-7875: Moved MultiFields static methods out of the class.  getLiveDocs is now
+  in MultiBits which is now public.  getMergedFieldInfos and getIndexedFields are now in
+  FieldInfos.  getTerms is now in MultiTerms.  getTermPositionsEnum and getTermDocsEnum
+  were collapsed and renamed to just getTermPostingsEnum and moved to MultiTerms.
+  (David Smiley)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
@@ -179,6 +189,9 @@ Optimizations
 * LUCENE-8511: MultiFields.getIndexedFields is now optimized; does not call getMergedFieldInfos
   (David Smiley)
 
+* LUCENE-8507: TopFieldCollector can now update the minimum competitive score if the primary sort
+  is by relevancy and the total hit count is not required. (Jim Ferenczi)
+
 ======================= Lucene 7.6.0 =======================
 
 Build:
@@ -191,6 +204,45 @@ Bug fixes:
 
 * LUCENE-8479: QueryBuilder#analyzeGraphPhrase now throws TooManyClause exception
   if the number of expanded path reaches the BooleanQuery#maxClause limit. (Jim Ferenczi)
+
+* LUCENE-8522: throw InvalidShapeException when constructing a polygon and
+  all points are coplanar. (Ignacio Vera)
+
+* LUCENE-8531: QueryBuilder#analyzeGraphPhrase now creates one phrase query per finite strings
+  in the graph if the slop is greater than 0. Span queries cannot be used in this case because
+  they don't handle slop the same way than phrase queries. (Steve Rowe, Uwe Schindler, Jim Ferenczi)
+
+* LUCENE-8524: Add the Hangul Letter Araea (interpunct) as a separator in Nori's tokenizer.
+  This change also removes empty terms and trim surface form in Nori's Korean dictionary. (Trey Jones, Jim Ferenczi)
+
+New Features
+
+* LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
+  to select a fewer number of dimensions to be used for creating the index than
+  the total number of dimensions used for field encoding. i.e., dimensions 0 to N
+  may be used to determine how to split the inner nodes, and dimensions N+1 to D
+  are ignored and stored as data dimensions at the leaves. (Nick Knize)
+
+* LUCENE-8538: Add a Simple WKT Shape Parser for creating Lucene Geometries (Polygon, Line,
+  Rectangle) from WKT format. (Nick Knize)
+
+* LUCENE-8462: Adds an Arabic snowball stemmer based on
+  https://github.com/snowballstem/snowball/blob/master/algorithms/arabic.sbl 
+  (Ryadh Dahimene via Jim Ferenczi)
+
+Improvements:
+
+* LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the
+  first 4 are index dimensions defining the bounding box of the Triangle and the
+  remaining 3 data dimensions define the vertices of the triangle. (Nick Knize)
+
+Other:
+
+* LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
+  via Alan Woodward)
+
+* LUCENE-8533: Fix Javadocs of DataInput#readVInt(): Negative numbers are
+  supported, but should be avoided. (Vladimir Dolzhenko via Uwe Schindler)
 
 ======================= Lucene 7.5.1 =======================
 

@@ -18,6 +18,7 @@
 package org.apache.solr.common;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 public class MapWriterMap implements MapWriter {
@@ -31,6 +32,19 @@ public class MapWriterMap implements MapWriter {
   public void writeMap(EntryWriter ew) throws IOException {
     delegate.forEach((k, v) -> ew.putNoEx(k == null ? null : k.toString(), v));
   }
+
+  @Override
+  public Object _get(String path, Object def) {
+    if (path.indexOf('/') == -1) return delegate.getOrDefault(path, def);
+    return MapWriter.super._get(path, def);
+  }
+
+  @Override
+  public Object _get(List<String> path, Object def) {
+    if (path.size() == 1) return delegate.getOrDefault(path.get(0), def);
+    return MapWriter.super._get(path, def);
+  }
+
 
   @Override
   public Map toMap(Map<String, Object> map) {

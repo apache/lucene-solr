@@ -55,6 +55,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
@@ -106,14 +107,14 @@ public class Utils {
     return mutable ? copy : Collections.unmodifiableMap(copy);
   }
 
-  public static void forEachMapEntry(MapWriter mw, String path, BiConsumer fun) {
-    Object o = Utils.getObjectByPath(mw, false, path);
-    forEachMapEntry(o, fun);
+  public static void forEachMapEntry(Object o, String path, BiConsumer fun) {
+    Object val = Utils.getObjectByPath(o, false, path);
+    forEachMapEntry(val, fun);
   }
 
-  public static void forEachMapEntry(MapWriter mw, List<String> path, BiConsumer fun) {
-    Object o = Utils.getObjectByPath(mw, false, path);
-    forEachMapEntry(o, fun);
+  public static void forEachMapEntry(Object o, List<String> path, BiConsumer fun) {
+    Object val = Utils.getObjectByPath(o, false, path);
+    forEachMapEntry(val, fun);
   }
 
   public static void forEachMapEntry(Object o, BiConsumer fun) {
@@ -122,7 +123,7 @@ public class Utils {
       try {
         m.writeMap(new MapWriter.EntryWriter() {
           @Override
-          public MapWriter.EntryWriter put(String k, Object v) {
+          public MapWriter.EntryWriter put(CharSequence k, Object v) {
             fun.accept(k, v);
             return this;
           }
@@ -241,7 +242,7 @@ public class Utils {
         JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
         JSONParser.OPTIONAL_OUTER_BRACES);
     try {
-      return ObjectBuilder.getVal(parser);
+      return STANDARDOBJBUILDER.apply(parser).getVal(parser);
     } catch (IOException e) {
       throw new RuntimeException(e); // should never happen w/o using real IO
     }
@@ -275,6 +276,18 @@ public class Utils {
   public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER = jsonParser -> {
     try {
       return new ObjectBuilder(jsonParser);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
+  public static final Function<JSONParser, ObjectBuilder> MAPWRITEROBJBUILDER = jsonParser -> {
+    try {
+      return new ObjectBuilder(jsonParser){
+        @Override
+        public Object newObject() {
+          return new LinkedHashMapWriter();
+        }
+      };
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -458,8 +471,8 @@ public class Utils {
 
   }
 
-  static class MapWriterEntry<V> extends AbstractMap.SimpleEntry<String, V> implements MapWriter, Map.Entry<String, V> {
-    MapWriterEntry(String key, V value) {
+  static class MapWriterEntry<V> extends AbstractMap.SimpleEntry<CharSequence, V> implements MapWriter, Map.Entry<CharSequence, V> {
+    MapWriterEntry(CharSequence key, V value) {
       super(key, value);
     }
 
@@ -482,7 +495,7 @@ public class Utils {
         ((MapWriter) obj).writeMap(new MapWriter.EntryWriter() {
           int count = -1;
           @Override
-          public MapWriter.EntryWriter put(String k, Object v) {
+          public MapWriter.EntryWriter put(CharSequence k, Object v) {
             if (result[0] != null) return this;
             if (idx < 0) {
               if (k.equals(key)) result[0] = v;
@@ -675,4 +688,5 @@ public class Utils {
     }
     return def;
   }
+
 }

@@ -32,7 +32,7 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
 
 
-public class DebugAgg extends AggValueSource {
+class DebugAgg extends AggValueSource {
   public static AtomicLong parses = new AtomicLong(0);
 
   public static class Parser extends ValueSourceParser {

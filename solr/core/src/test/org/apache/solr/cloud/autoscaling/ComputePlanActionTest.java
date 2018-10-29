@@ -276,7 +276,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
         "conf",2, 3);
-//    create.setMaxShardsPerNode(2);
+    create.setMaxShardsPerNode(2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -325,6 +325,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeAdded() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
@@ -353,7 +354,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
-        "conf",1, 2);
+        "conf",1, 2).setMaxShardsPerNode(2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -516,6 +517,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeAddedTriggerWithAddReplicaPreferredOp_2Shard() throws Exception {
     String collectionNamePrefix = "testNodeAddedTriggerWithAddReplicaPreferredOp_2Shard";
     int numShards = 2;
@@ -553,7 +555,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
-        "conf", numShards, 1);
+        "conf", numShards, 1).setMaxShardsPerNode(2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -579,7 +581,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     for (int i = 1; i < numCollections; i++) {
       create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_" + i,
-          "conf", numShards, 2);
+          "conf", numShards, 2).setMaxShardsPerNode(numShards * 2);
       create.process(solrClient);
 
       waitForState("Timed out waiting for replicas of new collection to be active",
@@ -613,6 +615,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeLostTriggerWithDeleteNodePreferredOp() throws Exception {
     String collectionNamePrefix = "testNodeLostTriggerWithDeleteNodePreferredOp";
     int numCollections = 1 + random().nextInt(3), numShards = 1 + random().nextInt(3);
@@ -649,7 +652,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     String newNodeName = newNode.getNodeName();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
-        "conf", numShards, 2);
+        "conf", numShards, 2).setMaxShardsPerNode(numShards * 2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",

@@ -289,6 +289,14 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
     );
   }
 
+  public void testInterpunct() throws IOException {
+    assertAnalyzesTo(analyzer, "도로ㆍ지반ㆍ수자원ㆍ건설환경ㆍ건축ㆍ화재설비연구",
+        new String[]{"도로", "지반", "수자원", "건설", "환경", "건축", "화재", "설비", "연구"},
+        new int[]{0, 3, 6, 10, 12, 15, 18, 20, 22},
+        new int[]{2, 5, 9, 12, 14, 17, 20, 22, 24},
+        new int[]{1, 1, 1, 1,   1,  1,  1,  1,  1}
+    );
+  }
 
   /** blast some random strings through the tokenizer */
   public void testRandomStrings() throws Exception {

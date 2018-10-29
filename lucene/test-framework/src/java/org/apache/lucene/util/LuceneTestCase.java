@@ -894,7 +894,7 @@ public abstract class LuceneTestCase extends Assert {
    * Convenience method for logging an iterator.
    *
    * @param label  String logged before/after the items in the iterator
-   * @param iter   Each next() is toString()ed and logged on it's own line. If iter is null this is logged differnetly then an empty iterator.
+   * @param iter   Each next() is toString()ed and logged on its own line. If iter is null this is logged differently then an empty iterator.
    * @param stream Stream to log messages to.
    */
   public static void dumpIterator(String label, Iterator<?> iter,
@@ -1975,12 +1975,12 @@ public abstract class LuceneTestCase extends Assert {
    * Fields api equivalency 
    */
   public void assertTermsEquals(String info, IndexReader leftReader, IndexReader rightReader, boolean deep) throws IOException {
-    Set<String> leftFields = new HashSet<>(MultiFields.getIndexedFields(leftReader));
-    Set<String> rightFields = new HashSet<>(MultiFields.getIndexedFields(rightReader));
+    Set<String> leftFields = new HashSet<>(FieldInfos.getIndexedFields(leftReader));
+    Set<String> rightFields = new HashSet<>(FieldInfos.getIndexedFields(rightReader));
     assertEquals(info, leftFields, rightFields);
 
     for (String field : leftFields) {
-      assertTermsEquals(info, leftReader, MultiFields.getTerms(leftReader, field), MultiFields.getTerms(rightReader, field), deep);
+      assertTermsEquals(info, leftReader, MultiTerms.getTerms(leftReader, field), MultiTerms.getTerms(rightReader, field), deep);
     }
   }
 
@@ -2311,8 +2311,8 @@ public abstract class LuceneTestCase extends Assert {
    * checks that norms are the same across all fields 
    */
   public void assertNormsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
-    Set<String> leftFields = new HashSet<>(MultiFields.getIndexedFields(leftReader));
-    Set<String> rightFields = new HashSet<>(MultiFields.getIndexedFields(rightReader));
+    Set<String> leftFields = new HashSet<>(FieldInfos.getIndexedFields(leftReader));
+    Set<String> rightFields = new HashSet<>(FieldInfos.getIndexedFields(rightReader));
     assertEquals(info, leftFields, rightFields);
     
     for (String field : leftFields) {
@@ -2406,7 +2406,7 @@ public abstract class LuceneTestCase extends Assert {
 
   private static Set<String> getDVFields(IndexReader reader) {
     Set<String> fields = new HashSet<>();
-    for(FieldInfo fi : MultiFields.getMergedFieldInfos(reader)) {
+    for(FieldInfo fi : FieldInfos.getMergedFieldInfos(reader)) {
       if (fi.getDocValuesType() != DocValuesType.NONE) {
         fields.add(fi.name);
       }
@@ -2551,8 +2551,8 @@ public abstract class LuceneTestCase extends Assert {
   // TODO: this is kinda stupid, we don't delete documents in the test.
   public void assertDeletedDocsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
     assert leftReader.numDeletedDocs() == rightReader.numDeletedDocs();
-    Bits leftBits = MultiFields.getLiveDocs(leftReader);
-    Bits rightBits = MultiFields.getLiveDocs(rightReader);
+    Bits leftBits = MultiBits.getLiveDocs(leftReader);
+    Bits rightBits = MultiBits.getLiveDocs(rightReader);
     
     if (leftBits == null || rightBits == null) {
       assertNull(info, leftBits);
@@ -2568,8 +2568,8 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   public void assertFieldInfosEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
-    FieldInfos leftInfos = MultiFields.getMergedFieldInfos(leftReader);
-    FieldInfos rightInfos = MultiFields.getMergedFieldInfos(rightReader);
+    FieldInfos leftInfos = FieldInfos.getMergedFieldInfos(leftReader);
+    FieldInfos rightInfos = FieldInfos.getMergedFieldInfos(rightReader);
     
     // TODO: would be great to verify more than just the names of the fields!
     TreeSet<String> left = new TreeSet<>();
@@ -2624,13 +2624,15 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public void assertPointsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
-    FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(leftReader);
-    FieldInfos fieldInfos2 = MultiFields.getMergedFieldInfos(rightReader);
+    FieldInfos fieldInfos1 = FieldInfos.getMergedFieldInfos(leftReader);
+    FieldInfos fieldInfos2 = FieldInfos.getMergedFieldInfos(rightReader);
     for(FieldInfo fieldInfo1 : fieldInfos1) {
-      if (fieldInfo1.getPointDimensionCount() != 0) {
+      if (fieldInfo1.getPointDataDimensionCount() != 0) {
         FieldInfo fieldInfo2 = fieldInfos2.fieldInfo(fieldInfo1.name);
-        // same dimension count?
-        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo2.getPointDimensionCount());
+        // same data dimension count?
+        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo2.getPointDataDimensionCount());
+        // same index dimension count?
+        assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo2.getPointIndexDimensionCount());
         // same bytes per dimension?
         assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo2.getPointNumBytes());
 
@@ -2642,10 +2644,12 @@ public abstract class LuceneTestCase extends Assert {
 
     // make sure FieldInfos2 doesn't have any point fields that FieldInfo1 didn't have
     for(FieldInfo fieldInfo2 : fieldInfos2) {
-      if (fieldInfo2.getPointDimensionCount() != 0) {
+      if (fieldInfo2.getPointDataDimensionCount() != 0) {
         FieldInfo fieldInfo1 = fieldInfos1.fieldInfo(fieldInfo2.name);
-        // same dimension count?
-        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo1.getPointDimensionCount());
+        // same data dimension count?
+        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo1.getPointDataDimensionCount());
+        // same index dimension count?
+        assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo1.getPointIndexDimensionCount());
         // same bytes per dimension?
         assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo1.getPointNumBytes());
 

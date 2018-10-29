@@ -63,29 +63,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.CheckIndex;
-import org.apache.lucene.index.CodecReader;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeScheduler;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.SlowCodecReaderWrapper;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.index.*;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.mockfile.WindowsFS;
@@ -1082,7 +1060,7 @@ public final class TestUtil {
       final Field field1 = (Field) f;
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValuesType();
-      final int dimCount = field1.fieldType().pointDimensionCount();
+      final int dimCount = field1.fieldType().pointDataDimensionCount();
       if (dvType != DocValuesType.NONE) {
         switch(dvType) {
           case NUMERIC:
@@ -1115,7 +1093,7 @@ public final class TestUtil {
   // DocsAndFreqsEnum, DocsAndPositionsEnum.  Returns null
   // if field/term doesn't exist:
   public static PostingsEnum docs(Random random, IndexReader r, String field, BytesRef term, PostingsEnum reuse, int flags) throws IOException {
-    final Terms terms = MultiFields.getTerms(r, field);
+    final Terms terms = MultiTerms.getTerms(r, field);
     if (terms == null) {
       return null;
     }

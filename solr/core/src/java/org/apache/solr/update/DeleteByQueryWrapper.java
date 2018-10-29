@@ -50,7 +50,7 @@ final class DeleteByQueryWrapper extends Query {
   }
   
   LeafReader wrap(LeafReader reader) {
-    return new UninvertingReader(reader, schema.getUninversionMap(reader));
+    return UninvertingReader.wrap(reader, schema.getUninversionMapper());
   }
   
   // we try to be well-behaved, but we are not (and IW's applyQueryDeletes isn't much better...)

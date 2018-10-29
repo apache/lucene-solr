@@ -1565,6 +1565,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testParallelRollupStream() throws Exception {
 
     new UpdateRequest()
@@ -3296,7 +3297,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testClassifyStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 

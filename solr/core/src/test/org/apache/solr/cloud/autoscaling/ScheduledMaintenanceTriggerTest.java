@@ -19,6 +19,7 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,10 +36,13 @@ import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
+import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -167,6 +171,17 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     CloudTestUtils.waitForState(cloudManager, "failed to create " + collection1, collection1,
         CloudTestUtils.clusterShape(1, 1));
 
+    // also create a very stale lock
+    Map<String, Object> lockData = new HashMap<>();
+    lockData.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs() -
+        TimeUnit.NANOSECONDS.convert(48, TimeUnit.HOURS)));
+    String staleLockName = collection1 + "/staleShard-splitting";
+    cloudManager.getDistribStateManager().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" +
+        staleLockName, Utils.toJSON(lockData), CreateMode.EPHEMERAL, true);
+
+    // expect two events - one for a very stale lock, one for the cleanup
+    triggerFired = new CountDownLatch(2);
+
     String setListenerCommand = "{" +
         "'set-listener' : " +
         "{" +
@@ -186,10 +201,10 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "'set-trigger' : {" +
         "'name' : '" + AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_NAME + "'," +
         "'event' : 'scheduled'," +
-        "'startTime' : 'NOW+3SECONDS'," +
+        "'startTime' : 'NOW+10SECONDS'," +
         "'every' : '+2SECONDS'," +
         "'enabled' : true," +
-        "'actions' : [{'name' : 'inactive_shard_plan', 'class' : 'solr.InactiveShardPlanAction', 'ttl' : '10'}," +
+        "'actions' : [{'name' : 'inactive_shard_plan', 'class' : 'solr.InactiveShardPlanAction', 'ttl' : '20'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}," +
         "{'name' : 'test', 'class' : '" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
@@ -208,7 +223,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         CloudTestUtils.clusterShape(3, 1, true, true));
 
 
-    await = triggerFired.await(60, TimeUnit.SECONDS);
+    await = triggerFired.await(90, TimeUnit.SECONDS);
     assertTrue("cleanup action didn't run", await);
 
     // cleanup should have occurred
@@ -217,21 +232,27 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     listenerEvents.clear();
 
     assertFalse(events.isEmpty());
-    int inactiveEvents = 0;
     CapturedEvent ce = null;
+    CapturedEvent staleLock = null;
     for (CapturedEvent e : events) {
       if (e.stage != TriggerEventProcessorStage.AFTER_ACTION) {
         continue;
       }
-      if (e.context.containsKey("properties.inactive_shard_plan")) {
+      Map<String, Object> plan = (Map<String, Object>)e.context.get("properties.inactive_shard_plan");
+      if (plan == null) {
+        continue;
+      }
+      if (plan.containsKey("cleanup")) {
         ce = e;
-        break;
-      } else {
-        inactiveEvents++;
+      }
+      // capture only the first
+      if (plan.containsKey("staleLocks") && staleLock == null) {
+        staleLock = e;
       }
     }
-    assertTrue("should be at least one inactive event", inactiveEvents > 0);
-    assertNotNull("missing cleanup event", ce);
+    assertNotNull("missing cleanup event: " + events, ce);
+    assertNotNull("missing staleLocks event: " + events, staleLock);
+
     Map<String, Object> map = (Map<String, Object>)ce.context.get("properties.inactive_shard_plan");
     assertNotNull(map);
 
@@ -241,6 +262,12 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     Map<String, List<String>> cleanup = (Map<String, List<String>>)map.get("cleanup");
     assertEquals(1, cleanup.size());
     assertNotNull(cleanup.get(collection1));
+
+    map = (Map<String, Object>)staleLock.context.get("properties.inactive_shard_plan");
+    assertNotNull(map);
+    Map<String, Map<String, Object>> locks = (Map<String, Map<String, Object>>)map.get("staleLocks");
+    assertNotNull(locks);
+    assertTrue("missing stale lock data: " + locks + "\nevents: " + events, locks.containsKey(staleLockName));
 
     ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
 
