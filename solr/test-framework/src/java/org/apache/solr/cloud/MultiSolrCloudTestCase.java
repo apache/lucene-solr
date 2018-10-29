@@ -102,6 +102,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
     for (MiniSolrCloudCluster cluster : clusterId2cluster.values()) {
       cluster.shutdown();
     }
+    clusterId2cluster.clear();
   }
 
 }

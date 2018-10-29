@@ -121,9 +121,10 @@ public class V2HttpCall extends HttpSolrCall {
           core = getCoreByCollection(collection.getName(), isPreferLeader);
           if (core == null) {
             //this collection exists , but this node does not have a replica for that collection
-            extractRemotePath(collection.getName(), origCorename);
+            extractRemotePath(collection.getName(), collection.getName());
             if (action == REMOTEQUERY) {
-              this.path = path = path.substring(prefix.length() + origCorename.length() + 2);
+              coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
+              this.path = path = path.substring(prefix.length() + collection.getName().length() + 2);
               return;
             }
           }

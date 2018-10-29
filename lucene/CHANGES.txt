@@ -212,6 +212,9 @@ Bug fixes:
   in the graph if the slop is greater than 0. Span queries cannot be used in this case because
   they don't handle slop the same way than phrase queries. (Steve Rowe, Uwe Schindler, Jim Ferenczi)
 
+* LUCENE-8524: Add the Hangul Letter Araea (interpunct) as a separator in Nori's tokenizer.
+  This change also removes empty terms and trim surface form in Nori's Korean dictionary. (Trey Jones, Jim Ferenczi)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
@@ -219,6 +222,13 @@ New Features
   the total number of dimensions used for field encoding. i.e., dimensions 0 to N
   may be used to determine how to split the inner nodes, and dimensions N+1 to D
   are ignored and stored as data dimensions at the leaves. (Nick Knize)
+
+* LUCENE-8538: Add a Simple WKT Shape Parser for creating Lucene Geometries (Polygon, Line,
+  Rectangle) from WKT format. (Nick Knize)
+
+* LUCENE-8462: Adds an Arabic snowball stemmer based on
+  https://github.com/snowballstem/snowball/blob/master/algorithms/arabic.sbl 
+  (Ryadh Dahimene via Jim Ferenczi)
 
 Improvements:
 

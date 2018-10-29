@@ -133,7 +133,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 public class HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final Random random;
+  public static final Random random;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
     // based on the current seed
@@ -877,7 +877,7 @@ public class HttpSolrCall {
     }
   }
 
-  private String getRemotCoreUrl(String collectionName, String origCorename) {
+  protected String getRemotCoreUrl(String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
