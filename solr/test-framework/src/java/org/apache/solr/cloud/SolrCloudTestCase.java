@@ -419,4 +419,5 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
     cluster.waitForAllNodes(timeoutSeconds);
   }
+
 }
