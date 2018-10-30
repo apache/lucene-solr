@@ -1800,6 +1800,31 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(log.doubleValue(), 1.4842998393467859, 0.0);
   }
 
+
+  @Test
+  public void testRecip() throws Exception {
+    String cexpr = "let(echo=true, a=array(10, 20, 30), b=recip(a), c=recip(30.5))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+    Tuple tuple = tuples.get(0);
+    List<Number> logs = (List<Number>)tuple.get("b");
+    assertEquals(logs.size(), 3);
+    assertEquals(logs.get(0).doubleValue(), .1, 0.0);
+    assertEquals(logs.get(1).doubleValue(), .05, 0.0);
+    assertEquals(logs.get(2).doubleValue(), 0.03333333333333333, 0.0);
+
+    Number log = (Number)tuple.get("c");
+    assertEquals(log.doubleValue(), 0.03278688524590164, 0.0);
+  }
+
+
   @Test
   public void testPow() throws Exception {
     String cexpr = "let(echo=true, a=array(10, 20, 30), b=pow(a, 2), c=pow(2, a), d=pow(10, 3), e=pow(a, array(1, 2, 3)))";
