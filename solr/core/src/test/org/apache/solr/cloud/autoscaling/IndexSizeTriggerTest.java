@@ -669,7 +669,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    System.exit(-1);
+//    System.exit(-1);
 
     assertEquals(1, listenerEvents.size());
     events = listenerEvents.get("capturing4");

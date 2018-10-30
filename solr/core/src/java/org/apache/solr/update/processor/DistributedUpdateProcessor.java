@@ -235,7 +235,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
-      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD);
+      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD,
+          UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS);
 
     CoreContainer cc = req.getCore().getCoreContainer();
 
@@ -1387,10 +1388,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     boolean dropCmd = false;
     if (!forwardToLeader) {
       dropCmd  = versionDelete(cmd);
+      System.out.println("Doing versionDelete on " + req.getCore().getName() + " dropCmd=" + dropCmd);
     }
 
     if (dropCmd) {
-      // TODO: do we need to add anything to the response?
+      // TODO: do we need to add anytprocehing to the response?
       return;
     }
 

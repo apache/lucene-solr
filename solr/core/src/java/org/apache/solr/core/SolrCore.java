@@ -433,6 +433,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         dir = directoryFactory.get(getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
         try {
           size = DirectoryFactory.sizeOfDirectory(dir);
+          System.out.println("Found size=" + size + " for indexDir=" + getIndexDir());
         } finally {
           directoryFactory.release(dir);
         }

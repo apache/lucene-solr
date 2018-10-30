@@ -108,7 +108,7 @@ final class IndexFileDeleter implements Closeable {
 
   /** Change to true to see details of reference counts when
    *  infoStream is enabled */
-  public static boolean VERBOSE_REF_COUNTS = false;
+  public static boolean VERBOSE_REF_COUNTS = true;
 
   private final IndexWriter writer;
 
