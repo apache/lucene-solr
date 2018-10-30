@@ -232,7 +232,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
       }
     };
-//    client.addListenerFactory(() -> listener);
+    client.addListenerFactory(() -> listener);
   }
 
   @Override

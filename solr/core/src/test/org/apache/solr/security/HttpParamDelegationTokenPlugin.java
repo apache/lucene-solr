@@ -155,7 +155,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
         getPrincipal().ifPresent(usr -> request.header(INTERNAL_REQUEST_HEADER, usr));
       }
     };
-//    client.addListenerFactory(() -> listener);
+    client.addListenerFactory(() -> listener);
   }
 
   @Override
