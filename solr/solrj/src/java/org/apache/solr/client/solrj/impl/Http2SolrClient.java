@@ -188,7 +188,8 @@ public class Http2SolrClient extends SolrClient {
     httpClient.setMaxRequestsQueuedPerDestination(asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
 
-    if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
+//    if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
+    httpClient.setMaxConnectionsPerDestination(4);
     if (builder.idleTimeout != null) httpClient.setIdleTimeout(builder.idleTimeout);
     if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
     return httpClient;
@@ -622,7 +623,7 @@ public class Http2SolrClient extends SolrClient {
 
     int getMaxRequestsQueuedPerDestination() {
       // comfortably above max outstanding requests
-      return MAX_OUTSTANDING_REQUESTS * 2;
+      return MAX_OUTSTANDING_REQUESTS * 3;
     }
 
     public void waitForComplete() {
