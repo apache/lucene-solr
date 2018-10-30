@@ -110,11 +110,11 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     if (cfg != null) {
       updateOnlyClientBuilder
           .connectionTimeout(cfg.getDistributedConnectionTimeout())
-          .idleTimeout(cfg.getDistributedSocketTimeout())
-          .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
+          .idleTimeout(cfg.getDistributedSocketTimeout());
+//          .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
     updateOnlyClient = updateOnlyClientBuilder.build();
-    updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
+//    updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
 
     defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
