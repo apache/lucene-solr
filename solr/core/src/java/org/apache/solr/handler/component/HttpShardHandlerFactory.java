@@ -205,9 +205,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
     this.defaultClient = new Http2SolrClient.Builder()
         .connectionTimeout(connectionTimeout)
-        .idleTimeout(soTimeout)
-        .maxConnectionsPerHost(maxConnectionsPerHost).build();
-    this.defaultClient.addListenerFactory(this.httpListenerFactory);
+        .idleTimeout(soTimeout).build();
     this.loadbalancer = new LBHttp2SolrClient(defaultClient);
   }
 
