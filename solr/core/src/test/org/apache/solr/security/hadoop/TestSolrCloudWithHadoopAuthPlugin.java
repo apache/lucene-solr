@@ -108,10 +108,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
   public void testBasics() throws Exception {
     testCollectionCreateSearchDelete();
     // sometimes run a second test e.g. to test collection create-delete-create scenario
-    if (random().nextBoolean()) {
-      setMetricsBaseline();
-      testCollectionCreateSearchDelete();
-    }
+    if (random().nextBoolean()) testCollectionCreateSearchDelete();
   }
 
   protected void testCollectionCreateSearchDelete() throws Exception {
@@ -123,13 +120,13 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
         NUM_SHARDS, REPLICATION_FACTOR);
     create.process(solrClient);
     // The metrics counter for wrong credentials here really just means  
-    assertAuthMetrics(6, 3, 0, 3, 0, 0);
+    assertAuthMetricsMinimums(6, 3, 0, 3, 0, 0);
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
     solrClient.add(collectionName, doc);
     solrClient.commit(collectionName);
-    assertAuthMetrics(10, 5, 0, 5, 0, 0);
+    assertAuthMetricsMinimums(10, 5, 0, 5, 0, 0);
 
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -140,7 +137,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
     deleteReq.process(solrClient);
     AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
         solrClient.getZkStateReader(), true, true, 330);
-    assertAuthMetrics(16, 8, 0, 8, 0, 0);
+    assertAuthMetricsMinimums(16, 8, 0, 8, 0, 0);
   }
 
 }
