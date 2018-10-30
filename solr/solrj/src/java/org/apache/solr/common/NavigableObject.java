@@ -24,7 +24,7 @@ import org.apache.solr.common.util.Utils;
 
 /**This class contains helper methods for navigating deeply nested Objects. Keep in mind that
  * it may be expensive depending on the underlying implementation. each level needs an extra lookup
- * and the lookup may be as expensive as O(log(n)) to O(o) depending on the underlying impl
+ * and the lookup may be as expensive as O(log(n)) to O(n) depending on the underlying impl
  *
  */
 public interface NavigableObject {
