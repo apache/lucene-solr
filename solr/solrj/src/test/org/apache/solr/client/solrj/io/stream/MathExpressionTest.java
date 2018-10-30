@@ -985,6 +985,23 @@ public class MathExpressionTest extends SolrCloudTestCase {
     tuple = tuples.get(0);
     p = tuple.getDouble("return-value");
     assertEquals(p, 2.4, 0.001);
+
+
+    cexpr = "percentile(array(11,10,3,4,5,6,7,8,9,2,1), array(20, 50))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    tuple = tuples.get(0);
+    List<Number> percentiles = (List<Number>)tuple.get("return-value");
+    assertEquals(percentiles.get(0).doubleValue(), 2.4, 0.001);
+    assertEquals(percentiles.get(1).doubleValue(), 6.0, 0.001);
   }
 
   @Test
