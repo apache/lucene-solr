@@ -291,7 +291,11 @@ public abstract class Suggester implements MapWriter {
       for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
         if (!isAllowed(new Pair<>(e.getKey(), shard.getKey()), Hint.COLL_SHARD)) continue;//todo fix
         if (shard.getValue() == null || shard.getValue().isEmpty()) continue;
-        replicaList.add(new Pair<>(shard.getValue().get(0), r));
+        for (ReplicaInfo replicaInfo : shard.getValue()) {
+          if (replicaInfo.getName().startsWith("SYNTHETIC.")) continue;
+          replicaList.add(new Pair<>(shard.getValue().get(0), r));
+          break;
+        }
       }
     }
   }
@@ -303,10 +307,8 @@ public abstract class Suggester implements MapWriter {
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       Clause originalClause = clause.derivedFrom == null ? clause : clause.derivedFrom;
-//      if (!executeInStrictMode && !clause.strict) {
       if (this.deviations == null) this.deviations = new LinkedHashMap<>();
       this.deviations.put(originalClause, new double[1]);
-//      }
       List<Violation> errs = clause.test(session, this.deviations == null ? null : this.deviations.get(originalClause));
       if (!errs.isEmpty() &&
           (executeInStrictMode || clause.strict)) errors.addAll(errs);
