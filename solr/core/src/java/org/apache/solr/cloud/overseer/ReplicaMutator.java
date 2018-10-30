@@ -394,7 +394,7 @@ public class ReplicaMutator {
           }
         }
         if (allActive) {
-          log.info("Shard: {} - all replicas are active. Finding status of fellow sub-shards", sliceName);
+          log.info("Shard: {} - all {} replicas are active. Finding status of fellow sub-shards", sliceName, slice.getReplicasMap().size());
           // find out about other sub shards
           Map<String, Slice> allSlicesCopy = new HashMap<>(collection.getSlicesMap());
           List<Slice> subShardSlices = new ArrayList<>();
@@ -413,7 +413,7 @@ public class ReplicaMutator {
                     break outer;
                   }
                 }
-                log.info("Shard: {} - Fellow sub-shard: {} has all replicas active", sliceName, otherSlice.getName());
+                log.info("Shard: {} - Fellow sub-shard: {} has all {} replicas active", sliceName, otherSlice.getName(), otherSlice.getReplicasMap().size());
                 subShardSlices.add(otherSlice);
               }
             }

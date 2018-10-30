@@ -67,7 +67,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 /**
  *
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.handler.admin.MetricsHandler=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.handler.admin.MetricsHandler=DEBUG;org.apache.solr.core.SolrDeletionPolicy=DEBUG;org.apache.solr.core.IndexDeletionPolicyWrapper=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUGorg.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
 public class IndexSizeTriggerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
