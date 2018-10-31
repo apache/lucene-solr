@@ -1099,6 +1099,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             boolean updated = getUpdatedDocument(cmd, versionOnUpdate);
 
+            // if the update updates a doc that is part of a block,
+            // save the old version, for deleting the old block if the update succeeds
             if(isNestedSchema && cmd.isNestedUpdate()) {
               lastKnownVersion = vinfo.lookupVersion(cmd.getIndexedId());
             }
