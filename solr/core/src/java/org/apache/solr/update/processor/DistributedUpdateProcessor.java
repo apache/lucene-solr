@@ -1099,7 +1099,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             boolean updated = getUpdatedDocument(cmd, versionOnUpdate);
 
-            if(isNestedSchema && cmd.isNestedAtomicUpdate()) {
+            if(isNestedSchema && cmd.isNestedUpdate()) {
               lastKnownVersion = vinfo.lookupVersion(cmd.getIndexedId());
             }
 

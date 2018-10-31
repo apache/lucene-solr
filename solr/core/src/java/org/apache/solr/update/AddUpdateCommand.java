@@ -306,7 +306,7 @@ public class AddUpdateCommand extends UpdateCommand {
    *
    * @return whether this update changes a value of a block
    */
-  public boolean isNestedAtomicUpdate() {
+  public boolean isNestedUpdate() {
     SolrInputDocument sdoc = getSolrInputDocument();
     // is part of a block
     if (sdoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) return true;
