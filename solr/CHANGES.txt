@@ -172,6 +172,8 @@ New Features
 
 * SOLR-12862: Add log10 Stream Evaluator and allow the pow Stream Evaluator to accept a vector of exponents (Joel Bernstein)
 
+* SOLR-12942: Add an option in IndexSizeTrigger to select the split shard method. (ab)
+
 Other Changes
 ----------------------
 
