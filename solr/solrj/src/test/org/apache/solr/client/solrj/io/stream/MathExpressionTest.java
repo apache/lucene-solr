@@ -985,6 +985,23 @@ public class MathExpressionTest extends SolrCloudTestCase {
     tuple = tuples.get(0);
     p = tuple.getDouble("return-value");
     assertEquals(p, 2.4, 0.001);
+
+
+    cexpr = "percentile(array(11,10,3,4,5,6,7,8,9,2,1), array(20, 50))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    tuple = tuples.get(0);
+    List<Number> percentiles = (List<Number>)tuple.get("return-value");
+    assertEquals(percentiles.get(0).doubleValue(), 2.4, 0.001);
+    assertEquals(percentiles.get(1).doubleValue(), 6.0, 0.001);
   }
 
   @Test
@@ -1782,6 +1799,31 @@ public class MathExpressionTest extends SolrCloudTestCase {
     Number log = (Number)tuple.get("c");
     assertEquals(log.doubleValue(), 1.4842998393467859, 0.0);
   }
+
+
+  @Test
+  public void testRecip() throws Exception {
+    String cexpr = "let(echo=true, a=array(10, 20, 30), b=recip(a), c=recip(30.5))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+    Tuple tuple = tuples.get(0);
+    List<Number> logs = (List<Number>)tuple.get("b");
+    assertEquals(logs.size(), 3);
+    assertEquals(logs.get(0).doubleValue(), .1, 0.0);
+    assertEquals(logs.get(1).doubleValue(), .05, 0.0);
+    assertEquals(logs.get(2).doubleValue(), 0.03333333333333333, 0.0);
+
+    Number log = (Number)tuple.get("c");
+    assertEquals(log.doubleValue(), 0.03278688524590164, 0.0);
+  }
+
 
   @Test
   public void testPow() throws Exception {

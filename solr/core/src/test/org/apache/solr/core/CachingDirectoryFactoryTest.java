@@ -49,8 +49,11 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
   
   @Test
   public void stressTest() throws Exception {
-    final CachingDirectoryFactory df = new RAMDirectoryFactory();
-    
+    doStressTest(new RAMDirectoryFactory());
+    doStressTest(new ByteBuffersDirectoryFactory());
+  }
+  
+  private void doStressTest(final CachingDirectoryFactory df) throws Exception {
     List<Thread> threads = new ArrayList<>();
     int threadCount = 11;
     for (int i = 0; i < threadCount; i++) {

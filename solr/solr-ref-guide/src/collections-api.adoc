@@ -288,9 +288,9 @@ This parameter can be used to split a shard using a route key such that all docu
 For example, suppose `split.key=A!` hashes to the range `12-15` and belongs to shard 'shard1' with range `0-20`. Splitting by this route key would yield three sub-shards with ranges `0-11`, `12-15` and `16-20`. Note that the sub-shard with the hash range of the route key may also contain documents for other route keys whose hash ranges overlap.
 
 `numSubShards`::
-The number of sub-shards to split the parent shard into. Allowed values for this are in the range of 2-8 and defaults to 2.
+The number of sub-shards to split the parent shard into. Allowed values for this are in the range of `2`-`8` and defaults to `2`.
 +
-This parameter can only be used when ranges or split.key are not specified.
+This parameter can only be used when `ranges` or `split.key` are not specified.
 
 `splitMethod`::
 Currently two methods of shard splitting are supported:

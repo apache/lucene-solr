@@ -537,6 +537,8 @@ array.
 
 * `log`: Returns a numeric array with the natural log of each element of the original array.
 
+* `log10`: Returns a numeric array with the base 10 log of each element of the original array.
+
 * `sqrt`: Returns a numeric array with the square root of each element of the original array.
 
 * `cbrt`: Returns a numeric array with the cube root of each element of the original array.
@@ -568,6 +570,91 @@ When this expression is sent to the `/stream` handler it responds with:
       {
         "EOF": true,
         "RESPONSE_TIME": 58
+      }
+    ]
+  }
+}
+----
+
+== Back Transformations
+
+Vectors that have been transformed with the `log`, `log10`, `sqrt` and `cbrt` functions
+can be back transformed using the `pow` function.
+
+The example below shows how to back transform data that has been transformed by the
+`sqrt` function.
+
+
+[source,text]
+----
+let(echo="b,c",
+    a=array(100, 200, 300),
+    b=sqrt(a),
+    c=pow(b, 2))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          10,
+          14.142135623730951,
+          17.320508075688775
+        ],
+        "c": [
+          100,
+          200.00000000000003,
+          300.00000000000006
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+The example below shows how to back transform data that has been transformed by the
+`log10` function.
+
+
+[source,text]
+----
+let(echo="b,c",
+    a=array(100, 200, 300),
+    b=log10(a),
+    c=pow(10, b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          2,
+          2.3010299956639813,
+          2.4771212547196626
+        ],
+        "c": [
+          100,
+          200.00000000000003,
+          300.0000000000001
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
       }
     ]
   }

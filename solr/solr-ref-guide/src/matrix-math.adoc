@@ -103,6 +103,59 @@ responds with:
 }
 ----
 
+== Pair Sorting Vectors
+
+The `pairSort` function can be used to sort two vectors based on the values in
+the first vector. The sorting operation maintains the pairing between
+the two vectors during the sort.
+
+The `pairSort` function returns a matrix containing the
+pair sorted vectors. The first row in the matrix is the first vector,
+the second row in the matrix is the second vector.
+
+The individual vectors can then be accessed using the `rowAt` function.
+
+The example below performs a pair sort of two vectors and returns the
+matrix containing the sorted vectors.
+
+----
+let(a=array(10, 2, 1),
+    b=array(100, 200, 300),
+    c=pairSort(a, b))
+----
+
+When this expression is sent to the `/stream` handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": [
+          [
+            1,
+            2,
+            10
+          ],
+          [
+            300,
+            200,
+            100
+          ]
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 1
+      }
+    ]
+  }
+}
+----
+
+
 == Row and Column Labels
 
 A matrix can have column and rows and labels. The functions
