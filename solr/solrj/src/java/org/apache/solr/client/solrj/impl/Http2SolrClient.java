@@ -189,7 +189,7 @@ public class Http2SolrClient extends SolrClient {
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
 
 //    if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
-    httpClient.setMaxConnectionsPerDestination(4);
+    httpClient.setMaxConnectionsPerDestination(100000);
     if (builder.idleTimeout != null) httpClient.setIdleTimeout(builder.idleTimeout);
     if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
     return httpClient;
