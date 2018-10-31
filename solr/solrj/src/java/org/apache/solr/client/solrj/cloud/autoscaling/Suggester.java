@@ -95,7 +95,15 @@ public abstract class Suggester implements MapWriter {
       Collection<?> values = value instanceof Collection ? (Collection) value : Collections.singletonList(value);
       ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
     } else {
-      hints.put(hint, value == null ? null : String.valueOf(value));
+      if (value == null) {
+        hints.put(hint, null);
+      } else {
+        if ((value instanceof Map) || (value instanceof Number)) {
+          hints.put(hint, value);
+        } else {
+          hints.put(hint, String.valueOf(value));
+        }
+      }
     }
     return this;
   }
@@ -373,6 +381,11 @@ public abstract class Suggester implements MapWriter {
     }),
     NUMBER(true, o -> {
       if (!(o instanceof Number)) throw new RuntimeException("NUMBER hint must be a number");
+    }),
+    PARAMS(false, o -> {
+      if (!(o instanceof Map)) {
+        throw new RuntimeException("PARAMS hint must be a Map<String, Object>");
+      }
     }),
     REPLICA(true);
 
