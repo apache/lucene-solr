@@ -430,11 +430,19 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
     // Our countAcc is virtual, so this is not needed:
     // countAcc.incrementCount(slot, 1);
 
-    super.collectFirstPhase(segDoc, slot, slotNum -> {
-        Comparable value = calc.bitsToValue(val);
-        return new SlotContext(sf.getType().getFieldQuery(null, sf, calc.formatValue(value)));
-      });
+    super.collectFirstPhase(segDoc, slot, slotContext);
   }
+
+  /**
+   * SlotContext to use during all {@link SlotAcc} collection.
+   *
+   * This avoids a memory allocation for each invocation of collectValFirstPhase.
+   */
+  private IntFunction<SlotContext> slotContext = (slotNum) -> {
+    long val = table.vals[slotNum];
+    Comparable value = calc.bitsToValue(val);
+    return new SlotContext(sf.getType().getFieldQuery(null, sf, calc.formatValue(value)));
+  };
 
   private void doRehash(LongCounts table) {
     if (collectAcc == null && allBucketsAcc == null) return;

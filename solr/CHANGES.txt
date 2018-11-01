@@ -252,6 +252,8 @@ Improvements
 
 * SOLR-12892: MapWriter to use CharSequence instead of String (noble)
 
+* SOLR-12882: Eliminate excessive lambda allocation in json facets FacetFieldProcessorByHashDV (Tim Underwood)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
