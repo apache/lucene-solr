@@ -17,19 +17,14 @@
 
 package org.apache.solr.cloud;
 
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.List;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase {
@@ -89,7 +84,6 @@ public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase 
     aClient.commit();
 
     int i = 0;
-    SolrDocument finalNestedDoc = null;
     for (SolrClient client : clients) {
 
       doc = sdoc("id", "b", "grandChildren", map("add", sdocs(sdoc("id", ids[i], "level_s", "grand_child"))));
@@ -110,11 +104,11 @@ public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase 
       QueryResponse rsp = client.query(params("qt","/get", "id","a", "fl", "*, [child]"));
       SolrDocument val = (SolrDocument) rsp.getResponse().get("doc");
       assertEquals("a", val.getFieldValue("id"));
-      ArrayList<SolrDocument> children = (ArrayList) val.getFieldValues("children");
+      List<SolrDocument> children = (List) val.getFieldValues("children");
       assertEquals(1, children.size());
       SolrDocument childDoc = children.get(0);
       assertEquals("b", childDoc.getFieldValue("id"));
-      ArrayList<SolrDocument> grandChildren = (ArrayList) childDoc.getFieldValues("grandChildren");
+      List<SolrDocument> grandChildren = (List) childDoc.getFieldValues("grandChildren");
       assertEquals(++i, grandChildren.size());
       SolrDocument grandChild = grandChildren.get(0);
       assertEquals("c", grandChild.getFieldValue("id"));

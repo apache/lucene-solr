@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.tuple.Pair;
@@ -1101,7 +1102,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             // if the update updates a doc that is part of a block,
             // save the old version, for deleting the old block if the update succeeds
-            if(isNestedSchema && cmd.isNestedUpdate()) {
+            if(isNestedSchema && shouldLookupDocVersion(cmd)) {
               lastKnownVersion = vinfo.lookupVersion(cmd.getIndexedId());
             }
 
@@ -2142,6 +2143,26 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return null;
     }
     return urls;
+  }
+
+  /**
+   *
+   * @return whether this update changes a value of a block
+   */
+  public static boolean shouldLookupDocVersion(AddUpdateCommand cmd) {
+    SolrInputDocument sdoc = cmd.getSolrInputDocument();
+    // is part of a block
+    if (sdoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) return true;
+    // update adds children
+    if (sdoc.hasChildDocuments()) return true;
+    if (sdoc.values().stream().anyMatch(x -> (x.getFirstValue() instanceof SolrInputDocument))) return true;
+
+    // get all atomic updates
+    Stream<Collection<Object>> atomicUpdatesStream = sdoc.values().stream()
+        .filter(x -> (x.getFirstValue() instanceof Map) && !(x.getFirstValue() instanceof SolrInputDocument))
+        .map(SolrInputField::getValues);
+    // update updates the document's children
+    return atomicUpdatesStream.anyMatch(x -> x.stream().anyMatch(d -> d instanceof SolrInputDocument));
   }
 
   /**

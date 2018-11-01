@@ -19,8 +19,6 @@ package org.apache.solr.update;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
@@ -300,26 +298,5 @@ public class AddUpdateCommand extends UpdateCommand {
    */
   public boolean isInPlaceUpdate() {
     return (prevVersion >= 0);
-  }
-
-  /**
-   *
-   * @return whether this update changes a value of a block
-   */
-  public boolean isNestedUpdate() {
-    SolrInputDocument sdoc = getSolrInputDocument();
-    // is part of a block
-    if (sdoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) return true;
-    // update adds children
-    if (sdoc.hasChildDocuments()) return true;
-    if (sdoc.values().stream().anyMatch(x -> (x.getFirstValue() instanceof SolrInputDocument))) return true;
-
-    // get all atomic updates
-    Stream<Collection<Object>> atomicUpdatesStream = sdoc.values().stream()
-        .filter(x -> (x.getFirstValue() instanceof Map) && !(x.getFirstValue() instanceof SolrInputDocument))
-        .map(SolrInputField::getValues);
-    // update updates the document's children
-    return atomicUpdatesStream.anyMatch(x -> x.stream().anyMatch(d -> d instanceof SolrInputDocument));
-
   }
 }
