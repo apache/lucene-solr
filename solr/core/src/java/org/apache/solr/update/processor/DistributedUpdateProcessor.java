@@ -1388,7 +1388,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     boolean dropCmd = false;
     if (!forwardToLeader) {
       dropCmd  = versionDelete(cmd);
-      System.out.println("Doing versionDelete on " + req.getCore().getName() + " dropCmd=" + dropCmd);
     }
 
     if (dropCmd) {

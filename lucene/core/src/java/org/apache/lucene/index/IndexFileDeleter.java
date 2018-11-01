@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -564,7 +566,16 @@ final class IndexFileDeleter implements Closeable {
     RefCount rc = getRefCount(fileName);
     if (infoStream.isEnabled("IFD")) {
       if (VERBOSE_REF_COUNTS) {
-        infoStream.message("IFD", "  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
+        // todo nocommit remove the extra logging
+        String extra = null;
+        if ("_0.fdt".equals(fileName))  {
+          StringWriter stringWriter = new StringWriter();
+          PrintWriter writer = new PrintWriter(stringWriter);
+          new Exception().printStackTrace(writer);
+          extra = stringWriter.toString();
+        }
+
+        infoStream.message("IFD", "  IncRef \"" + fileName + "\": pre-incr count is " + rc.count + (extra != null ? " and stack is " + extra : ""));
       }
     }
     rc.IncRef();
@@ -602,7 +613,15 @@ final class IndexFileDeleter implements Closeable {
     RefCount rc = getRefCount(fileName);
     if (infoStream.isEnabled("IFD")) {
       if (VERBOSE_REF_COUNTS) {
-        infoStream.message("IFD", "  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);
+        String extra = null;
+        // todo nocommit remove the extra logging
+        if ("_0.fdt".equals(fileName))  {
+          StringWriter stringWriter = new StringWriter();
+          PrintWriter writer = new PrintWriter(stringWriter);
+          new Exception().printStackTrace(writer);
+          extra = stringWriter.toString();
+        }
+        infoStream.message("IFD", "  DecRef \"" + fileName + "\": pre-decr count is " + rc.count + (extra != null ? " and stack is " + extra : ""));
       }
     }
     if (rc.DecRef() == 0) {
