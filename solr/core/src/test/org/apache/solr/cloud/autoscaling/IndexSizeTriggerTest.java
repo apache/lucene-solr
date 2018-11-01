@@ -67,7 +67,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 /**
  *
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.handler.admin.MetricsHandler=DEBUG;org.apache.solr.core.SolrDeletionPolicy=DEBUG;org.apache.solr.core.IndexDeletionPolicyWrapper=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUGorg.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
+//@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.handler.admin.MetricsHandler=DEBUG;org.apache.solr.core.SolrDeletionPolicy=DEBUG;org.apache.solr.core.IndexDeletionPolicyWrapper=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUGorg.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
 public class IndexSizeTriggerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -651,6 +651,17 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     // wait for the segments to merge to reduce the index size
     cloudManager.getTimeSource().sleep(50000);
+
+    // add some docs so that every shard gets an update
+    // we can reduce the number of docs here but this also works
+    for (int j = 0; j < 1; j++) {
+      UpdateRequest ureq = new UpdateRequest();
+      ureq.setParam("collection", collectionName);
+      for (int i = 0; i < 98; i++) {
+        ureq.add("id", "id-" + (i * 100) + "-" + j);
+      }
+      solrClient.request(ureq);
+    }
 
     log.info("-- requesting commit");
     solrClient.commit(collectionName, true, true);

@@ -286,7 +286,30 @@ public class SolrIndexConfig implements MapSerializable {
 
   private MergeScheduler buildMergeScheduler(IndexSchema schema) {
     String msClassName = mergeSchedulerInfo == null ? SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME : mergeSchedulerInfo.className;
-    MergeScheduler scheduler = new TestCMS(); // todo nocommit
+    // todo nocommit -- remove this scheduler instance with proper MDC logging support inside merge scheduler threads
+    MergeScheduler scheduler = new ConcurrentMergeScheduler() {
+      @Override
+      protected synchronized MergeThread getMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+        MergeThread mergeThread = super.getMergeThread(writer, merge);
+        final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
+        StringBuilder contextString = new StringBuilder();
+        if (submitterContext != null) {
+          Collection<String> values = submitterContext.values();
+
+          for (String value : values) {
+            contextString.append(value + " ");
+          }
+          if (contextString.length() > 1) {
+            contextString.setLength(contextString.length() - 1);
+          }
+        }
+
+        String ctxStr = contextString.toString().replace("/", "//");
+        final String submitterContextStr = ctxStr.length() <= 512 ? ctxStr : ctxStr.substring(0, 512);
+        mergeThread.setName(mergeThread.getName() + "-processing-" + submitterContextStr);
+        return mergeThread;
+      }
+    };
 
     if (mergeSchedulerInfo != null) {
       // LUCENE-5080: these two setters are removed, so we have to invoke setMaxMergesAndThreads
@@ -314,29 +337,4 @@ public class SolrIndexConfig implements MapSerializable {
 
     return scheduler;
   }
-
-  static class TestCMS extends ConcurrentMergeScheduler {
-    @Override
-    protected synchronized MergeThread getMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
-      MergeThread mergeThread = super.getMergeThread(writer, merge);
-      final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
-      StringBuilder contextString = new StringBuilder();
-      if (submitterContext != null) {
-        Collection<String> values = submitterContext.values();
-
-        for (String value : values) {
-          contextString.append(value + " ");
-        }
-        if (contextString.length() > 1) {
-          contextString.setLength(contextString.length() - 1);
-        }
-      }
-
-      String ctxStr = contextString.toString().replace("/", "//");
-      final String submitterContextStr = ctxStr.length() <= 512 ? ctxStr : ctxStr.substring(0, 512);
-      mergeThread.setName(mergeThread.getName() + "-processing-" + submitterContextStr);
-      return mergeThread;
-    }
-  }
-
 }
