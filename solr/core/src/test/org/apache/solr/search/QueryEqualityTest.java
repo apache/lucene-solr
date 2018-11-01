@@ -1218,7 +1218,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testPayloadCheckQuery() throws Exception {
-    expectThrows(AssertionFailedError.class, "queries were not equal, as expected",
+    expectThrows(AssertionFailedError.class, "queries should not have been equal",
         () -> assertQueryEquals
             ("payload_check"
                 , "{!payload_check f=foo_dpf payloads=2}one"
@@ -1249,7 +1249,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "{!bool must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' " +
             "must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' filter='{!lucene}foo_s:e'}");
 
-    expectThrows(AssertionFailedError.class, "queries were not equal, as expected",
+    expectThrows(AssertionFailedError.class, "queries should not have been equal",
         () -> assertQueryEquals
             ("bool"
                 , "{!bool must='{!lucene}foo_s:a'}"

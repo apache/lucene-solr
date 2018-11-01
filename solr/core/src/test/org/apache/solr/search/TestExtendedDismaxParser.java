@@ -665,12 +665,9 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           () -> h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")));
       assertCyclicDetectionErrorMessage(e);
 
-      try {
-        h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6"));
-      } catch (SolrException ex) {
-        assertFalse("This is not cyclic alising", ex.getCause().getMessage().contains("Field aliases lead to a cycle"));
-        assertTrue(ex.getCause().getMessage().contains("not a valid field name"));
-      }
+      e = expectThrows(SolrException.class, "Cyclic aliasing not detected", () -> h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6")));
+      assertFalse("This is not cyclic aliasing", e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+      assertTrue("Should throw exception due to invalid field name", e.getCause().getMessage().contains("not a valid field name"));
 
       e = expectThrows(SolrException.class, "Cyclic alising not detected",
           () -> h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4")));
