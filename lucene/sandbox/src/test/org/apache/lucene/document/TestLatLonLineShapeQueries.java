@@ -16,9 +16,12 @@
  */
 package org.apache.lucene.document;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.EdgeTree;
+import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
@@ -30,6 +33,32 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
     return ShapeType.LINE;
+  }
+
+  @Override
+  protected Line randomQueryLine(Object... shapes) {
+    if (random().nextInt(100) == 42) {
+      // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
+      int maxBound = (int)Math.floor(shapes.length * 0.1d);
+      if (maxBound < 2) {
+        maxBound = shapes.length;
+      }
+      double[] lats = new double[RandomNumbers.randomIntBetween(random(), 2, maxBound)];
+      double[] lons = new double[lats.length];
+      for (int i = 0, j = 0; j < lats.length && i < shapes.length; ++i, ++j) {
+        Line l = (Line) (shapes[i]);
+        if (random().nextBoolean() && l != null) {
+          int v = random().nextInt(l.numPoints() - 1);
+          lats[j] = l.getLat(v);
+          lons[j] = l.getLon(v);
+        } else {
+          lats[j] = GeoTestUtil.nextLatitude();
+          lons[j] = GeoTestUtil.nextLongitude();
+        }
+      }
+      return new Line(lats, lons);
+    }
+    return nextLine();
   }
 
   @Override
@@ -54,9 +83,18 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
       }
 
       // to keep it simple we convert the bbox into a polygon and use poly2d
-      Polygon2D p = Polygon2D.create(new Polygon[] {new Polygon(new double[] {minLat, minLat, maxLat, maxLat, minLat},
-          new double[] {minLon, maxLon, maxLon, minLon, minLon})});
-      return testLine(p, l);
+      Line2D line = Line2D.create(quantizeLine(l));
+      Relation r = line.relate(minLat, maxLat, minLon, maxLon);
+
+      if (queryRelation == QueryRelation.DISJOINT) {
+        return r == Relation.CELL_OUTSIDE_QUERY;
+      }
+      return r != Relation.CELL_OUTSIDE_QUERY;
+    }
+
+    @Override
+    public boolean testLineQuery(Line2D line2d, Object shape) {
+      return testLine(line2d, (Line) shape);
     }
 
     @Override
@@ -64,7 +102,7 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
       return testLine(poly2d, (Line) shape);
     }
 
-    private boolean testLine(Polygon2D queryPoly, Line line) {
+    private boolean testLine(EdgeTree queryPoly, Line line) {
       double ax, ay, bx, by, temp;
       Relation r;
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {

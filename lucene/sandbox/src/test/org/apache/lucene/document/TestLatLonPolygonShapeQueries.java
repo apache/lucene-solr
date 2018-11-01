@@ -19,6 +19,8 @@ package org.apache.lucene.document;
 import java.util.List;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.EdgeTree;
+import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Tessellator;
@@ -79,11 +81,20 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
+    public boolean testLineQuery(Line2D query, Object shape) {
+      return testPolygon(query, (Polygon) shape);
+    }
+
+    @Override
     public boolean testPolygonQuery(Polygon2D query, Object shape) {
-      List<Tessellator.Triangle> tessellation = Tessellator.tessellate((Polygon) shape);
+      return testPolygon(query, (Polygon) shape);
+    }
+
+    private boolean testPolygon(EdgeTree tree, Polygon shape) {
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       for (Tessellator.Triangle t : tessellation) {
         // we quantize the triangle for consistency with the index
-        Relation r = query.relateTriangle(quantizeLon(t.getLon(0)), quantizeLat(t.getLat(0)),
+        Relation r = tree.relateTriangle(quantizeLon(t.getLon(0)), quantizeLat(t.getLat(0)),
             quantizeLon(t.getLon(1)), quantizeLat(t.getLat(1)),
             quantizeLon(t.getLon(2)), quantizeLat(t.getLat(2)));
         if (queryRelation == QueryRelation.DISJOINT) {
