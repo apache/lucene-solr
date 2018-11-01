@@ -241,6 +241,9 @@ New Features
   https://github.com/snowballstem/snowball/blob/master/algorithms/arabic.sbl 
   (Ryadh Dahimene via Jim Ferenczi)
 
+* LUCENE-8554: Add new LatLonShapeLineQuery that queries indexed LatLonShape fields
+  by arbitrary lines. (Nick Knize)
+
 Improvements:
 
 * LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the

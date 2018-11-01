@@ -18,7 +18,7 @@ package org.apache.lucene.document;
 
 import java.util.Arrays;
 
-import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.FutureArrays;
@@ -37,7 +37,7 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  * Finds all previously indexed shapes that intersect the specified bounding box.
  *
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields(String, Polygon)} added per document.
+ * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
@@ -99,25 +99,36 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     int cY = (int)(c & 0x00000000FFFFFFFFL);
 
     if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
-      return queryContains(aX, aY) && queryContains(bX, bY) && queryContains(cX, cY);
+      return bboxContainsTriangle(aX, aY, bX, bY, cX, cY, minX, maxX, minY, maxY);
     }
     return queryMatches(aX, aY, bX, bY, cX, cY);
   }
 
-  private boolean queryContains(int x, int y) {
+  /** static utility method to check if a bounding box contains a point */
+  private static boolean bboxContainsPoint(int x, int y, int minX, int maxX, int minY, int maxY) {
     return (x < minX || x > maxX || y < minY || y > maxY) == false;
   }
 
-  private boolean queryContains(int ax, int ay, int bx, int by, int cx, int cy) {
-    return queryContains(ax, ay) || queryContains(bx, by) || queryContains(cx, cy);
+  /** static utility method to check if a bounding box contains a triangle */
+  private static boolean bboxContainsTriangle(int ax, int ay, int bx, int by, int cx, int cy,
+                                              int minX, int maxX, int minY, int maxY) {
+    return bboxContainsPoint(ax, ay, minX, maxX, minY, maxY)
+        && bboxContainsPoint(bx, by, minX, maxX, minY, maxY)
+        && bboxContainsPoint(cx, cy, minX, maxX, minY, maxY);
+  }
+
+  /** instance method to check if query box contains point */
+  private boolean queryContainsPoint(int x, int y) {
+    return bboxContainsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY);
   }
 
   protected boolean queryMatches(int aX, int aY, int bX, int bY, int cX, int cY) {
     // 1. query contains any triangle points
-    if (queryContains(aX, aY, bX, bY, cX, cY)) {
+    if (queryContainsPoint(aX, aY) || queryContainsPoint(bX, bY) || queryContainsPoint(cX, cY)) {
       return true;
     }
 
+    // compute bounding box of triangle
     int tMinX = StrictMath.min(StrictMath.min(aX, bX), cX);
     int tMaxX = StrictMath.max(StrictMath.max(aX, bX), cX);
     int tMinY = StrictMath.min(StrictMath.min(aY, bY), cY);
@@ -139,7 +150,6 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
       return true;
     }
 
-
     // 4. last ditch effort: check crossings
     if (queryIntersects(aX, aY, bX, bY, cX, cY)) {
       return true;
@@ -148,7 +158,30 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
   }
 
   /** returns true if the edge (defined by (ax, ay) (bx, by)) intersects the query */
-  private boolean edgeIntersectsQuery(double ax, double ay, double bx, double by) {
+  private static boolean edgeIntersectsBox(int ax, int ay, int bx, int by,
+                                           int minX, int maxX, int minY, int maxY) {
+    // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point
+    if (ax == bx && ay == by) {
+      return Rectangle.containsPoint(ay, ax, minY, maxY, minX, maxX);
+    }
+
+    // shortcut: check if either of the end points fall inside the box
+    if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY)
+        || bboxContainsPoint(bx, by, minX, maxX, minY, maxY)) {
+      return true;
+    }
+
+    // shortcut: check bboxes of edges are disjoint
+    if (boxesAreDisjoint(Math.min(ax, bx), Math.max(ax, bx), Math.min(ay, by), Math.max(ay, by),
+        minX, maxX, minY, maxY)) {
+      return false;
+    }
+
+    // shortcut: edge is a point
+    if (ax == bx && ay == by) {
+      return false;
+    }
+
     // top
     if (orient(ax, ay, bx, by, minX, maxY) * orient(ax, ay, bx, by, maxX, maxY) <= 0 &&
         orient(minX, maxY, maxX, maxY, ax, ay) * orient(minX, maxY, maxX, maxY, bx, by) <= 0) {
@@ -175,6 +208,11 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     return false;
   }
 
+  /** returns true if the edge (defined by (ax, ay) (bx, by)) intersects the query */
+  private boolean edgeIntersectsQuery(int ax, int ay, int bx, int by) {
+    return edgeIntersectsBox(ax, ay, bx, by, this.minX, this.maxX, this.minY, this.maxY);
+  }
+
   /** returns true if the query intersects the provided triangle (in encoded space) */
   private boolean queryIntersects(int ax, int ay, int bx, int by, int cx, int cy) {
     // check each edge of the triangle against the query
@@ -184,6 +222,12 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
       return true;
     }
     return false;
+  }
+
+  /** utility method to check if two boxes are disjoint */
+  public static boolean boxesAreDisjoint(final int aMinX, final int aMaxX, final int aMinY, final int aMaxY,
+                                          final int bMinX, final int bMaxX, final int bMinY, final int bMaxY) {
+    return (aMaxX < bMinX || aMinX > bMaxX || aMaxY < bMinY || aMinY > bMaxY);
   }
 
   @Override

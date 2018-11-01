@@ -124,6 +124,13 @@ public class LatLonShape {
     return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
 
+  /** create a query to find all polygons that intersect a provided linestring (or array of linestrings)
+   *  note: does not support dateline crossing
+   **/
+  public static Query newLineQuery(String field, QueryRelation queryRelation, Line... lines) {
+    return new LatLonShapeLineQuery(field, queryRelation, lines);
+  }
+
   /** create a query to find all polygons that intersect a provided polygon (or array of polygons)
    *  note: does not support dateline crossing
    **/
