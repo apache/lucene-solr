@@ -124,15 +124,11 @@ final public class Tessellator {
     // Link points into the circular doubly-linked list in the specified winding order
     if (windingOrder == polygon.getWindingOrder()) {
       for (int i = 0; i < polygon.numPoints(); ++i) {
-        if (lastNode == null || filter(polygon, i, lastNode) == false) {
-          lastNode = insertNode(polygon, startIndex++, i, lastNode);
-        }
+        lastNode = insertNode(polygon, startIndex++, i, lastNode);
       }
     } else {
       for (int i = polygon.numPoints() - 1; i >= 0; --i) {
-        if (lastNode == null || filter(polygon, i, lastNode) == false) {
-          lastNode = insertNode(polygon, startIndex++, i, lastNode);
-        }
+        lastNode = insertNode(polygon, startIndex++, i, lastNode);
       }
     }
     // if first and last node are the same then remove the end node and set lastNode to the start
@@ -142,7 +138,7 @@ final public class Tessellator {
     }
 
     // Return the last node in the Doubly-Linked List
-    return lastNode;
+    return filterPoints(lastNode, null);
   }
 
   /** Links every hole into the outer loop, producing a single-ring polygon without holes. **/
@@ -639,19 +635,6 @@ final public class Tessellator {
       tail.nextZ = null;
       inSize *= 2;
     } while (numMerges > 1);
-  }
-
-  /** utility method to filter a single duplicate or colinear triangle */
-  private static boolean filter(final Polygon polygon, final int i, final Node node) {
-    final double x = polygon.getPolyLon(i);
-    final double y = polygon.getPolyLat(i);
-    final boolean equal = (x == node.getX() && y == node.getY());
-    if (equal == true) {
-      return true;
-    } else if (node.previous == node || node.previous.previous == node) {
-      return false;
-    }
-    return area(node.previous.previous.getX(), node.previous.previous.getY(), node.previous.getX(), node.previous.getY(), x, y) == 0d;
   }
 
   /** Eliminate colinear/duplicate points from the doubly linked list */

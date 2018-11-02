@@ -52,6 +52,9 @@ Improvements:
 
 Bug Fixes:
 
+* LUCENE-8550: Fix filtering of coplanar points when creating linked list on
+  polygon tesselator. (Ignacio Vera)
+
 * LUCENE-8549: Polygon tessellator throws an error if some parts of the shape
    could not be processed. (Ignacio Vera)
 
