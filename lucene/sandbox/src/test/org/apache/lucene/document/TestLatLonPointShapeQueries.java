@@ -75,8 +75,4 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
       return r != Relation.CELL_OUTSIDE_QUERY;
     }
   }
-
-  @Override
-  public void testRandomTiny() throws Exception {
-  }
 }
