@@ -84,4 +84,10 @@ public class TestTessellator extends LuceneTestCase {
     List<Tessellator.Triangle> result = Tessellator.tessellate(polygons[0]);
     assertEquals(113, result.size());
   }
+
+  public void testInvalidPolygon()  throws Exception {
+    String wkt = "POLYGON((0 0, 1 1, 0 1, 1 0, 0 0))";
+    Polygon polygon = (Polygon)SimpleWKTShapeParser.parse(wkt);
+    expectThrows( IllegalArgumentException.class, () -> {Tessellator.tessellate(polygon); });
+  }
 }
