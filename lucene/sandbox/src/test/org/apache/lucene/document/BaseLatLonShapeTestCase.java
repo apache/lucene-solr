@@ -59,8 +59,11 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
 import static org.apache.lucene.geo.GeoTestUtil.nextLongitude;
 
+/** base test class for {@link TestLatLonLineShapeQueries}, {@link TestLatLonPointShapeQueries},
+ * and {@link TestLatLonPolygonShapeQueries} */
 public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
+  /** name of the LatLonShape indexed field */
   protected static final String FIELD_NAME = "shape";
 
   protected abstract ShapeType getShapeType();
@@ -69,22 +72,27 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return getShapeType().nextShape();
   }
 
+  /** quantizes a latitude value to be consistent with index encoding */
   protected double quantizeLat(double rawLat) {
     return decodeLatitude(encodeLatitude(rawLat));
   }
 
+  /** quantizes a provided latitude value rounded up to the nearest encoded integer */
   protected double quantizeLatCeil(double rawLat) {
     return decodeLatitude(encodeLatitudeCeil(rawLat));
   }
 
+  /** quantizes a longitude value to be consistent with index encoding */
   protected double quantizeLon(double rawLon) {
     return decodeLongitude(encodeLongitude(rawLon));
   }
 
+  /** quantizes a provided longitude value rounded up to the nearest encoded integer */
   protected double quantizeLonCeil(double rawLon) {
     return decodeLongitude(encodeLongitudeCeil(rawLon));
   }
 
+  /** quantizes a provided polygon to be consistent with the index encoding */
   protected Polygon quantizePolygon(Polygon polygon) {
     double[] lats = new double[polygon.numPoints()];
     double[] lons = new double[polygon.numPoints()];
@@ -95,6 +103,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return new Polygon(lats, lons);
   }
 
+  /** quantizes a provided linestring to be consistent with the index encoding */
   protected Line quantizeLine(Line line) {
     double[] lats = new double[line.numPoints()];
     double[] lons = new double[line.numPoints()];
@@ -105,8 +114,10 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return new Line(lats, lons);
   }
 
+  /** creates the array of LatLonShape.Triangle values that are used to index the shape */
   protected abstract Field[] createIndexableFields(String field, Object shape);
 
+  /** adds a shape to a provided document */
   private void addShapeToDoc(String field, Document doc, Object shape) {
     Field[] fields = createIndexableFields(field, shape);
     for (Field f : fields) {
@@ -114,10 +125,12 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
+  /** factory method to create a new bounding box query */
   protected Query newRectQuery(String field, QueryRelation queryRelation, double minLat, double maxLat, double minLon, double maxLon) {
     return LatLonShape.newBoxQuery(field, queryRelation, minLat, maxLat, minLon, maxLon);
   }
 
+  /** factory method to create a new polygon query */
   protected Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
     return LatLonShape.newPolygonQuery(field, queryRelation, polygons);
   }
@@ -212,8 +225,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         addShapeToDoc(FIELD_NAME, doc, shapes[id]);
       }
       w.addDocument(doc);
-      if (id > 0 && randomInt(100) == 42) {
-        int idToDelete = randomInt(id);
+      if (id > 0 && random().nextInt(100) == 42) {
+        int idToDelete = random().nextInt(id);
         w.deleteDocuments(new Term("id", ""+idToDelete));
         deleted.add(idToDelete);
         if (VERBOSE) {
@@ -227,6 +240,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
+  /** test random generated bounding boxes */
   protected void verifyRandomBBoxQueries(IndexReader reader, Object... shapes) throws Exception {
     IndexSearcher s = newSearcher(reader);
 
@@ -323,6 +337,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
+  /** test random generated polygons */
   protected void verifyRandomPolygonQueries(IndexReader reader, Object... shapes) throws Exception {
     IndexSearcher s = newSearcher(reader);
 
@@ -481,6 +496,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
+  /** validator class used to test query results against "ground truth" */
   protected abstract class Validator {
     protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
     public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
