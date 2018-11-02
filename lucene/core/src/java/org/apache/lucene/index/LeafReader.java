@@ -206,6 +206,10 @@ public abstract class LeafReader extends IndexReader {
   /**
    * Get the {@link FieldInfos} describing all fields in
    * this reader.
+   *
+   * Note: Implementations should cache the FieldInfos
+   * instance returned by this method such that subsequent
+   * calls to this method return the same instance.
    * @lucene.experimental
    */
   public abstract FieldInfos getFieldInfos();

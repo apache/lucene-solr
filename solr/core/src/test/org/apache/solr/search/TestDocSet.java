@@ -391,7 +391,7 @@ public class TestDocSet extends LuceneTestCase {
 
       @Override
       public FieldInfos getFieldInfos() {
-        return new FieldInfos(new FieldInfo[0]);
+        return FieldInfos.EMPTY;
       }
 
       @Override

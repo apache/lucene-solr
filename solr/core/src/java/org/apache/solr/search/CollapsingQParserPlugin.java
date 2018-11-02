@@ -390,10 +390,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   private static class ReaderWrapper extends FilterLeafReader {
 
     private String field;
+    private FieldInfos fieldInfos;
 
     public ReaderWrapper(LeafReader leafReader, String field) {
       super(leafReader);
       this.field = field;
+      this.fieldInfos = initFieldInfos();
     }
 
     // NOTE: delegating the caches is wrong here as we are altering the content
@@ -415,7 +417,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return null;
     }
 
-    public FieldInfos getFieldInfos() {
+    private FieldInfos initFieldInfos() {
       Iterator<FieldInfo> it = in.getFieldInfos().iterator();
       List<FieldInfo> newInfos = new ArrayList();
       while(it.hasNext()) {
@@ -440,6 +442,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
       FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
       return infos;
+    }
+
+    public FieldInfos getFieldInfos() {
+      return fieldInfos;
     }
   }
 
