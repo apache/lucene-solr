@@ -30,6 +30,10 @@ subprojects {
 			systemProperty 'java.security.egd', 'file:/dev/./urandom'
 		}
 	}
+	tasks.withType(Test) {
+	        maxParallelForks = Runtime.runtime.availableProcessors() / 2
+    	}
+
 }
 
 // These versions are defined here because they represent
