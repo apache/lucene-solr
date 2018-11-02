@@ -1,0 +1,7 @@
+apply plugin: 'java'
+
+dependencies {
+	compile project(':solr:core')
+
+	testCompile project(':solr:test-framework')
+}
