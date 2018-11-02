@@ -389,17 +389,17 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
 
     try {
       ignoreException("No\\ default\\, and no switch case");
-      assertQ("no match and no default",
+      RuntimeException exp = expectThrows(RuntimeException.class, "Should have gotten an error w/o default",
+          () -> assertQ("no match and no default",
               req("q", "{!switch case.x=Dude case.z=Yonik}asdf")
-              ,"//result[@numFound='BOGUS']");
-      fail("Should have gotten an error w/o default");
-    } catch (RuntimeException exp) {
-      assertTrue("exp cause is wrong", 
-                 exp.getCause() instanceof SolrException);
+              , "//result[@numFound='BOGUS']")
+      );
+      assertTrue("exp cause is wrong",
+          exp.getCause() instanceof SolrException);
       SolrException e = (SolrException) exp.getCause();
       assertEquals("error isn't user error", 400, e.code());
       assertTrue("Error doesn't include bad switch case: " + e.getMessage(),
-                 e.getMessage().contains("asdf"));
+          e.getMessage().contains("asdf"));
     } finally {
       resetExceptionIgnores();
     }
