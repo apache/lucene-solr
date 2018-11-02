@@ -1,0 +1,20 @@
+apply plugin: 'java'
+
+dependencies {
+
+    compile library.simpleclient
+    compile library.simpleclient_common
+    compile library.simpleclient_httpserver
+    compile library.jackson_core
+    compile library.jackson_databind
+    compile library.jackson_annotations
+    compile library.jackson_jq
+    compile library.argparse4j
+    compile library.slf4j_api
+    compile library.log4j_slf4j_impl
+    compile library.log4j_api
+    compile library.log4j_core
+    compile project(':solr:core')
+    
+    testCompile project(':solr:test-framework')
+}

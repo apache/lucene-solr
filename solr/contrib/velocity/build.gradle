@@ -1,0 +1,10 @@
+apply plugin: 'java'
+
+dependencies {
+    compile library.commons_collections
+    compile library.velocity
+    compile library.velocity_tools
+    compile project(':solr:core')
+    
+    testCompile project(':solr:test-framework')
+}
