@@ -215,6 +215,17 @@ Bug fixes:
 * LUCENE-8524: Add the Hangul Letter Araea (interpunct) as a separator in Nori's tokenizer.
   This change also removes empty terms and trim surface form in Nori's Korean dictionary. (Trey Jones, Jim Ferenczi)
 
+* LUCENE-8550: Fix filtering of coplanar points when creating linked list on
+  polygon tesselator. (Ignacio Vera)
+
+* LUCENE-8549: Polygon tessellator throws an error if some parts of the shape
+   could not be processed. (Ignacio Vera)
+
+* LUCENE-8540: Better handling of min/max values for Geo3d encoding. (Ignacio Vera)
+
+* LUCENE-8534: Fix incorrect computation for triangles intersecting polygon edges in
+  shape tessellation. (Ignacio Vera)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
@@ -235,19 +246,6 @@ Improvements:
 * LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the
   first 4 are index dimensions defining the bounding box of the Triangle and the
   remaining 3 data dimensions define the vertices of the triangle. (Nick Knize)
-
-Bug Fixes:
-
-* LUCENE-8550: Fix filtering of coplanar points when creating linked list on
-  polygon tesselator. (Ignacio Vera)
-
-* LUCENE-8549: Polygon tessellator throws an error if some parts of the shape
-   could not be processed. (Ignacio Vera)
-
-* LUCENE-8540: Better handling of min/max values for Geo3d encoding. (Ignacio Vera)
-
-* LUCENE-8534: Fix incorrect computation for triangles intersecting polygon edges in
-  shape tessellation. (Ignacio Vera)
 
 Other:
 
