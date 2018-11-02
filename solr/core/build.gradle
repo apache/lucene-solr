@@ -1,5 +1,9 @@
 apply plugin: 'java'
 
+configurations {
+    all*.exclude group: 'org.apache.directory.api', module: 'api-ldap-schema-data'
+}
+
 dependencies {
 	compile project(':solr:server')
 	compile project(':solr:solrj')
