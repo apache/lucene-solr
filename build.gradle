@@ -94,7 +94,7 @@ ext.library = [
 	disruptor: "com.lmax:disruptor:3.4.0",
 	java_libpst: "com.pff:java-libpst:0.8.1",
 
-	rome: "com.rometools:$rometools_version",
+	rome: "com.rometools:rome:$rometools_version",
 	rome_utils: "com.rometools:rome-utils:$rometools_version",
 
 	jersey_core: "com.sun.jersey:jersey-core:$jersey_version",
