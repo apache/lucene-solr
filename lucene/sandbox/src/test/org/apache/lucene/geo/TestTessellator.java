@@ -90,4 +90,10 @@ public class TestTessellator extends LuceneTestCase {
     Polygon polygon = (Polygon)SimpleWKTShapeParser.parse(wkt);
     expectThrows( IllegalArgumentException.class, () -> {Tessellator.tessellate(polygon); });
   }
+
+  public void testLUCENE8550()  throws Exception {
+    String wkt = "POLYGON((24.04725 59.942,24.04825 59.94125,24.04875 59.94125,24.04875 59.94175,24.048 59.9425,24.0475 59.94275,24.0465 59.94225,24.046 59.94225,24.04575 59.9425,24.04525 59.94225,24.04725 59.942))";
+    Polygon polygon = (Polygon)SimpleWKTShapeParser.parse(wkt);
+    assertTrue(Tessellator.tessellate(polygon).size() == 8);
+  }
 }
