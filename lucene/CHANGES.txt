@@ -43,6 +43,8 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8540: Better handling of min/max values for Geo3d encoding. (Ignacio Vera)
+
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
   bogus tiles when building GeoPolygons. (Ignacio Vera)
 
