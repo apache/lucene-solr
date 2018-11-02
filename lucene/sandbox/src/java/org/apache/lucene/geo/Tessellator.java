@@ -422,6 +422,7 @@ final public class Tessellator {
 
       // a self-intersection where edge (v[i-1],v[i]) intersects (v[i+1],v[i+2])
       if (isVertexEquals(a, b) == false
+          && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
           && linesIntersect(a.getX(), a.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), b.getX(), b.getY())
           && isLocallyInside(a, b) && isLocallyInside(b, a)) {
         // Return the triangulated vertices to the tessellation
@@ -454,6 +455,10 @@ final public class Tessellator {
           searchNode = filterPoints(searchNode, searchNode.next);
           splitNode  = filterPoints(splitNode, splitNode.next);
           // Attempt to earcut both of the resulting polygons
+          if (mortonIndexed) {
+            sortByMortonWithReset(searchNode);
+            sortByMortonWithReset(splitNode);
+          }
           earcutLinkedList(searchNode, tessellation, State.INIT, mortonIndexed);
           earcutLinkedList(splitNode,  tessellation, State.INIT, mortonIndexed);
           // Finish the iterative search
@@ -538,7 +543,9 @@ final public class Tessellator {
       if(node.getX() != x0 && node.getY() != y0 && nextNode.getX() != x0
           && nextNode.getY() != y0 && node.getX() != x1 && node.getY() != y1
           && nextNode.getX() != x1 && nextNode.getY() != y1) {
-        return linesIntersect(node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), x0, y0, x1, y1);
+        if (linesIntersect(node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), x0, y0, x1, y1)) {
+          return true;
+        }
       }
       node = nextNode;
     } while (node != start);
@@ -551,6 +558,17 @@ final public class Tessellator {
                                              final double bX0, final double bY0, final double bX1, final double bY1) {
     return (area(aX0, aY0, aX1, aY1, bX0, bY0) > 0) != (area(aX0, aY0, aX1, aY1, bX1, bY1) > 0)
         && (area(bX0, bY0, bX1, bY1, aX0, aY0) > 0) != (area(bX0, bY0, bX1, bY1, aX1, aY1) > 0);
+  }
+
+  /** Interlinks polygon nodes in Z-Order. It reset the values on the z values**/
+  private static final void sortByMortonWithReset(Node start) {
+    Node next = start;
+    do {
+      next.previousZ = next.previous;
+      next.nextZ = next.next;
+      next = next.next;
+    } while (next != start);
+    sortByMorton(start);
   }
 
   /** Interlinks polygon nodes in Z-Order. **/
