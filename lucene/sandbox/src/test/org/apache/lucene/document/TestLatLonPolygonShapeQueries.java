@@ -26,6 +26,9 @@ import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues.Relation;
 
+import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
+import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
+
 /** random bounding box and polygon query tests for random indexed {@link Polygon} types */
 public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
@@ -68,12 +71,32 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
       Polygon p = (Polygon)shape;
       if (queryRelation == QueryRelation.WITHIN) {
         // within: bounding box of shape should be within query box
-        return minLat <= quantizeLat(p.minLat) && maxLat >= quantizeLat(p.maxLat)
-            && minLon <= quantizeLon(p.minLon) && maxLon >= quantizeLon(p.maxLon);
+        double pMinLat = quantizeLat(p.minLat);
+        double pMinLon = quantizeLon(p.minLon);
+        double pMaxLat = quantizeLat(p.maxLat);
+        double pMaxLon = quantizeLon(p.maxLon);
+
+        if (minLon > maxLon) {
+          // crosses dateline:
+          return minLat <= pMinLat && maxLat >= pMaxLat
+              && ((MIN_LON_INCL <= pMinLon && maxLon >= pMaxLon)
+              ||  (minLon <= pMinLon && MAX_LON_INCL >= pMaxLon));
+        }
+        return minLat <= pMinLat && maxLat >= pMaxLat
+            && minLon <= pMinLon && maxLon >= pMaxLon;
       }
 
       Polygon2D poly = Polygon2D.create(quantizePolygon(p));
-      Relation r = poly.relate(minLat, maxLat, minLon, maxLon);
+      Relation r;
+      if (minLon > maxLon) {
+        // crosses dateline:
+        r = poly.relate(minLat, maxLat, MIN_LON_INCL, maxLon);
+        if (r == Relation.CELL_OUTSIDE_QUERY) {
+          r = poly.relate(minLat, maxLat, minLon, MAX_LON_INCL);
+        }
+      } else {
+        r = poly.relate(minLat, maxLat, minLon, maxLon);
+      }
       if (queryRelation == QueryRelation.DISJOINT) {
         return r == Relation.CELL_OUTSIDE_QUERY;
       }

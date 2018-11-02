@@ -117,8 +117,6 @@ public class LatLonShape {
   }
 
   /** create a query to find all polygons that intersect a defined bounding box
-   *  note: does not currently support dateline crossing boxes
-   * todo split dateline crossing boxes into two queries like {@link LatLonPoint#newBoxQuery}
    **/
   public static Query newBoxQuery(String field, QueryRelation queryRelation, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
     return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
