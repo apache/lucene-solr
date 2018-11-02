@@ -5,6 +5,7 @@
 /maven-build
 /classes
 build
+out
 /idea-build
 dist
 lib
