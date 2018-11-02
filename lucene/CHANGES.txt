@@ -52,6 +52,9 @@ Improvements:
 
 Bug Fixes:
 
+* LUCENE-8549: Polygon tessellator throws an error if some parts of the shape
+   could not be processed. (Ignacio Vera)
+
 * LUCENE-8540: Better handling of min/max values for Geo3d encoding. (Ignacio Vera)
 
 * LUCENE-8534: Fix incorrect computation for triangles intersecting polygon edges in

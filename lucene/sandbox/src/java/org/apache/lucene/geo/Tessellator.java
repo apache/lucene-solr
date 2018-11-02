@@ -321,7 +321,10 @@ final public class Tessellator {
               continue earcut;
             case SPLIT:
               // as a last resort, try splitting the remaining polygon into two
-              splitEarcut(currEar, tessellation, mortonOptimized);
+              if (splitEarcut(currEar, tessellation, mortonOptimized) == false) {
+                //we could not process all points. Tessellation failed
+                tessellation.clear();
+              }
               break;
           }
           break;
@@ -439,8 +442,8 @@ final public class Tessellator {
     return node;
   }
 
-  /** Attempt to split a polygon and independently triangulate each side **/
-  private static final void splitEarcut(final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
+  /** Attempt to split a polygon and independently triangulate each side. Return true if the polygon was splitted **/
+  private static final boolean splitEarcut(final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
     // Search for a valid diagonal that divides the polygon into two.
     Node searchNode = start;
     Node nextNode;
@@ -462,12 +465,13 @@ final public class Tessellator {
           earcutLinkedList(searchNode, tessellation, State.INIT, mortonIndexed);
           earcutLinkedList(splitNode,  tessellation, State.INIT, mortonIndexed);
           // Finish the iterative search
-          return;
+          return true;
         }
         diagonal = diagonal.next;
       }
       searchNode = searchNode.next;
     } while (searchNode != start);
+    return false;
   }
 
   /** Links two polygon vertices using a bridge. **/
