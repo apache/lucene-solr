@@ -20,10 +20,14 @@ import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
+
+import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
+import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 
 /** random bounding box and polygon query tests for random generated {@link Line} types */
 public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
@@ -78,13 +82,32 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
       Line l = (Line)shape;
       if (queryRelation == QueryRelation.WITHIN) {
         // within: bounding box of shape should be within query box
-        return minLat <= quantizeLat(l.minLat) && maxLat >= quantizeLat(l.maxLat)
-            && minLon <= quantizeLon(l.minLon) && maxLon >= quantizeLon(l.maxLon);
+        double lMinLat = quantizeLat(l.minLat);
+        double lMinLon = quantizeLon(l.minLon);
+        double lMaxLat = quantizeLat(l.maxLat);
+        double lMaxLon = quantizeLon(l.maxLon);
+
+        if (minLon > maxLon) {
+          // crosses dateline:
+          return minLat <= lMinLat && maxLat >= lMaxLat
+              && ((GeoUtils.MIN_LON_INCL <= lMinLon && maxLon >= lMaxLon)
+              || (minLon <= lMinLon && GeoUtils.MAX_LON_INCL >= lMaxLon));
+        }
+        return minLat <= lMinLat && maxLat >= lMaxLat
+            && minLon <= lMinLon && maxLon >= lMaxLon;
       }
 
-      // to keep it simple we convert the bbox into a polygon and use poly2d
       Line2D line = Line2D.create(quantizeLine(l));
-      Relation r = line.relate(minLat, maxLat, minLon, maxLon);
+      Relation r;
+      if (minLon > maxLon) {
+        // crosses dateline:
+        r = line.relate(minLat, maxLat, MIN_LON_INCL, maxLon);
+        if (r == Relation.CELL_OUTSIDE_QUERY) {
+          r = line.relate(minLat, maxLat, minLon, MAX_LON_INCL);
+        }
+      } else {
+        r = line.relate(minLat, maxLat, minLon, maxLon);
+      }
 
       if (queryRelation == QueryRelation.DISJOINT) {
         return r == Relation.CELL_OUTSIDE_QUERY;

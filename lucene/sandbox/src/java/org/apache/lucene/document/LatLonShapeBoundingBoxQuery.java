@@ -25,6 +25,8 @@ import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.document.LatLonShape.BYTES;
+import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
+import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
@@ -43,6 +45,7 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  **/
 final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
   final byte[] bbox;
+  final byte[] west;
   final int minX;
   final int maxX;
   final int minY;
@@ -50,23 +53,59 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   public LatLonShapeBoundingBoxQuery(String field, LatLonShape.QueryRelation queryRelation, double minLat, double maxLat, double minLon, double maxLon) {
     super(field, queryRelation);
-    if (minLon > maxLon) {
-      throw new IllegalArgumentException("dateline crossing bounding box queries are not supported for [" + field + "]");
-    }
+
     this.bbox = new byte[4 * LatLonShape.BYTES];
-    this.minX = encodeLongitudeCeil(minLon);
-    this.maxX = encodeLongitude(maxLon);
+    int minXenc = encodeLongitudeCeil(minLon);
+    int maxXenc = encodeLongitude(maxLon);
     this.minY = encodeLatitudeCeil(minLat);
     this.maxY = encodeLatitude(maxLat);
-    LatLonShape.encodeTriangleBoxVal(this.minY, bbox, 0);
-    LatLonShape.encodeTriangleBoxVal(this.minX, bbox, BYTES);
-    LatLonShape.encodeTriangleBoxVal(this.maxY, bbox, 2 * BYTES);
-    LatLonShape.encodeTriangleBoxVal(this.maxX, bbox, 3 * BYTES);
+
+    if (minLon > maxLon == true) {
+      // crossing dateline is split into east/west boxes
+      this.west = new byte[4 * LatLonShape.BYTES];
+      this.minX = minXenc;
+      this.maxX = maxXenc;
+      encode(MIN_LON_ENCODED, this.maxX, this.minY, this.maxY, this.west);
+      encode(this.minX, MAX_LON_ENCODED, this.minY, this.maxY, this.bbox);
+    } else {
+      // encodeLongitudeCeil may cause minX to be > maxX iff
+      // the delta between the longtude < the encoding resolution
+      if (minXenc > maxXenc) {
+        minXenc = maxXenc;
+      }
+      this.west = null;
+      this.minX = minXenc;
+      this.maxX = maxXenc;
+      encode(this.minX, this.maxX, this.minY, this.maxY, bbox);
+    }
+  }
+
+  /** encodes a bounding box into the provided byte array */
+  private static void encode(final int minX, final int maxX, final int minY, final int maxY, byte[] b) {
+    if (b == null) {
+      b = new byte[4 * LatLonShape.BYTES];
+    }
+    LatLonShape.encodeTriangleBoxVal(minY, b, 0);
+    LatLonShape.encodeTriangleBoxVal(minX, b, BYTES);
+    LatLonShape.encodeTriangleBoxVal(maxY, b, 2 * BYTES);
+    LatLonShape.encodeTriangleBoxVal(maxX, b, 3 * BYTES);
   }
 
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    Relation eastRelation = compareBBoxToRangeBBox(this.bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
+      return compareBBoxToRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    }
+
+    return eastRelation;
+  }
+
+  /** static utility method to compare a bbox with a range of triangles (just the bbox of the triangle collection) */
+  protected static Relation compareBBoxToRangeBBox(final byte[] bbox,
+                                                   int minXOffset, int minYOffset, byte[] minTriangle,
+                                                   int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     // check bounding box (DISJOINT)
     if (FutureArrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
         FutureArrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
@@ -87,6 +126,7 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
   /** returns true if the query matches the encoded triangle */
   @Override
   protected boolean queryMatches(byte[] t) {
+    // decode indexed triangle
     long a = NumericUtils.sortableBytesToLong(t, 4 * LatLonShape.BYTES);
     long b = NumericUtils.sortableBytesToLong(t, 5 * LatLonShape.BYTES);
     long c = NumericUtils.sortableBytesToLong(t, 6 * LatLonShape.BYTES);
@@ -99,9 +139,17 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     int cY = (int)(c & 0x00000000FFFFFFFFL);
 
     if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
-      return bboxContainsTriangle(aX, aY, bX, bY, cX, cY, minX, maxX, minY, maxY);
+      return queryContainsTriangle(aX, aY, bX, bY, cX, cY);
     }
     return queryMatches(aX, aY, bX, bY, cX, cY);
+  }
+
+  private boolean queryContainsTriangle(int ax, int ay, int bx, int by, int cx, int cy) {
+    if (this.crossesDateline() == true) {
+      return bboxContainsTriangle(ax, ay, bx, by, cx, cy, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
+          || bboxContainsTriangle(ax, ay, bx, by, cx, cy, this.minX, MAX_LON_ENCODED, this.minY, this.maxY);
+    }
+    return bboxContainsTriangle(ax, ay, bx, by, cx, cy, minX, maxX, minY, maxY);
   }
 
   /** static utility method to check if a bounding box contains a point */
@@ -119,6 +167,10 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   /** instance method to check if query box contains point */
   private boolean queryContainsPoint(int x, int y) {
+    if (this.crossesDateline() == true) {
+      return bboxContainsPoint(x, y, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
+          || bboxContainsPoint(x, y, this.minX, MAX_LON_ENCODED, this.minY, this.maxY);
+    }
     return bboxContainsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY);
   }
 
@@ -135,7 +187,12 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     int tMaxY = StrictMath.max(StrictMath.max(aY, bY), cY);
 
     // 2. check bounding boxes are disjoint
-    if (tMaxX < minX || tMinX > maxX || tMinY > maxY || tMaxY < minY) {
+    if (this.crossesDateline() == true) {
+      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
+          && boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, this.minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
+        return false;
+      }
+    } else if (tMaxX < minX || tMinX > maxX || tMinY > maxY || tMaxY < minY) {
       return false;
     }
 
@@ -210,6 +267,10 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   /** returns true if the edge (defined by (ax, ay) (bx, by)) intersects the query */
   private boolean edgeIntersectsQuery(int ax, int ay, int bx, int by) {
+    if (this.crossesDateline() == true) {
+      return edgeIntersectsBox(ax, ay, bx, by, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
+          || edgeIntersectsBox(ax, ay, bx, by, this.minX, MAX_LON_ENCODED, this.minY, this.maxY);
+    }
     return edgeIntersectsBox(ax, ay, bx, by, this.minX, this.maxX, this.minY, this.maxY);
   }
 
@@ -230,6 +291,10 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     return (aMaxX < bMinX || aMinX > bMaxX || aMaxY < bMinY || aMinY > bMaxY);
   }
 
+  public boolean crossesDateline() {
+    return minX > maxX;
+  }
+
   @Override
   public boolean equals(Object o) {
     return sameClassAs(o) && equalsTo(getClass().cast(o));
@@ -237,13 +302,16 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(bbox, ((LatLonShapeBoundingBoxQuery)o).bbox);
+    return super.equalsTo(o)
+        && Arrays.equals(bbox, ((LatLonShapeBoundingBoxQuery)o).bbox)
+        && Arrays.equals(west, ((LatLonShapeBoundingBoxQuery)o).west);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
     hash = 31 * hash + Arrays.hashCode(bbox);
+    hash = 31 * hash + Arrays.hashCode(west);
     return hash;
   }
 
@@ -265,6 +333,9 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     sb.append(decodeLongitude(minX));
     sb.append(" TO ");
     sb.append(decodeLongitude(maxX));
+    if (maxX < minX) {
+      sb.append(" [crosses dateline!]");
+    }
     sb.append(")");
     return sb.toString();
   }

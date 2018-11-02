@@ -283,16 +283,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
       }
 
       // BBox
-      Rectangle rect;
-      // quantizing the bbox may end up w/ bounding boxes crossing dateline...
-      // todo add support for bounding boxes crossing dateline
-      while (true) {
-        rect = GeoTestUtil.nextBoxNotCrossingDateline();
-        if (decodeLongitude(encodeLongitudeCeil(rect.minLon)) <= decodeLongitude(encodeLongitude(rect.maxLon)) &&
-            decodeLatitude(encodeLatitudeCeil(rect.minLat)) <= decodeLatitude(encodeLatitude(rect.maxLat))) {
-          break;
-        }
-      }
+      Rectangle rect = GeoTestUtil.nextBox();
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
       Query query = newRectQuery(FIELD_NAME, queryRelation, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
@@ -327,6 +318,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         assertEquals(docID, docIDToID.nextDoc());
         int id = (int) docIDToID.longValue();
         boolean expected;
+        double qMinLon = quantizeLonCeil(rect.minLon);
+        double qMaxLon = quantizeLon(rect.maxLon);
         if (liveDocs != null && liveDocs.get(docID) == false) {
           // document is deleted
           expected = false;
@@ -334,8 +327,12 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           expected = false;
         } else {
           // check quantized poly against quantized query
-          expected = getValidator(queryRelation).testBBoxQuery(quantizeLatCeil(rect.minLat), quantizeLat(rect.maxLat),
-              quantizeLonCeil(rect.minLon), quantizeLon(rect.maxLon), shapes[id]);
+          if (qMinLon > qMaxLon && rect.crossesDateline() == false) {
+            // if the quantization creates a false dateline crossing (because of encodeCeil):
+            // then do not use encodeCeil
+            qMinLon = quantizeLon(rect.minLon);
+          }
+          expected = getValidator(queryRelation).testBBoxQuery(quantizeLatCeil(rect.minLat), quantizeLat(rect.maxLat), qMinLon, qMaxLon, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -350,8 +347,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           b.append("  query=" + query + " docID=" + docID + "\n");
           b.append("  shape=" + shapes[id] + "\n");
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  rect=Rectangle(" + quantizeLatCeil(rect.minLat) + " TO " + quantizeLat(rect.maxLat) + " lon=" + quantizeLonCeil(rect.minLon) + " TO " + quantizeLon(rect.maxLon) + ")\n");
-          if (true) {
+          b.append("  rect=Rectangle(lat=" + quantizeLatCeil(rect.minLat) + " TO " + quantizeLat(rect.maxLat) + " lon=" + qMinLon + " TO " + quantizeLon(rect.maxLon) + ")\n");          if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
             System.out.println(b.toString());

@@ -81,9 +81,13 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Point p = (Point)shape;
-      double lat = decodeLatitude(encodeLatitude(p.lat));
-      double lon = decodeLongitude(encodeLongitude(p.lon));
-      boolean isDisjoint = lat < minLat || lat > maxLat || lon < minLon || lon > maxLon;
+      double lat = quantizeLat(p.lat);
+      double lon = quantizeLon(p.lon);
+      boolean isDisjoint = lat < minLat || lat > maxLat;
+
+      isDisjoint = isDisjoint || ((minLon > maxLon)
+          ? lon < minLon && lon > maxLon
+          : lon < minLon || lon > maxLon);
       if (queryRelation == QueryRelation.DISJOINT) {
         return isDisjoint;
       }
