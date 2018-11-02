@@ -50,6 +50,10 @@ Improvements:
   first 4 are index dimensions defining the bounding box of the Triangle and the
   remaining 3 data dimensions define the vertices of the triangle. (Nick Knize)
 
+Bug Fixes:
+
+* LUCENE-8540: Better handling of min/max values for Geo3d encoding. (Ignacio Vera)
+
 Other:
 
 * LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
