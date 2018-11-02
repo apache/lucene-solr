@@ -1,0 +1,15 @@
+apply plugin: 'java'
+
+dependencies {
+    compile library.carrot2_mini
+    compile library.carrot2_guava
+    compile library.attributes_binder
+
+	compile library.simple_xml
+	compile library.jackson_annotations    
+	compile library.jackson_databind
+
+	compile project(':solr:core')
+
+	testCompile project(':solr:test-framework')
+}
