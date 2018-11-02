@@ -1,0 +1,10 @@
+----------------------------------------------------------------
+Fri Nov 02 06:23:46 CDT 2018:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.9.1.0 - (1344872): instance a816c00e-0166-d42a-2ef3-00000dfa6678 
+on database directory memory:/Users/caomanhdat/workspace/lucene-solr-gradle/solr/contrib/dataimporthandler/tempDB  with class loader sun.misc.Launcher$AppClassLoader@2a139a55 
+Loaded from file:/Users/caomanhdat/.gradle/caches/modules-2/files-2.1/org.apache.derby/derby/10.9.1.0/4538cf5564ab3c262eec65c55fdb13965625589c/derby-10.9.1.0.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.8.0_191-b12
+user.dir=/Users/caomanhdat/workspace/lucene-solr-gradle/solr/contrib/dataimporthandler
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''
