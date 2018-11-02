@@ -1,0 +1,17 @@
+apply plugin: 'java'
+
+dependencies {
+    compile library.icu4j
+    compile library.opennlp_tools
+    compile library.morfologik_fsa
+    compile library.morfologik_polish
+    compile library.morfologik_stemming
+
+	compile project(':solr:solrj')
+	compile project(':solr:core')
+	compile project(':lucene:analysis:icu')
+	compile project(':lucene:analysis:opennlp')
+
+	testCompile project(':solr:test-framework')
+	testCompile project(path: ':lucene:analysis:common', configuration: 'testOutput')
+}

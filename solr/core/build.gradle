@@ -133,4 +133,5 @@ dependencies {
 	testCompile project(':solr:test-framework')
 	testCompile project(path: ':lucene:backward-codecs', configuration: 'testOutput')
 	testCompile project(path: ':lucene:queryparser', configuration: 'testOutput')
+	testCompile project(':solr:contrib:analysis-extras')
 }
