@@ -153,6 +153,8 @@ used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
 
 * SOLR-12023: Autoscaling policy engine shuffles replicas needlessly (noble)
 
+* SOLR-12954: fix facet.pivot refinement bugs when using facet.sort=index and facet.mincount>1 (hossman)
+
 Improvements
 ----------------------
 
