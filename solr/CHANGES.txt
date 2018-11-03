@@ -233,6 +233,8 @@ Bug Fixes
 * SOLR-12875: fix ArrayIndexOutOfBoundsException when unique(field) or uniqueBlock(_root_) is 
 used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
 
+* SOLR-12954: fix facet.pivot refinement bugs when using facet.sort=index and facet.mincount>1 (hossman)
+
 Improvements
 ----------------------
 
