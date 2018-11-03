@@ -232,7 +232,8 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
           try {
             factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
-                new DistributedUpdateProcessor(cmd.getReq(), new SolrQueryResponse(),
+                new DistributedStandAloneUpdateProcessor(cmd.getReq(), new SolrQueryResponse(),
+                    new AtomicUpdateDocumentMerger(cmd.getReq()),
                     new RunUpdateProcessor(cmd.getReq(), null))).processAdd(cmd);
           } catch (IOException e) {
           }

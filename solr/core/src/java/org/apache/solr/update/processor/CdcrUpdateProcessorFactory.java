@@ -17,6 +17,7 @@
 package org.apache.solr.update.processor;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -36,10 +37,13 @@ public class CdcrUpdateProcessorFactory
   }
 
   @Override
-  public CdcrUpdateProcessor getInstance(SolrQueryRequest req,
+  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                          SolrQueryResponse rsp, UpdateRequestProcessor next) {
-
-    return new CdcrUpdateProcessor(req, rsp, next);
+    CoreContainer cc = req.getCore().getCoreContainer();
+    if(cc.isZooKeeperAware()) {
+      return new CdcrZookeeperZkUpdateProcessor(req, rsp, cc, next);
+    }
+    return new CdcrStandAloneStandAloneUpdateProcessor(req, rsp, next);
   }
 
 }

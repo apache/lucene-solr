@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -50,8 +51,16 @@ public class DistributedUpdateProcessorFactory
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     // note: will sometimes return DURP (no overhead) instead of wrapping
+    DistributedUpdateProcessor proc = null;
+    CoreContainer cc = req.getCore().getCoreContainer();
+    if(cc.isZooKeeperAware()) {
+      proc = new DistributedZkUpdateProcessor(req, rsp, new AtomicUpdateDocumentMerger(req), cc, next);
+    } else {
+      proc = new DistributedStandAloneUpdateProcessor(req, rsp, new AtomicUpdateDocumentMerger(req), next);
+    }
+
     return TimeRoutedAliasUpdateProcessor.wrap(req,
-        new DistributedUpdateProcessor(req, rsp, next));
+        proc);
   }
   
 }
