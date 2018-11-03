@@ -39,8 +39,6 @@
     <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${/org.eclipse.jetty/jetty-continuation}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" conf="jetty"/>
 
-    <dependency org="commons-logging" name="commons-logging" rev="${/commons-logging/commons-logging}" conf="logging"/>
-
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 

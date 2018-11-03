@@ -1,7 +1,7 @@
 import org.apache.lucene.gradle.LicenseCheckTask
 
 subprojects {
-    group = 'org.apache.lucene'
+    group = 'org.apache.solr'
 }
 
 tasks.create("checkLicenses", LicenseCheckTask, new File(projectDir.getAbsolutePath()

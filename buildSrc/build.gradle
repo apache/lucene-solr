@@ -1,0 +1,14 @@
+apply plugin: 'groovy'
+apply plugin: 'java'
+group = 'org.lucene.gradle'
+
+repositories {
+	jcenter()
+}
+
+dependencies {
+	compile gradleApi()
+	compile localGroovy()
+
+	compile 'org.eclipse.jgit:org.eclipse.jgit:4.6.0.201612231935-r'
+}
