@@ -90,6 +90,8 @@ New Features
 
 * SOLR-12862: Add log10 Stream Evaluator and allow the pow Stream Evaluator to accept a vector of exponents (Joel Bernstein)
 
+* SOLR-12938: Cluster Status returns results for aliases, instead of throwing exceptions (Gus Heck)
+
 Other Changes
 ----------------------
 

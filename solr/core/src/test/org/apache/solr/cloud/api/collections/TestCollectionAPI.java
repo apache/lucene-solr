@@ -418,13 +418,17 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void clusterStatusAliasTest() throws Exception  {
     try (CloudSolrClient client = createCloudClient(null)) {
+      // create an alias named myalias
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "myalias");
       params.set("collections", DEFAULT_COLLECTION + "," + COLLECTION_NAME);
       SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
+
       client.request(request);
+
+      // request a collection that's part of an alias
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", DEFAULT_COLLECTION);
@@ -432,7 +436,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
-
 
       NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
@@ -448,6 +451,38 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertEquals("conf1", collection.get("configName"));
       List<String> collAlias = (List<String>) collection.get("aliases");
       assertEquals("Aliases not found", Lists.newArrayList("myalias"), collAlias);
+
+      // status request on the alias itself
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+      params.set("collection", "myalias");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      // SOLR-12938 - this should NOT cause an exception
+      rsp = client.request(request);
+
+      cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertNotNull(collections.get(DEFAULT_COLLECTION));
+      assertNotNull(collections.get(COLLECTION_NAME));
+
+      // status request on something neither an alias nor a collection itself
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+      params.set("collection", "notAnAliasOrCollection");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      // SOLR-12938 - this should still cause an exception
+      try {
+        client.request(request);
+        fail("requesting status for 'notAnAliasOrCollection' should cause an exception from CLUSTERSTATUS" );
+      } catch (RuntimeException e) {
+        // success
+      }
     }
   }
 
