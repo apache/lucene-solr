@@ -1,6 +1,5 @@
 apply plugin: 'java'
 
-group = 'org.apache.lucene'
 archivesBaseName = 'core'
 
 dependencies {
