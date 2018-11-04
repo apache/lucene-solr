@@ -1663,7 +1663,7 @@ Fetch the cluster status including collections, shards, replicas, configuration 
 === CLUSTERSTATUS Parameters
 
 `collection`::
-The collection name for which information is requested. If omitted, information on all collections in the cluster will be returned.
+The collection or alias name for which information is requested. If omitted, information on all collections in the cluster will be returned. If an alias is supplied, information on the collections in the alias will be returned.
 
 `shard`::
 The shard(s) for which information is requested. Multiple shard names can be specified as a comma-separated list.

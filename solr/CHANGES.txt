@@ -90,7 +90,7 @@ New Features
 
 * SOLR-12862: Add log10 Stream Evaluator and allow the pow Stream Evaluator to accept a vector of exponents (Joel Bernstein)
 
-* SOLR-12942: Add an option in IndexSizeTrigger to select the split shard method. (ab)
+* SOLR-12938: Cluster Status returns results for aliases, instead of throwing exceptions (Gus Heck)
 
 Other Changes
 ----------------------
@@ -153,7 +153,7 @@ used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
 
 * SOLR-12023: Autoscaling policy engine shuffles replicas needlessly (noble)
 
-* SOLR-12954: fix facet.pivot refinement bugs when using facet.sort=index and facet.mincount>1 (hossman)
+* SOLR-12023: Autoscaling policy engine shuffles replicas needlessly (noble)
 
 Improvements
 ----------------------
@@ -173,8 +173,6 @@ Improvements
   encoding header or file extension. (Andrew Lundgren via David Smiley, Jan Høydahl)
 
 * SOLR-12892: MapWriter to use CharSequence instead of String (noble)
-
-* SOLR-12882: Eliminate excessive lambda allocation in json facets FacetFieldProcessorByHashDV (Tim Underwood)
 
 ==================  7.5.0 ==================
 
@@ -782,6 +780,8 @@ Bug Fixes
 
 * SOLR-12294: update processors loaded from runtime jars fail to load if they are specified
    in an update processor chain (noble)
+
+* SOLR-12358: Autoscaling suggestions fail randomly with sorting (noble)
 
 * SOLR-12358: Autoscaling suggestions fail randomly with sorting (noble)
 
