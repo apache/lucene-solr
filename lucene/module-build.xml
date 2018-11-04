@@ -714,4 +714,16 @@
     </ant>
     <property name="suggest-javadocs.uptodate" value="true"/>
   </target>
+
+  <property name="luke.jar" value="${common.dir}/build/luke/lucene-luke-${version}.jar"/>
+  <target name="check-luke-uptodate" unless="suggest.uptodate">
+    <module-uptodate name="luke" jarfile="${luke.jar}" property="luke.uptodate"/>
+  </target>
+  <target name="jar-luke" unless="luke.uptodate" depends="check-luke-uptodate">
+    <ant dir="${common.dir}/luke" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="luke.uptodate" value="true"/>
+  </target>
+
 </project>

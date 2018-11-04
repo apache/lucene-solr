@@ -1,0 +1,2 @@
+Copyright 2001-2016 (C) MetaStuff, Ltd. and DOM4J contributors. All Rights Reserved.
+
