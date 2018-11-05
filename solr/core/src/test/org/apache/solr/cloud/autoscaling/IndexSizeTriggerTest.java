@@ -46,6 +46,7 @@ import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
@@ -208,6 +209,9 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         } else {
           fail("unexpected shard name " + p.second());
         }
+        Map<String, Object> params = (Map<String, Object>)op.getHints().get(Suggester.Hint.PARAMS);
+        assertNotNull("params are null: " + op, params);
+        assertEquals("splitMethod: " + op, "rewrite", params.get(CommonAdminParams.SPLIT_METHOD));
       }
       assertTrue("shard1 should be split", shard1);
       assertTrue("shard2 should be split", shard2);
@@ -852,6 +856,83 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     ops = (List<TriggerEvent.Op>) events.get(2).event.getProperty(TriggerEvent.REQUESTED_OPS);
     assertNotNull("should contain requestedOps", ops);
     assertEquals("number of ops: " + ops, 3, ops.size());
+  }
+
+  @Test
+  public void testSplitMethodConfig() throws Exception {
+    String collectionName = "testSplitMethod_collection";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
+        "conf", 2, 2).setMaxShardsPerNode(2);
+    create.process(solrClient);
+    CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
+        CloudTestUtils.clusterShape(2, 2, false, true));
+
+    long waitForSeconds = 3 + random().nextInt(5);
+    Map<String, Object> props = createTriggerProps(waitForSeconds);
+    props.put(CommonAdminParams.SPLIT_METHOD, "link");
+    try (IndexSizeTrigger trigger = new IndexSizeTrigger("index_size_trigger6")) {
+      trigger.configure(loader, cloudManager, props);
+      trigger.init();
+      trigger.setProcessor(noFirstRunProcessor);
+      trigger.run();
+
+      for (int i = 0; i < 25; i++) {
+        SolrInputDocument doc = new SolrInputDocument("id", "id-" + i);
+        solrClient.add(collectionName, doc);
+      }
+      solrClient.commit(collectionName);
+
+      AtomicBoolean fired = new AtomicBoolean(false);
+      AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
+      trigger.setProcessor(event -> {
+        if (fired.compareAndSet(false, true)) {
+          eventRef.set(event);
+          long currentTimeNanos = timeSource.getTimeNs();
+          long eventTimeNanos = event.getEventTime();
+          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
+          if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
+            fail("processor was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
+          }
+        } else {
+          fail("IndexSizeTrigger was fired more than once!");
+        }
+        return true;
+      });
+      trigger.run();
+      TriggerEvent ev = eventRef.get();
+      // waitFor delay - should not produce any event yet
+      assertNull("waitFor not elapsed but produced an event", ev);
+      timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
+      trigger.run();
+      ev = eventRef.get();
+      assertNotNull("should have fired an event", ev);
+      List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>) ev.getProperty(TriggerEvent.REQUESTED_OPS);
+      assertNotNull("should contain requestedOps", ops);
+      assertEquals("number of ops: " + ops, 2, ops.size());
+      boolean shard1 = false;
+      boolean shard2 = false;
+      for (TriggerEvent.Op op : ops) {
+        assertEquals(CollectionParams.CollectionAction.SPLITSHARD, op.getAction());
+        Set<Pair<String, String>> hints = (Set<Pair<String, String>>)op.getHints().get(Suggester.Hint.COLL_SHARD);
+        assertNotNull("hints", hints);
+        assertEquals("hints", 1, hints.size());
+        Pair<String, String> p = hints.iterator().next();
+        assertEquals(collectionName, p.first());
+        if (p.second().equals("shard1")) {
+          shard1 = true;
+        } else if (p.second().equals("shard2")) {
+          shard2 = true;
+        } else {
+          fail("unexpected shard name " + p.second());
+        }
+        Map<String, Object> params = (Map<String, Object>)op.getHints().get(Suggester.Hint.PARAMS);
+        assertNotNull("params are null: " + op, params);
+        assertEquals("splitMethod: " + op, "link", params.get(CommonAdminParams.SPLIT_METHOD));
+      }
+      assertTrue("shard1 should be split", shard1);
+      assertTrue("shard2 should be split", shard2);
+    }
+
   }
 
   private Map<String, Object> createTriggerProps(long waitForSeconds) {

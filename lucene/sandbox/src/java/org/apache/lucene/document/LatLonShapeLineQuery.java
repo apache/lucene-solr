@@ -20,55 +20,67 @@ import java.util.Arrays;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed shapes that intersect the specified arbitrary.
- *
+ * Finds all previously indexed shapes that intersect the specified arbitrary {@code Line}.
+ * <p>
+ * Note:
+ * <ul>
+ *    <li>{@code QueryRelation.WITHIN} queries are not yet supported</li>
+ *    <li>Dateline crossing is not yet supported</li>
+ * </ul>
+ * <p>
+ * todo:
+ * <ul>
+ *   <li>Add distance support for buffered queries</li>
+ * </ul>
  * <p>The field must be indexed using
  * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
-final class LatLonShapePolygonQuery extends LatLonShapeQuery {
-  final Polygon[] polygons;
-  final private Polygon2D poly2D;
+final class LatLonShapeLineQuery extends LatLonShapeQuery {
+  final Line[] lines;
+  final private Line2D line2D;
 
-  /**
-   * Creates a query that matches all indexed shapes to the provided polygons
-   */
-  public LatLonShapePolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
+  public LatLonShapeLineQuery(String field, QueryRelation queryRelation, Line... lines) {
     super(field, queryRelation);
-    if (polygons == null) {
-      throw new IllegalArgumentException("polygons must not be null");
+    /** line queries do not support within relations, only intersects and disjoint */
+    if (queryRelation == QueryRelation.WITHIN) {
+      throw new IllegalArgumentException("LatLonShapeLineQuery does not support " + QueryRelation.WITHIN + " queries");
     }
-    if (polygons.length == 0) {
-      throw new IllegalArgumentException("polygons must not be empty");
+
+    if (lines == null) {
+      throw new IllegalArgumentException("lines must not be null");
     }
-    for (int i = 0; i < polygons.length; i++) {
-      if (polygons[i] == null) {
-        throw new IllegalArgumentException("polygon[" + i + "] must not be null");
-      } else if (polygons[i].minLon > polygons[i].maxLon) {
-        throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
+    if (lines.length == 0) {
+      throw new IllegalArgumentException("lines must not be empty");
+    }
+    for (int i = 0; i < lines.length; ++i) {
+      if (lines[i] == null) {
+        throw new IllegalArgumentException("line[" + i + "] must not be null");
+      } else if (lines[i].minLon > lines[i].maxLon) {
+        throw new IllegalArgumentException("LatLonShapeLineQuery does not currently support querying across dateline.");
       }
     }
-    this.polygons = polygons.clone();
-    this.poly2D = Polygon2D.create(polygons);
+    this.lines = lines.clone();
+    this.line2D = Line2D.create(lines);
   }
 
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
-                                            int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+                                                        int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     double minLat = GeoEncodingUtils.decodeLatitude(LatLonShape.decodeTriangleBoxVal(minTriangle, minYOffset));
     double minLon = GeoEncodingUtils.decodeLongitude(LatLonShape.decodeTriangleBoxVal(minTriangle, minXOffset));
     double maxLat = GeoEncodingUtils.decodeLatitude(LatLonShape.decodeTriangleBoxVal(maxTriangle, maxYOffset));
     double maxLon = GeoEncodingUtils.decodeLongitude(LatLonShape.decodeTriangleBoxVal(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return poly2D.relate(minLat, maxLat, minLon, maxLon);
+    return line2D.relate(minLat, maxLat, minLon, maxLon);
   }
 
   @Override
@@ -91,11 +103,11 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
     double clat = GeoEncodingUtils.decodeLatitude(cY);
     double clon = GeoEncodingUtils.decodeLongitude(cX);
 
-    if (queryRelation == QueryRelation.WITHIN) {
-      return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+    if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
+      return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
     }
     // INTERSECTS
-    return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+    return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override
@@ -108,19 +120,19 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Polygon(" + polygons[0].toGeoJSON() + ")");
+    sb.append("Line(" + lines[0].toGeoJSON() + ")");
     return sb.toString();
   }
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(polygons, ((LatLonShapePolygonQuery)o).polygons);
+    return super.equalsTo(o) && Arrays.equals(lines, ((LatLonShapeLineQuery)o).lines);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + Arrays.hashCode(polygons);
+    hash = 31 * hash + Arrays.hashCode(lines);
     return hash;
   }
 }

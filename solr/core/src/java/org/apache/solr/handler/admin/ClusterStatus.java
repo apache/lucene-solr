@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -90,6 +91,17 @@ public class ClusterStatus {
       collectionsMap = clusterState.getCollectionsMap();
     } else  {
       collectionsMap = Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection));
+    }
+
+    boolean isAlias = aliasVsCollections.containsKey(collection);
+    boolean didNotFindCollection = collectionsMap.get(collection) == null;
+
+    if (didNotFindCollection && isAlias) {
+      // In this case this.collection is an alias name not a collection
+      // get all collections and filter out collections not in the alias
+      collectionsMap = clusterState.getCollectionsMap().entrySet().stream()
+          .filter((entry) -> aliasVsCollections.get(collection).contains(entry.getKey()))
+          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     NamedList<Object> collectionProps = new SimpleOrderedMap<>();

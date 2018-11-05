@@ -272,6 +272,7 @@ public class Lang {
         .withFunctionName("getRadius", GetRadiusEvaluator.class)
         .withFunctionName("getSupportPoints", GetSupportPointsEvaluator.class)
         .withFunctionName("pairSort", PairSortEvaluator.class)
+        .withFunctionName("recip", RecipEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)

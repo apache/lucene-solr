@@ -656,43 +656,33 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   public void testCyclicAliasing() throws Exception {
     try {
       ignoreException(".*Field aliases lead to a cycle.*");
-      try {
-        h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","who"));
-        fail("Simple cyclic alising not detected");
-      } catch (SolrException e) {
-        assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
-      }
-      
-      try {
-        h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
-        fail("Cyclic alising not detected");
-      } catch (SolrException e) {
-        assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
-      }
-      
-      try {
-        h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6"));
-      } catch (SolrException e) {
-        assertFalse("This is not cyclic alising", e.getCause().getMessage().contains("Field aliases lead to a cycle"));
-        assertTrue(e.getCause().getMessage().contains("not a valid field name"));
-      }
-      
-      try {
-        h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4"));
-        fail("Cyclic alising not detected");
-      } catch (SolrException e) {
-        assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
-      }
-      
-      try {
-        h.query(req("defType","edismax", "q","who:(Zapp Pig)", "qf","text", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
-        fail("Cyclic alising not detected");
-      } catch (SolrException e) {
-        assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
-      }
+
+      SolrException e = expectThrows(SolrException.class, "Simple cyclic alising not detected",
+          () -> h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","who")));
+      assertCyclicDetectionErrorMessage(e);
+
+      e = expectThrows(SolrException.class, "Cyclic alising not detected",
+          () -> h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")));
+      assertCyclicDetectionErrorMessage(e);
+
+      e = expectThrows(SolrException.class, "Cyclic aliasing not detected", () -> h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6")));
+      assertFalse("This is not cyclic aliasing", e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+      assertTrue("Should throw exception due to invalid field name", e.getCause().getMessage().contains("not a valid field name"));
+
+      e = expectThrows(SolrException.class, "Cyclic alising not detected",
+          () -> h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4")));
+      assertCyclicDetectionErrorMessage(e);
+
+      e = expectThrows(SolrException.class, "Cyclic alising not detected",
+          () -> h.query(req("defType","edismax", "q","who:(Zapp Pig)", "qf","text", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")));
+      assertCyclicDetectionErrorMessage(e);
     } finally {
       resetExceptionIgnores();
     }
+  }
+
+  private void assertCyclicDetectionErrorMessage(SolrException e) {
+    assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
   }
 
   public void testOperatorsWithLiteralColons() {
@@ -2092,8 +2082,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   public void killInfiniteRecursionParse() throws Exception {
     assertJQ(req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}"));
   }
-  
-  /** SOLR-5163 */ 
+
+  /** SOLR-5163 */
   @Test
   public void testValidateQueryFields() throws Exception {
     // field aliasing covered by test - testAliasing
@@ -2103,13 +2093,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     params.add("q", "olive AND other");
     params.add("qf", "subject^3 title");
     params.add("debugQuery", "true");
-    
+
     // test valid field names
     try (SolrQueryRequest req = req(params)) {
       String response = h.query(req);
       response.contains("+DisjunctionMaxQuery((title:olive | (subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))");
     }
-    
+
     // test invalid field name
     params.set("qf", "subject^3 nosuchfield");
     try (SolrQueryRequest req = req(params)) {
@@ -2117,7 +2107,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     } catch (Exception e) {
       Assert.assertEquals("org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name", e.getMessage());
     }
-    
+
   }
 
 }
