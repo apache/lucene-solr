@@ -95,6 +95,11 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class NeuralNetworkModel extends LTRScoringModel {
 
+  /**
+   * layers is part of the LTRScoringModel params map
+   * and therefore here it does not individually
+   * influence the class hashCode, equals, etc.
+   */
   private List<Layer> layers;
 
   protected interface Activation {

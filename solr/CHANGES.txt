@@ -178,6 +178,9 @@ Improvements
 
 * SOLR-12892: MapWriter to use CharSequence instead of String (noble)
 
+* SOLR-12699: Make contrib/ltr LTRScoringModel immutable and cache its hashCode.
+  (Stanislav Livotov, Edward Ribeiro, Christine Poerschke)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
