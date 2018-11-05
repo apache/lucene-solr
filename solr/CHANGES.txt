@@ -156,6 +156,9 @@ used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
 
 * SOLR-12023: Autoscaling policy engine shuffles replicas needlessly (noble)
 
+* SOLR-12243: Edismax missing phrase queries when phrases contain multiterm synonyms
+  (Elizabeth Haubert, Alessandro Benedetti, Uwe Schindler, Steve Rowe)
+
 Improvements
 ----------------------
 
