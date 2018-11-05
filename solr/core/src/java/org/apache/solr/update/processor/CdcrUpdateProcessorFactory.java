@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -37,13 +38,13 @@ public class CdcrUpdateProcessorFactory
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
+  public CdcrZookeeperZkUpdateProcessor getInstance(SolrQueryRequest req,
                                          SolrQueryResponse rsp, UpdateRequestProcessor next) {
     CoreContainer cc = req.getCore().getCoreContainer();
-    if(cc.isZooKeeperAware()) {
-      return new CdcrZookeeperZkUpdateProcessor(req, rsp, cc, next);
+    if(!cc.isZooKeeperAware()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CDCR cannot be instantiated if zookeeper is not enabled");
     }
-    return new CdcrStandAloneStandAloneUpdateProcessor(req, rsp, next);
+    return new CdcrZookeeperZkUpdateProcessor(req, rsp, cc, next);
   }
 
 }
