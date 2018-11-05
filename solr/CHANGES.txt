@@ -110,9 +110,12 @@ Other Changes
 
 * SOLR-12423: Upgrade to Tika 1.19.1 when available (Tim Allison via Erick Erickson)
 
-* SOLR-12793: Move TestCloudJSONFacetJoinDomain amd TestCloudJSONFacetSKG to the facet test package (Varun Thacker)
+* SOLR-12793: Move TestCloudJSONFacetJoinDomain and TestCloudJSONFacetSKG to the facet test package (Varun Thacker)
 
 * SOLR-12861: Add Solr factory for ByteBuffersDirectory.
+
+* SOLR-12746: Simplify the Ref Guide HTML structure and use semantic HTML tags where possible. Adds new template files
+  for Asciidoctor HTML conversion. Building the HTML version now requires the Slim gem. (Cassandra Targett)
 
 Bug Fixes
 ----------------------
@@ -148,7 +151,7 @@ Bug Fixes
 
 * SOLR-7557: Fix parsing of child documents using queryAndStreamResponse (Marvin Bredal Lillehaug/Stian Østerhaug via janhoy)
 
-* SOLR-12875: fix ArrayIndexOutOfBoundsException when unique(field) or uniqueBlock(_root_) is 
+* SOLR-12875: fix ArrayIndexOutOfBoundsException when unique(field) or uniqueBlock(_root_) is
 used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
 
 * SOLR-12023: Autoscaling policy engine shuffles replicas needlessly (noble)
