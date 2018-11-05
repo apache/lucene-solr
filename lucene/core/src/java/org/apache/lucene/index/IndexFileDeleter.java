@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -110,7 +108,7 @@ final class IndexFileDeleter implements Closeable {
 
   /** Change to true to see details of reference counts when
    *  infoStream is enabled */
-  public static boolean VERBOSE_REF_COUNTS = true;
+  public static boolean VERBOSE_REF_COUNTS = false;
 
   private final IndexWriter writer;
 
@@ -566,16 +564,7 @@ final class IndexFileDeleter implements Closeable {
     RefCount rc = getRefCount(fileName);
     if (infoStream.isEnabled("IFD")) {
       if (VERBOSE_REF_COUNTS) {
-        // todo nocommit remove the extra logging
-        String extra = null;
-        if ("_0.fdt".equals(fileName))  {
-          StringWriter stringWriter = new StringWriter();
-          PrintWriter writer = new PrintWriter(stringWriter);
-          new Exception().printStackTrace(writer);
-          extra = stringWriter.toString();
-        }
-
-        infoStream.message("IFD", "  IncRef \"" + fileName + "\": pre-incr count is " + rc.count + (extra != null ? " and stack is " + extra : ""));
+        infoStream.message("IFD", "  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
       }
     }
     rc.IncRef();
@@ -613,15 +602,7 @@ final class IndexFileDeleter implements Closeable {
     RefCount rc = getRefCount(fileName);
     if (infoStream.isEnabled("IFD")) {
       if (VERBOSE_REF_COUNTS) {
-        String extra = null;
-        // todo nocommit remove the extra logging
-        if ("_0.fdt".equals(fileName))  {
-          StringWriter stringWriter = new StringWriter();
-          PrintWriter writer = new PrintWriter(stringWriter);
-          new Exception().printStackTrace(writer);
-          extra = stringWriter.toString();
-        }
-        infoStream.message("IFD", "  DecRef \"" + fileName + "\": pre-decr count is " + rc.count + (extra != null ? " and stack is " + extra : ""));
+        infoStream.message("IFD", "  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);
       }
     }
     if (rc.DecRef() == 0) {

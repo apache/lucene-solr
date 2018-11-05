@@ -130,7 +130,6 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     if (reserveCount == null) reserveCount = new AtomicInteger();
     reserveCount.incrementAndGet();
     savedCommits.put(indexCommitGen, reserveCount);
-    log.debug("Saving commit point for generation {}", indexCommitGen);
   }
 
   /** Release a previously saved commit point */
@@ -139,7 +138,6 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     if (reserveCount == null) return;// this should not happen
     if (reserveCount.decrementAndGet() <= 0) {
       savedCommits.remove(indexCommitGen);
-      log.debug("Releasing commit point for generation {}", indexCommitGen);
     }
   }
 
@@ -191,20 +189,11 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     @Override
     public void delete() {
       Long gen = delegate.getGeneration();
-      log.debug("Checking whether we can delete commit point with generation: {}", gen);
       Long reserve = reserves.get(gen);
-      long currentTime = System.nanoTime();
-      if (reserve != null && currentTime < reserve) {
-        log.debug("Commit point with generation: {} not deleted because its reserve {} is less than current time {}", gen, reserve, currentTime);
-        return;
-      }
-      if (savedCommits.containsKey(gen))  {
-        log.debug("Commit point with generation: {} not deleted because it is saved");
-        return;
-      }
+      if (reserve != null && System.nanoTime() < reserve) return;
+      if (savedCommits.containsKey(gen)) return;
       if (snapshotMgr.isSnapshotted(gen)) return;
       delegate.delete();
-      log.debug("Commit point with generation: {} deleted", gen);
     }
 
     @Override

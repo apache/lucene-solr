@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
@@ -50,7 +48,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import static org.apache.solr.core.Config.assertWarnOrFail;
 
@@ -286,30 +283,7 @@ public class SolrIndexConfig implements MapSerializable {
 
   private MergeScheduler buildMergeScheduler(IndexSchema schema) {
     String msClassName = mergeSchedulerInfo == null ? SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME : mergeSchedulerInfo.className;
-    // todo nocommit -- remove this scheduler instance with proper MDC logging support inside merge scheduler threads
-    MergeScheduler scheduler = new ConcurrentMergeScheduler() {
-      @Override
-      protected synchronized MergeThread getMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
-        MergeThread mergeThread = super.getMergeThread(writer, merge);
-        final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
-        StringBuilder contextString = new StringBuilder();
-        if (submitterContext != null) {
-          Collection<String> values = submitterContext.values();
-
-          for (String value : values) {
-            contextString.append(value + " ");
-          }
-          if (contextString.length() > 1) {
-            contextString.setLength(contextString.length() - 1);
-          }
-        }
-
-        String ctxStr = contextString.toString().replace("/", "//");
-        final String submitterContextStr = ctxStr.length() <= 512 ? ctxStr : ctxStr.substring(0, 512);
-        mergeThread.setName(mergeThread.getName() + "-processing-" + submitterContextStr);
-        return mergeThread;
-      }
-    };
+    MergeScheduler scheduler = schema.getResourceLoader().newInstance(msClassName, MergeScheduler.class);
 
     if (mergeSchedulerInfo != null) {
       // LUCENE-5080: these two setters are removed, so we have to invoke setMaxMergesAndThreads
@@ -337,4 +311,5 @@ public class SolrIndexConfig implements MapSerializable {
 
     return scheduler;
   }
+
 }

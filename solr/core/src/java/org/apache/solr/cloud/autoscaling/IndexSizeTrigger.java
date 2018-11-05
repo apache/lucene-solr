@@ -171,7 +171,7 @@ public class IndexSizeTrigger extends TriggerBase {
     } catch (Exception e) {
       throw new TriggerValidationException(getName(), MAX_OPS_PROP, "invalid value: '" + maxOpsStr + "': " + e.getMessage());
     }
-    String methodStr = (String)properties.getOrDefault(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
+    String methodStr = (String)properties.getOrDefault(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.LINK.toLower());
     splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
     if (splitMethod == null) {
       throw new TriggerValidationException(getName(), SPLIT_METHOD_PROP, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
@@ -286,7 +286,6 @@ public class IndexSizeTrigger extends TriggerBase {
             String registry = SolrCoreMetricManager.createRegistryName(true, coll, sh, replicaName, null);
             String tag = "metrics:" + registry + ":INDEX.sizeInBytes";
             metricTags.put(tag, info);
-            metricTags.put("metrics:" + registry + ":INDEX.sizeDetails", info);
             tag = "metrics:" + registry + ":SEARCHER.searcher.numDocs";
             metricTags.put(tag, info);
           });
@@ -462,14 +461,6 @@ public class IndexSizeTrigger extends TriggerBase {
 
     if (ops.isEmpty()) {
       return;
-    }
-    try {
-      ClusterState cs = cloudManager.getClusterStateProvider().getClusterState();
-      cs.forEachCollection(coll -> {
-        log.debug("##== Collection: {}", coll);
-      });
-    } catch (IOException e) {
-      throw new RuntimeException("oops: ", e);
     }
     if (processor.process(new IndexSizeEvent(getName(), eventTime.get(), ops, aboveSize, belowSize))) {
       // update last event times

@@ -1391,7 +1391,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     if (dropCmd) {
-      // TODO: do we need to add anytprocehing to the response?
+      // TODO: do we need to add anything to the response?
       return;
     }
 

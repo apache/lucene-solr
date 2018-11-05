@@ -339,7 +339,6 @@ public abstract class FSDirectory extends BaseDirectory {
     }
     privateDeleteFile(name, false);
     maybeDeletePendingFiles();
-    System.out.println("Deleted file: " + name);
   }
 
   /** Try to delete any pending files that we had previously tried to delete but failed

@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -44,7 +45,6 @@ import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
@@ -54,7 +54,6 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -95,7 +94,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean() || true) {
+    if (random().nextBoolean() && false) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -126,7 +125,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     } else {
       cluster.deleteAllCollections();
     }
-    cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig(new Policy(), null, null, null, 0);
+    cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(autoScalingConfig), -1);
     cloudManager.getTimeSource().sleep(5000);
     listenerEvents.clear();
     listenerCreated = new CountDownLatch(1);
@@ -211,7 +211,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         }
         Map<String, Object> params = (Map<String, Object>)op.getHints().get(Suggester.Hint.PARAMS);
         assertNotNull("params are null: " + op, params);
-        assertEquals("splitMethod: " + op, "rewrite", params.get(CommonAdminParams.SPLIT_METHOD));
+        assertEquals("splitMethod: " + op, "link", params.get(CommonAdminParams.SPLIT_METHOD));
       }
       assertTrue("shard1 should be split", shard1);
       assertTrue("shard2 should be split", shard2);
@@ -317,7 +317,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
 
-    boolean await = finished.await(60000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     CloudTestUtils.waitForState(cloudManager, collectionName, 20, TimeUnit.SECONDS, CloudTestUtils.clusterShape(6, 2, true, true));
     assertEquals(1, listenerEvents.size());
@@ -506,7 +506,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     }
     assertTrue("maxSize should be non-zero", maxSize > 0);
 
-    int aboveBytes = maxSize * 9 / 10;
+    int aboveBytes = maxSize * 8 / 10;
 
     // need to wait for recovery after splitting
     long waitForSeconds = 10 + random().nextInt(5);

@@ -280,8 +280,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
         break;
       }
     }
-
-    System.out.println(Arrays.toString(files) + " size=" + size + " on path: " + directory.toString());
     
     return size;
   }
