@@ -22,6 +22,7 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Phaser;
 
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public class SolrCmdDistributor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final List<Error> allErrors = new ArrayList<>();
+  private final List<Error> allErrors = Collections.synchronizedList(new ArrayList<>());
   private Http2SolrClient client;
   private Phaser pendingTasksPhaser = new Phaser(1);
   private int retryPause = 500;
