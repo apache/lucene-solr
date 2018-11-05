@@ -153,7 +153,8 @@ used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
 
 * SOLR-12023: Autoscaling policy engine shuffles replicas needlessly (noble)
 
-* SOLR-12023: Autoscaling policy engine shuffles replicas needlessly (noble)
+* SOLR-12243: Edismax missing phrase queries when phrases contain multiterm synonyms
+  (Elizabeth Haubert, Alessandro Benedetti, Uwe Schindler, Steve Rowe)
 
 Improvements
 ----------------------
@@ -780,8 +781,6 @@ Bug Fixes
 
 * SOLR-12294: update processors loaded from runtime jars fail to load if they are specified
    in an update processor chain (noble)
-
-* SOLR-12358: Autoscaling suggestions fail randomly with sorting (noble)
 
 * SOLR-12358: Autoscaling suggestions fail randomly with sorting (noble)
 
