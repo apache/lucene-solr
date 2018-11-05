@@ -177,7 +177,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
-      assertTrue(e.getMessage().contains("Timeout"));
+      assertTrue(e.getMessage().contains("timeout") || e.getMessage().contains("Timeout"));
     }
 
   }

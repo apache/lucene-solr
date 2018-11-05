@@ -664,6 +664,9 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
+    /**
+     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited by 4
+     */
     public Builder maxConnectionsPerHost(int max) {
       this.maxConnectionsPerHost = max;
       return this;
