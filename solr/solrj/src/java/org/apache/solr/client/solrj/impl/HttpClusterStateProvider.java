@@ -96,14 +96,13 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
         ClusterState cs = fetchClusterState(client, collection, null);
         return cs.getCollectionRef(collection);
       } catch (SolrServerException | RemoteSolrException | IOException e) {
-        if (e.getMessage().contains(collection + " not found")) {
-          // Cluster state for the given collection was not found.
-          // Lets fetch/update our aliases:
-          getAliases(true);
-          return null;
-        }
         log.warn("Attempt to fetch cluster state from " +
             Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+      } catch (NotACollectionException e) {
+        // Cluster state for the given collection was not found, could be an alias.
+        // Lets fetch/update our aliases:
+        getAliases(true);
+        return null;
       }
     }
     throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
@@ -114,7 +113,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  private ClusterState fetchClusterState(SolrClient client, String collection, Map<String, Object> clusterProperties) throws SolrServerException, IOException {
+  private ClusterState fetchClusterState(SolrClient client, String collection, Map<String, Object> clusterProperties) throws SolrServerException, IOException, NotACollectionException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (collection != null) {
       params.set("collection", collection);
@@ -131,8 +130,12 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
       collectionsMap = ((NamedList)cluster.get("collections")).asMap(10);
     }
     int znodeVersion;
-    if (collection != null) {
-      znodeVersion =  (int)((Map<String, Object>)(collectionsMap).get(collection)).get("znodeVersion");
+    Map<String, Object> collFromStatus = (Map<String, Object>) (collectionsMap).get(collection);
+    if (collection != null && collFromStatus == null) {
+      throw new NotACollectionException(); // probably an alias
+    }
+    if (collection != null) { // can be null if alias
+      znodeVersion =  (int) collFromStatus.get("znodeVersion");
     } else {
       znodeVersion = -1;
     }
@@ -253,6 +256,10 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
       } catch (SolrServerException | RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from " +
             Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+      } catch (NotACollectionException e) {
+        // Cluster state for the given collection was not found, could be an alias.
+        // Lets fetch/update our aliases:
+        getAliases(true);
       }
     }
     throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
@@ -264,7 +271,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public Map<String, Object> getClusterProperties() {
-    for (String nodeName: liveNodes) {
+    for (String nodeName : liveNodes) {
       try (HttpSolrClient client = new HttpSolrClient.Builder().
           withBaseSolrUrl(Utils.getBaseUrlForNodeName(nodeName, urlScheme)).
           withHttpClient(httpClient).build()) {
@@ -274,9 +281,11 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
       } catch (SolrServerException | RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from " +
             Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+      } catch (NotACollectionException e) {
+        // should be an an alias, don't care
       }
     }
-    throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
+    throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes + ". However, "
         + "succeeded in obtaining the cluster state from none of them."
         + "If you think your Solr cluster is up and is accessible,"
         + " you could try re-creating a new CloudSolrClient using working"
@@ -309,4 +318,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
     this.cacheTimeout = cacheTimeout;
   }
 
+  // This exception is not meant to escape this class it should be caught and wrapped.
+  private class NotACollectionException extends Exception {
+  }
 }

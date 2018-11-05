@@ -271,8 +271,8 @@ abstract class LatLonShapeQuery extends Query {
     return Relation.CELL_CROSSES_QUERY;
   }
 
-  /** utility class for implementing constant score logic specifig to INTERSECT, WITHIN, and DISJOINT */
-  protected static abstract class RelationScorerSupplier extends ScorerSupplier {
+  /** utility class for implementing constant score logic specific to INTERSECT, WITHIN, and DISJOINT */
+  private static abstract class RelationScorerSupplier extends ScorerSupplier {
     PointValues values;
     IntersectVisitor visitor;
     long cost = -1;

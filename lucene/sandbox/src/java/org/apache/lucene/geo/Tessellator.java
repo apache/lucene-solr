@@ -124,15 +124,11 @@ final public class Tessellator {
     // Link points into the circular doubly-linked list in the specified winding order
     if (windingOrder == polygon.getWindingOrder()) {
       for (int i = 0; i < polygon.numPoints(); ++i) {
-        if (lastNode == null || filter(polygon, i, lastNode) == false) {
-          lastNode = insertNode(polygon, startIndex++, i, lastNode);
-        }
+        lastNode = insertNode(polygon, startIndex++, i, lastNode);
       }
     } else {
       for (int i = polygon.numPoints() - 1; i >= 0; --i) {
-        if (lastNode == null || filter(polygon, i, lastNode) == false) {
-          lastNode = insertNode(polygon, startIndex++, i, lastNode);
-        }
+        lastNode = insertNode(polygon, startIndex++, i, lastNode);
       }
     }
     // if first and last node are the same then remove the end node and set lastNode to the start
@@ -142,7 +138,7 @@ final public class Tessellator {
     }
 
     // Return the last node in the Doubly-Linked List
-    return lastNode;
+    return filterPoints(lastNode, null);
   }
 
   /** Links every hole into the outer loop, producing a single-ring polygon without holes. **/
@@ -321,7 +317,10 @@ final public class Tessellator {
               continue earcut;
             case SPLIT:
               // as a last resort, try splitting the remaining polygon into two
-              splitEarcut(currEar, tessellation, mortonOptimized);
+              if (splitEarcut(currEar, tessellation, mortonOptimized) == false) {
+                //we could not process all points. Tessellation failed
+                tessellation.clear();
+              }
               break;
           }
           break;
@@ -422,6 +421,7 @@ final public class Tessellator {
 
       // a self-intersection where edge (v[i-1],v[i]) intersects (v[i+1],v[i+2])
       if (isVertexEquals(a, b) == false
+          && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
           && linesIntersect(a.getX(), a.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), b.getX(), b.getY())
           && isLocallyInside(a, b) && isLocallyInside(b, a)) {
         // Return the triangulated vertices to the tessellation
@@ -438,8 +438,8 @@ final public class Tessellator {
     return node;
   }
 
-  /** Attempt to split a polygon and independently triangulate each side **/
-  private static final void splitEarcut(final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
+  /** Attempt to split a polygon and independently triangulate each side. Return true if the polygon was splitted **/
+  private static final boolean splitEarcut(final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
     // Search for a valid diagonal that divides the polygon into two.
     Node searchNode = start;
     Node nextNode;
@@ -454,15 +454,20 @@ final public class Tessellator {
           searchNode = filterPoints(searchNode, searchNode.next);
           splitNode  = filterPoints(splitNode, splitNode.next);
           // Attempt to earcut both of the resulting polygons
+          if (mortonIndexed) {
+            sortByMortonWithReset(searchNode);
+            sortByMortonWithReset(splitNode);
+          }
           earcutLinkedList(searchNode, tessellation, State.INIT, mortonIndexed);
           earcutLinkedList(splitNode,  tessellation, State.INIT, mortonIndexed);
           // Finish the iterative search
-          return;
+          return true;
         }
         diagonal = diagonal.next;
       }
       searchNode = searchNode.next;
     } while (searchNode != start);
+    return false;
   }
 
   /** Links two polygon vertices using a bridge. **/
@@ -538,7 +543,9 @@ final public class Tessellator {
       if(node.getX() != x0 && node.getY() != y0 && nextNode.getX() != x0
           && nextNode.getY() != y0 && node.getX() != x1 && node.getY() != y1
           && nextNode.getX() != x1 && nextNode.getY() != y1) {
-        return linesIntersect(node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), x0, y0, x1, y1);
+        if (linesIntersect(node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), x0, y0, x1, y1)) {
+          return true;
+        }
       }
       node = nextNode;
     } while (node != start);
@@ -551,6 +558,17 @@ final public class Tessellator {
                                              final double bX0, final double bY0, final double bX1, final double bY1) {
     return (area(aX0, aY0, aX1, aY1, bX0, bY0) > 0) != (area(aX0, aY0, aX1, aY1, bX1, bY1) > 0)
         && (area(bX0, bY0, bX1, bY1, aX0, aY0) > 0) != (area(bX0, bY0, bX1, bY1, aX1, aY1) > 0);
+  }
+
+  /** Interlinks polygon nodes in Z-Order. It reset the values on the z values**/
+  private static final void sortByMortonWithReset(Node start) {
+    Node next = start;
+    do {
+      next.previousZ = next.previous;
+      next.nextZ = next.next;
+      next = next.next;
+    } while (next != start);
+    sortByMorton(start);
   }
 
   /** Interlinks polygon nodes in Z-Order. **/
@@ -617,19 +635,6 @@ final public class Tessellator {
       tail.nextZ = null;
       inSize *= 2;
     } while (numMerges > 1);
-  }
-
-  /** utility method to filter a single duplicate or colinear triangle */
-  private static boolean filter(final Polygon polygon, final int i, final Node node) {
-    final double x = polygon.getPolyLon(i);
-    final double y = polygon.getPolyLat(i);
-    final boolean equal = (x == node.getX() && y == node.getY());
-    if (equal == true) {
-      return true;
-    } else if (node.previous == node || node.previous.previous == node) {
-      return false;
-    }
-    return area(node.previous.previous.getX(), node.previous.previous.getY(), node.previous.getX(), node.previous.getY(), x, y) == 0d;
   }
 
   /** Eliminate colinear/duplicate points from the doubly linked list */

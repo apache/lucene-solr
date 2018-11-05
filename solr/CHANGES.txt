@@ -199,6 +199,8 @@ New Features
 
 * SOLR-12862: Add log10 Stream Evaluator and allow the pow Stream Evaluator to accept a vector of exponents (Joel Bernstein)
 
+* SOLR-12938: Cluster Status returns results for aliases, instead of throwing exceptions (Gus Heck)
+
 Other Changes
 ----------------------
 
@@ -257,6 +259,8 @@ Bug Fixes
 
 * SOLR-12875: fix ArrayIndexOutOfBoundsException when unique(field) or uniqueBlock(_root_) is 
 used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
+
+* SOLR-12023: Autoscaling policy engine shuffles replicas needlessly (noble)
 
 Improvements
 ----------------------
@@ -546,12 +550,13 @@ Optimizations
 * SOLR-11654: Time Routed Alias will now route documents to the ideal shard of a collection, thus avoiding a hop.
   Usually documents were already routed well but not always.  (Gus Heck, David Smiley)
 
+* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery.
+  (Cao Manh Dat)
+
 * SOLR-11598: The export handler does not limit users to 4 sort fields and is now unlimited. However the speed at
   which we can export is directly proportional to the number of sort fields specified. This change also allows streaming
   expressions to group by on more than 4 fields. (Aroop Ganguly, Amrit Sarkar, Varun Thacker)
 
-* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery.
-  (Cao Manh Dat)
 
 * SOLR-12509: Improve SplitShardCmd performance and reliability. A new method of splitting has been
   introduced (splitMethod=link) which uses hard-linking of index files when possible, resulting in
@@ -600,8 +605,6 @@ Other Changes
 * SOLR-10984: Clean up web.xml, removing old redirects and outdated comments (Varun Thacker, janhoy)
 
 * SOLR-12617: Remove Commons BeanUtils as a dependency (Varun Thacker)
-
-* SOLR-11008: Use a lighter config for MetricsHandlerTest and ensure the core is up before the test starts (Varun Thacker)
 
 * SOLR-11766: Move Streaming Expressions section in Ref Guide to be a top-level section. (Cassandra Targett)
 
@@ -712,6 +715,11 @@ New Features
 * SOLR-9480: A new 'relatedness()' aggregate function for JSON Faceting to enable building Semantic
   Knowledge Graphs. (Trey Grainger, hossman)
 
+* SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log.
+  (Shawn Heisey, Remko Popma, Varun Thacker)
+
+* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
+
 * SOLR-12378: Support missing versionField on indexed docs in DocBasedVersionConstraintsURP.
   (Oliver Bates, Michael Braun via Mark Miller)
 
@@ -727,11 +735,6 @@ New Features
 
 * SOLR-12328: JSON Facet API: Domain change with graph query.
   (Daniel Meehl, Kevin Watters, yonik)
-
-* SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log.
-  (Shawn Heisey, Remko Popma, Varun Thacker)
-
-* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
 
 * SOLR-11779, SOLR-12438: Basic long-term collection of aggregated metrics. Historical data is
   maintained as multi-resolution time series using round-robin databases in the '.system'
@@ -792,6 +795,11 @@ Bug Fixes
   memory when multiple collection property changes are done in a short period of time. (Tomás Fernández Löbbe)
 
 * SOLR-11929: UpdateLog metrics are not initialized on core reload.  (ab, Steve Rowe)
+
+* SOLR-11882: SolrMetric registries retained references to SolrCores when closed. A
+  change of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics
+  method signatures was required to fix it. Third party components may continue to use the old API
+  but should be updated to avoid this bug (Eros Taborelli, Erick Erickson, ab)
 
 * SOLR-12199: TestReplicationHandler.doTestRepeater(): TEST_PORT interpolation failure:
   Server refused connection at: http://127.0.0.1:TEST_PORT/solr  (Mikhail Khludnev, Dawid Weiss, Steve Rowe)
@@ -877,13 +885,16 @@ Bug Fixes
 * SOLR-3567: Spellcheck custom parameters not being passed through due to wrong prefix creation.
   (Josh Lucas via shalin)
 
-* SOLR-12358: Autoscaling suggestions fail randomly with sorting (noble)
-
 * SOLR-12294: update processors loaded from runtime jars fail to load if they are specified
-  in an update processor chain (noble)
+   in an update processor chain (noble)
+
+* SOLR-12358: Autoscaling suggestions fail randomly with sorting (noble)
 
 * SOLR-12314: Use http timeout's defined in solr.xml for creating ConcurrentUpdateSolrClient during
   indexing requests between leader and replica ( Mark Miller, Varun Thacker)
+
+* SOLR-12290: Do not close any servlet streams and improve our servlet stream closing prevention code for users
+  and devs. (Mark Miller)
 
 * SOLR-12374: SnapShooter.getIndexCommit can forget to decref the searcher; though it's not clear in practice when.
   (David Smiley)
@@ -932,7 +943,7 @@ Optimizations
 * SOLR-11880: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor by distributed
   search and update operations. (Varun Thacker, shalin)
 
-* SOLR-12375: Optimize Lucene ScoreMode use:
+* SOLR-12375: Optimize Lucene needsScore / ScoreMode use:
   A non-cached filter query could be told incorrectly that scores were needed.
   The /export (ExportQParserPlugin) would declare incorrectly that scores are needed.
   Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
@@ -1024,8 +1035,6 @@ Other Changes
 
 * SOLR-12435: Fix bin/solr help and ref guide text to describe ZK_HOST in solr.in.sh/solr.in.cmd
   as an alternative to -z cmdline param. (Steve Rowe)
-
-* SOLR-12428: Solr LTR jar now included in _default configset's solrconfig.xml (Ishan Chattopadhyaya)
 
 ==================  7.3.1 ==================
 

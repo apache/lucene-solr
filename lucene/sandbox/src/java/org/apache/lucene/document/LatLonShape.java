@@ -84,7 +84,6 @@ public class LatLonShape {
 
     // create "flat" triangles
     double aLat, bLat, aLon, bLon, temp;
-    double size;
     for (int i = 0, j = 1; j < numPoints; ++i, ++j) {
       aLat = line.getLat(i);
       aLon = line.getLon(i);
@@ -107,25 +106,32 @@ public class LatLonShape {
           bLon = temp;
         }
       }
-      size = StrictMath.sqrt(StrictMath.pow(aLat - bLat, 2d) + StrictMath.pow(aLon - bLon, 2d));
-      fields.add(new LatLonTriangle(fieldName, aLat, aLon, bLat, bLon, aLat, aLon, size));
+      fields.add(new LatLonTriangle(fieldName, aLat, aLon, bLat, bLon, aLat, aLon));
     }
     return fields.toArray(new Field[fields.size()]);
   }
 
   /** create indexable fields for point geometry */
   public static Field[] createIndexableFields(String fieldName, double lat, double lon) {
-    return new Field[] {new LatLonTriangle(fieldName, lat, lon, lat, lon, lat, lon, 0d)};
+    return new Field[] {new LatLonTriangle(fieldName, lat, lon, lat, lon, lat, lon)};
   }
 
   /** create a query to find all polygons that intersect a defined bounding box
-   *  note: does not currently support dateline crossing boxes
-   * todo split dateline crossing boxes into two queries like {@link LatLonPoint#newBoxQuery}
    **/
   public static Query newBoxQuery(String field, QueryRelation queryRelation, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
     return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
 
+  /** create a query to find all polygons that intersect a provided linestring (or array of linestrings)
+   *  note: does not support dateline crossing
+   **/
+  public static Query newLineQuery(String field, QueryRelation queryRelation, Line... lines) {
+    return new LatLonShapeLineQuery(field, queryRelation, lines);
+  }
+
+  /** create a query to find all polygons that intersect a provided polygon (or array of polygons)
+   *  note: does not support dateline crossing
+   **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
     return new LatLonShapePolygonQuery(field, queryRelation, polygons);
   }
@@ -135,7 +141,7 @@ public class LatLonShape {
    */
   private static class LatLonTriangle extends Field {
 
-    LatLonTriangle(String name, double aLat, double aLon, double bLat, double bLon, double cLat, double cLon, double size) {
+    LatLonTriangle(String name, double aLat, double aLon, double bLat, double bLon, double cLat, double cLon) {
       super(name, TYPE);
       setTriangleValue(encodeLongitude(aLon), encodeLatitude(aLat), encodeLongitude(bLon), encodeLatitude(bLat), encodeLongitude(cLon), encodeLatitude(cLat));
     }
@@ -178,6 +184,9 @@ public class LatLonShape {
     }
   }
 
+  /** encodes bounding box value of triangle. Note the encoding uses 64bit encoding, but the bounding box only needs
+   * 32bits, so we pad w/ zeros to take advantage of prefix compression.
+   */
   public static void encodeTriangleBoxVal(int encodedVal, byte[] bytes, int offset) {
     long val = (long)(encodedVal ^ 0x80000000);
     val &= 0x00000000FFFFFFFFL;
@@ -185,6 +194,7 @@ public class LatLonShape {
     NumericUtils.longToSortableBytes(val, bytes, offset);
   }
 
+  /** counterpart to {@link #encodeTriangleBoxVal}; decodes encoded triangle bounding box values */
   public static int decodeTriangleBoxVal(byte[] encoded, int offset) {
     long val = NumericUtils.sortableBytesToLong(encoded, offset);
     int result = (int)(val & 0x00000000FFFFFFFF);

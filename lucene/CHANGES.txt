@@ -215,6 +215,17 @@ Bug fixes:
 * LUCENE-8524: Add the Hangul Letter Araea (interpunct) as a separator in Nori's tokenizer.
   This change also removes empty terms and trim surface form in Nori's Korean dictionary. (Trey Jones, Jim Ferenczi)
 
+* LUCENE-8550: Fix filtering of coplanar points when creating linked list on
+  polygon tesselator. (Ignacio Vera)
+
+* LUCENE-8549: Polygon tessellator throws an error if some parts of the shape
+   could not be processed. (Ignacio Vera)
+
+* LUCENE-8540: Better handling of min/max values for Geo3d encoding. (Ignacio Vera)
+
+* LUCENE-8534: Fix incorrect computation for triangles intersecting polygon edges in
+  shape tessellation. (Ignacio Vera)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
@@ -229,6 +240,11 @@ New Features
 * LUCENE-8462: Adds an Arabic snowball stemmer based on
   https://github.com/snowballstem/snowball/blob/master/algorithms/arabic.sbl 
   (Ryadh Dahimene via Jim Ferenczi)
+
+* LUCENE-8554: Add new LatLonShapeLineQuery that queries indexed LatLonShape fields
+  by arbitrary lines. (Nick Knize)
+
+* LUCENE-8555: Add dateline crossing support to LatLonShapeBoundingBoxQuery. (Nick Knize)
 
 Improvements:
 
