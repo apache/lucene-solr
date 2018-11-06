@@ -35,6 +35,8 @@ import org.apache.lucene.analysis.util.MultiTermAwareComponent;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class PersianCharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
 

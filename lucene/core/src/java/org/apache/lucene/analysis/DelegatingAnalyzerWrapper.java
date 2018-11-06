@@ -35,6 +35,8 @@ import java.io.Reader;
  * which is returned by {@link #getReuseStrategy()}. This strategy is used when
  * delegating. If you wrap this analyzer again and reuse this strategy, no
  * delegation is done and the given fallback is used.
+ *
+ * @since 4.10.0
  */
 public abstract class DelegatingAnalyzerWrapper extends AnalyzerWrapper {
   

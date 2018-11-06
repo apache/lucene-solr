@@ -34,6 +34,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.ArabicNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class ArabicNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 

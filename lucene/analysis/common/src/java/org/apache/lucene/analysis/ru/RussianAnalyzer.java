@@ -40,6 +40,8 @@ import org.apache.lucene.util.IOUtils;
  * Supports an external list of stopwords (words that
  * will not be indexed at all).
  * A default set of stopwords is used unless an alternative list is specified.
+ *
+ * @since 3.1
  */
 public final class RussianAnalyzer extends StopwordAnalyzerBase {
     

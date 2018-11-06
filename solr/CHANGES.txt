@@ -119,6 +119,8 @@ Other Changes
 * SOLR-12746: Simplify the Ref Guide HTML structure and use semantic HTML tags where possible. Adds new template files
   for Asciidoctor HTML conversion. Building the HTML version now requires the Slim gem. (Cassandra Targett)
 
+* SOLR-12956: Add Javadoc @since tag to Analyzer component classes (Alexandre Rafalovitch)
+
 Bug Fixes
 ----------------------
 

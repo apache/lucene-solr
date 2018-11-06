@@ -47,6 +47,8 @@ import org.apache.lucene.util.IOUtils;
  * A default set of stopwords is used unless an alternative list is specified, but the
  * exclusion list is empty by default.
  * </p>
+ *
+ * @since 3.1
  */
 // TODO: extend StopwordAnalyzerBase
 public final class DutchAnalyzer extends Analyzer {

@@ -32,6 +32,8 @@ import org.apache.lucene.analysis.WordlistLoader;
 /**
  * Filters {@link StandardTokenizer} with {@link LowerCaseFilter} and
  * {@link StopFilter}, using a configurable list of stop words.
+ *
+ * @since 3.1
  */
 public final class StandardAnalyzer extends StopwordAnalyzerBase {
 

@@ -32,6 +32,8 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
 
 /** 
  * Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
+ *
+ * @since 3.1
  */
 public final class StopAnalyzer extends StopwordAnalyzerBase {
 

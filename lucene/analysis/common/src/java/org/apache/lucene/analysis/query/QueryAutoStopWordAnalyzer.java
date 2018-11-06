@@ -40,6 +40,8 @@ import org.apache.lucene.util.CharsRefBuilder;
  * a 38 million doc index which had a term in around 50% of docs and was causing TermQueries for 
  * this term to take 2 seconds.
  * </p>
+ *
+ * @since 3.1
  */
 public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
 
