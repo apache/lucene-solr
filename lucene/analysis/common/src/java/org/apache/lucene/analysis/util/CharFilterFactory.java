@@ -26,6 +26,8 @@ import org.apache.lucene.analysis.CharFilter;
 /**
  * Abstract parent class for analysis factories that create {@link CharFilter}
  * instances.
+ *
+ * @since 3.1
  */
 public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 

@@ -28,6 +28,8 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
 /**
  * An analyzer that uses a tokenizer and a list of token filters to
  * create a TokenStream.
+ *
+ * @since 3.1
  */
 public final class TokenizerChain extends SolrAnalyzer {
   private static final CharFilterFactory[] EMPTY_CHAR_FITLERS = new CharFilterFactory[0];

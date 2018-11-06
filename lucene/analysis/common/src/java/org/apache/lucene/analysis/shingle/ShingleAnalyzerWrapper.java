@@ -26,6 +26,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
  * <p>
  * A shingle is another name for a token based n-gram.
  * </p>
+ *
+ * @since 3.1
  */
 public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
 

@@ -66,6 +66,8 @@ import org.apache.lucene.util.AttributeFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
+ *
+ * @since 3.1
  */
 public class PathHierarchyTokenizerFactory extends TokenizerFactory {
   private final char delimiter;

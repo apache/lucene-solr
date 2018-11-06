@@ -31,6 +31,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   <li>tokenSeparator - how tokens should be joined together in the shingle (default: space)
  *   <li>fillerToken - what should be added in place of stop words (default: _ )
  * </ul>
+ *
+ * @since 7.4.0
  */
 public class FixedShingleFilterFactory extends TokenFilterFactory {
 

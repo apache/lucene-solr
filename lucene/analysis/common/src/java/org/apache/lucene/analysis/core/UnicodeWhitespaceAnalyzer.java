@@ -21,6 +21,8 @@ import org.apache.lucene.analysis.Analyzer;
 
 /**
  * An Analyzer that uses {@link UnicodeWhitespaceTokenizer}.
+ *
+ * @since 5.4.0
  **/
 public final class UnicodeWhitespaceAnalyzer extends Analyzer {
   

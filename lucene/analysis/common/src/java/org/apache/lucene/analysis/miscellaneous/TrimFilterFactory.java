@@ -36,6 +36,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @see TrimFilter
+ *
+ * @since 3.1
  */
 public class TrimFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   

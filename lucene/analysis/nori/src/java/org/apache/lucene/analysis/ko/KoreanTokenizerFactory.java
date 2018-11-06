@@ -58,6 +58,8 @@ import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
  *   <li>outputUnknownUnigrams: If true outputs unigrams for unknown words.</li>
  * </ul>
  * @lucene.experimental
+ *
+ * @since 7.4.0
  */
 public class KoreanTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
   private static final String USER_DICT_PATH = "userDictionary";

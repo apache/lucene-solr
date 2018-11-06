@@ -30,6 +30,8 @@ import org.apache.lucene.util.AttributeFactory;
  * SmartChinese stoplist with a StopFilterFactory via:
  * <code>words="org/apache/lucene/analysis/cn/smart/stopwords.txt"</code>
  * @lucene.experimental
+ *
+ * @since 4.10.0
  */
 public final class HMMChineseTokenizerFactory extends TokenizerFactory {
 

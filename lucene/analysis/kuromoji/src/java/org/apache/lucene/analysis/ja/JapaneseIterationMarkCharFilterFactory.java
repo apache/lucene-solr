@@ -35,6 +35,8 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.JapaneseTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 4.0.0
  */
 public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
 

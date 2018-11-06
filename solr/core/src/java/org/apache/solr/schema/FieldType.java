@@ -80,7 +80,7 @@ import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MAT
 /**
  * Base class for all field types used by an index schema.
  *
- *
+ * @since 3.1
  */
 public abstract class FieldType extends FieldProperties {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
