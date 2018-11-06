@@ -387,13 +387,55 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   }
 
+  /**
+   * This forces the use of the top level field cache for String fields.
+   * This is VERY fast at query time but slower to warm and causes insanity.
+   */
+  public static LeafReader getTopFieldCacheReader(SolrIndexSearcher searcher, String collapseField) {
+    return UninvertingReader.wrap(
+        new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField),
+        Collections.singletonMap(collapseField, UninvertingReader.Type.SORTED)::get);
+  }
+
   private static class ReaderWrapper extends FilterLeafReader {
 
-    private String field;
+    private final FieldInfos fieldInfos;
 
-    public ReaderWrapper(LeafReader leafReader, String field) {
+    ReaderWrapper(LeafReader leafReader, String field) {
       super(leafReader);
-      this.field = field;
+
+      // TODO can we just do "field" and not bother with the other fields?
+      List<FieldInfo> newInfos = new ArrayList<>(in.getFieldInfos().size());
+      for (FieldInfo fieldInfo : in.getFieldInfos()) {
+        if (fieldInfo.name.equals(field)) {
+          FieldInfo f = new FieldInfo(fieldInfo.name,
+              fieldInfo.number,
+              fieldInfo.hasVectors(),
+              fieldInfo.hasNorms(),
+              fieldInfo.hasPayloads(),
+              fieldInfo.getIndexOptions(),
+              DocValuesType.NONE,
+              fieldInfo.getDocValuesGen(),
+              fieldInfo.attributes(),
+              fieldInfo.getPointDataDimensionCount(),
+              fieldInfo.getPointIndexDimensionCount(),
+              fieldInfo.getPointNumBytes(),
+              fieldInfo.isSoftDeletesField());
+          newInfos.add(f);
+        } else {
+          newInfos.add(fieldInfo);
+        }
+      }
+      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
+      this.fieldInfos = infos;
+    }
+
+    public FieldInfos getFieldInfos() {
+      return fieldInfos;
+    }
+
+    public SortedDocValues getSortedDocValues(String field) {
+      return null;
     }
 
     // NOTE: delegating the caches is wrong here as we are altering the content
@@ -409,37 +451,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     public CacheHelper getReaderCacheHelper() {
       return in.getReaderCacheHelper();
-    }
-
-    public SortedDocValues getSortedDocValues(String field) {
-      return null;
-    }
-
-    public FieldInfos getFieldInfos() {
-      Iterator<FieldInfo> it = in.getFieldInfos().iterator();
-      List<FieldInfo> newInfos = new ArrayList();
-      while(it.hasNext()) {
-        FieldInfo fieldInfo = it.next();
-
-        if(fieldInfo.name.equals(field)) {
-          FieldInfo f = new FieldInfo(fieldInfo.name,
-                                      fieldInfo.number,
-                                      fieldInfo.hasVectors(),
-                                      fieldInfo.hasNorms(),
-                                      fieldInfo.hasPayloads(),
-                                      fieldInfo.getIndexOptions(),
-                                      DocValuesType.NONE,
-                                      fieldInfo.getDocValuesGen(),
-                                      fieldInfo.attributes(),
-                                      0, 0, 0, fieldInfo.isSoftDeletesField());
-          newInfos.add(f);
-
-        } else {
-          newInfos.add(fieldInfo);
-        }
-      }
-      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
-      return infos;
     }
   }
 
@@ -1255,14 +1266,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if(collapseFieldType instanceof StrField) {
         if(HINT_TOP_FC.equals(hint)) {
-
-          /*
-          * This hint forces the use of the top level field cache for String fields.
-          * This is VERY fast at query time but slower to warm and causes insanity.
-          */
-          @SuppressWarnings("resource") final LeafReader uninvertingReader = UninvertingReader.wrap(
-                  new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField),
-                  Collections.singletonMap(collapseField, UninvertingReader.Type.SORTED)::get);
+          @SuppressWarnings("resource")
+          final LeafReader uninvertingReader = getTopFieldCacheReader(searcher, collapseField);
 
           docValuesProducer = new EmptyDocValuesProducer() {
               @Override

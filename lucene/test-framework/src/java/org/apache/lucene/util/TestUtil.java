@@ -335,6 +335,11 @@ public final class TestUtil {
       }
       assert Accountables.toString(sr) != null;
     }
+
+    // FieldInfos should be cached at the reader and always return the same instance
+    if (reader.getFieldInfos() != reader.getFieldInfos()) {
+      throw new RuntimeException("getFieldInfos() returned different instances for class: "+reader.getClass());
+    }
   }
   
   // used by TestUtil.checkReader to check some things really unrelated to the index,

@@ -48,6 +48,11 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   private final CompositeReader in;
   private final LeafMetaData metaData;
 
+  // Cached copy of FieldInfos to prevent it from being re-created on each
+  // getFieldInfos call.  Most (if not all) other LeafReader implementations
+  // also have a cached FieldInfos instance so this is consistent. SOLR-12878
+  private final FieldInfos fieldInfos;
+
   final Map<String,Terms> cachedTerms = new ConcurrentHashMap<>();
 
   // TODO: consider ConcurrentHashMap ?
@@ -86,6 +91,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       }
       metaData = new LeafMetaData(reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor(), minVersion, null);
     }
+    fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }
 
   @Override
@@ -273,8 +279,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   @Override
   public FieldInfos getFieldInfos() {
-    ensureOpen();
-    return FieldInfos.getMergedFieldInfos(in); // TODO cache?
+    return fieldInfos;
   }
 
   @Override
