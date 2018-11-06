@@ -266,9 +266,7 @@ public class AtomicUpdateDocumentMerger {
        null, // don't want the version to be returned
        true, // avoid stored fields from index
        updatedFields,
-       true, // resolve the full document
-       false, // do not resolve the whole nested structure if doc is a child document
-       true); // resolve children of current doc
+       RealTimeGetComponent.Resolution.DOC_CHILDREN); // resolve children of current doc
                                               
     if (oldDocument == RealTimeGetComponent.DELETED || oldDocument == null) {
       // This doc was deleted recently. In-place update cannot work, hence a full atomic update should be tried.

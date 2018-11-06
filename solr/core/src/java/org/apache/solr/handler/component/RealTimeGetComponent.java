@@ -357,7 +357,7 @@ public class RealTimeGetComponent extends SearchComponent
     String idStr = params.get("getInputDocument", null);
     if (idStr == null) return;
     AtomicLong version = new AtomicLong();
-    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, false, null, true, false, false);
+    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, false, null, Resolution.FULL_DOC);
     log.info("getInputDocument called for id="+idStr+", returning: "+doc);
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
@@ -595,14 +595,17 @@ public class RealTimeGetComponent extends SearchComponent
    * Obtains the latest document for a given id from the tlog or index (if not found in the tlog).
    * 
    * NOTE: This method uses the effective value for avoidRetrievingStoredFields param as false and
-   * for nonStoredDVs as null in the call to @see {@link RealTimeGetComponent#getInputDocument(SolrCore, BytesRef, AtomicLong, boolean, Set, boolean, boolean, boolean)},
+   * for nonStoredDVs as null in the call to @see {@link RealTimeGetComponent#getInputDocument(SolrCore, BytesRef, AtomicLong, boolean, Set, Resolution)},
    * so as to retrieve all stored and non-stored DV fields from all documents. Also, it uses the effective value of
    * resolveFullDocument param as true, i.e. it resolves any partial documents (in-place updates), in case the 
    * document is fetched from the tlog, to a full document.
+   * If resolveRootDoc is set to true the Resolution is set {@link Resolution#FULL_BLOCK},
+   * otherwise, {@link Resolution#FULL_DOC}.
    */
 
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, boolean resolveRootDoc) throws IOException {
-    return getInputDocument (core, idBytes, null, false, null, true, resolveRootDoc, false);
+    final Resolution lookupStrategy = resolveRootDoc? Resolution.FULL_BLOCK: Resolution.FULL_DOC;
+    return getInputDocument (core, idBytes, null, false, null, lookupStrategy);
   }
   
   /**
@@ -615,19 +618,16 @@ public class RealTimeGetComponent extends SearchComponent
    *                  obtained from the index.
    * @param onlyTheseNonStoredDVs If not-null, populate only these DV fields in the document fetched through the realtime searcher. 
    *                  If this is null, decorate all non-stored  DVs (that are not targets of copy fields) from the searcher.
-   * @param resolveFullDocument In case the document is fetched from the tlog, it could only be a partial document if the last update
-   *                  was an in-place update. In that case, should this partial document be resolved to a full document (by following
-   *                  back prevPointer/prevVersion)?
-   * @param resolveRootDoc Check whether the document is part of a nested hierarchy. If so, return the whole hierarchy.
-   * @param resolveChildren Check whether the document has child documents. If so, return the document including its children.
+   * @param resolveStrategy The strategy to resolve the the document.
+   * @see Resolution
    */
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, AtomicLong versionReturned, boolean avoidRetrievingStoredFields,
-      Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument, boolean resolveRootDoc, boolean resolveChildren) throws IOException {
+      Set<String> onlyTheseNonStoredDVs, Resolution resolveStrategy) throws IOException {
     SolrInputDocument sid = null;
     RefCounted<SolrIndexSearcher> searcherHolder = null;
     try {
       SolrIndexSearcher searcher = null;
-      sid = getInputDocumentFromTlog(core, idBytes, versionReturned, onlyTheseNonStoredDVs, resolveFullDocument);
+      sid = getInputDocumentFromTlog(core, idBytes, versionReturned, onlyTheseNonStoredDVs, resolveStrategy != Resolution.IN_PLACE);
       if (sid == DELETED) {
         return null;
       }
@@ -653,11 +653,12 @@ public class RealTimeGetComponent extends SearchComponent
           Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, schema);
         }
-        ensureDocFieldsDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, resolveRootDoc ||
-            resolveChildren || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
+        final boolean isNestedRequest = resolveStrategy == Resolution.DOC_CHILDREN || resolveStrategy == Resolution.FULL_BLOCK;
+        ensureDocFieldsDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, isNestedRequest || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
         SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
-        if((resolveChildren || resolveRootDoc) && schema.isUsableForChildDocs() && rootField!=null) {
+        if((isNestedRequest) && schema.isUsableForChildDocs() && rootField!=null) {
           // doc is part of a nested structure
+          final boolean resolveRootDoc = resolveStrategy == Resolution.FULL_BLOCK;
           String id = resolveRootDoc? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
           ModifiableSolrParams params = new ModifiableSolrParams()
               .set("fl", "*, _nest_path_, [child]")
@@ -1233,6 +1234,36 @@ public class RealTimeGetComponent extends SearchComponent
     }
     // TODO do we need to sort versions using PeerSync.absComparator?
     return new ArrayList<>(versionsToRet);
+  }
+
+  /**
+   *  <p>
+   *    Lookup strategy for {@link #getInputDocument(SolrCore, BytesRef, AtomicLong, boolean, Set, Resolution)}.
+   *  </p>
+   *  <ul>
+   *    <li>{@link #IN_PLACE}</li>
+   *    <li>{@link #FULL_DOC}</li>
+   *    <li>{@link #DOC_CHILDREN}</li>
+   *    <li>{@link #FULL_BLOCK}</li>
+   *  </ul>
+   */
+  public static enum Resolution {
+    /**
+     * Only resolve partial doc from in place update if the doc is fetched from tlog.
+     */
+    IN_PLACE,
+    /**
+     * Resolve this partial document to a full document (by following back prevPointer/prevVersion)?
+     */
+    FULL_DOC,
+    /**
+     * Check whether the document has child documents. If so, return the document including its children.
+     */
+    DOC_CHILDREN,
+    /**
+     * Check whether the document is part of a nested hierarchy. If so, return the whole hierarchy(look up root doc).
+     */
+    FULL_BLOCK
   }
 
   /** 
