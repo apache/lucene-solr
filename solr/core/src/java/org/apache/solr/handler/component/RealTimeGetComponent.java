@@ -612,7 +612,6 @@ public class RealTimeGetComponent extends SearchComponent
    */
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, AtomicLong versionReturned,
       Set<String> onlyTheseNonStoredDVs, Resolution resolveStrategy) throws IOException {
-    assert (onlyTheseNonStoredDVs!=null) == (resolveStrategy==Resolution.IN_PLACE);
     SolrInputDocument sid = null;
     RefCounted<SolrIndexSearcher> searcherHolder = null;
     try {
