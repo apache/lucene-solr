@@ -72,7 +72,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.DocTransformer;
-import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -357,7 +356,7 @@ public class RealTimeGetComponent extends SearchComponent
     String idStr = params.get("getInputDocument", null);
     if (idStr == null) return;
     AtomicLong version = new AtomicLong();
-    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, false, null, Resolution.FULL_DOC);
+    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, null, Resolution.FULL_DOC);
     log.info("getInputDocument called for id="+idStr+", returning: "+doc);
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
@@ -594,35 +593,26 @@ public class RealTimeGetComponent extends SearchComponent
   /**
    * Obtains the latest document for a given id from the tlog or index (if not found in the tlog).
    * 
-   * NOTE: This method uses the effective value for avoidRetrievingStoredFields param as false and
-   * for nonStoredDVs as null in the call to @see {@link RealTimeGetComponent#getInputDocument(SolrCore, BytesRef, AtomicLong, boolean, Set, Resolution)},
-   * so as to retrieve all stored and non-stored DV fields from all documents. Also, it uses the effective value of
-   * resolveFullDocument param as true, i.e. it resolves any partial documents (in-place updates), in case the 
-   * document is fetched from the tlog, to a full document.
-   * If resolveRootDoc is set to true the Resolution is set {@link Resolution#FULL_HIERARCHY},
-   * otherwise, {@link Resolution#FULL_DOC}.
+   * NOTE: This method uses the effective value for nonStoredDVs as null in the call to @see {@link RealTimeGetComponent#getInputDocument(SolrCore, BytesRef, AtomicLong, Set, Resolution)},
+   * so as to retrieve all stored and non-stored DV fields from all documents.
    */
 
-  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, boolean resolveRootDoc) throws IOException {
-    final Resolution lookupStrategy = resolveRootDoc? Resolution.FULL_HIERARCHY : Resolution.FULL_DOC;
-    return getInputDocument (core, idBytes, null, false, null, lookupStrategy);
+  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, Resolution lookupStrategy) throws IOException {
+    return getInputDocument (core, idBytes, null, null, lookupStrategy);
   }
   
   /**
    * Obtains the latest document for a given id from the tlog or through the realtime searcher (if not found in the tlog). 
    * @param versionReturned If a non-null AtomicLong is passed in, it is set to the version of the update returned from the TLog.
-   * @param avoidRetrievingStoredFields Setting this to true avoids fetching stored fields through the realtime searcher,
-   *                  however has no effect on documents obtained from the tlog. 
-   *                  Non-stored docValues fields are populated anyway, and are not affected by this parameter. Note that if
-   *                  the id field is a stored field, it will not be populated if this parameter is true and the document is
-   *                  obtained from the index.
    * @param onlyTheseNonStoredDVs If not-null, populate only these DV fields in the document fetched through the realtime searcher. 
    *                  If this is null, decorate all non-stored  DVs (that are not targets of copy fields) from the searcher.
+   *                  When non-null, stored fields are not fetched.
    * @param resolveStrategy The strategy to resolve the the document.
    * @see Resolution
    */
-  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, AtomicLong versionReturned, boolean avoidRetrievingStoredFields,
+  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, AtomicLong versionReturned,
       Set<String> onlyTheseNonStoredDVs, Resolution resolveStrategy) throws IOException {
+    assert (onlyTheseNonStoredDVs!=null) == (resolveStrategy==Resolution.IN_PLACE);
     SolrInputDocument sid = null;
     RefCounted<SolrIndexSearcher> searcherHolder = null;
     try {
@@ -647,14 +637,14 @@ public class RealTimeGetComponent extends SearchComponent
         if (docid < 0) return null;
 
         SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
-        if (avoidRetrievingStoredFields) {
+        if (onlyTheseNonStoredDVs != null) {
           sid = new SolrInputDocument();
         } else {
           Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, schema);
         }
         final boolean isNestedRequest = resolveStrategy == Resolution.DOC_CHILDREN || resolveStrategy == Resolution.FULL_HIERARCHY;
-        ensureDocFieldsDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, isNestedRequest || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
+        decorateDocValueFields(docFetcher, sid, docid, onlyTheseNonStoredDVs, isNestedRequest || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
         SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
         if((isNestedRequest) && schema.isUsableForChildDocs() && rootField!=null) {
           // doc is part of a nested structure
@@ -666,7 +656,7 @@ public class RealTimeGetComponent extends SearchComponent
           SolrQueryRequest nestedReq = new LocalSolrQueryRequest(core, params);
           final BytesRef rootIdBytes = new BytesRef(id);
           final int rootDocId = searcher.getFirstMatch(new Term(idField.getName(), rootIdBytes));
-          final DocTransformer childDocTransformer = TransformerFactory.defaultFactories.get("child").create("child", params, nestedReq);
+          final DocTransformer childDocTransformer = core.getTransformerFactory("child").create("child", params, nestedReq);
           final ResultContext resultContext = new RTGResultContext(new SolrReturnFields(nestedReq), searcher, nestedReq);
           childDocTransformer.setContext(resultContext);
           final SolrDocument nestedDoc;
@@ -674,7 +664,7 @@ public class RealTimeGetComponent extends SearchComponent
             nestedDoc = toSolrDoc(sid, schema);
           } else {
             nestedDoc = toSolrDoc(docFetcher.doc(rootDocId), schema);
-            ensureDocFieldsDecorated(onlyTheseNonStoredDVs, nestedDoc, rootDocId, docFetcher, true);
+            decorateDocValueFields(docFetcher, nestedDoc, rootDocId, onlyTheseNonStoredDVs, true);
           }
           childDocTransformer.transform(nestedDoc, rootDocId);
           sid = toSolrInputDocument(nestedDoc, schema);
@@ -694,7 +684,7 @@ public class RealTimeGetComponent extends SearchComponent
     return sid;
   }
 
-  private static void ensureDocFieldsDecorated(Set<String> onlyTheseNonStoredDVs, SolrDocumentBase doc, int docid, SolrDocumentFetcher docFetcher, boolean resolveNestedFields) throws IOException {
+  private static void decorateDocValueFields(SolrDocumentFetcher docFetcher, SolrDocumentBase doc, int docid, Set<String> onlyTheseNonStoredDVs, boolean resolveNestedFields) throws IOException {
     if (onlyTheseNonStoredDVs != null) {
       docFetcher.decorateDocValueFields(doc, docid, onlyTheseNonStoredDVs);
     } else {
@@ -1238,7 +1228,7 @@ public class RealTimeGetComponent extends SearchComponent
 
   /**
    *  <p>
-   *    Lookup strategy for {@link #getInputDocument(SolrCore, BytesRef, AtomicLong, boolean, Set, Resolution)}.
+   *    Lookup strategy for {@link #getInputDocument(SolrCore, BytesRef, AtomicLong, Set, Resolution)}.
    *  </p>
    *  <ul>
    *    <li>{@link #IN_PLACE}</li>

@@ -264,7 +264,6 @@ public class AtomicUpdateDocumentMerger {
     SolrInputDocument oldDocument = RealTimeGetComponent.getInputDocument
       (cmd.getReq().getCore(), idBytes,
        null, // don't want the version to be returned
-       true, // avoid stored fields from index
        updatedFields,
        RealTimeGetComponent.Resolution.DOC_CHILDREN); // resolve children of current doc
                                               

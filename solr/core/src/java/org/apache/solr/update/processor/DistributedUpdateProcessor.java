@@ -1412,8 +1412,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     final boolean isNestedSchema = req.getSchema().isUsableForChildDocs();
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
-    SolrInputDocument nestedDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
-        false, null, RealTimeGetComponent.Resolution.FULL_HIERARCHY);
+    SolrInputDocument nestedDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, RealTimeGetComponent.Resolution.FULL_HIERARCHY);
 
     if (nestedDoc == null) {
       if (versionOnUpdate > 0) {
@@ -1433,8 +1432,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if(isNestedSchema && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
           nestedDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) &&
           !sdoc.getField(idField.getName()).getFirstValue().toString().equals((String) nestedDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
-        SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
-            false, null, RealTimeGetComponent.Resolution.DOC_CHILDREN);
+        SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, RealTimeGetComponent.Resolution.DOC_CHILDREN);
         String docPath = (String) oldDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
         List<String> docPaths = StrUtils.splitSmart(docPath, '/');
         Pair<String, Integer> subPath = getPathAndIndexFromNestPath(docPaths.remove(0));
