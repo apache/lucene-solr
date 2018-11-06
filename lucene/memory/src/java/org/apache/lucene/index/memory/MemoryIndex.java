@@ -1138,12 +1138,20 @@ public class MemoryIndex {
   private final class MemoryIndexReader extends LeafReader {
 
     private final MemoryFields memoryFields = new MemoryFields(fields);
+    private final FieldInfos fieldInfos;
 
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
+
+      FieldInfo[] fieldInfosArr = new FieldInfo[fields.size()];
+
+      int i = 0;
       for (Info info : fields.values()) {
         info.prepareDocValuesAndPointValues();
+        fieldInfosArr[i++] = info.fieldInfo;
       }
+
+      fieldInfos = new FieldInfos(fieldInfosArr);
     }
 
     private Info getInfoForExpectedDocValuesType(String fieldName, DocValuesType expectedType) {
@@ -1167,12 +1175,7 @@ public class MemoryIndex {
     
     @Override
     public FieldInfos getFieldInfos() {
-      FieldInfo[] fieldInfos = new FieldInfo[fields.size()];
-      int i = 0;
-      for (Info info : fields.values()) {
-        fieldInfos[i++] = info.fieldInfo;
-      }
-      return new FieldInfos(fieldInfos);
+      return fieldInfos;
     }
 
     @Override

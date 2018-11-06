@@ -66,6 +66,10 @@ Improvements:
   first 4 are index dimensions defining the bounding box of the Triangle and the
   remaining 3 data dimensions define the vertices of the triangle. (Nick Knize)
 
+* LUCENE-8557: LeafReader.getFieldInfos is now documented and tested that it ought to return
+  the same cached instance.  MemoryIndex's impl now pre-creates the FieldInfos instead of
+  re-calculating a new instance each time.  (Tim Underwood, David Smiley)
+
 Other:
 
 * LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani

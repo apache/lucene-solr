@@ -126,8 +126,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // list of all caches associated with this searcher.
   private final SolrCache[] cacheList;
 
-  private final FieldInfos fieldInfos;
-
   private DirectoryFactory directoryFactory;
 
   private final LeafReader leafReader;
@@ -263,7 +261,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.queryResultMaxDocsCached = solrConfig.queryResultMaxDocsCached;
     this.useFilterForSortedQuery = solrConfig.useFilterForSortedQuery;
 
-    this.fieldInfos = leafReader.getFieldInfos();
     this.docFetcher = new SolrDocumentFetcher(this, solrConfig, enableCache);
 
     this.cachingEnabled = enableCache;
@@ -319,7 +316,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public FieldInfos getFieldInfos() {
-    return fieldInfos;
+    return leafReader.getFieldInfos();
   }
 
   /*
@@ -495,7 +492,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Returns a collection of all field names the index reader knows about.
    */
   public Iterable<String> getFieldNames() {
-    return Iterables.transform(fieldInfos, fieldInfo -> fieldInfo.name);
+    return Iterables.transform(getFieldInfos(), fieldInfo -> fieldInfo.name);
   }
 
   public SolrCache<Query,DocSet> getFilterCache() {

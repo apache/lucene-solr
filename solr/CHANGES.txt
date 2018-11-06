@@ -30,6 +30,7 @@ Jetty 9.4.11.v20180605
 
 Upgrade Notes
 ----------------------
+
 * SOLR-12767: The min_rf parameter is no longer needed, Solr will always return the achieved replication factor (rf)
   in the response header.
 
@@ -186,6 +187,9 @@ Improvements
 
 * SOLR-12699: Make contrib/ltr LTRScoringModel immutable and cache its hashCode.
   (Stanislav Livotov, Edward Ribeiro, Christine Poerschke)
+
+* LUCENE-8557: Some internal LeafReader.getFieldInfos implementations were being re-computed on-demand instead of
+  once up front leading to some slowdowns in places like JSON Facets and field collapsing. (Tim Underwood, David Smiley)
 
 ==================  7.5.0 ==================
 

@@ -35,6 +35,10 @@ import org.apache.lucene.util.ArrayUtil;
  *  @lucene.experimental
  */
 public class FieldInfos implements Iterable<FieldInfo> {
+
+  /** An instance without any fields. */
+  public final static FieldInfos EMPTY = new FieldInfos(new FieldInfo[0]);
+
   private final boolean hasFreq;
   private final boolean hasProx;
   private final boolean hasPayloads;

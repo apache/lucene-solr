@@ -47,7 +47,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   private final CompositeReader in;
   private final Fields fields;
   private final LeafMetaData metaData;
-  
+
+  // Cached copy of FieldInfos to prevent it from being re-created on each
+  // getFieldInfos call.  Most (if not all) other LeafReader implementations
+  // also have a cached FieldInfos instance so this is consistent. SOLR-12878
+  private final FieldInfos fieldInfos;
+
   /** This method is sugar for getting an {@link LeafReader} from
    * an {@link IndexReader} of any kind. If the reader is already atomic,
    * it is returned unchanged, otherwise wrapped by this class.
@@ -81,6 +86,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       }
       metaData = new LeafMetaData(reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor(), minVersion, null);
     }
+    fieldInfos = MultiFields.getMergedFieldInfos(in);
   }
 
   @Override
@@ -210,7 +216,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     starts[size] = maxDoc();
     return new MultiDocValues.MultiSortedSetDocValues(values, starts, map, cost);
   }
-  
+
   // TODO: this could really be a weak map somewhere else on the coreCacheKey,
   // but do we really need to optimize slow-wrapper any more?
   final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
@@ -259,8 +265,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   @Override
   public FieldInfos getFieldInfos() {
-    ensureOpen();
-    return MultiFields.getMergedFieldInfos(in);
+    return fieldInfos;
   }
 
   @Override
