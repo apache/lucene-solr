@@ -92,6 +92,8 @@ New Features
 
 * SOLR-12938: Cluster Status returns results for aliases, instead of throwing exceptions (Gus Heck)
 
+* SOLR-11997: Suggestions API/UI should show an entry where a violation could not be resolved (noble)
+
 Other Changes
 ----------------------
 

@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 public class TestPolicy2 extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -200,7 +201,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
             for (String tag : tags) {
               if (tag.equals(CORES.tagName))
                 result.put(CORES.tagName, coreCount.getOrDefault(node, new AtomicInteger(0)).get());
-              result.put(tag, Utils.getObjectByPath(nodeVals, true, Arrays.asList(node, tag)));
+              result.put(tag, getObjectByPath(nodeVals, true, Arrays.asList(node, tag)));
             }
             return result;
           }
@@ -227,19 +228,20 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     };
   }
 
-  public void testAutoScalingHandlerFailure() throws IOException {
+  public void testAutoScalingHandlerFailure() {
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testAutoScalingHandlerFailure.json");
 
-    Policy policy = new Policy((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
+    Policy policy = new Policy((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"));
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
     Policy.Session session = policy.createSession(cloudManagerFromDiagnostics);
-    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config")), cloudManagerFromDiagnostics);
-    assertEquals(2, suggestions.size());
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config")), cloudManagerFromDiagnostics);
+//    System.out.println(Utils.writeJson(suggestions, new StringWriter(),true).toString());
+    assertEquals(4, suggestions.size());
 
   }
 
   static SolrCloudManager createCloudManagerFromDiagnostics(Map<String, Object> m) {
-    List<Map> sortedNodes = (List<Map>) Utils.getObjectByPath(m, false, "diagnostics/sortedNodes");
+    List<Map> sortedNodes = (List<Map>) getObjectByPath(m, false, "diagnostics/sortedNodes");
     Set<String> liveNodes = new HashSet<>();
     SolrClientNodeStateProvider nodeStateProvider = new SolrClientNodeStateProvider(null) {
       @Override
@@ -283,7 +285,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
       @Override
       public ClusterStateProvider getClusterStateProvider() {
         if (clusterState == null) {
-          Map map = (Map) Utils.getObjectByPath (m, false, "cluster/collections");
+          Map map = (Map) getObjectByPath(m, false, "cluster/collections");
           if (map == null) map = new HashMap<>();
           clusterState = ClusterState.load(0, map, liveNodes, "/clusterstate.json");
         }
@@ -311,7 +313,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
   public void testHostAttribute() {
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testHostAttribute.json");
-    Map<String, Object> conf = (Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config");
+    Map<String, Object> conf = (Map<String, Object>) getObjectByPath(m, false, "diagnostics/config");
     Policy policy = new Policy(conf);
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
     Policy.Session session = policy.createSession(cloudManagerFromDiagnostics);
@@ -331,7 +333,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testSysPropSuggestions.json");
 
-    Map<String, Object> conf = (Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config");
+    Map<String, Object> conf = (Map<String, Object>) getObjectByPath(m, false, "diagnostics/config");
     Policy policy = new Policy(conf);
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
     Policy.Session session = policy.createSession(cloudManagerFromDiagnostics);
@@ -349,7 +351,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     }
   }
 
-  public void testSuggestionsRebalanceOnly() throws IOException {
+  public void testSuggestionsRebalanceOnly() {
     String conf = " {" +
         "    'cluster-preferences':[{" +
         "      'minimize':'cores'," +
@@ -370,11 +372,11 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     assertEquals("127.0.0.1:63219_solr", suggestions.get(1)._get("operation/command/move-replica/targetNode", null));
   }
 
-  public void testSuggestionsRebalance2() throws IOException {
+  public void testSuggestionsRebalance2() {
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testSuggestionsRebalance2.json");
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
 
-    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"));
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
 
     assertEquals(3, suggestions.size());
@@ -386,10 +388,10 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
   }
 
-  public void testAddMissingReplica() throws IOException {
+  public void testAddMissingReplica() {
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testAddMissingReplica.json");
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
-    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.getObjectByPath(m, false, "diagnostics/config"));
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"));
 
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
 
@@ -401,11 +403,10 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
   }
 
-  public void testCreateCollectionWithEmptyPolicy() throws IOException {
+  public void testCreateCollectionWithEmptyPolicy() {
     Map m = (Map) loadFromResource("testCreateCollectionWithEmptyPolicy.json");
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
     AutoScalingConfig autoScalingConfig = new AutoScalingConfig(new HashMap());
-    ///Users/noble/work/4solr/solr/core/src/test/org/apache/solr/handler/V2ApiIntegrationTest.java
     //POSITIONS : [shard1:1[NRT] @127.0.0.1:49469_solr, shard1:2[NRT] @127.0.0.1:49469_solr]
     List<ReplicaPosition> positions = PolicyHelper.getReplicaLocations("coll_new", autoScalingConfig, cloudManagerFromDiagnostics,
         EMPTY_MAP, Collections.singletonList("shard1"), 2, 0, 0, null);
@@ -417,6 +418,20 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
   }
 
+  public void testUnresolvedSuggestion() {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testUnresolvedSuggestion.json");
+
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"))
+        , cloudManagerFromDiagnostics);
+//    System.out.println(Utils.writeJson(suggestions, new StringWriter(), true).toString());
+    for (Suggester.SuggestionInfo suggestion : suggestions) {
+      assertEquals("unresolved-violation", suggestion._get("type", null));
+      assertEquals("1.0", suggestion._getStr("violation/violation/delta", null));
+    }
+
+
+  }
   public static Object loadFromResource(String file)  {
     try (InputStream is = TestPolicy2.class.getResourceAsStream("/solrj/solr/autoscaling/" + file)) {
       return Utils.fromJSON(is);

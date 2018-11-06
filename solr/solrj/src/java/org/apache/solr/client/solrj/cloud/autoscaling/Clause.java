@@ -127,6 +127,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
     hasComputedValue = hasComputedValue();
   }
 
+  public Condition getThirdTag() {
+    return globalTag == null ? tag : globalTag;
+  }
   private void doPostValidate(Condition... conditions) {
     for (Condition condition : conditions) {
       if (condition == null) continue;
