@@ -67,9 +67,9 @@ class LibSvmFormatter:
                 if startReading:
                     newParamVal = float(line.strip())
                     if not isFirst:
-                        convertedOutFile["params"]["weights"][self.featureIdToName[counter]] + '":' + str(newParamVal))
+                        convertedOutFile["params"]["weights"][self.featureIdToName[counter]] = str(newParamVal))
                     else:
-                        convertedOutFile["params"]["weights"][self.featureIdToName[counter]] + '":' + str(newParamVal))
+                        convertedOutFile["params"]["weights"][self.featureIdToName[counter]] = str(newParamVal))
                         isFirst = False
                     counter += 1
                 elif line.strip() == 'w':
