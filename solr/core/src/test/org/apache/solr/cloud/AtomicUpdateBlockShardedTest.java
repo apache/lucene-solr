@@ -91,6 +91,11 @@ public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase 
       indexDoc(client, params, doc);
       client.commit();
 
+      doc = sdoc("id", "c", "inplace_updatable_int", map("inc", "1"));
+
+      indexDoc(client, params, doc);
+      client.commit();
+
       // assert RTG request respects _route_ param
       QueryResponse routeRsp = client.query(params("qt","/get", "id","b", "_route_", "a"));
       SolrDocument results = (SolrDocument) routeRsp.getResponse().get("doc");
@@ -111,6 +116,7 @@ public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase 
       List<SolrDocument> grandChildren = (List) childDoc.getFieldValues("grandChildren");
       assertEquals(++i, grandChildren.size());
       SolrDocument grandChild = grandChildren.get(0);
+      assertEquals(i, grandChild.getFirstValue("inplace_updatable_int"));
       assertEquals("c", grandChild.getFieldValue("id"));
     }
   }

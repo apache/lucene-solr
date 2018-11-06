@@ -265,7 +265,7 @@ public class AtomicUpdateDocumentMerger {
       (cmd.getReq().getCore(), idBytes,
        null, // don't want the version to be returned
        updatedFields,
-       RealTimeGetComponent.Resolution.DOC_CHILDREN); // resolve children of current doc
+       RealTimeGetComponent.Resolution.FULL_DOC); // full doc
                                               
     if (oldDocument == RealTimeGetComponent.DELETED || oldDocument == null) {
       // This doc was deleted recently. In-place update cannot work, hence a full atomic update should be tried.
