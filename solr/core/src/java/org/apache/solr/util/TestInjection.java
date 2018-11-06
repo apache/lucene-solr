@@ -42,6 +42,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
@@ -439,7 +440,9 @@ public class TestInjection {
     boolean enabled = pair.first();
     if (!enabled) return true;
     long t = System.currentTimeMillis() - 200;
-    for (int i = 0; i < pair.second(); i++) {
+    int i = 0;
+    TimeOut timeOut = new TimeOut(pair.second(), TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeOut.hasTimedOut()) {
       try {
         if (core.isClosed()) return true;
         Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
@@ -448,7 +451,7 @@ public class TestInjection {
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.set(CommonParams.QT, ReplicationHandler.PATH);
           params.set(COMMAND, CMD_DETAILS);
-  
+
           NamedList<Object> response = leaderClient.request(new QueryRequest(params));
           long leaderVersion = (long) ((NamedList)response.get("details")).get("indexVersion");
           String localVersion = core.withSearcher(searcher ->
@@ -460,9 +463,9 @@ public class TestInjection {
             return true;
           } else {
             log.debug("Tlog replica not in sync with leader yet. Attempt: {}. Local Version={}, leader Version={}", i, localVersion, leaderVersion);
-            Thread.sleep(500);
+            Thread.sleep(250);
           }
-  
+
         }
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
@@ -473,6 +476,7 @@ public class TestInjection {
         if (core.isClosed()) return true;
         log.error("Exception when wait for replicas in sync with master. Will retry until timeout.", e);
       }
+      i++;
     }
     return false;
   }

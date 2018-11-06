@@ -66,6 +66,9 @@ public class ReplicateFromLeader {
       }
       SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();
       String pollIntervalStr = "00:00:03";
+      if (System.getProperty("jetty.testMode") != null) {
+        pollIntervalStr = "00:00:01";
+      }
       if (uinfo.autoCommmitMaxTime != -1) {
         pollIntervalStr = toPollIntervalStr(uinfo.autoCommmitMaxTime/2);
       } else if (uinfo.autoSoftCommmitMaxTime != -1) {
