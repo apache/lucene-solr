@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.IOException;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
