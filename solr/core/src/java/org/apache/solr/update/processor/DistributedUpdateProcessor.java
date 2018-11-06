@@ -1227,7 +1227,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   " OR " + idField.getName() + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) +
                   ") AND " + CommonParams.VERSION_FIELD + ": [* TO " + Long.toString(lastKnownVersion) + "]")));
           dmd.query = dmd.getReq().getParams().get("q");
-          doLocalDelete(dmd);
+          dmd.setVersion(-versionOnUpdate);
+
+          doLocalDeleteByQuery(dmd, findVersionOnUpdate(dmd), isReplayOrPeersync);
         }
 
         if (willDistrib && cloneRequiredOnLeader) {
@@ -1240,7 +1242,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     // delete old block distributed
     if(lastKnownVersion != null && dmd != null) {
-      versionDeleteByQuery(dmd);
+      doDeleteByQuery(dmd);
     }
     return false;
   }
@@ -1772,12 +1774,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   protected void versionDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     // Find the version
-    long versionOnUpdate = cmd.getVersion();
-    if (versionOnUpdate == 0) {
-      String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
-      versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
-    }
-    versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
+    long versionOnUpdate = findVersionOnUpdate(cmd);
 
     boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
@@ -1789,31 +1786,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     vinfo.blockUpdates();
     try {
 
-      if (versionsStored) {
-        if (leaderLogic) {
-          long version = vinfo.getNewClock();
-          cmd.setVersion(-version);
-          // TODO update versions in all buckets
-
-          doLocalDelete(cmd);
-
-        } else {
-          cmd.setVersion(-versionOnUpdate);
-
-          if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
-            // we're not in an active state, and this update isn't from a replay, so buffer it.
-            cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
-            ulog.deleteByQuery(cmd);
-            return;
-          }
-
-          if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
-            // TLOG replica not leader, don't write the DBQ to IW
-            cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
-          }
-          doLocalDelete(cmd);
-        }
-      }
+      doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync);
 
       // since we don't know which documents were deleted, the easiest thing to do is to invalidate
       // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the IndexReader
@@ -1821,6 +1794,45 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     } finally {
       vinfo.unblockUpdates();
+    }
+  }
+
+  private long findVersionOnUpdate(DeleteUpdateCommand cmd) {
+    long versionOnUpdate = cmd.getVersion();
+    if (versionOnUpdate == 0) {
+      String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
+      versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
+    }
+    versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
+    return versionOnUpdate;
+  }
+
+  private void doLocalDeleteByQuery(DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync) throws IOException {
+    if (versionsStored) {
+      final boolean leaderLogic = isLeader & !isReplayOrPeersync;
+      if (leaderLogic) {
+        long version = vinfo.getNewClock();
+        cmd.setVersion(-version);
+        // TODO update versions in all buckets
+
+        doLocalDelete(cmd);
+
+      } else {
+        cmd.setVersion(-versionOnUpdate);
+
+        if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
+          // we're not in an active state, and this update isn't from a replay, so buffer it.
+          cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+          ulog.deleteByQuery(cmd);
+          return;
+        }
+
+        if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+          // TLOG replica not leader, don't write the DBQ to IW
+          cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+        }
+        doLocalDelete(cmd);
+      }
     }
   }
 

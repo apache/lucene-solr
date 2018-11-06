@@ -616,7 +616,7 @@ public class RealTimeGetComponent extends SearchComponent
     RefCounted<SolrIndexSearcher> searcherHolder = null;
     try {
       SolrIndexSearcher searcher = null;
-      sid = getInputDocumentFromTlog(core, idBytes, versionReturned, onlyTheseNonStoredDVs, resolveStrategy != Resolution.IN_PLACE);
+      sid = getInputDocumentFromTlog(core, idBytes, versionReturned, onlyTheseNonStoredDVs, true);
       if (sid == DELETED) {
         return null;
       }
@@ -1230,17 +1230,12 @@ public class RealTimeGetComponent extends SearchComponent
    *    Lookup strategy for {@link #getInputDocument(SolrCore, BytesRef, AtomicLong, Set, Resolution)}.
    *  </p>
    *  <ul>
-   *    <li>{@link #IN_PLACE}</li>
    *    <li>{@link #FULL_DOC}</li>
    *    <li>{@link #DOC_CHILDREN}</li>
    *    <li>{@link #FULL_HIERARCHY}</li>
    *  </ul>
    */
   public static enum Resolution {
-    /**
-     * Only resolve partial doc from in place update if the doc is fetched from tlog.
-     */
-    IN_PLACE,
     /**
      * Resolve this partial document to a full document (by following back prevPointer/prevVersion)?
      */
