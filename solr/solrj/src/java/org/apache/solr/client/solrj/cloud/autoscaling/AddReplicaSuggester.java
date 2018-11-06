@@ -49,7 +49,7 @@ class AddReplicaSuggester extends Suggester {
       Row bestNode = null;
       for (int i = getMatrix().size() - 1; i >= 0; i--) {
         Row row = getMatrix().get(i);
-        if (!isNodeSuitableForReplicaAddition(row)) continue;
+        if (!isNodeSuitableForReplicaAddition(row, null)) continue;
         Row tmpRow = row.addReplica(shard.first(), shard.second(), type, strict);
         List<Violation> errs = testChangedMatrix(strict, tmpRow.session);
         if (!containsNewErrors(errs)) {

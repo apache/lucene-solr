@@ -121,10 +121,26 @@ public abstract class Suggester implements MapWriter {
     return this;
   }
 
-  protected boolean isNodeSuitableForReplicaAddition(Row row) {
-    if (!row.isLive) return false;
-    if (!isAllowed(row.node, Hint.TARGET_NODE)) return false;
-    if (!isAllowed(row.getVal(ImplicitSnitch.DISK), Hint.MINFREEDISK)) return false;
+  protected boolean isNodeSuitableForReplicaAddition(Row targetRow, Row srcRow) {
+    if (!targetRow.isLive) return false;
+    if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) return false;
+    if (!isAllowed(targetRow.getVal(ImplicitSnitch.DISK), Hint.MINFREEDISK)) return false;
+
+    if (srcRow != null) {// if the src row has the same violation it's not
+      for (Violation v1 : originalViolations) {
+        if (!v1.getClause().getThirdTag().varType.meta.isNodeSpecificVal()) continue;
+        if (v1.getClause().hasComputedValue) continue;
+        if (targetRow.node.equals(v1.node)) {
+          for (Violation v2 : originalViolations) {
+            if (srcRow.node.equals(v2.node)) {
+              if (v1.getClause().equals(v2.getClause()))
+                return false;
+            }
+          }
+        }
+      }
+    }
+
     return true;
   }
 
