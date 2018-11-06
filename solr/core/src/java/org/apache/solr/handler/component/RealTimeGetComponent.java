@@ -599,12 +599,12 @@ public class RealTimeGetComponent extends SearchComponent
    * so as to retrieve all stored and non-stored DV fields from all documents. Also, it uses the effective value of
    * resolveFullDocument param as true, i.e. it resolves any partial documents (in-place updates), in case the 
    * document is fetched from the tlog, to a full document.
-   * If resolveRootDoc is set to true the Resolution is set {@link Resolution#FULL_BLOCK},
+   * If resolveRootDoc is set to true the Resolution is set {@link Resolution#FULL_HIERARCHY},
    * otherwise, {@link Resolution#FULL_DOC}.
    */
 
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, boolean resolveRootDoc) throws IOException {
-    final Resolution lookupStrategy = resolveRootDoc? Resolution.FULL_BLOCK: Resolution.FULL_DOC;
+    final Resolution lookupStrategy = resolveRootDoc? Resolution.FULL_HIERARCHY : Resolution.FULL_DOC;
     return getInputDocument (core, idBytes, null, false, null, lookupStrategy);
   }
   
@@ -653,12 +653,12 @@ public class RealTimeGetComponent extends SearchComponent
           Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, schema);
         }
-        final boolean isNestedRequest = resolveStrategy == Resolution.DOC_CHILDREN || resolveStrategy == Resolution.FULL_BLOCK;
+        final boolean isNestedRequest = resolveStrategy == Resolution.DOC_CHILDREN || resolveStrategy == Resolution.FULL_HIERARCHY;
         ensureDocFieldsDecorated(onlyTheseNonStoredDVs, sid, docid, docFetcher, isNestedRequest || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
         SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
         if((isNestedRequest) && schema.isUsableForChildDocs() && rootField!=null) {
           // doc is part of a nested structure
-          final boolean resolveRootDoc = resolveStrategy == Resolution.FULL_BLOCK;
+          final boolean resolveRootDoc = resolveStrategy == Resolution.FULL_HIERARCHY;
           String id = resolveRootDoc? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
           ModifiableSolrParams params = new ModifiableSolrParams()
               .set("fl", "*, _nest_path_, [child]")
@@ -1244,7 +1244,7 @@ public class RealTimeGetComponent extends SearchComponent
    *    <li>{@link #IN_PLACE}</li>
    *    <li>{@link #FULL_DOC}</li>
    *    <li>{@link #DOC_CHILDREN}</li>
-   *    <li>{@link #FULL_BLOCK}</li>
+   *    <li>{@link #FULL_HIERARCHY}</li>
    *  </ul>
    */
   public static enum Resolution {
@@ -1263,7 +1263,7 @@ public class RealTimeGetComponent extends SearchComponent
     /**
      * Check whether the document is part of a nested hierarchy. If so, return the whole hierarchy(look up root doc).
      */
-    FULL_BLOCK
+    FULL_HIERARCHY
   }
 
   /** 

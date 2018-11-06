@@ -1413,7 +1413,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
     SolrInputDocument nestedDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, null,
-        false, null, RealTimeGetComponent.Resolution.FULL_BLOCK);
+        false, null, RealTimeGetComponent.Resolution.FULL_HIERARCHY);
 
     if (nestedDoc == null) {
       if (versionOnUpdate > 0) {
