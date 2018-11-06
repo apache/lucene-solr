@@ -121,6 +121,8 @@ Other Changes
 
 * SOLR-12956: Add Javadoc @since tag to Analyzer component classes (Alexandre Rafalovitch)
 
+* SOLR-12966: Add Javadoc @since tag to URP classes (Alexandre Rafalovitch)
+
 Bug Fixes
 ----------------------
 
