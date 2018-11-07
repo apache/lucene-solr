@@ -273,6 +273,8 @@ public class Lang {
         .withFunctionName("getSupportPoints", GetSupportPointsEvaluator.class)
         .withFunctionName("pairSort", PairSortEvaluator.class)
         .withFunctionName("recip", RecipEvaluator.class)
+        .withFunctionName("pivot", PivotEvaluator.class)
+
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)
