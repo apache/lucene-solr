@@ -540,9 +540,7 @@ final public class Tessellator {
     Node nextNode;
     do {
       nextNode = node.next;
-      if(node.getX() != x0 && node.getY() != y0 && nextNode.getX() != x0
-          && nextNode.getY() != y0 && node.getX() != x1 && node.getY() != y1
-          && nextNode.getX() != x1 && nextNode.getY() != y1) {
+      if(isVertexEquals(node, x0, y0) == false && isVertexEquals(node, x1, y1) == false) {
         if (linesIntersect(node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), x0, y0, x1, y1)) {
           return true;
         }
@@ -709,7 +707,12 @@ final public class Tessellator {
 
   /** Determines if two point vertices are equal. **/
   private static final boolean isVertexEquals(final Node a, final Node b) {
-    return a.getX() == b.getX() && a.getY() == b.getY();
+    return isVertexEquals(a, b.getX(), b.getY());
+  }
+
+  /** Determines if two point vertices are equal. **/
+  private static final boolean isVertexEquals(final Node a, final double x, final  double y) {
+    return a.getX() == x && a.getY() == y;
   }
 
   /** Compute signed area of triangle */

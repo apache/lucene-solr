@@ -226,6 +226,9 @@ Bug fixes:
 * LUCENE-8534: Fix incorrect computation for triangles intersecting polygon edges in
   shape tessellation. (Ignacio Vera)
 
+* LUCENE-8559: Fix bug where polygon edges were skipped when checking for intersections.
+  (Ignacio Vera)   
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
