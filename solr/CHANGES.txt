@@ -95,6 +95,8 @@ New Features
 
 * SOLR-11997: Suggestions API/UI should show an entry where a violation could not be resolved (noble)
 
+* SOLR-12971: Add pivot Stream Evaluator to pivot facet co-occurrence counts into a matrix (Joel Bernstein)
+
 Other Changes
 ----------------------
 
