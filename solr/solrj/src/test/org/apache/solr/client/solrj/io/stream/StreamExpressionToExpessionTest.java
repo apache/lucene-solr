@@ -316,34 +316,6 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
         +   "collection1, "
         +   "q=\"*:*\", "
         +   "buckets=\"a_s\", "
-        +   "bucketSizeLimit=100, "
-        +   "sum(a_i), sum(a_f), "
-        +   "min(a_i), min(a_f), "
-        +   "max(a_i), max(a_f), "
-        +   "avg(a_i), avg(a_f), "
-        +   "count(*)"
-        + ")"), factory)){
-      expressionString = stream.toExpression(factory).toString();
-      assertTrue(expressionString.contains("facet(collection1"));
-      assertTrue(expressionString.contains("q=\"*:*\""));
-      assertTrue(expressionString.contains("buckets=a_s"));
-      assertTrue(expressionString.contains("bucketSorts=\"count(*) desc\""));
-      assertTrue(expressionString.contains("bucketSizeLimit=100"));
-      assertTrue(expressionString.contains("sum(a_i)"));
-      assertTrue(expressionString.contains("sum(a_f)"));
-      assertTrue(expressionString.contains("min(a_i)"));
-      assertTrue(expressionString.contains("min(a_f)"));
-      assertTrue(expressionString.contains("max(a_i)"));
-      assertTrue(expressionString.contains("max(a_f)"));
-      assertTrue(expressionString.contains("avg(a_i,false)"));
-      assertTrue(expressionString.contains("avg(a_f,false)"));
-      assertTrue(expressionString.contains("count(*)"));
-    }
-
-    try (FacetStream stream = new FacetStream(StreamExpressionParser.parse("facet("
-        +   "collection1, "
-        +   "q=\"*:*\", "
-        +   "buckets=\"a_s\", "
         +   "bucketSorts=\"sum(a_i) asc\", "
         +   "rows=10, method=dvhash, "
         +   "sum(a_i), sum(a_f), "
