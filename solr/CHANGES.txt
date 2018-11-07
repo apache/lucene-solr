@@ -185,6 +185,7 @@ New Features
 
 * SOLR-11572: Add recip Stream Evaluator to support reciprocal transformations (Joel Bernstein)
 
+* SOLR-12936: Allow percentiles Stream Evaluator to accept an array of percentiles to calculate (Joel bernstein)
 
 Other Changes
 ----------------------
