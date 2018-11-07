@@ -1227,7 +1227,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   " OR " + idField.getName() + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) +
                   ") AND " + CommonParams.VERSION_FIELD + ": [* TO " + Long.toString(lastKnownVersion) + "]")));
           dmd.query = dmd.getReq().getParams().get("q");
-          dmd.setVersion(-versionOnUpdate);
+          dmd.setVersion(-lastKnownVersion);
 
           doLocalDeleteByQuery(dmd, findVersionOnUpdate(dmd), isReplayOrPeersync);
         }
