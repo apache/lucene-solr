@@ -187,6 +187,8 @@ New Features
 
 * SOLR-12936: Allow percentiles Stream Evaluator to accept an array of percentiles to calculate (Joel bernstein)
 
+* SOLR-12829: Add plist (parallel list) Streaming Expression (Joel Bernstein)
+
 Other Changes
 ----------------------
 
