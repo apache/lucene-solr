@@ -259,6 +259,8 @@ Improvements:
   the same cached instance.  MemoryIndex's impl now pre-creates the FieldInfos instead of
   re-calculating a new instance each time.  (Tim Underwood, David Smiley)
 
+* LUCENE-8558: Replace O(N) lookup with O(1) lookup in PerFieldMergeState#FilterFieldInfos.
+  (Kranthi via Simon Willnauer)
 Other:
 
 * LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
