@@ -208,7 +208,7 @@ Other Changes
 
 * SOLR-12966: Add Javadoc @since tag to URP classes (Alexandre Rafalovitch)
 
-* SOLR-12600: Fix parameter names in Solr JSON documentation
+* SOLR-12600: Fix parameter names in Solr JSON documentation (Alexandre Rafalovitch)
 
 Bug Fixes
 ----------------------
