@@ -163,7 +163,7 @@ public class FacetStream extends TupleStream implements Expressible  {
     String bucketSortString = null;
 
     if(bucketSortExpression == null) {
-      bucketSortString = "count(*) desc";
+      throw new IOException("The bucketSorts parameter is required for the facet function.");
     } else {
       bucketSortString = ((StreamExpressionValue)bucketSortExpression.getParameter()).getValue();
     }
