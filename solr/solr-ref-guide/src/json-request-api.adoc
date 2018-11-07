@@ -171,11 +171,14 @@ Right now only some standard query parameters have JSON equivalents. Unmapped pa
 |`fq`
 |`filter`
 
-|`offset`
 |`start`
+|`offset`
 
-|`limit`
 |`rows`
+|`limit`
+
+|`fl`
+|`fields`
 
 |`sort`
 |`sort`
