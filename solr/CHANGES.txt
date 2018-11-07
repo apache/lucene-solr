@@ -181,6 +181,9 @@ New Features
 
 * SOLR-12971: Add pivot Stream Evaluator to pivot facet co-occurrence counts into a matrix (Joel Bernstein)
 
+* SOLR-12795: Introduce 'rows' and 'offset' parameter in FacetStream (Joel Bernstein, Amrit Sarkar, Varun Thacker)
+
+
 Other Changes
 ----------------------
 
