@@ -50,6 +50,7 @@ public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase 
   public void test() throws Exception {
     boolean testFinished = false;
     try {
+      doNestedInplaceUpdateTest();
       doRootShardRoutingTest();
       testFinished = true;
     } finally {
@@ -117,6 +118,68 @@ public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase 
       assertEquals(++i, grandChildren.size());
       SolrDocument grandChild = grandChildren.get(0);
       assertEquals(i, grandChild.getFirstValue("inplace_updatable_int"));
+      assertEquals("c", grandChild.getFieldValue("id"));
+    }
+  }
+
+  public void doNestedInplaceUpdateTest() throws Exception {
+    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    final String[] ids = {"c", "d", "e", "f"};
+
+    assertEquals("size of ids to index should be the same as the number of clients", clients.size(), ids.length);
+    // for now,  we know how ranges will be distributed to shards.
+    // may have to look it up in clusterstate if that assumption changes.
+
+    SolrInputDocument doc = sdoc("id", "a", "level_s", "root");
+
+    final SolrParams params = new ModifiableSolrParams().set("update.chain", "nested-rtg").set("wt", "json").set("_route_", "a");
+
+    int which = (params.get("_route_").hashCode() & 0x7fffffff) % clients.size();
+    SolrClient aClient = clients.get(which);
+
+    indexDoc(aClient, params, doc);
+
+    aClient.commit();
+
+    doc = sdoc("id", "a", "children", map("add", sdocs(sdoc("id", "b", "level_s", "child"))));
+
+    indexDoc(aClient, params, doc);
+    aClient.commit();
+
+    doc = sdoc("id", "b", "grandChildren", map("add", sdocs(sdoc("id", ids[0], "level_s", "grand_child"))));
+
+    indexDoc(aClient, params, doc);
+    aClient.commit();
+
+    int i = 0;
+    for (SolrClient client : clients) {
+
+      doc = sdoc("id", "c", "inplace_updatable_int", map("inc", "1"));
+
+      indexDoc(client, params, doc);
+      client.commit();
+
+      // assert RTG request respects _route_ param
+      QueryResponse routeRsp = client.query(params("qt","/get", "id","b", "_route_", "a"));
+      SolrDocument results = (SolrDocument) routeRsp.getResponse().get("doc");
+      assertNotNull("RTG should find doc because _route_ was set to the root documents' ID", results);
+      assertEquals("b", results.getFieldValue("id"));
+
+      // assert all docs are indexed under the same root
+      assertEquals(0, client.query(new ModifiableSolrParams().set("q", "-_root_:a")).getResults().size());
+
+      // assert all docs are indexed inside the same block
+      QueryResponse rsp = client.query(params("qt","/get", "id","a", "fl", "*, [child]"));
+      SolrDocument val = (SolrDocument) rsp.getResponse().get("doc");
+      assertEquals("a", val.getFieldValue("id"));
+      List<SolrDocument> children = (List) val.getFieldValues("children");
+      assertEquals(1, children.size());
+      SolrDocument childDoc = children.get(0);
+      assertEquals("b", childDoc.getFieldValue("id"));
+      List<SolrDocument> grandChildren = (List) childDoc.getFieldValues("grandChildren");
+      assertEquals(1, grandChildren.size());
+      SolrDocument grandChild = grandChildren.get(0);
+      assertEquals(++i, grandChild.getFirstValue("inplace_updatable_int"));
       assertEquals("c", grandChild.getFieldValue("id"));
     }
   }
