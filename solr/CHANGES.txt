@@ -183,6 +183,8 @@ New Features
 
 * SOLR-12795: Introduce 'rows' and 'offset' parameter in FacetStream (Joel Bernstein, Amrit Sarkar, Varun Thacker)
 
+* SOLR-11572: Add recip Stream Evaluator to support reciprocal transformations (Joel Bernstein)
+
 
 Other Changes
 ----------------------
