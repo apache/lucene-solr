@@ -27,6 +27,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.MapWriter;
 import org.junit.Test;
 import static org.junit.internal.matchers.StringContains.containsString;
 
@@ -54,6 +55,14 @@ public class JsonQueryRequestUnitTest extends LuceneTestCase {
   }
 
   @Test
+  public void testRejectsNullQueryMapWriter() {
+    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+      new JsonQueryRequest().setQuery((MapWriter)null);
+    });
+    assertThat(thrown.getMessage(),containsString("must be non-null"));
+  }
+
+  @Test
   public void testWritesProvidedQueryStringToJsonCorrectly() {
     final JsonQueryRequest request = new JsonQueryRequest().setQuery("text:solr");
     final String requestBody = writeRequestToJson(request);
@@ -68,6 +77,22 @@ public class JsonQueryRequestUnitTest extends LuceneTestCase {
     paramsMap.put("df", "text");
     paramsMap.put("q", "*:*");
     final JsonQueryRequest request = new JsonQueryRequest().setQuery(queryMap);
+    final String requestBody = writeRequestToJson(request);
+    assertThat(requestBody, containsString("\"query\":{\"lucene\":{\"q\":\"*:*\",\"df\":\"text\"}}"));
+  }
+
+  @Test
+  public void testWritesProvidedQueryMapWriterToJsonCorrectly() {
+    final MapWriter queryWriter = new MapWriter() {
+      @Override
+      public void writeMap(EntryWriter ew) throws IOException {
+        ew.put("lucene", (MapWriter) ew1 -> {
+          ew1.put("q", "*:*");
+          ew1.put("df", "text");
+        });
+      }
+    };
+    final JsonQueryRequest request = new JsonQueryRequest().setQuery(queryWriter);
     final String requestBody = writeRequestToJson(request);
     assertThat(requestBody, containsString("\"query\":{\"lucene\":{\"q\":\"*:*\",\"df\":\"text\"}}"));
   }

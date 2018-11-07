@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.request.json;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,10 +28,10 @@ import java.util.Map;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
-import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -110,6 +111,25 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
     final JsonQueryRequest simpleQuery = new JsonQueryRequest()
         .setQuery(queryMap);
+    QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
+    assertEquals(0, queryResponse.getStatus());
+    assertEquals(NUM_SCIFI_BOOKS, queryResponse.getResults().getNumFound());
+  }
+
+  @Test
+  public void testQueriesCanBeRepresentedUsingMapWriters() throws Exception {
+    final MapWriter queryWriter = new MapWriter() {
+      @Override
+      public void writeMap(EntryWriter ew) throws IOException {
+        ew.put("lucene", (MapWriter) queryParamWriter -> {
+          queryParamWriter.put("df", "genre_s");
+          queryParamWriter.put("query", "scifi");
+        });
+      }
+    };
+
+    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
+        .setQuery(queryWriter);
     QueryResponse queryResponse = simpleQuery.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_SCIFI_BOOKS, queryResponse.getResults().getNumFound());
