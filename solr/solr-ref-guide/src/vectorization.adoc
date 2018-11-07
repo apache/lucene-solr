@@ -248,7 +248,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-== Facet Co-Occurrence Matrices
+== Facet Co-occurrence Matrices
 
 The `facet` function can be used to quickly perform mulit-dimension aggregations of categorical data from
 records stored in a Solr Cloud collection. These multi-dimension aggregations can represent co-occurrence
