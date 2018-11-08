@@ -356,7 +356,7 @@ public class RealTimeGetComponent extends SearchComponent
     String idStr = params.get("getInputDocument", null);
     if (idStr == null) return;
     AtomicLong version = new AtomicLong();
-    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, null, Resolution.FULL_DOC);
+    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, null, Resolution.DOC);
     log.info("getInputDocument called for id="+idStr+", returning: "+doc);
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
@@ -642,12 +642,12 @@ public class RealTimeGetComponent extends SearchComponent
           Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, schema);
         }
-        final boolean isNestedRequest = resolveStrategy == Resolution.DOC_CHILDREN || resolveStrategy == Resolution.FULL_HIERARCHY;
+        final boolean isNestedRequest = resolveStrategy == Resolution.DOC_WITH_CHILDREN || resolveStrategy == Resolution.ROOT_WITH_CHILDREN;
         decorateDocValueFields(docFetcher, sid, docid, onlyTheseNonStoredDVs, isNestedRequest || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
         SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
         if((isNestedRequest) && schema.isUsableForChildDocs() && rootField!=null) {
           // doc is part of a nested structure
-          final boolean resolveRootDoc = resolveStrategy == Resolution.FULL_HIERARCHY;
+          final boolean resolveRootDoc = resolveStrategy == Resolution.ROOT_WITH_CHILDREN;
           String id = resolveRootDoc? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
           ModifiableSolrParams params = new ModifiableSolrParams()
               .set("fl", "*, _nest_path_, [child]")
@@ -1230,24 +1230,24 @@ public class RealTimeGetComponent extends SearchComponent
    *    Lookup strategy for {@link #getInputDocument(SolrCore, BytesRef, AtomicLong, Set, Resolution)}.
    *  </p>
    *  <ul>
-   *    <li>{@link #FULL_DOC}</li>
-   *    <li>{@link #DOC_CHILDREN}</li>
-   *    <li>{@link #FULL_HIERARCHY}</li>
+   *    <li>{@link #DOC}</li>
+   *    <li>{@link #DOC_WITH_CHILDREN}</li>
+   *    <li>{@link #ROOT_WITH_CHILDREN}</li>
    *  </ul>
    */
   public static enum Resolution {
     /**
      * Resolve this partial document to a full document (by following back prevPointer/prevVersion)?
      */
-    FULL_DOC,
+    DOC,
     /**
      * Check whether the document has child documents. If so, return the document including its children.
      */
-    DOC_CHILDREN,
+    DOC_WITH_CHILDREN,
     /**
      * Check whether the document is part of a nested hierarchy. If so, return the whole hierarchy(look up root doc).
      */
-    FULL_HIERARCHY
+    ROOT_WITH_CHILDREN
   }
 
   /** 

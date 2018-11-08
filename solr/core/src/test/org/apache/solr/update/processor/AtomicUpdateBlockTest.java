@@ -216,7 +216,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
-    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.FULL_HIERARCHY);
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     // assert block doc has child docs
     assertTrue(block.containsKey("child1"));
 
@@ -227,10 +227,10 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     // commit the changes
     assertU(commit());
 
-    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.FULL_HIERARCHY);
+    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     BytesRef childDocId = new BytesRef("2");
     // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
-    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.FULL_HIERARCHY).toString());
+    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN).toString());
 
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
@@ -363,7 +363,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
-    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.FULL_HIERARCHY);
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     // assert block doc has child docs
     assertTrue(block.containsKey("child1"));
 
@@ -374,10 +374,10 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     // commit the changes
     assertU(commit());
 
-    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.FULL_HIERARCHY);
+    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     BytesRef childDocId = new BytesRef("2");
     // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
-    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.FULL_HIERARCHY).toString());
+    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN).toString());
 
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
@@ -500,7 +500,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
-    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.FULL_HIERARCHY);
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     // assert block doc has child docs
     assertTrue(block.containsKey("child1"));
 
@@ -511,10 +511,10 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     // commit the changes
     assertU(commit());
 
-    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.FULL_HIERARCHY);
+    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     BytesRef childDocId = new BytesRef("2");
     // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
-    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.FULL_HIERARCHY).toString());
+    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN).toString());
 
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
