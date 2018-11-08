@@ -192,6 +192,10 @@ Optimizations
 * LUCENE-8507: TopFieldCollector can now update the minimum competitive score if the primary sort
   is by relevancy and the total hit count is not required. (Jim Ferenczi)
 
+* LUCENE-8464: ConstantScoreScorer now implements setMinCompetitveScore in order
+  to early terminate the iterator if the minimum score is greater than the constant
+  score. (Christophe Bismuth via Jim Ferenczi)
+
 ======================= Lucene 7.7.0 =======================
 
 Build

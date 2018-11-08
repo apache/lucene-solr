@@ -151,21 +151,21 @@ abstract class LatLonShapeQuery extends Query {
       }
 
       /** get a scorer supplier for INTERSECT queries */
-      protected ScorerSupplier getIntersectScorerSupplier(LeafReader reader, PointValues values, Weight weight) throws IOException {
+      protected ScorerSupplier getIntersectScorerSupplier(LeafReader reader, PointValues values, Weight weight, ScoreMode scoreMode) throws IOException {
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
         IntersectVisitor visitor = getSparseIntersectVisitor(result);
         return new RelationScorerSupplier(values, visitor) {
           @Override
           public Scorer get(long leadCost) throws IOException {
-            return getIntersectsScorer(LatLonShapeQuery.this, reader, weight, result, score());
+            return getIntersectsScorer(LatLonShapeQuery.this, reader, weight, result, score(), scoreMode);
           }
         };
       }
 
       /** get a scorer supplier for all other queries (DISJOINT, WITHIN) */
-      protected ScorerSupplier getScorerSupplier(LeafReader reader, PointValues values, Weight weight) throws IOException {
+      protected ScorerSupplier getScorerSupplier(LeafReader reader, PointValues values, Weight weight, ScoreMode scoreMode) throws IOException {
         if (queryRelation == QueryRelation.INTERSECTS) {
-          return getIntersectScorerSupplier(reader, values, weight);
+          return getIntersectScorerSupplier(reader, values, weight, scoreMode);
         }
 
         FixedBitSet intersect = new FixedBitSet(reader.maxDoc());
@@ -174,7 +174,7 @@ abstract class LatLonShapeQuery extends Query {
         return new RelationScorerSupplier(values, visitor) {
           @Override
           public Scorer get(long leadCost) throws IOException {
-            return getScorer(LatLonShapeQuery.this, weight, intersect, disjoint, score());
+            return getScorer(LatLonShapeQuery.this, weight, intersect, disjoint, score(), scoreMode);
           }
         };
       }
@@ -204,8 +204,7 @@ abstract class LatLonShapeQuery extends Query {
           return new ScorerSupplier() {
             @Override
             public Scorer get(long leadCost) throws IOException {
-              return new ConstantScoreScorer(weight, score(),
-                  DocIdSetIterator.all(reader.maxDoc()));
+              return new ConstantScoreScorer(weight, score(), scoreMode, DocIdSetIterator.all(reader.maxDoc()));
             }
 
             @Override
@@ -214,7 +213,7 @@ abstract class LatLonShapeQuery extends Query {
             }
           };
         } else {
-          return getScorerSupplier(reader, values, weight);
+          return getScorerSupplier(reader, values, weight, scoreMode);
         }
       }
 
@@ -309,7 +308,7 @@ abstract class LatLonShapeQuery extends Query {
 
     /** returns a Scorer for INTERSECT queries that uses a sparse bitset */
     protected Scorer getIntersectsScorer(LatLonShapeQuery query, LeafReader reader, Weight weight,
-                                         DocIdSetBuilder docIdSetBuilder, final float boost) throws IOException {
+                                         DocIdSetBuilder docIdSetBuilder, final float boost, ScoreMode scoreMode) throws IOException {
       if (values.getDocCount() == reader.maxDoc()
           && values.getDocCount() == values.size()
           && cost() > reader.maxDoc() / 2) {
@@ -321,17 +320,17 @@ abstract class LatLonShapeQuery extends Query {
         int[] cost = new int[]{reader.maxDoc()};
         values.intersect(getInverseIntersectVisitor(query, result, cost));
         final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
-        return new ConstantScoreScorer(weight, boost, iterator);
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
 
       values.intersect(visitor);
       DocIdSetIterator iterator = docIdSetBuilder.build().iterator();
-      return new ConstantScoreScorer(weight, boost, iterator);
+      return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
 
     /** returns a Scorer for all other (non INTERSECT) queries */
     protected Scorer getScorer(LatLonShapeQuery query, Weight weight,
-                               FixedBitSet intersect, FixedBitSet disjoint, final float boost) throws IOException {
+                               FixedBitSet intersect, FixedBitSet disjoint, final float boost, ScoreMode scoreMode) throws IOException {
       values.intersect(visitor);
       DocIdSetIterator iterator;
       if (query.queryRelation == QueryRelation.DISJOINT) {
@@ -343,7 +342,7 @@ abstract class LatLonShapeQuery extends Query {
       } else {
         iterator = new BitSetIterator(intersect, cost());
       }
-      return new ConstantScoreScorer(weight, boost, iterator);
+      return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
 
     @Override

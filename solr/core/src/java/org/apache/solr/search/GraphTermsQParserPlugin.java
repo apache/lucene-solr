@@ -305,7 +305,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           if (disi == null) {
             return null;
           }
-          return new ConstantScoreScorer(this, score(), disi);
+          return new ConstantScoreScorer(this, score(), scoreMode, disi);
         }
 
         @Override
@@ -624,7 +624,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
         if (readerSetIterator == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), readerSetIterator);
+        return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
       }
 
       @Override

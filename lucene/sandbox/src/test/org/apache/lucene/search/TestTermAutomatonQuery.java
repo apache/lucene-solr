@@ -595,7 +595,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
               //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
             }
           }
-          return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
         }
 
         @Override

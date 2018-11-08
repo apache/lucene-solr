@@ -472,7 +472,7 @@ public class SolrIndexSplitter {
               log.error("### INVALID DELS " + dels.cardinality());
             }
           }
-          return new ConstantScoreScorer(this, score(), new BitSetIterator(set, set.length()));
+          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(set, set.length()));
         }
 
         @Override
