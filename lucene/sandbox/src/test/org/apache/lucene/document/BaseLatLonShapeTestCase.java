@@ -321,6 +321,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         boolean expected;
         double qMinLon = quantizeLonCeil(rect.minLon);
         double qMaxLon = quantizeLon(rect.maxLon);
+        double qMinLat = quantizeLatCeil(rect.minLat);
+        double qMaxLat = quantizeLat(rect.maxLat);
         if (liveDocs != null && liveDocs.get(docID) == false) {
           // document is deleted
           expected = false;
@@ -333,7 +335,11 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
             // then do not use encodeCeil
             qMinLon = quantizeLon(rect.minLon);
           }
-          expected = getValidator(queryRelation).testBBoxQuery(quantizeLatCeil(rect.minLat), quantizeLat(rect.maxLat), qMinLon, qMaxLon, shapes[id]);
+
+          if (qMinLat > qMaxLat) {
+            qMinLat = quantizeLat(rect.maxLat);
+          }
+          expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
