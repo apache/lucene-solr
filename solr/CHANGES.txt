@@ -189,6 +189,8 @@ New Features
 
 * SOLR-12829: Add plist (parallel list) Streaming Expression (Joel Bernstein)
 
+* SOLR-12975: Add ltrim and rtrim Stream Evaluators (Joel Bernstein)
+
 Other Changes
 ----------------------
 
