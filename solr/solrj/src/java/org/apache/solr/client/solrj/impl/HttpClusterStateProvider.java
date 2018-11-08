@@ -95,7 +95,13 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
           withHttpClient(httpClient).build()) {
         ClusterState cs = fetchClusterState(client, collection, null);
         return cs.getCollectionRef(collection);
-      } catch (SolrServerException | RemoteSolrException | IOException e) {
+      } catch (SolrServerException | IOException e) {
+        log.warn("Attempt to fetch cluster state from " +
+            Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+      } catch (RemoteSolrException e) {
+        if ("NOT_FOUND".equals(e.getMetadata("CLUSTERSTATUS"))) {
+          return null;
+        }
         log.warn("Attempt to fetch cluster state from " +
             Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
       } catch (NotACollectionException e) {
@@ -257,9 +263,9 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
         log.warn("Attempt to fetch cluster state from " +
             Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
       } catch (NotACollectionException e) {
-        // Cluster state for the given collection was not found, could be an alias.
-        // Lets fetch/update our aliases:
-        getAliases(true);
+        // not possible! (we passed in null for collection so it can't be an alias)
+        throw new RuntimeException("null should never cause NotACollectionException in " +
+            "fetchClusterState() Please report this as a bug!");
       }
     }
     throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
@@ -282,7 +288,9 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
         log.warn("Attempt to fetch cluster state from " +
             Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
       } catch (NotACollectionException e) {
-        // should be an an alias, don't care
+        // not possible! (we passed in null for collection so it can't be an alias)
+        throw new RuntimeException("null should never cause NotACollectionException in " +
+            "fetchClusterState() Please report this as a bug!");
       }
     }
     throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes + ". However, "
