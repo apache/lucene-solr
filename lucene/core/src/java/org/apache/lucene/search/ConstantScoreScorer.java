@@ -27,7 +27,7 @@ public final class ConstantScoreScorer extends Scorer {
 
   private final float score;
   private final TwoPhaseIterator twoPhaseIterator;
-  private final DocIdSetIterator disi;
+  private DocIdSetIterator disi;
 
   /** Constructor based on a {@link DocIdSetIterator} which will be used to
    *  drive iteration. Two phase iteration will not be supported.
@@ -56,6 +56,14 @@ public final class ConstantScoreScorer extends Scorer {
   @Override
   public float getMaxScore(int upTo) throws IOException {
     return score;
+  }
+
+  @Override
+  public void setMinCompetitiveScore(float minScore) throws IOException {
+    float minScoreDown = Math.nextDown(minScore);
+    if (minScoreDown > score) {
+      disi = DocIdSetIterator.empty();
+    }
   }
 
   @Override
