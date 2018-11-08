@@ -274,6 +274,8 @@ public class Lang {
         .withFunctionName("pairSort", PairSortEvaluator.class)
         .withFunctionName("recip", RecipEvaluator.class)
         .withFunctionName("pivot", PivotEvaluator.class)
+        .withFunctionName("ltrim", LeftShiftEvaluator.class)
+        .withFunctionName("rtrim", RightShiftEvaluator.class)
 
         // Boolean Stream Evaluators
 
