@@ -37,12 +37,12 @@ public class TestConstantScoreScorer extends LuceneTestCase {
   private static final String[] VALUES = new String[]{"foo", "bar", "foo bar", "azerty"};
 
   public void testBasics() throws Exception {
-    try (final TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
+    try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
       BooleanQuery query = new BooleanQuery.Builder()
           .add(new ConstantScoreQuery(new TermQuery(new Term(FIELD, "foo"))), Occur.MUST)
           .build();
 
-      final ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
+      ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
       assertThat(scorer.iterator().nextDoc(), equalTo(0));
       assertThat(scorer.score(), is(equalTo(1f)));
       assertThat(scorer.iterator().nextDoc(), equalTo(2));
@@ -52,12 +52,12 @@ public class TestConstantScoreScorer extends LuceneTestCase {
   }
 
   public void testWithMinCompetitiveScoreSet() throws Exception {
-    try (final TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
+    try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
       BooleanQuery query = new BooleanQuery.Builder()
           .add(new ConstantScoreQuery(new TermQuery(new Term(FIELD, "foo"))), Occur.MUST)
           .build();
 
-      final ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
+      ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
       assertThat(scorer.iterator().nextDoc(), equalTo(0));
       assertThat(scorer.score(), is(equalTo(1f)));
       scorer.setMinCompetitiveScore(2f);
@@ -93,7 +93,7 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
       LeafReaderContext context = searcher.getIndexReader().leaves().get(0);
 
-      final Scorer scorer = weight.scorer(context);
+      Scorer scorer = weight.scorer(context);
 
       return new ConstantScoreScorer(scorer.getWeight(), score, scorer.iterator());
     }
