@@ -49,8 +49,41 @@ public final class ConstantScoreScorer extends Scorer {
    *  @param twoPhaseIterator the iterator that defines matching documents */
   public ConstantScoreScorer(Weight weight, float score, TwoPhaseIterator twoPhaseIterator) {
     super(weight);
+
+    DocIdSetIterator approximation = new DocIdSetIterator() {
+      @Override
+      public int nextDoc() throws IOException {
+        return doc = twoPhaseIterator.approximation().nextDoc();
+      }
+
+      @Override
+      public int docID() {
+        return doc;
+      }
+
+      @Override
+      public long cost() {
+        return twoPhaseIterator.approximation().cost();
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        return doc = twoPhaseIterator.approximation().advance(target);
+      }
+    };
+
     this.score = score;
-    this.twoPhaseIterator = twoPhaseIterator;
+    this.twoPhaseIterator = new TwoPhaseIterator(approximation) {
+      @Override
+      public boolean matches() throws IOException {
+        return twoPhaseIterator.matches();
+      }
+
+      @Override
+      public float matchCost() {
+        return twoPhaseIterator.matchCost();
+      }
+    };
     this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
   }
 
