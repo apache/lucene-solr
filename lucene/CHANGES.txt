@@ -6,6 +6,10 @@ http://s.apache.org/luceneversions
 ======================= Lucene 7.7.0 =======================
 (No Changes)
 
+Build:
+
+* LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
+
 ======================= Lucene 7.6.0 =======================
 
 Build:
