@@ -30,7 +30,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import static org.apache.lucene.search.BooleanClause.Occur;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 
 public class TestConstantScoreScorer extends LuceneTestCase {
   private static final String FIELD = "f";
@@ -44,9 +43,9 @@ public class TestConstantScoreScorer extends LuceneTestCase {
 
       ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
       assertThat(scorer.iterator().nextDoc(), equalTo(0));
-      assertThat(scorer.score(), is(equalTo(1f)));
+      assertThat(scorer.score(), equalTo(1f));
       assertThat(scorer.iterator().nextDoc(), equalTo(2));
-      assertThat(scorer.score(), is(equalTo(1f)));
+      assertThat(scorer.score(), equalTo(1f));
       assertThat(scorer.iterator().nextDoc(), equalTo(NO_MORE_DOCS));
     }
   }
@@ -61,9 +60,9 @@ public class TestConstantScoreScorer extends LuceneTestCase {
 
       ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
       assertThat(doc = scorer.iterator().nextDoc(), equalTo(0));
-      assertThat(scorer.score(), is(equalTo(1f)));
+      assertThat(scorer.score(), equalTo(1f));
       scorer.setMinCompetitiveScore(2f);
-      assertThat(scorer.iterator().docID(), is(equalTo(doc)));
+      assertThat(scorer.iterator().docID(), equalTo(doc));
       assertThat(scorer.iterator().nextDoc(), equalTo(NO_MORE_DOCS));
     }
   }
