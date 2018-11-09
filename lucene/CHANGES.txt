@@ -41,7 +41,10 @@ Bug fixes:
   shape tessellation. (Ignacio Vera)
 
 * LUCENE-8559: Fix bug where polygon edges were skipped when checking for intersections.
-  (Ignacio Vera)   
+  (Ignacio Vera)
+
+* LUCENE-8556: Use latitude and longitude instead of encoding values to check if triangle is ear
+  when using morton optimisation. (Ignacio Vera)
 
 New Features
 
