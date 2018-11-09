@@ -98,7 +98,7 @@ public final class ConstantScoreScorer extends Scorer {
 
   @Override
   public int docID() {
-    return doc;
+    return twoPhaseIterator != null ? twoPhaseIterator.approximation().docID() : doc;
   }
 
   @Override
@@ -107,4 +107,3 @@ public final class ConstantScoreScorer extends Scorer {
   }
 
 }
-
