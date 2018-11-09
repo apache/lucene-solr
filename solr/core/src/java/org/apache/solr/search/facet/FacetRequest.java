@@ -371,7 +371,7 @@ public abstract class FacetRequest {
         debugInfo.setFilter(fcontext.filter.toString());
       }
       debugInfo.setReqDescription(getFacetDescription());
-      debugInfo.setProcessor(getClass().getSimpleName());
+      debugInfo.setProcessor(facetProcessor.getClass().getSimpleName());
       debugInfo.putInfoItem("domainSize", (long) fcontext.base.size());
       RTimer timer = new RTimer();
       facetProcessor.process();
