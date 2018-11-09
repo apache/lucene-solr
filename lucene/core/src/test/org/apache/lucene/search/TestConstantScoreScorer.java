@@ -74,12 +74,15 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     TestConstantScoreScorerIndex() throws IOException {
       directory = newDirectory();
 
-      writer = new RandomIndexWriter(random(), directory);
+      writer = new RandomIndexWriter(random(), directory,
+          newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+
       for (String VALUE : VALUES) {
         Document doc = new Document();
         doc.add(newTextField(FIELD, VALUE, Field.Store.YES));
         writer.addDocument(doc);
       }
+
       reader = writer.getReader();
       writer.close();
     }
