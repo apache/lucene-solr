@@ -37,7 +37,9 @@ import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -212,6 +214,75 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
   }
 
+  public void testBehaviorEquivilenceOfUninvertibleFalse() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    // regardless of the facet method (parameterized via default at test class level)
+    // faceting on an "uninvertible=false docValues=false" field is not supported.
+    //
+    // it should behave the same as any attempt (using any method) at faceting on
+    // and "indexed=false docValues=false" field...
+    for (String f : Arrays.asList("where_s_not_indexed_sS",
+                                  "where_s_multi_not_uninvert",
+                                  "where_s_single_not_uninvert")) {
+      SolrQueryRequest request = req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                                     "{x: {type:terms, field:'"+f+"'}}");
+      if (FacetField.FacetMethod.DEFAULT_METHOD == FacetField.FacetMethod.DVHASH
+          && !f.contains("multi")) {
+        // DVHASH is (currently) weird...
+        //
+        // it's ignored for multi valued fields -- but for single valued fields, it explicitly
+        // checks the *FieldInfos* on the reader to see if the DocVals type is ok.
+        //
+        // Which means that unlike most other facet method:xxx options, it fails hard if you try to use it
+        // on a field where no docs have been indexed (yet).
+        expectThrows(SolrException.class, () ->{
+            assertJQ(request);
+          });
+        
+      } else {
+        // In most cases, we should just get no buckets back...
+        assertJQ(request
+                 , "response/numFound==3"
+                 , "facets/count==3"
+                 , "facets/x=={buckets:[]}"
+
+                 );
+      }
+    }
+
+    // regardless of the facet method (parameterized via default at test class level)
+    // faceting on an "uninvertible=false docValues=true" field should work,
+    //
+    // it should behave equivilently to it's copyField source...
+    for (String f : Arrays.asList("where_s",
+                                  "where_s_multi_not_uninvert_dv",
+                                  "where_s_single_not_uninvert_dv")) {
+      assertJQ(req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                   "{x: {type:terms, field:'"+f+"'}}")
+               , "response/numFound==3"
+               , "facets/count==3"
+               , "facets/x=={buckets:[ {val:NY, count:2} , {val:NJ, count:1} ]}"
+               );
+    }
+   
+    // faceting on an "uninvertible=false docValues=false" field should be possible
+    // when using method:enum w/sort:index
+    //
+    // it should behave equivilent to it's copyField source...
+    for (String f : Arrays.asList("where_s",
+                                  "where_s_multi_not_uninvert",
+                                  "where_s_single_not_uninvert")) {
+      assertJQ(req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                                     "{x: {type:terms, sort:'index asc', method:enum, field:'"+f+"'}}")
+               , "response/numFound==3"
+               , "facets/count==3"
+               , "facets/x=={buckets:[ {val:NJ, count:1} , {val:NY, count:2} ]}"
+               );
+    }
+  }
+  
   /**
    * whitebox sanity checks that a shard request range facet that returns "between" or "after"
    * will cause the correct "actual_end" to be returned

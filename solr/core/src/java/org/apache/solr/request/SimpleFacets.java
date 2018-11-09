@@ -670,6 +670,13 @@ public class SimpleFacets {
        method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
      }
 
+     /* Unless isUninvertible() is true, we prohibit any use of UIF...
+        Here we just force FC(S) instead, and trust that the DocValues faceting logic will
+        do the right thing either way (with or w/o docvalues) */
+     if (FacetMethod.UIF == method && ! field.isUninvertible()) {
+       method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+     }
+     
      /* ENUM can't deal with trie fields that index several terms per value */
      if (method == FacetMethod.ENUM
          && TrieField.getMainValuePrefix(type) != null) {
