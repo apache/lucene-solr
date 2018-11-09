@@ -72,6 +72,7 @@ public class TestConstantScoreScorer extends LuceneTestCase {
 
       scorer.setMinCompetitiveScore(2f);
       assertThat(scorer.docID(), equalTo(doc));
+      assertThat(scorer.iterator().docID(), equalTo(doc));
       assertThat(scorer.score(), equalTo(1f));
 
       doc = scorer.iterator().nextDoc();
