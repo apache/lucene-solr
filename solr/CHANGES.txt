@@ -293,6 +293,12 @@ Improvements
 * LUCENE-8557: Some internal LeafReader.getFieldInfos implementations were being re-computed on-demand instead of
   once up front leading to some slowdowns in places like JSON Facets and field collapsing. (Tim Underwood, David Smiley)
 
+* SOLR-12964: Json Facets: use DocValuesIterator advanceExact() instead of advance() in FacetFieldProcessorByHashDV and
+  UniqueSinglevaluedSlotAcc. (Tim Underwood)
+
+* SOLR-12880: Json Facets: Show the FacetProcessor class name instead of the FacetRequest in the JSON Facets debug-trace
+  output (Tim Underwood)
+
 ==================  7.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

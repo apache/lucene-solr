@@ -353,13 +353,6 @@ final public class Tessellator {
 
   /** Uses morton code for speed to determine whether or a polygon node forms a valid ear w/ adjacent nodes */
   private static final boolean mortonIsEar(final Node ear) {
-    double ax = ear.previous.x;
-    double ay = ear.previous.y;
-    double bx = ear.x;
-    double by = ear.y;
-    double cx = ear.next.x;
-    double cy = ear.next.y;
-
     // triangle bbox (flip the bits so negative encoded values are < positive encoded values)
     int minTX = StrictMath.min(StrictMath.min(ear.previous.x, ear.x), ear.next.x) ^ 0x80000000;
     int minTY = StrictMath.min(StrictMath.min(ear.previous.y, ear.y), ear.next.y) ^ 0x80000000;
@@ -378,21 +371,21 @@ final public class Tessellator {
     while (p != null && Long.compareUnsigned(p.morton, minZ) >= 0
         && n != null && Long.compareUnsigned(n.morton, maxZ) <= 0) {
       if (p.idx != ear.previous.idx && p.idx != ear.next.idx &&
-          pointInEar(p.x, p.y, ax, ay, bx, by, cx, cy) &&
-          area(p.previous.x, p.previous.y, p.x, p.y, p.next.x, p.next.y) >= 0) return false;
+          pointInEar(p.getX(), p.getY(), ear.previous.getX(), ear.previous.getY(), ear.getX(), ear.getY(), ear.next.getX(), ear.next.getY()) &&
+          area(p.previous.getX(), p.previous.getY(), p.getX(), p.getY(), p.next.getX(), p.next.getY()) >= 0) return false;
       p = p.previousZ;
 
       if (n.idx != ear.previous.idx && n.idx != ear.next.idx &&
-          pointInEar(n.x, n.y, ax, ay, bx, by, cx, cy) &&
-          area(n.previous.x, n.previous.y, n.x, n.y, n.next.x, n.next.y) >= 0) return false;
+          pointInEar(n.getX(), n.getY(), ear.previous.getX(), ear.previous.getY(), ear.getX(), ear.getY(), ear.next.getX(), ear.next.getY()) &&
+          area(n.previous.getX(), n.previous.getY(), n.getX(), n.getY(), n.next.getX(), n.next.getY()) >= 0) return false;
       n = n.nextZ;
     }
 
     // first look for points inside the triangle in decreasing z-order
     while (p != null && Long.compareUnsigned(p.morton, minZ) >= 0) {
       if (p.idx != ear.previous.idx && p.idx != ear.next.idx
-            && pointInEar(p.x, p.y, ax, ay, bx, by, cx, cy)
-            && area(p.previous.x, p.previous.y, p.x, p.y, p.next.x, p.next.y) >= 0) {
+            && pointInEar(p.getX(), p.getY(), ear.previous.getX(), ear.previous.getY(), ear.getX(), ear.getY(), ear.next.getX(), ear.next.getY())
+            && area(p.previous.getX(), p.previous.getY(), p.getX(), p.getY(), p.next.getX(), p.next.getY()) >= 0) {
           return false;
         }
       p = p.previousZ;
@@ -401,8 +394,8 @@ final public class Tessellator {
     while (n != null &&
         Long.compareUnsigned(n.morton, maxZ) <= 0) {
         if (n.idx != ear.previous.idx && n.idx != ear.next.idx
-            && pointInEar(n.x, n.y, ax, ay, bx, by, cx, cy)
-            && area(n.previous.x, n.previous.y, n.x, n.y, n.next.x, n.next.y) >= 0) {
+            && pointInEar(n.getX(), n.getY(), ear.previous.getX(), ear.previous.getY(), ear.getX(), ear.getY(), ear.next.getX(), ear.next.getY())
+            && area(n.previous.getX(), n.previous.getY(), n.getX(), n.getY(), n.next.getX(), n.next.getY()) >= 0) {
           return false;
         }
       n = n.nextZ;
