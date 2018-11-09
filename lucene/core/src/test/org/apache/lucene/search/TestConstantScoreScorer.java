@@ -82,6 +82,7 @@ public class TestConstantScoreScorer extends LuceneTestCase {
         doc.add(newTextField(FIELD, VALUE, Field.Store.YES));
         writer.addDocument(doc);
       }
+      writer.forceMerge(1);
 
       reader = writer.getReader();
       writer.close();
