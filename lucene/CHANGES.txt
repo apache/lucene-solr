@@ -193,7 +193,6 @@ Optimizations
   is by relevancy and the total hit count is not required. (Jim Ferenczi)
 
 ======================= Lucene 7.7.0 =======================
-(No Changes)
 
 Build:
 
