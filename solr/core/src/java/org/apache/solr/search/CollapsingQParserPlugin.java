@@ -392,9 +392,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    * This is VERY fast at query time but slower to warm and causes insanity.
    */
   public static LeafReader getTopFieldCacheReader(SolrIndexSearcher searcher, String collapseField) {
+    UninvertingReader.Type type = null;
+    final SchemaField f = searcher.getSchema().getFieldOrNull(collapseField);
+    assert null != f;        // should already be enforced higher up
+    assert !f.multiValued(); // should already be enforced higher up
+    
+    assert f.getType() instanceof StrField; // this method shouldn't be called otherwise
+    if (f.indexed() && f.isUninvertible()) {
+      type = UninvertingReader.Type.SORTED;
+    }
+    
     return UninvertingReader.wrap(
         new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField),
-        Collections.singletonMap(collapseField, UninvertingReader.Type.SORTED)::get);
+        Collections.singletonMap(collapseField, type)::get);
   }
 
   private static class ReaderWrapper extends FilterLeafReader {

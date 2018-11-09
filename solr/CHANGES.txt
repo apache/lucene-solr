@@ -191,6 +191,11 @@ New Features
 
 * SOLR-12975: Add ltrim and rtrim Stream Evaluators (Joel Bernstein)
 
+* SOLR-12962: Added a new 'uninvertible' option for fields and fieldtypes. This defaults to 'true' for
+  backcompat allowing a FieldCache to be built for indexed fields as needed, but users are encouraged
+  to set this to false (using docValues as needed) to reduce the risk of large fluxuations in heap
+  size due to unexpected attempts to sort/facet/function on non-docValue fields. (hossman)
+
 Other Changes
 ----------------------
 
