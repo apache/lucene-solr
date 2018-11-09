@@ -41,12 +41,19 @@ public class TestConstantScoreScorer extends LuceneTestCase {
           .add(new ConstantScoreQuery(new TermQuery(new Term(FIELD, "foo"))), Occur.MUST)
           .build();
 
+      int doc;
       ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
-      assertThat(scorer.iterator().nextDoc(), equalTo(0));
+
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(0));
       assertThat(scorer.score(), equalTo(1f));
-      assertThat(scorer.iterator().nextDoc(), equalTo(2));
+
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(2));
       assertThat(scorer.score(), equalTo(1f));
-      assertThat(scorer.iterator().nextDoc(), equalTo(NO_MORE_DOCS));
+
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(NO_MORE_DOCS));
     }
   }
 
@@ -56,14 +63,19 @@ public class TestConstantScoreScorer extends LuceneTestCase {
           .add(new ConstantScoreQuery(new TermQuery(new Term(FIELD, "foo"))), Occur.MUST)
           .build();
 
-      int doc = -1;
-
+      int doc;
       ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
-      assertThat(doc = scorer.iterator().nextDoc(), equalTo(0));
+
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(0));
       assertThat(scorer.score(), equalTo(1f));
+
       scorer.setMinCompetitiveScore(2f);
-      assertThat(scorer.iterator().docID(), equalTo(doc));
-      assertThat(scorer.iterator().nextDoc(), equalTo(NO_MORE_DOCS));
+      assertThat(scorer.docID(), equalTo(doc));
+      assertThat(scorer.score(), equalTo(1f));
+
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(NO_MORE_DOCS));
     }
   }
 
