@@ -641,10 +641,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
         params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), getReq().getCore().getName()));
-        if (nodes != null) {
-          cmdDistrib.distribCommit(cmd, nodes, params);
-          cmdDistrib.blockAndDoRetries();
-        }
+        cmdDistrib.distribCommit(cmd, nodes, params);
+        cmdDistrib.blockAndDoRetries();
       }
     }
   }
@@ -694,10 +692,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
       }
     }
-    if (urls.isEmpty()) {
-      return null;
-    }
-    return urls;
+
+    return urls.isEmpty()? null: urls;
   }
 
   @Override
@@ -857,13 +853,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can't find document with id=" + id + ", but fetching from leader "
           + "failed since we're not in cloud mode.");
     }
-    Replica leader;
     try {
-      leader = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
+      return zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId()).getCoreUrl();
     } catch (InterruptedException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception during fetching from leader.", e);
     }
-    return leader.getCoreUrl();
   }
 
   /** For {@link org.apache.solr.common.params.CollectionParams.CollectionAction#SPLITSHARD} */
@@ -905,17 +899,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
         // delete by query case
         if (id == null) {
-          for (Map.Entry<String, RoutingRule> entry : routingRules.entrySet()) {
-            String targetCollectionName = entry.getValue().getTargetCollectionName();
-            final DocCollection docCollection = cstate.getCollectionOrNull(targetCollectionName);
-            if (docCollection != null && docCollection.getActiveSlicesArr().length > 0) {
-              final Slice[] activeSlices = docCollection.getActiveSlicesArr();
-              Slice any = activeSlices[0];
-              if (nodes == null) nodes = new ArrayList<>();
-              nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(any.getLeader())));
-            }
-          }
-          return nodes;
+          return getNodesDeleteByQuery(cstate, routingRules);
         }
 
         String routeKey = SolrIndexSplitter.getRouteKey(id);
@@ -975,9 +959,23 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     return nodes;
   }
 
+  private List<SolrCmdDistributor.Node> getNodesDeleteByQuery(ClusterState cstate, Map<String, RoutingRule> routingRules) {
+    List<SolrCmdDistributor.Node> nodes = null;
+    for (Map.Entry<String, RoutingRule> entry : routingRules.entrySet()) {
+      String targetCollectionName = entry.getValue().getTargetCollectionName();
+      final DocCollection docCollection = cstate.getCollectionOrNull(targetCollectionName);
+      if (docCollection != null && docCollection.getActiveSlicesArr().length > 0) {
+        final Slice[] activeSlices = docCollection.getActiveSlicesArr();
+        Slice any = activeSlices[0];
+        if(nodes == null) nodes = new ArrayList<>();
+        nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(any.getLeader())));
+      }
+    }
+    return nodes;
+  }
+
   // used for deleteByQuery to get the list of nodes this leader should forward to
   private List<SolrCmdDistributor.Node> setupRequestForDBQ() {
-    List<SolrCmdDistributor.Node> nodes = null;
     String shardId = cloudDesc.getShardId();
 
     try {
@@ -990,17 +988,18 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
           .getReplicaProps(collection, shardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
       if (replicaProps != null) {
-        nodes = new ArrayList<>(replicaProps.size());
+        List<SolrCmdDistributor.Node> nodes = new ArrayList<>(replicaProps.size());
         for (ZkCoreNodeProps props : replicaProps) {
           nodes.add(new SolrCmdDistributor.StdNode(props, collection, shardId));
         }
+        return nodes;
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
 
-    return nodes;
+    return null;
   }
 
   // helper method, processAdd was getting a bit large.
