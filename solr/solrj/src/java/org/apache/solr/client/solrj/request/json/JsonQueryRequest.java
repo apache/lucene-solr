@@ -191,9 +191,7 @@ public class JsonQueryRequest extends QueryRequest {
     if (filterQuery == null) {
       throw new IllegalArgumentException("'filterQuery' must be non-null");
     }
-    jsonRequestMap.putIfAbsent("filter", new ArrayList<Object>());
-    final List<Object> filters = (List<Object>) jsonRequestMap.get("filter");
-    filters.add(filterQuery);
+    ((List)jsonRequestMap.computeIfAbsent("filter", s -> new ArrayList<>())).add(filterQuery) ;
     return this;
   }
 
@@ -220,9 +218,7 @@ public class JsonQueryRequest extends QueryRequest {
     if (filterQuery == null) {
       throw new IllegalArgumentException("'filterQuery' parameter must be non-null");
     }
-    jsonRequestMap.putIfAbsent("filter", new ArrayList<Object>());
-    final List<Object> filters = (List<Object>) jsonRequestMap.get("filter");
-    filters.add(filterQuery);
+    ((List)jsonRequestMap.computeIfAbsent("filter", s -> new ArrayList<>())).add(filterQuery) ;
     return this;
   }
 
@@ -254,6 +250,7 @@ public class JsonQueryRequest extends QueryRequest {
     if (fieldNames == null) {
       throw new IllegalArgumentException("'fieldNames' parameter must be non-null");
     }
+
     jsonRequestMap.putIfAbsent("fields", new ArrayList<String>());
     final List<String> fields = (List<String>) jsonRequestMap.get("fields");
     for (String fieldName : fieldNames) {
@@ -286,9 +283,7 @@ public class JsonQueryRequest extends QueryRequest {
       throw new IllegalArgumentException("'value' parameter must be non-null");
     }
 
-    jsonRequestMap.putIfAbsent("params", new HashMap<String, Object>());
-    final Map<String, Object> miscParamsMap = (Map<String, Object>) jsonRequestMap.get("params");
-    miscParamsMap.put(name, value);
+    ((Map<String, Object>)jsonRequestMap.computeIfAbsent("params", s -> new HashMap<String, Object>())).put(name, value);
     return this;
   }
 
