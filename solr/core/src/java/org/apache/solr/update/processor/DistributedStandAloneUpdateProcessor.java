@@ -23,6 +23,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.UpdateCommand;
 
@@ -56,7 +57,25 @@ public class DistributedStandAloneUpdateProcessor extends DistributedUpdateProce
   }
 
   @Override
+  public void processAdd(AddUpdateCommand cmd) throws IOException {
+    setUpdateCommand(cmd);
+
+    isLeader = getNonZkLeaderAssumption(getReq());
+
+    super.processAdd(cmd);
+  }
+
+  @Override
+  public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+    isLeader = isLeader(cmd);
+
+    super.processDelete(cmd);
+  }
+
+  @Override
   public void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+    setUpdateCommand(cmd);
+
     isLeader = getNonZkLeaderAssumption(getReq());
 
     DistribPhase phase = DistribPhase.parseParam(getReq().getParams().get(DISTRIB_UPDATE_PARAM));
@@ -66,5 +85,11 @@ public class DistributedStandAloneUpdateProcessor extends DistributedUpdateProce
     super.doDeleteByQuery(cmd);
   }
 
+  @Override
+  public void finish() throws IOException {
+    super.finish();
+
+    if (next != null) next.finish();
+  }
 
 }
