@@ -27,6 +27,25 @@ public final class ConstantScoreScorer extends Scorer {
 
   private int doc = -1;
 
+  private class TwoPhaseIteratorWrapper extends TwoPhaseIterator {
+    final TwoPhaseIterator delegate;
+
+    TwoPhaseIteratorWrapper(TwoPhaseIterator delegate, DocIdSetIteratorWrapper approximation) {
+      super(approximation);
+      this.delegate = delegate;
+    }
+
+    @Override
+    public boolean matches() throws IOException {
+      return delegate.matches();
+    }
+
+    @Override
+    public float matchCost() {
+      return delegate.matchCost();
+    }
+  }
+
   private class DocIdSetIteratorWrapper extends DocIdSetIterator {
     final DocIdSetIterator delegate;
 
@@ -82,17 +101,7 @@ public final class ConstantScoreScorer extends Scorer {
     super(weight);
     this.score = score;
     this.approximation = new DocIdSetIteratorWrapper(twoPhaseIterator.approximation());
-    this.twoPhaseIterator = new TwoPhaseIterator(this.approximation) {
-      @Override
-      public boolean matches() throws IOException {
-        return twoPhaseIterator.matches();
-      }
-
-      @Override
-      public float matchCost() {
-        return twoPhaseIterator.matchCost();
-      }
-    };
+    this.twoPhaseIterator = new TwoPhaseIteratorWrapper(twoPhaseIterator, this.approximation);
     this.disi = TwoPhaseIterator.asDocIdSetIterator(this.twoPhaseIterator);
   }
 
@@ -108,17 +117,7 @@ public final class ConstantScoreScorer extends Scorer {
         disi = DocIdSetIterator.empty();
       } else {
         approximation = new DocIdSetIteratorWrapper(DocIdSetIterator.empty());
-        twoPhaseIterator = new TwoPhaseIterator(approximation) {
-          @Override
-          public boolean matches() throws IOException {
-            return twoPhaseIterator.matches();
-          }
-
-          @Override
-          public float matchCost() {
-            return twoPhaseIterator.matchCost();
-          }
-        };
+        twoPhaseIterator = new TwoPhaseIteratorWrapper(twoPhaseIterator, approximation);
         disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
       }
     }
