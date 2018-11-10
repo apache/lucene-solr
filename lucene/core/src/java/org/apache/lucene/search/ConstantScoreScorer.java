@@ -25,10 +25,40 @@ import java.io.IOException;
  */
 public final class ConstantScoreScorer extends Scorer {
 
-  private final float score;
-  private final TwoPhaseIterator twoPhaseIterator;
-  private DocIdSetIterator disi;
   private int doc = -1;
+
+  private class DocIdSetIteratorWrapper extends DocIdSetIterator {
+    final DocIdSetIterator delegate;
+
+    DocIdSetIteratorWrapper(DocIdSetIterator delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return doc = delegate.nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return doc = delegate.advance(target);
+    }
+
+    @Override
+    public long cost() {
+      return delegate.cost();
+    }
+  }
+
+  private final float score;
+  private DocIdSetIteratorWrapper approximation;
+  private TwoPhaseIterator twoPhaseIterator;
+  private DocIdSetIterator disi;
 
   /** Constructor based on a {@link DocIdSetIterator} which will be used to
    *  drive iteration. Two phase iteration will not be supported.
@@ -38,6 +68,7 @@ public final class ConstantScoreScorer extends Scorer {
   public ConstantScoreScorer(Weight weight, float score, DocIdSetIterator disi) {
     super(weight);
     this.score = score;
+    this.approximation = null;
     this.twoPhaseIterator = null;
     this.disi = disi;
   }
@@ -49,31 +80,9 @@ public final class ConstantScoreScorer extends Scorer {
    *  @param twoPhaseIterator the iterator that defines matching documents */
   public ConstantScoreScorer(Weight weight, float score, TwoPhaseIterator twoPhaseIterator) {
     super(weight);
-
-    DocIdSetIterator approximation = new DocIdSetIterator() {
-      @Override
-      public int nextDoc() throws IOException {
-        return doc = twoPhaseIterator.approximation().nextDoc();
-      }
-
-      @Override
-      public int docID() {
-        return doc;
-      }
-
-      @Override
-      public long cost() {
-        return twoPhaseIterator.approximation().cost();
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        return doc = twoPhaseIterator.approximation().advance(target);
-      }
-    };
-
     this.score = score;
-    this.twoPhaseIterator = new TwoPhaseIterator(approximation) {
+    this.approximation = new DocIdSetIteratorWrapper(twoPhaseIterator.approximation());
+    this.twoPhaseIterator = new TwoPhaseIterator(this.approximation) {
       @Override
       public boolean matches() throws IOException {
         return twoPhaseIterator.matches();
@@ -84,7 +93,7 @@ public final class ConstantScoreScorer extends Scorer {
         return twoPhaseIterator.matchCost();
       }
     };
-    this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
+    this.disi = TwoPhaseIterator.asDocIdSetIterator(this.twoPhaseIterator);
   }
 
   @Override
@@ -95,7 +104,23 @@ public final class ConstantScoreScorer extends Scorer {
   @Override
   public void setMinCompetitiveScore(float minScore) throws IOException {
     if (minScore > score) {
-      disi = DocIdSetIterator.empty();
+      if (twoPhaseIterator == null) {
+        disi = DocIdSetIterator.empty();
+      } else {
+        approximation = new DocIdSetIteratorWrapper(DocIdSetIterator.empty());
+        twoPhaseIterator = new TwoPhaseIterator(approximation) {
+          @Override
+          public boolean matches() throws IOException {
+            return twoPhaseIterator.matches();
+          }
+
+          @Override
+          public float matchCost() {
+            return twoPhaseIterator.matchCost();
+          }
+        };
+        disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
+      }
     }
   }
 
@@ -131,7 +156,7 @@ public final class ConstantScoreScorer extends Scorer {
 
   @Override
   public int docID() {
-    return twoPhaseIterator != null ? twoPhaseIterator.approximation().docID() : doc;
+    return doc;
   }
 
   @Override
