@@ -73,6 +73,66 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testBlockAtomicInplaceUpdates() throws Exception {
+    SolrInputDocument doc = sdoc("id", "1", "string_s", "root");
+    addDoc(adoc(doc), "nested-rtg");
+
+    assertU(commit());
+
+    assertQ(req("q", "id:1", "fl", "*"),
+        "//*[@numFound='1']",
+        "//doc[1]/str[@name='id']=1"
+    );
+
+    List<SolrInputDocument> docs = IntStream.range(10, 20).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s",
+        "child", "inplace_updatable_int", "0")).collect(Collectors.toList());
+    doc = sdoc("id", "1", "children", Collections.singletonMap("add", docs));
+    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+
+    assertU(commit());
+
+
+    assertQ(req("q", "_root_:1", "fl", "*", "rows", "11"),
+        "//*[@numFound='11']",
+        "*[count(//str[@name='_root_'][.='1'])=11]"
+    );
+
+    assertQ(req("q", "string_s:child", "fl", "*"),
+        "//*[@numFound='10']",
+        "*[count(//str[@name='string_s'][.='child'])=10]"
+    );
+
+    // ensure updates work when block has more than 10 children
+    for(int i = 10; i < 20; ++i) {
+      docs = IntStream.range(i * 10, (i * 10) + 5).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild")).collect(Collectors.toList());
+      doc = sdoc("id", String.valueOf(i), "grandChildren", Collections.singletonMap("add", docs));
+      addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+      assertU(commit());
+    }
+
+    for(int i = 10; i < 20; ++i) {
+      docs = IntStream.range(i * 10, (i * 10) + 5).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild")).collect(Collectors.toList());
+      doc = sdoc("id", String.valueOf(i), "grandChildren", Collections.singletonMap("add", docs));
+      addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+      assertU(commit());
+    }
+
+    for(int i =10; i < 20; ++i) {
+      doc = sdoc("id", i, "inplace_updateable_int", Collections.singletonMap("inc", "1"));
+      addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+      assertU(commit());
+    }
+
+    assertQ(req("q", "string_s:grandChild", "fl", "*", "rows", "50"),
+        "//*[@numFound='50']",
+        "*[count(//str[@name='string_s'][.='grandChild'])=50]");
+
+    assertQ(req("q", "string_s:child", "fl", "*"),
+        "//*[@numFound='10']",
+        "*[count(//str[@name='string_s'][.='child'])=10]");
+  }
+
+  @Test
   public void testBlockAtomicQuantities() throws Exception {
     SolrInputDocument doc = sdoc("id", "1", "string_s", "root");
     addDoc(adoc(doc), "nested-rtg");
