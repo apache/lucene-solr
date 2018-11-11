@@ -17,8 +17,7 @@
     limitations under the License.
  -->
 
-<project name="luke" default="default"
->
+<project name="luke" default="default">
 
   <description>
     Luke - Lucene Toolbox
@@ -32,8 +31,10 @@
   <target name="init" depends="module-build.init,jar-lucene-core"/>
 
   <path id="classpath">
-    <pathelement path="${analyzers-common.jar}"/>
     <pathelement path="${lucene-core.jar}"/>
+    <pathelement path="${codecs.jar}"/>
+    <pathelement path="${backward-codecs.jar}"/>
+    <pathelement path="${analyzers-common.jar}"/>
     <pathelement path="${misc.jar}"/>
     <pathelement path="${queryparser.jar}"/>
     <pathelement path="${queries.jar}"/>
@@ -52,6 +53,16 @@
         <include name="**/*.bat"/>
       </fileset>
     </copy>
+  </target>
+
+  <!-- launch Luke -->
+  <target name="launch" depends="compile-core">
+    <java classname="org.apache.lucene.luke.app.desktop.LukeMain"
+          classpath="${build.dir}/classes/java"
+          fork="true"
+          maxmemory="512m">
+      <classpath refid="classpath"/>
+    </java>
   </target>
 
   <target name="compile-core"
