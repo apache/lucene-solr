@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
 import org.junit.Test;
@@ -95,6 +94,91 @@ public class JsonQueryRequestUnitTest extends LuceneTestCase {
     final JsonQueryRequest request = new JsonQueryRequest().setQuery(queryWriter);
     final String requestBody = writeRequestToJson(request);
     assertThat(requestBody, containsString("\"query\":{\"lucene\":{\"q\":\"*:*\",\"df\":\"text\"}}"));
+  }
+
+  @Test
+  public void testRejectsInvalidFacetName() {
+    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+      new JsonQueryRequest().withFacet(null, new HashMap<>());
+    });
+    assertThat(thrown.getMessage(),containsString("must be non-null"));
+
+    thrown = expectThrows(IllegalArgumentException.class, () -> {
+      new JsonQueryRequest().withStatFacet(null, "avg(price)");
+    });
+    assertThat(thrown.getMessage(),containsString("must be non-null"));
+  }
+
+  @Test
+  public void testRejectsInvalidFacetMap() {
+    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+      new JsonQueryRequest().withFacet("anyFacetName", (Map<String, Object>)null);
+    });
+    assertThat(thrown.getMessage(),containsString("must be non-null"));
+  }
+
+  @Test
+  public void testRejectsNullFacetMapWriter() {
+    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+      new JsonQueryRequest().withFacet("anyFacetName", (MapWriter)null);
+    });
+    assertThat(thrown.getMessage(),containsString("must be non-null"));
+  }
+
+  @Test
+  public void testRejectsInvalidStatFacetString() {
+    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+      new JsonQueryRequest().withStatFacet("anyFacetName", (String)null);
+    });
+    assertThat(thrown.getMessage(),containsString("must be non-null"));
+  }
+
+  @Test
+  public void testWritesProvidedFacetMapToJsonCorrectly() {
+    final Map<String, Object> categoryFacetMap = new HashMap<>();
+    categoryFacetMap.put("type", "terms");
+    categoryFacetMap.put("field", "category");
+    final JsonQueryRequest request = new JsonQueryRequest().withFacet("top_categories", categoryFacetMap);
+    final String requestBody = writeRequestToJson(request);
+    assertThat(requestBody, containsString("\"facet\":{\"top_categories\":{\"field\":\"category\",\"type\":\"terms\"}}"));
+  }
+
+  @Test
+  public void testWritesProvidedFacetMapWriterToJsonCorrectly() {
+    final MapWriter facetWriter = new MapWriter() {
+      @Override
+      public void writeMap(EntryWriter ew) throws IOException {
+        ew.put("type", "terms");
+        ew.put("field", "category");
+      }
+    };
+    final JsonQueryRequest request = new JsonQueryRequest().withFacet("top_categories", facetWriter);
+    final String requestBody = writeRequestToJson(request);
+    assertThat(requestBody, containsString("\"facet\":{\"top_categories\":{\"type\":\"terms\",\"field\":\"category\"}}"));
+  }
+
+  @Test
+  public void testWritesProvidedStatFacetToJsonCorrectly() {
+    final JsonQueryRequest request = new JsonQueryRequest().withStatFacet("avg_price", "avg(price)");
+    final String requestBody = writeRequestToJson(request);
+    assertThat(requestBody, containsString("\"facet\":{\"avg_price\":\"avg(price)\"}"));
+  }
+
+  @Test
+  public void testWritesMultipleFacetMapsToJsonCorrectly() {
+    final Map<String, Object> facetMap1 = new HashMap<>();
+    facetMap1.put("type", "terms");
+    facetMap1.put("field", "a");
+    final Map<String, Object> facetMap2 = new HashMap<>();
+    facetMap2.put("type", "terms");
+    facetMap2.put("field", "b");
+    final JsonQueryRequest request = new JsonQueryRequest();
+
+    request.withFacet("facet1", facetMap1);
+    request.withFacet("facet2", facetMap2);
+    final String requestBody = writeRequestToJson(request);
+
+    assertThat(requestBody, containsString("\"facet\":{\"facet2\":{\"field\":\"b\",\"type\":\"terms\"},\"facet1\":{\"field\":\"a\",\"type\":\"terms\"}}"));
   }
 
   @Test

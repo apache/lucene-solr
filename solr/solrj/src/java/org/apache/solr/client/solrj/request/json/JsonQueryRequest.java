@@ -133,6 +133,115 @@ public class JsonQueryRequest extends QueryRequest {
   }
 
   /**
+   * Specify a facet sent as a part of this JSON request.
+   *
+   * This method may be called multiple times.  Each call made with a different {@code facetName} value will add a new
+   * top-level facet.  Repeating {@code facetName} values will cause previous facets with that {@code facetName} to be
+   * overwritten.
+   * <p>
+   * <b>Example:</b> You wish to send the JSON request: {"query": "*:*", "facet": { "top_cats":{"type": "terms", "field":"cat"}}}.  You
+   * would represent (and attach) the facet in this request as follows:
+   * <pre>{@code
+   *     final Map<String, Object> catFacetMap = new HashMap<>();
+   *     catFacetMap.put("type", "terms");
+   *     catFacetMap.put("field", "cat");
+   *
+   *     jsonQueryRequest.withStatFacet("top_cats", catFacetMap);
+   * }</pre>
+   *
+   * @param facetName the name of the top-level facet you'd like to add.
+   * @param facetJson a Map of values representing the facet you wish to add to the request
+   */
+  public JsonQueryRequest withFacet(String facetName, Map<String, Object> facetJson) {
+    if (facetName == null) {
+      throw new IllegalArgumentException("'facetName' parameter must be non-null");
+    }
+    if (facetJson == null) {
+      throw new IllegalArgumentException("'facetMap' parameter must be non-null");
+    }
+
+    if (! jsonRequestMap.containsKey("facet")) {
+      jsonRequestMap.put("facet", new HashMap<String, Object>());
+    }
+
+    final Map<String, Object> facetMap = (Map<String, Object>) jsonRequestMap.get("facet");
+    facetMap.put(facetName, facetJson);
+    return this;
+  }
+
+  /**
+   * Specify a facet sent as a part of this JSON request.
+   *
+   * This method may be called multiple times.  Each call made with a different {@code facetName} value will add a new
+   * top-level facet.  Repeating {@code facetName} values will cause previous facets with that {@code facetName} to be
+   * overwritten.
+   * <p>
+   * <b>Example:</b> You wish to send the JSON request: {"query": "*:*", "facet": { "top_cats":{"type": "terms", "field":"cat"}}}.  You
+   * would represent the facet in this request as follows:
+   * <pre>
+   *     final MapWriter facetWriter = new MapWriter() {
+   *         &#64;Override
+   *         public void writeMap(EntryWriter ew) throws IOException {
+   *             ew.put("type", "terms");
+   *             ew.put("field", "cat");
+   *         }
+   *     };
+   * </pre>
+   *
+   * @param facetName the name of the top-level facet you'd like to add.
+   * @param facetWriter a MapWriter representing the facet you wish to add to the request
+   */
+  public JsonQueryRequest withFacet(String facetName, MapWriter facetWriter) {
+    if (facetName == null) {
+      throw new IllegalArgumentException("'facetName' parameter must be non-null");
+    }
+    if (facetWriter == null) {
+      throw new IllegalArgumentException("'facetWriter' parameter must be non-null");
+    }
+
+    if (! jsonRequestMap.containsKey("facet")) {
+      jsonRequestMap.put("facet", new HashMap<String, Object>());
+    }
+
+    final Map<String, Object> facetMap = (Map<String, Object>) jsonRequestMap.get("facet");
+    facetMap.put(facetName, facetWriter);
+    return this;
+  }
+
+  /**
+   * Specify a simple stat or aggregation facet to be sent as a part of this JSON request.
+   *
+   * This method may be called multiple times.  Each call made with a different {@code facetName} value will add a new
+   * top-level facet.  Repeating {@code facetName} values will cause previous facets with that {@code facetName} to be
+   * overwritten.
+   * <p>
+   * <b>Example:</b>  You wish to send the JSON request: {"query": "*:*", "facet": {"avg_price": "avg(price)"}}.  You
+   * would represent the facet in this request as follows:
+   * <pre>{@code
+   *     jsonQueryRequest.withStatFacet("avg_price", "avg(price)");
+   * }</pre>
+   *
+   * @param facetName the name of the top-level stat/agg facet you'd like to add.
+   * @param facetValue a String representing the stat/agg facet computation to perform.
+   */
+  public JsonQueryRequest withStatFacet(String facetName, String facetValue) {
+    if (facetName == null) {
+      throw new IllegalArgumentException("'facetName' parameter must be non-null");
+    }
+    if (facetValue == null) {
+      throw new IllegalArgumentException("'facetValue' parameter must be non-null");
+    }
+
+    if (! jsonRequestMap.containsKey("facet")) {
+      jsonRequestMap.put("facet", new HashMap<String, Object>());
+    }
+
+    final Map<String, Object> facetMap = (Map<String, Object>) jsonRequestMap.get("facet");
+    facetMap.put(facetName, facetValue);
+    return this;
+  }
+
+  /**
    * Specify whether results should be fetched starting from a particular offset (or 'start').
    *
    * Defaults to 0 if not set.
