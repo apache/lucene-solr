@@ -27,11 +27,13 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
+import org.apache.solr.client.solrj.request.json.TermsFacetMap;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,7 +60,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
-    up.addFile(getFile("solrj/docs2.xml"), "application/xml"); // A subset of the 'techproducts' documents
+    up.addFile(getFile("solrj/techproducts.xml"), "application/xml");
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     UpdateResponse updateResponse = up.process(cluster.getSolrClient());
     assertEquals(0, updateResponse.getStatus());
@@ -67,7 +69,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   @Test
   public void testSimpleJsonQuery() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
-    final int expectedResults = 3;
+    final int expectedResults = 4;
 
     // tag::solrj-json-query-simple[]
     final JsonQueryRequest simpleQuery = new JsonQueryRequest()
@@ -116,7 +118,97 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     // end::solrj-json-query-macro-expansion[]
 
     assertEquals(0, queryResponse.getStatus());
-    assertEquals(3, queryResponse.getResults().size());
+    assertEquals(5, queryResponse.getResults().size());
+  }
+
+  @Test
+  public void testSimpleJsonTermsFacet() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+
+    //tag::solrj-json-simple-terms-facet[]
+    final TermsFacetMap categoryFacet = new TermsFacetMap("cat").setLimit(3);
+    final JsonQueryRequest request = new JsonQueryRequest()
+        .setQuery("*:*")
+        .withFacet("categories", categoryFacet);
+    QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
+    //end::solrj-json-simple-terms-facet[]
+
+    assertEquals(0, queryResponse.getStatus());
+    assertEquals(32, queryResponse.getResults().getNumFound());
+    assertEquals(10, queryResponse.getResults().size());
+    assertHasFacetWithBucketValues(queryResponse.getResponse(),"categories",
+        new FacetBucket("electronics",12),
+        new FacetBucket("currency", 4),
+        new FacetBucket("memory", 3));
+  }
+
+  @Test
+  public void testTermsFacet2() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+
+    //tag::solrj-json-terms-facet2[]
+    final TermsFacetMap categoryFacet = new TermsFacetMap("cat").setLimit(5);
+    final JsonQueryRequest request = new JsonQueryRequest()
+        .setQuery("*:*")
+        .withFacet("categories", categoryFacet);
+    QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
+    //end::solrj-json-terms-facet2[]
+
+    assertEquals(0, queryResponse.getStatus());
+    assertEquals(32, queryResponse.getResults().getNumFound());
+    assertEquals(10, queryResponse.getResults().size());
+    assertHasFacetWithBucketValues(queryResponse.getResponse(),"categories",
+        new FacetBucket("electronics",12),
+        new FacetBucket("currency", 4),
+        new FacetBucket("memory", 3),
+        new FacetBucket("connector", 2),
+        new FacetBucket("graphics card", 2));
+  }
+
+  private class FacetBucket {
+    private final Object val;
+    private final int count;
+    FacetBucket(Object val, int count) {
+      this.val = val;
+      this.count = count;
+    }
+
+    public Object getVal() { return val; }
+    public int getCount() { return count; }
+  }
+
+  private void assertHasFacetWithBucketValues(NamedList<Object> rawResponse, String expectedFacetName, FacetBucket... expectedBuckets) {
+    final NamedList<Object> facetsTopLevel = assertHasFacetResponse(rawResponse);
+    assertFacetResponseHasFacetWithBuckets(facetsTopLevel, expectedFacetName, expectedBuckets);
+  }
+
+  private NamedList<Object> assertHasFacetResponse(NamedList<Object> topLevelResponse) {
+    Object o = topLevelResponse.get("facets");
+    if (o == null) fail("Response has no top-level 'facets' property as expected");
+    if (!(o instanceof NamedList)) fail("Response has a top-level 'facets' property, but it is not a NamedList");
+
+    return (NamedList<Object>) o;
+  }
+
+  private void assertFacetResponseHasFacetWithBuckets(NamedList<Object> facetResponse, String expectedFacetName, FacetBucket... expectedBuckets) {
+    Object o = facetResponse.get(expectedFacetName);
+    if (o == null) fail("Response has no top-level facet named '" + expectedFacetName + "'");
+    if (!(o instanceof NamedList)) fail("Response has a property for the expected facet '" + expectedFacetName + "' property, but it is not a NamedList");
+
+    final NamedList<Object> expectedFacetTopLevel = (NamedList<Object>) o;
+    o = expectedFacetTopLevel.get("buckets");
+    if (o == null) fail("Response has no 'buckets' property under 'facets'");
+    if (!(o instanceof List)) fail("Response has no 'buckets' property containing actual facet information.");
+
+    final List<NamedList> bucketList = (List<NamedList>) o;
+    assertEquals("Expected " + expectedBuckets.length + " buckets, but found " + bucketList.size(),
+        expectedBuckets.length, bucketList.size());
+    for (int i = 0; i < expectedBuckets.length; i++) {
+      final FacetBucket expectedBucket = expectedBuckets[i];
+      final NamedList<Object> actualBucket = bucketList.get(i);
+      assertEquals(expectedBucket.getVal(), actualBucket.get("val"));
+      assertEquals(expectedBucket.getCount(), actualBucket.get("count"));
+    }
   }
 
 }
