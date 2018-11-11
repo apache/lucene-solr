@@ -456,7 +456,6 @@ public final class SearchPanelProvider implements Provider<JPanel>, SearchTabOpe
     tabbedPane.setEnabledAt(Tab.QPARSER.index(), false);
     tabbedPane.setEnabledAt(Tab.ANALYZER.index(), false);
     tabbedPane.setEnabledAt(Tab.SIMILARITY.index(), false);
-    tabbedPane.setEnabledAt(Tab.MLT.index(), false);
     if (tabbedPane.getSelectedIndex() == Tab.QPARSER.index() ||
         tabbedPane.getSelectedIndex() == Tab.ANALYZER.index() ||
         tabbedPane.getSelectedIndex() == Tab.SIMILARITY.index() ||
@@ -473,7 +472,6 @@ public final class SearchPanelProvider implements Provider<JPanel>, SearchTabOpe
     tabbedPane.setEnabledAt(Tab.QPARSER.index(), true);
     tabbedPane.setEnabledAt(Tab.ANALYZER.index(), true);
     tabbedPane.setEnabledAt(Tab.SIMILARITY.index(), true);
-    tabbedPane.setEnabledAt(Tab.MLT.index(), true);
     parseBtn.setEnabled(true);
     rewriteCB.setEnabled(true);
     mltBtn.setEnabled(true);
