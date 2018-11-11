@@ -110,18 +110,21 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
       assertU(commit());
     }
 
-    for(int i = 10; i < 20; ++i) {
-      docs = IntStream.range(i * 10, (i * 10) + 5).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild")).collect(Collectors.toList());
-      doc = sdoc("id", String.valueOf(i), "grandChildren", Collections.singletonMap("add", docs));
+    for(int i =10; i < 20; ++i) {
+      doc = sdoc("id", String.valueOf(i), "inplace_updatable_int", Collections.singletonMap("inc", "1"));
       addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
       assertU(commit());
     }
 
     for(int i =10; i < 20; ++i) {
-      doc = sdoc("id", i, "inplace_updateable_int", Collections.singletonMap("inc", "1"));
+      doc = sdoc("id", String.valueOf(i), "inplace_updatable_int", Collections.singletonMap("inc", "1"));
       addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
       assertU(commit());
     }
+
+    assertQ(req("q", "-_root_:*", "fl", "*"),
+        "//*[@numFound='0']"
+    );
 
     assertQ(req("q", "string_s:grandChild", "fl", "*", "rows", "50"),
         "//*[@numFound='50']",
@@ -130,6 +133,16 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
     assertQ(req("q", "string_s:child", "fl", "*"),
         "//*[@numFound='10']",
         "*[count(//str[@name='string_s'][.='child'])=10]");
+
+    assertJQ(req("q", "id:1", "fl", "*,[child limit=-1]"),
+        "/response/docs/[0]/id=='1'",
+        "/response/docs/[0]/children/[0]/id=='10'",
+        "/response/docs/[0]/children/[0]/inplace_updatable_int==2",
+        "/response/docs/[0]/children/[0]/grandChildren/[0]/id=='100'",
+        "/response/docs/[0]/children/[0]/grandChildren/[4]/id=='104'",
+        "/response/docs/[0]/children/[9]/id=='19'"
+    );
+
   }
 
   @Test
