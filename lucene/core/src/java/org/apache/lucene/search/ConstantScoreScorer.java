@@ -30,7 +30,7 @@ public final class ConstantScoreScorer extends Scorer {
   private class TwoPhaseIteratorWrapper extends TwoPhaseIterator {
     final TwoPhaseIterator delegate;
 
-    TwoPhaseIteratorWrapper(TwoPhaseIterator delegate, DocIdSetIteratorWrapper approximation) {
+    TwoPhaseIteratorWrapper(TwoPhaseIterator delegate, DocIdSetIterator approximation) {
       super(approximation);
       this.delegate = delegate;
     }
@@ -75,7 +75,7 @@ public final class ConstantScoreScorer extends Scorer {
   }
 
   private final float score;
-  private DocIdSetIteratorWrapper approximation;
+  private DocIdSetIterator approximation;
   private TwoPhaseIterator twoPhaseIterator;
   private DocIdSetIterator disi;
 
@@ -89,7 +89,7 @@ public final class ConstantScoreScorer extends Scorer {
     this.score = score;
     this.approximation = null;
     this.twoPhaseIterator = null;
-    this.disi = disi;
+    this.disi = new DocIdSetIteratorWrapper(disi);
   }
 
   /** Constructor based on a {@link TwoPhaseIterator}. In that case the
@@ -114,7 +114,7 @@ public final class ConstantScoreScorer extends Scorer {
   public void setMinCompetitiveScore(float minScore) throws IOException {
     if (minScore > score) {
       if (twoPhaseIterator == null) {
-        disi = DocIdSetIterator.empty();
+        disi = new DocIdSetIteratorWrapper(DocIdSetIterator.empty());
       } else {
         approximation = new DocIdSetIteratorWrapper(DocIdSetIterator.empty());
         twoPhaseIterator = new TwoPhaseIteratorWrapper(twoPhaseIterator, approximation);
@@ -125,27 +125,7 @@ public final class ConstantScoreScorer extends Scorer {
 
   @Override
   public DocIdSetIterator iterator() {
-    return new DocIdSetIterator() {
-      @Override
-      public int nextDoc() throws IOException {
-        return doc = disi.nextDoc();
-      }
-
-      @Override
-      public int docID() {
-        return doc;
-      }
-
-      @Override
-      public long cost() {
-        return disi.cost();
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        return doc = disi.advance(target);
-      }
-    };
+    return disi;
   }
 
   @Override
