@@ -76,7 +76,7 @@ public final class ConstantScoreScorer extends Scorer {
 
   private final float score;
   private final DocIdSetIteratorWrapper approximation;
-  private final TwoPhaseIterator twoPhaseIterator;
+  private final TwoPhaseIteratorWrapper twoPhaseIterator;
   private final DocIdSetIteratorWrapper disi;
 
   /** Constructor based on a {@link DocIdSetIterator} which will be used to
