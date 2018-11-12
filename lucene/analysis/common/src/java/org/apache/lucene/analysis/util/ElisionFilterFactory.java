@@ -35,6 +35,8 @@ import org.apache.lucene.analysis.fr.FrenchAnalyzer;
  *       articles="stopwordarticles.txt" ignoreCase="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class ElisionFilterFactory extends TokenFilterFactory implements ResourceLoaderAware, MultiTermAwareComponent {
   private final String articlesFile;

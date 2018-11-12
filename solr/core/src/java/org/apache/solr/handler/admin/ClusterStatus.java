@@ -112,7 +112,9 @@ public class ClusterStatus {
       DocCollection clusterStateCollection = entry.getValue();
       if (clusterStateCollection == null) {
         if (collection != null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
+          SolrException solrException = new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
+          solrException.setMetadata("CLUSTERSTATUS","NOT_FOUND");
+          throw solrException;
         } else {
           //collection might have got deleted at the same time
           continue;

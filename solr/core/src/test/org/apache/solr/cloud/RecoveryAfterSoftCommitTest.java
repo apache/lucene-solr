@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,6 +51,7 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     System.setProperty("solr.ulog.numRecordsToKeep", String.valueOf(ULOG_NUM_RECORDS_TO_KEEP));
     // avoid creating too many files, see SOLR-7421
     System.setProperty("useCompoundFile", "true");
+    TestInjection.waitForReplicasInSync = null;
   }
 
   @AfterClass
@@ -57,6 +59,7 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     System.clearProperty("solr.tests.maxBufferedDocs");
     System.clearProperty("solr.ulog.numRecordsToKeep");
     System.clearProperty("useCompoundFile");
+    TestInjection.reset();
   }
 
   /**

@@ -1226,6 +1226,47 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testLtrim() throws Exception {
+    String cexpr = "ltrim(array(1,2,3,4,5,6), 2)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertEquals(out.size(), 4);
+    assertEquals(out.get(0).intValue(), 3);
+    assertEquals(out.get(1).intValue(), 4);
+    assertEquals(out.get(2).intValue(), 5);
+    assertEquals(out.get(3).intValue(), 6);
+  }
+
+  @Test
+  public void testRtrim() throws Exception {
+    String cexpr = "rtrim(array(1,2,3,4,5,6), 2)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertEquals(out.size(), 4);
+    assertEquals(out.get(0).intValue(), 1);
+    assertEquals(out.get(1).intValue(), 2);
+    assertEquals(out.get(2).intValue(), 3);
+    assertEquals(out.get(3).intValue(), 4);
+  }
+
+
+  @Test
   public void testZeros() throws Exception {
     String cexpr = "zeros(6)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -2161,6 +2202,50 @@ public class MathExpressionTest extends SolrCloudTestCase {
     termVectors  = (List<List<Number>>)tuples.get(0).get("b");
     assertEquals(termVectors.size(), 4);
     assertEquals(termVectors.get(0).size(), 0);
+  }
+
+  @Test
+  public void testPivot() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=list(tuple(fx=x1, fy=f1, fv=add(1,1)), " +
+        "                      tuple(fx=x1, fy=f2, fv=add(1,3)), " +
+        "                      tuple(fx=x2, fy=f1, fv=add(1,7)), " +
+        "                      tuple(fx=x3, fy=f1, fv=add(1,4))," +
+        "                      tuple(fx=x3, fy=f3, fv=add(1,7)))," +
+                   "    b=pivot(a, fx, fy, fv)," +
+        "               c=getRowLabels(b)," +
+        "               d=getColumnLabels(b))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+    List<List<Number>> matrix = (List<List<Number>>)tuples.get(0).get("b");
+    List<Number> row1 = matrix.get(0);
+    assertEquals(row1.get(0).doubleValue(), 2.0,0);
+    assertEquals(row1.get(1).doubleValue(), 4.0,0);
+    assertEquals(row1.get(2).doubleValue(), 0,0);
+    List<Number> row2 = matrix.get(1);
+    assertEquals(row2.get(0).doubleValue(), 8.0,0);
+    assertEquals(row2.get(1).doubleValue(), 0,0);
+    assertEquals(row2.get(2).doubleValue(), 0,0);
+    List<Number> row3 = matrix.get(2);
+    assertEquals(row3.get(0).doubleValue(), 5.0,0);
+    assertEquals(row3.get(1).doubleValue(), 0,0);
+    assertEquals(row3.get(2).doubleValue(), 8.0,0);
+
+    List<String> rowLabels = (List<String>)tuples.get(0).get("c");
+    assertEquals(rowLabels.get(0), "x1");
+    assertEquals(rowLabels.get(1), "x2");
+    assertEquals(rowLabels.get(2), "x3");
+    List<String> columnLabels = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnLabels.get(0), "f1");
+    assertEquals(columnLabels.get(1), "f2");
+    assertEquals(columnLabels.get(2), "f3");
   }
 
   @Test

@@ -60,7 +60,7 @@ public class MoveReplicaSuggester extends Suggester {
       for (int j = session.matrix.size() - 1; j >= stopAt; j--) {
         targetRow = session.matrix.get(j);
         if (targetRow.node.equals(fromRow.node)) continue;
-        if (!isNodeSuitableForReplicaAddition(targetRow)) continue;
+        if (!isNodeSuitableForReplicaAddition(targetRow, fromRow)) continue;
         targetRow = targetRow.addReplica(ri.getCollection(), ri.getShard(), ri.getType(), strict); // add replica to target first
         Row srcRowModified = targetRow.session.getNode(fromRow.node).removeReplica(ri.getCollection(), ri.getShard(), ri.getType());//then remove replica from source node
         List<Violation> errs = testChangedMatrix(strict, srcRowModified.session);

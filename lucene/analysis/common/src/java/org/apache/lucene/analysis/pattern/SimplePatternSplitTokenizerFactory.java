@@ -53,6 +53,8 @@ import org.apache.lucene.util.automaton.RegExp;
  * @lucene.experimental
  *
  * @see SimplePatternSplitTokenizer
+ *
+ * @since 6.5.0
  */
 public class SimplePatternSplitTokenizerFactory extends TokenizerFactory {
   public static final String PATTERN = "pattern";

@@ -35,6 +35,8 @@ import org.apache.lucene.analysis.TokenStream;
  *     &lt;filter class="solr.ASCIIFoldingFilterFactory" preserveOriginal="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class ASCIIFoldingFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   private static final String PRESERVE_ORIGINAL = "preserveOriginal";

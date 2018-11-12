@@ -986,6 +986,147 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(count.doubleValue() == 2);
 
 
+    clause = "facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "fl=\"a_s,a_i,a_f\", "
+        +   "sort=\"a_s asc\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"sum(a_i) desc\", "
+        +   "rows=2, "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")";
+
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+
+    //Test rows
+
+    tuple = tuples.get(0);
+    assertEquals(tuples.size(), 2);
+
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
+
+
+    clause = "facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "fl=\"a_s,a_i,a_f\", "
+        +   "sort=\"a_s asc\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"sum(a_i) desc\", "
+        +   "rows=2, offset=1, method=dvhash, refine=true,"
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")";
+
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+
+    //Test offset
+
+    tuple = tuples.get(0);
+    assertEquals(tuples.size(), 2);
+
+    tuple = tuples.get(0);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
+
+
     //Test index sort
     clause = "facet("
         +   "collection1, "

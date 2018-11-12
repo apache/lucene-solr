@@ -57,8 +57,13 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     this.bbox = new byte[4 * LatLonShape.BYTES];
     int minXenc = encodeLongitudeCeil(minLon);
     int maxXenc = encodeLongitude(maxLon);
-    this.minY = encodeLatitudeCeil(minLat);
-    this.maxY = encodeLatitude(maxLat);
+    int minYenc = encodeLatitudeCeil(minLat);
+    int maxYenc = encodeLatitude(maxLat);
+    if (minYenc > maxYenc) {
+      minYenc = maxYenc;
+    }
+    this.minY = minYenc;
+    this.maxY = maxYenc;
 
     if (minLon > maxLon == true) {
       // crossing dateline is split into east/west boxes

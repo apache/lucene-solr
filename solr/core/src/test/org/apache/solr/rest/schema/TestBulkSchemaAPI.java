@@ -390,13 +390,15 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                       'name':'a2',\n" +
         "                       'type': 'string',\n" +
         "                       'stored':true,\n" +
-        "                       'indexed':true\n" +
+        "                       'indexed':true,\n" +
+        "                       'uninvertible':true,\n" +
         "                       },\n" +
         "          'add-dynamic-field' : {\n" +
         "                       'name' :'*_lol',\n" +
         "                       'type':'string',\n" +
         "                       'stored':true,\n" +
-        "                       'indexed':true\n" +
+        "                       'indexed':true,\n" +
+        "                       'uninvertible':false,\n" +
         "                       },\n" +
         "          'add-copy-field' : {\n" +
         "                       'source' :'a1',\n" +
@@ -470,6 +472,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "          'add-field-type' : {" +
         "                       'name' : 'myWhitespaceTxtField',\n" +
         "                       'class':'solr.TextField',\n" +
+        "                       'uninvertible':false,\n" +
         "                       'analyzer' : {'class' : 'org.apache.lucene.analysis.core.WhitespaceAnalyzer'}\n" +
         "                       },\n"+
         "          'add-field' : {\n" +
@@ -532,6 +535,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals("string", m.get("type"));
     assertEquals(Boolean.TRUE, m.get("stored"));
     assertEquals(Boolean.TRUE, m.get("indexed"));
+    assertEquals(Boolean.TRUE, m.get("uninvertible"));
 
     m = getObj(harness,"*_lol", "dynamicFields");
     assertNotNull("field *_lol not created", m);
@@ -539,6 +543,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals("string", m.get("type"));
     assertEquals(Boolean.TRUE, m.get("stored"));
     assertEquals(Boolean.TRUE, m.get("indexed"));
+    assertEquals(Boolean.FALSE, m.get("uninvertible"));
 
     l = getSourceCopyFields(harness, "a1");
     s = new HashSet();
@@ -579,11 +584,13 @@ public class TestBulkSchemaAPI extends RestTestBase {
     
     m = getObj(harness, "myWhitespaceTxtField", "fieldTypes");
     assertNotNull(m);
+    assertEquals(Boolean.FALSE, m.get("uninvertible"));
     assertNull(m.get("similarity")); // unspecified, expect default
 
     m = getObj(harness, "a5", "fields");
     assertNotNull("field a5 not created", m);
     assertEquals("myWhitespaceTxtField", m.get("type"));
+    assertNull(m.get("uninvertible")); // inherited, but API shouldn't return w/o explicit showDefaults
     assertFieldSimilarity("a5", BM25Similarity.class); // unspecified, expect default
 
     m = getObj(harness, "wdf_nocase", "fields");

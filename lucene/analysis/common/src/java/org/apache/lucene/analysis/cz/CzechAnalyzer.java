@@ -40,6 +40,8 @@ import org.apache.lucene.util.IOUtils;
  * all). A default set of stopwords is used unless an alternative list is
  * specified.
  * </p>
+ *
+ * @since 3.1
  */
 public final class CzechAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Czech stopwords. */

@@ -25,11 +25,6 @@ import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-
 /** random bounding box and polygon query tests for random generated {@code latitude, longitude} points */
 public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
@@ -105,8 +100,8 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     private boolean testPoint(EdgeTree tree, Point p) {
-      double lat = decodeLatitude(encodeLatitude(p.lat));
-      double lon = decodeLongitude(encodeLongitude(p.lon));
+      double lat = quantizeLat(p.lat);
+      double lon = quantizeLon(p.lon);
       // for consistency w/ the query we test the point as a triangle
       Relation r = tree.relateTriangle(lon, lat, lon, lat, lon, lat);
       if (queryRelation == QueryRelation.WITHIN) {

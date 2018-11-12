@@ -34,6 +34,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.GreekLowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
  

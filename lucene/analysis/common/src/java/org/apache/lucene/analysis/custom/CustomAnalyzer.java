@@ -89,6 +89,8 @@ import static org.apache.lucene.analysis.util.AnalysisSPILoader.newFactoryClassI
  *    .endwhen()
  *    .build();
  * </pre>
+ *
+ * @since 5.0.0
  */
 public final class CustomAnalyzer extends Analyzer {
   

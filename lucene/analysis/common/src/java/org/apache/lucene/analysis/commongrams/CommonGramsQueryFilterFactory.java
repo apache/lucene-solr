@@ -34,6 +34,8 @@ import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
  *     &lt;filter class="solr.CommonGramsQueryFilterFactory" words="commongramsquerystopwords.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class CommonGramsQueryFilterFactory extends CommonGramsFilterFactory {
 

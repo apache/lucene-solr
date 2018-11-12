@@ -199,7 +199,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           getClass()+" doesn't support prefix"); // yet, but it could
     }
-    FieldInfo fieldInfo = fcontext.searcher.getSlowAtomicReader().getFieldInfos().fieldInfo(sf.getName());
+    FieldInfo fieldInfo = fcontext.searcher.getFieldInfos().fieldInfo(sf.getName());
     if (fieldInfo != null &&
         fieldInfo.getDocValuesType() != DocValuesType.NUMERIC &&
         fieldInfo.getDocValuesType() != DocValuesType.SORTED &&
@@ -361,10 +361,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
 
           @Override
           public void collect(int segDoc) throws IOException {
-            if (segDoc > docValues.docID()) {
-              docValues.advance(segDoc);
-            }
-            if (segDoc == docValues.docID()) {
+            if (docValues.advanceExact(segDoc)) {
               long val = toGlobal.get(docValues.ordValue());
               collectValFirstPhase(segDoc, val);
             }

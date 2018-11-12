@@ -34,6 +34,8 @@ import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
  * and {@link #preserveSep()}
  *
  * @lucene.experimental
+ *
+ * @since 5.1.0
  */
 public final class CompletionAnalyzer extends AnalyzerWrapper {
 

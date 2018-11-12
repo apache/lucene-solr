@@ -1,5 +1,23 @@
 = JSON Facet API
 :page-tocclass: right
+:solr-root-path: ../../
+:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 == Facet & Analytics Module
 
@@ -58,6 +76,11 @@ The response to the facet request above will start with documents matching the r
 
 Here's an example of a bucketing facet, that partitions documents into bucket based on the `cat` field (short for category), and returns the top 3 buckets:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#curljsonsimpletermsfacet]
+====
+[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&
@@ -69,6 +92,18 @@ json.facet={
   }
 }'
 ----
+====
+
+[example.tab-pane#solrjjsonsimpletermsfacet]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-simple-terms-facet]
+----
+====
+--
 
 The response below shows us that 32 documents match the default root domain. and 12 documents have `cat:electronics`, 4 documents have `cat:currency`, etc.
 
@@ -116,6 +151,11 @@ curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&json.facet=
 
 Another option is to use the JSON Request API to provide the entire request in JSON:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#curljsontermsfacet2]
+====
+[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -128,6 +168,18 @@ curl http://localhost:8983/solr/techproducts/query -d '
 }
 '
 ----
+====
+
+[example.tab-pane#solrjjsontermsfacet2]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet2]
+----
+====
+--
 
 === JSON Extensions
 

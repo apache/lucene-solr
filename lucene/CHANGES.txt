@@ -192,6 +192,12 @@ Optimizations
 * LUCENE-8507: TopFieldCollector can now update the minimum competitive score if the primary sort
   is by relevancy and the total hit count is not required. (Jim Ferenczi)
 
+======================= Lucene 7.7.0 =======================
+
+Build:
+
+* LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
+
 ======================= Lucene 7.6.0 =======================
 
 Build:
@@ -226,6 +232,12 @@ Bug fixes:
 * LUCENE-8534: Fix incorrect computation for triangles intersecting polygon edges in
   shape tessellation. (Ignacio Vera)
 
+* LUCENE-8559: Fix bug where polygon edges were skipped when checking for intersections.
+  (Ignacio Vera)
+
+* LUCENE-8556: Use latitude and longitude instead of encoding values to check if triangle is ear
+  when using morton optimisation. (Ignacio Vera)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
@@ -252,6 +264,12 @@ Improvements:
   first 4 are index dimensions defining the bounding box of the Triangle and the
   remaining 3 data dimensions define the vertices of the triangle. (Nick Knize)
 
+* LUCENE-8557: LeafReader.getFieldInfos is now documented and tested that it ought to return
+  the same cached instance.  MemoryIndex's impl now pre-creates the FieldInfos instead of
+  re-calculating a new instance each time.  (Tim Underwood, David Smiley)
+
+* LUCENE-8558: Replace O(N) lookup with O(1) lookup in PerFieldMergeState#FilterFieldInfos.
+  (Kranthi via Simon Willnauer)
 Other:
 
 * LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani

@@ -69,21 +69,20 @@ Upgrade Notes
 * SOLR-12643: Since Http2SolrClient does not support exposing connections related metrics. These metrics are no longer
   available 'QUERY.httpShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}',
   'UPDATE.updateShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}'
-  (Cao Manh Dat)
 
 * SOLR-12605: UpdateShardHandler's updateOnlyClient is now a Http2SolrClient (previous HttpSolrClient). This new
-  client does not support 'maxConnections' parameter (Cao Manh Dat). StreamingsSolrClient which is removed and
+  client does not support 'maxConnections','maxConnectionsPerHost' parameters (Cao Manh Dat). StreamingsSolrClient which is removed and
   ConcurrentUpdateSolrClient are no longer used to send updates, updates will be sent asynchronously (without-batching)
   by Http2SolrClient.
 
 * SOLR-12640: HttpShardHandlerFactory's defaultClient is now a Http2SolrClient (previous HttpSolrClient). This new
-  client does not support 'maxConnections' parameter (Cao Manh Dat). LBHttpSolrClient.Req and LBHttpSolrClient.Rsp
+  client does not support 'maxConnections','maxConnectionsPerHost' parameters. LBHttpSolrClient.Req and LBHttpSolrClient.Rsp
   are marked as deprecated, uses LBSolrClient.Req and LBSolrClient.Rsp instead.
 
 * SOLR-12644: Custom AuthenticationPlugin must provide its own setup for Http2SolrClient through
-  implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated. (Cao Manh Dat)
+  implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated.
 
-* SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true.  If there are unforseen highlight problems,
+* SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true. If there are unforseen highlight problems,
   this may be the culprit.
 
 New Features
@@ -125,6 +124,21 @@ Other Changes
 
 * SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy)
 
+==================  7.7.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache ZooKeeper 3.4.11
+Jetty 9.4.11.v20180605
+
+
+(No Changes)
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -139,6 +153,7 @@ Jetty 9.4.11.v20180605
 
 Upgrade Notes
 ----------------------
+
 * SOLR-12767: The min_rf parameter is no longer needed, Solr will always return the achieved replication factor (rf)
   in the response header.
 
@@ -199,7 +214,29 @@ New Features
 
 * SOLR-12862: Add log10 Stream Evaluator and allow the pow Stream Evaluator to accept a vector of exponents (Joel Bernstein)
 
+* SOLR-12942: Add an option in IndexSizeTrigger to select the split shard method. (ab)
+
 * SOLR-12938: Cluster Status returns results for aliases, instead of throwing exceptions (Gus Heck)
+
+* SOLR-11997: Suggestions API/UI should show an entry where a violation could not be resolved (noble)
+
+* SOLR-12971: Add pivot Stream Evaluator to pivot facet co-occurrence counts into a matrix (Joel Bernstein)
+
+* SOLR-12795: Introduce 'rows' and 'offset' parameter in FacetStream (Joel Bernstein, Amrit Sarkar, Varun Thacker)
+
+* SOLR-11572: Add recip Stream Evaluator to support reciprocal transformations (Joel Bernstein)
+
+* SOLR-12936: Allow percentiles Stream Evaluator to accept an array of percentiles to calculate (Joel bernstein)
+
+* SOLR-12829: Add plist (parallel list) Streaming Expression (Joel Bernstein)
+
+* SOLR-12975: Add ltrim and rtrim Stream Evaluators (Joel Bernstein)
+
+* SOLR-12962: Added a new 'uninvertible' option for fields and fieldtypes. This defaults to 'true' for
+  backcompat allowing a FieldCache to be built for indexed fields as needed, but users are encouraged
+  to set this to false (using docValues as needed) to reduce the risk of large fluxuations in heap
+  size due to unexpected attempts to sort/facet/function on non-docValue fields. (hossman)
+
 
 Other Changes
 ----------------------
@@ -219,9 +256,18 @@ Other Changes
 
 * SOLR-12423: Upgrade to Tika 1.19.1 when available (Tim Allison via Erick Erickson)
 
-* SOLR-12793: Move TestCloudJSONFacetJoinDomain amd TestCloudJSONFacetSKG to the facet test package (Varun Thacker)
+* SOLR-12793: Move TestCloudJSONFacetJoinDomain and TestCloudJSONFacetSKG to the facet test package (Varun Thacker)
 
 * SOLR-12861: Add Solr factory for ByteBuffersDirectory.
+
+* SOLR-12746: Simplify the Ref Guide HTML structure and use semantic HTML tags where possible. Adds new template files
+  for Asciidoctor HTML conversion. Building the HTML version now requires the Slim gem. (Cassandra Targett)
+
+* SOLR-12956: Add Javadoc @since tag to Analyzer component classes (Alexandre Rafalovitch)
+
+* SOLR-12966: Add Javadoc @since tag to URP classes (Alexandre Rafalovitch)
+
+* SOLR-12600: Fix parameter names in Solr JSON documentation (Alexandre Rafalovitch)
 
 Bug Fixes
 ----------------------
@@ -257,10 +303,19 @@ Bug Fixes
 
 * SOLR-7557: Fix parsing of child documents using queryAndStreamResponse (Marvin Bredal Lillehaug/Stian Østerhaug via janhoy)
 
-* SOLR-12875: fix ArrayIndexOutOfBoundsException when unique(field) or uniqueBlock(_root_) is 
+* SOLR-12875: fix ArrayIndexOutOfBoundsException when unique(field) or uniqueBlock(_root_) is
 used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
 
+* SOLR-12954: fix facet.pivot refinement bugs when using facet.sort=index and facet.mincount>1 (hossman)
+
 * SOLR-12023: Autoscaling policy engine shuffles replicas needlessly (noble)
+
+* SOLR-12243: Edismax missing phrase queries when phrases contain multiterm synonyms
+  (Elizabeth Haubert, Alessandro Benedetti, Uwe Schindler, Steve Rowe)
+
+* SOLR-12977: Autoscaling tries to fetch metrics from dead nodes (noble)
+
+* SOLR-12978: In autoscaling NPE thrown for nodes where value is absent (noble)
 
 Improvements
 ----------------------
@@ -280,6 +335,20 @@ Improvements
   encoding header or file extension. (Andrew Lundgren via David Smiley, Jan Høydahl)
 
 * SOLR-12892: MapWriter to use CharSequence instead of String (noble)
+
+* SOLR-12882: Eliminate excessive lambda allocation in json facets FacetFieldProcessorByHashDV (Tim Underwood)
+
+* SOLR-12699: Make contrib/ltr LTRScoringModel immutable and cache its hashCode.
+  (Stanislav Livotov, Edward Ribeiro, Christine Poerschke)
+
+* LUCENE-8557: Some internal LeafReader.getFieldInfos implementations were being re-computed on-demand instead of
+  once up front leading to some slowdowns in places like JSON Facets and field collapsing. (Tim Underwood, David Smiley)
+
+* SOLR-12964: Json Facets: use DocValuesIterator advanceExact() instead of advance() in FacetFieldProcessorByHashDV and
+  UniqueSinglevaluedSlotAcc. (Tim Underwood)
+
+* SOLR-12880: Json Facets: Show the FacetProcessor class name instead of the FacetRequest in the JSON Facets debug-trace
+  output (Tim Underwood)
 
 ==================  7.5.0 ==================
 
@@ -550,13 +619,12 @@ Optimizations
 * SOLR-11654: Time Routed Alias will now route documents to the ideal shard of a collection, thus avoiding a hop.
   Usually documents were already routed well but not always.  (Gus Heck, David Smiley)
 
-* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery.
-  (Cao Manh Dat)
-
 * SOLR-11598: The export handler does not limit users to 4 sort fields and is now unlimited. However the speed at
   which we can export is directly proportional to the number of sort fields specified. This change also allows streaming
   expressions to group by on more than 4 fields. (Aroop Ganguly, Amrit Sarkar, Varun Thacker)
 
+* SOLR-12305: When a replica is applying updates, some kind of updates can skip buffering for faster recovery.
+  (Cao Manh Dat)
 
 * SOLR-12509: Improve SplitShardCmd performance and reliability. A new method of splitting has been
   introduced (splitMethod=link) which uses hard-linking of index files when possible, resulting in
@@ -605,6 +673,8 @@ Other Changes
 * SOLR-10984: Clean up web.xml, removing old redirects and outdated comments (Varun Thacker, janhoy)
 
 * SOLR-12617: Remove Commons BeanUtils as a dependency (Varun Thacker)
+
+* SOLR-11008: Use a lighter config for MetricsHandlerTest and ensure the core is up before the test starts (Varun Thacker)
 
 * SOLR-11766: Move Streaming Expressions section in Ref Guide to be a top-level section. (Cassandra Targett)
 
@@ -735,6 +805,11 @@ New Features
 
 * SOLR-12328: JSON Facet API: Domain change with graph query.
   (Daniel Meehl, Kevin Watters, yonik)
+
+* SOLR-11453: Configuring slowQueryThresholdMillis logs slow requests to a separate file - solr_slow_requests.log.
+  (Shawn Heisey, Remko Popma, Varun Thacker)
+
+* SOLR-12401: Add getValue() and setValue() Stream Evaluators (Joel Bernstein, janhoy)
 
 * SOLR-11779, SOLR-12438: Basic long-term collection of aggregated metrics. Historical data is
   maintained as multi-resolution time series using round-robin databases in the '.system'
@@ -885,10 +960,10 @@ Bug Fixes
 * SOLR-3567: Spellcheck custom parameters not being passed through due to wrong prefix creation.
   (Josh Lucas via shalin)
 
-* SOLR-12294: update processors loaded from runtime jars fail to load if they are specified
-   in an update processor chain (noble)
-
 * SOLR-12358: Autoscaling suggestions fail randomly with sorting (noble)
+
+* SOLR-12294: update processors loaded from runtime jars fail to load if they are specified
+  in an update processor chain (noble)
 
 * SOLR-12314: Use http timeout's defined in solr.xml for creating ConcurrentUpdateSolrClient during
   indexing requests between leader and replica ( Mark Miller, Varun Thacker)
@@ -943,7 +1018,7 @@ Optimizations
 * SOLR-11880: Avoid creating new exceptions for every request made to MDCAwareThreadPoolExecutor by distributed
   search and update operations. (Varun Thacker, shalin)
 
-* SOLR-12375: Optimize Lucene needsScore / ScoreMode use:
+* SOLR-12375: Optimize Lucene ScoreMode use:
   A non-cached filter query could be told incorrectly that scores were needed.
   The /export (ExportQParserPlugin) would declare incorrectly that scores are needed.
   Expanded docs (expand component) could be told incorrectly that scores are needed.  (David Smiley)
@@ -1035,6 +1110,8 @@ Other Changes
 
 * SOLR-12435: Fix bin/solr help and ref guide text to describe ZK_HOST in solr.in.sh/solr.in.cmd
   as an alternative to -z cmdline param. (Steve Rowe)
+
+* SOLR-12428: Solr LTR jar now included in _default configset's solrconfig.xml (Ishan Chattopadhyaya)
 
 ==================  7.3.1 ==================
 
