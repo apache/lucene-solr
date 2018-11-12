@@ -316,8 +316,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     CloudSolrClient solrClient;
 
     public boolean isNodeAlive(String node) {
-      if (zkClientClusterStateProvider != null && zkClientClusterStateProvider.getLiveNodes().contains(node))
-        return true;
+      if (zkClientClusterStateProvider != null) {
+        return zkClientClusterStateProvider.getLiveNodes().contains(node);
+      }
       return true;
     }
     public ClientSnitchCtx(SnitchInfo perSnitch,
