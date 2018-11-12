@@ -128,7 +128,6 @@ New Features
   to set this to false (using docValues as needed) to reduce the risk of large fluxuations in heap
   size due to unexpected attempts to sort/facet/function on non-docValue fields. (hossman)
 
-* SOLR-12977: Autoscaling tries to fetch metrics from dead nodes (noble)
 
 Other Changes
 ----------------------
@@ -202,6 +201,8 @@ used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
 
 * SOLR-12243: Edismax missing phrase queries when phrases contain multiterm synonyms
   (Elizabeth Haubert, Alessandro Benedetti, Uwe Schindler, Steve Rowe)
+
+* SOLR-12977: Autoscaling tries to fetch metrics from dead nodes (noble)
 
 Improvements
 ----------------------
