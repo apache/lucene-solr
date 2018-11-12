@@ -129,12 +129,12 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
      */
     private void checkAndThrow() {
       if (queryTimeout.shouldExit()) {
-        throw new ExitingReaderException("The request took too long to iterate over terms. Timeout: "
+        throw new ExitingReaderException("The request took too long to iterate over point values. Timeout: "
             + queryTimeout.toString()
             + ", PointValues=" + in
         );
       } else if (Thread.interrupted()) {
-        throw new ExitingReaderException("Interrupted while iterating over terms. PointValues=" + in);
+        throw new ExitingReaderException("Interrupted while iterating over point values. PointValues=" + in);
       }
     }
 
