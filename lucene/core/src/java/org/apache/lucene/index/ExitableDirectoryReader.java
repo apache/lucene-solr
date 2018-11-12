@@ -237,13 +237,11 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
 
     @Override
     public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      checkAndThrow();
       return in.compare(minPackedValue, maxPackedValue);
     }
 
     @Override
     public void grow(int count) {
-      checkAndThrow();
       in.grow(count);
     }
   }
