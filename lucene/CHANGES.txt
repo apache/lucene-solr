@@ -212,6 +212,11 @@ New Features
   IndexWriterConfig#setIndexCreatedVersionMajor. This is an expert feature.
   (Adrien Grand)
 
+Improvements:
+
+* LUCENE-8463: TopFieldCollector can now early-terminates queries when sorting by SortField.DOC.
+  (Christophe Bismuth via Jim Ferenczi)
+
 ======================= Lucene 7.6.0 =======================
 
 Build
