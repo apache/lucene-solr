@@ -40,17 +40,17 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public abstract class AuthenticationProtocolHandler implements ProtocolHandler
+public abstract class SolrAuthenticationProtocolHandler implements ProtocolHandler
 {
   public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
-  public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
+  public static final Logger LOG = Log.getLogger(SolrAuthenticationProtocolHandler.class);
   private final HttpClient client;
   private final int maxContentLength;
   private final ResponseNotifier notifier;
 
   private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
 
-  protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
+  protected SolrAuthenticationProtocolHandler(HttpClient client, int maxContentLength)
   {
     this.client = client;
     this.maxContentLength = maxContentLength;

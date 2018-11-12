@@ -37,7 +37,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
 import org.eclipse.jetty.client.ProxyAuthenticationProtocolHandler;
 import org.apache.solr.client.solrj.util.SolrBasicAuthentication;
-import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
+import org.eclipse.jetty.client.SolrWWWAuthenticationProtocolHandler;
 
 /**
  * HttpClientConfigurer implementation providing support for preemptive Http Basic authentication
@@ -117,7 +117,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
     HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
     authenticationStore.addAuthentication(new SolrBasicAuthentication(basicAuthUser, basicAuthPass));
     client.getHttpClient().setAuthenticationStore(authenticationStore);
-    client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client.getHttpClient()));
+    client.getProtocolHandlers().put(new SolrWWWAuthenticationProtocolHandler(client.getHttpClient()));
     client.getProtocolHandlers().put(new ProxyAuthenticationProtocolHandler(client.getHttpClient()));
   }
 
