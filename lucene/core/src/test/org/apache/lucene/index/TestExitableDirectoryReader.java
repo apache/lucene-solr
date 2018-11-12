@@ -119,7 +119,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
 
     Query query = new PrefixQuery(new Term("default", "o"));
 
-    // Set a fairly high timeout value (1 second) and expect the query to complete in that time frame.
+    // Set a fairly high timeout value (infinite) and expect the query to complete in that time frame.
     // Not checking the validity of the result, all we are bothered about in this test is the timing out.
     directoryReader = DirectoryReader.open(directory);
     exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, inifiniteQueryTimeout());
@@ -191,7 +191,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
 
     Query query = IntPoint.newRangeQuery("default", 10, 20);
 
-    // Set a fairly high timeout value (1 second) and expect the query to complete in that time frame.
+    // Set a fairly high timeout value (infinite) and expect the query to complete in that time frame.
     // Not checking the validity of the result, all we are bothered about in this test is the timing out.
     directoryReader = DirectoryReader.open(directory);
     exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, inifiniteQueryTimeout());
