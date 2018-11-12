@@ -195,22 +195,15 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
 
   public static class ExitableIntersectVisitor implements PointValues.IntersectVisitor {
 
-    public static final int DEFAULT_MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK = 10;
+    public static final int MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK = 10;
 
     private final PointValues.IntersectVisitor in;
     private final QueryTimeout queryTimeout;
-    private final int maxCallsBeforeQueryTimeoutCheck;
     private int calls = 0;
 
     public ExitableIntersectVisitor(PointValues.IntersectVisitor in, QueryTimeout queryTimeout) {
-      this(in, queryTimeout, DEFAULT_MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK);
-    }
-
-    public ExitableIntersectVisitor(PointValues.IntersectVisitor in,
-                                    QueryTimeout queryTimeout, int maxCallsBeforeQueryTimeoutCheck) {
       this.in = in;
       this.queryTimeout = queryTimeout;
-      this.maxCallsBeforeQueryTimeoutCheck = maxCallsBeforeQueryTimeoutCheck;
     }
 
     /**
@@ -218,7 +211,7 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
      * or if {@link Thread#interrupted()} returns true.
      */
     private void checkAndThrow() {
-      if (calls++ % maxCallsBeforeQueryTimeoutCheck == 0 && queryTimeout.shouldExit()) {
+      if (calls++ % MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK == 0 && queryTimeout.shouldExit()) {
         throw new ExitingReaderException("The request took too long to intersect point values. Timeout: "
             + queryTimeout.toString()
             + ", PointValues=" + in
