@@ -75,9 +75,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   private static boolean canEarlyTerminateOnDocId(Sort searchSort, Sort indexSort) {
     final SortField[] fields1 = searchSort.getSort();
     final SortField[] fields2 = indexSort.getSort();
-    return fields1.length == 1 &&
-           fields2.length == 1 &&
-           SortField.FIELD_DOC.equals(fields1[0]) &&
+    return SortField.FIELD_DOC.equals(fields1[0]) &&
            SortField.FIELD_DOC.equals(fields2[0]);
   }
 
