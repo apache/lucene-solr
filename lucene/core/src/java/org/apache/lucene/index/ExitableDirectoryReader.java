@@ -141,7 +141,7 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     @Override
     public void intersect(IntersectVisitor visitor) throws IOException {
       checkAndThrow();
-      in.intersect(visitor);
+      in.intersect(new ExitableIntersectVisitor(visitor, queryTimeout));
     }
 
     @Override
@@ -190,6 +190,66 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     public int getDocCount() {
       checkAndThrow();
       return in.getDocCount();
+    }
+  }
+
+  public static class ExitableIntersectVisitor implements PointValues.IntersectVisitor {
+
+    public static final int DEFAULT_MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK = 10;
+
+    private final PointValues.IntersectVisitor in;
+    private final QueryTimeout queryTimeout;
+    private final int maxCallsBeforeQueryTimeoutCheck;
+    private int calls = 0;
+
+    public ExitableIntersectVisitor(PointValues.IntersectVisitor in, QueryTimeout queryTimeout) {
+      this(in, queryTimeout, DEFAULT_MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK);
+    }
+
+    public ExitableIntersectVisitor(PointValues.IntersectVisitor in,
+                                    QueryTimeout queryTimeout, int maxCallsBeforeQueryTimeoutCheck) {
+      this.in = in;
+      this.queryTimeout = queryTimeout;
+      this.maxCallsBeforeQueryTimeoutCheck = maxCallsBeforeQueryTimeoutCheck;
+    }
+
+    /**
+     * Throws {@link ExitingReaderException} if {@link QueryTimeout#shouldExit()} returns true,
+     * or if {@link Thread#interrupted()} returns true.
+     */
+    private void checkAndThrow() {
+      if (calls++ % maxCallsBeforeQueryTimeoutCheck == 0 && queryTimeout.shouldExit()) {
+        throw new ExitingReaderException("The request took too long to intersect point values. Timeout: "
+            + queryTimeout.toString()
+            + ", PointValues=" + in
+        );
+      } else if (Thread.interrupted()) {
+        throw new ExitingReaderException("Interrupted while intersecting point values. PointValues=" + in);
+      }
+    }
+
+    @Override
+    public void visit(int docID) throws IOException {
+      checkAndThrow();
+      in.visit(docID);
+    }
+
+    @Override
+    public void visit(int docID, byte[] packedValue) throws IOException {
+      checkAndThrow();
+      in.visit(docID, packedValue);
+    }
+
+    @Override
+    public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      checkAndThrow();
+      return in.compare(minPackedValue, maxPackedValue);
+    }
+
+    @Override
+    public void grow(int count) {
+      checkAndThrow();
+      in.grow(count);
     }
   }
 
