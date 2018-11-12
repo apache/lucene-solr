@@ -118,7 +118,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-//    ew.put("liveNodes", liveNodes);
     ew.put("replicaInfo", Utils.getDeepCopy(nodeVsCollectionVsShardVsReplicaInfo, 5));
     ew.put("nodeValues", nodeVsTags);
   }
@@ -189,6 +188,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   }
 
   static void fetchReplicaMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
+    if (!ctx.isNodeAlive(solrNode)) return;
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
     try {
@@ -216,6 +216,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   static class AutoScalingSnitch extends ImplicitSnitch {
     @Override
     protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
+      if (!((ClientSnitchCtx)ctx).isNodeAlive(solrNode)) return;
       ClientSnitchCtx snitchContext = (ClientSnitchCtx) ctx;
       Map<String, Object> metricsKeyVsTag = new HashMap<>();
       for (String tag : requestedTags) {
@@ -314,6 +315,12 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     ZkClientClusterStateProvider zkClientClusterStateProvider;
     CloudSolrClient solrClient;
 
+    public boolean isNodeAlive(String node) {
+      if (zkClientClusterStateProvider != null) {
+        return zkClientClusterStateProvider.getLiveNodes().contains(node);
+      }
+      return true;
+    }
     public ClientSnitchCtx(SnitchInfo perSnitch,
                            String node, Map<String, Object> session,
                            CloudSolrClient solrClient) {

@@ -252,7 +252,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     log.info("Looked up max version bucket seed "+maxVersionBefore+" for core "+coreName);
 
     // now up the stakes and do more docs
-    int numDocs = TEST_NIGHTLY ? 1000 : 100;
+    int numDocs = TEST_NIGHTLY ? 1000 : 105;
     boolean hasPartition = false;
     for (int d = 0; d < numDocs; d++) {
       // create / restore partition every 100 docs
