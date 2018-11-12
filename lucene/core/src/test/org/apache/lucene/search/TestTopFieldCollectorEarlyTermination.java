@@ -102,7 +102,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       reader = iw.getReader();
     }
   }
-
+  
   private void closeIndex() throws IOException {
     reader.close();
     iw.close();
@@ -166,7 +166,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       closeIndex();
     }
   }
-
+  
   public void testCanEarlyTerminateOnDocId() {
     assertTrue(TopFieldCollector.canEarlyTerminate(
         new Sort(SortField.FIELD_DOC),
