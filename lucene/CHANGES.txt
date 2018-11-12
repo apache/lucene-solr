@@ -198,6 +198,12 @@ Build:
 
 * LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
 
+New Features
+
+* LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
+  points such as range queries or geo queries.
+  (Christophe Bismuth via Adrien Grand)
+
 ======================= Lucene 7.6.0 =======================
 
 Build:
