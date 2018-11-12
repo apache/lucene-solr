@@ -128,7 +128,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     searcher.search(query, 10);
     reader.close();
 
-    // Set a really low timeout value (1 millisecond) and expect an Exception
+    // Set a really low timeout value (immediate) and expect an Exception
     directoryReader = DirectoryReader.open(directory);
     exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, immediateQueryTimeout());
     reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
@@ -200,7 +200,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     searcher.search(query, 10);
     reader.close();
 
-    // Set a really low timeout value (1 millisecond) and expect an Exception
+    // Set a really low timeout value (immediate) and expect an Exception
     directoryReader = DirectoryReader.open(directory);
     exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, immediateQueryTimeout());
     reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
