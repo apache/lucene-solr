@@ -27,6 +27,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static org.apache.lucene.search.BooleanClause.Occur;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -109,8 +110,30 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       LeafReaderContext context = searcher.getIndexReader().leaves().get(0);
 
       Scorer scorer = weight.scorer(context);
+      DocIdSetIterator disi = scorer.iterator();
 
-      return new ConstantScoreScorer(scorer.getWeight(), score, scorer.iterator());
+      ConstantScoreScorer constantScoreScorer;
+      if (randomBoolean()) {
+        constantScoreScorer = new ConstantScoreScorer(scorer.getWeight(), score, disi);
+      } else {
+        constantScoreScorer = new ConstantScoreScorer(scorer.getWeight(), score, new TwoPhaseIterator(disi) {
+          @Override
+          public boolean matches() throws IOException {
+            try {
+              return context.reader().document(approximation.docID()) != null;
+            } catch (Exception ignored) {
+              return false;
+            }
+          }
+
+          @Override
+          public float matchCost() {
+            return 0;
+          }
+        });
+      }
+
+      return constantScoreScorer;
     }
 
     @Override
