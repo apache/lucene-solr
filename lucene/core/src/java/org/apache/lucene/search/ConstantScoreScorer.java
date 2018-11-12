@@ -47,7 +47,7 @@ public final class ConstantScoreScorer extends Scorer {
   }
 
   private class DocIdSetIteratorWrapper extends DocIdSetIterator {
-    final DocIdSetIterator delegate;
+    DocIdSetIterator delegate;
 
     DocIdSetIteratorWrapper(DocIdSetIterator delegate) {
       this.delegate = delegate;
@@ -75,9 +75,9 @@ public final class ConstantScoreScorer extends Scorer {
   }
 
   private final float score;
-  private DocIdSetIterator approximation;
-  private TwoPhaseIterator twoPhaseIterator;
-  private DocIdSetIterator disi;
+  private final DocIdSetIteratorWrapper approximation;
+  private final TwoPhaseIterator twoPhaseIterator;
+  private final DocIdSetIteratorWrapper disi;
 
   /** Constructor based on a {@link DocIdSetIterator} which will be used to
    *  drive iteration. Two phase iteration will not be supported.
@@ -102,7 +102,7 @@ public final class ConstantScoreScorer extends Scorer {
     this.score = score;
     this.approximation = new DocIdSetIteratorWrapper(twoPhaseIterator.approximation());
     this.twoPhaseIterator = new TwoPhaseIteratorWrapper(twoPhaseIterator, this.approximation);
-    this.disi = TwoPhaseIterator.asDocIdSetIterator(this.twoPhaseIterator);
+    this.disi = new DocIdSetIteratorWrapper(TwoPhaseIterator.asDocIdSetIterator(this.twoPhaseIterator));
   }
 
   @Override
@@ -114,11 +114,9 @@ public final class ConstantScoreScorer extends Scorer {
   public void setMinCompetitiveScore(float minScore) throws IOException {
     if (minScore > score) {
       if (twoPhaseIterator == null) {
-        disi = new DocIdSetIteratorWrapper(DocIdSetIterator.empty());
+        disi.delegate = DocIdSetIterator.empty();
       } else {
-        approximation = new DocIdSetIteratorWrapper(DocIdSetIterator.empty());
-        twoPhaseIterator = new TwoPhaseIteratorWrapper(twoPhaseIterator, approximation);
-        disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
+        approximation.delegate = DocIdSetIterator.empty();
       }
     }
   }
