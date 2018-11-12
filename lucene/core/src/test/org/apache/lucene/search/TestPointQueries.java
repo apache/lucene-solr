@@ -208,7 +208,7 @@ public class TestPointQueries extends LuceneTestCase {
     r.close();
     dir.close();
   }
-
+  
   public void testCrazyDoubles() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
@@ -216,11 +216,11 @@ public class TestPointQueries extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new DoublePoint("point", Double.NEGATIVE_INFINITY));
     w.addDocument(doc);
-
+    
     doc = new Document();
     doc.add(new DoublePoint("point", -0.0D));
     w.addDocument(doc);
-
+    
     doc = new Document();
     doc.add(new DoublePoint("point", +0.0D));
     w.addDocument(doc);
@@ -228,11 +228,11 @@ public class TestPointQueries extends LuceneTestCase {
     doc = new Document();
     doc.add(new DoublePoint("point", Double.MIN_VALUE));
     w.addDocument(doc);
-
+    
     doc = new Document();
     doc.add(new DoublePoint("point", Double.MAX_VALUE));
     w.addDocument(doc);
-
+    
     doc = new Document();
     doc.add(new DoublePoint("point", Double.POSITIVE_INFINITY));
     w.addDocument(doc);
@@ -243,7 +243,7 @@ public class TestPointQueries extends LuceneTestCase {
 
     DirectoryReader r = DirectoryReader.open(w);
     IndexSearcher s = new IndexSearcher(r);
-
+    
     // exact queries
     assertEquals(1, s.count(DoublePoint.newExactQuery("point", Double.NEGATIVE_INFINITY)));
     assertEquals(1, s.count(DoublePoint.newExactQuery("point", -0.0D)));
@@ -252,7 +252,7 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(1, s.count(DoublePoint.newExactQuery("point", Double.MAX_VALUE)));
     assertEquals(1, s.count(DoublePoint.newExactQuery("point", Double.POSITIVE_INFINITY)));
     assertEquals(1, s.count(DoublePoint.newExactQuery("point", Double.NaN)));
-
+    
     // set query
     double set[] = new double[] { Double.MAX_VALUE, Double.NaN, +0.0D, Double.NEGATIVE_INFINITY, Double.MIN_VALUE, -0.0D, Double.POSITIVE_INFINITY };
     assertEquals(7, s.count(DoublePoint.newSetQuery("point", set)));
@@ -269,7 +269,7 @@ public class TestPointQueries extends LuceneTestCase {
     r.close();
     dir.close();
   }
-
+  
   public void testCrazyFloats() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
@@ -277,11 +277,11 @@ public class TestPointQueries extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new FloatPoint("point", Float.NEGATIVE_INFINITY));
     w.addDocument(doc);
-
+    
     doc = new Document();
     doc.add(new FloatPoint("point", -0.0F));
     w.addDocument(doc);
-
+    
     doc = new Document();
     doc.add(new FloatPoint("point", +0.0F));
     w.addDocument(doc);
@@ -289,11 +289,11 @@ public class TestPointQueries extends LuceneTestCase {
     doc = new Document();
     doc.add(new FloatPoint("point", Float.MIN_VALUE));
     w.addDocument(doc);
-
+    
     doc = new Document();
     doc.add(new FloatPoint("point", Float.MAX_VALUE));
     w.addDocument(doc);
-
+    
     doc = new Document();
     doc.add(new FloatPoint("point", Float.POSITIVE_INFINITY));
     w.addDocument(doc);
@@ -304,7 +304,7 @@ public class TestPointQueries extends LuceneTestCase {
 
     DirectoryReader r = DirectoryReader.open(w);
     IndexSearcher s = new IndexSearcher(r);
-
+    
     // exact queries
     assertEquals(1, s.count(FloatPoint.newExactQuery("point", Float.NEGATIVE_INFINITY)));
     assertEquals(1, s.count(FloatPoint.newExactQuery("point", -0.0F)));
@@ -313,7 +313,7 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(1, s.count(FloatPoint.newExactQuery("point", Float.MAX_VALUE)));
     assertEquals(1, s.count(FloatPoint.newExactQuery("point", Float.POSITIVE_INFINITY)));
     assertEquals(1, s.count(FloatPoint.newExactQuery("point", Float.NaN)));
-
+    
     // set query
     float set[] = new float[] { Float.MAX_VALUE, Float.NaN, +0.0F, Float.NEGATIVE_INFINITY, Float.MIN_VALUE, -0.0F, Float.POSITIVE_INFINITY };
     assertEquals(7, s.count(FloatPoint.newSetQuery("point", set)));
@@ -577,9 +577,9 @@ public class TestPointQueries extends LuceneTestCase {
               if (VERBOSE) {
                 System.out.println(Thread.currentThread().getName() + ":  hitCount: " + hits.cardinality());
               }
-
+      
               NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
-
+              
               for(int docID=0;docID<r.maxDoc();docID++) {
                 assertEquals(docID, docIDToID.nextDoc());
                 int id = (int) docIDToID.longValue();
@@ -904,7 +904,7 @@ public class TestPointQueries extends LuceneTestCase {
       return valueMid + TestUtil.nextInt(random(), -valueRange, valueRange);
     }
   }
-
+  
   public void testMinMaxLong() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -1230,7 +1230,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testToString() throws Exception {
-
+    
     // ints
     assertEquals("field:[1 TO 2]", IntPoint.newRangeQuery("field", 1, 2).toString());
     assertEquals("field:[-2 TO 1]", IntPoint.newRangeQuery("field", -2, 1).toString());
@@ -1238,18 +1238,18 @@ public class TestPointQueries extends LuceneTestCase {
     // longs
     assertEquals("field:[1099511627776 TO 2199023255552]", LongPoint.newRangeQuery("field", 1L<<40, 1L<<41).toString());
     assertEquals("field:[-5 TO 6]", LongPoint.newRangeQuery("field", -5L, 6L).toString());
-
+    
     // floats
     assertEquals("field:[1.3 TO 2.5]", FloatPoint.newRangeQuery("field", 1.3F, 2.5F).toString());
     assertEquals("field:[-2.9 TO 1.0]", FloatPoint.newRangeQuery("field", -2.9F, 1.0F).toString());
-
+    
     // doubles
     assertEquals("field:[1.3 TO 2.5]", DoublePoint.newRangeQuery("field", 1.3, 2.5).toString());
     assertEquals("field:[-2.9 TO 1.0]", DoublePoint.newRangeQuery("field", -2.9, 1.0).toString());
-
+    
     // n-dimensional double
-    assertEquals("field:[1.3 TO 2.5],[-2.9 TO 1.0]", DoublePoint.newRangeQuery("field",
-                                                                      new double[] { 1.3, -2.9 },
+    assertEquals("field:[1.3 TO 2.5],[-2.9 TO 1.0]", DoublePoint.newRangeQuery("field", 
+                                                                      new double[] { 1.3, -2.9 }, 
                                                                       new double[] { 2.5, 1.0 }).toString());
 
   }
@@ -1612,7 +1612,7 @@ public class TestPointQueries extends LuceneTestCase {
     r.close();
     dir.close();
   }
-
+  
   /** Boxed methods for primitive types should behave the same as unboxed: just sugar */
   public void testPointIntSetBoxed() throws Exception {
     assertEquals(IntPoint.newSetQuery("foo", 1, 2, 3), IntPoint.newSetQuery("foo", Arrays.asList(1, 2, 3)));
