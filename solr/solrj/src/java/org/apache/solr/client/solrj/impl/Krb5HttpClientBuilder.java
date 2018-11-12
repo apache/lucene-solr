@@ -16,18 +16,18 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -44,17 +44,8 @@ import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
+import org.eclipse.jetty.client.SPNEGOAuthentication;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
-import org.eclipse.jetty.client.api.Authentication;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.util.Attributes;
-import org.ietf.jgss.GSSContext;
-import org.ietf.jgss.GSSCredential;
-import org.ietf.jgss.GSSException;
-import org.ietf.jgss.GSSManager;
-import org.ietf.jgss.GSSName;
-import org.ietf.jgss.Oid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,62 +86,45 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     return builder.isPresent() ? getBuilder(builder.get()) : getBuilder();
   }
 
+  private SPNEGOAuthentication createSPNEGOAuthentication() {
+    SPNEGOAuthentication authentication = new SPNEGOAuthentication(null){
+
+      public boolean matches(String type, URI uri, String realm) {
+        return this.getType().equals(type);
+      }
+    };
+    String clientAppName = System.getProperty("solr.kerberos.jaas.appname", "Client");
+    AppConfigurationEntry[] entries = jaasConfig.getAppConfigurationEntry(clientAppName);
+    if (entries == null) {
+      log.warn("Could not find login configuration entry for {}. SPNego authentication may not be successful.", (Object)clientAppName);
+      return authentication;
+    }
+    if (entries.length != 1) {
+      log.warn("Multiple login modules are specified in the configuration file");
+      return authentication;
+    }
+    Map<String, ?> options = entries[0].getOptions();
+    String keyTab = (String)options.get("keyTab");
+    if (keyTab != null) {
+      authentication.setUserKeyTabPath(Paths.get(keyTab, new String[0]));
+    }
+    authentication.setServiceName("HTTP");
+    authentication.setUserName((String)options.get("principal"));
+    if ("true".equalsIgnoreCase((String)options.get("useTicketCache"))) {
+      authentication.setUseTicketCache(true);
+      String ticketCachePath = (String)options.get("ticketCache");
+      if (ticketCachePath != null) {
+        authentication.setTicketCachePath(Paths.get(ticketCachePath));
+      }
+      authentication.setRenewTGT("true".equalsIgnoreCase((String)options.get("renewTGT")));
+    }
+    return authentication;
+  }
+
   @Override
   public void setup(Http2SolrClient http2Client) {
     HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
-    authenticationStore.addAuthentication(new Authentication() {
-      @Override
-      public boolean matches(String type, URI uri, String realm) {
-        return "Negotiate".equals(type);
-      }
-
-      @Override
-      public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context) {
-        String challenge = headerInfo.getBase64();
-        if (challenge == null) challenge = "";
-        byte[] input = java.util.Base64.getDecoder().decode(challenge);
-        byte[] token;
-        String authServer = request.getHost();
-        final GSSManager manager = GSSManager.getInstance();
-        try {
-          GSSName serverName = manager.createName("HTTP@" + authServer, GSSName.NT_HOSTBASED_SERVICE);
-          final GSSContext gssContext = createGSSContext(manager, new Oid(SPNEGO_OID), serverName, null);
-          if (input != null) {
-            token = gssContext.initSecContext(input, 0, input.length);
-          } else {
-            token = gssContext.initSecContext(new byte[] {}, 0, 0);
-          }
-        } catch (GSSException e) {
-          throw new IllegalArgumentException("Unable to init GSSContext", e);
-        }
-        return new Result() {
-          AtomicBoolean sentToken = new AtomicBoolean(false);
-          @Override
-          public URI getURI() {
-            // Since Kerberos is connection based authentication, sub-sequence requests won't need to resend the token in header
-            // by return null, the ProtocolHandler won't try to apply this result on sequence requests
-            return null;
-          }
-
-          @Override
-          public void apply(Request request) {
-            if (sentToken.get()) return;
-
-            final String tokenstr = java.util.Base64.getEncoder().encodeToString(token);
-            log.info("Sending response with token:{} back to the auth server", tokenstr);
-            request.header(headerInfo.getHeader().asString(), "Negotiate "+tokenstr);
-          }
-        };
-      }
-
-      private GSSContext createGSSContext(GSSManager manager, Oid oid, GSSName serverName, final GSSCredential gssCredential) throws GSSException {
-        // Get the credentials from the JAAS configuration rather than here
-        final GSSContext gssContext = manager.createContext(serverName.canonicalize(oid), oid, gssCredential,
-            GSSContext.DEFAULT_LIFETIME);
-        gssContext.requestMutualAuth(true);
-        return gssContext;
-      }
-    });
+    authenticationStore.addAuthentication(createSPNEGOAuthentication());
     http2Client.getHttpClient().setAuthenticationStore(authenticationStore);
     http2Client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
   }

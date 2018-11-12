@@ -52,7 +52,9 @@
       <mkdir dir="${javadoc.dir}/${name}"/>
       <solr-invoke-javadoc>
         <solrsources>
-          <packageset dir="${src.dir}"/>
+          <packageset dir="${src.dir}">
+            <exclude name="**/jetty/**"/>
+          </packageset>
         </solrsources>
       </solr-invoke-javadoc>
       <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
