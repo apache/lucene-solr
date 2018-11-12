@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.ExitableDirectoryReader.ExitingReaderException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
@@ -93,7 +94,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
    * @throws Exception on error
    */
   @Ignore("this test relies on wall clock time and sometimes false fails")
-  public void testExitableFilterIndexReader() throws Exception {
+  public void testExitableFilterTermsIndexReader() throws Exception {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
 
@@ -108,8 +109,8 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     Document d3 = new Document();
     d3.add(newTextField("default", "ones two four", Field.Store.YES));
     writer.addDocument(d3);
-    writer.forceMerge(1);
 
+    writer.forceMerge(1);
     writer.commit();
     writer.close();
 
@@ -129,7 +130,6 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     searcher.search(query, 10);
     reader.close();
 
-
     // Set a really low timeout value (1 millisecond) and expect an Exception
     directoryReader = DirectoryReader.open(directory);
     exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, new QueryTimeoutImpl(1));
@@ -141,6 +141,79 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     reader.close();
    
     // Set maximum time out and expect the query to complete. 
+    // Not checking the validity of the result, all we are bothered about in this test is the timing out.
+    directoryReader = DirectoryReader.open(directory);
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, new QueryTimeoutImpl(Long.MAX_VALUE));
+    reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
+    searcher = new IndexSearcher(reader);
+    searcher.search(query, 10);
+    reader.close();
+
+    // Set a negative time allowed and expect the query to complete (should disable timeouts)
+    // Not checking the validity of the result, all we are bothered about in this test is the timing out.
+    directoryReader = DirectoryReader.open(directory);
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, new QueryTimeoutImpl(-189034L));
+    reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
+    searcher = new IndexSearcher(reader);
+    searcher.search(query, 10);
+    reader.close();
+
+    directory.close();
+  }
+
+  /**
+   * Tests timing out of PointValues queries
+   *
+   * @throws Exception on error
+   */
+  @Ignore("this test relies on wall clock time and sometimes false fails")
+  public void testExitablePointValuesIndexReader() throws Exception {
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    Document d1 = new Document();
+    d1.add(new IntPoint("default", 10));
+    writer.addDocument(d1);
+
+    Document d2 = new Document();
+    d2.add(new IntPoint("default", 100));
+    writer.addDocument(d2);
+
+    Document d3 = new Document();
+    d3.add(new IntPoint("default", 1000));
+    writer.addDocument(d3);
+
+    writer.forceMerge(1);
+    writer.commit();
+    writer.close();
+
+    DirectoryReader directoryReader;
+    DirectoryReader exitableDirectoryReader;
+    IndexReader reader;
+    IndexSearcher searcher;
+
+    Query query = IntPoint.newRangeQuery("default", 10, 20);
+
+    // Set a fairly high timeout value (1 second) and expect the query to complete in that time frame.
+    // Not checking the validity of the result, all we are bothered about in this test is the timing out.
+    directoryReader = DirectoryReader.open(directory);
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, new QueryTimeoutImpl(1000));
+    reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
+    searcher = new IndexSearcher(reader);
+    searcher.search(query, 10);
+    reader.close();
+
+    // Set a really low timeout value (1 millisecond) and expect an Exception
+    directoryReader = DirectoryReader.open(directory);
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, new QueryTimeoutImpl(1));
+    reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
+    IndexSearcher slowSearcher = new IndexSearcher(reader);
+    expectThrows(ExitingReaderException.class, () -> {
+      slowSearcher.search(query, 10);
+    });
+    reader.close();
+
+    // Set maximum time out and expect the query to complete.
     // Not checking the validity of the result, all we are bothered about in this test is the timing out.
     directoryReader = DirectoryReader.open(directory);
     exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, new QueryTimeoutImpl(Long.MAX_VALUE));
