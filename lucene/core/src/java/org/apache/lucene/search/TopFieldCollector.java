@@ -69,13 +69,27 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   static boolean canEarlyTerminate(Sort searchSort, Sort indexSort) {
+    return canEarlyTerminateOnDocId(searchSort) ||
+           canEarlyTerminateOnPrefix(searchSort, indexSort);
+  }
+
+  private static boolean canEarlyTerminateOnDocId(Sort searchSort) {
     final SortField[] fields1 = searchSort.getSort();
-    final SortField[] fields2 = indexSort.getSort();
-    // early termination is possible if fields1 is a prefix of fields2
-    if (fields1.length > fields2.length) {
+    return SortField.FIELD_DOC.equals(fields1[0]);
+  }
+
+  private static boolean canEarlyTerminateOnPrefix(Sort searchSort, Sort indexSort) {
+    if (indexSort != null) {
+      final SortField[] fields1 = searchSort.getSort();
+      final SortField[] fields2 = indexSort.getSort();
+      // early termination is possible if fields1 is a prefix of fields2
+      if (fields1.length > fields2.length) {
+        return false;
+      }
+      return Arrays.asList(fields1).equals(Arrays.asList(fields2).subList(0, fields1.length));
+    } else {
       return false;
     }
-    return Arrays.asList(fields1).equals(Arrays.asList(fields2).subList(0, fields1.length));
   }
 
   static int estimateRemainingHits(int hitCount, int doc, int maxDoc) {
@@ -122,8 +136,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       final LeafFieldComparator[] comparators = queue.getComparators(context);
       final int[] reverseMul = queue.getReverseMul();
       final Sort indexSort = context.reader().getMetaData().getSort();
-      final boolean canEarlyStopComparing = indexSort != null &&
-          canEarlyTerminate(sort, indexSort);
+      final boolean canEarlyStopComparing = canEarlyTerminate(sort, indexSort);
       final boolean canEarlyTerminate = trackTotalHits == false &&
           trackMaxScore == false &&
           canEarlyStopComparing;
@@ -244,8 +257,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       docBase = context.docBase;
       final int afterDoc = after.doc - docBase;
       final Sort indexSort = context.reader().getMetaData().getSort();
-      final boolean canEarlyStopComparing = indexSort != null &&
-          canEarlyTerminate(sort, indexSort);
+      final boolean canEarlyStopComparing = canEarlyTerminate(sort, indexSort);
       final boolean canEarlyTerminate = trackTotalHits == false &&
           trackMaxScore == false &&
           canEarlyStopComparing;
