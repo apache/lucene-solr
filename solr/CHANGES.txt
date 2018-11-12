@@ -290,6 +290,8 @@ used with DVHASH method in json.facet. (Tim Underwood via Mikhail Khludnev)
 
 * SOLR-12977: Autoscaling tries to fetch metrics from dead nodes (noble)
 
+* SOLR-12978: In autoscaling NPE thrown for nodes where value is absent (noble)
+
 Improvements
 ----------------------
 
