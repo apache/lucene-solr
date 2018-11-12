@@ -122,7 +122,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     // Set a fairly high timeout value (infinite) and expect the query to complete in that time frame.
     // Not checking the validity of the result, all we are bothered about in this test is the timing out.
     directoryReader = DirectoryReader.open(directory);
-    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, inifiniteQueryTimeout());
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, infiniteQueryTimeout());
     reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
     searcher = new IndexSearcher(reader);
     searcher.search(query, 10);
@@ -141,7 +141,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     // Set maximum time out and expect the query to complete. 
     // Not checking the validity of the result, all we are bothered about in this test is the timing out.
     directoryReader = DirectoryReader.open(directory);
-    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, inifiniteQueryTimeout());
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, infiniteQueryTimeout());
     reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
     searcher = new IndexSearcher(reader);
     searcher.search(query, 10);
@@ -194,7 +194,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     // Set a fairly high timeout value (infinite) and expect the query to complete in that time frame.
     // Not checking the validity of the result, all we are bothered about in this test is the timing out.
     directoryReader = DirectoryReader.open(directory);
-    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, inifiniteQueryTimeout());
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, infiniteQueryTimeout());
     reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
     searcher = new IndexSearcher(reader);
     searcher.search(query, 10);
@@ -213,7 +213,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     // Set maximum time out and expect the query to complete.
     // Not checking the validity of the result, all we are bothered about in this test is the timing out.
     directoryReader = DirectoryReader.open(directory);
-    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, inifiniteQueryTimeout());
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, infiniteQueryTimeout());
     reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
     searcher = new IndexSearcher(reader);
     searcher.search(query, 10);
@@ -246,7 +246,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     };
   }
 
-  private static QueryTimeout inifiniteQueryTimeout() {
+  private static QueryTimeout infiniteQueryTimeout() {
     return new QueryTimeout() {
 
       @Override
