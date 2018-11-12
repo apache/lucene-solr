@@ -66,6 +66,11 @@ public class DistributedStandAloneUpdateProcessor extends DistributedUpdateProce
   }
 
   @Override
+  protected String getLeaderUrl(String id) {
+    return getReq().getParams().get(DISTRIB_FROM);
+  }
+
+  @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
     isLeader = isLeader(cmd);
 

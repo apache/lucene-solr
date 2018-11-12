@@ -668,6 +668,10 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
 
     String leaderUrl = getLeaderUrl(id);
 
+    if(leaderUrl == null) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Can't find document with id=" + id);
+    }
+
     NamedList<Object> rsp = null;
     try (HttpSolrClient hsc = new HttpSolrClient.Builder(leaderUrl).
         withHttpClient(updateShardHandler.getUpdateOnlyHttpClient()).build()) {
@@ -1049,9 +1053,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     finished = true;
   }
 
-  protected String getLeaderUrl(String id) {
-    return req.getParams().get(DISTRIB_FROM);
-  }
+  abstract protected String getLeaderUrl(String id);
 
   /**
    * Returns a boolean indicating whether or not the caller should behave as
