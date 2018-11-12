@@ -102,7 +102,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       reader = iw.getReader();
     }
   }
-  
+
   private void closeIndex() throws IOException {
     reader.close();
     iw.close();
@@ -166,8 +166,34 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       closeIndex();
     }
   }
-  
-  public void testCanEarlyTerminate() {
+
+  public void testCanEarlyTerminateOnDocId() {
+    assertTrue(TopFieldCollector.canEarlyTerminate(
+        new Sort(SortField.FIELD_DOC),
+        new Sort(SortField.FIELD_DOC)));
+
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG)),
+        new Sort(new SortField("b", SortField.Type.LONG))));
+
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(SortField.FIELD_DOC),
+        new Sort(new SortField("b", SortField.Type.LONG))));
+
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(SortField.FIELD_DOC),
+        new Sort(new SortField("b", SortField.Type.LONG), SortField.FIELD_DOC)));
+
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG)),
+        new Sort(SortField.FIELD_DOC)));
+
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG), SortField.FIELD_DOC),
+        new Sort(SortField.FIELD_DOC)));
+  }
+
+  public void testCanEarlyTerminateOnPrefix() {
     assertTrue(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG)),
         new Sort(new SortField("a", SortField.Type.LONG))));
