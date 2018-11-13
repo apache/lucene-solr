@@ -199,7 +199,7 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
 
     private final PointValues.IntersectVisitor in;
     private final QueryTimeout queryTimeout;
-    private int calls = 0;
+    private int calls;
 
     public ExitableIntersectVisitor(PointValues.IntersectVisitor in, QueryTimeout queryTimeout) {
       this.in = in;
