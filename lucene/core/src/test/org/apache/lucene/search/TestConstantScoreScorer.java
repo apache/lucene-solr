@@ -104,7 +104,7 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       writer.close();
     }
 
-    ConstantScoreScorer constantScoreScorer(BooleanQuery query, float score) throws IOException {
+    ConstantScoreScorer constantScoreScorer(Query query, float score) throws IOException {
       IndexSearcher searcher = newSearcher(reader);
       Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
       LeafReaderContext context = searcher.getIndexReader().leaves().get(0);
