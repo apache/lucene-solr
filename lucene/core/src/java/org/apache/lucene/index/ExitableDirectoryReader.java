@@ -210,38 +210,44 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
      * Throws {@link ExitingReaderException} if {@link QueryTimeout#shouldExit()} returns true,
      * or if {@link Thread#interrupted()} returns true.
      */
-    private void checkAndThrow() {
+    private void checkAndThrowWithSampling() {
       if (calls++ % MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK == 0) {
-        if (queryTimeout.shouldExit()) {
-          throw new ExitingReaderException("The request took too long to intersect point values. Timeout: "
-              + queryTimeout.toString()
-              + ", PointValues=" + in
-          );
-        } else if (Thread.interrupted()) {
-          throw new ExitingReaderException("Interrupted while intersecting point values. PointValues=" + in);
-        }
+        checkAndThrow();
+      }
+    }
+
+    private void checkAndThrow() {
+      if (queryTimeout.shouldExit()) {
+        throw new ExitingReaderException("The request took too long to intersect point values. Timeout: "
+            + queryTimeout.toString()
+            + ", PointValues=" + in
+        );
+      } else if (Thread.interrupted()) {
+        throw new ExitingReaderException("Interrupted while intersecting point values. PointValues=" + in);
       }
     }
 
     @Override
     public void visit(int docID) throws IOException {
-      checkAndThrow();
+      checkAndThrowWithSampling();
       in.visit(docID);
     }
 
     @Override
     public void visit(int docID, byte[] packedValue) throws IOException {
-      checkAndThrow();
+      checkAndThrowWithSampling();
       in.visit(docID, packedValue);
     }
 
     @Override
     public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      checkAndThrow();
       return in.compare(minPackedValue, maxPackedValue);
     }
 
     @Override
     public void grow(int count) {
+      checkAndThrow();
       in.grow(count);
     }
   }
