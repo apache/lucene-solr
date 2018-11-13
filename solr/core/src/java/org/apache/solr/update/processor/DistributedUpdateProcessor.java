@@ -82,7 +82,6 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.RealTimeGetComponent;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -1068,8 +1067,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    DeleteUpdateCommand dmd = null;
-    Long lastKnownVersion = null;
     vinfo.lockForUpdate();
     try {
       synchronized (bucket) {
@@ -1099,12 +1096,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             }
 
             boolean updated = getUpdatedDocument(cmd, versionOnUpdate);
-
-            // if the update updates a doc that is part of a block,
-            // save the old version, for deleting the old block if the update succeeds
-            if(isNestedSchema && shouldLookupDocVersion(cmd)) {
-              lastKnownVersion = vinfo.lookupVersion(cmd.getIndexedId());
-            }
 
             // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
             if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
@@ -1218,18 +1209,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
 
-        // delete old block locally
-        if(lastKnownVersion != null && isNestedSchema &&
-            req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
-            cmd.solrDoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) {
-          dmd = new DeleteUpdateCommand(new LocalSolrQueryRequest(req.getCore(), new ModifiableSolrParams()
-              .set("q", "(" + IndexSchema.ROOT_FIELD_NAME + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) +
-                  " OR " + idField.getName() + ":" + cmd.solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME) +
-                  ") AND " + CommonParams.VERSION_FIELD + ": [* TO " + Long.toString(lastKnownVersion) + "]")));
-          dmd.query = dmd.getReq().getParams().get("q");
-          dmd.setVersion(-lastKnownVersion);
 
-          doLocalDeleteByQuery(dmd, findVersionOnUpdate(dmd), isReplayOrPeersync);
+        // if the update updates a doc that is part of a nested structure,
+        // force open a realTimeSearcher to trigger a ulog cache refresh.
+        // This refresh makes RTG handler aware of this update.q
+        if(isNestedSchema && shouldRefreshUlogCaches(cmd)) {
+          ulog.openRealtimeSearcher();
         }
 
         if (willDistrib && cloneRequiredOnLeader) {
@@ -1239,10 +1224,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }  // end synchronized (bucket)
     } finally {
       vinfo.unlockForUpdate();
-    }
-    // delete old block distributed
-    if(lastKnownVersion != null && dmd != null) {
-      doDeleteByQuery(dmd);
     }
     return false;
   }
@@ -1797,7 +1778,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private long findVersionOnUpdate(DeleteUpdateCommand cmd) {
+  private long findVersionOnUpdate(UpdateCommand cmd) {
     long versionOnUpdate = cmd.getVersion();
     if (versionOnUpdate == 0) {
       String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
@@ -2159,7 +2140,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    *
    * @return whether this update changes a value of a block
    */
-  public static boolean shouldLookupDocVersion(AddUpdateCommand cmd) {
+  public static boolean shouldRefreshUlogCaches(AddUpdateCommand cmd) {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     // is part of a block
     if (sdoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) return true;
