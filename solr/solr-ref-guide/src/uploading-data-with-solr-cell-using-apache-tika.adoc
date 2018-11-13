@@ -26,16 +26,23 @@ If you want to supply your own `ContentHandler` for Solr to use, you can extend 
 
 When using the Solr Cell framework, it is helpful to keep the following in mind:
 
-* Tika will automatically attempt to determine the input document type (Word, PDF, HTML) and extract the content appropriately. If you like, you can explicitly specify a MIME type for Tika with the `stream.type` parameter.
-* Tika works by producing an XHTML stream that it feeds to a SAX ContentHandler. SAX is a common interface implemented for many different XML parsers. For more information, see http://www.saxproject.org/quickstart.html.
-* Solr then responds to Tika's SAX events and creates the fields to index.
-* Tika produces metadata such as Title, Subject, and Author according to specifications such as the DublinCore. See http://tika.apache.org/{ivy-tika-version}/formats.html for the file types supported.
-* Tika adds all the extracted text to the `content` field.
-* You can map Tika's metadata fields to Solr fields.
-* You can pass in literals for field values. Literals will override Tika-parsed values, including fields in the Tika metadata object, the Tika content field, and any "captured content" fields.
-* You can apply an XPath expression to the Tika XHTML to restrict the content that is produced.
+* Tika will automatically attempt to determine the input document type (e.g., Word, PDF, HTML) and extract the content appropriately.
+If you like, you can explicitly specify a MIME type for Tika with the `stream.type` parameter.
+See http://tika.apache.org/{ivy-tika-version}/formats.html for the file types supported.
+* Briefly, Tika internally works by synthesizing an XHTML document from the core content of the parsed document which is passed to a configured http://www.saxproject.org/quickstart.html[SAX] ContentHandler provided by Solr Cell.
+Solr responds to Tika's SAX events to create one or more text fields from the content.
+Tika exposes document metadata as well (apart from the XHTML).
+* Tika produces metadata such as Title, Subject, and Author according to specifications such as the DublinCore.
+The metadata available is highly dependent on the file types and what they in turn contain.
+Solr Cell supplies some metadata of its own too.
+* Solr Cell concatenates text from the internal XHTML into a `content` field.
+You can configure which elements should be included/ignored, and which should map to another field.
+* Solr Cell maps each piece of metadata onto a field.
+By default it maps to the same name but several parameters control how this is done.
+* When Solr Cell finishes creating the internal `SolrInputDocument`, the rest of the Lucene/Solr indexing stack takes over.
+The next step after any update handler is the <<update-request-processors.adoc#update-request-processors,Update Request Processor>> chain.
 
-[TIP]
+[NOTE]
 ====
 While Apache Tika is quite powerful, it is not perfect and fails on some files. PDF files are particularly problematic, mostly due to the PDF format itself. In case of a failure processing any file, the `ExtractingRequestHandler` does not have a secondary mechanism to try to extract some text from the file; it will throw an exception and fail.
 ====
@@ -138,7 +145,7 @@ Defines a file path and name for a file of file name to password mappings.
 Specifies the optional name of the file. Tika can use it as a hint for detecting a file's MIME type.
 
 `resource.password`::
-Defines a password to use for a password-protected PDF or OOXML file
+Defines a password to use for a password-protected PDF or OOXML file.
 
 `tika.config`::
 Defines a file path and name to a customized Tika configuration file. This is only required if you have customized your Tika implementation.
