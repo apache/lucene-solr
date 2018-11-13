@@ -45,8 +45,9 @@ def invalidPatterns = [
   (~$/\$$Id\b/$) : 'svn keyword',
   (~$/\$$Header\b/$) : 'svn keyword',
   (~$/\$$Source\b/$) : 'svn keyword',
-  (~$/^\uFEFF/$) : 'UTF-8 byte order mark'
-];
+  (~$/^\uFEFF/$) : 'UTF-8 byte order mark',
+  (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
+]
 
 def baseDir = properties['basedir'];
 def baseDirLen = baseDir.length() + 1;
