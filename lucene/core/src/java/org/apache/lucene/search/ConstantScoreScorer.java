@@ -68,9 +68,9 @@ public final class ConstantScoreScorer extends Scorer {
   public ConstantScoreScorer(Weight weight, float score, DocIdSetIterator disi) {
     super(weight);
     this.score = score;
-    this.approximation = null;
+    this.approximation = new DocIdSetIteratorWrapper(disi);
     this.twoPhaseIterator = null;
-    this.disi = new DocIdSetIteratorWrapper(disi);
+    this.disi = this.approximation;
   }
 
   /** Constructor based on a {@link TwoPhaseIterator}. In that case the
@@ -104,11 +104,7 @@ public final class ConstantScoreScorer extends Scorer {
   @Override
   public void setMinCompetitiveScore(float minScore) throws IOException {
     if (minScore > score) {
-      if (twoPhaseIterator == null) {
-        ((DocIdSetIteratorWrapper) disi).delegate = DocIdSetIterator.empty();
-      } else {
-        approximation.delegate = DocIdSetIterator.empty();
-      }
+      approximation.delegate = DocIdSetIterator.empty();
     }
   }
 
