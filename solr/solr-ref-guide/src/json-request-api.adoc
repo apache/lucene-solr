@@ -113,7 +113,7 @@ curl "http://localhost:8983/solr/techproducts/query?fl=name,price"-d '
   }
 }'
 
-Which is equivalent to
+Which is equivalent to:
 
 [source,bash]
 curl "http://localhost:8983/solr/techproducts/query?fl=name,price&q=memory&rows=1"
