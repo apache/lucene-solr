@@ -17,7 +17,9 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -26,8 +28,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static org.apache.lucene.search.BooleanClause.Occur;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -36,18 +38,32 @@ public class TestConstantScoreScorer extends LuceneTestCase {
   private static final String FIELD = "f";
   private static final String[] VALUES = new String[]{"foo", "bar", "foo bar", "azerty"};
 
+  @ParametersFactory(argumentFormatting = "query=%s")
+  public static Iterable<Object[]> parameters() {
+    return Arrays.asList(new Object[][]{
+        {
+            "iterator", new BooleanQuery.Builder()
+                                        .add(new TermQuery(new Term(FIELD, "foo")), Occur.MUST)
+                                        .add(new TermQuery(new Term(FIELD, "bar")), Occur.MUST)
+                                        .build()
+        },
+        {
+            "twoPhaseIterator", new PhraseQuery(FIELD, "foo", "bar")
+        }
+    });
+  }
+
+  private Query query;
+
+  public TestConstantScoreScorer(String suiteName, Query query) {
+    this.query = query;
+  }
+
+  @Test
   public void testBasics() throws Exception {
     try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
-      BooleanQuery query = new BooleanQuery.Builder()
-          .add(new ConstantScoreQuery(new TermQuery(new Term(FIELD, "foo"))), Occur.MUST)
-          .build();
-
       int doc;
       ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
-
-      doc = scorer.iterator().nextDoc();
-      assertThat(doc, equalTo(0));
-      assertThat(scorer.score(), equalTo(1f));
 
       doc = scorer.iterator().nextDoc();
       assertThat(doc, equalTo(2));
@@ -58,17 +74,14 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     }
   }
 
+  @Test
   public void testWithMinCompetitiveScoreSet() throws Exception {
     try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
-      BooleanQuery query = new BooleanQuery.Builder()
-          .add(new ConstantScoreQuery(new TermQuery(new Term(FIELD, "foo"))), Occur.MUST)
-          .build();
-
       int doc;
       ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
 
       doc = scorer.iterator().nextDoc();
-      assertThat(doc, equalTo(0));
+      assertThat(doc, equalTo(2));
       assertThat(scorer.score(), equalTo(1f));
 
       scorer.setMinCompetitiveScore(2f);
@@ -106,34 +119,16 @@ public class TestConstantScoreScorer extends LuceneTestCase {
 
     ConstantScoreScorer constantScoreScorer(Query query, float score) throws IOException {
       IndexSearcher searcher = newSearcher(reader);
-      Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
+      Weight weight = searcher.createWeight(new ConstantScoreQuery(query), ScoreMode.TOP_SCORES, 1);
       LeafReaderContext context = searcher.getIndexReader().leaves().get(0);
 
       Scorer scorer = weight.scorer(context);
-      DocIdSetIterator disi = scorer.iterator();
 
-      ConstantScoreScorer constantScoreScorer;
-      if (randomBoolean()) {
-        constantScoreScorer = new ConstantScoreScorer(scorer.getWeight(), score, disi);
+      if (scorer.twoPhaseIterator() == null) {
+        return new ConstantScoreScorer(scorer.getWeight(), score, scorer.iterator());
       } else {
-        constantScoreScorer = new ConstantScoreScorer(scorer.getWeight(), score, new TwoPhaseIterator(disi) {
-          @Override
-          public boolean matches() throws IOException {
-            try {
-              return context.reader().document(approximation.docID()) != null;
-            } catch (Exception ignored) {
-              return false;
-            }
-          }
-
-          @Override
-          public float matchCost() {
-            return 0;
-          }
-        });
+        return new ConstantScoreScorer(scorer.getWeight(), score, scorer.twoPhaseIterator());
       }
-
-      return constantScoreScorer;
     }
 
     @Override
