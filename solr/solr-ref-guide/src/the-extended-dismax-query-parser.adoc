@@ -212,9 +212,9 @@ A document that contains "Hans Anderson" will match, but a document that contain
 
 Finally, in addition to the phrase fields (`pf`) parameter, `edismax` also supports the `pf2` and `pf3` parameters, for fields over which to create bigram and trigram phrase queries. The phrase slop for these parameters' queries can be specified using the `ps2` and `ps3` parameters, respectively. If you use `pf2`/`pf3` but not `ps2`/`ps3`, then the phrase slop for these parameters' queries will be taken from the `ps` parameter, if any.
 
-=== Synonyms expansion in phrase queries with slop
+=== Synonyms Expansion in Phrase Queries with Slop
 
-When a phrase query with slop (e.g. `pf` with `ps`) triggers synonym expansions, a separate clause will be generated for each combination of synonyms. For example, with configured synonyms `dog,canine` and `cat,feline`, the query `"dog chased cat"` will generate the following phrase query clauses:
+When a phrase query with slop (e.g., `pf` with `ps`) triggers synonym expansions, a separate clause will be generated for each combination of synonyms. For example, with configured synonyms `dog,canine` and `cat,feline`, the query `"dog chased cat"` will generate the following phrase query clauses:
 
 * `"dog chased cat"`
 * `"canine chased cat"`
