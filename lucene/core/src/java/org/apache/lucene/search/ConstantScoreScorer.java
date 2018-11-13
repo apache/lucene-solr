@@ -77,7 +77,7 @@ public final class ConstantScoreScorer extends Scorer {
   private final float score;
   private final DocIdSetIteratorWrapper approximation;
   private final TwoPhaseIteratorWrapper twoPhaseIterator;
-  private final DocIdSetIteratorWrapper disi;
+  private final DocIdSetIterator disi;
 
   /** Constructor based on a {@link DocIdSetIterator} which will be used to
    *  drive iteration. Two phase iteration will not be supported.
@@ -102,7 +102,7 @@ public final class ConstantScoreScorer extends Scorer {
     this.score = score;
     this.approximation = new DocIdSetIteratorWrapper(twoPhaseIterator.approximation());
     this.twoPhaseIterator = new TwoPhaseIteratorWrapper(twoPhaseIterator, this.approximation);
-    this.disi = new DocIdSetIteratorWrapper(TwoPhaseIterator.asDocIdSetIterator(this.twoPhaseIterator));
+    this.disi = TwoPhaseIterator.asDocIdSetIterator(this.twoPhaseIterator);
   }
 
   @Override
@@ -114,7 +114,7 @@ public final class ConstantScoreScorer extends Scorer {
   public void setMinCompetitiveScore(float minScore) throws IOException {
     if (minScore > score) {
       if (twoPhaseIterator == null) {
-        disi.delegate = DocIdSetIterator.empty();
+        ((DocIdSetIteratorWrapper) disi).delegate = DocIdSetIterator.empty();
       } else {
         approximation.delegate = DocIdSetIterator.empty();
       }
