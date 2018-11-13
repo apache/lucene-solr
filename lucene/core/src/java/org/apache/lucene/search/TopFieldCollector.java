@@ -203,11 +203,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
-
       final int afterDoc = after.doc - docBase;
       final Sort indexSort = context.reader().getMetaData().getSort();
       final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
-      
       return new MultiComparatorLeafCollector(queue.getComparators(context), queue.getReverseMul()) {
 
         boolean collectedAllCompetitiveHits = false;
