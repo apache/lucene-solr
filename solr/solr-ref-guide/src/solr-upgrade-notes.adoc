@@ -76,7 +76,7 @@ The default value of `maxShardsPerNode` is still `1`. It can be set to `-1` if t
 
 *DirectoryFactory*
 
-* Lucene has introduced the `ByteBuffersDirectory` as a replacement for the `RAMDirectoryFactory`, which will be removed in Solr 9.
+* Lucene has introduced the `ByteBuffersDirectoryFactory` as a replacement for the `RAMDirectoryFactory`, which will be removed in Solr 9.
 +
 While most users are still encouraged to use the `NRTCachingDirectoryFactory`, which allows Lucene to select the best directory factory to use, if you have explicitly configured Solr to use the `RAMDirectoryFactory`, you are encouraged to switch to the new implementation as soon as possible before Solr 9 is released.
 +
