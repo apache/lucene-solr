@@ -132,6 +132,12 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       assertThat(doc, equalTo(2));
       assertThat(scorer.score(), equalTo(1f));
 
+      // should not reset iterator
+      scorer.setMinCompetitiveScore(2f);
+      assertThat(scorer.docID(), equalTo(doc));
+      assertThat(scorer.iterator().docID(), equalTo(doc));
+      assertThat(scorer.score(), equalTo(1f));
+      
       // "foo not bar" will match the approximation but not the two phase iterator
 
       // "foo bar foo" match
