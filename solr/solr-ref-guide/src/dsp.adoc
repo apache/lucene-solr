@@ -27,25 +27,25 @@ the more advanced DSP functions its useful to develop a deeper intuition of the 
 
 The dot product operation is performed in two steps:
 
-1) Element-by-element multiplication of two vectors which produces a vector of products.
+. Element-by-element multiplication of two vectors which produces a vector of products.
 
-2) Sum the vector of products to produce a scalar result.
+. Sum the vector of products to produce a scalar result.
 
 This simple bit of math has a number of important applications.
 
 === Representing Linear Combinations
 
-The `dotProduct` performs the math of a Linear Combination. A Linear Combination has the following form:
+The `dotProduct` performs the math of a _linear combination_. A linear combination has the following form:
 
 [source,text]
 ----
 (a1*v1)+(a2*v2)...
 ----
 
-In the above example a1 and a2 are random variables that change. v1 and v2 are *constant values*.
+In the above example `a1` and `a2` are random variables that change. `v1` and `v2` are constant values.
 
 When computing the dot product the elements of two vectors are multiplied together and the results are added.
-If the first vector contains random variables and the second vector contains *constant values*
+If the first vector contains random variables and the second vector contains constant values
 then the dot product is performing a linear combination.
 
 This scenario comes up again and again in machine learning. For example both linear and logistic regression
@@ -53,7 +53,7 @@ solve for a vector of constant weights. In order to perform a prediction, a dot 
 between a random observation vector and the constant weight vector. That dot product is a linear combination because
 one of the vectors holds constant weights.
 
-Lets look at simple example of how a linear combination can be used to find the *mean* of a vector of numbers.
+Lets look at simple example of how a linear combination can be used to find the mean of a vector of numbers.
 
 In the example below two arrays are set to variables *`a`* and *`b`* and then operated on by the `dotProduct` function.
 The output of the `dotProduct` function is set to variable *`c`*.
