@@ -28,6 +28,63 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 == Upgrading to 7.x Releases
 
+=== Solr 7.6
+
+See the https://wiki.apache.org/solr/ReleaseNote76[7.6 Release Notes] for an overview of the main new features in Solr 7.6.
+
+When upgrading to Solr 7.6, users should be aware of the following major changes from v7.5:
+
+*Collections*
+
+* The JSON parameter to set cluster-wide default cluster properties with the <<collections-api.adoc#clusterprop,CLUSTERPROP>> command has changed.
++
+The old syntax nested the defaults into a property named `clusterDefaults`. The new syntax uses only `defaults`. The command to use is still `set-obj-property`.
++
+An example of the new syntax is:
++
+[source,json]
+----
+{
+  "set-obj-property": {
+    "defaults" : {
+      "collection": {
+        "numShards": 2,
+        "nrtReplicas": 1,
+        "tlogReplicas": 1,
+        "pullReplicas": 1
+      }
+    }
+  }
+}
+----
++
+The old syntax will be supported until at least Solr 9, but users are advised to begin using the new syntax as soon as possible.
+
+* The parameter `min_rf` has been deprecated and no longer needs to be provided in order to see the achieved replication factor. This information will now always be returned to the client with the response.
+
+*Autoscaling*
+
+* An autoscaling policy is now used as the default strategy for selecting nodes on which new replicas or replicas of new collections are created.
++
+A default policy is now in place for all users, which will sort nodes by the number of cores and available freedisk, which means by default a node with the fewest number of cores already on it and the highest available freedisk will be selected for new core creation.
+
+* The change described above has two additional impacts on the `maxShardsPerNode` parameter:
+
+. It removes the restriction against using `maxShardsPerNode` when an autoscaling policy is in place. This parameter can now always be set when creating a collection.
+. It removes the default setting of `maxShardsPerNode=1` when an autoscaling policy is in place. It will be set correctly (if required) regardless of whether an autoscaling policy is in place or not.
++
+The default value of `maxShardsPerNode` is still `1`. It can be set to `-1` if the old behavior of unlimited `maxSharedsPerNode` is desired.
+
+*DirectoryFactory*
+
+* Lucene has introduced the `ByteBuffersDirectoryFactory` as a replacement for the `RAMDirectoryFactory`, which will be removed in Solr 9.
++
+While most users are still encouraged to use the `NRTCachingDirectoryFactory`, which allows Lucene to select the best directory factory to use, if you have explicitly configured Solr to use the `RAMDirectoryFactory`, you are encouraged to switch to the new implementation as soon as possible before Solr 9 is released.
++
+For more information about the new directory factory, see the Jira issue https://issues.apache.org/jira/browse/LUCENE-8438[LUCENE-8438].
++
+For more information about the directory factory configuration in Solr, see the section <<datadir-and-directoryfactory-in-solrconfig.adoc#datadir-and-directoryfactory-in-solrconfig,DataDir and DirectoryFactory in SolrConfig>>.
+
 === Solr 7.5
 
 See the https://wiki.apache.org/solr/ReleaseNote75[7.5 Release Notes] for an overview of the main new features in Solr 7.5.
@@ -66,7 +123,7 @@ When upgrading to Solr 7.4, users should be aware of the following major changes
 
 *Logging*
 
-* Solr now uses Log4j v2.11. The Log4j configuration is now in `log4j2.xml` rather than `log4j.properties` files. This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging implementation which is compatible with SLF4J. We now let Log4j handle rotation of solr logs at startup, and `bin/solr` start scripts will no longer attempt this nor move existing console or garbage collection logs into `logs/archived` either. See <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for more details about Solr logging.
+* Solr now uses Log4j v2.11. The Log4j configuration is now in `log4j2.xml` rather than `log4j.properties` files. This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging implementation which is compatible with SLF4J. We now let Log4j handle rotation of Solr logs at startup, and `bin/solr` start scripts will no longer attempt this nor move existing console or garbage collection logs into `logs/archived` either. See <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for more details about Solr logging.
 
 * Configuring `slowQueryThresholdMillis` now logs slow requests to a separate file named `solr_slow_requests.log`. Previously they would get logged in the `solr.log` file.
 

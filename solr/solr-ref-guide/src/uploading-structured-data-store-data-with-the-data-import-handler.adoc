@@ -820,7 +820,7 @@ timeout::
 The query timeout in seconds. The default is 5 minutes (300 seconds).
 
 cursorMark="true"::
-Use this to enable cursor for efficient result set scrolling
+Use this to enable cursor for efficient result set scrolling.
 
 sort="id asc"::
 This should be used to specify a sort parameter referencing the uniqueKey field of the source Solr instance. See <<pagination-of-results.adoc#pagination-of-results,Pagination of Results>> for details.
