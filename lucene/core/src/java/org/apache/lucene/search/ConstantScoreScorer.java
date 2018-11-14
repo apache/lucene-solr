@@ -25,9 +25,8 @@ import java.io.IOException;
  */
 public final class ConstantScoreScorer extends Scorer {
 
-  private int doc = -1;
-
   private class DocIdSetIteratorWrapper extends DocIdSetIterator {
+    int doc = -1;
     DocIdSetIterator delegate;
 
     DocIdSetIteratorWrapper(DocIdSetIterator delegate) {
@@ -120,7 +119,7 @@ public final class ConstantScoreScorer extends Scorer {
 
   @Override
   public int docID() {
-    return doc;
+    return disi.docID();
   }
 
   @Override
