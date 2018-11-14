@@ -112,13 +112,12 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
   /**
    * Wrapper class for another PointValues implementation that is used by ExitableFields.
    */
-  public static class ExitablePointValues extends PointValues {
+  private static class ExitablePointValues extends PointValues {
 
     private final PointValues in;
     private final QueryTimeout queryTimeout;
 
-    /** Constructor **/
-    public ExitablePointValues(PointValues in, QueryTimeout queryTimeout) {
+    private ExitablePointValues(PointValues in, QueryTimeout queryTimeout) {
       this.in = in;
       this.queryTimeout = queryTimeout;
       checkAndThrow();
