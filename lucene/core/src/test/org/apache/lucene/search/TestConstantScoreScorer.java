@@ -43,21 +43,37 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       "azerty"
   };
 
-  public void testIterator() throws Exception {
-    Query query = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "foo")), Occur.MUST)
-        .add(new TermQuery(new Term(FIELD, "bar")), Occur.MUST)
-        .build();
-    
+  private static final Query TERM_QUERY = new BooleanQuery.Builder()
+      .add(new TermQuery(new Term(FIELD, "foo")), Occur.MUST)
+      .add(new TermQuery(new Term(FIELD, "bar")), Occur.MUST)
+      .build();
+  private static final Query PHRASE_QUERY = new PhraseQuery(FIELD, "foo", "bar");
+
+  public void testMatching_ScoreMode_COMPLETE() throws Exception {
+    testMatching(ScoreMode.COMPLETE);
+  }
+
+  public void testMatching_ScoreMode_COMPLETE_NO_SCORES() throws Exception {
+    testMatching(ScoreMode.COMPLETE_NO_SCORES);
+  }
+
+  private void testMatching(ScoreMode scoreMode) throws Exception {
+
     try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
       int doc;
-      ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
+      ConstantScoreScorer scorer = index.constantScoreScorer(TERM_QUERY, 1f, scoreMode);
 
       // "foo bar" match
       doc = scorer.iterator().nextDoc();
       assertThat(doc, equalTo(2));
       assertThat(scorer.score(), equalTo(1f));
 
+      // should not reset iterator
+      scorer.setMinCompetitiveScore(2f);
+      assertThat(scorer.docID(), equalTo(doc));
+      assertThat(scorer.iterator().docID(), equalTo(doc));
+      assertThat(scorer.score(), equalTo(1f));
+      
       // "bar foo" match
       doc = scorer.iterator().nextDoc();
       assertThat(doc, equalTo(3));
@@ -78,15 +94,10 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     }
   }
 
-  public void testIteratorWithMinCompetitiveScore() throws Exception {
-    Query query = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "foo")), Occur.MUST)
-        .add(new TermQuery(new Term(FIELD, "bar")), Occur.MUST)
-        .build();
-
+  public void testMatching_ScoreMode_TOP_SCORES() throws Exception {
     try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
       int doc;
-      ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
+      ConstantScoreScorer scorer = index.constantScoreScorer(TERM_QUERY, 1f, ScoreMode.TOP_SCORES);
 
       // "foo bar" match
       doc = scorer.iterator().nextDoc();
@@ -103,12 +114,18 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     }
   }
 
-  public void testTwoPhaseIterator() throws Exception {
-    Query query = new PhraseQuery(FIELD, "foo", "bar");
+  public void testTwoPhaseMatching_ScoreMode_COMPLETE() throws Exception {
+    testTwoPhaseMatching(ScoreMode.COMPLETE);
+  }
 
+  public void testTwoPhaseMatching_ScoreMode_COMPLETE_NO_SCORES() throws Exception {
+    testTwoPhaseMatching(ScoreMode.COMPLETE_NO_SCORES);
+  }
+
+  private void testTwoPhaseMatching(ScoreMode scoreMode) throws Exception {
     try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
       int doc;
-      ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
+      ConstantScoreScorer scorer = index.constantScoreScorer(PHRASE_QUERY, 1f, scoreMode);
 
       // "foo bar" match
       doc = scorer.iterator().nextDoc();
@@ -127,12 +144,10 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     }
   }
 
-  public void testTwoPhaseIteratorWithMinCompetitiveScore() throws Exception {
-    Query query = new PhraseQuery(FIELD, "foo", "bar");
-
+  public void testTwoPhaseMatching_ScoreMode_TOP_SCORES() throws Exception {
     try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
       int doc;
-      ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
+      ConstantScoreScorer scorer = index.constantScoreScorer(PHRASE_QUERY, 1f, ScoreMode.TOP_SCORES);
 
       // "foo bar" match
       doc = scorer.iterator().nextDoc();
@@ -150,7 +165,6 @@ public class TestConstantScoreScorer extends LuceneTestCase {
   }
 
   static class TestConstantScoreScorerIndex implements AutoCloseable {
-
     private final Directory directory;
     private final RandomIndexWriter writer;
     private final IndexReader reader;
@@ -172,17 +186,17 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       writer.close();
     }
 
-    ConstantScoreScorer constantScoreScorer(Query query, float score) throws IOException {
+    ConstantScoreScorer constantScoreScorer(Query query, float score, ScoreMode scoreMode) throws IOException {
       IndexSearcher searcher = newSearcher(reader);
-      Weight weight = searcher.createWeight(new ConstantScoreQuery(query), ScoreMode.TOP_SCORES, 1);
+      Weight weight = searcher.createWeight(new ConstantScoreQuery(query), scoreMode, 1);
       LeafReaderContext context = searcher.getIndexReader().leaves().get(0);
 
       Scorer scorer = weight.scorer(context);
 
       if (scorer.twoPhaseIterator() == null) {
-        return new ConstantScoreScorer(scorer.getWeight(), score, scorer.iterator());
+        return new ConstantScoreScorer(scorer.getWeight(), score, scoreMode, scorer.iterator());
       } else {
-        return new ConstantScoreScorer(scorer.getWeight(), score, scorer.twoPhaseIterator());
+        return new ConstantScoreScorer(scorer.getWeight(), score, scoreMode, scorer.twoPhaseIterator());
       }
     }
 
@@ -192,5 +206,4 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       directory.close();
     }
   }
-
 }

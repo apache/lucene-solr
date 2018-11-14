@@ -100,7 +100,7 @@ public class IntersectsRPTVerifyQuery extends Query {
         if (result.exactDocIdSet != null) {
           // If both sets are the same, there's nothing to verify; we needn't return a TwoPhaseIterator
           if (result.approxDocIdSet == result.exactDocIdSet) {
-            return new ConstantScoreScorer(this, score(), approxDISI);
+            return new ConstantScoreScorer(this, score(), scoreMode, approxDISI);
           }
           exactIterator = result.exactDocIdSet.iterator();
           assert exactIterator != null;
@@ -132,7 +132,7 @@ public class IntersectsRPTVerifyQuery extends Query {
           }
         };
 
-        return new ConstantScoreScorer(this, score(), twoPhaseIterator);
+        return new ConstantScoreScorer(this, score(), scoreMode, twoPhaseIterator);
       }
 
       @Override

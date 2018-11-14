@@ -160,10 +160,10 @@ final class LatLonPointDistanceQuery extends Query {
               int[] cost = new int[]{reader.maxDoc()};
               values.intersect(getInverseIntersectVisitor(result, cost));
               final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
-              return new ConstantScoreScorer(weight, score(), iterator);
+              return new ConstantScoreScorer(weight, score(), scoreMode, iterator);
             }
             values.intersect(visitor);
-            return new ConstantScoreScorer(weight, score(), result.build().iterator());
+            return new ConstantScoreScorer(weight, score(), scoreMode, result.build().iterator());
           }
 
           @Override
