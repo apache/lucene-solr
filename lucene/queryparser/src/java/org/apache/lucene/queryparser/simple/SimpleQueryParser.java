@@ -410,13 +410,13 @@ public class SimpleQueryParser extends QueryBuilder {
         if (fuzziness == 0) {
           branch = newDefaultQuery(token, state.field);
         } else {
-          branch = newFuzzyQuery(token, fuzziness);
+          branch = newFuzzyQuery(token, state.field, fuzziness);
         }
       } else if (prefix) {
         // if a term is found with a closing '*' it is considered to be a prefix query
         // and will have prefix added as an option
         String token = new String(state.buffer, 0, copied - 1);
-        branch = newPrefixQuery(token);
+        branch = newPrefixQuery(token, state.field);
       } else {
         // a standard term has been found so it will be run through
         // the entire analysis chain from the specified schema field
@@ -570,7 +570,12 @@ public class SimpleQueryParser extends QueryBuilder {
   /**
    * Factory method to generate a fuzzy query.
    */
-  protected Query newFuzzyQuery(String text, int fuzziness) {
+  protected Query newFuzzyQuery(String text, String field, int fuzziness) {
+    if (field != null) {
+      final BytesRef term = getAnalyzer().normalize(field, text);
+      return new FuzzyQuery(new Term(field, term), fuzziness);
+    }
+
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       final String fieldName = entry.getKey();
@@ -610,7 +615,12 @@ public class SimpleQueryParser extends QueryBuilder {
   /**
    * Factory method to generate a prefix query.
    */
-  protected Query newPrefixQuery(String text) {
+  protected Query newPrefixQuery(String text, String field) {
+    if (field != null) {
+      final BytesRef term = getAnalyzer().normalize(field, text);
+      return new PrefixQuery(new Term(field, term));
+    }
+
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       final String fieldName = entry.getKey();
