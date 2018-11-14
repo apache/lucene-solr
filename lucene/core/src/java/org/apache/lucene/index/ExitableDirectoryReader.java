@@ -117,6 +117,7 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     private final PointValues in;
     private final QueryTimeout queryTimeout;
 
+    /** Constructor **/
     public ExitablePointValues(PointValues in, QueryTimeout queryTimeout) {
       this.in = in;
       this.queryTimeout = queryTimeout;
