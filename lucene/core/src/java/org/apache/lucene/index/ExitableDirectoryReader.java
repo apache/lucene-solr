@@ -193,15 +193,15 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     }
   }
 
-  public static class ExitableIntersectVisitor implements PointValues.IntersectVisitor {
+  private static class ExitableIntersectVisitor implements PointValues.IntersectVisitor {
 
-    public static final int MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK = 10;
+    private static final int MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK = 10;
 
     private final PointValues.IntersectVisitor in;
     private final QueryTimeout queryTimeout;
     private int calls;
 
-    public ExitableIntersectVisitor(PointValues.IntersectVisitor in, QueryTimeout queryTimeout) {
+    private ExitableIntersectVisitor(PointValues.IntersectVisitor in, QueryTimeout queryTimeout) {
       this.in = in;
       this.queryTimeout = queryTimeout;
     }
