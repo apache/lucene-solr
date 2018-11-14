@@ -1903,9 +1903,6 @@ public class TestPointQueries extends LuceneTestCase {
       upperBound[i] = value[i] + random().nextInt(1);
     }
     Query query = IntPoint.newRangeQuery("point", lowerBound, upperBound);
-    Weight weight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1);
-    Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
-    assertFalse(DocIdSetIterator.all(1).getClass().equals(scorer.iterator().getClass()));
 
     // When not all documents in the query have a value, the optimization is not applicable
     reader.close();
@@ -1914,8 +1911,8 @@ public class TestPointQueries extends LuceneTestCase {
     reader = w.getReader();
     searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null);
-    weight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1);
-    scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
+    Weight weight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1);
+    Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertFalse(DocIdSetIterator.all(1).getClass().equals(scorer.iterator().getClass()));
 
     reader.close();
