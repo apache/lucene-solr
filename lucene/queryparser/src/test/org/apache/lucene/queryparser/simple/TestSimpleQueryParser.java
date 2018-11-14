@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -138,6 +139,18 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     Query expected = new TermQuery(new Term("myfield", "foobar"));
 
     assertEquals(expected, parse("myfield:foobar"));
+
+    // Different fields
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.add(new BooleanClause(expected, Occur.MUST));
+    bq.add(new BooleanClause(new TermQuery(new Term("otherfield", "test")), Occur.MUST));
+    assertEquals(bq.build(), parse("myfield:foobar otherfield:test"));
+
+    // Make sure the field for additional resets correctly
+    bq = new BooleanQuery.Builder();
+    bq.add(new BooleanClause(expected, Occur.MUST));
+    bq.add(new BooleanClause(new TermQuery(new Term("field", "test")), Occur.MUST));
+    assertEquals(bq.build(), parse("myfield:foobar test"));
   }
 
   /** test a simple phrase with field configuration */
@@ -145,6 +158,12 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     PhraseQuery expected = new PhraseQuery("myfield", "foo", "bar");
 
     assertEquals(expected, parse("myfield:\"foo bar\""));
+
+    // Make sure the field for additional resets correctly
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.add(new BooleanClause(expected, Occur.MUST));
+    bq.add(new BooleanClause(new TermQuery(new Term("field", "test")), Occur.MUST));
+    assertEquals(bq.build(), parse("myfield:\"foo bar\" test"));
   }
 
   /** test a simple prefix */

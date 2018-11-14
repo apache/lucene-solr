@@ -270,6 +270,7 @@ public class SimpleQueryParser extends QueryBuilder {
       // parenthesis so the current operation is reset since it would
       // have been applied to this subquery
       state.currentOperation = null;
+      state.field = null;
 
       ++state.index;
     } else {
@@ -335,6 +336,7 @@ public class SimpleQueryParser extends QueryBuilder {
       // double quote so the current operation is reset since it would
       // have been applied to this phrase
       state.currentOperation = null;
+      state.field = null;
 
       ++state.index;
     } else {
@@ -343,9 +345,9 @@ public class SimpleQueryParser extends QueryBuilder {
       String phrase = new String(state.buffer, 0, copied);
       Query branch;
       if (hasSlop) {
-        branch = newPhraseQuery(phrase, parseFuzziness(state));
+        branch = newPhraseQuery(phrase, state.field, parseFuzziness(state));
       } else {
-        branch = newPhraseQuery(phrase, 0);
+        branch = newPhraseQuery(phrase, state.field,0);
       }
       buildQueryTree(state, branch);
 
@@ -354,7 +356,6 @@ public class SimpleQueryParser extends QueryBuilder {
   }
 
   private void consumeToken(State state) {
-    String field = null;
     int copied = 0;
     boolean escaped = false;
     boolean prefix = false;
@@ -373,7 +374,7 @@ public class SimpleQueryParser extends QueryBuilder {
 
           continue;
         } else if (state.data[state.index] == ':' && (flags & FIELD_OPERATOR) != 0) {
-          field = new String(state.buffer, 0, copied);
+          state.field = new String(state.buffer, 0, copied);
           ++state.index;
           copied = 0;
           continue;
@@ -407,7 +408,7 @@ public class SimpleQueryParser extends QueryBuilder {
         // edit distance has a maximum, limit to the maximum supported
         fuzziness = Math.min(fuzziness, LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
         if (fuzziness == 0) {
-          branch = newDefaultQuery(token, field);
+          branch = newDefaultQuery(token, state.field);
         } else {
           branch = newFuzzyQuery(token, fuzziness);
         }
@@ -420,7 +421,7 @@ public class SimpleQueryParser extends QueryBuilder {
         // a standard term has been found so it will be run through
         // the entire analysis chain from the specified schema field
         String token = new String(state.buffer, 0, copied);
-        branch = newDefaultQuery(token, field);
+        branch = newDefaultQuery(token, state.field);
       }
 
       buildQueryTree(state, branch);
@@ -480,6 +481,7 @@ public class SimpleQueryParser extends QueryBuilder {
       // the incoming term (or phrase or subquery) even if branch was null
       // due to other possible errors
       state.currentOperation = null;
+      state.field = null;
     }
   }
 
@@ -586,7 +588,11 @@ public class SimpleQueryParser extends QueryBuilder {
   /**
    * Factory method to generate a phrase query with slop.
    */
-  protected Query newPhraseQuery(String text, int slop) {
+  protected Query newPhraseQuery(String text, String field, int slop) {
+    if (field != null) {
+      return createPhraseQuery(field, text, slop);
+    }
+
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createPhraseQuery(entry.getKey(), text, slop);
@@ -660,6 +666,7 @@ public class SimpleQueryParser extends QueryBuilder {
     BooleanClause.Occur currentOperation;
     BooleanClause.Occur previousOperation;
     int not;
+    String field;
 
     Query top;
 
