@@ -26,7 +26,7 @@ If you want to supply your own `ContentHandler` for Solr to use, you can extend 
 
 When using the Solr Cell framework, it is helpful to keep the following in mind:
 
-* Tika will automatically attempt to determine the input document type (e.g. Word, PDF, HTML) and extract the content appropriately.
+* Tika will automatically attempt to determine the input document type (e.g., Word, PDF, HTML) and extract the content appropriately.
 If you like, you can explicitly specify a MIME type for Tika with the `stream.type` parameter.
 See http://tika.apache.org/{ivy-tika-version}/formats.html for the file types supported.
 * Briefly, Tika internally works by synthesizing an XHTML document from the core content of the parsed document which is passed to a configured http://www.saxproject.org/quickstart.html[SAX] ContentHandler provided by Solr Cell.
@@ -155,7 +155,7 @@ Defines a file path and name for a file of file name to password mappings.
 Specifies the optional name of the file. Tika can use it as a hint for detecting a file's MIME type.
 
 `resource.password`::
-Defines a password to use for a password-protected PDF or OOXML file
+Defines a password to use for a password-protected PDF or OOXML file.
 
 `tika.config`::
 Defines a file path and name to a customized Tika configuration file. This is only required if you have customized your Tika implementation.
