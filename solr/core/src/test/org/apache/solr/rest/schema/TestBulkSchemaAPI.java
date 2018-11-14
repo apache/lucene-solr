@@ -16,30 +16,6 @@
  */
 package org.apache.solr.rest.schema;
 
-import org.apache.commons.io.FileUtils;
-
-import org.apache.lucene.search.similarities.DFISimilarity;
-import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
-import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.misc.SweetSpotSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
-
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.search.similarities.SchemaSimilarityFactory;
-import org.apache.solr.util.RESTfulServerProvider;
-import org.apache.solr.util.RestTestBase;
-import org.apache.solr.util.RestTestHarness;
-
-import org.junit.After;
-import org.junit.Before;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
@@ -50,6 +26,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.misc.SweetSpotSimilarity;
+import org.apache.lucene.search.similarities.DFISimilarity;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarity.LegacyBM25Similarity;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.search.similarities.SchemaSimilarityFactory;
+import org.apache.solr.util.RESTfulServerProvider;
+import org.apache.solr.util.RestTestBase;
+import org.apache.solr.util.RestTestHarness;
+import org.junit.After;
+import org.junit.Before;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class TestBulkSchemaAPI extends RestTestBase {
@@ -591,7 +588,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull("field a5 not created", m);
     assertEquals("myWhitespaceTxtField", m.get("type"));
     assertNull(m.get("uninvertible")); // inherited, but API shouldn't return w/o explicit showDefaults
-    assertFieldSimilarity("a5", BM25Similarity.class); // unspecified, expect default
+    assertFieldSimilarity("a5", LegacyBM25Similarity.class); // unspecified, expect default
 
     m = getObj(harness, "wdf_nocase", "fields");
     assertNull("field 'wdf_nocase' not deleted", m);
@@ -933,7 +930,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     Map fields = getObj(harness, fieldName, "fields");
     assertNotNull("field " + fieldName + " not created", fields);
     
-    assertFieldSimilarity(fieldName, BM25Similarity.class,
+    assertFieldSimilarity(fieldName, LegacyBM25Similarity.class,
        sim -> assertEquals("Unexpected k1", k1, sim.getK1(), .001),
        sim -> assertEquals("Unexpected b", b, sim.getB(), .001));
 

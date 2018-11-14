@@ -16,13 +16,13 @@
  */
 package org.apache.solr.search.similarities;
 
-import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarity.LegacyBM25Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 
 /**
- * Factory for {@link BM25Similarity}
+ * Factory for {@link LegacyBM25Similarity}
  * <p>
  * Parameters:
  * <ul>
@@ -35,7 +35,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * Optional settings:
  * <ul>
  *   <li>discountOverlaps (bool): Sets
- *       {@link BM25Similarity#setDiscountOverlaps(boolean)}</li>
+ *       {@link LegacyBM25Similarity#setDiscountOverlaps(boolean)}</li>
  * </ul>
  * @lucene.experimental
  */
@@ -54,7 +54,7 @@ public class BM25SimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    BM25Similarity sim = new BM25Similarity(k1, b);
+    LegacyBM25Similarity sim = new LegacyBM25Similarity(k1, b);
     sim.setDiscountOverlaps(discountOverlaps);
     return sim;
   }
