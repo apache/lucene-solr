@@ -122,6 +122,8 @@ public class SimpleQueryParser extends QueryBuilder {
   public static final int FUZZY_OPERATOR       = 1<<8;
   /** Enables {@code NEAR} operators: (~) on phrases */
   public static final int NEAR_OPERATOR        = 1<<9;
+  /** Enables {@code FIELD} operators: (field:term) */
+  public static final int FIELD_OPERATOR        = 1<<10;
 
 
   private BooleanClause.Occur defaultOperator = BooleanClause.Occur.SHOULD;
@@ -352,6 +354,7 @@ public class SimpleQueryParser extends QueryBuilder {
   }
 
   private void consumeToken(State state) {
+    String field = null;
     int copied = 0;
     boolean escaped = false;
     boolean prefix = false;
@@ -368,6 +371,11 @@ public class SimpleQueryParser extends QueryBuilder {
           prefix = false;
           ++state.index;
 
+          continue;
+        } else if (state.data[state.index] == ':' && (flags & FIELD_OPERATOR) != 0) {
+          field = new String(state.buffer, 0, copied);
+          ++state.index;
+          copied = 0;
           continue;
         } else if (tokenFinished(state)) {
           // this should be the end of the term
@@ -399,7 +407,7 @@ public class SimpleQueryParser extends QueryBuilder {
         // edit distance has a maximum, limit to the maximum supported
         fuzziness = Math.min(fuzziness, LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
         if (fuzziness == 0) {
-          branch = newDefaultQuery(token);
+          branch = newDefaultQuery(token, field);
         } else {
           branch = newFuzzyQuery(token, fuzziness);
         }
@@ -412,7 +420,7 @@ public class SimpleQueryParser extends QueryBuilder {
         // a standard term has been found so it will be run through
         // the entire analysis chain from the specified schema field
         String token = new String(state.buffer, 0, copied);
-        branch = newDefaultQuery(token);
+        branch = newDefaultQuery(token, field);
       }
 
       buildQueryTree(state, branch);
@@ -538,7 +546,11 @@ public class SimpleQueryParser extends QueryBuilder {
   /**
    * Factory method to generate a standard query (no phrase or prefix operators).
    */
-  protected Query newDefaultQuery(String text) {
+  protected Query newDefaultQuery(String text, String field) {
+    if (field != null) {
+      return createBooleanQuery(field, text, defaultOperator);
+    }
+
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createBooleanQuery(entry.getKey(), text, defaultOperator);

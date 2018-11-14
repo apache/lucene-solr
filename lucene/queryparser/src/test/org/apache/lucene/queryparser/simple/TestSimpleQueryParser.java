@@ -133,6 +133,20 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     assertEquals(expectedBoolean.build(), parse("\"foo bar\"~12 baz"));
   }
 
+  /** test a simple term with a field configuration */
+  public void testTermField() throws Exception {
+    Query expected = new TermQuery(new Term("myfield", "foobar"));
+
+    assertEquals(expected, parse("myfield:foobar"));
+  }
+
+  /** test a simple phrase with field configuration */
+  public void testPhraseField() throws Exception {
+    PhraseQuery expected = new PhraseQuery("myfield", "foo", "bar");
+
+    assertEquals(expected, parse("myfield:\"foo bar\""));
+  }
+
   /** test a simple prefix */
   public void testPrefix() throws Exception {
     PrefixQuery expected = new PrefixQuery(new Term("field", "foobar"));
@@ -471,7 +485,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   /** test a term with field weights */
-  public void testWeightedTerm() throws Exception {
+  public void testWeightedTerm() {
     Map<String,Float> weights = new LinkedHashMap<>();
     weights.put("field0", 5f);
     weights.put("field1", 10f);
@@ -490,7 +504,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   /** test a more complex query with field weights */
-  public void testWeightedOR() throws Exception {
+  public void testWeightedOR() {
     Map<String,Float> weights = new LinkedHashMap<>();
     weights.put("field0", 5f);
     weights.put("field1", 10f);
@@ -602,7 +616,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   // we aren't supposed to barf on any input...
-  public void testRandomQueries() throws Exception {
+  public void testRandomQueries() {
     for (int i = 0; i < 1000; i++) {
       String query = TestUtil.randomUnicodeString(random());
       parse(query); // no exception
@@ -610,7 +624,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     }
   }
 
-  public void testRandomQueries2() throws Exception {
+  public void testRandomQueries2() {
     char chars[] = new char[] { 'a', '1', '|', '&', ' ', '(', ')', '"', '-', '~'};
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < 1000; i++) {
@@ -624,7 +638,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     }
   }
 
-  public void testStarBecomesMatchAll() throws Exception {
+  public void testStarBecomesMatchAll() {
     Query q = parse("*");
     assertEquals(q, new MatchAllDocsQuery());
     q = parse(" *   ");
