@@ -17,9 +17,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Arrays;
 
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -28,7 +26,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
 
 import static org.apache.lucene.search.BooleanClause.Occur;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -36,37 +33,69 @@ import static org.hamcrest.CoreMatchers.equalTo;
 
 public class TestConstantScoreScorer extends LuceneTestCase {
   private static final String FIELD = "f";
-  private static final String[] VALUES = new String[]{"foo", "bar", "foo bar", "azerty"};
+  private static final String[] VALUES = new String[]{
+      "foo",
+      "bar",
+      "foo bar",
+      "bar foo",
+      "foo not bar",
+      "bar foo bar",
+      "azerty"
+  };
 
-  @ParametersFactory(argumentFormatting = "query=%s")
-  public static Iterable<Object[]> parameters() {
-    return Arrays.asList(new Object[][]{
-        {
-            "iterator", new BooleanQuery.Builder()
-                                        .add(new TermQuery(new Term(FIELD, "foo")), Occur.MUST)
-                                        .add(new TermQuery(new Term(FIELD, "bar")), Occur.MUST)
-                                        .build()
-        },
-        {
-            "twoPhaseIterator", new PhraseQuery(FIELD, "foo", "bar")
-        }
-    });
-  }
-
-  private Query query;
-
-  public TestConstantScoreScorer(String suiteName, Query query) {
-    this.query = query;
-  }
-
-  @Test
-  public void testBasics() throws Exception {
+  public void testIterator() throws Exception {
+    Query query = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term(FIELD, "foo")), Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "bar")), Occur.MUST)
+        .build();
+    
     try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
       int doc;
       ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
 
+      // "foo bar" match
       doc = scorer.iterator().nextDoc();
       assertThat(doc, equalTo(2));
+      assertThat(scorer.score(), equalTo(1f));
+
+      // "bar foo" match
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(3));
+      assertThat(scorer.score(), equalTo(1f));
+
+      // "foo not bar" match
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(4));
+      assertThat(scorer.score(), equalTo(1f));
+
+      // "foo bar foo" match
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(5));
+      assertThat(scorer.score(), equalTo(1f));
+      
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(NO_MORE_DOCS));
+    }
+  }
+
+  public void testIteratorWithMinCompetitiveScore() throws Exception {
+    Query query = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term(FIELD, "foo")), Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "bar")), Occur.MUST)
+        .build();
+
+    try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
+      int doc;
+      ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
+
+      // "foo bar" match
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(2));
+      assertThat(scorer.score(), equalTo(1f));
+
+      scorer.setMinCompetitiveScore(2f);
+      assertThat(scorer.docID(), equalTo(doc));
+      assertThat(scorer.iterator().docID(), equalTo(doc));
       assertThat(scorer.score(), equalTo(1f));
 
       doc = scorer.iterator().nextDoc();
@@ -74,12 +103,38 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     }
   }
 
-  @Test
-  public void testWithMinCompetitiveScoreSet() throws Exception {
+  public void testTwoPhaseIterator() throws Exception {
+    Query query = new PhraseQuery(FIELD, "foo", "bar");
+
     try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
       int doc;
       ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
 
+      // "foo bar" match
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(2));
+      assertThat(scorer.score(), equalTo(1f));
+
+      // "foo not bar" will match the approximation but not the two phase iterator
+
+      // "foo bar foo" match
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(5));
+      assertThat(scorer.score(), equalTo(1f));
+
+      doc = scorer.iterator().nextDoc();
+      assertThat(doc, equalTo(NO_MORE_DOCS));
+    }
+  }
+
+  public void testTwoPhaseIteratorWithMinCompetitiveScore() throws Exception {
+    Query query = new PhraseQuery(FIELD, "foo", "bar");
+
+    try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
+      int doc;
+      ConstantScoreScorer scorer = index.constantScoreScorer(query, 1f);
+
+      // "foo bar" match
       doc = scorer.iterator().nextDoc();
       assertThat(doc, equalTo(2));
       assertThat(scorer.score(), equalTo(1f));
