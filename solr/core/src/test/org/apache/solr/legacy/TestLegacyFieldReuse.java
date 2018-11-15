@@ -24,9 +24,6 @@ import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
-import org.apache.solr.legacy.LegacyIntField;
-import org.apache.solr.legacy.LegacyNumericTokenStream;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.solr.legacy.LegacyNumericTokenStream.LegacyNumericTermAttribute;
 
 /** test tokenstream reuse by DefaultIndexingChain */

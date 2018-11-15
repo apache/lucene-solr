@@ -29,8 +29,27 @@ Apache ZooKeeper 3.4.11
 Jetty 9.4.11.v20180605
 
 
+Upgrade Notes
+----------------------
+
 (No Changes)
 
+New Features
+----------------------
+
+(No Changes)
+Other Changes
+----------------------
+
+(No Changes)
+Bug Fixes
+----------------------
+
+(No Changes)
+Improvements
+----------------------
+
+* SOLR-12881: Remove unneeded import statements (Peter Somogyi via Erick Erickson)
 
 ==================  7.6.0 ==================
 

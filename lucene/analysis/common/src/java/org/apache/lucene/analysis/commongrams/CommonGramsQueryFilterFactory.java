@@ -21,8 +21,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
-import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
 
 /**
  * Construct {@link CommonGramsQueryFilter}.

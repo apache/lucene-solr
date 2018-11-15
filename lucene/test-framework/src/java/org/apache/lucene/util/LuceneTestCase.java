@@ -76,7 +76,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.mockfile.VirusCheckingFS;

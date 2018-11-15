@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.lucene.codecs.simpletext.SimpleTextUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.IndexInput;

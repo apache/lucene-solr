@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ja;
 
 
 import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.ja.JapaneseIterationMarkCharFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
