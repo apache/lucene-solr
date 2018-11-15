@@ -27,7 +27,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.component.PhrasesIdentificationComponent;
 import org.apache.solr.handler.component.PhrasesIdentificationComponent.Phrase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
