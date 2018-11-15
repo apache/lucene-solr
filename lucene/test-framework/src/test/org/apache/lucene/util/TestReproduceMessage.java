@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 import java.util.Arrays;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
