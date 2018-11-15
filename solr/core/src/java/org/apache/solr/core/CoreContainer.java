@@ -58,6 +58,8 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
+import org.apache.solr.cloud.synchronizeddisruption.SynchronizedDisruptionManager;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -84,6 +86,7 @@ import org.apache.solr.handler.admin.MetricsHistoryHandler;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
 import org.apache.solr.handler.admin.SecurityConfHandlerZk;
+import org.apache.solr.handler.admin.SynchronizedDisruptionHandler;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -120,6 +123,7 @@ import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PA
 import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_HISTORY_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
+import static org.apache.solr.common.params.CommonParams.SYNCHRONIZED_DISRUPTION_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
@@ -203,12 +207,15 @@ public class CoreContainer {
 
   protected MetricsHandler metricsHandler;
 
+  protected SynchronizedDisruptionHandler synchronizedDisruptionHandler;
+
   protected MetricsHistoryHandler metricsHistoryHandler;
 
   protected MetricsCollectorHandler metricsCollectorHandler;
 
   protected AutoscalingHistoryHandler autoscalingHistoryHandler;
 
+  protected SynchronizedDisruptionManager synchronizedDisruptionManager;
 
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;
@@ -500,6 +507,10 @@ public class CoreContainer {
     return metricsHandler;
   }
 
+  public SynchronizedDisruptionHandler getSynchronizedDisruptionHandler() {
+    return synchronizedDisruptionHandler;
+  }
+
   public MetricsHistoryHandler getMetricsHistoryHandler() {
     return metricsHistoryHandler;
   }
@@ -652,6 +663,10 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
     }
+
+    synchronizedDisruptionManager = new SynchronizedDisruptionManager(this, cfg.getSynchronizedDisruptionConfig());
+    this.synchronizedDisruptionHandler = new SynchronizedDisruptionHandler(synchronizedDisruptionManager, this);
+    containerHandlers.put(SYNCHRONIZED_DISRUPTION_PATH, synchronizedDisruptionHandler);
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
@@ -856,6 +871,7 @@ public class CoreContainer {
       if (metricManager != null) {
         metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
       }
+      synchronizedDisruptionManager.closeAll();
     }
 
     try {

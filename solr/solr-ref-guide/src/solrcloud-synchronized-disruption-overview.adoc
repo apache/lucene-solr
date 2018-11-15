@@ -1,0 +1,44 @@
+= Overview of SolrCloud Synchronized Disruption
+:page-toclevels: 1
+:page-tocclass: right
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Synchronized disruption in Solr aims to enable large clusters to maintain consistent response times by running cluster-wide stoppage events like garbage collection.
+
+As clusters grow larger, the odds of any instance running a stop-the-world garbage collection nears 1, which results in any queries sent during that time to wait for the instance to finish and then handle the request.  By running a disruption across the cluster at the same time, it enables more predictable response times.
+
+== Current Disruptions
+Currently only the following disruptions are implemented:
+
+* Garbage Collection: Garbage collection is signaled by the disruption.
+
+== Implementation
+
+When a Solr instance starts up, the instance will first check Zookeeper for any disruptions.  If any disruptions are found, they will attempt to be loaded.  Then, Solr will load any disruptions specified by the Solr.xml file. If disruptions are found in the Solr.xml, they will attempt to be loaded and then added to Zookeeper and pushed to other nodes via the "admin/synchronizeddisruption" handler.
+
+== Solr.xml
+
+A disruption can also be set in the Solr.xml.  When loaded, the node will push the disruption to Zookeeper and other instances in the cluster if they are not already present.
+
+[source,xml]
+----
+  <synchronizeddisruption>
+    <disruption name="GarbageCollection" class="org.apache.solr.cloud.synchronizeddisruption.GarbageCollection" cron="0/30 * * * * ?" />
+  </synchronizeddisruption>
+----
+
