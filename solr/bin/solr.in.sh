@@ -152,6 +152,7 @@
 # * javax.net.ssl.trustStorePassword
 # More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
 #SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
+#SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
 
 # Settings for authentication
 # Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
