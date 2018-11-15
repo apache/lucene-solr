@@ -270,7 +270,7 @@ public class TestConjunctionDISI extends LuceneTestCase {
         if (random().nextBoolean()) {
           // simple iterator
           sets[i] = set;
-          iterators[i] = new ConstantScoreScorer(new FakeWeight(), 0f, ScoreMode.TOP_SCORES, new BitDocIdSet(set).iterator());
+          iterators[i] = new ConstantScoreScorer(new FakeWeight(), 0f, ScoreMode.COMPLETE_NO_SCORES, new BitDocIdSet(set).iterator());
         } else {
           // scorer with approximation
           final FixedBitSet confirmed = clearRandomBits(set);
