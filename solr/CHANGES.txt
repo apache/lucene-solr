@@ -179,6 +179,9 @@ Other Changes
 
 * SOLR-12600: Fix parameter names in Solr JSON documentation (Alexandre Rafalovitch)
 
+* SOLR-12497: Add documentation to use Hadoop credential provider-based keystore/trustsore.
+(Mano Kovacs, Cassandra Targett)
+
 Bug Fixes
 ----------------------
 
