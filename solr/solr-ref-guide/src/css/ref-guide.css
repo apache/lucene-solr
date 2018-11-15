@@ -447,7 +447,6 @@ p.lead
 .exampleblock > .title,
 .hdlist > .title,
 .imageblock > .title,
-.imageblock > figcaption,
 .listingblock > .title,
 .literalblock > .title,
 .olist > .title,
@@ -460,7 +459,8 @@ p.lead
 .ulist > .title,
 .verseblock > .title,
 .videoblock > .title,
-table.tableblock > .title
+table.tableblock > .title,
+figcaption
 {
     margin-top: 0;
     margin-bottom: .25em;
