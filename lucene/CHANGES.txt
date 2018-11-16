@@ -15,6 +15,10 @@ New Features
   points such as range queries or geo queries.
   (Christophe Bismuth via Adrien Grand)
 
+* LUCENE-8508: IndexWriter can now set the created version via
+  IndexWriterConfig#setIndexCreatedVersionMajor. This is an expert feature.
+  (Adrien Grand)
+
 ======================= Lucene 7.6.0 =======================
 
 Build
