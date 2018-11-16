@@ -17,6 +17,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -195,8 +196,11 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     ConstantScoreScorer constantScoreScorer(Query query, float score, ScoreMode scoreMode) throws IOException {
       IndexSearcher searcher = newSearcher(reader);
       Weight weight = searcher.createWeight(new ConstantScoreQuery(query), scoreMode, 1);
-      LeafReaderContext context = searcher.getIndexReader().leaves().get(0);
+      List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
+      assertThat(leaves.size(), equalTo(1));
+
+      LeafReaderContext context = leaves.get(0);
       Scorer scorer = weight.scorer(context);
 
       if (scorer.twoPhaseIterator() == null) {
