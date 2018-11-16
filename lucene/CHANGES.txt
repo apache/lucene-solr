@@ -5,7 +5,7 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 7.6.0 =======================
 
-Build:
+Build
 
 * LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
 
@@ -14,7 +14,7 @@ Build:
 
 * LUCENE-8493: Stop publishing insecure .sha1 files with releases (janhoy)
 
-Bug fixes:
+Bug fixes
 
 * LUCENE-8479: QueryBuilder#analyzeGraphPhrase now throws TooManyClause exception
   if the number of expanded path reaches the BooleanQuery#maxClause limit. (Jim Ferenczi)
@@ -66,7 +66,7 @@ New Features
 
 * LUCENE-8555: Add dateline crossing support to LatLonShapeBoundingBoxQuery. (Nick Knize)
 
-Improvements:
+Improvements
 
 * LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the
   first 4 are index dimensions defining the bounding box of the Triangle and the
@@ -78,7 +78,8 @@ Improvements:
 
 * LUCENE-8558: Replace O(N) lookup with O(1) lookup in PerFieldMergeState#FilterFieldInfos.
   (Kranthi via Simon Willnauer)
-Other:
+
+Other
 
 * LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
   via Alan Woodward)
@@ -88,14 +89,14 @@ Other:
 
 ======================= Lucene 7.5.1 =======================
 
-Bug Fixes:
+Bug Fixes
 
 * LUCENE-8454: Fix incorrect vertex indexing and other computation errors in
   shape tessellation that would sometimes cause an infinite loop. (Nick Knize)
 
 ======================= Lucene 7.5.0 =======================
 
-API Changes:
+API Changes
 
 * LUCENE-8467: RAMDirectory, RAMFile, RAMInputStream, RAMOutputStream are deprecated
   (Dawid Weiss)
@@ -155,7 +156,7 @@ API Changes:
   IndexReaders, allowing the caller to pass a FilterDirectoryReader, for example.
   (Mike McCandless)
 
-Bug Fixes:
+Bug Fixes
 
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
   bogus tiles when building GeoPolygons. (Ignacio Vera)
@@ -199,7 +200,7 @@ Bug Fixes:
   allow access to it's delegate like other filter readers. This adds a new #getDelegate method
   to access the wrapped reader. (Simon Willnauer)
 
-Changes in Runtime Behavior:
+Changes in Runtime Behavior
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
   findForcedMerges and findForcedDeletesMerges (Erick Erickson)
@@ -256,7 +257,7 @@ Build
   The buildAndPushRelease.py script validates that RM's PGP key is in the KEYS file.
   Remove unused 'copy-to-stage' and '-dist-keys' targets from ant build. (janhoy)
 
-Other:
+Other
 
 * LUCENE-8485: Update randomizedtesting to version 2.6.4. (Dawid Weiss)
 
@@ -283,7 +284,7 @@ Other:
 
 ======================= Lucene 7.4.1 =======================
 
-Bug Fixes:
+Bug Fixes
  
  * LUCENE-8365: Fix ArrayIndexOutOfBoundsException in UnifiedHighlighter. This fixes 
    a "off by one" error in the UnifiedHighlighter's code that is only triggered when
