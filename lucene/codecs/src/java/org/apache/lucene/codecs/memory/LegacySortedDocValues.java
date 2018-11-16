@@ -14,65 +14,66 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
+package org.apache.lucene.codecs.memory;
 
 
-import java.io.IOException;
-
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A per-document set of presorted byte[] values.
+ * A per-document byte[] with presorted values.
  * <p>
  * Per-Document values in a SortedDocValues are deduplicated, dereferenced,
  * and sorted into a dictionary of unique values. A pointer to the
  * dictionary value (ordinal) can be retrieved for each document. Ordinals
  * are dense and in increasing sorted order.
  *
- * @deprecated Use {@link SortedSetDocValues} instead.
+ * @deprecated Use {@link SortedDocValues} instead.
  */
 @Deprecated
-public abstract class LegacySortedSetDocValues {
-  
+abstract class LegacySortedDocValues extends LegacyBinaryDocValues {
+
   /** Sole constructor. (For invocation by subclass 
-   * constructors, typically implicit.) */
-  protected LegacySortedSetDocValues() {}
+   *  constructors, typically implicit.) */
+  protected LegacySortedDocValues() {}
 
-  /** When returned by {@link #nextOrd()} it means there are no more 
-   *  ordinals for the document.
+  /**
+   * Returns the ordinal for the specified docID.
+   * @param  docID document ID to lookup
+   * @return ordinal for the document: this is dense, starts at 0, then
+   *         increments by 1 for the next value in sorted order. Note that
+   *         missing values are indicated by -1.
    */
-  public static final long NO_MORE_ORDS = -1;
-
-  /** 
-   * Returns the next ordinal for the current document (previously
-   * set by {@link #setDocument(int)}.
-   * @return next ordinal for the document, or {@link #NO_MORE_ORDS}. 
-   *         ordinals are dense, start at 0, then increment by 1 for 
-   *         the next value in sorted order. 
-   */
-  public abstract long nextOrd();
-  
-  /** 
-   * Sets iteration to the specified docID 
-   * @param docID document ID 
-   */
-  public abstract void setDocument(int docID);
+  public abstract int getOrd(int docID);
 
   /** Retrieves the value for the specified ordinal. The returned
-   * {@link BytesRef} may be re-used across calls to lookupOrd so make sure to
-   * {@link BytesRef#deepCopyOf(BytesRef) copy it} if you want to keep it
-   * around.
-   * @param ord ordinal to lookup
-   * @see #nextOrd
+   * {@link BytesRef} may be re-used across calls to {@link #lookupOrd(int)}
+   * so make sure to {@link BytesRef#deepCopyOf(BytesRef) copy it} if you want
+   * to keep it around.
+   * @param ord ordinal to lookup (must be &gt;= 0 and &lt; {@link #getValueCount()})
+   * @see #getOrd(int) 
    */
-  public abstract BytesRef lookupOrd(long ord);
+  public abstract BytesRef lookupOrd(int ord);
 
   /**
    * Returns the number of unique values.
    * @return number of unique values in this SortedDocValues. This is
    *         also equivalent to one plus the maximum ordinal.
    */
-  public abstract long getValueCount();
+  public abstract int getValueCount();
+
+  private final BytesRef empty = new BytesRef();
+
+  @Override
+  public BytesRef get(int docID) {
+    int ord = getOrd(docID);
+    if (ord == -1) {
+      return empty;
+    } else {
+      return lookupOrd(ord);
+    }
+  }
 
   /** If {@code key} exists, returns its ordinal, else
    *  returns {@code -insertionPoint-1}, like {@code
@@ -80,12 +81,12 @@ public abstract class LegacySortedSetDocValues {
    *
    *  @param key Key to look up
    **/
-  public long lookupTerm(BytesRef key) {
-    long low = 0;
-    long high = getValueCount()-1;
+  public int lookupTerm(BytesRef key) {
+    int low = 0;
+    int high = getValueCount()-1;
 
     while (low <= high) {
-      long mid = (low + high) >>> 1;
+      int mid = (low + high) >>> 1;
       final BytesRef term = lookupOrd(mid);
       int cmp = term.compareTo(key);
 
@@ -105,7 +106,7 @@ public abstract class LegacySortedSetDocValues {
    * Returns a {@link TermsEnum} over the values.
    * The enum supports {@link TermsEnum#ord()} and {@link TermsEnum#seekExact(long)}.
    */
-  public TermsEnum termsEnum() throws IOException {
+  public TermsEnum termsEnum() {
     throw new UnsupportedOperationException();
   }
 }

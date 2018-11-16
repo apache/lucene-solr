@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
+package org.apache.lucene.codecs.memory;
 
 
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -25,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
  * @deprecated Use {@link BinaryDocValues} instead.
  */
 @Deprecated
-public abstract class LegacyBinaryDocValues {
+abstract class LegacyBinaryDocValues {
   
   /** Sole constructor. (For invocation by subclass 
    * constructors, typically implicit.) */

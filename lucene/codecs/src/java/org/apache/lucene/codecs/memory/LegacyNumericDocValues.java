@@ -14,36 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
+package org.apache.lucene.codecs.memory;
 
+import org.apache.lucene.index.NumericDocValues;
 
 /**
- * A list of per-document numeric values, sorted 
- * according to {@link Long#compare(long, long)}.
+ * A per-document numeric value.
  *
- * @deprecated Use {@link SortedNumericDocValues} instead.
+ * @deprecated Use {@link NumericDocValues} instead.
  */
 @Deprecated
-public abstract class LegacySortedNumericDocValues {
+abstract class LegacyNumericDocValues {
   
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
-  protected LegacySortedNumericDocValues() {}
+  protected LegacyNumericDocValues() {}
 
-  /** 
-   * Positions to the specified document 
+  /**
+   * Returns the numeric value for the specified document ID.
+   * @param docID document ID to lookup
+   * @return numeric value
    */
-  public abstract void setDocument(int doc);
-  
-  /** 
-   * Retrieve the value for the current document at the specified index. 
-   * An index ranges from {@code 0} to {@code count()-1}. 
-   */
-  public abstract long valueAt(int index);
-  
-  /** 
-   * Retrieves the count of values for the current document. 
-   * This may be zero if a document has no values.
-   */
-  public abstract int count();
+  public abstract long get(int docID);
 }
