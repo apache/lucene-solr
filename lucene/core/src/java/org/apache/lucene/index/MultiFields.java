@@ -256,7 +256,7 @@ public final class MultiFields extends Fields {
   }
 
   /** Call this to get the (merged) FieldInfos for a
-   *  composite reader. 
+   *  composite reader.
    *  <p>
    *  NOTE: the returned field numbers will likely not
    *  correspond to the actual field numbers in the underlying
@@ -264,14 +264,22 @@ public final class MultiFields extends Fields {
    *  will be unavailable.
    */
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
-    final String softDeletesField = reader.leaves().stream()
-        .map(l -> l.reader().getFieldInfos().getSoftDeletesField())
-        .filter(Objects::nonNull).findAny().orElse(null);
-    final FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(softDeletesField));
-    for(final LeafReaderContext ctx : reader.leaves()) {
-      builder.add(ctx.reader().getFieldInfos());
+    final List<LeafReaderContext> leaves = reader.leaves();
+    if (leaves.isEmpty()) {
+      return FieldInfos.EMPTY;
+    } else if (leaves.size() == 1) {
+      return leaves.get(0).reader().getFieldInfos();
+    } else {
+      final String softDeletesField = leaves.stream()
+          .map(l -> l.reader().getFieldInfos().getSoftDeletesField())
+          .filter(Objects::nonNull)
+          .findAny().orElse(null);
+      final FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(softDeletesField));
+      for (final LeafReaderContext ctx : leaves) {
+        builder.add(ctx.reader().getFieldInfos());
+      }
+      return builder.finish();
     }
-    return builder.finish();
   }
 
   /** Call this to get the (merged) FieldInfos representing the
