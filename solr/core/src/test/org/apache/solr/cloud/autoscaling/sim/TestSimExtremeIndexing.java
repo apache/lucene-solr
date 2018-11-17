@@ -19,6 +19,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.solr.client.solrj.SolrClient;
@@ -92,7 +93,8 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(10);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cluster, "failed to create " + collectionName, collectionName,
+    
+    CloudTestUtils.waitForState(cluster, collectionName, 90, TimeUnit.SECONDS,
         CloudTestUtils.clusterShape(2, 2, false, true));
 
     //long waitForSeconds = 3 + random().nextInt(5);

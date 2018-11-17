@@ -69,7 +69,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     String asyncId = message.getStr(ASYNC);
     Map<String, String> requestMap = new HashMap<>();
     NamedList shardRequestResults = new NamedList();
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
     SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
 
     Optional<CollectionSnapshotMetaData> meta = SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);

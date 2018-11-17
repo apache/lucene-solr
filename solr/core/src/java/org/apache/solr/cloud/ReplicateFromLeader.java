@@ -39,11 +39,11 @@ import org.slf4j.LoggerFactory;
 public class ReplicateFromLeader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private CoreContainer cc;
-  private String coreName;
+  private final CoreContainer cc;
+  private final String coreName;
 
-  private ReplicationHandler replicationProcess;
-  private long lastVersion = 0;
+  private volatile ReplicationHandler replicationProcess;
+  private volatile long lastVersion = 0;
 
   public ReplicateFromLeader(CoreContainer cc, String coreName) {
     this.cc = cc;

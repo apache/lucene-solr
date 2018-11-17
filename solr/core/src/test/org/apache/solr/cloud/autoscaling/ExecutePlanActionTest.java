@@ -45,6 +45,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -67,28 +68,29 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(NODE_COUNT)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+
   }
 
   @Before
   public void setUp() throws Exception  {
     super.setUp();
+    
+    configureCluster(NODE_COUNT)
+    .addConfig("conf", configset("cloud-minimal"))
+    .configure();
+    
     // clear any persisted auto scaling configuration
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
 
-    if (cluster.getJettySolrRunners().size() < NODE_COUNT) {
-      // start some to get to original state
-      int numJetties = cluster.getJettySolrRunners().size();
-      for (int i = 0; i < NODE_COUNT - numJetties; i++) {
-        cluster.startJettySolrRunner();
-      }
-    }
-    cluster.waitForAllNodes(30);
-    loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
+
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
-    cluster.deleteAllCollections();
+  }
+  
+
+  @After
+  public void tearDown() throws Exception  {
+    shutdownCluster();
+    super.tearDown();
   }
 
   @Test
@@ -99,6 +101,8 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         "conf", 1, 2);
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
+    
+    cluster.waitForActiveCollection(collectionName, 1, 2);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
         collectionName, clusterShape(1, 2));
@@ -189,6 +193,8 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         "conf", 1, 2);
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
+    
+    cluster.waitForActiveCollection(collectionName, 1, 2);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
         collectionName, clusterShape(1, 2));
@@ -209,11 +215,13 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       JettySolrRunner runner = cluster.getJettySolrRunner(i);
       if (runner == sourceNode) {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
       }
     }
+    
+    Thread.sleep(1000);
 
-    cluster.waitForAllNodes(30);
     waitForState("Timed out waiting for replicas of collection to be 2 again",
         collectionName, clusterShape(1, 2));
 
@@ -221,6 +229,6 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     docCollection = clusterState.getCollection(collectionName);
     List<Replica> replicasOnSurvivor = docCollection.getReplicas(survivor.getNodeName());
     assertNotNull(replicasOnSurvivor);
-    assertEquals(2, replicasOnSurvivor.size());
+    assertEquals(docCollection.toString(), 2, replicasOnSurvivor.size());
   }
 }

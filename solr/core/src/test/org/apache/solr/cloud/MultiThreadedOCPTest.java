@@ -51,7 +51,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   private static final int REQUEST_STATUS_TIMEOUT = 5 * 60;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int NUM_COLLECTIONS = 4;
+  private static final int NUM_COLLECTIONS = 3;
 
   public MultiThreadedOCPTest() {
     sliceCount = 2;
@@ -60,7 +60,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   @Test
 // commented 20-July-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
 //commented 20-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
-  @ShardsFixed(num = 4)
+  @ShardsFixed(num = 3)
   public void test() throws Exception {
     testParallelCollectionAPICalls();
     testTaskExclusivity();
@@ -119,7 +119,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
-        CollectionAdminRequest.createCollection("ocptest" + i,"conf1",4,1).processAsync(String.valueOf(i), client);
+        CollectionAdminRequest.createCollection("ocptest" + i,"conf1",3,1).processAsync(String.valueOf(i), client);
       }
   
       boolean pass = false;
@@ -209,7 +209,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
-      CollectionAdminRequest.createCollection("ocptest_shardsplit2","conf1",4,1).processAsync("3000",client);
+      CollectionAdminRequest.createCollection("ocptest_shardsplit2","conf1",3,1).processAsync("3000",client);
   
       SplitShard splitShardRequest = CollectionAdminRequest.splitShard("ocptest_shardsplit2").setShardName(SHARD1);
       splitShardRequest.processAsync("3001",client);

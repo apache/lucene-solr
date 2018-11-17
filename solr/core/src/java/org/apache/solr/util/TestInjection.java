@@ -16,6 +16,9 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
+import static org.apache.solr.handler.ReplicationHandler.COMMAND;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -24,6 +27,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,9 +53,6 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
-import static org.apache.solr.handler.ReplicationHandler.COMMAND;
 
 
 /**
@@ -116,43 +117,50 @@ public class TestInjection {
     }
   }
   
-  public static String nonGracefullClose = null;
+  public volatile static String nonGracefullClose = null;
 
-  public static String failReplicaRequests = null;
+  public volatile static String failReplicaRequests = null;
   
-  public static String failUpdateRequests = null;
+  public volatile static String failUpdateRequests = null;
 
-  public static String nonExistentCoreExceptionAfterUnload = null;
+  public volatile static String nonExistentCoreExceptionAfterUnload = null;
 
-  public static String updateLogReplayRandomPause = null;
+  public volatile static String updateLogReplayRandomPause = null;
   
-  public static String updateRandomPause = null;
+  public volatile static String updateRandomPause = null;
 
-  public static String prepRecoveryOpPauseForever = null;
+  public volatile static String prepRecoveryOpPauseForever = null;
 
-  public static String randomDelayInCoreCreation = null;
+  public volatile static String randomDelayInCoreCreation = null;
   
-  public static int randomDelayMaxInCoreCreationInSec = 10;
+  public volatile static int randomDelayMaxInCoreCreationInSec = 10;
 
-  public static String splitFailureBeforeReplicaCreation = null;
+  public volatile static String splitFailureBeforeReplicaCreation = null;
 
-  public static String splitFailureAfterReplicaCreation = null;
+  public volatile static String splitFailureAfterReplicaCreation = null;
 
-  public static CountDownLatch splitLatch = null;
+  public volatile static CountDownLatch splitLatch = null;
 
-  public static String waitForReplicasInSync = "true:60";
+  public volatile static String waitForReplicasInSync = "true:60";
 
-  public static String failIndexFingerprintRequests = null;
+  public volatile static String failIndexFingerprintRequests = null;
 
-  public static String wrongIndexFingerprint = null;
+  public volatile static String wrongIndexFingerprint = null;
   
-  private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
+  private volatile static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
 
-  private static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
+  private volatile static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
-  public static Integer delayBeforeSlaveCommitRefresh=null;
+  public volatile static Integer delayBeforeSlaveCommitRefresh=null;
 
-  public static boolean uifOutOfMemoryError = false;
+  public volatile static boolean uifOutOfMemoryError = false;
+
+  private volatile static CountDownLatch notifyPauseForeverDone = new CountDownLatch(1);
+  
+  public static void notifyPauseForeverDone() {
+    notifyPauseForeverDone.countDown();
+    notifyPauseForeverDone = new CountDownLatch(1);
+  }
 
   public static void reset() {
     nonGracefullClose = null;
@@ -172,7 +180,8 @@ public class TestInjection {
     wrongIndexFingerprint = null;
     delayBeforeSlaveCommitRefresh = null;
     uifOutOfMemoryError = false;
-
+    notifyPauseForeverDone();
+    newSearcherHooks.clear();
     for (Timer timer : timers) {
       timer.cancel();
     }
@@ -371,19 +380,20 @@ public class TestInjection {
   }
 
   public static boolean injectPrepRecoveryOpPauseForever() {
-    if (prepRecoveryOpPauseForever != null)  {
+    String val = prepRecoveryOpPauseForever;
+    if (val != null)  {
       Random rand = random();
       if (null == rand) return true;
-
-      Pair<Boolean,Integer> pair = parseValue(prepRecoveryOpPauseForever);
+      Pair<Boolean,Integer> pair = parseValue(val);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       // Prevent for continuous pause forever
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100) && countPrepRecoveryOpPauseForever.get() < 1) {
         countPrepRecoveryOpPauseForever.incrementAndGet();
         log.info("inject pause forever for prep recovery op");
+        
         try {
-          Thread.sleep(Integer.MAX_VALUE);
+          notifyPauseForeverDone.await();
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
@@ -481,9 +491,12 @@ public class TestInjection {
     return false;
   }
   
-  private static Pair<Boolean,Integer> parseValue(String raw) {
+  private static Pair<Boolean,Integer> parseValue(final String raw) {
+    if (raw == null) return new Pair<>(false, 0);
     Matcher m = ENABLED_PERCENT.matcher(raw);
-    if (!m.matches()) throw new RuntimeException("No match, probably bad syntax: " + raw);
+    if (!m.matches()) {
+      throw new RuntimeException("No match, probably bad syntax: " + raw);
+    }
     String val = m.group(1);
     String percent = "100";
     if (m.groupCount() == 2) {
@@ -511,4 +524,24 @@ public class TestInjection {
     return true;
   }
 
+  static Set<Hook> newSearcherHooks = ConcurrentHashMap.newKeySet();
+  
+  public interface Hook {
+    public void newSearcher(String collectionName);
+    public void waitForSearcher(String collection, int cnt, int timeoutms, boolean failOnTimeout) throws InterruptedException;
+  }
+  
+  public static boolean newSearcherHook(Hook hook) {
+    newSearcherHooks.add(hook);
+    return true;
+  }
+
+  public static boolean injectSearcherHooks(String collectionName) {
+    for (Hook hook : newSearcherHooks) {
+      hook.newSearcher(collectionName);
+    }
+    return true;
+  }
+  
+  
 }

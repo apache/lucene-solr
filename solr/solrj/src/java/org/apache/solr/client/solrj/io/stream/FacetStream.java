@@ -484,7 +484,7 @@ public class FacetStream extends TupleStream implements Expressible  {
     } else {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
-      cloudSolrClient = new Builder(hosts, Optional.empty()).build();
+      cloudSolrClient = new Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build();
     }
 
     FieldComparator[] adjustedSorts = adjustSorts(buckets, bucketSorts);

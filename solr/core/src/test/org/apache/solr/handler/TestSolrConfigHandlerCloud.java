@@ -42,6 +42,8 @@ import static java.util.Arrays.asList;
 
 public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
+  private static final long TIMEOUT_S = 10;
+
   @Test
   public void test() throws Exception {
     setupRestTestHarnesses();
@@ -66,7 +68,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         Arrays.asList("overlay", "requestHandler", "/admin/luke", "class"),
         "org.apache.solr.handler.DumpRequestHandler",
-        10);
+        TIMEOUT_S);
 
    NamedList<Object> rsp = cloudClient.request(new LukeRequest());
    System.out.println(rsp);
@@ -113,7 +115,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("response", "params", "x", "a"),
         "A val",
-        10);
+        TIMEOUT_S);
     compareValues(result, "B val", asList("response", "params", "x", "b"));
 
     payload = "{\n" +
@@ -128,7 +130,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("overlay", "requestHandler", "/dump", "name"),
         "/dump",
-        10);
+        TIMEOUT_S);
 
     result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
@@ -136,7 +138,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("params", "a"),
         "A val",
-        5);
+        TIMEOUT_S);
     compareValues(result, "", asList( "params", RequestParams.USEPARAM));
 
     TestSolrConfigHandler.testForResponseElement(null,
@@ -145,7 +147,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("params", "a"),
         "fomrequest",
-        5);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/dump1', 'class': 'org.apache.solr.handler.DumpRequestHandler', 'useParams':'x' }\n" +
@@ -159,7 +161,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("overlay", "requestHandler", "/dump1", "name"),
         "/dump1",
-        10);
+        TIMEOUT_S);
 
     result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
@@ -167,7 +169,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("params", "a"),
         "A val",
-        5);
+        TIMEOUT_S);
 
 
 
@@ -191,7 +193,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("response", "params", "y", "c"),
         "CY val",
-        10);
+        TIMEOUT_S);
     compareValues(result, 20l, asList("response", "params", "y", "i"));
 
 
@@ -201,7 +203,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("params", "c"),
         "CY val",
-        5);
+        TIMEOUT_S);
     compareValues(result, "BY val", asList("params", "b"));
     compareValues(result, null, asList("params", "a"));
     compareValues(result, Arrays.asList("val 1", "val 2")  , asList("params", "d"));
@@ -225,7 +227,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("response", "params", "y", "c"),
         "CY val modified",
-        10);
+        TIMEOUT_S);
     compareValues(result, "EY val", asList("response", "params", "y", "e"));
 
 
@@ -246,7 +248,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("response", "params", "y", "p"),
         "P val",
-        10);
+        TIMEOUT_S);
     compareValues(result, null, asList("response", "params", "y", "c"));
 
     payload = " {'delete' : 'y'}";
@@ -258,7 +260,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         cloudClient,
         asList("response", "params", "y", "p"),
         null,
-        10);
+        TIMEOUT_S);
 
 
   }

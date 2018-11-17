@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -232,7 +231,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       fail("Could not create collection. Response" + response.toString());
     }
     ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(name, zkStateReader, false, true, 100);
+    solrCluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
   }
 
 

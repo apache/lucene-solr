@@ -32,11 +32,14 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+
 /**
  * Test for {@link LeaderInitiatedRecoveryThread}
  */
 @Deprecated
 @SolrTestCaseJ4.SuppressSSL
+@Nightly
 public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTestBase {
 
   public TestLeaderInitiatedRecoveryThread() {
@@ -103,15 +106,11 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
         DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd);
     // kill the replica
     int children = cloudClient.getZkStateReader().getZkClient().getChildren("/live_nodes", null, true).size();
-    ChaosMonkey.stop(notLeader.jetty);
-    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeOut.hasTimedOut()) {
-      if (children > cloudClient.getZkStateReader().getZkClient().getChildren("/live_nodes", null, true).size()) {
-        break;
-      }
-      Thread.sleep(500);
-    }
-    assertTrue(children > cloudClient.getZkStateReader().getZkClient().getChildren("/live_nodes", null, true).size());
+    
+    String nodeName = notLeader.jetty.getNodeName();
+    notLeader.jetty.stop();
+    
+    cloudClient.getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, SolrCloudTestCase.missingLiveNode(nodeName));
 
     int cversion = getOverseerCversion();
     // Thread should not publish LIR and down state for node which is not live, regardless of whether forcePublish is true or false
@@ -127,7 +126,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     /*
     3. Test that if ZK connection loss then thread should not attempt to publish down state even if forcePublish=true
      */
-    ChaosMonkey.start(notLeader.jetty);
+    notLeader.jetty.start();
     waitForRecoveriesToFinish(true);
 
     thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
@@ -179,7 +178,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     // this should have published a down state so assert that cversion has incremented
     assertTrue(getOverseerCversion() > cversion);
 
-    timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       Replica r = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getReplica(replica.getName());
       if (r.getState() == Replica.State.DOWN) {

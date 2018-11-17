@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -43,12 +42,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@ThreadLeakLingering(linger = 60000)
-@SuppressObjectReleaseTracker(bugUrl="Testing purposes")
 public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
 
@@ -71,6 +66,9 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     if (usually()) {
       System.setProperty("solr.autoCommit.maxTime", "15000");
     }
+    System.clearProperty("solr.httpclient.retries");
+    System.clearProperty("solr.retries.on.forward");
+    System.clearProperty("solr.retries.to.followers"); 
     TestInjection.waitForReplicasInSync = null;
     setErrorHook();
   }
@@ -85,7 +83,11 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
   protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
 
-  private int clientSoTimeout = 60000;
+  private int clientSoTimeout;
+
+  private volatile FullThrottleStoppableIndexingThread ftIndexThread;
+
+  private final boolean runFullThrottle;
   
   public String[] getFieldNames() {
     return fieldNames;
@@ -103,6 +105,16 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     useFactory("solr.StandardDirectoryFactory");
   }
   
+  @Override
+  public void distribTearDown() throws Exception {
+    try {
+      ftIndexThread.safeStop();
+    } catch (NullPointerException e) {
+      // okay
+    }
+    super.distribTearDown();
+  }
+  
   public ChaosMonkeyNothingIsSafeWithPullReplicasTest() {
     super();
     numPullReplicas = random().nextInt(TEST_NIGHTLY ? 2 : 1) + 1;
@@ -116,12 +128,12 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     fixShardCount(numNodes);
     log.info("Starting ChaosMonkey test with {} shards and {} nodes", sliceCount, numNodes);
 
-
+    runFullThrottle = random().nextBoolean();
   }
 
   @Override
   protected boolean useTlogReplicas() {
-    return useTlogReplicas;
+    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
   }
   
   @Override
@@ -140,8 +152,8 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   public void test() throws Exception {
     // None of the operations used here are particularly costly, so this should work.
     // Using this low timeout will also help us catch index stalling.
-    clientSoTimeout = 5000;
-    cloudClient = createCloudClient(DEFAULT_COLLECTION);
+    clientSoTimeout = 8000;
+
     DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");
@@ -162,9 +174,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       }      // make sure we again have leaders for each shard
       
       waitForRecoveriesToFinish(false);
-      
-      // we cannot do delete by query
-      // as it's not supported for recovery
+
       del("*:*");
       
       List<StoppableThread> threads = new ArrayList<>();
@@ -172,7 +182,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       int threadCount = TEST_NIGHTLY ? 3 : 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
-        StoppableIndexingThread indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true);
+        StoppableIndexingThread indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true, 35, 1, true);
         threads.add(indexThread);
         indexTreads.add(indexThread);
         indexThread.start();
@@ -192,13 +202,9 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
         commitThread.start();
       }
       
-      // TODO: we only do this sometimes so that we can sometimes compare against control,
-      // it's currently hard to know what requests failed when using ConcurrentSolrUpdateServer
-      boolean runFullThrottle = random().nextBoolean();
       if (runFullThrottle) {
-        FullThrottleStoppableIndexingThread ftIndexThread = 
-            new FullThrottleStoppableIndexingThread(controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
-        threads.add(ftIndexThread);
+        ftIndexThread = 
+            new FullThrottleStoppableIndexingThread(cloudClient.getHttpClient(), controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
         ftIndexThread.start();
       }
       
@@ -213,7 +219,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
             runTimes = new int[] {5000, 6000, 10000, 15000, 25000, 30000,
                 30000, 45000, 90000, 120000};
           } else {
-            runTimes = new int[] {5000, 7000, 15000};
+            runTimes = new int[] {5000, 7000, 10000};
           }
           runLength = runTimes[random().nextInt(runTimes.length - 1)];
         }
@@ -225,6 +231,10 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       // ideally this should go into chaosMonkey
       restartZk(1000 * (5 + random().nextInt(4)));
 
+      if (runFullThrottle) {
+        ftIndexThread.safeStop();
+      }
+      
       for (StoppableThread indexThread : threads) {
         indexThread.safeStop();
       }

@@ -84,7 +84,6 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
 
   @Test
   public void moveReplicaTest() throws Exception {
-    cluster.waitForAllNodes(5000);
     String coll = "movereplicatest_coll";
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
@@ -130,7 +129,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
     checkNumOfCores(cloudClient, replica.getNodeName(), 0);
     checkNumOfCores(cloudClient, targetNode, 2);
 
-    waitForState("Wait for recovery finish failed",coll, clusterShape(2,2));
+    waitForState("Wait for recovery finish failed",coll, clusterShape(2,4));
     slice = cloudClient.getZkStateReader().getClusterState().getCollection(coll).getSlice(slice.getName());
     boolean found = false;
     for (Replica newReplica : slice.getReplicas()) {
