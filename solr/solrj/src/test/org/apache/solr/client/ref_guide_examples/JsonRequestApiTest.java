@@ -28,12 +28,13 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
 import org.apache.solr.client.solrj.request.json.TermsFacetMap;
+import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
+import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -136,7 +137,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
-    assertHasFacetWithBucketValues(queryResponse.getResponse(),"categories",
+    final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetingData,"categories",
         new FacetBucket("electronics",12),
         new FacetBucket("currency", 4),
         new FacetBucket("memory", 3));
@@ -157,7 +159,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
-    assertHasFacetWithBucketValues(queryResponse.getResponse(),"categories",
+    final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetingData,"categories",
         new FacetBucket("electronics",12),
         new FacetBucket("currency", 4),
         new FacetBucket("memory", 3),
@@ -177,38 +180,16 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     public int getCount() { return count; }
   }
 
-  private void assertHasFacetWithBucketValues(NamedList<Object> rawResponse, String expectedFacetName, FacetBucket... expectedBuckets) {
-    final NamedList<Object> facetsTopLevel = assertHasFacetResponse(rawResponse);
-    assertFacetResponseHasFacetWithBuckets(facetsTopLevel, expectedFacetName, expectedBuckets);
-  }
-
-  private NamedList<Object> assertHasFacetResponse(NamedList<Object> topLevelResponse) {
-    Object o = topLevelResponse.get("facets");
-    if (o == null) fail("Response has no top-level 'facets' property as expected");
-    if (!(o instanceof NamedList)) fail("Response has a top-level 'facets' property, but it is not a NamedList");
-
-    return (NamedList<Object>) o;
-  }
-
-  private void assertFacetResponseHasFacetWithBuckets(NamedList<Object> facetResponse, String expectedFacetName, FacetBucket... expectedBuckets) {
-    Object o = facetResponse.get(expectedFacetName);
-    if (o == null) fail("Response has no top-level facet named '" + expectedFacetName + "'");
-    if (!(o instanceof NamedList)) fail("Response has a property for the expected facet '" + expectedFacetName + "' property, but it is not a NamedList");
-
-    final NamedList<Object> expectedFacetTopLevel = (NamedList<Object>) o;
-    o = expectedFacetTopLevel.get("buckets");
-    if (o == null) fail("Response has no 'buckets' property under 'facets'");
-    if (!(o instanceof List)) fail("Response has no 'buckets' property containing actual facet information.");
-
-    final List<NamedList> bucketList = (List<NamedList>) o;
-    assertEquals("Expected " + expectedBuckets.length + " buckets, but found " + bucketList.size(),
-        expectedBuckets.length, bucketList.size());
+  private void assertHasFacetWithBucketValues(NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
+    assertTrue("Expected response to have facet with name " + expectedFacetName,
+        response.getBucketBasedFacets(expectedFacetName) != null);
+    final List<BucketJsonFacet> buckets = response.getBucketBasedFacets(expectedFacetName).getBuckets();
+    assertEquals(expectedBuckets.length, buckets.size());
     for (int i = 0; i < expectedBuckets.length; i++) {
       final FacetBucket expectedBucket = expectedBuckets[i];
-      final NamedList<Object> actualBucket = bucketList.get(i);
-      assertEquals(expectedBucket.getVal(), actualBucket.get("val"));
-      assertEquals(expectedBucket.getCount(), actualBucket.get("count"));
+      final BucketJsonFacet actualBucket = buckets.get(i);
+      assertEquals(expectedBucket.getVal(), actualBucket.getVal());
+      assertEquals(expectedBucket.getCount(), actualBucket.getCount());
     }
   }
-
 }

@@ -24,11 +24,12 @@ import java.util.List;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
+import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,8 +46,6 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
   private static final int NUM_CORSAIR = 3;
   private static final int NUM_BELKIN = 2;
   private static final int NUM_CANON = 2;
-
-
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -79,15 +78,16 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-    assertHasFacetWithBucketValues(rawResponse,"top_cats", new FacetBucket("electronics",NUM_ELECTRONICS),
-        new FacetBucket("currency", NUM_CURRENCY), new FacetBucket("memory", NUM_MEMORY));
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
+    assertHasFacetWithBucketValues(topLevelFacetData, "top_cats",
+        new FacetBucket("electronics", NUM_ELECTRONICS),
+        new FacetBucket("currency", NUM_CURRENCY),
+        new FacetBucket("memory", NUM_MEMORY));
   }
 
   @Test
@@ -108,18 +108,20 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
-    assertHasFacetWithBucketValues(rawResponse,"top_cats", new FacetBucket("electronics",NUM_ELECTRONICS),
-        new FacetBucket("currency", NUM_CURRENCY), new FacetBucket("memory", NUM_MEMORY));
-    assertHasFacetWithBucketValues(rawResponse,"top_manufacturers", new FacetBucket("corsair",NUM_CORSAIR),
-        new FacetBucket("belkin", NUM_BELKIN), new FacetBucket("canon", NUM_CANON));
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
+    assertHasFacetWithBucketValues(topLevelFacetData,"top_cats",
+        new FacetBucket("electronics",NUM_ELECTRONICS),
+        new FacetBucket("currency", NUM_CURRENCY),
+        new FacetBucket("memory", NUM_MEMORY));
+    assertHasFacetWithBucketValues(topLevelFacetData,"top_manufacturers",
+        new FacetBucket("corsair",NUM_CORSAIR),
+        new FacetBucket("belkin", NUM_BELKIN),
+        new FacetBucket("canon", NUM_CANON));
   }
 
   @Test
@@ -137,14 +139,13 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-    assertHasFacetWithBucketValues(rawResponse,"prices",
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
+    assertHasFacetWithBucketValues(topLevelFacetData,"prices",
         new FacetBucket(0.0f, 5),
         new FacetBucket(20.0f, 0),
         new FacetBucket(40.0f, 0),
@@ -174,20 +175,19 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-    assertHasFacetWithBucketValues(rawResponse,"prices",
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
+    assertHasFacetWithBucketValues(topLevelFacetData,"prices",
         new FacetBucket(0.0f, 5),
         new FacetBucket(20.0f, 0),
         new FacetBucket(40.0f, 0),
         new FacetBucket(60.0f, 1),
         new FacetBucket(80.0f, 1));
-    assertHasFacetWithBucketValues(rawResponse, "shipping_weights",
+    assertHasFacetWithBucketValues(topLevelFacetData, "shipping_weights",
         new FacetBucket(0.0f, 6),
         new FacetBucket(50.0f, 0),
         new FacetBucket(100.0f, 0),
@@ -203,14 +203,12 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-    assertHasStatFacetWithValue(rawResponse,"sum_price", 5251.270030975342);
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasStatFacetWithValue(topLevelFacetData,"sum_price", 5251.270030975342);
   }
 
   @Test
@@ -223,15 +221,13 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-    assertHasStatFacetWithValue(rawResponse,"sum_price", 5251.270030975342);
-    assertHasStatFacetWithValue(rawResponse,"avg_price", 328.20437693595886);
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasStatFacetWithValue(topLevelFacetData,"sum_price", 5251.270030975342);
+    assertHasStatFacetWithValue(topLevelFacetData,"avg_price", 328.20437693595886);
   }
 
   @Test
@@ -248,20 +244,21 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-    assertHasStatFacetWithValue(rawResponse,"avg_price", 328.20437693595886);
-    assertHasFacetWithBucketValues(rawResponse,"top_cats", new FacetBucket("electronics",NUM_ELECTRONICS),
-        new FacetBucket("currency", NUM_CURRENCY), new FacetBucket("memory", NUM_MEMORY));
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasStatFacetWithValue(topLevelFacetData,"avg_price", 328.20437693595886);
+    assertHasFacetWithBucketValues(topLevelFacetData,"top_cats",
+        new FacetBucket("electronics",NUM_ELECTRONICS),
+        new FacetBucket("currency", NUM_CURRENCY),
+        new FacetBucket("memory", NUM_MEMORY));
   }
 
   @Test
   public void testNestedTermsFacet() throws Exception {
+    final String subfacetName = "top_manufacturers_for_cat";
     final String jsonBody = String.join("\n","{",
         "  'query': '*:*',",
         "  'facet': {",
@@ -280,26 +277,21 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     // Test top level facets
-    assertHasFacetWithBucketValues(rawResponse,"top_cats", new FacetBucket("electronics",NUM_ELECTRONICS),
-        new FacetBucket("currency", NUM_CURRENCY), new FacetBucket("memory", NUM_MEMORY));
-
+    assertHasFacetWithBucketValues(topLevelFacetData,"top_cats",
+        new FacetBucket("electronics",NUM_ELECTRONICS),
+        new FacetBucket("currency", NUM_CURRENCY),
+        new FacetBucket("memory", NUM_MEMORY));
     // Test subfacet values for each top-level facet bucket
-    final List<NamedList<Object>> topLevelFacetResponse = (List<NamedList<Object>>) rawResponse.findRecursive("facets", "top_cats", "buckets");
-    final NamedList<Object> electronicsSubFacet = topLevelFacetResponse.get(0);
-    assertFacetResponseHasFacetWithBuckets(electronicsSubFacet, "top_manufacturers_for_cat", new FacetBucket("corsair", 3));
-    final NamedList<Object> currencySubfacet = topLevelFacetResponse.get(1);
-    assertFacetResponseHasFacetWithBuckets(currencySubfacet, "top_manufacturers_for_cat", new FacetBucket("boa", 1));
-    final NamedList<Object> memorySubfacet = topLevelFacetResponse.get(2);
-    assertFacetResponseHasFacetWithBuckets(memorySubfacet, "top_manufacturers_for_cat", new FacetBucket("corsair", 3));
+    final List<BucketJsonFacet> catBuckets = topLevelFacetData.getBucketBasedFacets("top_cats").getBuckets();
+    assertHasFacetWithBucketValues(catBuckets.get(0), subfacetName, new FacetBucket("corsair", 3));
+    assertHasFacetWithBucketValues(catBuckets.get(1), subfacetName, new FacetBucket("boa", 1));
+    assertHasFacetWithBucketValues(catBuckets.get(2), subfacetName, new FacetBucket("corsair", 3));
   }
 
   @Test
@@ -319,26 +311,21 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     // Test top level facets
-    assertHasFacetWithBucketValues(rawResponse,"top_cats", new FacetBucket("electronics",NUM_ELECTRONICS),
-        new FacetBucket("currency", NUM_CURRENCY), new FacetBucket("memory", NUM_MEMORY));
-
+    assertHasFacetWithBucketValues(topLevelFacetData,"top_cats",
+        new FacetBucket("electronics",NUM_ELECTRONICS),
+        new FacetBucket("currency", NUM_CURRENCY),
+        new FacetBucket("memory", NUM_MEMORY));
     // Test subfacet values for each top-level facet bucket
-    final List<NamedList<Object>> topLevelFacetResponse = (List<NamedList<Object>>) rawResponse.findRecursive("facets", "top_cats", "buckets");
-    final NamedList<Object> electronicsSubFacet = topLevelFacetResponse.get(0);
-    assertFacetResponseHasStatFacetWithValue(electronicsSubFacet, subfacetName, 252.02909261530095);
-    final NamedList<Object> currencySubfacet = topLevelFacetResponse.get(1);
-    assertFacetResponseHasStatFacetWithValue(currencySubfacet, subfacetName, 0.0);
-    final NamedList<Object> memorySubfacet = topLevelFacetResponse.get(2);
-    assertFacetResponseHasStatFacetWithValue(memorySubfacet, subfacetName, 129.99499893188477);
+    final List<BucketJsonFacet> catBuckets = topLevelFacetData.getBucketBasedFacets("top_cats").getBuckets();
+    assertHasStatFacetWithValue(catBuckets.get(0), subfacetName, 252.02909261530095); // electronics
+    assertHasStatFacetWithValue(catBuckets.get(1), subfacetName, 0.0); // currency
+    assertHasStatFacetWithValue(catBuckets.get(2), subfacetName, 129.99499893188477); // memory
   }
 
   @Test
@@ -357,17 +344,15 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
-    // Test top level facets
-    assertHasFacetWithBucketValues(rawResponse,"top_popular_cats", new FacetBucket("electronics",9),
-        new FacetBucket("graphics card", 2), new FacetBucket("hard drive", 2));
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetData,"top_popular_cats",
+        new FacetBucket("electronics",9),
+        new FacetBucket("graphics card", 2),
+        new FacetBucket("hard drive", 2));
   }
 
   @Test
@@ -388,15 +373,12 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_TECHPRODUCTS_DOCS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
-    // Test top level facets
-    assertHasFacetWithBucketValues(rawResponse,"top_popular_cats", new FacetBucket("electronics",9),
-        new FacetBucket("graphics card", 2), new FacetBucket("hard drive", 2));
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetData,"top_popular_cats",
+        new FacetBucket("electronics",9),
+        new FacetBucket("graphics card", 2),
+        new FacetBucket("hard drive", 2));
   }
 
   @Test
@@ -415,17 +397,15 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_ELECTRONICS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
-    // Test top level facets
-    assertHasFacetWithBucketValues(rawResponse,"top_cats", new FacetBucket("electronics",NUM_ELECTRONICS),
-        new FacetBucket("currency", NUM_CURRENCY), new FacetBucket("memory", NUM_MEMORY));
+    assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetData,"top_cats",
+        new FacetBucket("electronics",NUM_ELECTRONICS),
+        new FacetBucket("currency", NUM_CURRENCY),
+        new FacetBucket("memory", NUM_MEMORY));
   }
 
   @Test
@@ -443,22 +423,17 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_ELECTRONICS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
-    assertHasFacetWithBucketValues(rawResponse,"largest_search_cats",
+    assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetData,"largest_search_cats",
         new FacetBucket("search",2),
         new FacetBucket("software", 2));
   }
 
-  /*
-   * Multiple query clauses are effectively AND'd together
-   */
+  @Test
   public void testFacetWithMultipleSimpleQueryClausesInArbitraryDomain() throws Exception {
     final String jsonBody = String.join("\n","{",
         "  'query': 'cat:electronics',",
@@ -473,19 +448,17 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_ELECTRONICS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
-    assertHasFacetWithBucketValues(rawResponse,"cats_matching_solr",
+    assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetData,"cats_matching_solr",
         new FacetBucket("search",1),
         new FacetBucket("software", 1));
   }
 
+  @Test
   public void testFacetWithMultipleLocalParamsQueryClausesInArbitraryDomain() throws Exception {
     final String jsonBody = String.join("\n","{",
         "  'query': 'cat:electronics',",
@@ -500,16 +473,12 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_ELECTRONICS, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
-    // Test top level facets
-    assertHasFacetWithBucketValues(rawResponse,"cats_matching_solr",
+    assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetData,"cats_matching_solr",
         new FacetBucket("search",1),
         new FacetBucket("software", 1));
   }
@@ -536,18 +505,15 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         "  }",
         "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
+
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    assertEquals(0, response.getStatus());
-    final SolrDocumentList returnedDocs = response.getResults();
-    assertEquals(NUM_IN_STOCK, returnedDocs.getNumFound());
-    assertEquals(10, returnedDocs.size());
-    final NamedList<Object> rawResponse = response.getResponse();
-
-    assertHasFacetWithBucketValues(rawResponse,"in_stock_only",
+    assertExpectedDocumentsFoundAndReturned(response, NUM_IN_STOCK, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetData,"in_stock_only",
         new FacetBucket("electronics",8),
         new FacetBucket("currency", 4));
-    assertHasFacetWithBucketValues(rawResponse,"all",
+    assertHasFacetWithBucketValues(topLevelFacetData,"all",
         new FacetBucket("electronics",12),
         new FacetBucket("currency", 4));
   }
@@ -564,52 +530,29 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
     public int getCount() { return count; }
   }
 
-  private void assertHasFacetWithBucketValues(NamedList<Object> rawResponse, String expectedFacetName, FacetBucket... expectedBuckets) {
-    final NamedList<Object> facetsTopLevel = assertHasFacetResponse(rawResponse);
-    assertFacetResponseHasFacetWithBuckets(facetsTopLevel, expectedFacetName, expectedBuckets);
-  }
-
-  private void assertHasStatFacetWithValue(NamedList<Object> rawResponse, String expectedFacetName, Double expectedStatValue) {
-    final NamedList<Object> facetsTopLevel = assertHasFacetResponse(rawResponse);
-    assertFacetResponseHasStatFacetWithValue(facetsTopLevel, expectedFacetName, expectedStatValue);
-  }
-
-  private NamedList<Object> assertHasFacetResponse(NamedList<Object> topLevelResponse) {
-    Object o = topLevelResponse.get("facets");
-    if (o == null) fail("Response has no top-level 'facets' property as expected");
-    if (!(o instanceof NamedList)) fail("Response has a top-level 'facets' property, but it is not a NamedList");
-
-    return (NamedList<Object>) o;
-  }
-
-  private void assertFacetResponseHasFacetWithBuckets(NamedList<Object> facetResponse, String expectedFacetName, FacetBucket... expectedBuckets) {
-    Object o = facetResponse.get(expectedFacetName);
-    if (o == null) fail("Response has no top-level facet named '" + expectedFacetName + "'");
-    if (!(o instanceof NamedList)) fail("Response has a property for the expected facet '" + expectedFacetName + "' property, but it is not a NamedList");
-
-    final NamedList<Object> expectedFacetTopLevel = (NamedList<Object>) o;
-    o = expectedFacetTopLevel.get("buckets");
-    if (o == null) fail("Response has no 'buckets' property under 'facets'");
-    if (!(o instanceof List)) fail("Response has no 'buckets' property containing actual facet information.");
-
-    final List<NamedList> bucketList = (List<NamedList>) o;
-    assertEquals("Expected " + expectedBuckets.length + " buckets, but found " + bucketList.size(),
-        expectedBuckets.length, bucketList.size());
+  private void assertHasFacetWithBucketValues(NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
+    assertTrue("Expected response to have facet with name " + expectedFacetName,
+        response.getBucketBasedFacets(expectedFacetName) != null);
+    final List<BucketJsonFacet> buckets = response.getBucketBasedFacets(expectedFacetName).getBuckets();
+    assertEquals(expectedBuckets.length, buckets.size());
     for (int i = 0; i < expectedBuckets.length; i++) {
       final FacetBucket expectedBucket = expectedBuckets[i];
-      final NamedList<Object> actualBucket = bucketList.get(i);
-      assertEquals(expectedBucket.getVal(), actualBucket.get("val"));
-      assertEquals(expectedBucket.getCount(), actualBucket.get("count"));
+      final BucketJsonFacet actualBucket = buckets.get(i);
+      assertEquals(expectedBucket.getVal(), actualBucket.getVal());
+      assertEquals(expectedBucket.getCount(), actualBucket.getCount());
     }
   }
 
-  private void assertFacetResponseHasStatFacetWithValue(NamedList<Object> facetResponse, String expectedFacetName, Double expectedStatValue) {
-    Object o = facetResponse.get(expectedFacetName);
-    if (o == null) fail("Response has no top-level facet named '" + expectedFacetName + "'");
-    if (!(o instanceof Number)) fail("Response has a property for the expected facet '" + expectedFacetName + "' property, but it is not a Number");
+  private void assertHasStatFacetWithValue(NestableJsonFacet response, String expectedFacetName, Double expectedStatValue) {
+    assertTrue("Expected response to have stat facet named '" + expectedFacetName + "'",
+        response.getStatFacetValue(expectedFacetName) != null);
+    assertEquals(expectedStatValue, response.getStatFacetValue(expectedFacetName));
+  }
 
-    final Number actualStatValueAsNumber = (Number) o;
-    final Double actualStatValueAsDouble = ((Number) o).doubleValue();
-    assertEquals(expectedStatValue, actualStatValueAsDouble, 0.5);
+  private void assertExpectedDocumentsFoundAndReturned(QueryResponse response, int expectedNumFound, int expectedReturned) {
+    assertEquals(0, response.getStatus());
+    final SolrDocumentList documents = response.getResults();
+    assertEquals(expectedNumFound, documents.getNumFound());
+    assertEquals(expectedReturned, documents.size());
   }
 }

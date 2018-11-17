@@ -37,9 +37,12 @@ Upgrade Notes
 New Features
 ----------------------
 
+
 (No Changes)
 Other Changes
 ----------------------
+* SOLR-12981: SolrJ's QueryResponse now has a method `getJsonFacetingResponse()`,
+  which allows easier access to the response information for the JSON faceting API. (Jason Gerlowski)
 
 (No Changes)
 Bug Fixes
