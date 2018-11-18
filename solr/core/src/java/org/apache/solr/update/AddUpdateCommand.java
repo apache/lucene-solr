@@ -96,11 +96,20 @@ public class AddUpdateCommand extends UpdateCommand {
    * Any changes made to the returned Document will not be reflected in the SolrInputDocument, or future calls to this
    * method.
    * Note that the behavior of this is sensitive to {@link #isInPlaceUpdate()}.
+   * @param withBlockId If true, then block id is forcibly added to the doc
    */
-   public Document getLuceneDocument() {
+   Document getLuceneDocument(boolean withBlockId) {
      final boolean ignoreNestedDocs = false; // throw an exception if found
-     return DocumentBuilder.toDocument(getSolrInputDocument(), req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
+     SolrInputDocument solrInputDocument = getSolrInputDocument();
+     if (withBlockId) {
+       addBlockId(solrInputDocument);
+     }
+     return DocumentBuilder.toDocument(solrInputDocument, req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
    }
+
+  public Document getLuceneDocument() {
+     return getLuceneDocument(false);
+  }
 
   /** Returns the indexed ID for this document.  The returned BytesRef is retained across multiple calls, and should not be modified. */
    public BytesRef getIndexedId() {
@@ -194,18 +203,20 @@ public class AddUpdateCommand extends UpdateCommand {
       return null; // caller should call getLuceneDocument() instead
     }
 
-    String rootId = getHashableId();
-
-    boolean isVersion = version != 0;
-
     for (SolrInputDocument sdoc : all) {
-      sdoc.setField(IndexSchema.ROOT_FIELD_NAME, rootId);
-      if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);
-      // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
-      // then we could add this field to the generated lucene document instead.
+      addBlockId(sdoc);
     }
 
     return () -> all.stream().map(sdoc -> DocumentBuilder.toDocument(sdoc, req.getSchema())).iterator();
+  }
+
+  private void addBlockId(SolrInputDocument sdoc) {
+    String rootId = getHashableId();
+    boolean isVersion = version != 0;
+    sdoc.setField(IndexSchema.ROOT_FIELD_NAME, rootId);
+    if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);
+    // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
+    // then we could add this field to the generated lucene document instead.
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {

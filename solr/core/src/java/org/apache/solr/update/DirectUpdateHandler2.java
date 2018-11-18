@@ -42,6 +42,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -323,7 +324,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (blockDocs != null) {
         writer.addDocuments(blockDocs);
       } else {
-        writer.addDocument(cmd.getLuceneDocument());
+        writer.addDocument(cmd.getLuceneDocument(forciblyAddBlockId()));
       }
       if (ulog != null) ulog.add(cmd);
 
@@ -425,7 +426,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       return;
     }
 
-    Term deleteTerm = new Term(idField.getName(), cmd.getIndexedId());
+    Term deleteTerm = getIdTerm(cmd.indexedId, false);
     // SolrCore.verbose("deleteDocuments",deleteTerm,writer);
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
@@ -953,13 +954,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       Iterable<Document> blockDocs = cmd.getLuceneDocsIfNested();
       boolean isBlock = blockDocs != null; // AKA nested child docs
-      Term idTerm = new Term(isBlock ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
+      Term idTerm = getIdTerm(cmd.getIndexedId(), isBlock);
       Term updateTerm = hasUpdateTerm ? cmd.updateTerm : idTerm;
       if (isBlock) {
         log.debug("updateDocuments({})", cmd);
         writer.updateDocuments(updateTerm, blockDocs);
       } else {
-        Document luceneDocument = cmd.getLuceneDocument();
+        Document luceneDocument = cmd.getLuceneDocument(forciblyAddBlockId());
         log.debug("updateDocument({})", cmd);
         writer.updateDocument(updateTerm, luceneDocument);
       }
@@ -975,6 +976,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
   }
 
+  boolean forciblyAddBlockId() {
+    return core.getLatestSchema().isUsableForChildDocs();
+  }
+
+  private Term getIdTerm(BytesRef indexedId, boolean isBlock) {
+    boolean useRootId = isBlock || forciblyAddBlockId();
+    return new Term(useRootId ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), indexedId);
+  }
 
   /////////////////////////////////////////////////////////////////////
   // SolrInfoBean stuff: Statistics and Module Info
