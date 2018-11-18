@@ -102,7 +102,7 @@ public class AddUpdateCommand extends UpdateCommand {
      final boolean ignoreNestedDocs = false; // throw an exception if found
      SolrInputDocument solrInputDocument = getSolrInputDocument();
      if (withBlockId) {
-       addBlockId(solrInputDocument);
+       addBlockId(solrInputDocument, getHashableId());
      }
      return DocumentBuilder.toDocument(solrInputDocument, req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
    }
@@ -203,15 +203,15 @@ public class AddUpdateCommand extends UpdateCommand {
       return null; // caller should call getLuceneDocument() instead
     }
 
+    final String rootId = getHashableId();
     for (SolrInputDocument sdoc : all) {
-      addBlockId(sdoc);
+      addBlockId(sdoc, rootId);
     }
 
     return () -> all.stream().map(sdoc -> DocumentBuilder.toDocument(sdoc, req.getSchema())).iterator();
   }
 
-  private void addBlockId(SolrInputDocument sdoc) {
-    String rootId = getHashableId();
+  private void addBlockId(SolrInputDocument sdoc, String rootId) {
     boolean isVersion = version != 0;
     sdoc.setField(IndexSchema.ROOT_FIELD_NAME, rootId);
     if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);

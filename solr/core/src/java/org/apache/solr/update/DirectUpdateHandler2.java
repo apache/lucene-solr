@@ -426,7 +426,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       return;
     }
 
-    Term deleteTerm = getIdTerm(cmd.indexedId, false);
+    Term deleteTerm = getIdTerm(cmd.getIndexedId(), false);
     // SolrCore.verbose("deleteDocuments",deleteTerm,writer);
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
