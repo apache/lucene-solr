@@ -30,7 +30,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolr2Client;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.update.SolrCmdDistributor.Error;
@@ -47,7 +47,7 @@ public class StreamingSolrClients {
 
   private Http2SolrClient httpClient;
 
-  private Map<String, ConcurrentUpdateSolr2Client> solrClients = new HashMap<>();
+  private Map<String, ConcurrentUpdateHttp2SolrClient> solrClients = new HashMap<>();
   private List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
 
   private ExecutorService updateExecutor;
@@ -73,7 +73,7 @@ public class StreamingSolrClients {
 
   public synchronized SolrClient getSolrClient(final SolrCmdDistributor.Req req) {
     String url = getFullUrl(req.node.getUrl());
-    ConcurrentUpdateSolr2Client client = solrClients.get(url);
+    ConcurrentUpdateHttp2SolrClient client = solrClients.get(url);
     if (client == null) {
       // NOTE: increasing to more than 1 threadCount for the client could cause updates to be reordered
       // on a greater scale since the current behavior is to only increase the number of connections/Runners when
@@ -101,13 +101,13 @@ public class StreamingSolrClients {
   }
 
   public synchronized void blockUntilFinished() {
-    for (ConcurrentUpdateSolr2Client client : solrClients.values()) {
+    for (ConcurrentUpdateHttp2SolrClient client : solrClients.values()) {
       client.blockUntilFinished();
     }
   }
 
   public synchronized void shutdown() {
-    for (ConcurrentUpdateSolr2Client client : solrClients.values()) {
+    for (ConcurrentUpdateHttp2SolrClient client : solrClients.values()) {
       client.close();
     }
   }
@@ -131,7 +131,7 @@ public class StreamingSolrClients {
   }
 }
 
-class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolr2Client {
+class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2SolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCmdDistributor.Req req;
   private final List<Error> errors;
@@ -144,7 +144,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolr2Clie
 
   @Override
   public void handleError(Throwable ex) {
-    log.error("Datcm error", ex);
+    log.error("error", ex);
     Error error = new Error();
     error.e = (Exception) ex;
     if (ex instanceof SolrException) {
@@ -154,7 +154,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolr2Clie
     errors.add(error);
     if (!req.shouldRetry(error)) {
       // only track the error if we are not retrying the request
-      req.trackRequestResult(null,null, false);
+      req.trackRequestResult(null, null, false);
     }
   }
   @Override
@@ -162,7 +162,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolr2Clie
     req.trackRequestResult(resp, respBody, true);
   }
 
-  static class Builder extends ConcurrentUpdateSolr2Client.Builder {
+  static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
     protected SolrCmdDistributor.Req req;
     protected List<Error> errors;
 

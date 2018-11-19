@@ -539,8 +539,7 @@ public class SolrCmdDistributor implements Closeable {
     private boolean isRetriableException(Throwable t) {
       return t instanceof SocketException
           || t instanceof NoHttpResponseException
-          || t instanceof SocketTimeoutException
-          || t instanceof EofException;
+          || t instanceof SocketTimeoutException;
     }
 
     @Override

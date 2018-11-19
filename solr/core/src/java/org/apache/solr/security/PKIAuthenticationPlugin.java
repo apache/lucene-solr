@@ -248,7 +248,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     SolrRequestInfo reqInfo = getRequestInfo();
     String usr;
     if (reqInfo != null) {
-      log.debug("ReqInfo is not null");
       Principal principal = reqInfo.getReq().getUserPrincipal();
       if (principal == null) {
         log.debug("principal is null");
@@ -259,14 +258,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         usr = principal.getName();
       }
     } else {
-      log.debug("SolrRequestInfo is null");
       if (!isSolrThread()) {
-        log.debug("Not in Solr threadpool");
         //if this is not running inside a Solr threadpool (as in testcases)
         // then no need to add any header
         return Optional.empty();
       }
-      log.debug("usr = $");
       //this request seems to be originated from Solr itself
       usr = "$"; //special name to denote the user is the node itself
     }
@@ -276,7 +272,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
-    log.debug("Base64Ciphoer {}", base64Cipher);
     return Optional.of(base64Cipher);
   }
 

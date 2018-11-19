@@ -58,7 +58,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-public class ConcurrentUpdateSolr2Client extends SolrClient {
+public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Update END_UPDATE = new Update(null, null);
@@ -82,9 +82,9 @@ public class ConcurrentUpdateSolr2Client extends SolrClient {
    * @deprecated use {@link ConcurrentUpdateSolrClient#ConcurrentUpdateSolrClient(ConcurrentUpdateSolrClient.Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
   @Deprecated
-  protected ConcurrentUpdateSolr2Client(String solrServerUrl,
-                                        Http2SolrClient client, int queueSize, int threadCount,
-                                        ExecutorService es, boolean streamDeletes) {
+  protected ConcurrentUpdateHttp2SolrClient(String solrServerUrl,
+                                            Http2SolrClient client, int queueSize, int threadCount,
+                                            ExecutorService es, boolean streamDeletes) {
     this((streamDeletes) ?
         new Builder(solrServerUrl)
             .withHttpClient(client)
@@ -100,7 +100,7 @@ public class ConcurrentUpdateSolr2Client extends SolrClient {
             .neverStreamDeletes());
   }
 
-  protected ConcurrentUpdateSolr2Client(Builder builder) {
+  protected ConcurrentUpdateHttp2SolrClient(Builder builder) {
     this.client = builder.httpClient;
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
     this.threadCount = builder.threadCount;
@@ -202,7 +202,7 @@ public class ConcurrentUpdateSolr2Client extends SolrClient {
             requestParams.set(CommonParams.WT, client.parser.getWriterType());
             requestParams.set(CommonParams.VERSION, client.parser.getVersion());
 
-            String basePath = ConcurrentUpdateSolr2Client.this.basePath;
+            String basePath = ConcurrentUpdateHttp2SolrClient.this.basePath;
             if (update.getCollection() != null)
               basePath += "/" + update.getCollection();
             if (!basePath.endsWith("/"))
@@ -783,12 +783,12 @@ public class ConcurrentUpdateSolr2Client extends SolrClient {
     /**
      * Create a {@link ConcurrentUpdateSolrClient} based on the provided configuration options.
      */
-    public ConcurrentUpdateSolr2Client build() {
+    public ConcurrentUpdateHttp2SolrClient build() {
       if (baseSolrUrl == null) {
         throw new IllegalArgumentException("Cannot create HttpSolrClient without a valid baseSolrUrl!");
       }
 
-      return new ConcurrentUpdateSolr2Client(this);
+      return new ConcurrentUpdateHttp2SolrClient(this);
     }
 
     @Override
