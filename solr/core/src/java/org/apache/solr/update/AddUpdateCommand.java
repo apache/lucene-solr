@@ -102,7 +102,7 @@ public class AddUpdateCommand extends UpdateCommand {
      final boolean ignoreNestedDocs = false; // throw an exception if found
      SolrInputDocument solrInputDocument = getSolrInputDocument();
      if (withBlockId) {
-       addBlockId(solrInputDocument, getHashableId());
+       addRootField(solrInputDocument, getHashableId());
      }
      return DocumentBuilder.toDocument(solrInputDocument, req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
    }
@@ -204,19 +204,31 @@ public class AddUpdateCommand extends UpdateCommand {
     }
 
     final String rootId = getHashableId();
+
+    final boolean hasVersion = version != 0;
+    SolrInputField versionSif = hasVersion? solrDoc.get(CommonParams.VERSION_FIELD): null;
+
     for (SolrInputDocument sdoc : all) {
-      addBlockId(sdoc, rootId);
+      addRootField(sdoc, rootId);
+      if (hasVersion) {
+        addVersionField(sdoc, versionSif);
+      }
+      // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
+      // then we could add this field to the generated lucene document instead.
     }
 
     return () -> all.stream().map(sdoc -> DocumentBuilder.toDocument(sdoc, req.getSchema())).iterator();
   }
 
-  private void addBlockId(SolrInputDocument sdoc, String rootId) {
-    boolean isVersion = version != 0;
+  private void addRootField(SolrInputDocument sdoc, String rootId) {
     sdoc.setField(IndexSchema.ROOT_FIELD_NAME, rootId);
-    if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);
-    // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
-    // then we could add this field to the generated lucene document instead.
+  }
+
+  private void addVersionField(SolrInputDocument sdoc, SolrInputField versionSif) {
+    // Reordered delete-by-query assumes all documents have a version, see SOLR-10114
+    // all docs in hierarchy should have the same version.
+    // Either fetch the version from the root doc or compute it and propagate it.
+    sdoc.put(CommonParams.VERSION_FIELD, versionSif);
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
