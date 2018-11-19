@@ -110,6 +110,20 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   }
 
+
+  public Set<String> getQueryParams() {
+    return this.client.getQueryParams();
+  }
+
+  /**
+   * Expert Method.
+   * @param queryParams set of param keys to only send via the query string
+   */
+  public void setQueryParams(Set<String> queryParams) {
+    this.client.setQueryParams(queryParams);
+  }
+
+
   /**
    * Opens a connection and sends everything...
    */
