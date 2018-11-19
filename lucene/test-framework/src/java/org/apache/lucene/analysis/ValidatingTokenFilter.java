@@ -181,8 +181,8 @@ public final class ValidatingTokenFilter extends TokenFilter {
 
   /**
    * Prints details about consumed tokens stored in any ValidatingTokenFilters in the input chain
-   * @param in
-   * @param out
+   * @param in the input token stream
+   * @param out the output print stream
    */
   public static void dumpValidatingTokenFilters(TokenStream in, PrintStream out) {
     if (in instanceof TokenFilter) {
