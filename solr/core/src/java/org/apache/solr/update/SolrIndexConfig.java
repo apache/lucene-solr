@@ -62,6 +62,8 @@ public class SolrIndexConfig implements MapSerializable {
 
   private static final String DEFAULT_MERGE_POLICY_FACTORY_CLASSNAME = DefaultMergePolicyFactory.class.getName();
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
+
+  @Deprecated
   public final Version luceneVersion;
 
   public final boolean useCompoundFile;

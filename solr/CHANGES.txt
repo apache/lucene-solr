@@ -123,7 +123,8 @@ New Features
 Other Changes
 ----------------------
 
-(No Changes)
+* SOLR-12972: deprecate unused SolrIndexConfig.luceneVersion (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
