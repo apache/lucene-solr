@@ -17,8 +17,10 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
@@ -36,6 +38,7 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
@@ -66,9 +69,11 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartContentProvider;
+import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -101,8 +106,8 @@ public class Http2SolrClient extends SolrClient {
   private volatile Set<String> queryParams = Collections.emptySet();
   private int idleTimeout;
 
-  private ResponseParser parser = new BinaryResponseParser();
-  private volatile RequestWriter requestWriter = new BinaryRequestWriter();
+  ResponseParser parser = new BinaryResponseParser();
+  volatile RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new LinkedList<>();
   private AsyncTracker asyncTracker = new AsyncTracker();
   /**
@@ -158,8 +163,8 @@ public class Http2SolrClient extends SolrClient {
   private HttpClient createHttpClient(Builder builder) {
     HttpClient httpClient;
 
-    BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(128, 128);
-    QueuedThreadPool httpClientExecutor = new QueuedThreadPool(128, 4, 60000, queue);
+    BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
+    QueuedThreadPool httpClientExecutor = new QueuedThreadPool(256, 16, 60000, queue);
     httpClientExecutor.setDaemon(true);
 
     SslContextFactory sslContextFactory;
@@ -211,8 +216,161 @@ public class Http2SolrClient extends SolrClient {
     assert ObjectReleaseTracker.release(this);
   }
 
-  private boolean isV2ApiRequest(final SolrRequest request) {
+  public boolean isV2ApiRequest(final SolrRequest request) {
     return request instanceof V2Request || request.getPath().contains("/____v2");
+  }
+
+  public static class OutStream implements Closeable {
+    private final String url;
+    private final boolean isV2Api;
+    private final OutputStreamContentProvider contentProvider;
+    private final ReentrantLock lock = new ReentrantLock();
+
+    private OutStream(String url, boolean isV2Api, OutputStreamContentProvider contentProvider) {
+      this.url = url;
+      this.isV2Api = isV2Api;
+      this.contentProvider = contentProvider;
+    }
+
+    private boolean belongToThisStream(String url, boolean isV2Api) {
+      return this.url.equals(url) && this.isV2Api == isV2Api;
+    }
+
+    public void close() {
+      this.lock.lock();
+      try {
+        this.contentProvider.close();
+      } finally {
+        this.lock.unlock();
+      }
+    }
+  }
+
+  public String getUrl(SolrRequest solrRequest) {
+    if (solrRequest.getBasePath() == null && serverBaseUrl == null)
+      throw new IllegalArgumentException("Destination node is not provided!");
+    String path = requestWriter.getPath(solrRequest);
+    if (path == null || !path.startsWith("/")) {
+      path = DEFAULT_PATH;
+    }
+    String basePath = solrRequest.getBasePath() == null ? serverBaseUrl : solrRequest.getBasePath();
+
+    if (solrRequest instanceof V2Request) {
+      if (System.getProperty("solr.v2RealPath") == null) {
+        basePath = serverBaseUrl.replace("/solr", "/api");
+      } else {
+        basePath = serverBaseUrl + "/____v2";
+      }
+    }
+
+    ResponseParser parser = solrRequest.getResponseParser();
+    if (parser == null) {
+      parser = this.parser;
+    }
+
+    // The parser 'wt=' and 'version=' params are used instead of the original
+    // params
+    ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
+    if (parser != null) {
+      wparams.set(CommonParams.WT, parser.getWriterType());
+      wparams.set(CommonParams.VERSION, parser.getVersion());
+    }
+    return basePath + path + wparams.toQueryString();
+  }
+
+  public OutStream init(SolrRequest solrRequest, OnComplete onComplete) {
+    if (solrRequest.getMethod() != SolrRequest.METHOD.POST && solrRequest.getMethod() != SolrRequest.METHOD.PUT) {
+      throw new IllegalArgumentException("Only support sending requests in stream for POST or PUT requests");
+    }
+
+    if (!queryParams.isEmpty()) {
+      throw new IllegalStateException("Query params are not supported, found:"+queryParams);
+    }
+
+    if (solrRequest instanceof V2RequestSupport) {
+      solrRequest = ((V2RequestSupport) solrRequest).getV2Request();
+    }
+
+    final String url = getUrl(solrRequest);
+    final OutputStreamContentProvider content = new OutputStreamContentProvider();
+    final OutStream outStream = new OutStream(url, isV2ApiRequest(solrRequest), content);
+
+    HttpMethod method = SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
+
+    Request req = httpClient
+        .newRequest(url)
+        .method(method)
+        .content(content, requestWriter.getUpdateContentType());
+    setBasicAuthHeader(solrRequest, req);
+    send(req, onComplete, isV2ApiRequest(solrRequest));
+    return outStream;
+  }
+
+  public void send(SolrRequest solrRequest, OutStream outStream, OnComplete onComplete) throws IOException {
+    if (!outStream.belongToThisStream(getUrl(solrRequest), isV2ApiRequest(solrRequest))) {
+      throw new IllegalStateException("Path of request:"+getUrl(solrRequest)
+          + " does not same as url of stream:"+outStream.url);
+    }
+    httpClient.getExecutor().execute(new Runnable() {
+      @Override
+      public void run() {
+        outStream.lock.lock();
+        IOException exp = null;
+        try {
+          requestWriter.write(solrRequest, outStream.contentProvider.getOutputStream());
+        } catch (IOException e) {
+          exp = e;
+        } finally {
+          outStream.lock.unlock();
+        }
+        if (exp != null) {
+          onComplete.onFailure(exp);
+        } else {
+          onComplete.onSuccess(null);
+        }
+      }
+    });
+  }
+
+  public void addNecessaryAuth(Request req) {
+    for (HttpListenerFactory factory : listenerFactory) {
+      HttpListenerFactory.RequestResponseListener listener = factory.get();
+      req.onRequestQueued(listener);
+      req.onRequestBegin(listener);
+      req.onComplete(listener);
+    }
+  }
+
+  private void send(Request req, OnComplete onComplete, boolean isV2Api) {
+    for (HttpListenerFactory factory : listenerFactory) {
+      HttpListenerFactory.RequestResponseListener listener = factory.get();
+      req.onRequestQueued(listener);
+      req.onRequestBegin(listener);
+      req.onComplete(listener);
+    }
+    // This async call only suitable for indexing since the response size is limited by 5MB
+    req.onRequestQueued(asyncTracker.queuedListener)
+        .onComplete(asyncTracker.completeListener).send(new BufferingResponseListener(5 * 1024 * 1024) {
+
+      @Override
+      public void onComplete(Result result) {
+        if (result.isFailed()) {
+          onComplete.onFailure(result.getFailure());
+          return;
+        }
+
+        NamedList<Object> rsp;
+        try {
+          InputStream is = getContentAsInputStream();
+          assert ObjectReleaseTracker.track(is);
+          rsp = processErrorsAndResponse(result.getResponse(),
+              parser, is, getEncoding(), isV2Api);
+          onComplete.onSuccess(rsp);
+        } catch (Exception e) {
+          onComplete.onFailure(e);
+        }
+      }
+    });
   }
 
   public NamedList<Object> request(SolrRequest solrRequest,
@@ -305,10 +463,10 @@ public class Http2SolrClient extends SolrClient {
     return null;
   }
 
-  private void setBasicAuthHeader(SolrRequest solrRequest, Request req) throws UnsupportedEncodingException {
+  private void setBasicAuthHeader(SolrRequest solrRequest, Request req) {
     if (solrRequest.getBasicAuthUser() != null && solrRequest.getBasicAuthPassword() != null) {
       String userPass = solrRequest.getBasicAuthUser() + ":" + solrRequest.getBasicAuthPassword();
-      String encoded = Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
+      String encoded = Base64.byteArrayToBase64(userPass.getBytes(StandardCharsets.UTF_8));
       req.header("Authorization", "Basic " + encoded);
     }
   }

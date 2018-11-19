@@ -45,7 +45,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 
+/**
  * <p> 
  * Suppresses errors for individual add/delete commands within a single request.
  * Instead of failing on the first error, at most <code>maxErrors</code> errors (or unlimited 
@@ -59,29 +59,29 @@ import org.slf4j.LoggerFactory;
  * (depending on the underlying exceptions) and it won't finish processing any more updates in the request. 
  * (ie: subsequent update commands in the request will not be processed even if they are valid).
  * </p>
- * 
+ *
  * <p>
- * NOTE: In cloud based collections, this processor expects to <b>NOT</b> be used on {@link DistribPhase#FROMLEADER} 
+ * NOTE: In cloud based collections, this processor expects to <b>NOT</b> be used on {@link DistribPhase#FROMLEADER}
  * requests (because any successes that occur locally on the leader are considered successes even if there is some 
  * subsequent error on a replica).  {@link TolerantUpdateProcessorFactory} will short circut it away in those 
  * requests.
  * </p>
- * 
+ *
  * @see TolerantUpdateProcessorFactory
  */
 public class TolerantUpdateProcessor extends UpdateRequestProcessor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   /**
    * String to be used as document key for errors when a real uniqueKey can't be determined
    */
-  private static final String UNKNOWN_ID = "(unknown)"; 
+  private static final String UNKNOWN_ID = "(unknown)";
 
   /**
    * Response Header
    */
   private final NamedList<Object> header;
-  
+
   /**
    * Number of errors this UpdateRequestProcessor will tolerate. If more then this occur, 
    * the original exception will be thrown, interrupting the processing of the document
@@ -120,42 +120,42 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
   // So as a kludge, we keep track of them for deduping against identical remote failures
   //
   private Set<ToleratedUpdateError> knownDBQErrors = new HashSet<>();
-        
+
   private final FirstErrTracker firstErrTracker = new FirstErrTracker();
   private final DistribPhase distribPhase;
 
   public TolerantUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next, int maxErrors, DistribPhase distribPhase) {
     super(next);
     assert maxErrors >= -1;
-      
+
     header = rsp.getResponseHeader();
     this.maxErrors = ToleratedUpdateError.getEffectiveMaxErrors(maxErrors);
     this.req = req;
     this.distribPhase = distribPhase;
     assert ! DistribPhase.FROMLEADER.equals(distribPhase);
-    
+
     this.zkController = this.req.getCore().getCoreContainer().getZkController();
     this.uniqueKeyField = this.req.getCore().getLatestSchema().getUniqueKeyField();
     assert null != uniqueKeyField : "Factory didn't enforce uniqueKey field?";
   }
-  
+
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     BytesRef id = null;
-    
+
     try {
       // force AddUpdateCommand to validate+cache the id before proceeding
       id = cmd.getIndexedId();
-      
+
       super.processAdd(cmd);
 
-    } catch (Throwable t) { 
+    } catch (Throwable t) {
       firstErrTracker.caught(t);
       knownErrors.add(new ToleratedUpdateError
-                      (CmdType.ADD,
-                       getPrintableId(id),
-                       t.getMessage()));
-      
+          (CmdType.ADD,
+              getPrintableId(id),
+              t.getMessage()));
+
       if (knownErrors.size() > maxErrors) {
         firstErrTracker.throwFirst();
       }
@@ -164,17 +164,17 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    
+
     try {
-      
+
       super.processDelete(cmd);
-      
+
     } catch (Throwable t) {
       firstErrTracker.caught(t);
-      
+
       ToleratedUpdateError err = new ToleratedUpdateError(cmd.isDeleteById() ? CmdType.DELID : CmdType.DELQ,
-                                                          cmd.isDeleteById() ? cmd.id : cmd.query,
-                                                          t.getMessage());
+          cmd.isDeleteById() ? cmd.id : cmd.query,
+          t.getMessage());
       knownErrors.add(err);
 
       // NOTE: we're not using this to dedup before adding to knownErrors.
@@ -184,7 +184,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
       if (CmdType.DELQ.equals(err.getType())) {
         knownDBQErrors.add(err);
       }
-      
+
       if (knownErrors.size() > maxErrors) {
         firstErrTracker.throwFirst();
       }
@@ -233,13 +233,13 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     // even if processAdd threw an error, this.finish() is still called and we might have additional
     // errors from other remote leaders that we need to check for from the finish method of downstream processors
     // (like DUP)
-    
+
     try {
       super.finish();
     } catch (DistributedUpdateProcessor.DistributedUpdatesAsyncException duae) {
       firstErrTracker.caught(duae);
 
-      
+
       // adjust our stats based on each of the distributed errors
       for (Error error : duae.errors) {
         // we can't trust the req info from the Error, because multiple original requests might have been
@@ -247,11 +247,11 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         //
         // instead we trust the metadata that the TolerantUpdateProcessor running on the remote node added
         // to the exception when it failed.
-        if ( ! (error.t instanceof SolrException) ) {
-          log.error("async update exception is not SolrException, no metadata to process", error.t);
+        if ( ! (error.e instanceof SolrException) ) {
+          log.error("async update exception is not SolrException, no metadata to process", error.e);
           continue;
         }
-        SolrException remoteErr = (SolrException) error.t;
+        SolrException remoteErr = (SolrException) error.e;
         NamedList<String> remoteErrMetadata = remoteErr.getMetadata();
 
         if (null == remoteErrMetadata) {
@@ -261,8 +261,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
 
         for (int i = 0; i < remoteErrMetadata.size(); i++) {
           ToleratedUpdateError err =
-            ToleratedUpdateError.parseMetadataIfToleratedUpdateError(remoteErrMetadata.getName(i),
-                                                                     remoteErrMetadata.getVal(i));
+              ToleratedUpdateError.parseMetadataIfToleratedUpdateError(remoteErrMetadata.getName(i),
+                  remoteErrMetadata.getVal(i));
           if (null == err) {
             // some metadata unrelated to this update processor
             continue;
@@ -276,7 +276,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
               knownDBQErrors.add(err);
             }
           }
-          
+
           knownErrors.add(err);
         }
       }
@@ -290,7 +290,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     firstErrTracker.annotate(knownErrors);
 
     // decide if we have hit a situation where we know an error needs to be thrown.
-    
+
     if ((DistribPhase.TOLEADER.equals(distribPhase) ? 0 : maxErrors) < knownErrors.size()) {
       // NOTE: even if maxErrors wasn't exceeded, we need to throw an error when we have any errors if we're
       // a leader that was forwarded to by another node so that the forwarding node knows we encountered some
@@ -316,7 +316,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
 
   /**
    * Simple helper class for "tracking" any exceptions encountered.
-   * 
+   *
    * Only remembers the "first" exception encountered, and wraps it in a SolrException if needed, so that 
    * it can later be annotated with the metadata our users expect and re-thrown.
    *
@@ -324,15 +324,15 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
    */
   private static final class FirstErrTracker {
 
-    
+
     SolrException first = null;
     boolean thrown = false;
-    
+
     public FirstErrTracker() {
       /* NOOP */
     }
-    
-    /** 
+
+    /**
      * Call this method immediately anytime an exception is caught from a down stream method -- 
      * even if you are going to ignore it (for now).  If you plan to rethrow the Exception, use 
      * {@link #throwFirst} instead.
@@ -347,8 +347,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         }
       }
     }
-    
-    /** 
+
+    /**
      * Call this method in place of any situation where you would normally (re)throw an exception 
      * (already passed to the {@link #caught} method because maxErrors was exceeded
      * is exceed.
@@ -364,8 +364,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         throw first;
       }
     }
-    
-    /** 
+
+    /**
      * Annotates the first exception (which may already have been thrown, or be thrown in the future) with 
      * the metadata from this update processor.  For use in {@link TolerantUpdateProcessor#finish}
      */
@@ -374,9 +374,9 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
       if (null == first) {
         return; // no exception to annotate
       }
-      
+
       assert null != errors : "how do we have an exception to annotate w/o any errors?";
-      
+
       NamedList<String> firstErrMetadata = first.getMetadata();
       if (null == firstErrMetadata) { // obnoxious
         firstErrMetadata = new NamedList<String>();
@@ -387,7 +387,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         for (int i = 0; i < firstErrMetadata.size(); i++) {
           if (null != ToleratedUpdateError.parseMetadataIfToleratedUpdateError
               (firstErrMetadata.getName(i), firstErrMetadata.getVal(i))) {
-               
+
             firstErrMetadata.remove(i);
             // NOTE: post decrementing index so we don't miss anything as we remove items
             i--;
@@ -399,8 +399,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         firstErrMetadata.add(te.getMetadataKey(), te.getMetadataValue());
       }
     }
-    
-    
+
+
     /** The first exception that was thrown (or may be thrown) whose metadata can be annotated. */
     public SolrException getFirst() {
       return first;

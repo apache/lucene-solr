@@ -252,7 +252,7 @@ public class LBHttpSolrClient extends LBSolrClient {
   /**
    * Constructs {@link LBHttpSolrClient} instances from provided configuration.
    */
-  public static class Builder extends SolrClientBuilder<Builder> {
+  public static class Builder extends SolrClientBuilder<HttpClient, Builder> {
     protected final List<String> baseSolrUrls;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
 

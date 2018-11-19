@@ -20,9 +20,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 
-public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
+public abstract class SolrClientBuilder<C, B extends SolrClientBuilder<C, B>> {
 
-  protected HttpClient httpClient;
+  protected C httpClient;
   protected ResponseParser responseParser;
   protected Integer connectionTimeoutMillis;
   protected Integer socketTimeoutMillis;
@@ -33,7 +33,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   /**
    * Provides a {@link HttpClient} for the builder to use when creating clients.
    */
-  public B withHttpClient(HttpClient httpClient) {
+  public B withHttpClient(C httpClient) {
     this.httpClient = httpClient;
     return getThis();
   }
