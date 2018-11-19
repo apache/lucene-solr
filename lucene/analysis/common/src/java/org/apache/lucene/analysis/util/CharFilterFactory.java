@@ -73,4 +73,13 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
   /** Wraps the given Reader with a CharFilter. */
   public abstract Reader create(Reader input);
+
+  /**
+   * Normalize the specified input Reader
+   * While the default implementation returns input unchanged,
+   * char filters that should be applied at normalization time can delegate to {@code create} method.
+   */
+  public Reader normalize(Reader input) {
+    return input;
+  }
 }

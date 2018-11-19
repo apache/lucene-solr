@@ -87,6 +87,11 @@ API Changes
 * LUCENE-8513: MultiFields.getFields is now removed.  Please avoid this class,
   and Fields in general, when possible. (David Smiley)
 
+* LUCENE-8497: MultiTermAwareComponent has been removed, and in its place
+  TokenFilterFactory and CharFilterFactory now expose type-safe normalize()
+  methods.  This decouples normalization from tokenization entirely.
+  (Mayya Sharipova, Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

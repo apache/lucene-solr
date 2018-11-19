@@ -21,13 +21,10 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
-
 import com.ibm.icu.text.FilteredNormalizer2;
 import com.ibm.icu.text.Normalizer2;
 import com.ibm.icu.text.UnicodeSet;
+import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
  * Factory for {@link ICUNormalizer2CharFilter}
@@ -47,7 +44,7 @@ import com.ibm.icu.text.UnicodeSet;
  *
  * @since 4.10.0
  */
-public class ICUNormalizer2CharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
+public class ICUNormalizer2CharFilterFactory extends CharFilterFactory {
   private final Normalizer2 normalizer;
 
   /** Creates a new ICUNormalizer2CharFilterFactory */
@@ -78,8 +75,7 @@ public class ICUNormalizer2CharFilterFactory extends CharFilterFactory implement
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public Reader normalize(Reader input) {
+    return create(input);
   }
-  
 }
