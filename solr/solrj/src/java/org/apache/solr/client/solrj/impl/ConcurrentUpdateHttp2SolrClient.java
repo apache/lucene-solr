@@ -19,11 +19,8 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
-import java.util.Locale;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -38,21 +35,14 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.OutputStreamContentProvider;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,18 +110,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   }
 
-  public Set<String> getQueryParams() {
-    return this.client.getQueryParams();
-  }
-
-  /**
-   * Expert Method.
-   * @param queryParams set of param keys to only send via the query string
-   */
-  public void setQueryParams(Set<String> queryParams) {
-    this.client.setQueryParams(queryParams);
-  }
-
   /**
    * Opens a connection and sends everything...
    */
@@ -190,80 +168,23 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             if (update == null)
               break;
 
-            String contentType = client.requestWriter.getUpdateContentType();
-            final boolean isXml = ClientUtils.TEXT_XML.equals(contentType);
-
-            final ModifiableSolrParams origParams = new ModifiableSolrParams(update.getRequest().getParams());
-            final String origTargetCollection = update.getCollection();
-
-            // The parser 'wt=' and 'version=' params are used instead of the
-            // original params
-            ModifiableSolrParams requestParams = new ModifiableSolrParams(origParams);
-            requestParams.set(CommonParams.WT, client.parser.getWriterType());
-            requestParams.set(CommonParams.VERSION, client.parser.getVersion());
-
-            String basePath = ConcurrentUpdateHttp2SolrClient.this.basePath;
-            if (update.getCollection() != null)
-              basePath += "/" + update.getCollection();
-            if (!basePath.endsWith("/"))
-              basePath += "/";
-
-            OutputStreamContentProvider provider = new OutputStreamContentProvider();
-            Request postRequest = client.getHttpClient()
-                .newRequest(basePath + "update"
-                    + requestParams.toQueryString())
-                .method(HttpMethod.POST)
-                .timeout(connectionTimeout, TimeUnit.MILLISECONDS)
-                .timeout(soTimeout, TimeUnit.MILLISECONDS)
-                .header("User-Agent", HttpSolrClient.AGENT)
-                .header("Content-Type", contentType)
-                .content(provider);
-            InputStreamResponseListener responseListener = new InputStreamResponseListener();
-            client.addNecessaryAuth(postRequest);
-            postRequest.send(responseListener);
-
-            try (OutputStream out = provider.getOutputStream()) {
-              if (isXml) {
-                out.write("<stream>".getBytes(StandardCharsets.UTF_8)); // can be anything
-              }
+            InputStreamResponseListener responseListener = null;
+            try (Http2SolrClient.OutStream out = client.initOutStream(basePath, update.getRequest(),
+                update.getCollection(), connectionTimeout, soTimeout)) {
               Update upd = update;
               while (upd != null && upd != END_UPDATE) {
                 UpdateRequest req = upd.getRequest();
-                SolrParams currentParams = new ModifiableSolrParams(req.getParams());
-                if (!origParams.toNamedList().equals(currentParams.toNamedList()) || !StringUtils.equals(origTargetCollection, upd.getCollection())) {
+                if (!out.belongToThisStream(req, upd.getCollection())) {
                   queue.add(upd); // Request has different params or destination core/collection, return to queue
                   break;
                 }
-
-                client.requestWriter.write(req, out);
-                if (isXml) {
-                  // check for commit or optimize
-                  SolrParams params = req.getParams();
-                  if (params != null) {
-                    String fmt = null;
-                    if (params.getBool(UpdateParams.OPTIMIZE, false)) {
-                      fmt = "<optimize waitSearcher=\"%s\" />";
-                    } else if (params.getBool(UpdateParams.COMMIT, false)) {
-                      fmt = "<commit waitSearcher=\"%s\" />";
-                    }
-                    if (fmt != null) {
-                      byte[] content = String.format(Locale.ROOT,
-                          fmt, params.getBool(UpdateParams.WAIT_SEARCHER, false)
-                              + "")
-                          .getBytes(StandardCharsets.UTF_8);
-                      out.write(content);
-                    }
-                  }
-                }
+                client.send(out, upd.getRequest(), upd.getCollection());
                 out.flush();
 
                 notifyQueueAndRunnersIfEmptyQueue();
                 upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
               }
-
-              if (isXml) {
-                out.write("</stream>".getBytes(StandardCharsets.UTF_8));
-              }
+              responseListener = out.getResponseListener();
             }
 
             Response response = responseListener.get(soTimeout, TimeUnit.MILLISECONDS);
@@ -274,7 +195,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
               StringBuilder msg = new StringBuilder();
               msg.append(response.getReason());
               msg.append("\n\n\n\n");
-              msg.append("request: ").append(postRequest.getURI());
+              msg.append("request: ").append(basePath);
 
               SolrException solrExc;
               NamedList<String> metadata = null;

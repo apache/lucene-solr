@@ -50,11 +50,15 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
@@ -220,170 +224,123 @@ public class Http2SolrClient extends SolrClient {
     return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
-  public static class OutStream implements Closeable {
-    private final String url;
-    private final boolean isV2Api;
-    private final OutputStreamContentProvider contentProvider;
-    private final ReentrantLock lock = new ReentrantLock();
+  public static class OutStream implements Closeable{
+    private final String origCollection;
+    private final ModifiableSolrParams origParams;
+    private final OutputStreamContentProvider outProvider;
+    private final InputStreamResponseListener responseListener;
+    private final boolean isXml;
 
-    private OutStream(String url, boolean isV2Api, OutputStreamContentProvider contentProvider) {
-      this.url = url;
-      this.isV2Api = isV2Api;
-      this.contentProvider = contentProvider;
+    public OutStream(String origCollection, ModifiableSolrParams origParams,
+                     OutputStreamContentProvider outProvider, InputStreamResponseListener responseListener, boolean isXml) {
+      this.origCollection = origCollection;
+      this.origParams = origParams;
+      this.outProvider = outProvider;
+      this.responseListener = responseListener;
+      this.isXml = isXml;
     }
 
-    private boolean belongToThisStream(String url, boolean isV2Api) {
-      return this.url.equals(url) && this.isV2Api == isV2Api;
-    }
-
-    public void close() {
-      this.lock.lock();
-      try {
-        this.contentProvider.close();
-      } finally {
-        this.lock.unlock();
+    public boolean belongToThisStream(SolrRequest solrRequest, String collection) {
+      if (!origParams.toNamedList().equals(solrRequest.getParams().toNamedList()) || !StringUtils.equals(origCollection, collection)) {
+        return false;
       }
+      return true;
+    }
+
+    public void write(byte b[]) throws IOException {
+      this.outProvider.getOutputStream().write(b);
+    }
+
+    public void flush() throws IOException {
+      this.outProvider.getOutputStream().flush();
+    }
+
+    @Override
+    public void close() throws IOException {
+      if (isXml) {
+        write("</stream>".getBytes(StandardCharsets.UTF_8));
+      }
+      this.outProvider.getOutputStream().close();
+    }
+
+    //TODO this class should be hidden
+    public InputStreamResponseListener getResponseListener() {
+      return responseListener;
     }
   }
 
-  public String getUrl(SolrRequest solrRequest) {
-    if (solrRequest.getBasePath() == null && serverBaseUrl == null)
-      throw new IllegalArgumentException("Destination node is not provided!");
-    String path = requestWriter.getPath(solrRequest);
-    if (path == null || !path.startsWith("/")) {
-      path = DEFAULT_PATH;
+  public OutStream initOutStream(String baseUrl,
+                                 UpdateRequest updateRequest,
+                                 String collection,
+                                 long connectionTimeout,
+                                 long idleTimeout) throws IOException {
+    String contentType = requestWriter.getUpdateContentType();
+    final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
+
+    // The parser 'wt=' and 'version=' params are used instead of the
+    // original params
+    ModifiableSolrParams requestParams = new ModifiableSolrParams(origParams);
+    requestParams.set(CommonParams.WT, parser.getWriterType());
+    requestParams.set(CommonParams.VERSION, parser.getVersion());
+
+    String basePath = baseUrl;
+    if (collection != null)
+      basePath += "/" + collection;
+    if (!basePath.endsWith("/"))
+      basePath += "/";
+
+    OutputStreamContentProvider provider = new OutputStreamContentProvider();
+    Request postRequest = httpClient
+        .newRequest(basePath + "update"
+            + requestParams.toQueryString())
+        .method(HttpMethod.POST)
+        .timeout(connectionTimeout, TimeUnit.MILLISECONDS)
+        .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+        .header("User-Agent", HttpSolrClient.AGENT)
+        .header("Content-Type", contentType)
+        .content(provider);
+    setListeners(updateRequest, postRequest);
+    InputStreamResponseListener responseListener = new InputStreamResponseListener();
+    postRequest.send(responseListener);
+
+    boolean isXml = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType());
+    OutStream outStream = new OutStream(collection, origParams, provider, responseListener,
+        isXml);
+    if (isXml) {
+      outStream.write("<stream>".getBytes(StandardCharsets.UTF_8));
     }
-    String basePath = solrRequest.getBasePath() == null ? serverBaseUrl : solrRequest.getBasePath();
-
-    if (solrRequest instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = serverBaseUrl.replace("/solr", "/api");
-      } else {
-        basePath = serverBaseUrl + "/____v2";
-      }
-    }
-
-    ResponseParser parser = solrRequest.getResponseParser();
-    if (parser == null) {
-      parser = this.parser;
-    }
-
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
-    ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
-    if (parser != null) {
-      wparams.set(CommonParams.WT, parser.getWriterType());
-      wparams.set(CommonParams.VERSION, parser.getVersion());
-    }
-    return basePath + path + wparams.toQueryString();
-  }
-
-  public OutStream init(SolrRequest solrRequest, OnComplete onComplete) {
-    if (solrRequest.getMethod() != SolrRequest.METHOD.POST && solrRequest.getMethod() != SolrRequest.METHOD.PUT) {
-      throw new IllegalArgumentException("Only support sending requests in stream for POST or PUT requests");
-    }
-
-    if (!queryParams.isEmpty()) {
-      throw new IllegalStateException("Query params are not supported, found:"+queryParams);
-    }
-
-    if (solrRequest instanceof V2RequestSupport) {
-      solrRequest = ((V2RequestSupport) solrRequest).getV2Request();
-    }
-
-    final String url = getUrl(solrRequest);
-    final OutputStreamContentProvider content = new OutputStreamContentProvider();
-    final OutStream outStream = new OutStream(url, isV2ApiRequest(solrRequest), content);
-
-    HttpMethod method = SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
-
-    Request req = httpClient
-        .newRequest(url)
-        .method(method)
-        .content(content, requestWriter.getUpdateContentType());
-    setBasicAuthHeader(solrRequest, req);
-    send(req, onComplete, isV2ApiRequest(solrRequest));
     return outStream;
   }
 
-  public void send(SolrRequest solrRequest, OutStream outStream, OnComplete onComplete) throws IOException {
-    if (!outStream.belongToThisStream(getUrl(solrRequest), isV2ApiRequest(solrRequest))) {
-      throw new IllegalStateException("Path of request:"+getUrl(solrRequest)
-          + " does not same as url of stream:"+outStream.url);
-    }
-    httpClient.getExecutor().execute(new Runnable() {
-      @Override
-      public void run() {
-        outStream.lock.lock();
-        IOException exp = null;
-        try {
-          requestWriter.write(solrRequest, outStream.contentProvider.getOutputStream());
-        } catch (IOException e) {
-          exp = e;
-        } finally {
-          outStream.lock.unlock();
+  public void send(OutStream outStream, SolrRequest req, String collection) throws IOException {
+    assert outStream.belongToThisStream(req, collection);
+    this.requestWriter.write(req, outStream.outProvider.getOutputStream());
+    if (outStream.isXml) {
+      // check for commit or optimize
+      SolrParams params = req.getParams();
+      if (params != null) {
+        String fmt = null;
+        if (params.getBool(UpdateParams.OPTIMIZE, false)) {
+          fmt = "<optimize waitSearcher=\"%s\" />";
+        } else if (params.getBool(UpdateParams.COMMIT, false)) {
+          fmt = "<commit waitSearcher=\"%s\" />";
         }
-        if (exp != null) {
-          onComplete.onFailure(exp);
-        } else {
-          onComplete.onSuccess(null);
+        if (fmt != null) {
+          byte[] content = String.format(Locale.ROOT,
+              fmt, params.getBool(UpdateParams.WAIT_SEARCHER, false)
+                  + "")
+              .getBytes(StandardCharsets.UTF_8);
+          outStream.write(content);
         }
       }
-    });
-  }
-
-  public void addNecessaryAuth(Request req) {
-    for (HttpListenerFactory factory : listenerFactory) {
-      HttpListenerFactory.RequestResponseListener listener = factory.get();
-      req.onRequestQueued(listener);
-      req.onRequestBegin(listener);
-      req.onComplete(listener);
     }
-  }
-
-  private void send(Request req, OnComplete onComplete, boolean isV2Api) {
-    for (HttpListenerFactory factory : listenerFactory) {
-      HttpListenerFactory.RequestResponseListener listener = factory.get();
-      req.onRequestQueued(listener);
-      req.onRequestBegin(listener);
-      req.onComplete(listener);
-    }
-    // This async call only suitable for indexing since the response size is limited by 5MB
-    req.onRequestQueued(asyncTracker.queuedListener)
-        .onComplete(asyncTracker.completeListener).send(new BufferingResponseListener(5 * 1024 * 1024) {
-
-      @Override
-      public void onComplete(Result result) {
-        if (result.isFailed()) {
-          onComplete.onFailure(result.getFailure());
-          return;
-        }
-
-        NamedList<Object> rsp;
-        try {
-          InputStream is = getContentAsInputStream();
-          assert ObjectReleaseTracker.track(is);
-          rsp = processErrorsAndResponse(result.getResponse(),
-              parser, is, getEncoding(), isV2Api);
-          onComplete.onSuccess(rsp);
-        } catch (Exception e) {
-          onComplete.onFailure(e);
-        }
-      }
-    });
+    outStream.flush();
   }
 
   public NamedList<Object> request(SolrRequest solrRequest,
                                       String collection,
                                       OnComplete onComplete) throws IOException, SolrServerException {
     Request req = makeRequest(solrRequest, collection);
-    setBasicAuthHeader(solrRequest, req);
-    for (HttpListenerFactory factory : listenerFactory) {
-      HttpListenerFactory.RequestResponseListener listener = factory.get();
-      req.onRequestQueued(listener);
-      req.onRequestBegin(listener);
-      req.onComplete(listener);
-    }
 
     if (onComplete != null) {
       // This async call only suitable for indexing since the response size is limited by 5MB
@@ -473,6 +430,23 @@ public class Http2SolrClient extends SolrClient {
 
   private Request makeRequest(SolrRequest solrRequest, String collection)
       throws SolrServerException, IOException {
+    Request req = createRequest(solrRequest, collection);
+    setListeners(solrRequest, req);
+
+    return req;
+  }
+
+  private void setListeners(SolrRequest solrRequest, Request req) {
+    setBasicAuthHeader(solrRequest, req);
+    for (HttpListenerFactory factory : listenerFactory) {
+      HttpListenerFactory.RequestResponseListener listener = factory.get();
+      req.onRequestQueued(listener);
+      req.onRequestBegin(listener);
+      req.onComplete(listener);
+    }
+  }
+
+  private Request createRequest(SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
     if (solrRequest.getBasePath() == null && serverBaseUrl == null)
       throw new IllegalArgumentException("Destination node is not provided!");
 
