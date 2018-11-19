@@ -977,7 +977,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   boolean forciblyAddBlockId() {
-    return core.getLatestSchema().isUsableForChildDocs();
+    // forcibly add _root_ field if SOLR 8 or later.
+    return core.getSolrConfig().luceneMatchVersion.major >= 8;
   }
 
   private Term getIdTerm(BytesRef indexedId, boolean isBlock) {
