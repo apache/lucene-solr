@@ -433,9 +433,11 @@ select
     width: 100%;
 }
 
+/* Defines size and line height for "lead" type sections, the first sentence of a page. */
 #preamble > .sectionbody > .paragraph:first-of-type p,
 .paragraph.lead > p,
-p.lead
+p.lead,
+#preamble > p:first-of-type
 {
     font-size: 1.21875em;
     line-height: 1.6;
@@ -1454,8 +1456,10 @@ table.tableblock > caption.title
     white-space: nowrap;
 }
 
+/* Defines color for "lead" type sections, the first text on a page. */
 #preamble > .sectionbody > .paragraph:first-of-type p,
-.paragraph.lead > p
+.paragraph.lead > p,
+#preamble > p:first-of-type
 {
     color: rgba(0,0,0,.85);
 }
