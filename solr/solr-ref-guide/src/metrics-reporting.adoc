@@ -161,7 +161,6 @@ Reporter configurations are specified in `solr.xml` file in `<metrics><reporter>
     <int name="port">9999</int>
     <int name="period">60</int>
   </reporter>
-  <metrics>
     <reporter name="log_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrSlf4jReporter">
       <int name="period">60</int>
       <str name="filter">QUERY./select.requestTimes</str>
