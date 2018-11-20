@@ -73,7 +73,7 @@ public class StreamingSolrClients {
       // on a greater scale since the current behavior is to only increase the number of connections/Runners when
       // the queue is more than half full.
       client = new ErrorReportingConcurrentUpdateSolrClient.Builder(url, req, errors)
-          .withHttpClient(httpClient)
+          .withHttp2SolrClient(httpClient)
           .withQueueSize(100)
           .withThreadCount(runnerCount)
           .withExecutorService(updateExecutor)

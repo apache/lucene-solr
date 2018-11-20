@@ -22,18 +22,16 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Update;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -48,25 +46,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+/**
+ * @lucene.experimental
+ */
 public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Update END_UPDATE = new Update(null, null);
+
   private Http2SolrClient client;
   private final String basePath;
-  final BlockingQueue<Update> queue;
-  final ExecutorService scheduler;
-  final Queue<Runner> runners;
-  volatile CountDownLatch lock = null; // used to block everything
-  final int threadCount;
-  boolean shutdownExecutor = false;
-  int pollQueueTime = 250;
+  private final BlockingQueue<Update> queue;
+  private final ExecutorService scheduler;
+  private final Queue<Runner> runners;
+  private final int threadCount;
+
+  private boolean shutdownExecutor;
+  private int pollQueueTime = 250;
   private final boolean streamDeletes;
   private volatile boolean closed;
+  private volatile CountDownLatch lock = null; // used to block everything
 
 
   protected ConcurrentUpdateHttp2SolrClient(Builder builder) {
-    this.client = builder.httpClient;
+    this.client = builder.client;
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
     this.threadCount = builder.threadCount;
     this.runners = new LinkedList<>();
@@ -82,20 +85,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
 
   }
-
-
-  public Set<String> getQueryParams() {
-    return this.client.getQueryParams();
-  }
-
-  /**
-   * Expert Method.
-   * @param queryParams set of param keys to only send via the query string
-   */
-  public void setQueryParams(Set<String> queryParams) {
-    this.client.setQueryParams(queryParams);
-  }
-
 
   /**
    * Opens a connection and sends everything...
@@ -251,7 +240,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   // *must* be called with runners monitor held, e.g. synchronized(runners){ addRunner() }
   private void addRunner() {
-    MDC.put("ConcurrentUpdateSolrClient.url", client.getBaseURL());
+    MDC.put("ConcurrentUpdateHttp2SolrClient.url", client.getBaseURL());
     try {
       Runner r = new Runner();
       runners.add(r);
@@ -262,42 +251,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         throw e;
       }
     } finally {
-      MDC.remove("ConcurrentUpdateSolrClient.url");
-    }
-  }
-
-  /**
-   * Class representing an UpdateRequest and an optional collection.
-   */
-  static class Update {
-    UpdateRequest request;
-    String collection;
-    /**
-     *
-     * @param request the update request.
-     * @param collection The collection, can be null.
-     */
-    public Update(UpdateRequest request, String collection) {
-      this.request = request;
-      this.collection = collection;
-    }
-    /**
-     * @return the update request.
-     */
-    public UpdateRequest getRequest() {
-      return request;
-    }
-    public void setRequest(UpdateRequest request) {
-      this.request = request;
-    }
-    /**
-     * @return the collection, can be null.
-     */
-    public String getCollection() {
-      return collection;
-    }
-    public void setCollection(String collection) {
-      this.collection = collection;
+      MDC.remove("ConcurrentUpdateHttp2SolrClient.url");
     }
   }
 
@@ -553,11 +507,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
   }
 
-  public void setParser(ResponseParser responseParser) {
-    client.setParser(responseParser);
-  }
-
-
   /**
    * @param pollQueueTime time for an open connection to wait for updates when
    * the queue is empty.
@@ -566,14 +515,11 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.pollQueueTime = pollQueueTime;
   }
 
-  public void setRequestWriter(RequestWriter requestWriter) {
-    client.setRequestWriter(requestWriter);
-  }
-
   /**
-   * Constructs {@link ConcurrentUpdateSolrClient} instances from provided configuration.
+   * Constructs {@link ConcurrentUpdateHttp2SolrClient} instances from provided configuration.
    */
-  public static class Builder extends SolrClientBuilder<Http2SolrClient, Builder> {
+  public static class Builder {
+    protected Http2SolrClient client;
     protected String baseSolrUrl;
     protected int queueSize = 10;
     protected int threadCount;
@@ -587,7 +533,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
      *
      * 1) A path pointing directly at a particular core
      * <pre>
-     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
      *   QueryResponse resp = client.query(new SolrQuery("*:*"));
      * </pre>
      * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
@@ -595,7 +541,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
      *
      * 2) The path of the root Solr path ("/solr")
      * <pre>
-     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr").build();
      *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
      * </pre>
      * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
@@ -605,12 +551,17 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       this.baseSolrUrl = baseSolrUrl;
     }
 
+    public Builder withHttp2SolrClient(Http2SolrClient solrClient) {
+      this.client = solrClient;
+      return this;
+    }
+
     /**
      * The maximum number of requests buffered by the SolrClient's internal queue before being processed by background threads.
      *
      * This value should be carefully paired with the number of queue-consumer threads.  A queue with a maximum size
      * set too high may require more memory.  A queue with a maximum size set too low may suffer decreased throughput
-     * as {@link ConcurrentUpdateSolrClient#request(SolrRequest)} calls block waiting to add requests to the queue.
+     * as {@link ConcurrentUpdateHttp2SolrClient#request(SolrRequest)} calls block waiting to add requests to the queue.
      *
      * If not set, this defaults to 10.
      *
@@ -625,13 +576,13 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
 
     /**
-     * The maximum number of threads used to empty {@link ConcurrentUpdateSolrClient}s queue.
+     * The maximum number of threads used to empty {@link ConcurrentUpdateHttp2SolrClient}s queue.
      *
      * Threads are created when documents are added to the client's internal queue and exit when no updates remain in
      * the queue.
      * <p>
      * This value should be carefully paired with the maximum queue capacity.  A client with too few threads may suffer
-     * decreased throughput as the queue fills up and {@link ConcurrentUpdateSolrClient#request(SolrRequest)} calls
+     * decreased throughput as the queue fills up and {@link ConcurrentUpdateHttp2SolrClient#request(SolrRequest)} calls
      * block waiting to add requests to the queue.
      */
     public Builder withThreadCount(int threadCount) {
@@ -664,7 +615,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     /**
      * Configures created clients to not stream delete requests.
      *
-     * With this option set when the created ConcurrentUpdateSolrClient sents a delete request it will first will lock
+     * With this option set when the created ConcurrentUpdateHttp2SolrClient sents a delete request it will first will lock
      * the queue and block until all queued updates have been sent, and then send the delete request.
      */
     public Builder neverStreamDeletes() {
@@ -673,7 +624,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
 
     /**
-     * Create a {@link ConcurrentUpdateSolrClient} based on the provided configuration options.
+     * Create a {@link ConcurrentUpdateHttp2SolrClient} based on the provided configuration options.
      */
     public ConcurrentUpdateHttp2SolrClient build() {
       if (baseSolrUrl == null) {
@@ -683,9 +634,5 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       return new ConcurrentUpdateHttp2SolrClient(this);
     }
 
-    @Override
-    public Builder getThis() {
-      return this;
-    }
   }
 }

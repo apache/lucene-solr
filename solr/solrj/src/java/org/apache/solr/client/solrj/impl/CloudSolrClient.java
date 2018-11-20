@@ -1349,7 +1349,7 @@ public class CloudSolrClient extends SolrClient {
   /**
    * Constructs {@link CloudSolrClient} instances from provided configuration.
    */
-  public static class Builder extends SolrClientBuilder<HttpClient, Builder> {
+  public static class Builder extends SolrClientBuilder<Builder> {
     protected Collection<String> zkHosts = new ArrayList<>();
     protected List<String> solrUrls = new ArrayList<>();
     protected String zkChroot;

@@ -140,8 +140,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         return valueOf(param);
       } catch (IllegalArgumentException e) {
         throw new SolrException
-            (SolrException.ErrorCode.BAD_REQUEST, "Illegal value for " +
-                DISTRIB_UPDATE_PARAM + ": " + param, e);
+          (SolrException.ErrorCode.BAD_REQUEST, "Illegal value for " +
+           DISTRIB_UPDATE_PARAM + ": " + param, e);
       }
     }
   }
@@ -215,7 +215,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * @lucene.experimental
    */
   public DistributedUpdateProcessor(SolrQueryRequest req,
-                                    SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger, UpdateRequestProcessor next) {
+      SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger, UpdateRequestProcessor next) {
     super(next);
     this.rsp = rsp;
     this.next = next;
@@ -235,7 +235,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
-        (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD);
+      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD);
 
     CoreContainer cc = req.getCore().getCoreContainer();
 
@@ -446,7 +446,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         boolean isSubset = aslice.getRange() != null && aslice.getRange().isSubsetOf(myRange);
         if (isSubset &&
             (docId == null // in case of deletes
-                || coll.getRouter().isTargetSlice(docId, doc, req.getParams(), aslice.getName(), coll))) {
+            || coll.getRouter().isTargetSlice(docId, doc, req.getParams(), aslice.getName(), coll))) {
           Replica sliceLeader = aslice.getLeader();
           // slice leader can be null because node/shard is created zk before leader election
           if (sliceLeader != null && zkController.getClusterState().liveNodesContain(sliceLeader.getNodeName()))  {
@@ -837,7 +837,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         Exception getLeaderExc = null;
         Replica leaderProps = null;
         try {
-          leaderProps = zkController.getZkStateReader().getLeader(collection, shardId);
+            leaderProps = zkController.getZkStateReader().getLeader(collection, shardId);
           if (leaderProps != null) {
             leaderCoreNodeName = leaderProps.getName();
           }
@@ -970,8 +970,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (vinfo == null) {
       if (AtomicUpdateDocumentMerger.isAtomicUpdate(cmd)) {
         throw new SolrException
-            (SolrException.ErrorCode.BAD_REQUEST,
-                "Atomic document updates are not supported unless <updateLog/> is configured");
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "Atomic document updates are not supported unless <updateLog/> is configured");
       } else {
         super.processAdd(cmd);
         return false;
@@ -1190,7 +1190,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * @return -1 if the current in-place should be dropped, or last found version if previous update has been indexed.
    */
   private long waitForDependentUpdates(AddUpdateCommand cmd, long versionOnUpdate,
-                                       boolean isReplayOrPeersync, VersionBucket bucket) throws IOException {
+                               boolean isReplayOrPeersync, VersionBucket bucket) throws IOException {
     long lastFoundVersion = 0;
     TimeOut waitTimeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
@@ -1491,7 +1491,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     DistribPhase phase = DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
     DocCollection coll = zkEnabled
-        ? zkController.getClusterState().getCollection(collection) : null;
+      ? zkController.getClusterState().getCollection(collection) : null;
 
     if (zkEnabled && DistribPhase.NONE == phase) {
       if (rollupReplicationTracker == null) {
@@ -1988,7 +1988,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   public static boolean getNonZkLeaderAssumption(SolrQueryRequest req) {
     DistribPhase phase =
-        DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+      DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
     // if we have been told we are coming from a leader, then we are
     // definitely not the leader.  Otherwise assume we are.

@@ -772,7 +772,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   /**
    * Constructs {@link ConcurrentUpdateSolrClient} instances from provided configuration.
    */
-  public static class Builder extends SolrClientBuilder<HttpClient, Builder> {
+  public static class Builder extends SolrClientBuilder<Builder> {
     protected String baseSolrUrl;
     protected int queueSize = 10;
     protected int threadCount;

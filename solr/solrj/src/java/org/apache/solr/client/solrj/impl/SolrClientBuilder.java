@@ -20,20 +20,20 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 
-public abstract class SolrClientBuilder<C, B extends SolrClientBuilder<C, B>> {
+public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
-  protected C httpClient;
+  protected HttpClient httpClient;
   protected ResponseParser responseParser;
   protected Integer connectionTimeoutMillis;
   protected Integer socketTimeoutMillis;
 
   /** The solution for the unchecked cast warning. */
   public abstract B getThis();
-  
+
   /**
    * Provides a {@link HttpClient} for the builder to use when creating clients.
    */
-  public B withHttpClient(C httpClient) {
+  public B withHttpClient(HttpClient httpClient) {
     this.httpClient = httpClient;
     return getThis();
   }

@@ -152,9 +152,9 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     } catch (Throwable t) {
       firstErrTracker.caught(t);
       knownErrors.add(new ToleratedUpdateError
-          (CmdType.ADD,
-              getPrintableId(id),
-              t.getMessage()));
+                      (CmdType.ADD,
+                       getPrintableId(id),
+                       t.getMessage()));
 
       if (knownErrors.size() > maxErrors) {
         firstErrTracker.throwFirst();
@@ -173,8 +173,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
       firstErrTracker.caught(t);
 
       ToleratedUpdateError err = new ToleratedUpdateError(cmd.isDeleteById() ? CmdType.DELID : CmdType.DELQ,
-          cmd.isDeleteById() ? cmd.id : cmd.query,
-          t.getMessage());
+                                                          cmd.isDeleteById() ? cmd.id : cmd.query,
+                                                          t.getMessage());
       knownErrors.add(err);
 
       // NOTE: we're not using this to dedup before adding to knownErrors.
@@ -261,8 +261,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
 
         for (int i = 0; i < remoteErrMetadata.size(); i++) {
           ToleratedUpdateError err =
-              ToleratedUpdateError.parseMetadataIfToleratedUpdateError(remoteErrMetadata.getName(i),
-                  remoteErrMetadata.getVal(i));
+            ToleratedUpdateError.parseMetadataIfToleratedUpdateError(remoteErrMetadata.getName(i),
+                                                                     remoteErrMetadata.getVal(i));
           if (null == err) {
             // some metadata unrelated to this update processor
             continue;

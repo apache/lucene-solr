@@ -844,7 +844,7 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
   /**
    * Constructs {@link HttpSolrClient} instances from provided configuration.
    */
-  public static class Builder extends SolrClientBuilder<HttpClient, Builder> {
+  public static class Builder extends SolrClientBuilder<Builder> {
     protected String baseSolrUrl;
     protected boolean compression;
     protected ModifiableSolrParams invariantParams = new ModifiableSolrParams();

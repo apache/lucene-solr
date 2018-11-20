@@ -50,8 +50,6 @@ import org.apache.solr.core.Diagnostics;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.io.EofException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,11 +238,10 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
-                            ModifiableSolrParams params) throws IOException {
+      ModifiableSolrParams params) throws IOException {
 
     // we need to do any retries before commit...
     blockAndDoRetries();
-
     log.debug("Distrib commit to: {} params: {}", nodes, params);
 
     for (Node node : nodes) {
@@ -325,7 +322,7 @@ public class SolrCmdDistributor implements Closeable {
   private void doRequest(final Req req) {
     try {
       SolrClient solrClient = clients.getSolrClient(req);
-      NamedList rs = solrClient.request(req.uReq);
+      solrClient.request(req.uReq);
     } catch (Exception e) {
       SolrException.log(log, e);
       Error error = new Error();
@@ -420,11 +417,9 @@ public class SolrCmdDistributor implements Closeable {
         } catch (Exception e) {
           log.warn("Failed to parse response from {} during replication factor accounting", node, e);
         } finally {
-          if (inputStream != null) {
-            try {
-              inputStream.close();
-            } catch (Exception ignore) {
-            }
+          try {
+            inputStream.close();
+          } catch (Exception ignore) {
           }
         }
       }
@@ -538,9 +533,7 @@ public class SolrCmdDistributor implements Closeable {
      *         false otherwise
      */
     private boolean isRetriableException(Throwable t) {
-      return t instanceof SocketException
-          || t instanceof NoHttpResponseException
-          || t instanceof SocketTimeoutException;
+      return t instanceof SocketException || t instanceof NoHttpResponseException || t instanceof SocketTimeoutException;
     }
 
     @Override
