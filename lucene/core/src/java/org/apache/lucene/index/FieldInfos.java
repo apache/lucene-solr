@@ -139,15 +139,22 @@ public class FieldInfos implements Iterable<FieldInfo> {
    *  will be unavailable.
    */
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
-    final String softDeletesField = reader.leaves().stream()
-        .map(l -> l.reader().getFieldInfos().getSoftDeletesField())
-        .filter(Objects::nonNull)
-        .findAny().orElse(null);
-    final Builder builder = new Builder(new FieldNumbers(softDeletesField));
-    for(final LeafReaderContext ctx : reader.leaves()) {
-      builder.add(ctx.reader().getFieldInfos());
+    final List<LeafReaderContext> leaves = reader.leaves();
+    if (leaves.isEmpty()) {
+      return FieldInfos.EMPTY;
+    } else if (leaves.size() == 1) {
+      return leaves.get(0).reader().getFieldInfos();
+    } else {
+      final String softDeletesField = leaves.stream()
+          .map(l -> l.reader().getFieldInfos().getSoftDeletesField())
+          .filter(Objects::nonNull)
+          .findAny().orElse(null);
+      final Builder builder = new Builder(new FieldNumbers(softDeletesField));
+      for (final LeafReaderContext ctx : leaves) {
+        builder.add(ctx.reader().getFieldInfos());
+      }
+      return builder.finish();
     }
-    return builder.finish();
   }
 
   /** Returns a set of names of fields that have a terms index.  The order is undefined. */

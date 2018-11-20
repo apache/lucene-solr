@@ -15,29 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.index;
+package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.index.SortedNumericDocValues;
 
 /**
- * Wraps a {@link LegacyNumericDocValues} into a {@link NumericDocValues}.
+ * Wraps a {@link LegacySortedNumericDocValues} into a {@link SortedNumericDocValues}.
  *
- * @deprecated Implement {@link NumericDocValues} directly.
+ * @deprecated Implement {@link SortedNumericDocValues} directly.
  */
 @Deprecated
-public final class LegacyNumericDocValuesWrapper extends NumericDocValues {
-  private final Bits docsWithField;
-  private final LegacyNumericDocValues values;
+final class LegacySortedNumericDocValuesWrapper extends SortedNumericDocValues {
+  private final LegacySortedNumericDocValues values;
   private final int maxDoc;
   private int docID = -1;
-  private long value;
+  private int upto;
   
-  public LegacyNumericDocValuesWrapper(Bits docsWithField, LegacyNumericDocValues values) {
-    this.docsWithField = docsWithField;
+  public LegacySortedNumericDocValuesWrapper(LegacySortedNumericDocValues values, int maxDoc) {
     this.values = values;
-    this.maxDoc = docsWithField.length();
+    this.maxDoc = maxDoc;
   }
 
   @Override
@@ -47,25 +45,31 @@ public final class LegacyNumericDocValuesWrapper extends NumericDocValues {
 
   @Override
   public int nextDoc() {
-    docID++;
-    while (docID < maxDoc) {
-      value = values.get(docID);
-      if (value != 0 || docsWithField.get(docID)) {
-        return docID;
-      }
+    assert docID != NO_MORE_DOCS;
+    while (true) {
       docID++;
+      if (docID == maxDoc) {
+        docID = NO_MORE_DOCS;
+        break;
+      }
+      values.setDocument(docID);
+      if (values.count() != 0) {
+        break;
+      }
     }
-    docID = NO_MORE_DOCS;
-    return NO_MORE_DOCS;
+    upto = 0;
+    return docID;
   }
 
   @Override
   public int advance(int target) {
-    assert target >= docID: "target=" + target + " docID=" + docID;
-    if (target == NO_MORE_DOCS) {
-      this.docID = NO_MORE_DOCS;
+    if (target < docID) {
+      throw new IllegalArgumentException("cannot advance backwards: docID=" + docID + " target=" + target);
+    }
+    if (target >= maxDoc) {
+      docID = NO_MORE_DOCS;
     } else {
-      this.docID = target-1;
+      docID = target-1;
       nextDoc();
     }
     return docID;
@@ -74,23 +78,23 @@ public final class LegacyNumericDocValuesWrapper extends NumericDocValues {
   @Override
   public boolean advanceExact(int target) throws IOException {
     docID = target;
-    value = values.get(docID);
-    return value != 0 || docsWithField.get(docID);
+    values.setDocument(docID);
+    upto = 0;
+    return values.count() != 0;
   }
 
   @Override
   public long cost() {
-    // TODO
     return 0;
   }
 
   @Override
-  public long longValue() {
-    return value;
+  public long nextValue() {
+    return values.valueAt(upto++);
   }
 
   @Override
-  public String toString() {
-    return "LegacyNumericDocValuesWrapper(" + values + ")";
+  public int docValueCount() {
+    return values.count();
   }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.request.json;
 
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -63,6 +64,30 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
     put("gap", gap);
   }
 
+  /**
+   * Creates a "range" facet representation for a date field
+   *
+   * @param gap a DateMathParser compatible time/interval String.  (e.g. "+1MONTH")
+   */
+  public RangeFacetMap(String field, Date start, Date end, String gap) {
+    super("range");
+
+    if (field == null) {
+      throw new IllegalArgumentException("Parameter 'field' must be non-null");
+    }
+    if (start == null) {
+      throw new IllegalArgumentException("Parameter 'start' must be non-null");
+    }
+    if (end == null) {
+      throw new IllegalArgumentException("Parameter 'gap' must be non-null");
+    }
+
+    put("field", field);
+    put("start", start);
+    put("end", end);
+    put("gap", gap);
+  }
+
   @Override
   public RangeFacetMap getThis() { return this; }
 
@@ -100,6 +125,19 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
       throw new IllegalArgumentException("Parameter 'bucketSpecifier' must be non-null");
     }
     put("other", bucketSpecifier.toString());
+    return this;
+  }
+
+  /**
+   * Indicates that buckets should be returned only if they have a count of at least {@code minOccurrences}
+   *
+   * Defaults to '0' if not specified.
+   */
+  public RangeFacetMap setMinCount(int minOccurrences) {
+    if (minOccurrences < 0) {
+      throw new IllegalArgumentException(" Parameter 'minOccurrences' must be non-negative");
+    }
+    put("mincount", minOccurrences);
     return this;
   }
 }

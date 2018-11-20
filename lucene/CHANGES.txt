@@ -87,6 +87,11 @@ API Changes
 * LUCENE-8513: MultiFields.getFields is now removed.  Please avoid this class,
   and Fields in general, when possible. (David Smiley)
 
+* LUCENE-8497: MultiTermAwareComponent has been removed, and in its place
+  TokenFilterFactory and CharFilterFactory now expose type-safe normalize()
+  methods.  This decouples normalization from tokenization entirely.
+  (Mayya Sharipova, Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -192,21 +197,45 @@ Optimizations
 * LUCENE-8507: TopFieldCollector can now update the minimum competitive score if the primary sort
   is by relevancy and the total hit count is not required. (Jim Ferenczi)
 
+* LUCENE-8464: ConstantScoreScorer now implements setMinCompetitveScore in order
+  to early terminate the iterator if the minimum score is greater than the constant
+  score. (Christophe Bismuth via Jim Ferenczi)
+
 ======================= Lucene 7.7.0 =======================
 
-Build:
+Build
 
 * LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
 
+New Features
+
+* LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
+  points such as range queries or geo queries.
+  (Christophe Bismuth via Adrien Grand)
+
+* LUCENE-8508: IndexWriter can now set the created version via
+  IndexWriterConfig#setIndexCreatedVersionMajor. This is an expert feature.
+  (Adrien Grand)
+
+Improvements
+
+* LUCENE-8463: TopFieldCollector can now early-terminates queries when sorting by SortField.DOC.
+  (Christophe Bismuth via Jim Ferenczi)
+
+Optimizations
+
+* LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
+  (Christophe Bismuth via David Smiley)
+
 ======================= Lucene 7.6.0 =======================
 
-Build:
+Build
 
 * LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
 
 * LUCENE-8493: Stop publishing insecure .sha1 files with releases (janhoy)
 
-Bug fixes:
+Bug fixes
 
 * LUCENE-8479: QueryBuilder#analyzeGraphPhrase now throws TooManyClause exception
   if the number of expanded path reaches the BooleanQuery#maxClause limit. (Jim Ferenczi)
@@ -258,7 +287,7 @@ New Features
 
 * LUCENE-8555: Add dateline crossing support to LatLonShapeBoundingBoxQuery. (Nick Knize)
 
-Improvements:
+Improvements
 
 * LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the
   first 4 are index dimensions defining the bounding box of the Triangle and the
@@ -270,7 +299,8 @@ Improvements:
 
 * LUCENE-8558: Replace O(N) lookup with O(1) lookup in PerFieldMergeState#FilterFieldInfos.
   (Kranthi via Simon Willnauer)
-Other:
+
+Other
 
 * LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
   via Alan Woodward)
@@ -280,14 +310,14 @@ Other:
 
 ======================= Lucene 7.5.1 =======================
 
-Bug Fixes:
+Bug Fixes
 
 * LUCENE-8454: Fix incorrect vertex indexing and other computation errors in
   shape tessellation that would sometimes cause an infinite loop. (Nick Knize)
 
 ======================= Lucene 7.5.0 =======================
 
-API Changes:
+API Changes
 
 * LUCENE-8467: RAMDirectory, RAMFile, RAMInputStream, RAMOutputStream are deprecated
   (Dawid Weiss)
@@ -349,7 +379,7 @@ API Changes:
   IndexReaders, allowing the caller to pass a FilterDirectoryReader, for example.
   (Mike McCandless)
 
-Bug Fixes:
+Bug Fixes
 
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
   bogus tiles when building GeoPolygons. (Ignacio Vera)
@@ -393,7 +423,7 @@ Bug Fixes:
   allow access to it's delegate like other filter readers. This adds a new #getDelegate method
   to access the wrapped reader. (Simon Willnauer)
 
-Changes in Runtime Behavior:
+Changes in Runtime Behavior
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
   findForcedMerges and findForcedDeletesMerges (Erick Erickson)
@@ -450,7 +480,7 @@ Build
   The buildAndPushRelease.py script validates that RM's PGP key is in the KEYS file.
   Remove unused 'copy-to-stage' and '-dist-keys' targets from ant build. (janhoy)
 
-Other:
+Other
 
 * LUCENE-8485: Update randomizedtesting to version 2.6.4. (Dawid Weiss)
 
@@ -477,7 +507,7 @@ Other:
 
 ======================= Lucene 7.4.1 =======================
 
-Bug Fixes:
+Bug Fixes
  
  * LUCENE-8365: Fix ArrayIndexOutOfBoundsException in UnifiedHighlighter. This fixes 
    a "off by one" error in the UnifiedHighlighter's code that is only triggered when

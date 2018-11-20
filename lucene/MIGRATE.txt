@@ -145,3 +145,8 @@ use a TokenFilter chain as you would with any other Tokenizer.
 
 Both Highlighter and FastVectorHighlighter need a custom WeightedSpanTermExtractor or FieldQuery respectively
 in order to support ToParent/ToChildBlockJoinQuery.
+
+## MultiTermAwareComponent replaced by CharFilterFactory#normalize() and TokenFilterFactory#normalize() ##
+
+Normalization is now type-safe, with CharFilterFactory#normalize() returning a Reader and
+TokenFilterFactory#normalize() returning a TokenFilter.

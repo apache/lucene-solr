@@ -72,7 +72,7 @@ The properties that can be specified for a given field type fall into three majo
 
 === General Properties
 
-These are the general properties for fields
+These are the general properties for fields:
 
 `name`::
 The name of the fieldType. This value gets used in field definitions, in the "type" attribute. It is strongly recommended that names consist of alphanumeric or underscore characters only and not start with a digit. This is not currently strictly enforced.

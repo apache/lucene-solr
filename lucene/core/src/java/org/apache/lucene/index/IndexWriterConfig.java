@@ -33,6 +33,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util.SetOnce;
 
 /**
@@ -170,6 +171,35 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   @Override
   public OpenMode getOpenMode() {
     return openMode;
+  }
+
+  /**
+   * Expert: set the compatibility version to use for this index. In case the
+   * index is created, it will use the given major version for compatibility.
+   * It is sometimes useful to set the previous major version for compatibility
+   * due to the fact that {@link IndexWriter#addIndexes} only accepts indices
+   * that have been written with the same major version as the current index.
+   * If the index already exists, then this value is ignored.
+   * Default value is the {@link Version#major major} of the
+   * {@link Version#LATEST latest version}.
+   * <p><b>NOTE</b>: Changing the creation version reduces backward
+   * compatibility guarantees. For instance an index created with Lucene 8 with
+   * a compatibility version of 7 can't be read with Lucene 9 due to the fact
+   * that Lucene only supports reading indices created with the current or
+   * previous major release.
+   * @param indexCreatedVersionMajor the major version to use for compatibility
+   */
+  public IndexWriterConfig setIndexCreatedVersionMajor(int indexCreatedVersionMajor) {
+    if (indexCreatedVersionMajor > Version.LATEST.major) {
+      throw new IllegalArgumentException("indexCreatedVersionMajor may not be in the future: current major version is " +
+          Version.LATEST.major + ", but got: " + indexCreatedVersionMajor);
+    }
+    if (indexCreatedVersionMajor < Version.LATEST.major - 1) {
+      throw new IllegalArgumentException("indexCreatedVersionMajor may not be less than the minimum supported version: " +
+          (Version.LATEST.major-1) + ", but got: " + indexCreatedVersionMajor);
+    }
+    this.createdVersionMajor = indexCreatedVersionMajor;
+    return this;
   }
 
   /**

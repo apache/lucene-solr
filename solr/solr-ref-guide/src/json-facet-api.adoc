@@ -183,7 +183,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet2
 
 === JSON Extensions
 
-The *Noggit* JSON parser that is used by Solr accepts a number of JSON extensions such as
+The *Noggit* JSON parser that is used by Solr accepts a number of JSON extensions such as,
 
 * bare words can be left unquoted
 * single line comments using either `//` or `#`

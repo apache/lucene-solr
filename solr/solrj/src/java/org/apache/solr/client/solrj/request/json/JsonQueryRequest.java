@@ -149,7 +149,8 @@ public class JsonQueryRequest extends QueryRequest {
    *     jsonQueryRequest.withStatFacet("top_cats", catFacetMap);
    * }</pre>
    *
-   * @param facetName the name of the top-level facet you'd like to add.
+   * @param facetName the name of the top-level facet you'd like to add.  Avoid choosing facet names which overload
+   *                  properties already present in the JSON response schema (e.g. "count", "val", "minX", etc.)
    * @param facetJson a Map of values representing the facet you wish to add to the request
    */
   public JsonQueryRequest withFacet(String facetName, Map<String, Object> facetJson) {
@@ -188,7 +189,8 @@ public class JsonQueryRequest extends QueryRequest {
    *     };
    * </pre>
    *
-   * @param facetName the name of the top-level facet you'd like to add.
+   * @param facetName the name of the top-level facet you'd like to add.  Avoid choosing facet names which overload
+   *                  properties already present in the JSON response schema (e.g. "count", "val", "minX", etc.)
    * @param facetWriter a MapWriter representing the facet you wish to add to the request
    */
   public JsonQueryRequest withFacet(String facetName, MapWriter facetWriter) {
@@ -221,7 +223,8 @@ public class JsonQueryRequest extends QueryRequest {
    *     jsonQueryRequest.withStatFacet("avg_price", "avg(price)");
    * }</pre>
    *
-   * @param facetName the name of the top-level stat/agg facet you'd like to add.
+   * @param facetName the name of the top-level stat/agg facet you'd like to add.  Avoid choosing facet names which overload
+   *                  properties already present in the JSON response schema (e.g. "count", "val", "minX", etc.)
    * @param facetValue a String representing the stat/agg facet computation to perform.
    */
   public JsonQueryRequest withStatFacet(String facetName, String facetValue) {

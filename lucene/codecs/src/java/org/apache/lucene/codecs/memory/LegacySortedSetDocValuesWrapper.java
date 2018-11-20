@@ -15,25 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.index;
+package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Wraps a {@link LegacySortedDocValues} into a {@link SortedDocValues}.
+ * Wraps a {@link LegacySortedSetDocValues} into a {@link SortedSetDocValues}.
  *
- * @deprecated Implement {@link SortedDocValues} directly.
+ * @deprecated Implement {@link SortedSetDocValues} directly.
  */
 @Deprecated
-public final class LegacySortedDocValuesWrapper extends SortedDocValues {
-  private final LegacySortedDocValues values;
+final class LegacySortedSetDocValuesWrapper extends SortedSetDocValues {
+  private final LegacySortedSetDocValues values;
   private final int maxDoc;
   private int docID = -1;
-  private int ord;
+  private long ord;
   
-  public LegacySortedDocValuesWrapper(LegacySortedDocValues values, int maxDoc) {
+  public LegacySortedSetDocValuesWrapper(LegacySortedSetDocValues values, int maxDoc) {
     this.values = values;
     this.maxDoc = maxDoc;
   }
@@ -48,8 +49,9 @@ public final class LegacySortedDocValuesWrapper extends SortedDocValues {
     assert docID != NO_MORE_DOCS;
     docID++;
     while (docID < maxDoc) {
-      ord = values.getOrd(docID);
-      if (ord != -1) {
+      values.setDocument(docID);
+      ord = values.nextOrd();
+      if (ord != NO_MORE_ORDS) {
         return docID;
       }
       docID++;
@@ -75,8 +77,9 @@ public final class LegacySortedDocValuesWrapper extends SortedDocValues {
   @Override
   public boolean advanceExact(int target) throws IOException {
     docID = target;
-    ord = values.getOrd(docID);
-    return ord != -1;
+    values.setDocument(docID);
+    ord = values.nextOrd();
+    return ord != NO_MORE_ORDS;
   }
 
   @Override
@@ -85,17 +88,26 @@ public final class LegacySortedDocValuesWrapper extends SortedDocValues {
   }
 
   @Override
-  public int ordValue() {
-    return ord;
+  public long nextOrd() {
+    long result = ord;
+    if (result != NO_MORE_ORDS) {
+      ord = values.nextOrd();
+    }
+    return result;
   }
 
   @Override
-  public BytesRef lookupOrd(int ord) {
-    return values.lookupOrd(ord);
+  public BytesRef lookupOrd(long ord) {
+    return values.lookupOrd((int) ord);
   }
 
   @Override
-  public int getValueCount() {
+  public long getValueCount() {
     return values.getValueCount();
+  }
+
+  @Override
+  public String toString() {
+    return "LegacySortedSetDocValuesWrapper(" + values + ")";
   }
 }

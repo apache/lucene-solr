@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.standard;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.standard.UAX29URLEmailAnalyzer;
 
 import java.io.IOException;
 import java.util.Arrays;

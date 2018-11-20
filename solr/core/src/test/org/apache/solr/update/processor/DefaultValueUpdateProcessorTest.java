@@ -34,8 +34,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 
 import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 
 import org.junit.BeforeClass;
 

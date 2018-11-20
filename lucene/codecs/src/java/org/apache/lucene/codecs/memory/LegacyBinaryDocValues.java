@@ -14,36 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
+package org.apache.lucene.codecs.memory;
 
+
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.util.BytesRef;
 
 /**
- * A list of per-document numeric values, sorted 
- * according to {@link Long#compare(long, long)}.
+ * A per-document byte[]
  *
- * @deprecated Use {@link SortedNumericDocValues} instead.
+ * @deprecated Use {@link BinaryDocValues} instead.
  */
 @Deprecated
-public abstract class LegacySortedNumericDocValues {
+abstract class LegacyBinaryDocValues {
   
   /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected LegacySortedNumericDocValues() {}
+   * constructors, typically implicit.) */
+  protected LegacyBinaryDocValues() {}
 
-  /** 
-   * Positions to the specified document 
-   */
-  public abstract void setDocument(int doc);
-  
-  /** 
-   * Retrieve the value for the current document at the specified index. 
-   * An index ranges from {@code 0} to {@code count()-1}. 
-   */
-  public abstract long valueAt(int index);
-  
-  /** 
-   * Retrieves the count of values for the current document. 
-   * This may be zero if a document has no values.
-   */
-  public abstract int count();
+  /** Lookup the value for document.  The returned {@link BytesRef} may be
+   * re-used across calls to {@link #get(int)} so make sure to
+   * {@link BytesRef#deepCopyOf(BytesRef) copy it} if you want to keep it
+   * around. */
+  public abstract BytesRef get(int docID);
 }
