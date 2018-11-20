@@ -606,11 +606,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
             cloudDebugLog(core, "synced");
             
             log.info("Replaying updates buffered during PeerSync.");
-            replay(core);
+            replayFuture = replay(core);
 
             // sync success
             successfulRecovery = true;
-            return;
+            break;
           }
 
           log.info("PeerSync Recovery was not successful - trying replication.");
