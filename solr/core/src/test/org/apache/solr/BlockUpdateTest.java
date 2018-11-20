@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.embedded;
+package org.apache.solr;
 
 import java.util.List;
 
@@ -49,8 +49,9 @@ public class BlockUpdateTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     useRootSchema = random().nextBoolean();
-    String schema = useRootSchema ? "schema-root-update.xml" : "schema-flat-update.xml";
-    initCore("solrconfig-update.xml", schema);
+    // schema.xml declares _root_ field while schema-11.xml does not.
+    String schema = useRootSchema ? "schema.xml" : "schema-11.xml";
+    initCore("solrconfig.xml", schema);
   }
 
   @Test
