@@ -198,12 +198,11 @@ public class AddUpdateCommand extends UpdateCommand {
     }
 
     final String rootId = getHashableId();
-    final boolean hasVersion = version != 0;
-    final SolrInputField versionSif = hasVersion? solrDoc.get(CommonParams.VERSION_FIELD): null;
+    final SolrInputField versionSif = solrDoc.get(CommonParams.VERSION_FIELD);
 
     for (SolrInputDocument sdoc : all) {
       addRootField(sdoc, rootId);
-      if (hasVersion) {
+      if (versionSif != null) {
         addVersionField(sdoc, versionSif);
       }
       // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
