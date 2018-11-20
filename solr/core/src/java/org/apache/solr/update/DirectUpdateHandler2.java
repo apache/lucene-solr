@@ -324,7 +324,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (blockDocs != null) {
         writer.addDocuments(blockDocs);
       } else {
-        writer.addDocument(cmd.getLuceneDocument(forciblyAddBlockId()));
+        writer.addDocument(cmd.getLuceneDocument());
       }
       if (ulog != null) ulog.add(cmd);
 
@@ -960,7 +960,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         log.debug("updateDocuments({})", cmd);
         writer.updateDocuments(updateTerm, blockDocs);
       } else {
-        Document luceneDocument = cmd.getLuceneDocument(forciblyAddBlockId());
+        Document luceneDocument = cmd.getLuceneDocument();
         log.debug("updateDocument({})", cmd);
         writer.updateDocument(updateTerm, luceneDocument);
       }
@@ -976,13 +976,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
   }
 
-  boolean forciblyAddBlockId() {
-    // forcibly add _root_ field if SOLR 8 or later.
-    return core.getSolrConfig().luceneMatchVersion.major >= 8;
-  }
-
   private Term getIdTerm(BytesRef indexedId, boolean isBlock) {
-    boolean useRootId = isBlock || forciblyAddBlockId();
+    boolean useRootId = isBlock || core.getLatestSchema().isUsableForChildDocs();
     return new Term(useRootId ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), indexedId);
   }
 

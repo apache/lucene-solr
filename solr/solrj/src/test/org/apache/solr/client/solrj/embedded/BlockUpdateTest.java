@@ -36,24 +36,21 @@ import static org.hamcrest.CoreMatchers.is;
 
 public class BlockUpdateTest extends SolrJettyTestBase {
   private static boolean useRootSchema;
-  private static boolean useLegacyHandler;
   private static final String MESSAGE = "Update handler should create and process _root_ field " +
-      "unless there is no such a field in schema, or it's a LegacyDirectUpdateHandler";
+      "unless there is no such a field in schema";
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
   private static boolean expectRoot() {
-    return useRootSchema && !useLegacyHandler;
+    return useRootSchema;
   }
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     useRootSchema = random().nextBoolean();
     String schema = useRootSchema ? "schema-root-update.xml" : "schema-flat-update.xml";
-    useLegacyHandler = random().nextBoolean();
-    String solrconfig = useLegacyHandler ? "solrconfig-legacy-update.xml" : "solrconfig-update.xml";
-    initCore(solrconfig, schema);
+    initCore("solrconfig-update.xml", schema);
   }
 
   @Test

@@ -95,21 +95,15 @@ public class AddUpdateCommand extends UpdateCommand {
    * Nested documents, if found, will cause an exception to be thrown.  Call {@link #getLuceneDocsIfNested()} for that.
    * Any changes made to the returned Document will not be reflected in the SolrInputDocument, or future calls to this
    * method.
-   * Note that the behavior of this is sensitive to {@link #isInPlaceUpdate()}.
-   * @param withBlockId If true, then block id is forcibly added to the doc
-   */
-   Document getLuceneDocument(boolean withBlockId) {
+   * Note that the behavior of this is sensitive to {@link #isInPlaceUpdate()}.*/
+   public Document getLuceneDocument() {
      final boolean ignoreNestedDocs = false; // throw an exception if found
      SolrInputDocument solrInputDocument = getSolrInputDocument();
-     if (withBlockId) {
+     if (!isInPlaceUpdate() && getReq().getSchema().isUsableForChildDocs()) {
        addRootField(solrInputDocument, getHashableId());
      }
      return DocumentBuilder.toDocument(solrInputDocument, req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
    }
-
-  public Document getLuceneDocument() {
-     return getLuceneDocument(false);
-  }
 
   /** Returns the indexed ID for this document.  The returned BytesRef is retained across multiple calls, and should not be modified. */
    public BytesRef getIndexedId() {
@@ -204,9 +198,8 @@ public class AddUpdateCommand extends UpdateCommand {
     }
 
     final String rootId = getHashableId();
-
     final boolean hasVersion = version != 0;
-    SolrInputField versionSif = hasVersion? solrDoc.get(CommonParams.VERSION_FIELD): null;
+    final SolrInputField versionSif = hasVersion? solrDoc.get(CommonParams.VERSION_FIELD): null;
 
     for (SolrInputDocument sdoc : all) {
       addRootField(sdoc, rootId);
