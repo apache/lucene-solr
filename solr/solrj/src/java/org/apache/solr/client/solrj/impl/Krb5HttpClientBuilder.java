@@ -43,13 +43,9 @@ import org.apache.http.cookie.CookieSpecProvider;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.eclipse.jetty.client.SolrAuthenticationProtocolHandler;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
-import org.eclipse.jetty.client.SPNEGOAuthentication;
-import org.eclipse.jetty.client.SolrWWWAuthenticationProtocolHandler;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
+import org.eclipse.jetty.client.util.SPNEGOAuthentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,7 +126,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
     authenticationStore.addAuthentication(createSPNEGOAuthentication());
     http2Client.getHttpClient().setAuthenticationStore(authenticationStore);
-    http2Client.getProtocolHandlers().put(new SolrWWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
+    http2Client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
   }
 
   public SolrHttpClientBuilder getBuilder(SolrHttpClientBuilder builder) {
