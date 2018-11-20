@@ -320,9 +320,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
-      Iterable<Document> blockDocs = cmd.getLuceneDocsIfNested();
-      if (blockDocs != null) {
-        writer.addDocuments(blockDocs);
+      Iterable<Document> nestedDocs = cmd.getLuceneDocsIfNested();
+      if (nestedDocs != null) {
+        writer.addDocuments(nestedDocs);
       } else {
         writer.addDocument(cmd.getLuceneDocument());
       }
@@ -952,13 +952,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     } else { // more normal path
 
-      Iterable<Document> blockDocs = cmd.getLuceneDocsIfNested();
-      boolean isBlock = blockDocs != null; // AKA nested child docs
-      Term idTerm = getIdTerm(cmd.getIndexedId(), isBlock);
+      Iterable<Document> nestedDocs = cmd.getLuceneDocsIfNested();
+      boolean isNested = nestedDocs != null; // AKA nested child docs
+      Term idTerm = getIdTerm(cmd.getIndexedId(), isNested);
       Term updateTerm = hasUpdateTerm ? cmd.updateTerm : idTerm;
-      if (isBlock) {
+      if (isNested) {
         log.debug("updateDocuments({})", cmd);
-        writer.updateDocuments(updateTerm, blockDocs);
+        writer.updateDocuments(updateTerm, nestedDocs);
       } else {
         Document luceneDocument = cmd.getLuceneDocument();
         log.debug("updateDocument({})", cmd);
@@ -976,8 +976,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
   }
 
-  private Term getIdTerm(BytesRef indexedId, boolean isBlock) {
-    boolean useRootId = isBlock || core.getLatestSchema().isUsableForChildDocs();
+  private Term getIdTerm(BytesRef indexedId, boolean isNested) {
+    boolean useRootId = isNested || core.getLatestSchema().isUsableForChildDocs();
     return new Term(useRootId ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), indexedId);
   }
 
