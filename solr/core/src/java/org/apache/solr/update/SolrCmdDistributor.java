@@ -287,6 +287,7 @@ public class SolrCmdDistributor implements Closeable {
       blockAndDoRetries();
 
       try {
+        req.uReq.setBasePath(req.node.getUrl());
         clients.getHttpClient().request(req.uReq);
       } catch (Exception e) {
         SolrException.log(log, e);

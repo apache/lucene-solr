@@ -62,33 +62,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   boolean shutdownExecutor = false;
   int pollQueueTime = 250;
   private final boolean streamDeletes;
-  private volatile Integer connectionTimeout;
-  private volatile Integer soTimeout;
   private volatile boolean closed;
 
-  /**
-   * Uses the supplied HttpClient to send documents to the Solr server.
-   *
-   * @deprecated use {@link ConcurrentUpdateSolrClient#ConcurrentUpdateSolrClient(ConcurrentUpdateSolrClient.Builder)} instead, as it is a more extension/subclassing-friendly alternative
-   */
-  @Deprecated
-  protected ConcurrentUpdateHttp2SolrClient(String solrServerUrl,
-                                            Http2SolrClient client, int queueSize, int threadCount,
-                                            ExecutorService es, boolean streamDeletes) {
-    this((streamDeletes) ?
-        new Builder(solrServerUrl)
-            .withHttpClient(client)
-            .withQueueSize(queueSize)
-            .withThreadCount(threadCount)
-            .withExecutorService(es)
-            .alwaysStreamDeletes() :
-        new Builder(solrServerUrl)
-            .withHttpClient(client)
-            .withQueueSize(queueSize)
-            .withThreadCount(threadCount)
-            .withExecutorService(es)
-            .neverStreamDeletes());
-  }
 
   protected ConcurrentUpdateHttp2SolrClient(Builder builder) {
     this.client = builder.httpClient;
@@ -96,8 +71,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.threadCount = builder.threadCount;
     this.runners = new LinkedList<>();
     this.streamDeletes = builder.streamDeletes;
-    this.connectionTimeout = builder.connectionTimeoutMillis;
-    this.soTimeout = builder.socketTimeoutMillis;
     this.basePath = builder.baseSolrUrl;
 
     if (builder.executorService != null) {
@@ -184,7 +157,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
             InputStreamResponseListener responseListener = null;
             try (Http2SolrClient.OutStream out = client.initOutStream(basePath, update.getRequest(),
-                update.getCollection(), connectionTimeout, soTimeout)) {
+                update.getCollection())) {
               Update upd = update;
               while (upd != null && upd != END_UPDATE) {
                 UpdateRequest req = upd.getRequest();
@@ -199,9 +172,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                 upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
               }
               responseListener = out.getResponseListener();
+            } catch (NullPointerException e) {
+              e.printStackTrace();
+              throw e;
             }
 
-            Response response = responseListener.get(soTimeout, TimeUnit.MILLISECONDS);
+            Response response = responseListener.get(client.getIdleTimeout(), TimeUnit.MILLISECONDS);
             rspBody = responseListener.getInputStream();
 
             int statusCode = response.getStatus();
@@ -216,7 +192,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
               // parse out the metadata from the SolrException
               try {
                 String encoding = "UTF-8"; // default
-                NamedList<Object> resp = client.parser.processResponse(rspBody, encoding);
+                NamedList<Object> resp = client.getParser().processResponse(rspBody, encoding);
                 NamedList<Object> error = (NamedList<Object>) resp.get("error");
                 if (error != null) {
                   metadata = (NamedList<String>) error.get("metadata");
@@ -553,25 +529,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         queue.add(END_UPDATE);
       }
     }
-  }
-
-  /**
-   * @deprecated since 7.0  Use {@link ConcurrentUpdateSolrClient.Builder} methods instead.
-   */
-  @Deprecated
-  public void setConnectionTimeout(int timeout) {
-    this.connectionTimeout = timeout;
-  }
-
-  /**
-   * set soTimeout (read timeout) on the underlying HttpConnectionManager. This is desirable for queries, but probably
-   * not for indexing.
-   *
-   * @deprecated since 7.0  Use {@link ConcurrentUpdateSolrClient.Builder} methods instead.
-   */
-  @Deprecated
-  public void setSoTimeout(int timeout) {
-    this.soTimeout = timeout;
   }
 
   public void shutdownNow() {

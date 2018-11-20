@@ -110,8 +110,8 @@ public class Http2SolrClient extends SolrClient {
   private volatile Set<String> queryParams = Collections.emptySet();
   private int idleTimeout;
 
-  ResponseParser parser = new BinaryResponseParser();
-  volatile RequestWriter requestWriter = new BinaryRequestWriter();
+  private ResponseParser parser = new BinaryResponseParser();
+  private volatile RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new LinkedList<>();
   private AsyncTracker asyncTracker = new AsyncTracker();
   /**
@@ -224,6 +224,10 @@ public class Http2SolrClient extends SolrClient {
     return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
+  public long getIdleTimeout() {
+    return idleTimeout;
+  }
+
   public static class OutStream implements Closeable{
     private final String origCollection;
     private final ModifiableSolrParams origParams;
@@ -271,9 +275,7 @@ public class Http2SolrClient extends SolrClient {
 
   public OutStream initOutStream(String baseUrl,
                                  UpdateRequest updateRequest,
-                                 String collection,
-                                 long connectionTimeout,
-                                 long idleTimeout) throws IOException {
+                                 String collection) throws IOException {
     String contentType = requestWriter.getUpdateContentType();
     final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
 
@@ -294,8 +296,6 @@ public class Http2SolrClient extends SolrClient {
         .newRequest(basePath + "update"
             + requestParams.toQueryString())
         .method(HttpMethod.POST)
-        .timeout(connectionTimeout, TimeUnit.MILLISECONDS)
-        .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
         .header("User-Agent", HttpSolrClient.AGENT)
         .header("Content-Type", contentType)
         .content(provider);

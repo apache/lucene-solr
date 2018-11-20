@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +41,8 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.security.HttpClientBuilderPlugin;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
@@ -115,6 +118,10 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     }
     updateOnlyClient = updateOnlyClientBuilder.build();
     updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
+    Set<String> queryParams = new HashSet<>(2);
+    queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
+    queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
+    updateOnlyClient.setQueryParams(queryParams);
 
     defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
