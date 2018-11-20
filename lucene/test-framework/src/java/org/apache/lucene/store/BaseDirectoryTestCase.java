@@ -522,6 +522,9 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
 
       // But any read following the seek(len) should throw an EOFException.
       expectThrows(EOFException.class, i::readByte);
+      expectThrows(EOFException.class, () -> {
+        i.readBytes(new byte [1], 0, 1);
+      });
 
       i.close();
     }
