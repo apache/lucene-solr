@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.codecs;
+package org.apache.lucene.codecs.memory;
+
+import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
@@ -28,12 +33,9 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 
-import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 /** Bridge helper methods for legacy codecs to map sorted doc values to iterables. */
 
-public class LegacyDocValuesIterables {
+class LegacyDocValuesIterables {
 
   private LegacyDocValuesIterables() {
     // no

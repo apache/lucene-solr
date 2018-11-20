@@ -18,10 +18,11 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
@@ -91,10 +92,7 @@ public final class TokenizerChain extends SolrAnalyzer {
   protected Reader initReaderForNormalization(String fieldName, Reader reader) {
     if (charFilters != null && charFilters.length > 0) {
       for (CharFilterFactory charFilter : charFilters) {
-        if (charFilter instanceof MultiTermAwareComponent) {
-          charFilter = (CharFilterFactory) ((MultiTermAwareComponent) charFilter).getMultiTermComponent();
-          reader = charFilter.create(reader);
-        }
+        reader = charFilter.normalize(reader);
       }
     }
     return reader;
@@ -114,10 +112,7 @@ public final class TokenizerChain extends SolrAnalyzer {
   protected TokenStream normalize(String fieldName, TokenStream in) {
     TokenStream result = in;
     for (TokenFilterFactory filter : filters) {
-      if (filter instanceof MultiTermAwareComponent) {
-        filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
-        result = filter.create(result);
-      }
+      result = filter.normalize(result);
     }
     return result;
   }
@@ -136,6 +131,32 @@ public final class TokenizerChain extends SolrAnalyzer {
     }
     sb.append(')');
     return sb.toString();
+  }
+
+  public Analyzer getMultiTermAnalyzer() {
+    return new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tk = new KeywordTokenizer();
+        TokenStream ts = tk;
+        for (TokenFilterFactory filter : filters) {
+          ts = filter.normalize(ts);
+        }
+        return new TokenStreamComponents(tk, ts);
+      }
+
+      @Override
+      protected Reader initReader(String fieldName, Reader reader) {
+        if (charFilters != null && charFilters.length > 0) {
+          Reader cs = reader;
+          for (CharFilterFactory charFilter : charFilters) {
+            cs = charFilter.normalize(cs);
+          }
+          reader = cs;
+        }
+        return reader;
+      }
+    };
   }
 
 }

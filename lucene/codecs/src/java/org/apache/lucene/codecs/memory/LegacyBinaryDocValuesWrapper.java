@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.index;
+package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -28,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
  * @deprecated Implement {@link BinaryDocValues} directly.
  */
 @Deprecated
-public final class LegacyBinaryDocValuesWrapper extends BinaryDocValues {
+final class LegacyBinaryDocValuesWrapper extends BinaryDocValues {
   private final Bits docsWithField;
   private final LegacyBinaryDocValues values;
   private final int maxDoc;

@@ -15,25 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.index;
+package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Wraps a {@link LegacySortedSetDocValues} into a {@link SortedSetDocValues}.
+ * Wraps a {@link LegacySortedDocValues} into a {@link SortedDocValues}.
  *
- * @deprecated Implement {@link SortedSetDocValues} directly.
+ * @deprecated Implement {@link SortedDocValues} directly.
  */
 @Deprecated
-public final class LegacySortedSetDocValuesWrapper extends SortedSetDocValues {
-  private final LegacySortedSetDocValues values;
+final class LegacySortedDocValuesWrapper extends SortedDocValues {
+  private final LegacySortedDocValues values;
   private final int maxDoc;
   private int docID = -1;
-  private long ord;
+  private int ord;
   
-  public LegacySortedSetDocValuesWrapper(LegacySortedSetDocValues values, int maxDoc) {
+  public LegacySortedDocValuesWrapper(LegacySortedDocValues values, int maxDoc) {
     this.values = values;
     this.maxDoc = maxDoc;
   }
@@ -48,9 +49,8 @@ public final class LegacySortedSetDocValuesWrapper extends SortedSetDocValues {
     assert docID != NO_MORE_DOCS;
     docID++;
     while (docID < maxDoc) {
-      values.setDocument(docID);
-      ord = values.nextOrd();
-      if (ord != NO_MORE_ORDS) {
+      ord = values.getOrd(docID);
+      if (ord != -1) {
         return docID;
       }
       docID++;
@@ -76,9 +76,8 @@ public final class LegacySortedSetDocValuesWrapper extends SortedSetDocValues {
   @Override
   public boolean advanceExact(int target) throws IOException {
     docID = target;
-    values.setDocument(docID);
-    ord = values.nextOrd();
-    return ord != NO_MORE_ORDS;
+    ord = values.getOrd(docID);
+    return ord != -1;
   }
 
   @Override
@@ -87,26 +86,17 @@ public final class LegacySortedSetDocValuesWrapper extends SortedSetDocValues {
   }
 
   @Override
-  public long nextOrd() {
-    long result = ord;
-    if (result != NO_MORE_ORDS) {
-      ord = values.nextOrd();
-    }
-    return result;
+  public int ordValue() {
+    return ord;
   }
 
   @Override
-  public BytesRef lookupOrd(long ord) {
-    return values.lookupOrd((int) ord);
+  public BytesRef lookupOrd(int ord) {
+    return values.lookupOrd(ord);
   }
 
   @Override
-  public long getValueCount() {
+  public int getValueCount() {
     return values.getValueCount();
-  }
-
-  @Override
-  public String toString() {
-    return "LegacySortedSetDocValuesWrapper(" + values + ")";
   }
 }

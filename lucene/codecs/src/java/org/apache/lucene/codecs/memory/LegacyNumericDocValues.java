@@ -14,23 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.util;
+package org.apache.lucene.codecs.memory;
 
+import org.apache.lucene.index.NumericDocValues;
 
-/** Add to any analysis factory component to allow returning an
- * analysis component factory for use with partial terms in prefix queries,
- * wildcard queries, range query endpoints, regex queries, etc.
+/**
+ * A per-document numeric value.
  *
- * Components implementing this interface should not add or remove tokens from
- * the token stream, and should be able to deal with special characters
- * indicating that multi-term queries are required (eg slashes for regex, wildcard
- * characters, etc)
- *
- * @lucene.experimental
+ * @deprecated Use {@link NumericDocValues} instead.
  */
-public interface MultiTermAwareComponent {
-  /** Returns an analysis component to handle analysis if multi-term queries.
-   * The returned component must be a TokenizerFactory, TokenFilterFactory or CharFilterFactory.
+@Deprecated
+abstract class LegacyNumericDocValues {
+  
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected LegacyNumericDocValues() {}
+
+  /**
+   * Returns the numeric value for the specified document ID.
+   * @param docID document ID to lookup
+   * @return numeric value
    */
-  public AbstractAnalysisFactory getMultiTermComponent();
+  public abstract long get(int docID);
 }

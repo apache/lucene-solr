@@ -171,18 +171,6 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLowerTokenizer() {
-    // The lowercasetokenizer will remove the '1' from the index, but not from the query, thus the special test.
-    assertQ(req("q", "content_lower_token:Á*C*"), "//result[@numFound='1']");
-    assertQ(req("q", "content_lower_token:Á*C*1"), "//result[@numFound='0']");
-    assertQ(req("q", "content_lower_token:h*1"), "//result[@numFound='0']");
-    assertQ(req("q", "content_lower_token:H*1"), "//result[@numFound='0']");
-    assertQ(req("q", "content_lower_token:*1"), "//result[@numFound='0']");
-    assertQ(req("q", "content_lower_token:HÏ*l?*"), "//result[@numFound='1']");
-    assertQ(req("q", "content_lower_token:hȉ*l?*"), "//result[@numFound='1']");
-  }
-
-  @Test
   public void testFuzzy() throws Exception {
     assertQ(req("q", "content:ZiLLx~1"),
             "//result[@numFound='1']");

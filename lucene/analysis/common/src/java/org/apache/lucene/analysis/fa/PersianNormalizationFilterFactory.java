@@ -20,8 +20,6 @@ package org.apache.lucene.analysis.fa;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
@@ -37,7 +35,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  * @since 3.1
  */
-public class PersianNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+public class PersianNormalizationFilterFactory extends TokenFilterFactory {
   
   /** Creates a new PersianNormalizationFilterFactory */
   public PersianNormalizationFilterFactory(Map<String,String> args) {
@@ -48,13 +46,13 @@ public class PersianNormalizationFilterFactory extends TokenFilterFactory implem
   }
   
   @Override
-  public PersianNormalizationFilter create(TokenStream input) {
+  public TokenStream create(TokenStream input) {
     return new PersianNormalizationFilter(input);
   }
-  
+
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
 }
 

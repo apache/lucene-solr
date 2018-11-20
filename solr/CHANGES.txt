@@ -123,7 +123,8 @@ New Features
 Other Changes
 ----------------------
 
-(No Changes)
+* SOLR-12972: deprecate unused SolrIndexConfig.luceneVersion (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
@@ -132,6 +133,9 @@ Improvements
 ----------------------
 
 * SOLR-12881: Remove unneeded import statements (Peter Somogyi via Erick Erickson)
+
+* SOLR-12992: When using binary format, ExportWriter to directly copy BytesRef instead of
+  creating new String (noble)
 
 ==================  7.6.0 ==================
 
