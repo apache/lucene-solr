@@ -34,7 +34,7 @@ import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.CoreMatchers.is;
 
-public class BlockUpdateTest extends SolrJettyTestBase {
+public class NestedUpdateTest extends SolrJettyTestBase {
   private static boolean useRootSchema;
   private static final String MESSAGE = "Update handler should create and process _root_ field " +
       "unless there is no such a field in schema";
