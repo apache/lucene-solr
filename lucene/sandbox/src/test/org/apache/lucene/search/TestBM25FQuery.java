@@ -37,7 +37,7 @@ public class TestBM25FQuery extends LuceneTestCase {
     BM25FQuery.Builder builder = new BM25FQuery.Builder();
     IllegalArgumentException exc =
         expectThrows(IllegalArgumentException.class, () -> builder.addField("foo", 0.5f));
-    assertEquals(exc.getMessage(), "weight must be greater than 1");
+    assertEquals(exc.getMessage(), "weight must be greater or equal to 1");
   }
 
   public void testRewrite() throws IOException {

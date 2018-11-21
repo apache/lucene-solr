@@ -94,7 +94,7 @@ public final class BM25FQuery extends Query {
      */
     public Builder addField(String field, float weight) {
       if (weight < 1) {
-        throw new IllegalArgumentException("weight must be greater than 1");
+        throw new IllegalArgumentException("weight must be greater or equal to 1");
       }
       fieldAndWeights.put(field, new FieldAndWeight(field, weight));
       return this;
