@@ -106,4 +106,15 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
         new int[]{1, 1, 1}
     );
   }
+  
+  public void testCyrillicWord() throws IOException {
+    final Analyzer analyzer = new KoreanAnalyzer(TestKoreanTokenizer.readDict(),
+        KoreanTokenizer.DEFAULT_DECOMPOUND, KoreanPartOfSpeechStopFilter.DEFAULT_STOP_TAGS, false);
+    assertAnalyzesTo(analyzer, "мoscow",
+        new String[]{"мoscow"},
+        new int[]{0},
+        new int[]{6},
+        new int[]{1}
+    );
+  }
 }
