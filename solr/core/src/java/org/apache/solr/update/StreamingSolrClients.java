@@ -72,8 +72,7 @@ public class StreamingSolrClients {
       // NOTE: increasing to more than 1 threadCount for the client could cause updates to be reordered
       // on a greater scale since the current behavior is to only increase the number of connections/Runners when
       // the queue is more than half full.
-      client = new ErrorReportingConcurrentUpdateSolrClient.Builder(url, req, errors)
-          .withHttp2SolrClient(httpClient)
+      client = new ErrorReportingConcurrentUpdateSolrClient.Builder(url, httpClient, req, errors)
           .withQueueSize(100)
           .withThreadCount(runnerCount)
           .withExecutorService(updateExecutor)
@@ -152,8 +151,8 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
     protected SolrCmdDistributor.Req req;
     protected List<Error> errors;
 
-    public Builder(String baseSolrUrl, SolrCmdDistributor.Req req, List<Error> errors) {
-      super(baseSolrUrl);
+    public Builder(String baseSolrUrl, Http2SolrClient client, SolrCmdDistributor.Req req, List<Error> errors) {
+      super(baseSolrUrl, client);
       this.req = req;
       this.errors = errors;
     }

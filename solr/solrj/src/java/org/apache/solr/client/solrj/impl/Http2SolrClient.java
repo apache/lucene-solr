@@ -244,8 +244,9 @@ public class Http2SolrClient extends SolrClient {
       this.isXml = isXml;
     }
 
-    public boolean belongToThisStream(SolrRequest solrRequest, String collection) {
-      if (!origParams.toNamedList().equals(solrRequest.getParams().toNamedList()) || !StringUtils.equals(origCollection, collection)) {
+    boolean belongToThisStream(SolrRequest solrRequest, String collection) {
+      ModifiableSolrParams solrParams = new ModifiableSolrParams(solrRequest.getParams());
+      if (!origParams.toNamedList().equals(solrParams.toNamedList()) || !StringUtils.equals(origCollection, collection)) {
         return false;
       }
       return true;

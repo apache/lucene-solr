@@ -259,6 +259,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   public NamedList<Object> request(final SolrRequest request, String collection)
       throws SolrServerException, IOException {
     if (!(request instanceof UpdateRequest)) {
+      request.setBasePath(basePath);
       return client.request(request, collection);
     }
     UpdateRequest req = (UpdateRequest) request;
@@ -480,7 +481,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private void interruptRunnerThreadsPolling() {
     synchronized (runners) {
       for (Runner ignored : runners) {
-        queue.add(END_UPDATE);
+        try {
+          queue.put(END_UPDATE);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return;
+        }
       }
     }
   }
@@ -526,34 +532,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     protected ExecutorService executorService;
     protected boolean streamDeletes;
 
-    /**
-     * Create a Builder object, based on the provided Solr URL.
-     *
-     * Two different paths can be specified as a part of this URL:
-     *
-     * 1) A path pointing directly at a particular core
-     * <pre>
-     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
-     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
-     * </pre>
-     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
-     * core explicitly.  However, the client can only send requests to that core.
-     *
-     * 2) The path of the root Solr path ("/solr")
-     * <pre>
-     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr").build();
-     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
-     * </pre>
-     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
-     * requires that the core be specified on all requests.
-     */
-    public Builder(String baseSolrUrl) {
+    public Builder(String baseSolrUrl, Http2SolrClient client) {
       this.baseSolrUrl = baseSolrUrl;
-    }
-
-    public Builder withHttp2SolrClient(Http2SolrClient solrClient) {
-      this.client = solrClient;
-      return this;
+      this.client = client;
     }
 
     /**
