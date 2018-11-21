@@ -9,6 +9,12 @@ Build
 
 * LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
 
+Bug fixes:
+
+* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
+  detects script boundaries more accurately with Character#UnicodeScript#of.
+  (Christophe Bismuth, Jim Ferenczi)
+
 New Features
 
 * LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
