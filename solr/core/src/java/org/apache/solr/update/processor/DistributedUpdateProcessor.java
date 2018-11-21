@@ -1291,10 +1291,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       leaderUrl = leader.getCoreUrl();
     }
 
-    NamedList<Object> rsp = null;
+    NamedList<Object> rsp;
     try {
       ur.setBasePath(leaderUrl);
-      updateShardHandler.getUpdateOnlyHttpClient().request(ur);
+      rsp = updateShardHandler.getUpdateOnlyHttpClient().request(ur);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error during fetching [" + id +
           "] from leader (" + leaderUrl + "): ", e);
