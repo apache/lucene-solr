@@ -342,6 +342,8 @@ public class Http2SolrClient extends SolrClient {
                                       String collection,
                                       OnComplete onComplete) throws IOException, SolrServerException {
     Request req = makeRequest(solrRequest, collection);
+    final ResponseParser parser = solrRequest.getResponseParser() == null
+        ? this.parser: solrRequest.getResponseParser();
 
     if (onComplete != null) {
       // This async call only suitable for indexing since the response size is limited by 5MB

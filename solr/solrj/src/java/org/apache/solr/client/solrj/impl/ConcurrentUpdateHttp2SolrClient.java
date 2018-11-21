@@ -26,6 +26,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -60,6 +61,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private final ExecutorService scheduler;
   private final Queue<Runner> runners;
   private final int threadCount;
+  private final Semaphore available;
 
   private boolean shutdownExecutor;
   private int pollQueueTime = 250;
@@ -70,8 +72,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   protected ConcurrentUpdateHttp2SolrClient(Builder builder) {
     this.client = builder.client;
-    this.queue = new LinkedBlockingQueue<>(builder.queueSize);
     this.threadCount = builder.threadCount;
+    this.available = new Semaphore(builder.queueSize);
+    this.queue = new LinkedBlockingQueue<>(builder.queueSize + threadCount);
     this.runners = new LinkedList<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
@@ -90,6 +93,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
    * Opens a connection and sends everything...
    */
   class Runner implements Runnable {
+    volatile boolean inPoll = false;
 
     @Override
     public void run() {
@@ -141,8 +145,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
             if (update == END_UPDATE)
               break;
-            if (update == null)
+
+            if (update != null) {
+              available.release();
+            } else {
               break;
+            }
 
             InputStreamResponseListener responseListener = null;
             try (Http2SolrClient.OutStream out = client.initOutStream(basePath, update.getRequest(),
@@ -159,6 +167,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
                 notifyQueueAndRunnersIfEmptyQueue();
                 upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                if (upd != END_UPDATE && upd != null) {
+                  available.release();
+                }
               }
               responseListener = out.getResponseListener();
             } catch (NullPointerException e) {
@@ -207,6 +218,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             }
 
           } finally {
+            inPoll = false;
             try {
               if (rspBody != null) {
                 while (rspBody.read() != -1) {}
@@ -300,6 +312,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       }
 
       Update update = new Update(req, collection);
+      available.acquire();
       boolean success = queue.offer(update);
 
       for (;;) {
@@ -381,6 +394,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             addRunner();
           }
 
+          waitForEmptyQueue();
           interruptRunnerThreadsPolling();
 
           // try to avoid the worst case wait timeout
@@ -427,6 +441,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       }
       synchronized (queue) {
         try {
+          System.out.println("Datcm queue:"+queue + "\nend:"+END_UPDATE);
           queue.wait(250);
         } catch (InterruptedException e) {
           // If we set the thread as interrupted again, the next time the wait it's called i t's going to return immediately
@@ -480,12 +495,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   private void interruptRunnerThreadsPolling() {
     synchronized (runners) {
-      for (Runner ignored : runners) {
-        try {
-          queue.put(END_UPDATE);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
+      for (Runner runner : runners) {
+        if (runner.inPoll) {
+          queue.add(END_UPDATE);
         }
       }
     }
