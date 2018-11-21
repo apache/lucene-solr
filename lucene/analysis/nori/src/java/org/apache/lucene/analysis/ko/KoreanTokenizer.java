@@ -43,6 +43,8 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
 
+import static java.lang.Character.UnicodeScript;
+
 /**
  * Tokenizer for Korean that uses morphological analysis.
  * <p>
@@ -718,26 +720,41 @@ public final class KoreanTokenizer extends Tokenizer {
       if (!anyMatches || characterDefinition.isInvoke(firstCharacter)) {
 
         // Find unknown match:
-        final int characterId = characterDefinition.getCharacterClass(firstCharacter);
-        final boolean isPunct = isPunctuation(firstCharacter);
-
+        int characterId = characterDefinition.getCharacterClass(firstCharacter);
         // NOTE: copied from UnknownDictionary.lookup:
         int unknownWordLength;
         if (!characterDefinition.isGroup(firstCharacter)) {
           unknownWordLength = 1;
         } else {
-          // Extract unknown word. Characters with the same character class are considered to be part of unknown word
+          // Extract unknown word. Characters with the same script are considered to be part of unknown word
           unknownWordLength = 1;
+          UnicodeScript scriptCode = UnicodeScript.of((int) firstCharacter);
+          final boolean isPunct = isPunctuation(firstCharacter);
           for (int posAhead = pos + 1; unknownWordLength < MAX_UNKNOWN_WORD_LENGTH; posAhead++) {
-            final int ch = buffer.get(posAhead);
-            if (ch == -1) {
+            int next = buffer.get(posAhead);
+            if (next == -1) {
               break;
             }
-            if (characterId == characterDefinition.getCharacterClass((char) ch) &&
-                isPunctuation((char) ch) == isPunct) {
+            char ch = (char) next;
+            int chType = Character.getType(ch);
+            UnicodeScript sc = UnicodeScript.of(next);
+            boolean sameScript = isSameScript(scriptCode, sc)
+                // Non-spacing marks inherit the script of their base character,
+                // following recommendations from UTR #24.
+                || chType == Character.NON_SPACING_MARK;
+
+            if (sameScript
+                  && isPunctuation(ch, chType) == isPunct
+                  && characterDefinition.isGroup(ch)) {
               unknownWordLength++;
             } else {
               break;
+            }
+            // Update the script code and character class if the original script
+            // is Inherited or Common.
+            if (isCommonOrInherited(scriptCode) && isCommonOrInherited(sc) == false) {
+              scriptCode = sc;
+              characterId = characterDefinition.getCharacterClass(ch);
             }
           }
         }
@@ -932,11 +949,15 @@ public final class KoreanTokenizer extends Tokenizer {
   }
 
   private static boolean isPunctuation(char ch) {
+    return isPunctuation(ch, Character.getType(ch));
+  }
+
+  private static boolean isPunctuation(char ch, int cid) {
     // special case for Hangul Letter Araea (interpunct)
     if (ch == 0x318D) {
       return true;
     }
-    switch(Character.getType(ch)) {
+    switch(cid) {
       case Character.SPACE_SEPARATOR:
       case Character.LINE_SEPARATOR:
       case Character.PARAGRAPH_SEPARATOR:
@@ -957,5 +978,17 @@ public final class KoreanTokenizer extends Tokenizer {
       default:
         return false;
     }
+  }
+
+  private static boolean isCommonOrInherited(UnicodeScript script) {
+    return script == UnicodeScript.INHERITED ||
+        script == UnicodeScript.COMMON;
+  }
+
+  /** Determine if two scripts are compatible. */
+  private static boolean isSameScript(UnicodeScript scriptOne, UnicodeScript scriptTwo) {
+    return scriptOne == scriptTwo
+        || isCommonOrInherited(scriptOne)
+        || isCommonOrInherited(scriptTwo);
   }
 }

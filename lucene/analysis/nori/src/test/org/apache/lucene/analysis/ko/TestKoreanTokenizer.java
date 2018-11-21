@@ -328,6 +328,44 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
     analyzer.close();
   }
 
+  public void testCombining() throws IOException {
+    assertAnalyzesTo(analyzer, "Ба̀лтичко мо̑ре",
+        new String[]{"Ба̀лтичко", "мо̑ре"},
+        new int[]{0, 10},
+        new int[]{9, 15},
+        new int[]{1, 1}
+    );
+    assertPartsOfSpeech(analyzer, "Ба̀лтичко мо̑ре",
+        new POS.Type[]{POS.Type.MORPHEME, POS.Type.MORPHEME},
+        new POS.Tag[]{POS.Tag.SL, POS.Tag.SL},
+        new POS.Tag[]{POS.Tag.SL, POS.Tag.SL}
+    );
+
+    assertAnalyzesTo(analyzer, "ka̠k̚t͡ɕ͈a̠k̚",
+        new String[]{"ka̠k̚t͡ɕ͈a̠k̚"},
+        new int[]{0},
+        new int[]{13},
+        new int[]{1}
+    );
+    assertPartsOfSpeech(analyzer, "ka̠k̚t͡ɕ͈a̠k̚",
+        new POS.Type[]{POS.Type.MORPHEME},
+        new POS.Tag[]{POS.Tag.SL},
+        new POS.Tag[]{POS.Tag.SL}
+    );
+
+    assertAnalyzesTo(analyzer, "εἰμί",
+        new String[]{"εἰμί"},
+        new int[]{0},
+        new int[]{4},
+        new int[]{1}
+    );
+    assertPartsOfSpeech(analyzer, "εἰμί",
+        new POS.Type[]{POS.Type.MORPHEME},
+        new POS.Tag[]{POS.Tag.SL},
+        new POS.Tag[]{POS.Tag.SL}
+    );
+  }
+
   private void assertReadings(Analyzer analyzer, String input, String... readings) throws IOException {
     try (TokenStream ts = analyzer.tokenStream("ignored", input)) {
       ReadingAttribute readingAtt = ts.addAttribute(ReadingAttribute.class);
