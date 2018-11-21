@@ -2607,7 +2607,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // Do this as an event so it applies higher in the stack when we are not holding DocumentsWriterFlushQueue.purgeLock:
     eventQueue.add(w -> {
       try {
-        packet.apply(w);
+        // we call tryApply here since we don't want to block if a refresh or a flush is already applying the
+        // packet. The flush will retry this packet anyway to ensure all of them are applied
+        packet.tryApply(w);
       } catch (Throwable t) {
         try {
           w.onTragicEvent(t, "applyUpdatesPacket");
