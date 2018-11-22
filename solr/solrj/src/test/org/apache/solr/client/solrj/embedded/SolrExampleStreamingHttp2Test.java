@@ -134,7 +134,7 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
     public static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
 
       public Builder(String baseSolrUrl, Http2SolrClient http2Client) {
-        super(baseSolrUrl, http2Client);
+        super(baseSolrUrl, http2Client, true);
       }
 
       @Override
