@@ -3104,7 +3104,9 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testSoftUpdateDocuments() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("soft_delete"));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
+        .setMergePolicy(NoMergePolicy.INSTANCE)
+        .setSoftDeletesField("soft_delete"));
     expectThrows(IllegalArgumentException.class, () -> {
       writer.softUpdateDocument(null, new Document(), new NumericDocValuesField("soft_delete", 1));
     });
