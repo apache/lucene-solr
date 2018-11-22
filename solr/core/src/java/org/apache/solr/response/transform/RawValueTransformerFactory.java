@@ -32,6 +32,7 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.WriteableValue;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 
 /**
@@ -80,7 +81,11 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     if(apply) {
-      return new RawTransformer( field, display );
+      System.out.print("Apply me!");
+      boolean indent = req.getParams().getBool("indent", false);
+      System.out.println("Should we indent?" + indent);
+
+      return new RawTransformer( field, display, indent );
     }
     
     if(field.equals(display)) {
@@ -93,11 +98,13 @@ public class RawValueTransformerFactory extends TransformerFactory
   {
     final String field;
     final String display;
+    final boolean indent;
 
-    public RawTransformer( String field, String display )
+    public RawTransformer( String field, String display, boolean indent )
     {
       this.field = field;
       this.display = display;
+      this.indent = indent;
     }
 
     @Override
@@ -116,12 +123,12 @@ public class RawValueTransformerFactory extends TransformerFactory
         Collection current = (Collection)val;
         ArrayList<WriteableStringValue> vals = new ArrayList<RawValueTransformerFactory.WriteableStringValue>();
         for(Object v : current) {
-          vals.add(new WriteableStringValue(v));
+          vals.add(new WriteableStringValue(v, indent));
         }
         doc.setField(display, vals);
       }
       else {
-        doc.setField(display, new WriteableStringValue(val));
+        doc.setField(display, new WriteableStringValue(val, indent));
       }
     }
 
@@ -133,9 +140,13 @@ public class RawValueTransformerFactory extends TransformerFactory
   
   public static class WriteableStringValue extends WriteableValue {
     public final Object val;
+    public final boolean indent;
+    private ObjectMapper mapper = new ObjectMapper();
     
-    public WriteableStringValue(Object val) {
+    
+    public WriteableStringValue(Object val, boolean indent) {
       this.val = val;
+      this.indent = indent;
     }
     
     @Override
@@ -146,6 +157,15 @@ public class RawValueTransformerFactory extends TransformerFactory
       }
       else {
         str = val.toString();
+      }
+      if (indent) {
+        try {
+          Object json = mapper.readValue(str, Object.class); 
+          str = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
+        }
+        catch (IOException e) {
+          // If we can't parse the JSON for whatever reason, just ignore indenting.
+        }
       }
       writer.getWriter().write(str);
     }
