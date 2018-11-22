@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr;
+package org.apache.solr.update;
 
 import java.util.List;
 
