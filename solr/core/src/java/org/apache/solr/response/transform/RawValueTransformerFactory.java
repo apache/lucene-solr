@@ -81,10 +81,8 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     if(apply) {
-      System.out.print("Apply me!");
       boolean indent = req.getParams().getBool("indent", false);
-      System.out.println("Should we indent?" + indent);
-
+      
       return new RawTransformer( field, display, indent );
     }
     
