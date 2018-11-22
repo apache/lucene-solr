@@ -98,6 +98,9 @@ Other Changes
 
 * SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy)
 
+* SOLR-12775: LowerCaseTokenizer is deprecated, and should be replaced by LetterTokenizer and
+  LowerCaseFilter (Alan Woodward)
+
 ==================  7.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
