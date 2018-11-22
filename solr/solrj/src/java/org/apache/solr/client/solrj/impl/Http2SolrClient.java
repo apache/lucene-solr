@@ -80,6 +80,7 @@ import org.eclipse.jetty.client.util.MultiPartContentProvider;
 import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -563,13 +564,20 @@ public class Http2SolrClient extends SolrClient {
       }
       if (streams != null) {
         for (ContentStream contentStream : streams) {
+          String contentType = contentStream.getContentType();
+          if (contentType == null) {
+            contentType = BinaryResponseParser.BINARY_CONTENT_TYPE; // default
+          }
           String name = contentStream.getName();
           if (name == null) {
             name = "";
           }
-          content.addFieldPart(name, new InputStreamContentProvider(contentStream.getStream()), null);
+          HttpFields fields = new HttpFields();
+          fields.add(HttpHeader.CONTENT_TYPE, contentType);
+          content.addFilePart(name, contentStream.getName(), new InputStreamContentProvider(contentStream.getStream()), fields);
         }
       }
+      req.content(content);
     } else {
       // application/x-www-form-urlencoded
       Fields fields = new Fields();
@@ -655,7 +663,7 @@ public class Http2SolrClient extends SolrClient {
 
       NamedList<Object> rsp;
       try {
-        rsp = parser.processResponse(is, encoding);
+        rsp = processor.processResponse(is, encoding);
       } catch (Exception e) {
         throw new RemoteSolrException(serverBaseUrl, httpStatus, e.getMessage(), e);
       }

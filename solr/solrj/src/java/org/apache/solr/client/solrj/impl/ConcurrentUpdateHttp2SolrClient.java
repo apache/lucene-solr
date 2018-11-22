@@ -93,7 +93,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
    * Opens a connection and sends everything...
    */
   class Runner implements Runnable {
-    volatile boolean inPoll = false;
 
     @Override
     public void run() {
@@ -218,7 +217,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             }
 
           } finally {
-            inPoll = false;
             try {
               if (rspBody != null) {
                 while (rspBody.read() != -1) {}
@@ -393,8 +391,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                 queueSize + " adding more runners to process remaining requests on queue");
             addRunner();
           }
-
-          waitForEmptyQueue();
+          
           interruptRunnerThreadsPolling();
 
           // try to avoid the worst case wait timeout
@@ -496,9 +493,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private void interruptRunnerThreadsPolling() {
     synchronized (runners) {
       for (Runner runner : runners) {
-        if (runner.inPoll) {
-          queue.add(END_UPDATE);
-        }
+        queue.offer(END_UPDATE);
       }
     }
   }

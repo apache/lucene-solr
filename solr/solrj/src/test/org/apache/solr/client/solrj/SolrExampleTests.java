@@ -1699,7 +1699,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         client.commit(); //just to be sure the client has sent the doc
         SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
-        assertTrue("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError.getMessage().contains("Conflict"));
+        assertTrue("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError.getMessage().contains("conflict"));
       }
     } catch (SolrException se) {
       assertTrue("No identifiable error message", se.getMessage().contains("version conflict for unique"));
