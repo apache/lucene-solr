@@ -34,6 +34,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 /**
  * @since solr 5.2
@@ -82,8 +84,17 @@ public class RawValueTransformerFactory extends TransformerFactory
 
     if(apply) {
       boolean indent = req.getParams().getBool("indent", false);
-      
-      return new RawTransformer( field, display, indent );
+      ObjectMapper mapper = null;
+      if (indent) {
+        if (applyToWT.equalsIgnoreCase("json")) {
+          mapper = new ObjectMapper();
+        }
+        else {
+          mapper = new XmlMapper();
+        }
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+      }
+      return new RawTransformer( field, display, mapper );
     }
     
     if (field.equals(display)) {
@@ -97,13 +108,13 @@ public class RawValueTransformerFactory extends TransformerFactory
   {
     final String field;
     final String display;
-    final boolean indent;
+    final ObjectMapper mapper;
 
-    public RawTransformer( String field, String display, boolean indent )
+    public RawTransformer( String field, String display, ObjectMapper mapper )
     {
       this.field = field;
       this.display = display;
-      this.indent = indent;
+      this.mapper = mapper;
     }
 
     @Override
@@ -122,12 +133,12 @@ public class RawValueTransformerFactory extends TransformerFactory
         Collection current = (Collection)val;
         ArrayList<WriteableStringValue> vals = new ArrayList<RawValueTransformerFactory.WriteableStringValue>();
         for(Object v : current) {
-          vals.add(new WriteableStringValue(v, indent));
+          vals.add(new WriteableStringValue(v, mapper));
         }
         doc.setField(display, vals);
       }
       else {
-        doc.setField(display, new WriteableStringValue(val, indent));
+        doc.setField(display, new WriteableStringValue(val, mapper));
       }
     }
 
@@ -139,13 +150,12 @@ public class RawValueTransformerFactory extends TransformerFactory
   
   public static class WriteableStringValue extends WriteableValue {
     public final Object val;
-    public final boolean indent;
-    private ObjectMapper mapper = new ObjectMapper();
+    private ObjectMapper mapper;
     
     
-    public WriteableStringValue(Object val, boolean indent) {
+    public WriteableStringValue(Object val, ObjectMapper mapper) {
       this.val = val;
-      this.indent = indent;
+      this.mapper = mapper;
     }
     
     @Override
@@ -157,10 +167,10 @@ public class RawValueTransformerFactory extends TransformerFactory
       else {
         str = val.toString();
       }
-      if (indent) {
+      if (mapper != null) {
         try {
-          Object json = mapper.readValue(str, Object.class); 
-          str = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
+          Object obj = mapper.readValue(str, Object.class); 
+          str = mapper.writeValueAsString(obj);
         }
         catch (IOException e) {
           // If we can't parse the JSON for whatever reason, just ignore indenting.
