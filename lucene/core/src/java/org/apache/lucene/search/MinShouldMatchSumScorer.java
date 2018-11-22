@@ -117,11 +117,11 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   @Override
-  public final Collection<ChildScorer> getChildren() throws IOException {
-    List<ChildScorer> matchingChildren = new ArrayList<>();
+  public final Collection<ChildScorable> getChildren() throws IOException {
+    List<ChildScorable> matchingChildren = new ArrayList<>();
     updateFreq();
     for (DisiWrapper s = lead; s != null; s = s.next) {
-      matchingChildren.add(new ChildScorer(s.scorer, "SHOULD"));
+      matchingChildren.add(new ChildScorable(s.scorer, "SHOULD"));
     }
     return matchingChildren;
   }
@@ -326,7 +326,7 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   @Override
-  public float maxScore() {
+  public float getMaxScore(int upTo) throws IOException {
     // TODO: implement but be careful about floating-point errors.
     return Float.POSITIVE_INFINITY;
   }

@@ -33,16 +33,18 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
   public boolean exists(String path) throws IOException {
     String fullPath = normalize(path);
     synchronized (this) {
-      CacheValue cacheValue = byPathCache.get(fullPath);
-      Directory directory = null;
-      if (cacheValue != null) {
-        directory = cacheValue.directory;
-      }
-      if (directory == null) {
+      final CacheValue cacheValue = byPathCache.get(fullPath);
+      if (null == cacheValue) {
         return false;
-      } else {
-        return true;
       }
+      final Directory directory = cacheValue.directory;
+      if (null == directory) {
+        return false;
+      }
+      if (0 < directory.listAll().length) {
+        return true;
+      } 
+      return false;
     }
   }
   

@@ -523,7 +523,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     for (SimilarityBase sim : sims) {
       searcher.setSimilarity(sim);
       TopDocs topDocs = searcher.search(q, 1000);
-      assertEquals("Failed: " + sim.toString(), 3, topDocs.totalHits);
+      assertEquals("Failed: " + sim.toString(), 3, topDocs.totalHits.value);
     }
   }
   
@@ -551,7 +551,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     SimilarityBase actual = new DFRSimilarity(new BasicModelIne(), new AfterEffectB(), new NormalizationH2());
     expected.setDiscountOverlaps(false);
     actual.setDiscountOverlaps(false);
-    FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo");
+    FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", IndexOptions.DOCS_AND_FREQS);
     state.setLength(5);
     state.setNumOverlap(2);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));

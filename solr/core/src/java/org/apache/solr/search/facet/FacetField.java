@@ -24,12 +24,22 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 
+
 // Any type of facet request that generates a variable number of buckets
 // and the ability to sort by those generated buckets.
 abstract class FacetRequestSorted extends FacetRequest {
   long offset;
   long limit;
-  int overrequest = -1; // Number of buckets to request beyond the limit to do internally during distributed search. -1 means default.
+  /** 
+   * Number of buckets to request beyond the limit to do internally during initial distributed search. 
+   * -1 means default heuristic.
+   */
+  int overrequest = -1;
+  /** 
+   * Number of buckets to fill in beyond the limit to do internally during refinement of distributed search. 
+   * -1 means default heuristic.
+   */
+  int overrefine = -1;
   long mincount;
   String sortVariable;
   SortDirection sortDirection;
@@ -42,7 +52,7 @@ abstract class FacetRequestSorted extends FacetRequest {
 
   @Override
   public boolean returnsPartial() {
-    return limit > 0;
+    return super.returnsPartial() || (limit > 0);
   }
 
 }
@@ -101,7 +111,7 @@ public class FacetField extends FacetRequestSorted {
 
     if (fcontext.facetInfo != null) {
       // refinement... we will end up either skipping the entire facet, or doing calculating only specific facet buckets
-      if (multiToken && !sf.hasDocValues() && method!=FacetMethod.DV) {
+      if (multiToken && !sf.hasDocValues() && method!=FacetMethod.DV && sf.isUninvertible()) {
         // Match the access method from the first phase.
         // It won't always matter, but does currently for an all-values bucket
         return new FacetFieldProcessorByArrayUIF(fcontext, this, sf);
@@ -109,7 +119,7 @@ public class FacetField extends FacetRequestSorted {
       return new FacetFieldProcessorByArrayDV(fcontext, this, sf);
     }
 
-      NumberType ntype = ft.getNumberType();
+    NumberType ntype = ft.getNumberType();
     // ensure we can support the requested options for numeric faceting:
     if (ntype != null) {
       if (prefix != null) {
@@ -154,7 +164,7 @@ public class FacetField extends FacetRequestSorted {
 
     // multi-valued after this point
 
-    if (sf.hasDocValues() || method == FacetMethod.DV) {
+    if (sf.hasDocValues() || method == FacetMethod.DV || !sf.isUninvertible()) {
       // single and multi-valued string docValues
       return new FacetFieldProcessorByArrayDV(fcontext, this, sf);
     }

@@ -118,8 +118,13 @@ public class TextField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     /* :TODO: maybe warn if isTokenized(), but doesn't use LimitTokenCountFilter in its chain? */
-    return getSortedSetSortField(field, SortedSetSelector.Type.MIN, reverse,
-                                 SortField.STRING_FIRST, SortField.STRING_LAST);
+    return getSortedSetSortField(field,
+                                 // historical behavior based on how the early versions of the FieldCache
+                                 // would deal with multiple indexed terms in a singled valued field...
+                                 //
+                                 // Always use the 'min' value from the (Uninverted) "psuedo doc values"
+                                 SortedSetSelector.Type.MIN,
+                                 reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
   }
   
   @Override

@@ -90,7 +90,18 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
+  /**
+   * fname2index is filled from constructor arguments
+   * (that are already part of the base class hashCode)
+   * and therefore here it does not individually
+   * influence the class hashCode, equals, etc.
+   */
   private final HashMap<String,Integer> fname2index;
+  /**
+   * trees is part of the LTRScoringModel params map
+   * and therefore here it does not individually
+   * influence the class hashCode, equals, etc.
+   */
   private List<RegressionTree> trees;
 
   private RegressionTree createRegressionTree(Map<String,Object> map) {
@@ -246,11 +257,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     private RegressionTreeNode root;
 
     public void setWeight(float weight) {
-      this.weight = new Float(weight);
+      this.weight = weight;
     }
 
     public void setWeight(String weight) {
-      this.weight = new Float(weight);
+      this.weight = Float.valueOf(weight);
     }
 
     public void setRoot(Object root) {

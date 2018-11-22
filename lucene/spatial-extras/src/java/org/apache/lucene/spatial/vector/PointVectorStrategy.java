@@ -139,7 +139,7 @@ public class PointVectorStrategy extends SpatialStrategy {
     if ((this.hasDocVals = fieldType.docValuesType() != DocValuesType.NONE)) {
       numPairs++;
     }
-    if ((this.hasPointVals = fieldType.pointDimensionCount() > 0)) {
+    if ((this.hasPointVals = fieldType.pointDataDimensionCount() > 0)) {
       numPairs++;
     }
     this.fieldsLen = numPairs * 2;
@@ -287,7 +287,7 @@ public class PointVectorStrategy extends SpatialStrategy {
               return 100;   // distance calculation can be heavy!
             }
           };
-          return new ConstantScoreScorer(this, score(), twoPhase);
+          return new ConstantScoreScorer(this, score(), scoreMode, twoPhase);
         }
 
         @Override

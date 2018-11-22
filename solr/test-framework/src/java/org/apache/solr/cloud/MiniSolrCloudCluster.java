@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -83,7 +84,7 @@ public class MiniSolrCloudCluster {
       "    <str name=\"hostContext\">${hostContext:solr}</str>\n" +
       "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n" +
       "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n" +
-      "    <int name=\"leaderVoteWait\">10000</int>\n" +
+      "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n" +
       "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n" +
       "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n" +
       "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n" +
@@ -291,6 +292,13 @@ public class MiniSolrCloudCluster {
     }
   }
 
+  /**
+   * Wait for all Solr nodes to be live
+   *
+   * @param timeout number of seconds to wait before throwing an IllegalStateException
+   * @throws IOException if there was an error communicating with ZooKeeper
+   * @throws InterruptedException if the calling thread is interrupted during the wait operation
+   */
   public void waitForAllNodes(int timeout) throws IOException, InterruptedException {
     waitForAllNodes(jettys.size(), timeout);
   }
@@ -415,12 +423,19 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
     jetty.start(false);
-    jettys.add(jetty);
+    if (!jettys.contains(jetty)) jettys.add(jetty);
     return jetty;
   }
 
+  /**
+   * Stop the given Solr instance. It will be removed from the cluster's list of running instances.
+   * @param jetty a {@link JettySolrRunner} to be stopped
+   * @return the same {@link JettySolrRunner} instance provided to this method
+   * @throws Exception on error
+   */
   public JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
     jetty.stop();
+    jettys.remove(jetty);
     return jetty;
   }
 
@@ -437,9 +452,11 @@ public class MiniSolrCloudCluster {
     }
   }
 
+  /** Delete all collections (and aliases) */
   public void deleteAllCollections() throws Exception {
     try (ZkStateReader reader = new ZkStateReader(solrClient.getZkStateReader().getZkClient())) {
-      reader.createClusterStateWatchersAndUpdate();
+      reader.createClusterStateWatchersAndUpdate(); // up to date aliases & collections
+      reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
       for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
         CollectionAdminRequest.deleteCollection(collection).process(solrClient);
       }
@@ -491,8 +508,7 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudSolrClient buildSolrClient() {
-    return new Builder()
-        .withZkHost(getZkServer().getZkAddress())
+    return new Builder(Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
         .build();
   }
 
@@ -527,6 +543,7 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner getReplicaJetty(Replica replica) {
     for (JettySolrRunner jetty : jettys) {
+      if (jetty.isStopped()) continue;
       if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString()))
         return jetty;
     }

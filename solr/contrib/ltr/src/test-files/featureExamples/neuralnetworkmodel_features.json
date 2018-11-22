@@ -1,0 +1,30 @@
+[
+    {
+        "name": "constantOne",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
+        "params": {
+            "value": 1.0
+        }
+    },
+    {
+        "name": "constantTwo",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
+        "params": {
+            "value": 2.0
+        }
+    },
+    {
+        "name": "constantThree",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
+        "params": {
+            "value": 3.0
+        }
+    },
+    {
+        "name": "constantFour",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
+        "params": {
+            "value": 4.0
+        }
+    }
+]

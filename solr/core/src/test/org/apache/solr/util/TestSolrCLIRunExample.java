@@ -125,6 +125,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
               JettyConfig.builder().setContext("/solr").setPort(port).build();
           try {
             if (solrCloudCluster == null) {
+              Path logDir = createTempDir("solr_logs");
+              System.setProperty("solr.log.dir", logDir.toString());
               System.setProperty("host", "localhost");
               System.setProperty("jetty.port", String.valueOf(port));
               solrCloudCluster =
@@ -222,6 +224,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       System.setProperty("host", "localhost");
       System.setProperty("jetty.port", String.valueOf(port));
+      System.setProperty("solr.log.dir", createTempDir("solr_logs").toString());
 
       standaloneSolr = new JettySolrRunner(solrHomeDir.getAbsolutePath(), "/solr", port);
       Thread bg = new Thread() {

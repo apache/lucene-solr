@@ -40,12 +40,13 @@ public class StoredField extends Field {
    * FieldType}.
    * @param name field name
    * @param type custom {@link FieldType} for this field
-   * @throws IllegalArgumentException if the field name is null.
+   * @throws IllegalArgumentException if the field name or type
+   *         is null.
    */
   protected StoredField(String name, FieldType type) {
     super(name, type);
   }
-  
+
   /**
    * Expert: allows you to customize the {@link
    * FieldType}.
@@ -54,7 +55,8 @@ public class StoredField extends Field {
    * @param name field name
    * @param bytes byte array pointing to binary content (not copied)
    * @param type custom {@link FieldType} for this field
-   * @throws IllegalArgumentException if the field name is null.
+   * @throws IllegalArgumentException if the field name, value or type
+   *         is null.
    */
   public StoredField(String name, BytesRef bytes, FieldType type) {
     super(name, bytes, type);
@@ -66,7 +68,8 @@ public class StoredField extends Field {
    * not to change it until you're done with this field.
    * @param name field name
    * @param value byte array pointing to binary content (not copied)
-   * @throws IllegalArgumentException if the field name is null.
+   * @throws IllegalArgumentException if the field name or value
+   *         is null.
    */
   public StoredField(String name, byte[] value) {
     super(name, value, TYPE);
@@ -80,7 +83,8 @@ public class StoredField extends Field {
    * @param value byte array pointing to binary content (not copied)
    * @param offset starting position of the byte array
    * @param length valid length of the byte array
-   * @throws IllegalArgumentException if the field name is null.
+   * @throws IllegalArgumentException if the field name or value
+   *         is null.
    */
   public StoredField(String name, byte[] value, int offset, int length) {
     super(name, value, offset, length, TYPE);
@@ -92,7 +96,8 @@ public class StoredField extends Field {
    * not to change it until you're done with this field.
    * @param name field name
    * @param value BytesRef pointing to binary content (not copied)
-   * @throws IllegalArgumentException if the field name is null.
+   * @throws IllegalArgumentException if the field name or value
+   *         is null.
    */
   public StoredField(String name, BytesRef value) {
     super(name, value, TYPE);
@@ -102,7 +107,8 @@ public class StoredField extends Field {
    * Create a stored-only field with the given string value.
    * @param name field name
    * @param value string value
-   * @throws IllegalArgumentException if the field name or value is null.
+   * @throws IllegalArgumentException if the field name or value
+   *         is null.
    */
   public StoredField(String name, String value) {
     super(name, value, TYPE);
@@ -114,7 +120,8 @@ public class StoredField extends Field {
    * @param name field name
    * @param value string value
    * @param type custom {@link FieldType} for this field
-   * @throws IllegalArgumentException if the field name or value is null.
+   * @throws IllegalArgumentException if the field name, value or type
+   *         is null.
    */
   public StoredField(String name, String value, FieldType type) {
     super(name, value, type);

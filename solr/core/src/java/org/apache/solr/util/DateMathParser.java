@@ -286,28 +286,36 @@ public class DateMathParser  {
   private Date now;
   
   /**
-   * Default constructor that assumes UTC should be used for rounding unless 
-   * otherwise specified in the SolrRequestInfo
-   * 
+   * Chooses defaults based on the current request.
    * @see SolrRequestInfo#getClientTimeZone
+   * @see SolrRequestInfo#getNOW()
    */
   public DateMathParser() {
-    this(null);
+    this(null, null);
+  }
+
+  //TODO Deprecate?
+  public DateMathParser(TimeZone tz) {
+    this(null, tz);
   }
 
   /**
+   * @param now The current time. If null, it defaults to {@link SolrRequestInfo#getNOW()}.
+   *            otherwise the current time is assumed.
    * @param tz The TimeZone used for rounding (to determine when hours/days begin).  If null, then this method defaults
    *           to the value dictated by the SolrRequestInfo if it exists -- otherwise it uses UTC.
    * @see #DEFAULT_MATH_TZ
    * @see Calendar#getInstance(TimeZone,Locale)
    * @see SolrRequestInfo#getClientTimeZone
    */
-  public DateMathParser(TimeZone tz) {
+  public DateMathParser(Date now, TimeZone tz) {
+    this.now = now;// potentially null; it's okay
+
     if (null == tz) {
       SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
       tz = (null != reqInfo) ? reqInfo.getClientTimeZone() : DEFAULT_MATH_TZ;
     }
-    zone = (null != tz) ? tz : DEFAULT_MATH_TZ;
+    this.zone = (null != tz) ? tz : DEFAULT_MATH_TZ;
   }
 
   /**

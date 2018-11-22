@@ -52,7 +52,7 @@ To use this guide, you must have the following:
  .. You can select one of the existing https://aws.amazon.com/vpc[VPCs] or create a new one.
  .. We need two ports open for our cloud here:
  ... Solr port. In this example we will use Solr's default port 8983.
- ... ZooKeeper Port: We'll use Solr's embedded ZooKeeper, so we'll use the default port 9983 (see the <<appendix,Appendix>> to configure external ZooKeeper).
+ ... ZooKeeper Port: We'll use Solr's embedded ZooKeeper, so we'll use the default port 9983 (see the <<Deploying with External ZooKeeper>> to configure external ZooKeeper).
 .. Click btn:[Inbound] to set inbound network rules, then select btn:[Add Rule]. Select "Custom TCP" as the type. Enter 8983 for the "Port Range" and choose "My IP for the Source, then enter your public IP. Create a second rule with the same type and source, but enter 9983 for the port.
 +
 This will limit access to your current machine. If you want wider access to the instance in order to collaborate with others, you can specify that, but make sure you only allow as much access as needed. A Solr instance should not be exposed to general Internet traffic.
@@ -140,7 +140,7 @@ $ sudo vim /etc/hosts
 +
 In this case, one of the machines will host ZooKeeper embedded along with Solr node, say, `ec2-101-1-2-3.us-east-2.compute.amazonaws.com` (aka, `solr-node-1`)
 +
-See <<appendix,Appendix>> for configure external ZooKeeper.
+See <<Deploying with External ZooKeeper>> for configure external ZooKeeper.
 +
 Inside the `ec2-101-1-2-3.us-east-2.compute.amazonaws.com` (`solr-node-1`)
 +
@@ -174,8 +174,7 @@ You should able to see Solr UI dashboard for both nodes.
 
 You can refer <<solr-tutorial.adoc#exercise-1,Solr Tutorial>> for an extensive walkthrough on creating collections with multiple shards and  replicas, indexing data via different methods and querying documents accordingly.
 
-[[appendix]]
-== Appendix: Deploy with External ZooKeeper
+== Deploying with External ZooKeeper
 
 If you want to configure an external ZooKeeper ensemble to avoid using the embedded single-instance ZooKeeper that runs in the same JVM as the Solr node, you need to make few tweaks in the above listed steps as follows.
 
@@ -195,24 +194,24 @@ $ sudo vim /etc/hosts
 
 These steps will help you install and configure a single instance of ZooKeeper on AWS. This is not sufficient for a production, use, however, where a ZooKeeper ensemble of at least three nodes is recommended. See the section <<setting-up-an-external-zookeeper-ensemble.adoc#setting-up-an-external-zookeeper-ensemble,Setting Up an External ZooKeeper Ensemble>> for information about how to change this single-instance into an ensemble.
 
-. Download a stable version of ZooKeeper. In this example we're using ZooKeeper v3.4.6. On the node you're using to host ZooKeeper (`zookeeper-node`), download the package and untar it:
+. Download a stable version of ZooKeeper. In this example we're using ZooKeeper v{ivy-zookeeper-version}. On the node you're using to host ZooKeeper (`zookeeper-node`), download the package and untar it:
 +
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-# download stable version of ZooKeeper, here 3.4.6
-$ wget https://archive.apache.org/dist/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz
+# download stable version of ZooKeeper, here {ivy-zookeeper-version}
+$ wget https://archive.apache.org/dist/zookeeper/zookeeper-{ivy-zookeeper-version}/zookeeper-{ivy-zookeeper-version}.tar.gz
 # untar
-$ tar -zxvf zookeeper-3.4.6.tar.gz
+$ tar -zxvf zookeeper-{ivy-zookeeper-version}.tar.gz
 ----
 +
 Add an environment variable for ZooKeeper's home directory (`ZOO_HOME`) to the `.bashrc` for the user who will be running the process. The rest of the instructions assume you have set this variable. Correct the path to the ZooKeeper installation as appropriate if where you put it does not match the below.
 +
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-$ export ZOO_HOME=$PWD/zookeeper-3.4.6
+$ export ZOO_HOME=$PWD/zookeeper-{ivy-zookeeper-version}
 # put the env variable in .bashrc
 # vim ~/.bashrc
-export ZOO_HOME=/home/ec2-user/zookeeper-3.4.6
+export ZOO_HOME=/home/ec2-user/zookeeper-{ivy-zookeeper-version}
 ----
 . Change directories to `ZOO_HOME`, and create the ZooKeeper configuration by using the template provided by ZooKeeper.
 +

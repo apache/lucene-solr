@@ -16,13 +16,15 @@
  */
 package org.apache.solr.servlet;
 
+import java.lang.invoke.MethodHandles;
+
 import org.slf4j.LoggerFactory;
 
 final class CheckLoggingConfiguration {
   
   static void check() {
     try {
-      LoggerFactory.getLogger(CheckLoggingConfiguration.class);
+      LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     } catch (NoClassDefFoundError e) {
       throw new NoClassDefFoundError("Failed to initialize Apache Solr: "
           +"Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in "

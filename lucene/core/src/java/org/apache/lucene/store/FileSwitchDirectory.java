@@ -23,6 +23,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -201,5 +202,19 @@ public class FileSwitchDirectory extends Directory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     return getDirectory(name).openInput(name, context);
+  }
+
+  @Override
+  public Set<String> getPendingDeletions() throws IOException {
+    Set<String> primaryDeletions = primaryDir.getPendingDeletions();
+    Set<String> secondaryDeletions = secondaryDir.getPendingDeletions();
+    if (primaryDeletions.isEmpty() && secondaryDeletions.isEmpty()) {
+      return Collections.emptySet();
+    } else {
+      HashSet<String> combined = new HashSet<>();
+      combined.addAll(primaryDeletions);
+      combined.addAll(secondaryDeletions);
+      return Collections.unmodifiableSet(combined);
+    }
   }
 }

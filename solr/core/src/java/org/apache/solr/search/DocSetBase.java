@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReader;
@@ -264,9 +263,4 @@ abstract class DocSetBase implements DocSet {
     }
   }
 
-
-  /** FUTURE: for off-heap */
-  @Override
-  public void close() throws IOException {
-  }
 }

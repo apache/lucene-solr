@@ -29,6 +29,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
@@ -37,19 +39,28 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 
-/**  SolrParams hold request parameters.
- *
- *
+/**
+ * SolrParams is designed to hold parameters to Solr, often from the request coming into Solr.
+ * It's basically a MultiMap of String keys to one or more String values.  Neither keys nor values may be null.
+ * Unlike a general Map/MultiMap, the size is unknown without iterating over each parameter name.
  */
-public abstract class SolrParams implements Serializable, MapWriter {
+public abstract class SolrParams implements Serializable, MapWriter, Iterable<Map.Entry<String, String[]>> {
 
-  /** returns the String value of a param, or null if not set */
+  /**
+   * Returns the first String value of a param, or null if not set.
+   * To get all, call {@link #getParams(String)} instead.
+   */
   public abstract String get(String param);
 
-  /** returns an array of the String values of a param, or null if none */
+  /** returns an array of the String values of a param, or null if no mapping for the param exists. */
   public abstract String[] getParams(String param);
 
-  /** returns an Iterator over the parameter names */
+  /**
+   * Returns an Iterator over the parameter names.
+   * If you were to call a getter for this parameter, you should get a non-null value.
+   * Since you probably want the value, consider using Java 5 for-each style instead for convenience since a SolrParams
+   * implements {@link Iterable}.
+   */
   public abstract Iterator<String> getParameterNamesIterator();
 
   /** returns the value of the param, or def if not set */
@@ -57,6 +68,64 @@ public abstract class SolrParams implements Serializable, MapWriter {
     String val = get(param);
     return val==null ? def : val;
   }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    //TODO don't call toNamedList; more efficiently implement here
+    //note: multiple values, if present, are a String[] under 1 key
+    toNamedList().forEach((k, v) -> {
+      if (v == null || "".equals(v)) return;
+      try {
+        ew.put(k, v);
+      } catch (IOException e) {
+        throw new RuntimeException("Error serializing", e);
+      }
+    });
+  }
+
+  /** Returns an Iterator of {@code Map.Entry} providing a multi-map view.  Treat it as read-only. */
+  @Override
+  public Iterator<Map.Entry<String, String[]>> iterator() {
+    Iterator<String> it = getParameterNamesIterator();
+    return new Iterator<Map.Entry<String, String[]>>() {
+      @Override
+      public boolean hasNext() {
+        return it.hasNext();
+      }
+      @Override
+      public Map.Entry<String, String[]> next() {
+        String key = it.next();
+        return new Map.Entry<String, String[]>() {
+          @Override
+          public String getKey() {
+            return key;
+          }
+
+          @Override
+          public String[] getValue() {
+            return getParams(key);
+          }
+
+          @Override
+          public String[] setValue(String[] newValue) {
+            throw new UnsupportedOperationException("read-only");
+          }
+
+          @Override
+          public String toString() {
+            return getKey() + "=" + Arrays.toString(getValue());
+          }
+        };
+      }
+    };
+  }
+
+  /** A {@link Stream} view over {@link #iterator()} -- for convenience.  Treat it as read-only. */
+  public Stream<Map.Entry<String, String[]>> stream() {
+    return StreamSupport.stream(spliterator(), false);
+  }
+  // Do we add Map.forEach equivalent too?  But it eager-fetches the value, and Iterable<Map.Entry> allows the user
+  //  to only get the value when needed.
 
   /** returns a RequiredSolrParams wrapping this */
   public RequiredSolrParams required()
@@ -388,6 +457,7 @@ public abstract class SolrParams implements Serializable, MapWriter {
   }
 
   /** Create a Map&lt;String,String&gt; from a NamedList given no keys are repeated */
+  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
   public static Map<String,String> toMap(NamedList params) {
     HashMap<String,String> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
@@ -397,6 +467,7 @@ public abstract class SolrParams implements Serializable, MapWriter {
   }
 
   /** Create a Map&lt;String,String[]&gt; from a NamedList */
+  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
   public static Map<String,String[]> toMultiMap(NamedList params) {
     HashMap<String,String[]> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
@@ -418,14 +489,19 @@ public abstract class SolrParams implements Serializable, MapWriter {
     return map;
   }
 
-  /** Create SolrParams from NamedList. */
+  /**
+   * Create SolrParams from NamedList.
+   * @deprecated Use {@link NamedList#toSolrParams()}.
+   */
+  @Deprecated //move to NamedList to allow easier flow
   public static SolrParams toSolrParams(NamedList params) {
-    // always use MultiMap for easier processing further down the chain
-    return new MultiMapSolrParams(toMultiMap(params));
+    return params.toSolrParams();
   }
 
-  /** Create filtered SolrParams. */
+  @Deprecated
   public SolrParams toFilteredSolrParams(List<String> names) {
+    // TODO do this better somehow via a view that filters?  See SolrCore.preDecorateResponse.
+    //   ... and/or add some optional predicates to iterator()?
     NamedList<String> nl = new NamedList<>();
     for (Iterator<String> it = getParameterNamesIterator(); it.hasNext();) {
       final String name = it.next();
@@ -436,10 +512,13 @@ public abstract class SolrParams implements Serializable, MapWriter {
         }
       }
     }
-    return toSolrParams(nl);
+    return nl.toSolrParams();
   }
 
-  /** Convert this to a NamedList */
+  /**
+   * Convert this to a NamedList of unique keys with either String or String[] values depending on
+   * how many values there are for the parameter.
+   */
   public NamedList<Object> toNamedList() {
     final SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
 
@@ -456,6 +535,10 @@ public abstract class SolrParams implements Serializable, MapWriter {
     return result;
   }
 
+  // Deprecated because there isn't a universal way to deal with multi-values (always
+  //  String[] or only for > 1 or always 1st value).  And what to do with nulls or empty string.
+  //  And SolrParams now implements MapWriter.toMap(Map) (a default method).  So what do we do?
+  @Deprecated
   public Map<String, Object> getAll(Map<String, Object> sink, Collection<String> params) {
     if (sink == null) sink = new LinkedHashMap<>();
     for (String param : params) {
@@ -475,6 +558,7 @@ public abstract class SolrParams implements Serializable, MapWriter {
   /**Copy all params to the given map or if the given map is null
    * create a new one
    */
+  @Deprecated
   public Map<String, Object> getAll(Map<String, Object> sink, String... params){
     return getAll(sink, params == null ? Collections.emptyList() : Arrays.asList(params));
   }
@@ -548,19 +632,5 @@ public abstract class SolrParams implements Serializable, MapWriter {
       throw new AssertionError(e);
     }
   }
-
-  @Override
-  public void writeMap(EntryWriter ew) throws IOException {
-    toNamedList().forEach((k, v) -> {
-      if (v == null || "".equals(v)) return;
-      try {
-        ew.put(k, v);
-      } catch (IOException e) {
-        throw new RuntimeException("Error serializing", e);
-      }
-    });
-
-  }
-
 
 }

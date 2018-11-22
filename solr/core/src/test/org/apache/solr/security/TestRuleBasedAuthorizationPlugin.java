@@ -377,10 +377,13 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
   private void checkRules(Map<String, Object> values, int expected, Map<String ,Object> permissions) {
     AuthorizationContext context = new MockAuthorizationContext(values);
-    RuleBasedAuthorizationPlugin plugin = new RuleBasedAuthorizationPlugin();
-    plugin.init(permissions);
-    AuthorizationResponse authResp = plugin.authorize(context);
-    assertEquals(expected, authResp.statusCode);
+    try (RuleBasedAuthorizationPlugin plugin = new RuleBasedAuthorizationPlugin()) {
+      plugin.init(permissions);
+      AuthorizationResponse authResp = plugin.authorize(context);
+      assertEquals(expected, authResp.statusCode);
+    } catch (IOException e) {
+      ; // swallow error, otherwise a you have to add a _lot_ of exceptions to methods.
+    }
   }
 
   private static class MockAuthorizationContext extends AuthorizationContext {

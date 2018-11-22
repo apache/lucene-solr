@@ -30,6 +30,7 @@ import org.junit.Test;
 
 @Slow
 @SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class DistributedIntervalFacetingTest extends
     BaseDistributedSearchTestCase {
 

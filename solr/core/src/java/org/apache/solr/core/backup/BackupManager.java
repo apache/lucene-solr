@@ -44,6 +44,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository.PathType;
 import org.apache.solr.util.PropertiesInputStream;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,6 +193,46 @@ public class BackupManager {
     downloadFromZK(zkStateReader.getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, dest);
   }
 
+  public void uploadCollectionProperties(URI backupLoc, String backupId, String collectionName) throws IOException {
+    URI sourceDir = repository.resolve(backupLoc, backupId, ZK_STATE_DIR);
+    URI source = repository.resolve(sourceDir, ZkStateReader.COLLECTION_PROPS_ZKNODE);
+    if (!repository.exists(source)) {
+      // No collection properties to restore
+      return;
+    }
+    String zkPath = ZkStateReader.COLLECTIONS_ZKNODE + '/' + collectionName + '/' + ZkStateReader.COLLECTION_PROPS_ZKNODE;
+
+    try (IndexInput is = repository.openInput(sourceDir, ZkStateReader.COLLECTION_PROPS_ZKNODE, IOContext.DEFAULT)) {
+      byte[] arr = new byte[(int) is.length()];
+      is.readBytes(arr, 0, (int) is.length());
+      zkStateReader.getZkClient().create(zkPath, arr, CreateMode.PERSISTENT, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error uploading file to zookeeper path " + source.toString() + " to " + zkPath,
+          SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  public void downloadCollectionProperties(URI backupLoc, String backupId, String collectionName) throws IOException {
+    URI dest = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, ZkStateReader.COLLECTION_PROPS_ZKNODE);
+    String zkPath = ZkStateReader.COLLECTIONS_ZKNODE + '/' + collectionName + '/' + ZkStateReader.COLLECTION_PROPS_ZKNODE;
+
+
+    try {
+      if (!zkStateReader.getZkClient().exists(zkPath, true)) {
+        // Nothing to back up
+        return;
+      }
+
+      try (OutputStream os = repository.createOutput(dest)) {
+        byte[] data = zkStateReader.getZkClient().getData(zkPath, null, null, true);
+        os.write(data);
+      }
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error downloading file from zookeeper path " + zkPath + " to " + dest.toString(),
+          SolrZkClient.checkInterrupted(e));
+    }
+  }
+
   private void downloadFromZK(SolrZkClient zkClient, String zkPath, URI dir) throws IOException {
     try {
       if (!repository.exists(dir)) {
@@ -232,7 +273,7 @@ public class BackupManager {
             is.readBytes(arr, 0, (int) is.length());
             zkClient.makePath(zkNodePath, arr, true);
           } catch (KeeperException | InterruptedException e) {
-            throw new IOException(e);
+            throw new IOException(SolrZkClient.checkInterrupted(e));
           }
           break;
         }

@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
@@ -49,10 +50,13 @@ public class TestMultiFields extends LuceneTestCase {
       Directory dir = newDirectory();
 
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                             .setMergePolicy(NoMergePolicy.INSTANCE));
-      // we can do this because we use NoMergePolicy (and dont merge to "nothing")
-      w.setKeepFullyDeletedSegments(true);
-
+                                             .setMergePolicy(new FilterMergePolicy(NoMergePolicy.INSTANCE) {
+                                               @Override
+                                               public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+                                                 // we can do this because we use NoMergePolicy (and dont merge to "nothing")
+                                                 return true;
+                                               }
+                                             }));
       Map<BytesRef,List<Integer>> docs = new HashMap<>();
       Set<Integer> deleted = new HashSet<>();
       List<BytesRef> terms = new ArrayList<>();
@@ -124,7 +128,7 @@ public class TestMultiFields extends LuceneTestCase {
         System.out.println("TEST: reader=" + reader);
       }
 
-      Bits liveDocs = MultiFields.getLiveDocs(reader);
+      Bits liveDocs = MultiBits.getLiveDocs(reader);
       for(int delDoc : deleted) {
         assertFalse(liveDocs.get(delDoc));
       }
@@ -154,7 +158,7 @@ public class TestMultiFields extends LuceneTestCase {
     DocsEnum docs = _TestUtil.docs(random, r,
                                    "field",
                                    new BytesRef(term),
-                                   MultiFields.getLiveDocs(r),
+                                   MultiLeafReader.getLiveDocs(r),
                                    null,
                                    false);
     for(int docID : expected) {
@@ -192,7 +196,7 @@ public class TestMultiFields extends LuceneTestCase {
     w.addDocument(d);
     IndexReader r = w.getReader();
     w.close();
-    PostingsEnum de = MultiFields.getTermDocsEnum(r, "f", new BytesRef("j"));
+    PostingsEnum de = MultiTerms.getTermPostingsEnum(r, "f", new BytesRef("j"), (int) PostingsEnum.FREQS);
     assertEquals(0, de.nextDoc());
     assertEquals(1, de.nextDoc());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());

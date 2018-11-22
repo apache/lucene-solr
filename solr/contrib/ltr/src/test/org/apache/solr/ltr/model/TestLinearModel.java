@@ -39,7 +39,7 @@ public class TestLinearModel extends TestRerankBase {
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) throws ModelException {
     final LTRScoringModel model = LTRScoringModel.getInstance(solrResourceLoader,
-        LinearModel.class.getCanonicalName(),
+        LinearModel.class.getName(),
         name,
         features, norms, featureStoreName, allFeatures, params);
     return model;
@@ -111,7 +111,7 @@ public class TestLinearModel extends TestRerankBase {
   public void existingNameTest() {
     final SolrException expectedException =
         new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            ModelException.class.getCanonicalName()+": model 'test3' already exists. Please use a different name");
+            ModelException.class.getName()+": model 'test3' already exists. Please use a different name");
     try {
       final List<Feature> features = getFeatures(new String[]
           {"constant1", "constant5"});

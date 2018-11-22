@@ -117,9 +117,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     if (0 < cfiltfacs.length) {
       String source = value;
       for(CharFilterFactory cfiltfac : cfiltfacs ){
-        Reader reader = new StringReader(source);
-        reader = cfiltfac.create(reader);
-        source = writeCharStream(namedList, reader);
+        try (Reader sreader = new StringReader(source);
+             Reader reader = cfiltfac.create(sreader)) {
+          source = writeCharStream(namedList, reader);
+        } catch (IOException e) {
+          // do nothing.
+        }
       }
     }
 
@@ -139,9 +142,19 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       tokenStream = tokenFilterFactory.create(listBasedTokenStream);
       tokens = analyzeTokenStream(tokenStream);
       namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
+      try {
+        listBasedTokenStream.close();
+      } catch (IOException e) {
+        // do nothing;
+      }
       listBasedTokenStream = new ListBasedTokenStream(listBasedTokenStream, tokens);
     }
 
+    try {
+      listBasedTokenStream.close();
+    } catch (IOException e) {
+      // do nothing.
+    }
     return namedList;
   }
 

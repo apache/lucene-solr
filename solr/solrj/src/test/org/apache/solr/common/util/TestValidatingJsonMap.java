@@ -37,7 +37,7 @@ public class TestValidatingJsonMap extends SolrTestCaseJ4 {
             "c", makeMap("d", "D")));
     assertEquals(Boolean.TRUE, m.getBool("a", Boolean.FALSE));
     assertEquals(Boolean.FALSE, m.getBool("b", Boolean.TRUE));
-    assertEquals(new Integer(10), m.getInt("i",0));
+    assertEquals(Integer.valueOf(10), m.getInt("i",0));
     try {
       m.getList("l", ENUM_OF, ImmutableSet.of("X", "Z"));
       fail("Must have failed with unexpected type");

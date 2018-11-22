@@ -98,6 +98,20 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
     taxoEpoch = -1;
   }
 
+  /**
+   * Creates this from already opened {@link IndexReader} and {@link DirectoryTaxonomyReader} instances.  Note that
+   * the incoming readers will be closed when you call {@link #close}.
+   */
+  public SearcherTaxonomyManager(IndexReader reader, DirectoryTaxonomyReader taxoReader, SearcherFactory searcherFactory) throws IOException {
+    if (searcherFactory == null) {
+      searcherFactory = new SearcherFactory();
+    }
+    this.searcherFactory = searcherFactory;
+    current = new SearcherAndTaxonomy(SearcherManager.getSearcher(searcherFactory, reader, null), taxoReader);
+    this.taxoWriter = null;
+    taxoEpoch = -1;
+  }
+
   @Override
   protected void decRef(SearcherAndTaxonomy ref) throws IOException {
     ref.searcher.getIndexReader().decRef();
@@ -134,7 +148,17 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
     if (newReader == null) {
       return null;
     } else {
-      DirectoryTaxonomyReader tr = TaxonomyReader.openIfChanged(ref.taxonomyReader);
+      DirectoryTaxonomyReader tr;
+      try {
+        tr = TaxonomyReader.openIfChanged(ref.taxonomyReader);
+      } catch (Throwable t1) {
+        try {
+          IOUtils.close(newReader);
+        } catch (Throwable t2) {
+          t2.addSuppressed(t2);
+        }
+        throw t1;
+      }
       if (tr == null) {
         ref.taxonomyReader.incRef();
         tr = ref.taxonomyReader;

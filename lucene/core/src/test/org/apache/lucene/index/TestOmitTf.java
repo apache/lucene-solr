@@ -31,8 +31,8 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
@@ -58,103 +58,6 @@ public class TestOmitTf extends LuceneTestCase {
   
   static {
     omitType.setIndexOptions(IndexOptions.DOCS);
-  }
-
-  // Tests whether the DocumentWriter correctly enable the
-  // omitTermFreqAndPositions bit in the FieldInfo
-  public void testOmitTermFreqAndPositions() throws Exception {
-    Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
-    Document d = new Document();
-        
-    // this field will have Tf
-    Field f1 = newField("f1", "This field has term freqs", normalType);
-    d.add(f1);
-       
-    // this field will NOT have Tf
-    Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
-    d.add(f2);
-        
-    writer.addDocument(d);
-    writer.forceMerge(1);
-    // now we add another document which has term freq for field f2 and not for f1 and verify if the SegmentMerger
-    // keep things constant
-    d = new Document();
-        
-    // Reverse
-    f1 = newField("f1", "This field has term freqs", omitType);
-    d.add(f1);
-        
-    f2 = newField("f2", "This field has NO Tf in all docs", normalType);     
-    d.add(f2);
-        
-    writer.addDocument(d);
-
-    // force merge
-    writer.forceMerge(1);
-    // flush
-    writer.close();
-
-    LeafReader reader = getOnlyLeafReader(DirectoryReader.open(ram));
-    FieldInfos fi = reader.getFieldInfos();
-    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS, fi.fieldInfo("f1").getIndexOptions());
-    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
-        
-    reader.close();
-    ram.close();
-  }
- 
-  // Tests whether merging of docs that have different
-  // omitTermFreqAndPositions for the same field works
-  public void testMixedMerge() throws Exception {
-    Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(
-        ram,
-        newIndexWriterConfig(analyzer).
-            setMaxBufferedDocs(3).
-            setMergePolicy(newLogMergePolicy(2))
-    );
-    Document d = new Document();
-        
-    // this field will have Tf
-    Field f1 = newField("f1", "This field has term freqs", normalType);
-    d.add(f1);
-       
-    // this field will NOT have Tf
-    Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
-    d.add(f2);
-
-    for(int i=0;i<30;i++)
-      writer.addDocument(d);
-        
-    // now we add another document which has term freq for field f2 and not for f1 and verify if the SegmentMerger
-    // keep things constant
-    d = new Document();
-        
-    // Reverese
-    f1 = newField("f1", "This field has term freqs", omitType);
-    d.add(f1);
-        
-    f2 = newField("f2", "This field has NO Tf in all docs", normalType);     
-    d.add(f2);
-        
-    for(int i=0;i<30;i++)
-      writer.addDocument(d);
-        
-    // force merge
-    writer.forceMerge(1);
-    // flush
-    writer.close();
-
-    LeafReader reader = getOnlyLeafReader(DirectoryReader.open(ram));
-    FieldInfos fi = reader.getFieldInfos();
-    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS, fi.fieldInfo("f1").getIndexOptions());
-    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
-        
-    reader.close();
-    ram.close();
   }
 
   // Make sure first adding docs that do not omitTermFreqAndPositions for
@@ -230,21 +133,7 @@ public class TestOmitTf extends LuceneTestCase {
 
     assertNoPrx(ram);
     
-    // now add some documents with positions, and check
-    // there is no prox after full merge
-    d = new Document();
-    f1 = newTextField("f1", "This field has positions", Field.Store.NO);
-    d.add(f1);
-    
-    for(int i=0;i<30;i++)
-      writer.addDocument(d);
- 
-    // force merge
-    writer.forceMerge(1);
-    // flush
     writer.close();
-
-    assertNoPrx(ram);
     ram.close();
   }
  
@@ -309,13 +198,13 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(q1,
                     new CountingHitCollector() {
-                      private Scorer scorer;
+                      private Scorable scorer;
                       @Override
                       public ScoreMode scoreMode() {
                         return ScoreMode.COMPLETE;
                       }
                       @Override
-                      public final void setScorer(Scorer scorer) {
+                      public final void setScorer(Scorable scorer) {
                         this.scorer = scorer;
                       }
                       @Override
@@ -331,13 +220,13 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(q2,
                     new CountingHitCollector() {
-                      private Scorer scorer;
+                      private Scorable scorer;
                       @Override
                       public ScoreMode scoreMode() {
                         return ScoreMode.COMPLETE;
                       }
                       @Override
-                      public final void setScorer(Scorer scorer) {
+                      public final void setScorer(Scorable scorer) {
                         this.scorer = scorer;
                       }
                       @Override
@@ -356,13 +245,13 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(q3,
                     new CountingHitCollector() {
-                      private Scorer scorer;
+                      private Scorable scorer;
                       @Override
                       public ScoreMode scoreMode() {
                         return ScoreMode.COMPLETE;
                       }
                       @Override
-                      public final void setScorer(Scorer scorer) {
+                      public final void setScorer(Scorable scorer) {
                         this.scorer = scorer;
                       }
                       @Override
@@ -379,13 +268,13 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(q4,
                     new CountingHitCollector() {
-                      private Scorer scorer;
+                      private Scorable scorer;
                       @Override
                       public ScoreMode scoreMode() {
                         return ScoreMode.COMPLETE;
                       }
                       @Override
-                      public final void setScorer(Scorer scorer) {
+                      public final void setScorer(Scorable scorer) {
                         this.scorer = scorer;
                       }
                       @Override

@@ -54,10 +54,10 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertU(adoc("id", "42", "title", "w10"));
     assertU(commit());
 
-    loadFeature("description-length2", FieldLengthFeature.class.getCanonicalName(),
+    loadFeature("description-length2", FieldLengthFeature.class.getName(),
             "{\"field\":\"description\"}");
 
-    loadModel("description-model2", LinearModel.class.getCanonicalName(),
+    loadModel("description-model2", LinearModel.class.getName(),
             new String[] {"description-length2"}, "{\"weights\":{\"description-length2\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -75,10 +75,10 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertU(adoc("id", "43", "title", "w11", "description", ""));
     assertU(commit());
 
-    loadFeature("description-length3", FieldLengthFeature.class.getCanonicalName(),
+    loadFeature("description-length3", FieldLengthFeature.class.getName(),
             "{\"field\":\"description\"}");
 
-    loadModel("description-model3", LinearModel.class.getCanonicalName(),
+    loadModel("description-model3", LinearModel.class.getName(),
             new String[] {"description-length3"}, "{\"weights\":{\"description-length3\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -92,10 +92,10 @@ public class TestFieldLengthFeature extends TestRerankBase {
 
   @Test
   public void testRanking() throws Exception {
-    loadFeature("title-length", FieldLengthFeature.class.getCanonicalName(),
+    loadFeature("title-length", FieldLengthFeature.class.getName(),
         "{\"field\":\"title\"}");
 
-    loadModel("title-model", LinearModel.class.getCanonicalName(),
+    loadModel("title-model", LinearModel.class.getName(),
         new String[] {"title-length"}, "{\"weights\":{\"title-length\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -131,9 +131,9 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='6'");
 
     loadFeature("description-length",
-        FieldLengthFeature.class.getCanonicalName(),
+        FieldLengthFeature.class.getName(),
         "{\"field\":\"description\"}");
-    loadModel("description-model", LinearModel.class.getCanonicalName(),
+    loadModel("description-model", LinearModel.class.getName(),
         new String[] {"description-length"},
         "{\"weights\":{\"description-length\":1.0}}");
     query.setQuery("title:w1");

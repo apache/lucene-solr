@@ -79,7 +79,7 @@ public interface TaxonomyWriter extends Closeable, TwoPhaseCommit {
    * If the given ordinal is the ROOT_ORDINAL, an INVALID_ORDINAL is returned.
    * If the given ordinal is a top-level category, the ROOT_ORDINAL is returned.
    * If an invalid ordinal is given (negative or beyond the last available
-   * ordinal), an ArrayIndexOutOfBoundsException is thrown. However, it is
+   * ordinal), an IndexOutOfBoundsException is thrown. However, it is
    * expected that getParent will only be called for ordinals which are
    * already known to be in the taxonomy.
    * TODO (Facet): instead of a getParent(ordinal) method, consider having a

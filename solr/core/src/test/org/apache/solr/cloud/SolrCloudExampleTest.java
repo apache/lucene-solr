@@ -35,7 +35,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -68,6 +68,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
     waitForThingsToLevelOut(30000);
 
@@ -140,10 +141,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                  expectedXmlFileCount, xmlFiles.size());
     
     for (File xml : xmlFiles) {
-      ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
-      req.addFile(xml, "application/xml");
       log.info("POSTing "+xml.getAbsolutePath());
-      cloudClient.request(req);
+      cloudClient.request(new StreamingUpdateRequest("/update",xml,"application/xml"));
     }
     cloudClient.commit();
 
@@ -205,10 +204,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     Map<String, Object> configJson = SolrCLI.getJson(configUrl);
     Object maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
     assertNotNull(maxTimeFromConfig);
-    assertEquals(new Long(-1L), maxTimeFromConfig);
+    assertEquals(-1L, maxTimeFromConfig);
 
     String prop = "updateHandler.autoSoftCommit.maxTime";
-    Long maxTime = new Long(3000L);
+    Long maxTime = 3000L;
     String[] args = new String[]{
         "-collection", testCollectionName,
         "-property", prop,

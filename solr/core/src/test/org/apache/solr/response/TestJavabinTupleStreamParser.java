@@ -69,14 +69,15 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
 
     byte[] bytes = serialize(nl);
 
-    JavabinTupleStreamParser parser = new JavabinTupleStreamParser(new ByteArrayInputStream(bytes), true);
-    Map<String, Object> map = parser.next();
-    assertEquals("2", map.get("id"));
-    map = parser.next();
-    assertEquals("3", map.get("id"));
-    System.out.println();
-    map = parser.next();
-    assertNull(map);
+    try (JavabinTupleStreamParser parser = new JavabinTupleStreamParser(new ByteArrayInputStream(bytes), true)) {
+      Map<String, Object> map = parser.next();
+      assertEquals("2", map.get("id"));
+      map = parser.next();
+      assertEquals("3", map.get("id"));
+      System.out.println();
+      map = parser.next();
+      assertNull(map);
+    }
 
   }
 

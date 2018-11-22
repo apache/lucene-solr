@@ -196,6 +196,9 @@ public class RangeFacetProcessor extends SimpleFacets {
               intervals.set(includeBefore ? 1 : 0, new IntervalFacets.FacetInterval(sf, range.lower, range.upper,
                   range.includeLower, range.includeUpper, FacetRangeOther.BETWEEN.toString()));
               break;
+            case ALL:
+            case NONE:
+              break;
           }
         }
         continue;

@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
@@ -106,10 +106,19 @@ public class AutoScaling {
     void restoreState();
 
     /**
+     * Called when trigger is created but before it's initialized or scheduled for use.
+     * This method should also verify that the trigger configuration parameters are correct. It may
+     * be called multiple times.
+     * @param properties configuration properties
+     * @throws TriggerValidationException contains details of invalid configuration parameters.
+     */
+    void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException;
+
+    /**
      * Called before a trigger is scheduled. Any heavy object creation or initialisation should
      * be done in this method instead of the Trigger's constructor.
      */
-    void init();
+    void init() throws Exception;
   }
 
   /**
@@ -118,7 +127,7 @@ public class AutoScaling {
   public static abstract class TriggerFactory implements Closeable {
     protected boolean isClosed = false;
 
-    public abstract Trigger create(TriggerEventType type, String name, Map<String, Object> props);
+    public abstract Trigger create(TriggerEventType type, String name, Map<String, Object> props) throws TriggerValidationException;
 
     @Override
     public void close() throws IOException {
@@ -144,29 +153,50 @@ public class AutoScaling {
     }
 
     @Override
-    public synchronized Trigger create(TriggerEventType type, String name, Map<String, Object> props) {
+    public synchronized Trigger create(TriggerEventType type, String name, Map<String, Object> props) throws TriggerValidationException {
       if (isClosed) {
         throw new AlreadyClosedException("TriggerFactory has already been closed, cannot create new triggers");
       }
+      if (type == null) {
+        throw new IllegalArgumentException("Trigger type must not be null");
+      }
+      if (name == null || name.isEmpty()) {
+        throw new IllegalArgumentException("Trigger name must not be empty");
+      }
+      Trigger t;
       switch (type) {
         case NODEADDED:
-          return new NodeAddedTrigger(name, props, loader, cloudManager);
+          t = new NodeAddedTrigger(name);
+          break;
         case NODELOST:
-          return new NodeLostTrigger(name, props, loader, cloudManager);
+          t = new NodeLostTrigger(name);
+        break;
         case SEARCHRATE:
-          return new SearchRateTrigger(name, props, loader, cloudManager);
+          t = new SearchRateTrigger(name);
+        break;
         case METRIC:
-          return new MetricTrigger(name, props, loader, cloudManager);
+          t = new MetricTrigger(name);
+        break;
+        case SCHEDULED:
+          t = new ScheduledTrigger(name);
+        break;
+        case INDEXSIZE:
+          t = new IndexSizeTrigger(name);
+          break;
         default:
           throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
       }
+      t.configure(loader, cloudManager, props);
+      return t;
     }
 
   }
 
+  public static final String AUTO_ADD_REPLICAS_TRIGGER_NAME = ".auto_add_replicas";
+
   public static final String AUTO_ADD_REPLICAS_TRIGGER_DSL =
       "    {" +
-      "        'name' : '.auto_add_replicas'," +
+      "        'name' : '" + AUTO_ADD_REPLICAS_TRIGGER_NAME + "'," +
       "        'event' : 'nodeLost'," +
       "        'waitFor' : -1," +
       "        'enabled' : true," +
@@ -183,4 +213,28 @@ public class AutoScaling {
       "    }";
 
   public static final Map<String, Object> AUTO_ADD_REPLICAS_TRIGGER_PROPS = (Map) Utils.fromJSONString(AUTO_ADD_REPLICAS_TRIGGER_DSL);
+
+  public static final String SCHEDULED_MAINTENANCE_TRIGGER_NAME = ".scheduled_maintenance";
+
+  public static final String SCHEDULED_MAINTENANCE_TRIGGER_DSL =
+          "    {" +
+          "        'name' : '" + SCHEDULED_MAINTENANCE_TRIGGER_NAME + "'," +
+          "        'event' : 'scheduled'," +
+          "        'startTime' : 'NOW'," +
+          "        'every' : '+1DAY'," +
+          "        'enabled' : true," +
+          "        'actions' : [" +
+          "            {" +
+          "                'name':'inactive_shard_plan'," +
+          "                'class':'solr.InactiveShardPlanAction'" +
+          "            }," +
+          "            {" +
+          "                'name':'execute_plan'," +
+          "                'class':'solr.ExecutePlanAction'" +
+          "            }" +
+          "        ]" +
+          "    }";
+
+  public static final Map<String, Object> SCHEDULED_MAINTENANCE_TRIGGER_PROPS = (Map) Utils.fromJSONString(SCHEDULED_MAINTENANCE_TRIGGER_DSL);
+
 }

@@ -24,8 +24,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellCanPrune;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
-import org.apache.lucene.spatial.prefix.tree.LegacyCell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -53,7 +53,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   protected int prefixGridScanLevel;
 
   //Formerly known as simplifyIndexedCells. Eventually will be removed. Only compatible with RPT
-  // and a LegacyPrefixTree.
+  // and cells implementing CellCanPrune, otherwise ignored.
   protected boolean pruneLeafyBranches = true;
 
   protected boolean multiOverlappingIndexedShapes = true;
@@ -93,8 +93,10 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   }
 
   /**
-   * An optional hint affecting non-point shapes: it will
-   * prune away a complete set sibling leaves to their parent (recursively), resulting in ~20-50%
+   * An optional hint affecting non-point shapes and tree cells implementing {@link CellCanPrune}, otherwise
+   * ignored.
+   * <p>
+   * It will prune away a complete set sibling leaves to their parent (recursively), resulting in ~20-50%
    * fewer indexed cells, and consequently that much less disk and that much faster indexing.
    * So if it's a quad tree and all 4 sub-cells are there marked as a leaf, then they will be
    * removed (pruned) and the parent is marked as a leaf instead.  This occurs recursively on up.  Unfortunately, the
@@ -132,10 +134,6 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
   /** Returns true if cell was added as a leaf. If it wasn't it recursively descends. */
   private boolean recursiveTraverseAndPrune(Cell cell, Shape shape, int detailLevel, List<Cell> result) {
-    // Important: this logic assumes Cells don't share anything with other cells when
-    // calling cell.getNextLevelCells(). This is only true for LegacyCell.
-    if (!(cell instanceof LegacyCell))
-      throw new IllegalStateException("pruneLeafyBranches must be disabled for use with grid "+grid);
 
     if (cell.getLevel() == detailLevel) {
       cell.setLeaf();//FYI might already be a leaf
@@ -154,8 +152,14 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
       if (recursiveTraverseAndPrune(subCell, shape, detailLevel, result))
         leaves++;
     }
+
+    if (!(cell instanceof CellCanPrune)) {
+      //Cannot prune so return false
+      return false;
+    }
+
     //can we prune?
-    if (leaves == ((LegacyCell)cell).getSubCellsSize() && cell.getLevel() != 0) {
+    if (leaves == ((CellCanPrune)cell).getSubCellsSize() && cell.getLevel() != 0) {
       //Optimization: substitute the parent as a leaf instead of adding all
       // children as leaves
 

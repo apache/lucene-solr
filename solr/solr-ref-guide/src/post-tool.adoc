@@ -125,7 +125,7 @@ Index all JSON files into `gettingstarted`.
 bin/post -c gettingstarted *.json
 ----
 
-=== Indexing Rich Documents (PDF, Word, HTML, etc)
+=== Indexing Rich Documents (PDF, Word, HTML, etc.)
 
 Index a PDF file into `gettingstarted`.
 
@@ -150,7 +150,7 @@ bin/post -c gettingstarted -filetypes ppt,html afolder/
 
 === Indexing to a Password Protected Solr (Basic Auth)
 
-Index a pdf as the user solr with password `SolrRocks`:
+Index a PDF as the user "solr" with password "SolrRocks":
 
 [source,bash]
 ----

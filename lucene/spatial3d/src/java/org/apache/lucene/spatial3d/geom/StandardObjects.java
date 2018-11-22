@@ -75,6 +75,7 @@ class StandardObjects {
    classRegsitry.put(PlanetModel.class, 35);
    classRegsitry.put(GeoDegeneratePath.class, 36);
    classRegsitry.put(GeoExactCircle.class, 37);
+   classRegsitry.put(GeoS2Shape.class, 38);
 
    for (Class<?> clazz : classRegsitry.keySet()){
      codeRegsitry.put(classRegsitry.get(clazz), clazz);

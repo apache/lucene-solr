@@ -135,6 +135,7 @@ public class Replica extends ZkNodeProps {
     return name.equals(replica.name);
   }
 
+  /** Also known as coreNodeName. */
   public String getName() {
     return name;
   }
@@ -146,6 +147,7 @@ public class Replica extends ZkNodeProps {
     return getStr(ZkStateReader.BASE_URL_PROP);
   }
 
+  /** SolrCore name. */
   public String getCoreName() {
     return getStr(ZkStateReader.CORE_NAME_PROP);
   }

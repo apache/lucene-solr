@@ -16,15 +16,33 @@
  */
 package org.apache.solr.search;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.SpatialUtils;
+import org.apache.solr.util.TestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Point;
 
 //Unlike TestSolr4Spatial, not parametrized / not generic.
 public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
@@ -39,6 +57,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     clearIndex();
+    RetrievalCombo.idCounter = 0;
   }
 
   @Test
@@ -117,30 +136,136 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         "q", "{!cache=false field f=" + fieldName + "}Intersects(" + polygonWKT + ")",
         "sort", "id asc"), "/response/numFound==2");
   }
-  
+
+  @Test @Repeat(iterations = 10)
+  public void testLLPDecodeIsStableAndPrecise() throws Exception {
+    // test that LatLonPointSpatialField decode of docValue will round-trip (re-index then re-decode) to the same value
+    @SuppressWarnings({"resource", "IOResourceOpenedButNotSafelyClosed"})
+    SolrClient client = new EmbeddedSolrServer(h.getCore());// do NOT close it; it will close Solr
+
+    final String fld = "llp_1_dv_dvasst";
+    String ptOrig = GeoTestUtil.nextLatitude() + "," + GeoTestUtil.nextLongitude();
+    assertU(adoc("id", "0", fld, ptOrig));
+    assertU(commit());
+    // retrieve it (probably less precision)
+    String ptDecoded1 = (String) client.query(params("q", "id:0")).getResults().get(0).get(fld);
+    // now write it back
+    assertU(adoc("id", "0", fld, ptDecoded1));
+    assertU(commit());
+    // retrieve it; assert that it's the same as written
+    String ptDecoded2 = (String) client.query(params("q", "id:0")).getResults().get(0).get(fld);
+    assertEquals("orig:" + ptOrig, ptDecoded1, ptDecoded2);
+
+    // test that the representation is pretty accurate
+    final Point ptOrigObj = SpatialUtils.parsePoint(ptOrig, SpatialContext.GEO);
+    final Point ptDecodedObj = SpatialUtils.parsePoint(ptDecoded1, SpatialContext.GEO);
+    double deltaCentimeters = SpatialContext.GEO.calcDistance(ptOrigObj, ptDecodedObj) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
+    //See javadocs of LatLonDocValuesField for these constants
+    final Point absErrorPt = SpatialContext.GEO.getShapeFactory().pointXY(8.381903171539307E-8, 4.190951585769653E-8);
+    double deltaCentimetersMax
+        = SpatialContext.GEO.calcDistance(absErrorPt, 0,0) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
+    assertEquals(1.0420371840922256, deltaCentimetersMax, 0.0);// just so that we see it in black & white in the test
+
+    //max found by trial & error.  If we used 8 decimal places then we could get down to 1.04cm accuracy but then we
+    // lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
+    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.40);
+    // Pt(x=105.29894270124083,y=-0.4371673760042398) to  Pt(x=105.2989428,y=-0.4371673) is 1.38568
+  }
+
   @Test
   public void testLatLonRetrieval() throws Exception {
-    assertU(adoc("id", "0",
-        "llp_1_dv_st", "-75,41",
-        "llp_1_dv", "-80,20",
-        "llp_1_dv_dvasst", "10,-30"));
+    final String ptHighPrecision =   "40.2996543270,-74.0824956673";
+    final String ptLossOfPrecision = "40.2996544,-74.0824957"; // rounded version of the one above, losing precision
+
+    // "_1" is single, "_N" is multiValued
+    // "_dv" is docValues (otherwise not),  "_dvasst" is useDocValuesAsStored (otherwise not)
+    // "_st" is stored" (otherwise not)
+
+    // a random point using the number of decimal places we support for round-tripping.
+    String randPointStr =
+        new BigDecimal(GeoTestUtil.nextLatitude()).setScale(7, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString() +
+        "," + new BigDecimal(GeoTestUtil.nextLongitude()).setScale(7, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString();
+
+    List<RetrievalCombo> combos = Arrays.asList(
+        new RetrievalCombo("llp_1_dv_st", ptHighPrecision),
+        new RetrievalCombo("llp_N_dv_st", Arrays.asList("-40,40", "-45,45")),
+        new RetrievalCombo("llp_N_dv_st", Arrays.asList("-40,40")), // multiValued but 1 value
+
+        new RetrievalCombo("llp_1_dv_dvasst", ptHighPrecision, ptLossOfPrecision),
+        // this one comes back in a different order since it gets sorted low to high
+        new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList("-40,40", "-45,45"), Arrays.asList("-45,45", "-40,40")),
+        new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList(randPointStr)), // multiValued but 1 value
+        // edge cases.  (note we sorted it as Lucene will internally)
+        new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList(
+            "-90,180", "-90,-180",
+            "0,0", "0,180", "0,-180",
+            "90,0", "90,180", "90,-180")),
+
+        new RetrievalCombo("llp_1_dv", ptHighPrecision, ptLossOfPrecision),
+        new RetrievalCombo("llp_N_dv", Arrays.asList("-45,45", "-40,40"))
+
+        );
+    Collections.shuffle(combos, random());
+
+    // add and commit
+    for (RetrievalCombo combo : combos) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "" + combo.id);
+      for (String indexValue : combo.indexValues) {
+        doc.addField(combo.fieldName, indexValue);
+      }
+      assertU(adoc(doc));
+      if (TestUtils.rarely()) { // induce segments to potentially change internal behavior
+        assertU(commit());
+      }
+    }
     assertU(commit());
-    assertJQ(req("q","*:*", "fl","*"),
-        "response/docs/[0]/llp_1_dv_st=='-75,41'",
-        // Right now we do not support decoding point value from dv field
-        "!response/docs/[0]/llp_1_dv=='-80,20'",
-        "!response/docs/[0]/llp_1_dv_dvasst=='10,-30'");
-    assertJQ(req("q","*:*", "fl","llp_1_dv_st, llp_1_dv, llp_1_dv_dvasst"),
-        "response/docs/[0]/llp_1_dv_st=='-75,41'",
-        // Even when these fields are specified, we won't return them
-        "!response/docs/[0]/llp_1_dv=='-80,20'",
-        "!response/docs/[0]/llp_1_dv_dvasst=='10,-30'");
+
+    // create an assertJQ assertion string, once for fl=*, another for when the field is listed
+    List<String> assertJQsFlListed = new ArrayList<>();
+    List<String> assertJQsFlStar = new ArrayList<>();
+    for (RetrievalCombo combo : combos) {
+      String expect = "response/docs/[" + combo.id + "]/" + combo.fieldName + "==" + combo.expectReturnJSON;
+      assertJQsFlListed.add(expect);
+      if (combo.fieldName.endsWith("_dv")) {
+        expect =  "response/docs/[" + combo.id + "]=={'id':'" + combo.id + "'}"; // only the id, nothing else
+      }
+      assertJQsFlStar.add(expect);
+    }
+    // check
+    assertJQ(req("q","*:*", "sort", "id asc",
+        "fl","*"),
+        assertJQsFlStar.toArray(new String[0]));
+    assertJQ(req("q","*:*", "sort", "id asc",
+        "fl", "id," + combos.stream().map(c -> c.fieldName).collect(Collectors.joining(","))),
+        assertJQsFlListed.toArray(new String[0]));
+  }
+
+  private static class RetrievalCombo {
+    static int idCounter = 0;
+    final int id = idCounter++;
+    final String fieldName;
+    final List<String> indexValues;
+    final String expectReturnJSON; //or null if not expected in response
+
+    RetrievalCombo(String fieldName, List<String> indexValues) { this(fieldName, indexValues, indexValues);}
+    RetrievalCombo(String fieldName, List<String> indexValues, List<String> returnValues) {
+      this.fieldName = fieldName;
+      this.indexValues = indexValues;
+      this.expectReturnJSON = returnValues.stream().collect(Collectors.joining("', '", "['", "']"));
+    }
+    RetrievalCombo(String fieldName, String indexValue) { this(fieldName, indexValue, indexValue); }
+    RetrievalCombo(String fieldName, String indexValue, String returnValue) {
+      this.fieldName = fieldName;
+      this.indexValues = Collections.singletonList(indexValue);
+      this.expectReturnJSON = "'" + returnValue + "'";
+    }
   }
 
   private void testRptWithGeometryField(String fieldName) throws Exception {
     assertU(adoc("id", "0", fieldName, "ENVELOPE(-10, 20, 15, 10)"));
     assertU(adoc("id", "1", fieldName, "BUFFER(POINT(-10 15), 5)"));//circle at top-left corner
-    assertU(optimize());// one segment.
+    assertU(optimize("maxSegments", "1"));// one segment.
     assertU(commit());
 
     // Search to the edge but not quite touching the indexed envelope of id=0.  It requires geom validation to
@@ -152,7 +277,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     // The tricky thing is verifying the cache works correctly...
 
-    MetricsMap cacheMetrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
+    MetricsMap cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
     assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
     assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
 

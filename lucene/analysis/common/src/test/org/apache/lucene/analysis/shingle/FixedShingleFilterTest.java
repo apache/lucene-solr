@@ -1,0 +1,228 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.lucene.analysis.shingle;
+
+import java.io.IOException;
+
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CannedTokenStream;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+
+public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
+
+  public void testBiGramFilter() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(
+        new Token("please", 0, 6),
+        new Token("divide", 7, 13),
+        new Token("this", 14, 18),
+        new Token("sentence", 19, 27),
+        new Token("into", 28, 32),
+        new Token("shingles", 33, 41)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 2),
+        new String[]{"please divide", "divide this", "this sentence", "sentence into", "into shingles"},
+        new int[]{0, 7, 14, 19, 28,},
+        new int[]{13, 18, 27, 32, 41,},
+        new String[]{"shingle", "shingle", "shingle", "shingle", "shingle",},
+        new int[]{1, 1, 1, 1, 1,},
+        new int[]{1, 1, 1, 1, 1});
+
+  }
+
+  public void testBiGramFilterWithAltSeparator() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(
+        new Token("please", 0, 6),
+        new Token("divide", 7, 13),
+        new Token("this", 14, 18),
+        new Token("sentence", 19, 27),
+        new Token("into", 28, 32),
+        new Token("shingles", 33, 41)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 2, "<SEP>", "_"),
+        new String[]{"please<SEP>divide", "divide<SEP>this", "this<SEP>sentence", "sentence<SEP>into", "into<SEP>shingles"},
+        new int[]{0, 7, 14, 19, 28},
+        new int[]{13, 18, 27, 32, 41},
+        new String[]{"shingle", "shingle", "shingle", "shingle", "shingle"},
+        new int[]{1, 1, 1, 1, 1});
+
+  }
+
+  public void testTriGramFilter() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(
+        new Token("please", 0, 6),
+        new Token("divide", 7, 13),
+        new Token("this", 14, 18),
+        new Token("sentence", 19, 27),
+        new Token("into", 28, 32),
+        new Token("shingles", 33, 41)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 3),
+        new String[]{"please divide this", "divide this sentence", "this sentence into", "sentence into shingles"});
+  }
+
+  public void testShingleSizeGreaterThanTokenstreamLength() throws IOException {
+
+    TokenStream ts = new FixedShingleFilter(new CannedTokenStream(
+        new Token("please", 0, 6),
+        new Token("divide", 7, 13)
+    ), 3);
+
+    ts.reset();
+    assertFalse(ts.incrementToken());
+
+  }
+
+  public void testWithStopwords() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(
+        new Token("please", 0, 6),
+        new Token("divide", 7, 13),
+        new Token("sentence", 2, 19, 27),
+        new Token("shingles", 2, 33, 41)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 3),
+        new String[]{"please divide _", "divide _ sentence", "sentence _ shingles"},
+        new int[]{0, 7, 19,},
+        new int[]{13, 27, 41,},
+        new String[]{"shingle", "shingle", "shingle",},
+        new int[]{1, 1, 2,});
+
+  }
+
+  public void testConsecutiveStopwords() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(
+        new Token("b", 2, 2, 3),
+        new Token("c", 4, 5),
+        new Token("d", 6, 7),
+        new Token("b", 3, 12, 13),
+        new Token("c", 14, 15)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 4),
+        new String[]{"b c d _", "c d _ _", "d _ _ b"},
+        new int[]{2, 4, 6,},
+        new int[]{7, 7, 13,},
+        new int[]{2, 1, 1,});
+  }
+
+  public void testTrailingStopwords() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(1, 7,
+        new Token("b", 0, 1),
+        new Token("c", 2, 3),
+        new Token("d", 4, 5)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 3),
+          new String[] { "b c d", "c d _" },
+          new int[] {    0,         2,    },
+          new int[] {    5,         5,    },
+          new int[] {    1,         1,    });
+
+
+  }
+
+  public void testMultipleTrailingStopwords() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(2, 9,
+        new Token("b", 0, 1),
+        new Token("c", 2, 3),
+        new Token("d", 4, 5)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 3),
+          new String[] { "b c d", "c d _", "d _ _" },
+          new int[] {    0,         2,      4 },
+          new int[] {    5,         5,      5 },
+          new int[] {    1,         1,      1 });
+  }
+
+  public void testIncomingGraphs() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(
+        new Token("b", 0, 1),
+        new Token("a", 0, 0, 1),
+        new Token("c", 2, 3),
+        new Token("b", 4, 5),
+        new Token("a", 0, 4, 5),
+        new Token("d", 6, 7)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 2),
+          new String[] { "b c", "a c", "c b", "c a", "b d", "a d" },
+          new int[] {    0,     0,     2,     2,     4,     4 },
+          new int[] {    3,     3,     5,     5,     7,     7 },
+          new int[] {    1,     0,     1,     0,     1,     0 });
+  }
+
+  public void testShinglesSpanningGraphs() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(
+        new Token("b", 0, 1),
+        new Token("a", 0, 0, 1),
+        new Token("c", 2, 3),
+        new Token("b", 4, 5),
+        new Token("a", 0, 4, 5),
+        new Token("d", 6, 7)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 3),
+          new String[] { "b c b", "b c a", "a c b", "a c a", "c b d", "c a d" },
+          new int[] {    0,        0,      0,       0,       2,        2,     },
+          new int[] {    5,        5,      5,       5,       7,        7,     },
+          new int[] {    1,        0,      0,       0,       1,        0,     });
+  }
+
+  public void testParameterLimits() {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+      new FixedShingleFilter(new CannedTokenStream(), 1);
+    });
+    assertEquals("Shingle size must be between 2 and 4, got 1", e.getMessage());
+    IllegalArgumentException e2 = expectThrows(IllegalArgumentException.class, () -> {
+      new FixedShingleFilter(new CannedTokenStream(), 5);
+    });
+    assertEquals("Shingle size must be between 2 and 4, got 5", e2.getMessage());
+  }
+
+  public void testShingleCountLimits() {
+
+    Token[] tokens = new Token[5000];
+    tokens[0] = new Token("term", 1, 0, 1);
+    tokens[1] = new Token("term1", 1, 2, 3);
+    for (int i = 2; i < 5000; i++) {
+      tokens[i] = new Token("term" + i, 0, 2, 3);
+    }
+
+    Exception e = expectThrows(IllegalStateException.class, () -> {
+      TokenStream ts = new FixedShingleFilter(new CannedTokenStream(tokens), 2);
+      ts.reset();
+      while (ts.incrementToken()) {}
+    });
+    assertEquals("Too many shingles (> 1000) at term [term]", e.getMessage());
+  }
+
+}

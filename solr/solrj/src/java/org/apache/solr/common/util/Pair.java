@@ -18,6 +18,7 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
@@ -63,6 +64,10 @@ public class Pair<T1, T2> implements Serializable, MapWriter {
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put("first", first);
     ew.put("second", second);
+  }
+
+  public static Pair parse(Map m) {
+    return new Pair(m.get("first"), m.get("second"));
   }
 
 }

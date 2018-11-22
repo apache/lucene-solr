@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12386") // "Can't find resource"
 public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -89,7 +90,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     // that this test wouldn't spuriously fail more than once a year. If that's true users should never see
     // an issue in the wild unless they are doing something we probably don't want to support anyway
 
-    final CreateRoutedAliasThread[] threads = new CreateRoutedAliasThread[50];
+    final CreateRoutedAliasThread[] threads = new CreateRoutedAliasThread[4];
     int numStart = num;
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAlias" + num;

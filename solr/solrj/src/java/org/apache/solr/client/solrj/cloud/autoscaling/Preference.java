@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +45,7 @@ public class Preference implements MapWriter {
 
   public Preference(Map<String, Object> m, int idx) {
     this.idx = idx;
-    this.original = Utils.getDeepCopy(m,3);
+    this.original = Utils.getDeepCopy(m, 3);
     sort = Policy.Sort.get(m);
     name = Policy.SortParam.get(m.get(sort.name()).toString());
     Object p = m.getOrDefault("precision", 0);
@@ -52,9 +53,9 @@ public class Preference implements MapWriter {
     if (precision < 0) {
       throw new RuntimeException("precision must be a positive value ");
     }
-    if(precision< name.min || precision> name.max){
+    if (precision < name.min || precision > name.max) {
       throw new RuntimeException(StrUtils.formatString("invalid precision value {0} , must lie between {1} and {2}",
-          precision, name.min, name.max ) );
+          precision, name.min, name.max));
     }
 
   }
@@ -63,18 +64,26 @@ public class Preference implements MapWriter {
   // recursive, it uses the precision to tie & when there is a tie use the next preference to compare
   // in non-recursive mode, precision is not taken into consideration and sort is done on actual value
   int compare(Row r1, Row r2, boolean useApprox) {
-    if (!r1.isLive && !r2.isLive) return 0;
-    if (!r1.isLive) return -1;
-    if (!r2.isLive) return 1;
     Object o1 = useApprox ? r1.cells[idx].approxVal : r1.cells[idx].val;
     Object o2 = useApprox ? r2.cells[idx].approxVal : r2.cells[idx].val;
     int result = 0;
     if (o1 instanceof Long && o2 instanceof Long) result = ((Long) o1).compareTo((Long) o2);
-    else if (o1 instanceof Double && o2 instanceof Double) result = ((Double) o1).compareTo((Double) o2);
-    else if (!o1.getClass().getName().equals(o2.getClass().getName()))  {
+    else if (o1 instanceof Double && o2 instanceof Double) {
+      result = compareWithTolerance((Double) o1, (Double) o2, useApprox ? 1 : 1);
+    } else if (!o1.getClass().getName().equals(o2.getClass().getName())) {
       throw new RuntimeException("Unable to compare " + o1 + " of type: " + o1.getClass().getName() + " from " + r1.cells[idx].toString() + " and " + o2 + " of type: " + o2.getClass().getName() + " from " + r2.cells[idx].toString());
     }
-    return result == 0 ? (next == null ? 0 : next.compare(r1, r2, useApprox)) : sort.sortval * result;
+    return result == 0 ?
+        (next == null ? 0 :
+            next.compare(r1, r2, useApprox)) : sort.sortval * result;
+  }
+
+  static int compareWithTolerance(Double o1, Double o2, int percentage) {
+    if (percentage == 0) return o1.compareTo(o2);
+    if (o1.equals(o2)) return 0;
+    double delta = Math.abs(o1 - o2);
+    if ((100 * delta / o1) < percentage) return 0;
+    return o1.compareTo(o2);
   }
 
   //sets the new value according to precision in val_
@@ -84,10 +93,17 @@ public class Preference implements MapWriter {
       if (!row.isLive) {
         continue;
       }
-      prevVal = row.cells[idx].approxVal =
-          (prevVal == null || Double.compare(Math.abs(((Number) prevVal).doubleValue() - ((Number) row.cells[idx].val).doubleValue()), precision) > 0) ?
-              row.cells[idx].val :
-              prevVal;
+      if (prevVal == null) {//this is the first
+        prevVal = row.cells[idx].approxVal = row.cells[idx].val;
+      } else {
+        double prevD = ((Number) prevVal).doubleValue();
+        double currD = ((Number) row.cells[idx].val).doubleValue();
+        if (Math.abs(prevD - currD) >= precision) {
+          prevVal = row.cells[idx].approxVal = row.cells[idx].val;
+        } else {
+          prevVal = row.cells[idx].approxVal = prevVal;
+        }
+      }
     }
   }
 
@@ -121,5 +137,12 @@ public class Preference implements MapWriter {
   @Override
   public String toString() {
     return Utils.toJSONString(this);
+  }
+
+  /**
+   * @return an unmodifiable copy of the original map from which this object was constructed
+   */
+  public Map getOriginal() {
+    return Collections.unmodifiableMap(original);
   }
 }

@@ -19,8 +19,8 @@ package org.apache.solr.response.transform;
 import java.io.IOException;
 
 import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.WriteableValue;
+import org.apache.solr.common.util.TextWriter;
+import org.apache.solr.common.util.WriteableValue;
 import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.shape.Shape;
 
@@ -44,7 +44,7 @@ public class WriteableGeoJSON extends WriteableValue {
   }
 
   @Override
-  public void write(String name, TextResponseWriter writer) throws IOException {
+  public void write(String name, TextWriter writer) throws IOException {
     jsonWriter.write(writer.getWriter(), shape);
   }
 

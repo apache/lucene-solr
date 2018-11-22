@@ -191,11 +191,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          int docID = approximation.docID();
-          if (docID > values.docID()) {
-            values.advance(docID);
-          }
-          if (docID == values.docID()) {
+          if (values.advanceExact(approximation.docID())) {
             final long segmentOrd = values.ordValue();
             final int globalOrd = (int) segmentOrdToGlobalOrdLookup.get(segmentOrd);
             if (collector.match(globalOrd)) {
@@ -229,11 +225,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          int docID = approximation.docID();
-          if (docID > values.docID()) {
-            values.advance(docID);
-          }
-          if (docID == values.docID()) {
+          if (values.advanceExact(approximation.docID())) {
             final int segmentOrd = values.ordValue();
             if (collector.match(segmentOrd)) {
               score = collector.score(segmentOrd);

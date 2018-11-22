@@ -53,8 +53,8 @@ public class TestOriginalScoreFeature extends TestRerankBase {
 
   @Test
   public void testOriginalScore() throws Exception {
-    loadFeature("score", OriginalScoreFeature.class.getCanonicalName(), "{}");
-    loadModel("originalScore", LinearModel.class.getCanonicalName(),
+    loadFeature("score", OriginalScoreFeature.class.getName(), "{}");
+    loadModel("originalScore", LinearModel.class.getName(),
         new String[] {"score"}, "{\"weights\":{\"score\":1.0}}");
 
     implTestOriginalScoreResponseDocsCheck("originalScore", "score", null, null);
@@ -62,12 +62,12 @@ public class TestOriginalScoreFeature extends TestRerankBase {
 
   @Test
   public void testOriginalScoreWithNonScoringFeatures() throws Exception {
-    loadFeature("origScore", OriginalScoreFeature.class.getCanonicalName(),
+    loadFeature("origScore", OriginalScoreFeature.class.getName(),
         "store2", "{}");
-    loadFeature("c2", ValueFeature.class.getCanonicalName(), "store2",
+    loadFeature("c2", ValueFeature.class.getName(), "store2",
         "{\"value\":2.0}");
 
-    loadModel("origScore", LinearModel.class.getCanonicalName(),
+    loadModel("origScore", LinearModel.class.getName(),
         new String[] {"origScore"}, "store2",
         "{\"weights\":{\"origScore\":1.0}}");
 

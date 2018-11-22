@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import com.google.common.base.Strings;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -27,13 +28,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.JavaBinCodec.ObjectResolver;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TextWriter;
+import org.apache.solr.common.util.WriteableValue;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.WriteableValue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
 
 /**
  * @since solr 5.2
@@ -86,12 +86,13 @@ public class RawValueTransformerFactory extends TransformerFactory
       return new RawTransformer( field, display, indent );
     }
     
-    if(field.equals(display)) {
-      return null; // nothing
+    if (field.equals(display)) {
+      // we have to ensure the field is returned
+      return new DocTransformer.NoopFieldTransformer(field);
     }
     return new RenameFieldTransformer( field, display, false );
   }
-
+  
   static class RawTransformer extends DocTransformer
   {
     final String field;
@@ -148,7 +149,7 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
     
     @Override
-    public void write(String name, TextResponseWriter writer) throws IOException {
+    public void write(String name, TextWriter writer) throws IOException {
       String str = null;
       if(val instanceof IndexableField) { // delays holding it in memory
         str = ((IndexableField)val).stringValue();

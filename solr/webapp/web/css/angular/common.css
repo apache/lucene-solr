@@ -24,7 +24,7 @@ limitations under the License.
   padding: 0;
 }
 
-body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td
+body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td, div.ui-tooltip-content
 {
   color: #333;
   font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
@@ -342,7 +342,7 @@ ul
 
 .header-message p
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
   padding-top: 0;
 }
 
@@ -587,12 +587,12 @@ pre.syntax .tex .formula
   opacity: 0.5;
 }
 
-#content .tree li, 
+#content .tree li,
 #content .tree ins
 {
   background-color: transparent;
   background-image: url( ../../img/tree.png );
-  background-repeat: no-repeat; 
+  background-repeat: no-repeat;
 }
 
 #content .tree li
@@ -717,7 +717,7 @@ pre.syntax .tex .formula
   box-shadow: 1px 1px 0 #f0f0f0;
   -moz-box-shadow: 1px 1px 0 #f0f0f0;
   -webkit-box-shadow: 1px 1px 0 #f0f0f0;
-  color: #c0c0c0;
+  color: #4D4D4D;
   display: block;
   overflow: hidden;
   padding: 5px;
@@ -765,4 +765,3 @@ pre.syntax .tex .formula
 .other-ui-link a.ul {
   text-decoration: underline;
 }
-

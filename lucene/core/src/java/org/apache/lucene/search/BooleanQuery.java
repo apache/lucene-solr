@@ -183,6 +183,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   private BooleanQuery rewriteNoScoring() {
+    if (clauseSets.get(Occur.MUST).size() == 0) {
+      return this;
+    }
     BooleanQuery.Builder newQuery = new BooleanQuery.Builder();
     newQuery.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
     for (BooleanClause clause : clauses) {

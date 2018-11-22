@@ -18,6 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,9 +37,8 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.QueryContext;
-import org.apache.solr.search.SyntaxError;
-import org.apache.solr.util.RTimer;
-import org.noggit.JSONUtil;
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 
 public class FacetModule extends SearchComponent {
@@ -96,13 +96,7 @@ public class FacetModule extends SearchComponent {
     rb.setNeedDocSet(true);
 
     // Parse the facet in the prepare phase?
-    FacetParser parser = new FacetTopParser(rb.req);
-    FacetRequest facetRequest = null;
-    try {
-      facetRequest = parser.parse(jsonFacet);
-    } catch (SyntaxError syntaxError) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-    }
+    FacetRequest facetRequest = FacetRequest.parse(rb.req, jsonFacet);
 
     FacetComponentState fcState = new FacetComponentState();
     fcState.rb = rb;
@@ -136,28 +130,15 @@ public class FacetModule extends SearchComponent {
         fcontext.flags |= FacetContext.SKIP_FACET; // the root bucket should have been received from all shards previously
       }
     }
-
-    FacetProcessor fproc = facetState.facetRequest.createFacetProcessor(fcontext);
     if (rb.isDebug()) {
       FacetDebugInfo fdebug = new FacetDebugInfo();
       fcontext.setDebugInfo(fdebug);
-      fdebug.setReqDescription(facetState.facetRequest.getFacetDescription());
-      fdebug.setProcessor(fproc.getClass().getSimpleName());
-     
-      final RTimer timer = new RTimer();
-      fproc.process();
-      long timeElapsed = (long) timer.getTime();
-      fdebug.setElapse(timeElapsed);
-      fdebug.putInfoItem("domainSize", (long)fcontext.base.size());
       rb.req.getContext().put("FacetDebugInfo", fdebug);
-    } else {
-      fproc.process();
     }
-    
-    rb.rsp.add("facets", fproc.getResponse());
+
+    final Object results = facetState.facetRequest.process(fcontext);
+    rb.rsp.add("facets", results);
   }
-
-
 
 
   private void clearFaceting(List<ShardRequest> outgoing) {
@@ -234,7 +215,23 @@ public class FacetModule extends SearchComponent {
 
       Map<String,Object> finfo = new HashMap<>(1);
       finfo.put(FACET_REFINE, refinement);
-      String finfoStr = JSONUtil.toJSON(finfo, -1);
+
+      // String finfoStr = JSONUtil.toJSON(finfo, -1);  // this doesn't handle formatting of Date objects the way we want
+      CharArr out = new CharArr();
+      JSONWriter jsonWriter = new JSONWriter(out, -1) {
+        @Override
+        public void handleUnknownClass(Object o) {
+          // handle date formatting correctly
+          if (o instanceof Date) {
+            String s = ((Date)o).toInstant().toString();
+            writeString(s);
+            return;
+          }
+          super.handleUnknownClass(o);
+        }
+      };
+      jsonWriter.write(finfo);
+      String finfoStr = out.toString();
       // System.err.println("##################### REFINE=" + finfoStr);
       shardsRefineRequest.params.add(FACET_INFO, finfoStr);
 
@@ -289,6 +286,7 @@ public class FacetModule extends SearchComponent {
         return;
       }
 
+      // System.err.println("MERGING FACET RESULT FROM SHARD = " + facet);
       facetState.mcontext.root = facet;
       facetState.mcontext.newShard(shardRsp.getShard());
       facetState.merger.merge(facet , facetState.mcontext);

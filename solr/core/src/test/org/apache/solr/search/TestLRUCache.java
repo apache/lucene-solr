@@ -101,7 +101,7 @@ public class TestLRUCache extends LuceneTestCase {
   @SuppressWarnings("unchecked")
   public void testNoAutowarm() throws IOException {
     LRUCache<Object, Object> lruCache = new LRUCache<>();
-    lruCache.initializeMetrics(metricManager, registry, scope);
+    lruCache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
@@ -131,7 +131,7 @@ public class TestLRUCache extends LuceneTestCase {
 
   public void testMaxRamSize() throws Exception {
     LRUCache<String, Accountable> accountableLRUCache = new LRUCache<>();
-    accountableLRUCache.initializeMetrics(metricManager, registry, scope);
+    accountableLRUCache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "5");
     params.put("maxRamMB", "1");
@@ -182,11 +182,8 @@ public class TestLRUCache extends LuceneTestCase {
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = cache.init(params, null, cr);
 
-    try {
-      cache.put("1", "1");
-      fail("Adding a non-accountable value to a cache configured with maxRamBytes should have failed");
-    } catch (Exception e) {
-      assertEquals(e.getClass(), SolrException.class);
-    }
+    expectThrows(SolrException.class, "Adding a non-accountable value to a cache configured with maxRamBytes should have failed",
+        () -> cache.put("1", "1")
+    );
   }
 }

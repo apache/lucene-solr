@@ -43,6 +43,7 @@ public abstract class SpatialPrefixTreeFactory {
    * If it's neither of these, then "geohash" is chosen for a geo context, otherwise "quad" is chosen.
    */
   public static SpatialPrefixTree makeSPT(Map<String,String> args, ClassLoader classLoader, SpatialContext ctx) {
+    //TODO refactor to use Java SPI like how Lucene already does for codecs/postingsFormats, etc
     SpatialPrefixTreeFactory instance;
     String cname = args.get(PREFIX_TREE);
     if (cname == null)
@@ -53,6 +54,8 @@ public abstract class SpatialPrefixTreeFactory {
       instance = new QuadPrefixTree.Factory();
     else if ("packedQuad".equalsIgnoreCase(cname))
       instance = new PackedQuadPrefixTree.Factory();
+    else if ("s2".equalsIgnoreCase(cname))
+      instance = new S2PrefixTree.Factory();
     else {
       try {
         Class<?> c = classLoader.loadClass(cname);

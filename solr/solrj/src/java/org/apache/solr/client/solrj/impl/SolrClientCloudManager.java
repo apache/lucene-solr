@@ -38,9 +38,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.NodeStateProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 public class SolrClientCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudSolrClient solrClient;
+  protected final CloudSolrClient solrClient;
   private final ZkDistribStateManager stateManager;
   private final DistributedQueueFactory queueFactory;
   private final ZkStateReader zkStateReader;

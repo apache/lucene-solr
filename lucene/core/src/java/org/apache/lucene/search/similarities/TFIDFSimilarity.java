@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -500,10 +501,13 @@ public abstract class TFIDFSimilarity extends Similarity {
   @Override
   public final long computeNorm(FieldInvertState state) {
     final int numTerms;
-    if (discountOverlaps)
+    if (state.getIndexOptions() == IndexOptions.DOCS && state.getIndexCreatedVersionMajor() >= 8) {
+      numTerms = state.getUniqueTermCount();
+    } else if (discountOverlaps) {
       numTerms = state.getLength() - state.getNumOverlap();
-    else
+    } else {
       numTerms = state.getLength();
+    }
     return SmallFloat.intToByte4(numTerms);
   }
 
@@ -519,7 +523,7 @@ public abstract class TFIDFSimilarity extends Similarity {
       normTable[i] = norm;
     }
     normTable[0] = 1f / normTable[255];
-    return new TFIDFScorer(collectionStats.field(), boost, idf, normTable);
+    return new TFIDFScorer(boost, idf, normTable);
   }
 
   
@@ -532,8 +536,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     private final float queryWeight;
     final float[] normTable;
     
-    public TFIDFScorer(String field, float boost, Explanation idf, float[] normTable) {
-      super(field);
+    public TFIDFScorer(float boost, Explanation idf, float[] normTable) {
       // TODO: Validate?
       this.idf = idf;
       this.boost = boost;

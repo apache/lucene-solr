@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -24,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -33,16 +35,18 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
+import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -51,7 +55,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -83,6 +89,41 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "{}".getBytes(StandardCharsets.UTF_8), true);
   }
 
+  public void testCreateCollection() throws Exception  {
+    String commands =  "{ set-cluster-policy: [ {cores: '0', node: '#ANY'} ] }"; // disallow replica placement anywhere
+    cluster.getSolrClient().request(createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    String collectionName = "testCreateCollection";
+    HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class,
+        () -> CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient()));
+
+    assertTrue(exp.getMessage().contains("No node can satisfy the rules"));
+    assertTrue(exp.getMessage().contains("AutoScaling.error.diagnostics"));
+
+    // wait for a while until we don't see the collection
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
+    boolean removed = false;
+    while (! timeout.hasTimedOut()) {
+      timeout.sleep(100);
+      removed = !cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collectionName);
+      if (removed) {
+        timeout.sleep(500); // just a bit of time so it's more likely other
+        // readers see on return
+        break;
+      }
+    }
+    if (!removed) {
+      fail("Collection should have been deleted from cluster state but still exists: " + collectionName);
+    }
+
+    commands =  "{ set-cluster-policy: [ {cores: '<2', node: '#ANY'} ] }";
+    cluster.getSolrClient().request(createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
+    SolrClientCloudManager scm = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getSolrClient().getZkStateReader().getZkClient()), cluster.getSolrClient());
+    Policy.Session session = scm.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(scm);
+    System.out.println(Utils.writeJson(PolicyHelper.getDiagnostics(session), new StringWriter(), true).toString());
+
+  }
+
   public void testDataProviderPerReplicaDetails() throws Exception {
     CollectionAdminRequest.createCollection("perReplicaDataColl", "conf", 1, 5)
         .process(cluster.getSolrClient());
@@ -106,14 +147,30 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "  }" +
         "}";
     AutoScalingConfig config = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson));
+    AtomicInteger count = new AtomicInteger(0);
     SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient());
+    String nodeName = cloudManager.getClusterStateProvider().getLiveNodes().iterator().next();
+    SolrClientNodeStateProvider nodeStateProvider = (SolrClientNodeStateProvider) cloudManager.getNodeStateProvider();
+    Map<String, Map<String, List<ReplicaInfo>>> result = nodeStateProvider.getReplicaInfo(nodeName, Collections.singleton("UPDATE./update.requests"));
+    nodeStateProvider.forEachReplica(nodeName, replicaInfo -> {
+      if (replicaInfo.getVariables().containsKey("UPDATE./update.requests")) count.incrementAndGet();
+    });
+    assertTrue(count.get() > 0);
+
     Policy.Session session = config.getPolicy().createSession(cloudManager);
 
-    AtomicInteger count = new AtomicInteger(0);
-    for (Row row : session.getSorted()) {
+    for (Row row : session.getSortedNodes()) {
+      Object val = row.getVal(Type.TOTALDISK.tagName, null);
+      log.info("node: {} , totaldisk : {}, freedisk : {}", row.node, val, row.getVal("freedisk",null));
+      assertTrue(val != null);
+
+    }
+
+    count .set(0);
+    for (Row row : session.getSortedNodes()) {
       row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
         for (ReplicaInfo replicaInfo : replicaInfos) {
-          if (replicaInfo.getVariables().containsKey(Suggestion.ConditionType.CORE_IDX.tagName)) count.incrementAndGet();
+          if (replicaInfo.getVariables().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
         }
       }));
     }
@@ -223,16 +280,18 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     DocCollection collection = getCollectionState("metricsTest");
     DistributedQueueFactory queueFactory = new ZkDistributedQueueFactory(cluster.getZkClient());
-    SolrCloudManager provider = new SolrClientCloudManager(queueFactory, solrClient);
-    List<String> tags = Arrays.asList("metrics:solr.node:ADMIN./admin/authorization.clientErrors:count",
-        "metrics:solr.jvm:buffers.direct.Count");
-    Map<String, Object> val = provider.getNodeStateProvider().getNodeValues(collection .getReplicas().get(0).getNodeName(), tags);
-    for (String tag : tags) {
-      assertNotNull( "missing : "+ tag , val.get(tag));
+    try (SolrCloudManager provider = new SolrClientCloudManager(queueFactory, solrClient)) {
+      List<String> tags = Arrays.asList("metrics:solr.node:ADMIN./admin/authorization.clientErrors:count",
+          "metrics:solr.jvm:buffers.direct.Count");
+      Map<String, Object> val = provider.getNodeStateProvider().getNodeValues(collection.getReplicas().get(0).getNodeName(), tags);
+      for (String tag : tags) {
+        assertNotNull("missing : " + tag, val.get(tag));
+      }
+      val = provider.getNodeStateProvider().getNodeValues(collection.getReplicas().get(0).getNodeName(), Collections.singleton("diskType"));
+
+      Set<String> diskTypes = ImmutableSet.of("rotational", "ssd");
+      assertTrue(diskTypes.contains(val.get("diskType")));
     }
-    val = provider.getNodeStateProvider().getNodeValues(collection.getReplicas().get(0).getNodeName(), Collections.singleton("diskType"));
-    Set<String> diskTypes = ImmutableSet.of("rotational", "ssd");
-    assertTrue(diskTypes.contains(val.get("diskType")));
   }
 
   public void testCreateCollectionAddShardWithReplicaTypeUsingPolicy() throws Exception {
@@ -266,6 +325,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
+        .setMaxShardsPerNode(-1)
         .process(cluster.getSolrClient());
 
     DocCollection coll = getCollectionState("policiesTest");
@@ -325,42 +385,45 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     DocCollection rulesCollection = getCollectionState("policiesTest");
 
-    SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient());
-    Map<String, Object> val = cloudManager.getNodeStateProvider().getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
-        "freedisk",
-        "cores",
-        "heapUsage",
-        "sysLoadAvg"));
-    assertNotNull(val.get("freedisk"));
-    assertNotNull(val.get("heapUsage"));
-    assertNotNull(val.get("sysLoadAvg"));
-    assertTrue(((Number) val.get("cores")).intValue() > 0);
-    assertTrue("freedisk value is " + ((Number) val.get("freedisk")).doubleValue(),  Double.compare(((Number) val.get("freedisk")).doubleValue(), 0.0d) > 0);
-    assertTrue("heapUsage value is " + ((Number) val.get("heapUsage")).doubleValue(), Double.compare(((Number) val.get("heapUsage")).doubleValue(), 0.0d) > 0);
-    if (!Constants.WINDOWS)  {
-      // the system load average metrics is not available on windows platform
-      assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).doubleValue(), Double.compare(((Number) val.get("sysLoadAvg")).doubleValue(), 0.0d) > 0);
-    }
-    String overseerNode = OverseerTaskProcessor.getLeaderNode(cluster.getZkClient());
-    cluster.getSolrClient().request(CollectionAdminRequest.addRole(overseerNode, "overseer"));
-    for (int i = 0; i < 10; i++) {
-      Map<String, Object> data = Utils.getJson(cluster.getZkClient(), ZkStateReader.ROLES, true);
-      if (i >= 9 && data.isEmpty()) {
-        throw new RuntimeException("NO overseer node created");
+    try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient())) {
+      Map<String, Object> val = cloudManager.getNodeStateProvider().getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
+          "freedisk",
+          "cores",
+          "host",
+          "heapUsage",
+          "sysLoadAvg"));
+      assertNotNull(val.get("freedisk"));
+      assertNotNull(val.get("host"));
+      assertNotNull(val.get("heapUsage"));
+      assertNotNull(val.get("sysLoadAvg"));
+      assertTrue(((Number) val.get("cores")).intValue() > 0);
+      assertTrue("freedisk value is " + ((Number) val.get("freedisk")).doubleValue(), Double.compare(((Number) val.get("freedisk")).doubleValue(), 0.0d) > 0);
+      assertTrue("heapUsage value is " + ((Number) val.get("heapUsage")).doubleValue(), Double.compare(((Number) val.get("heapUsage")).doubleValue(), 0.0d) > 0);
+      if (!Constants.WINDOWS) {
+        // the system load average metrics is not available on windows platform
+        assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).doubleValue(), Double.compare(((Number) val.get("sysLoadAvg")).doubleValue(), 0.0d) > 0);
       }
-      Thread.sleep(100);
+      String overseerNode = OverseerTaskProcessor.getLeaderNode(cluster.getZkClient());
+      cluster.getSolrClient().request(CollectionAdminRequest.addRole(overseerNode, "overseer"));
+      for (int i = 0; i < 10; i++) {
+        Map<String, Object> data = Utils.getJson(cluster.getZkClient(), ZkStateReader.ROLES, true);
+        if (i >= 9 && data.isEmpty()) {
+          throw new RuntimeException("NO overseer node created");
+        }
+        Thread.sleep(100);
+      }
+      val = cloudManager.getNodeStateProvider().getNodeValues(overseerNode, Arrays.asList(
+          "nodeRole",
+          "ip_1", "ip_2", "ip_3", "ip_4",
+          "sysprop.java.version",
+          "sysprop.java.vendor"));
+      assertEquals("overseer", val.get("nodeRole"));
+      assertNotNull(val.get("ip_1"));
+      assertNotNull(val.get("ip_2"));
+      assertNotNull(val.get("ip_3"));
+      assertNotNull(val.get("ip_4"));
+      assertNotNull(val.get("sysprop.java.version"));
+      assertNotNull(val.get("sysprop.java.vendor"));
     }
-    val = cloudManager.getNodeStateProvider().getNodeValues(overseerNode, Arrays.asList(
-        "nodeRole",
-        "ip_1", "ip_2", "ip_3", "ip_4",
-        "sysprop.java.version",
-        "sysprop.java.vendor"));
-    assertEquals("overseer", val.get("nodeRole"));
-    assertNotNull(val.get("ip_1"));
-    assertNotNull(val.get("ip_2"));
-    assertNotNull(val.get("ip_3"));
-    assertNotNull(val.get("ip_4"));
-    assertNotNull(val.get("sysprop.java.version"));
-    assertNotNull(val.get("sysprop.java.vendor"));
   }
 }

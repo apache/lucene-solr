@@ -125,16 +125,27 @@ public class ClusterState implements JSONWriter.Writable {
 
   /**
    * Returns the corresponding {@link DocCollection} object for the given collection name
+   * if such a collection exists. Returns null otherwise.  Equivalent to getCollectionOrNull(collectionName, false)
+   */
+  public DocCollection getCollectionOrNull(String collectionName) {
+    return getCollectionOrNull(collectionName, false);
+  }
+
+  /**
+   * Returns the corresponding {@link DocCollection} object for the given collection name
    * if such a collection exists. Returns null otherwise.
+   *
+   * @param collectionName Name of the collection
+   * @param allowCached allow LazyCollectionRefs to use a time-based cached value
    *
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which may make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
    * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
-  public DocCollection getCollectionOrNull(String collectionName) {
+  public DocCollection getCollectionOrNull(String collectionName, boolean allowCached) {
     CollectionRef ref = collectionStates.get(collectionName);
-    return ref == null ? null : ref.get();
+    return ref == null ? null : ref.get(allowCached);
   }
 
   /**
@@ -368,7 +379,18 @@ public class ClusterState implements JSONWriter.Writable {
       this.coll = coll;
     }
 
+    /** Return the DocCollection, always refetching if lazy. Equivalent to get(false)
+     * @return The collection state modeled in zookeeper
+     */
     public DocCollection get(){
+      return get(false);
+    }
+
+    /** Return the DocCollection
+     * @param allowCached Determines if cached value can be used.  Applies only to LazyCollectionRef.
+     * @return The collection state modeled in zookeeper
+     */
+    public DocCollection get(boolean allowCached) {
       gets.incrementAndGet();
       return coll;
     }

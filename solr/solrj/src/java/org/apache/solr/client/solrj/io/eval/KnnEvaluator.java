@@ -22,52 +22,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
-import org.apache.commons.math3.ml.distance.CanberraDistance;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
-import org.apache.commons.math3.ml.distance.EarthMoversDistance;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
-import org.apache.commons.math3.ml.distance.ManhattanDistance;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  private DistanceMeasure distanceMeasure;
-
   public KnnEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-
-    DistanceEvaluator.DistanceType type = null;
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    if(namedParams.size() > 0) {
-      if (namedParams.size() > 1) {
-        throw new IOException("distance function expects only one named parameter 'distance'.");
-      }
-
-      StreamExpressionNamedParameter namedParameter = namedParams.get(0);
-      String name = namedParameter.getName();
-      if (!name.equalsIgnoreCase("distance")) {
-        throw new IOException("distance function expects only one named parameter 'distance'.");
-      }
-
-      String typeParam = namedParameter.getParameter().toString().trim();
-      type= DistanceEvaluator.DistanceType.valueOf(typeParam);
-    } else {
-      type = DistanceEvaluator.DistanceType.euclidean;
-    }
-
-    if (type.equals(DistanceEvaluator.DistanceType.euclidean)) {
-      distanceMeasure = new EuclideanDistance();
-    } else if (type.equals(DistanceEvaluator.DistanceType.manhattan)) {
-      distanceMeasure = new ManhattanDistance();
-    } else if (type.equals(DistanceEvaluator.DistanceType.canberra)) {
-      distanceMeasure = new CanberraDistance();
-    } else if (type.equals(DistanceEvaluator.DistanceType.earthMovers)) {
-      distanceMeasure = new EarthMoversDistance();
-    }
-
   }
 
   @Override
@@ -103,8 +67,23 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
       throw new IOException("The third parameter for knn should be k.");
     }
 
-    double[][] data = matrix.getData();
+    DistanceMeasure distanceMeasure = null;
 
+    if(values.length == 4) {
+      distanceMeasure = (DistanceMeasure)values[3];
+    } else {
+      distanceMeasure = new EuclideanDistance();
+    }
+
+    return search(matrix, vec, k, distanceMeasure);
+  }
+
+  public static Matrix search(Matrix observations,
+                              double[] vec,
+                              int k,
+                              DistanceMeasure distanceMeasure) {
+
+    double[][] data = observations.getData();
     TreeSet<Neighbor> neighbors = new TreeSet();
     for(int i=0; i<data.length; i++) {
       double distance = distanceMeasure.compute(vec, data[i]);
@@ -115,8 +94,9 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
     }
 
     double[][] out = new double[neighbors.size()][];
-    List<String> rowLabels = matrix.getRowLabels();
+    List<String> rowLabels = observations.getRowLabels();
     List<String> newRowLabels = new ArrayList();
+    List<Number> indexes = new ArrayList();
     List<Number> distances = new ArrayList();
     int i=-1;
 
@@ -130,6 +110,7 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
 
       out[++i] = data[rowIndex];
       distances.add(neighbor.getDistance());
+      indexes.add(rowIndex);
     }
 
     Matrix knn = new Matrix(out);
@@ -138,8 +119,9 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
       knn.setRowLabels(newRowLabels);
     }
 
-    knn.setColumnLabels(matrix.getColumnLabels());
+    knn.setColumnLabels(observations.getColumnLabels());
     knn.setAttribute("distances", distances);
+    knn.setAttribute("indexes", indexes);
     return knn;
   }
 
@@ -162,9 +144,12 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
     }
 
     public int compareTo(Neighbor neighbor) {
+      if(this.distance.compareTo(neighbor.getDistance()) == 0) {
+        return row-neighbor.getRow();
+      }
+
       return this.distance.compareTo(neighbor.getDistance());
     }
   }
-
 }
 

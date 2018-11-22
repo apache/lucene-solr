@@ -190,8 +190,8 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.8 compiler was used to build release bits:
       'X-Compile-Source-JDK: 8',
-      # Make sure 1.8 or 1.9 ant was used to build release bits: (this will match 1.8.x, 1.9.x)
-      ('Ant-Version: Apache Ant 1.8', 'Ant-Version: Apache Ant 1.9'),
+      # Make sure 1.8, 1.9 or 1.10 ant was used to build release bits: (this will match 1.8.x, 1.9.x, 1.10.x)
+      ('Ant-Version: Apache Ant 1.8', 'Ant-Version: Apache Ant 1.9', 'Ant-Version: Apache Ant 1.10'),
       # Make sure .class files are 1.8 format:
       'X-Compile-Target-JDK: 8',
       'Specification-Version: %s' % version,
@@ -285,23 +285,22 @@ def checkAllJARs(topDir, project, gitRevision, version, tmpDir, baseURL):
                                % (fullPath, luceneDistFilenames[jarFilename]))
 
 
-def checkSigs(project, urlString, version, tmpDir, isSigned):
+def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
 
   print('  test basics...')
   ents = getDirEntries(urlString)
   artifact = None
-  keysURL = None
   changesURL = None
   mavenURL = None
   expectedSigs = []
   if isSigned:
     expectedSigs.append('asc')
-  expectedSigs.extend(['md5', 'sha1'])
-  
+  expectedSigs.extend(['sha512'])
+
   artifacts = []
   for text, subURL in ents:
     if text == 'KEYS':
-      keysURL = subURL
+      raise RuntimeError('%s: release dir should not contain a KEYS file - only toplevel /dist/lucene/KEYS is used' % project)
     elif text == 'maven/':
       mavenURL = subURL
     elif text.startswith('changes'):
@@ -345,15 +344,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   actual = [x[0] for x in artifacts]
   if expected != actual:
     raise RuntimeError('%s: wrong artifacts: expected %s but got %s' % (project, expected, actual))
-                
-  if keysURL is None:
-    raise RuntimeError('%s is missing KEYS' % project)
-
-  print('  get KEYS')
-  download('%s.KEYS' % project, keysURL, tmpDir)
-
-  keysFile = '%s/%s.KEYS' % (tmpDir, project)
-
+  
   # Set up clean gpg world; import keys file:
   gpgHomeDir = '%s/%s.gpg' % (tmpDir, project)
   if os.path.exists(gpgHomeDir):
@@ -547,31 +538,22 @@ def run(command, logFile):
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
     
 def verifyDigests(artifact, urlString, tmpDir):
-  print('    verify md5/sha1 digests')
-  md5Expected, t = load(urlString + '.md5').strip().split()
+  print('    verify sha512 digest')
+  sha512Expected, t = load(urlString + '.sha512').strip().split()
   if t != '*'+artifact:
-    raise RuntimeError('MD5 %s.md5 lists artifact %s but expected *%s' % (urlString, t, artifact))
+    raise RuntimeError('SHA512 %s.sha512 lists artifact %s but expected *%s' % (urlString, t, artifact))
   
-  sha1Expected, t = load(urlString + '.sha1').strip().split()
-  if t != '*'+artifact:
-    raise RuntimeError('SHA1 %s.sha1 lists artifact %s but expected *%s' % (urlString, t, artifact))
-  
-  m = hashlib.md5()
-  s = hashlib.sha1()
+  s512 = hashlib.sha512()
   f = open('%s/%s' % (tmpDir, artifact), 'rb')
   while True:
     x = f.read(65536)
     if len(x) == 0:
       break
-    m.update(x)
-    s.update(x)
+    s512.update(x)
   f.close()
-  md5Actual = m.hexdigest()
-  sha1Actual = s.hexdigest()
-  if md5Actual != md5Expected:
-    raise RuntimeError('MD5 digest mismatch for %s: expected %s but got %s' % (artifact, md5Expected, md5Actual))
-  if sha1Actual != sha1Expected:
-    raise RuntimeError('SHA1 digest mismatch for %s: expected %s but got %s' % (artifact, sha1Expected, sha1Actual))
+  sha512Actual = s512.hexdigest()
+  if sha512Actual != sha512Expected:
+    raise RuntimeError('SHA512 digest mismatch for %s: expected %s but got %s' % (artifact, sha512Expected, sha512Actual))
 
 def getDirEntries(urlString):
   if urlString.startswith('file:/') and not urlString.startswith('file://'):
@@ -726,6 +708,16 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       java.run_java8('ant javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/build/docs' % unpackPath)
 
+      if java.run_java9:
+        print("    run tests w/ Java 9 and testArgs='%s'..." % testArgs)
+        java.run_java9('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
+        java.run_java9('ant jar', '%s/compile.log' % unpackPath)
+        testDemo(java.run_java9, isSrc, version, '9')
+
+        #print('    generate javadocs w/ Java 9...')
+        #java.run_java9('ant javadocs', '%s/javadocs.log' % unpackPath)
+        #checkJavadocpathFull('%s/build/docs' % unpackPath)
+
     else:
       os.chdir('solr')
 
@@ -741,6 +733,18 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       java.run_java8('ant clean server', '%s/antexample.log' % unpackPath)
       testSolrExample(unpackPath, java.java8_home, True)
 
+      if java.run_java9:
+        print("    run tests w/ Java 9 and testArgs='%s'..." % testArgs)
+        java.run_java9('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
+
+        #print('    generate javadocs w/ Java 9...')
+        #java.run_java9('ant clean javadocs', '%s/javadocs.log' % unpackPath)
+        #checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+
+        print('    test solr example w/ Java 9...')
+        java.run_java9('ant clean server', '%s/antexample.log' % unpackPath)
+        testSolrExample(unpackPath, java.java9_home, True)
+
       os.chdir('..')
       print('    check NOTICE')
       testNotice(unpackPath)
@@ -751,6 +755,8 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
     if project == 'lucene':
       testDemo(java.run_java8, isSrc, version, '1.8')
+      if java.run_java9:
+        testDemo(java.run_java9, isSrc, version, '9')
 
       print('    check Lucene\'s javadoc JAR')
       checkJavadocpath('%s/docs' % unpackPath)
@@ -764,6 +770,16 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       os.chdir(java8UnpackPath)
       print('    test solr example w/ Java 8...')
       testSolrExample(java8UnpackPath, java.java8_home, False)
+
+      if java.run_java9:
+        print('    copying unpacked distribution for Java 9 ...')
+        java9UnpackPath = '%s-java9' % unpackPath
+        if os.path.exists(java9UnpackPath):
+          shutil.rmtree(java9UnpackPath)
+        shutil.copytree(unpackPath, java9UnpackPath)
+        os.chdir(java9UnpackPath)
+        print('    test solr example w/ Java 9...')
+        testSolrExample(java9UnpackPath, java.java9_home, False)
 
       os.chdir(unpackPath)
 
@@ -943,7 +959,7 @@ def testDemo(run_java, isSrc, version, jdk):
 def removeTrailingZeros(version):
   return re.sub(r'(\.0)*$', '', version)
 
-def checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned):
+def checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
   POMtemplates = defaultdict()
   getPOMtemplates(solrSrcUnpackPath, POMtemplates, tmpDir)
   print('    download artifacts')
@@ -961,7 +977,7 @@ def checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigne
   checkJavadocAndSourceArtifacts(artifacts, version)
   verifyDeployedPOMsCoordinates(artifacts, version)
   if isSigned:
-    verifyMavenSigs(baseURL, tmpDir, artifacts)
+    verifyMavenSigs(baseURL, tmpDir, artifacts, keysFile)
 
   distFiles = getBinaryDistFilesForMavenChecks(tmpDir, version, baseURL)
   checkIdenticalMavenArtifacts(distFiles, artifacts, version)
@@ -1083,13 +1099,9 @@ def getPOMcoordinate(treeRoot):
   packaging = 'jar' if packaging is None else packaging.text.strip()
   return groupId, artifactId, packaging, version
 
-def verifyMavenSigs(baseURL, tmpDir, artifacts):
+def verifyMavenSigs(baseURL, tmpDir, artifacts, keysFile):
   print('    verify maven artifact sigs', end=' ')
   for project in ('lucene', 'solr'):
-    keysFile = '%s/%s.KEYS' % (tmpDir, project)
-    if not os.path.exists(keysFile):
-      keysURL = '%s/%s/KEYS' % (baseURL, project)
-      download('%s.KEYS' % project, keysURL, tmpDir, quiet=True)
 
     # Set up clean gpg world; import keys file:
     gpgHomeDir = '%s/%s.gpg' % (tmpDir, project)
@@ -1218,7 +1230,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
-def make_java_config(parser, java8_home):
+def make_java_config(parser, java9_home):
   def _make_runner(java_home, version):
     print('Java %s JAVA_HOME=%s' % (version, java_home))
     if cygwin:
@@ -1227,7 +1239,7 @@ def make_java_config(parser, java8_home):
                  (java_home, java_home, java_home)
     s = subprocess.check_output('%s; java -version' % cmd_prefix,
                                 shell=True, stderr=subprocess.STDOUT).decode('utf-8')
-    if s.find(' version "%s.' % version) == -1:
+    if s.find(' version "%s' % version) == -1:
       parser.error('got wrong version for java %s:\n%s' % (version, s)) 
     def run_java(cmd, logfile):
       run('%s; %s' % (cmd_prefix, cmd), logfile)
@@ -1236,9 +1248,12 @@ def make_java_config(parser, java8_home):
   if java8_home is None:
     parser.error('JAVA_HOME must be set')
   run_java8 = _make_runner(java8_home, '1.8')
+  run_java9 = None
+  if java9_home is not None:
+    run_java9 = _make_runner(java9_home, '9')
 
-  jc = namedtuple('JavaConfig', 'run_java8 java8_home')
-  return jc(run_java8, java8_home)
+  jc = namedtuple('JavaConfig', 'run_java8 java8_home run_java9 java9_home')
+  return jc(run_java8, java8_home, run_java9, java9_home)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev([a-f\d]+)')
@@ -1254,12 +1269,14 @@ def parse_config():
                       help='Temporary directory to test inside, defaults to /tmp/smoke_lucene_$version_$revision')
   parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
                       help='Indicates the release is not signed')
+  parser.add_argument('--local-keys', metavar='PATH',
+                      help='Uses local KEYS file instead of fetching from https://archive.apache.org/dist/lucene/KEYS')
   parser.add_argument('--revision',
                       help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
                       help='Version of the release, defaults to that in URL')
-  parser.add_argument('--test-java8', metavar='JAVA8_HOME',
-                      help='Path to Java8 home directory, to run tests with if specified')
+  parser.add_argument('--test-java9', metavar='JAVA9_HOME',
+                      help='Path to Java9 home directory, to run tests with if specified')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to ant for testing, e.g. -Dwhat=ever.')
@@ -1281,7 +1298,10 @@ def parse_config():
     c.revision = revision_match.group(1)
     print('Revision: %s' % c.revision)
 
-  c.java = make_java_config(parser, c.test_java8)
+  if c.local_keys is not None and not os.path.exists(c.local_keys):
+    parser.error('Local KEYS file "%s" not found' % c.local_keys)
+
+  c.java = make_java_config(parser, c.test_java9)
 
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)
@@ -1425,11 +1445,14 @@ def main():
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
-  smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
+  smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args))
 
-def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
+def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs):
 
   startTime = datetime.datetime.now()
+
+  # disable flakey tests for smoke-tester runs:
+  testArgs = '-Dtests.badapples=false %s' % testArgs
   
   if FORCE_CLEAN:
     if os.path.exists(tmpDir):
@@ -1459,15 +1482,26 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
     raise RuntimeError('could not find solr subdir')
 
   print()
+  print('Get KEYS...')
+  if local_keys is not None:
+    print("    Using local KEYS file %s" % local_keys)
+    keysFile = local_keys
+  else:
+    keysFileURL = "https://archive.apache.org/dist/lucene/KEYS"
+    print("    Downloading online KEYS file %s" % keysFileURL)
+    download('KEYS', keysFileURL, tmpDir)
+    keysFile = '%s/KEYS' % (tmpDir)
+
+  print()
   print('Test Lucene...')
-  checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
+  checkSigs('lucene', lucenePath, version, tmpDir, isSigned, keysFile)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
     unpackAndVerify(java, 'lucene', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
   unpackAndVerify(java, 'lucene', tmpDir, 'lucene-%s-src.tgz' % version, gitRevision, version, testArgs, baseURL)
 
   print()
   print('Test Solr...')
-  checkSigs('solr', solrPath, version, tmpDir, isSigned)
+  checkSigs('solr', solrPath, version, tmpDir, isSigned, keysFile)
   for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
     unpackAndVerify(java, 'solr', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
   solrSrcUnpackPath = unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version,
@@ -1475,7 +1509,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
 
   print()
   print('Test Maven artifacts for Lucene and Solr...')
-  checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned)
+  checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned, keysFile)
 
   print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 

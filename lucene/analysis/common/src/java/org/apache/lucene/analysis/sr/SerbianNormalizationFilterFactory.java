@@ -21,8 +21,6 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -38,7 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre> 
  * @since 5.0.0
  */
-public class SerbianNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+public class SerbianNormalizationFilterFactory extends TokenFilterFactory {
   final String haircut;
 
   /** Creates a new SerbianNormalizationFilterFactory */
@@ -61,8 +59,7 @@ public class SerbianNormalizationFilterFactory extends TokenFilterFactory implem
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
-
 }

@@ -19,7 +19,7 @@ package org.apache.solr.search;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -87,8 +87,10 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private Map<K,V> map;
   private String description="LRU Cache";
   private MetricsMap cacheMap;
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
+  private SolrMetricManager metricManager;
+  private String registryName;
 
   private long maxRamBytes = Long.MAX_VALUE;
   // The synchronization used for the map will be used to update this,
@@ -306,9 +308,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     warmupTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
   }
 
-
   @Override
   public void close() {
+
   }
 
 
@@ -331,7 +333,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registryName;
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {
@@ -360,7 +364,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
         res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, true, scope, getCategory().toString());
+    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
 
   // for unit tests only

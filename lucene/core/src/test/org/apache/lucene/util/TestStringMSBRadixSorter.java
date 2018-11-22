@@ -21,7 +21,7 @@ import java.util.Arrays;
 public class TestStringMSBRadixSorter extends LuceneTestCase {
 
   private void test(BytesRef[] refs, int len) {
-    BytesRef[] expected = Arrays.copyOf(refs, len);
+    BytesRef[] expected = ArrayUtil.copyOfSubArray(refs, 0, len);
     Arrays.sort(expected);
 
     new StringMSBRadixSorter() {
@@ -38,7 +38,7 @@ public class TestStringMSBRadixSorter extends LuceneTestCase {
         refs[j] = tmp;
       }
     }.sort(0, len);
-    BytesRef[] actual = Arrays.copyOf(refs, len);
+    BytesRef[] actual = ArrayUtil.copyOfSubArray(refs, 0, len);
     assertArrayEquals(expected, actual);
   }
 

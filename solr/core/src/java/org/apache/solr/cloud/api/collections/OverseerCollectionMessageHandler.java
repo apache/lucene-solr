@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -36,11 +35,11 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -84,6 +83,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
@@ -104,6 +104,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -128,8 +131,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   public static final String REQUESTID = "requestid";
 
-  public static final String COLL_CONF = "collection.configName";
-
   public static final String COLL_PROP_PREFIX = "property.";
 
   public static final String ONLY_IF_DOWN = "onlyIfDown";
@@ -140,7 +141,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   static final String SKIP_CREATE_REPLICA_IN_CLUSTER_STATE = "skipCreateReplicaInClusterState";
 
-  public static final Map<String, Object> COLL_PROPS = Collections.unmodifiableMap(makeMap(
+  public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS = Collections.unmodifiableMap(makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       ZkStateReader.REPLICATION_FACTOR, "1",
       ZkStateReader.NRT_REPLICAS, "1",
@@ -150,7 +151,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       ZkStateReader.AUTO_ADD_REPLICAS, "false",
       DocCollection.RULE, null,
       POLICY, null,
-      SNITCH, null));
+      SNITCH, null,
+      WITH_COLLECTION, null,
+      COLOCATED_WITH, null));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -227,10 +230,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(RELOAD, this::reloadCollection)
         .put(DELETE, new DeleteCollectionCmd(this))
         .put(CREATEALIAS, new CreateAliasCmd(this))
-        .put(CREATEROUTEDALIAS, new CreateAliasCmd(this))
         .put(DELETEALIAS, new DeleteAliasCmd(this))
-        .put(MODIFYALIAS, new ModifyAliasCmd(this))
-        .put(ROUTEDALIAS_CREATECOLL, new RoutedAliasCreateCollectionCmd(this))
+        .put(ALIASPROP, new SetAliasPropCmd(this))
+        .put(MAINTAINROUTEDALIAS, new MaintainRoutedAliasCmd(this))
         .put(OVERSEERSTATUS, new OverseerStatusCmd(this))
         .put(DELETESHARD, new DeleteShardCmd(this))
         .put(DELETEREPLICA, new DeleteReplicaCmd(this))
@@ -244,6 +246,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   @Override
   @SuppressWarnings("unchecked")
   public SolrResponse processMessage(ZkNodeProps message, String operation) {
+    MDCLoggingContext.setCollection(message.getStr(COLLECTION));
+    MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
+    MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
     log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
 
     NamedList results = new NamedList();
@@ -370,39 +375,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     propMap.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
     propMap.putAll(message.getProperties());
     inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
-  }
-
-  /**
-   * Walks the tree of collection status to verify that any replicas not reporting a "down" status is
-   * on a live node, if any replicas reporting their status as "active" but the node is not live is
-   * marked as "down"; used by CLUSTERSTATUS.
-   * @param liveNodes List of currently live node names.
-   * @param collectionProps Map of collection status information pulled directly from ZooKeeper.
-   */
-
-  @SuppressWarnings("unchecked")
-  protected void crossCheckReplicaStateWithLiveNodes(List<String> liveNodes, NamedList<Object> collectionProps) {
-    Iterator<Map.Entry<String,Object>> colls = collectionProps.iterator();
-    while (colls.hasNext()) {
-      Map.Entry<String,Object> next = colls.next();
-      Map<String,Object> collMap = (Map<String,Object>)next.getValue();
-      Map<String,Object> shards = (Map<String,Object>)collMap.get("shards");
-      for (Object nextShard : shards.values()) {
-        Map<String,Object> shardMap = (Map<String,Object>)nextShard;
-        Map<String,Object> replicas = (Map<String,Object>)shardMap.get("replicas");
-        for (Object nextReplica : replicas.values()) {
-          Map<String,Object> replicaMap = (Map<String,Object>)nextReplica;
-          if (Replica.State.getState((String) replicaMap.get(ZkStateReader.STATE_PROP)) != Replica.State.DOWN) {
-            // not down, so verify the node is live
-            String node_name = (String)replicaMap.get(ZkStateReader.NODE_NAME_PROP);
-            if (!liveNodes.contains(node_name)) {
-              // node is not live, so this replica is actually down
-              replicaMap.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
-            }
-          }
-        }
-      }
-    }
   }
 
   /**
@@ -658,7 +630,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     //the rest of the processing is based on writing cluster state properties
     //remove the property here to avoid any errors down the pipeline due to this property appearing
-    String configName = (String) message.getProperties().remove(COLL_CONF);
+    String configName = (String) message.getProperties().remove(CollectionAdminParams.COLL_CONF);
     
     if(configName != null) {
       validateConfigOrThrowSolrException(configName);
@@ -668,7 +640,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
     }
     
-    overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
 
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
     boolean areChangesVisible = true;
@@ -677,9 +649,16 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       areChangesVisible = true;
       for (Map.Entry<String,Object> updateEntry : message.getProperties().entrySet()) {
         String updateKey = updateEntry.getKey();
+
         if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
             && !updateKey.equals(Overseer.QUEUE_OPERATION)
+            && updateEntry.getValue() != null // handled below in a separate conditional
             && !collection.get(updateKey).equals(updateEntry.getValue())){
+          areChangesVisible = false;
+          break;
+        }
+
+        if (updateEntry.getValue() == null && collection.containsKey(updateKey)) {
           areChangesVisible = false;
           break;
         }
@@ -730,7 +709,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-  ZkNodeProps addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
+  List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
       throws Exception {
 
     return ((AddReplicaCmd) commandMap.get(ADDREPLICA)).addReplica(clusterState, message, results, onComplete);
@@ -810,7 +789,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
    */
   List<Replica> collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
                      NamedList results, Replica.State stateMatcher, String asyncId, Map<String, String> requestMap, Set<String> okayExceptions) {
-    log.info("Executing Collection Cmd : " + params);
+    log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 

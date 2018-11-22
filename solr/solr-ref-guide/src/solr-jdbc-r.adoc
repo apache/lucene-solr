@@ -25,7 +25,7 @@ R supports accessing JDBC using the https://www.rforge.net/RJDBC/[RJDBC] library
 ----
 #!/usr/bin/env bash
 
-# Java 8 must already be installed and R configured with `R CMD javareconf`
+# Java must already be installed and R configured with `R CMD javareconf`
 
 Rscript -e 'install.packages("RJDBC", dep=TRUE)'
 Rscript solr_rjdbc.R

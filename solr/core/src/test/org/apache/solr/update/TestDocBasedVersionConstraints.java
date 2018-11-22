@@ -16,6 +16,12 @@
  */
 package org.apache.solr.update;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -23,12 +29,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
 
@@ -288,6 +288,88 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
              , "=={'doc':{'my_version_l':1010}}");
   }
 
+  // Test multiple versions, that it has to be greater than my_version_l and my_version_f
+  public void testMultipleVersions() throws Exception {
+    updateJ(jsonAdd(sdoc("id", "aaa", "name", "a1", "my_version_l", "1001", "my_version_f", "1.0")),
+      params("update.chain","external-version-failhard-multiple"));
+    assertU(commit());
+    // All variations of additional versions should fail other than my_version_l greater or my_version_f greater.
+    try {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X1", "my_version_l", "1000", "my_version_f", "1.0")),
+          params("update.chain","external-version-failhard-multiple"));
+      fail("no 409");
+    } catch (SolrException ex) {
+      assertEquals(409, ex.code());
+    }
+    try {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X2", "my_version_l", "1001", "my_version_f", "0.9")),
+          params("update.chain","external-version-failhard-multiple"));
+      fail("no 409");
+    } catch (SolrException ex) {
+      assertEquals(409, ex.code());
+    }
+    // Also fails on the exact same version
+    try {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X3", "my_version_l", "1001", "my_version_f", "1.0")),
+          params("update.chain","external-version-failhard-multiple"));
+      fail("no 409");
+    } catch (SolrException ex) {
+      assertEquals(409, ex.code());
+    }
+    //Verify we are still unchanged
+    assertU(commit());
+    assertJQ(req("q","+id:aaa +name:a1"), "/response/numFound==1");
+
+    // update version 1
+    updateJ(jsonAdd(sdoc("id", "aaa", "name", "Y1", "my_version_l", "2001", "my_version_f", "1.0")),
+        params("update.chain","external-version-failhard-multiple"));
+    assertU(commit());
+    assertJQ(req("q","+id:aaa +name:Y1"), "/response/numFound==1");
+
+    // update version 2
+    updateJ(jsonAdd(sdoc("id", "aaa", "name", "Y2", "my_version_l", "2001", "my_version_f", "2.0")),
+        params("update.chain","external-version-failhard-multiple"));
+    assertU(commit());
+    assertJQ(req("q","+id:aaa +name:Y2"), "/response/numFound==1");
+  }
+
+  public void testMultipleVersionDeletes() throws Exception {
+    updateJ(jsonAdd(sdoc("id", "aaa", "name", "a1", "my_version_l", "1001", "my_version_f", "1.0")),
+        params("update.chain","external-version-failhard-multiple"));
+    assertU(commit());
+    try {
+      deleteAndGetVersion("aaa", params("del_version", "1000", "del_version_2", "1.0",
+          "update.chain","external-version-failhard-multiple"));
+      fail("no 409");
+    } catch (SolrException ex) {
+      assertEquals(409, ex.code());
+    }
+    try {
+      deleteAndGetVersion("aaa", params("del_version", "1001", "del_version_2", "0.9",
+          "update.chain","external-version-failhard-multiple"));
+      fail("no 409");
+    } catch (SolrException ex) {
+      assertEquals(409, ex.code());
+    }
+    // And just verify if we pass version 1, we still error if version 2 isn't found.
+    try {
+      deleteAndGetVersion("aaa", params("del_version", "1001",
+          "update.chain","external-version-failhard-multiple"));
+      fail("no 400");
+    } catch (SolrException ex) {
+      assertEquals(400, ex.code());
+    }
+    //Verify we are still unchanged
+    assertU(commit());
+    assertJQ(req("q","+id:aaa +name:a1"), "/response/numFound==1");
+
+    //And let's verify the actual case.
+    deleteAndGetVersion("aaa", params("del_version", "1001", "del_version_2", "2.0",
+        "update.chain","external-version-failhard-multiple"));
+    assertU(commit());
+    assertJQ(req("q","+id:aaa +name:a1"), "/response/numFound==0"); //Delete allowed
+  }
+
 
   /** 
    * Proof of concept test demonstrating how to manage and periodically cleanup
@@ -395,6 +477,50 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(runner);
     }
+  }
+
+  public void testMissingVersionOnOldDocs() throws Exception {
+    String version = "2";
+
+    // Write one doc with version, one doc without version using the "no version" chain
+    updateJ(json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + version + "}]"),
+            params("update.chain", "no-external-version"));
+    updateJ(json("[{\"id\": \"b\", \"name\": \"b1\"}]"), params("update.chain", "no-external-version"));
+    assertU(commit());
+    assertJQ(req("q","*:*"), "/response/numFound==2");
+    assertJQ(req("q","id:a"), "/response/numFound==1");
+    assertJQ(req("q","id:b"), "/response/numFound==1");
+
+    // Try updating both with a new version and using the enforced version chain, expect id=b to fail bc old
+    // doc is missing the version field
+    version = "3";
+    updateJ(json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + version + "}]"),
+            params("update.chain", "external-version-constraint"));
+    try {
+      updateJ(json("[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": " + version + "}]"),
+              params("update.chain", "external-version-constraint"));
+      fail("Update to id=b should have failed because existing doc is missing version field");
+    } catch (final SolrException ex) {
+      // expected
+      assertEquals("Doc exists in index, but has null versionField: my_version_l", ex.getMessage());
+    }
+    assertU(commit());
+    assertJQ(req("q","*:*"), "/response/numFound==2");
+    assertJQ(req("qt","/get", "id", "a", "fl", "id,my_version_l"), "=={'doc':{'id':'a', 'my_version_l':3}}"); // version changed to 3
+    assertJQ(req("qt","/get", "id", "b", "fl", "id,my_version_l"), "=={'doc':{'id':'b'}}"); // no version, because update failed
+
+    // Try to update again using the external version enforcement, but allowing old docs to not have the version
+    // field. Expect id=a to fail because version is lower, expect id=b to succeed.
+    version = "1";
+    updateJ(json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + version + "}]"),
+            params("update.chain", "external-version-support-missing"));
+    System.out.println("send b");
+    updateJ(json("[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": " + version + "}]"),
+            params("update.chain", "external-version-support-missing"));
+    assertU(commit());
+    assertJQ(req("q","*:*"), "/response/numFound==2");
+    assertJQ(req("qt","/get", "id", "a", "fl", "id,my_version_l"), "=={'doc':{'id':'a', 'my_version_l':3}}");
+    assertJQ(req("qt","/get", "id", "b", "fl", "id,my_version_l"), "=={'doc':{'id':'b', 'my_version_l':1}}");
   }
   
   private Callable<Object> delayedAdd(final String... fields) {

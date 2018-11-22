@@ -36,6 +36,7 @@ import java.util.Set;
 
 import com.google.common.base.Strings;
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.logging.LogWatcherConfig;
@@ -271,6 +272,9 @@ public class SolrXmlConfig {
         case "coreLoadThreads":
           builder.setCoreLoadThreads(parseInt(name, value));
           break;
+        case "replayUpdatesThreads":
+          builder.setReplayUpdatesThreads(parseInt(name, value));
+          break;
         case "transientCacheSize":
           builder.setTransientCacheSize(parseInt(name, value));
           break;
@@ -292,10 +296,10 @@ public class SolrXmlConfig {
 
     boolean defined = false;
 
-    int maxUpdateConnections = UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS;
-    int maxUpdateConnectionsPerHost = UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST;
-    int distributedSocketTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
-    int distributedConnectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
+    int maxUpdateConnections = HttpClientUtil.DEFAULT_MAXCONNECTIONS;
+    int maxUpdateConnectionsPerHost = HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST;
+    int distributedSocketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+    int distributedConnectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
     String metricNameStrategy = UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY;
     int maxRecoveryThreads = UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS;
 
@@ -482,6 +486,10 @@ public class SolrXmlConfig {
     node = config.getNode("solr/metrics/suppliers/histogram", false);
     if (node != null) {
       builder = builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
+    }
+    node = config.getNode("solr/metrics/history", false);
+    if (node != null) {
+      builder = builder.setHistoryHandler(new PluginInfo(node, "history", false, false));
     }
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(config);
     Set<String> hiddenSysProps = getHiddenSysProps(config);

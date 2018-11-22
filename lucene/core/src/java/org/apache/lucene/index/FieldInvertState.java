@@ -34,6 +34,7 @@ import org.apache.lucene.util.AttributeSource;
 public final class FieldInvertState {
   final int indexCreatedVersionMajor;
   final String name;
+  final IndexOptions indexOptions;
   int position;
   int length;
   int numOverlap;
@@ -53,19 +54,22 @@ public final class FieldInvertState {
 
   /** Creates {code FieldInvertState} for the specified
    *  field name. */
-  public FieldInvertState(int indexCreatedVersionMajor, String name) {
+  public FieldInvertState(int indexCreatedVersionMajor, String name, IndexOptions indexOptions) {
     this.indexCreatedVersionMajor = indexCreatedVersionMajor;
     this.name = name;
+    this.indexOptions = indexOptions;
   }
   
   /** Creates {code FieldInvertState} for the specified
    *  field name and values for all fields. */
-  public FieldInvertState(int indexCreatedVersionMajor, String name, int position, int length, int numOverlap, int offset) {
-    this(indexCreatedVersionMajor, name);
+  public FieldInvertState(int indexCreatedVersionMajor, String name, IndexOptions indexOptions, int position, int length, int numOverlap, int offset, int maxTermFrequency, int uniqueTermCount) {
+    this(indexCreatedVersionMajor, name, indexOptions);
     this.position = position;
     this.length = length;
     this.numOverlap = numOverlap;
     this.offset = offset;
+    this.maxTermFrequency = maxTermFrequency;
+    this.uniqueTermCount = uniqueTermCount;
   }
 
   /**
@@ -175,5 +179,12 @@ public final class FieldInvertState {
    */
   public int getIndexCreatedVersionMajor() {
     return indexCreatedVersionMajor;
+  }
+  
+  /**
+   * Get the index options for this field
+   */
+  public IndexOptions getIndexOptions() {
+    return indexOptions;
   }
 }

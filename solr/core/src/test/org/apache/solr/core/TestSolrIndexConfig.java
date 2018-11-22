@@ -21,12 +21,12 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LiveIndexWriterConfig;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.RandomMergePolicy;
 import org.apache.solr.update.LoggingInfoStream;
 import org.junit.BeforeClass;
 
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestSolrIndexConfig extends SolrTestCaseJ4 {
 
   @BeforeClass

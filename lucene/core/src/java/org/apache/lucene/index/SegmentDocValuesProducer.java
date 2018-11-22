@@ -55,7 +55,6 @@ class SegmentDocValuesProducer extends DocValuesProducer {
    * @param segDocValues producer map
    */
   SegmentDocValuesProducer(SegmentCommitInfo si, Directory dir, FieldInfos coreInfos, FieldInfos allInfos, SegmentDocValues segDocValues) throws IOException {
-    boolean success = false;
     try {
       DocValuesProducer baseProducer = null;
       for (FieldInfo fi : allInfos) {
@@ -74,21 +73,19 @@ class SegmentDocValuesProducer extends DocValuesProducer {
         } else {
           assert !dvGens.contains(docValuesGen);
           // otherwise, producer sees only the one fieldinfo it wrote
-          final DocValuesProducer dvp = segDocValues.getDocValuesProducer(docValuesGen, si, dir, new FieldInfos(new FieldInfo[] { fi }));
+          final DocValuesProducer dvp = segDocValues.getDocValuesProducer(docValuesGen, si, dir, new FieldInfos(new FieldInfo[]{fi}));
           dvGens.add(docValuesGen);
           dvProducers.add(dvp);
           dvProducersByField.put(fi.name, dvp);
         }
       }
-      success = true;
-    } finally {
-      if (success == false) {
-        try {
-          segDocValues.decRef(dvGens);
-        } catch (Throwable t) {
-          // Ignore so we keep throwing first exception
-        }
+    } catch (Throwable t) {
+      try {
+        segDocValues.decRef(dvGens);
+      } catch (Throwable t1) {
+        t.addSuppressed(t1);
       }
+      throw t;
     }
   }
 

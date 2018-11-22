@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest.document;
 import java.io.IOException;
 import java.util.PriorityQueue;
 
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -42,7 +43,7 @@ final class NRTSuggesterBuilder {
    * Label used to separate surface form and docID
    * in the output
    */
-  public static final int PAYLOAD_SEP = '\u001F';
+  public static final int PAYLOAD_SEP = ConcatenateGraphFilter.SEP_LABEL;
 
   /**
    * Marks end of the analyzed input and start of dedup

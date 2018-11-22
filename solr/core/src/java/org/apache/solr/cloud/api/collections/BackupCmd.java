@@ -115,7 +115,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     properties.put(BackupManager.BACKUP_NAME_PROP, backupName);
     properties.put(BackupManager.COLLECTION_NAME_PROP, collectionName);
-    properties.put(OverseerCollectionMessageHandler.COLL_CONF, configName);
+    properties.put(CollectionAdminParams.COLL_CONF, configName);
     properties.put(BackupManager.START_TIME_PROP, startTime.toString());
     properties.put(BackupManager.INDEX_VERSION_PROP, Version.LATEST.toString());
     //TODO: Add MD5 of the configset. If during restore the same name configset exists then we can compare checksums to see if they are the same.
@@ -123,6 +123,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     //TODO save numDocs for the shardLeader. We can use it to sanity check the restore.
 
     backupMgr.writeBackupProperties(location, backupName, properties);
+
+    backupMgr.downloadCollectionProperties(location, backupName, collectionName);
 
     log.info("Completed backing up ZK data for backupName={}", backupName);
   }
@@ -219,6 +221,6 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
 
-    ocmh.processResponses(results, shardHandler, true, "Could not backup all replicas", asyncId, requestMap);
+    ocmh.processResponses(results, shardHandler, true, "Could not backup all shards", asyncId, requestMap);
   }
 }

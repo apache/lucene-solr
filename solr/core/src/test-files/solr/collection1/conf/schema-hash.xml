@@ -128,7 +128,6 @@
   <fieldtype name="text" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
@@ -140,19 +139,7 @@
     <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
   </fieldtype>
 
-  <fieldtype name="teststop" class="solr.TextField">
-    <analyzer>
-      <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
-    </analyzer>
-  </fieldtype>
-
   <!-- fieldtypes in this section isolate tokenizers and tokenfilters for testing -->
-  <fieldtype name="lowertok" class="solr.TextField">
-    <analyzer>
-      <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-    </analyzer>
-  </fieldtype>
   <fieldtype name="keywordtok" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
@@ -188,13 +175,11 @@
   <fieldtype name="standardtokfilt" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
     </analyzer>
   </fieldtype>
   <fieldtype name="standardfilt" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
     </analyzer>
   </fieldtype>
   <fieldtype name="lowerfilt" class="solr.TextField">
@@ -488,8 +473,6 @@
          termPositions="true" termOffsets="true"/>
 
   <!-- fields to test individual tokenizers and tokenfilters -->
-  <field name="teststop" type="teststop" indexed="true" stored="true"/>
-  <field name="lowertok" type="lowertok" indexed="true" stored="true"/>
   <field name="keywordtok" type="keywordtok" indexed="true" stored="true"/>
   <field name="standardtok" type="standardtok" indexed="true" stored="true"/>
   <field name="HTMLstandardtok" type="HTMLstandardtok" indexed="true" stored="true"/>

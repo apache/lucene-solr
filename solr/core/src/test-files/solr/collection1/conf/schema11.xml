@@ -288,7 +288,6 @@ valued. -->
     <fieldType name="text_length" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.LengthFilterFactory" min="2" max="32768"/>
       </analyzer>
@@ -456,6 +455,9 @@ valued. -->
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_ws" type="text_ws" indexed="true"  stored="true"/>
    
+  <!-- Indexed, but NOT uninvertible -->
+  <dynamicField name="*_s_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" />
+   
    <!-- for testing tfidf functions, see TestFunctionQuery.testTFIDFFunctions -->
    <dynamicField name="*_tfidf"  type="tfidf_text"    indexed="true"  stored="true" />
    <fieldType name="tfidf_text" class="solr.TextField" positionIncrementGap="100">
@@ -519,6 +521,20 @@ valued. -->
     </analyzer>
   </fieldType>
 
+  <!-- See TestMinMaxOnMultiValuedField -->
+  <field name="val_stxt_s_dv" type="whitespace_stxt" multiValued="true"/>
+  <field name="val_stxt_missf_s_dv" type="whitespace_stxt" multiValued="true" sortMissingFirst="true"/>
+  <field name="val_stxt_missl_s_dv" type="whitespace_stxt" multiValued="true" sortMissingLast="true"/>
+  <field name="val_stxt_s_nodv" type="whitespace_stxt" multiValued="true" docValues="false" />
+  <!-- NOTE: explicitly not specifying docValues=true, it should be implicit default -->
+  <fieldType name="whitespace_stxt" class="solr.SortableTextField" indexed="true" stored="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+
+
+  
  <!-- Field to use to determine and enforce document uniqueness. 
       Unless this field is marked with required="false", it will be a required field
    -->

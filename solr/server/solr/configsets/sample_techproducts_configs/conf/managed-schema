@@ -134,7 +134,7 @@
    <field name="pre" type="preanalyzed" indexed="true" stored="true"/>
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text_general" indexed="true" stored="true"/>
-   <field name="manu" type="text_general" indexed="true" stored="true" omitNorms="true"/>
+   <field name="manu" type="text_gen_sort" indexed="true" stored="true" omitNorms="true" multiValued="false"/>
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="features" type="text_general" indexed="true" stored="true" multiValued="true"/>
    <field name="includes" type="text_general" indexed="true" stored="true" termVectors="true" termPositions="true" termOffsets="true" />
@@ -154,11 +154,11 @@
        "content_type": From the HTTP headers of incoming stream
        "resourcename": From SolrCell request param resource.name
    -->
-   <field name="title" type="text_general" indexed="true" stored="true" multiValued="true"/>
-   <field name="subject" type="text_general" indexed="true" stored="true"/>
+   <field name="title" type="text_gen_sort" indexed="true" stored="true" multiValued="true"/>
+   <field name="subject" type="text_gen_sort" indexed="true" stored="true" multiValued="false"/>
    <field name="description" type="text_general" indexed="true" stored="true"/>
    <field name="comments" type="text_general" indexed="true" stored="true"/>
-   <field name="author" type="text_general" indexed="true" stored="true"/>
+   <field name="author" type="text_gen_sort" indexed="true" stored="true" multiValued="false"/>
    <field name="keywords" type="text_general" indexed="true" stored="true"/>
    <field name="category" type="text_general" indexed="true" stored="true"/>
    <field name="resourcename" type="text_general" indexed="true" stored="true"/>
@@ -414,6 +414,28 @@
         <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
         <filter class="solr.FlattenGraphFilterFactory"/>
         -->
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" />
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+    
+    <!-- SortableTextField generaly functions exactly like TextField,
+         except that it supports, and by default uses, docValues for sorting (or faceting)
+         on the first 1024 characters of the original field values (which is configurable).
+         
+         This makes it a bit more useful then TextField in many situations, but the trade-off
+         is that it takes up more space on disk; which is why it's not used in place of TextField
+         for every fieldType in this _default schema.
+	  -->
+    <fieldType name="text_gen_sort" class="solr.SortableTextField" positionIncrementGap="100" multiValued="true">
+      <analyzer type="index">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" />
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
       <analyzer type="query">
@@ -1010,6 +1032,40 @@
       </analyzer>
     </fieldType>
     
+    <!-- Korean morphological analysis -->
+    <dynamicField name="*_txt_ko" type="text_ko"  indexed="true"  stored="true"/>
+    <fieldType name="text_ko" class="solr.TextField" positionIncrementGap="100">
+      <analyzer>
+        <!-- Nori Korean morphological analyzer/tokenizer (KoreanTokenizer)
+          The Korean (nori) analyzer integrates Lucene nori analysis module into Solr.
+          It uses the mecab-ko-dic dictionary to perform morphological analysis of Korean texts.
+
+          This dictionary was built with MeCab, it defines a format for the features adapted
+          for the Korean language.
+          
+          Nori also has a convenient user dictionary feature that allows overriding the statistical
+          model with your own entries for segmentation, part-of-speech tags and readings without a need
+          to specify weights. Notice that user dictionaries have not been subject to extensive testing.
+
+          The tokenizer supports multiple schema attributes:
+            * userDictionary: User dictionary path.
+            * userDictionaryEncoding: User dictionary encoding.
+            * decompoundMode: Decompound mode. Either 'none', 'discard', 'mixed'. Default is 'discard'.
+            * outputUnknownUnigrams: If true outputs unigrams for unknown words.
+        -->
+        <tokenizer class="solr.KoreanTokenizerFactory" decompoundMode="discard" outputUnknownUnigrams="false"/>
+        <!-- Removes some part of speech stuff like EOMI (Pos.E), you can add a parameter 'tags',
+          listing the tags to remove. By default it removes: 
+          E, IC, J, MAG, MAJ, MM, SP, SSC, SSO, SC, SE, XPN, XSA, XSN, XSV, UNA, NA, VSV
+          This is basically an equivalent to stemming.
+        -->
+        <filter class="solr.KoreanPartOfSpeechStopFilterFactory" />
+        <!-- Replaces term text with the Hangul transcription of Hanja characters, if applicable: -->
+        <filter class="solr.KoreanReadingFormFilterFactory" />
+        <filter class="solr.LowerCaseFilterFactory" />
+      </analyzer>
+    </fieldType>
+
     <!-- Latvian -->
     <fieldType name="text_lv" class="solr.TextField" positionIncrementGap="100">
       <analyzer> 

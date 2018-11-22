@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 
@@ -51,9 +50,8 @@ import org.apache.solr.ltr.norm.Normalizer;
  * Also note that if a "store" is configured for the wrapper
  * model then it must match the "store" of the wrapped model.
  */
-public abstract class WrapperModel extends LTRScoringModel {
+public abstract class WrapperModel extends AdapterModel {
 
-  protected SolrResourceLoader solrResourceLoader;
   protected LTRScoringModel model;
 
   @Override
@@ -105,10 +103,6 @@ public abstract class WrapperModel extends LTRScoringModel {
             + "wrapped feature store name ("+wrappedFeatureStoreName+")");
       }
     }
-  }
-
-  public void setSolrResourceLoader(SolrResourceLoader solrResourceLoader) {
-    this.solrResourceLoader = solrResourceLoader;
   }
 
   public void updateModel(LTRScoringModel model) {

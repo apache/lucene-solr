@@ -44,6 +44,8 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.SimplePostTool;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -125,9 +127,13 @@ public class PluginBag<T> implements AutoCloseable {
   public PluginHolder<T> createPlugin(PluginInfo info) {
     if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
       log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
-      return new LazyPluginHolder<T>(meta, info, core, "true".equals(System.getProperty("enable.runtime.lib")) ?
+      LazyPluginHolder<T> holder = new LazyPluginHolder<>(meta, info, core, "true".equals(System.getProperty("enable.runtime.lib")) ?
           core.getMemClassLoader() :
           core.getResourceLoader(), true);
+
+      return meta.clazz == UpdateRequestProcessorFactory.class ?
+          (PluginHolder<T>) new UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder(holder) :
+          holder;
     } else if ("lazy".equals(info.attributes.get("startup")) && meta.options.contains(SolrConfig.PluginOpts.LAZY)) {
       log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
@@ -360,6 +366,10 @@ public class PluginBag<T> implements AutoCloseable {
       if (isLoaded()) return inst.getClass().getName();
       if (pluginInfo != null) return pluginInfo.className;
       return null;
+    }
+
+    public PluginInfo getPluginInfo() {
+      return pluginInfo;
     }
   }
 

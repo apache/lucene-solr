@@ -115,14 +115,15 @@ algorithm.
 <pre class="prettyprint">
   Collator collator = Collator.getInstance(new ULocale("ar"));
   ICUCollationKeyAnalyzer analyzer = new ICUCollationKeyAnalyzer(collator);
-  RAMDirectory ramDir = new RAMDirectory();
-  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(analyzer));
+  Path indexPath = Files.createTempDirectory("tempIndex");
+  Directory dir = FSDirectory.open(indexPath);
+  IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
   Document doc = new Document();
   doc.add(new Field("content", "\u0633\u0627\u0628", 
                     Field.Store.YES, Field.Index.ANALYZED));
   writer.addDocument(doc);
   writer.close();
-  IndexSearcher is = new IndexSearcher(ramDir, true);
+  IndexSearcher is = new IndexSearcher(dir, true);
 
   QueryParser aqp = new QueryParser("content", analyzer);
   aqp.setAnalyzeRangeTerms(true);
@@ -141,8 +142,9 @@ algorithm.
 <pre class="prettyprint">
   Analyzer analyzer 
     = new ICUCollationKeyAnalyzer(Collator.getInstance(new ULocale("da", "dk")));
-  RAMDirectory indexStore = new RAMDirectory();
-  IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(analyzer));
+  Path indexPath = Files.createTempDirectory("tempIndex");
+  Directory dir = FSDirectory.open(indexPath);
+  IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
   String[] tracer = new String[] { "A", "B", "C", "D", "E" };
   String[] data = new String[] { "HAT", "HUT", "H\u00C5T", "H\u00D8T", "HOT" };
   String[] sortedTracerOrder = new String[] { "A", "E", "B", "D", "C" };
@@ -153,7 +155,7 @@ algorithm.
     writer.addDocument(doc);
   }
   writer.close();
-  IndexSearcher searcher = new IndexSearcher(indexStore, true);
+  IndexSearcher searcher = new IndexSearcher(dir, true);
   Sort sort = new Sort();
   sort.setSort(new SortField("contents", SortField.STRING));
   Query query = new MatchAllDocsQuery();
@@ -169,13 +171,14 @@ algorithm.
   Collator collator = Collator.getInstance(new ULocale("tr", "TR"));
   collator.setStrength(Collator.PRIMARY);
   Analyzer analyzer = new ICUCollationKeyAnalyzer(collator);
-  RAMDirectory ramDir = new RAMDirectory();
-  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(analyzer));
+  Path indexPath = Files.createTempDirectory("tempIndex");
+  Directory dir = FSDirectory.open(indexPath);
+  IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
   Document doc = new Document();
   doc.add(new Field("contents", "DIGY", Field.Store.NO, Field.Index.ANALYZED));
   writer.addDocument(doc);
   writer.close();
-  IndexSearcher is = new IndexSearcher(ramDir, true);
+  IndexSearcher is = new IndexSearcher(dir, true);
   QueryParser parser = new QueryParser("contents", analyzer);
   Query query = parser.parse("d\u0131gy");   // U+0131: dotless i
   ScoreDoc[] result = is.search(query, null, 1000).scoreDocs;
@@ -353,7 +356,7 @@ and
 <h1><a name="backcompat">Backwards Compatibility</a></h1>
 <p>
 This module exists to provide up-to-date Unicode functionality that supports
-the most recent version of Unicode (currently 10.0). However, some users who wish
+the most recent version of Unicode (currently 11.0). However, some users who wish
 for stronger backwards compatibility can restrict
 {@link org.apache.lucene.analysis.icu.ICUNormalizer2Filter} to operate on only
 a specific Unicode Version by using a {@link com.ibm.icu.text.FilteredNormalizer2}. 

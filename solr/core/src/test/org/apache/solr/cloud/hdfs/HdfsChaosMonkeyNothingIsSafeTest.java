@@ -35,7 +35,7 @@ import org.junit.BeforeClass;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @SuppressObjectReleaseTracker(bugUrl="Testing purposes")
-@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-10191")
+@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028, https://issues.apache.org/jira/browse/SOLR-10191")
 public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyNothingIsSafeTest {
   private static MiniDFSCluster dfsCluster;
   

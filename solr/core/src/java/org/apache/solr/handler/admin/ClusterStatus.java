@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -53,7 +55,7 @@ public class ClusterStatus {
   }
 
   @SuppressWarnings("unchecked")
-  public  void getClusterStatus(NamedList results)
+  public void getClusterStatus(NamedList results)
       throws KeeperException, InterruptedException {
     // read aliases
     Aliases aliases = zkStateReader.getAliases();
@@ -91,6 +93,17 @@ public class ClusterStatus {
       collectionsMap = Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection));
     }
 
+    boolean isAlias = aliasVsCollections.containsKey(collection);
+    boolean didNotFindCollection = collectionsMap.get(collection) == null;
+
+    if (didNotFindCollection && isAlias) {
+      // In this case this.collection is an alias name not a collection
+      // get all collections and filter out collections not in the alias
+      collectionsMap = clusterState.getCollectionsMap().entrySet().stream()
+          .filter((entry) -> aliasVsCollections.get(collection).contains(entry.getKey()))
+          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
     NamedList<Object> collectionProps = new SimpleOrderedMap<>();
 
     for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
@@ -99,7 +112,9 @@ public class ClusterStatus {
       DocCollection clusterStateCollection = entry.getValue();
       if (clusterStateCollection == null) {
         if (collection != null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
+          SolrException solrException = new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
+          solrException.setMetadata("CLUSTERSTATUS","NOT_FOUND");
+          throw solrException;
         } else {
           //collection might have got deleted at the same time
           continue;
@@ -115,7 +130,8 @@ public class ClusterStatus {
         }
       }
       if (shard != null) {
-        requestedShards.add(shard);
+        String[] paramShards = shard.split(",");
+        requestedShards.addAll(Arrays.asList(paramShards));
       }
 
       if (clusterStateCollection.getStateFormat() > 1) {
@@ -130,9 +146,16 @@ public class ClusterStatus {
       if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
         collectionStatus.put("aliases", collectionVsAliases.get(name));
       }
-      String configName = zkStateReader.readConfigName(name);
-      collectionStatus.put("configName", configName);
-      collectionProps.add(name, collectionStatus);
+      try {
+        String configName = zkStateReader.readConfigName(name);
+        collectionStatus.put("configName", configName);
+        collectionProps.add(name, collectionStatus);
+      } catch (SolrException e) {
+        if (e.getCause() instanceof KeeperException.NoNodeException)  {
+          // skip this collection because the collection's znode has been deleted
+          // which can happen during aggressive collection removal, see SOLR-10720
+        } else throw e;
+      }
     }
 
     List<String> liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);

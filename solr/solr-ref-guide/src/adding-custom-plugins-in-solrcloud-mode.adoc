@@ -146,7 +146,7 @@ The `.der` files that are output from Step 2 should then be loaded to ZooKeeper 
 
 At the current time, you can only use the ZooKeeper `zkCli.sh` (or `zkCli.cmd` on Windows) script to issue these commands (the Solr version has the same name, but is not the same). If you have your own ZooKeeper ensemble running already, you can find the script in `$ZK_INSTALL/bin/zkCli.sh` (or `zkCli.cmd` if you are using Windows).
 
-NOTE: If you are running the embedded ZooKeeper that is included with Solr, you *do not* have this script already; in order to use it, you will need to download a copy of ZooKeeper v3.4.11 from http://zookeeper.apache.org/. Don't worry about configuring the download, you're just trying to get the command line utility script. When you start the script, you will connect to the embedded ZooKeeper.
+NOTE: If you are running the embedded ZooKeeper that is included with Solr, you *do not* have this script already; in order to use it, you will need to download a copy of ZooKeeper v{ivy-zookeeper-version} from http://zookeeper.apache.org/. Don't worry about configuring the download, you're just trying to get the command line utility script. When you start the script, you will connect to the embedded ZooKeeper.
 
 To load the keys, you will need to connect to ZooKeeper with `zkCli.sh`, create the directories, and then create the key file, as in the following example.
 

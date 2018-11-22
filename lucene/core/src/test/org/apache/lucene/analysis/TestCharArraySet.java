@@ -19,8 +19,8 @@ package org.apache.lucene.analysis;
 
 import java.util.*;
 
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SuppressForbidden;
 
 
 public class TestCharArraySet extends LuceneTestCase {
@@ -56,7 +56,8 @@ public class TestCharArraySet extends LuceneTestCase {
     assertTrue(set.contains(findme, 1, 4));
     assertTrue(set.contains(new String(findme,1,4)));
   }
-  
+
+  @SuppressForbidden(reason = "Explicitly checking new Integers")
   public void testObjectContains() {
     CharArraySet set = new CharArraySet(10, true);
     Integer val = Integer.valueOf(1);

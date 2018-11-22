@@ -17,21 +17,18 @@
 package org.apache.solr.client.solrj.request.schema;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
+import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
+import org.apache.solr.common.util.Utils;
 
 /**
  * <p>This class offers access to the operations exposed by the Solr Schema API.</p>
@@ -706,10 +703,19 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     protected abstract NamedList<Object> getRequestParameters();
 
     @Override
-    public Collection<ContentStream> getContentStreams() throws IOException {
-      CharArr json = new CharArr();
-      new SchemaRequestJSONWriter(json).write(getRequestParameters());
-      return Collections.singletonList(new ContentStreamBase.StringStream(json.toString()));
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      return new RequestWriter.ContentWriter() {
+        @Override
+        public void write(OutputStream os) throws IOException {
+          Utils.writeJson(getRequestParameters(),
+              os, false);
+        }
+
+        @Override
+        public String getContentType() {
+          return CommonParams.JSON_MIME;
+        }
+      };
     }
 
     @Override
@@ -771,62 +777,4 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
   }
 
-  /**
-   * Simple extension of the noggit JSONWriter used to be write objects
-   * of type {@link NamedList}.
-   * Writing of objects of the type {@link NamedList} is done in very much
-   * the same way as for a map.
-   * <p>
-   * This writer is particularly useful when doing multiple update requests.
-   * In update Schema API there can be done multiple add operations of the same
-   * type (e.g. : add-field-type), they are grouped in an associative array, even though
-   * this can't be done normally in JSON. For such a use-case, the {@link NamedList}
-   * objects are particularly useful because they can group key-value mappings
-   * having the same values for the keys (unlike maps).
-   */
-  private static class SchemaRequestJSONWriter extends JSONWriter {
-    public SchemaRequestJSONWriter(CharArr out, int indentSize) {
-      super(out, indentSize);
-    }
-
-    public SchemaRequestJSONWriter(CharArr out) {
-      super(out);
-    }
-
-    public void write(Object o) {
-      if (o instanceof NamedList) {
-        write((NamedList) o);
-      } else super.write(o);
-    }
-
-    /**
-     * @see #write(Map)
-     */
-    @SuppressWarnings("unchecked")
-    public void write(NamedList<?> val) {
-      this.startObject();
-      int sz = val.size();
-      boolean first = true;
-      Iterator i$ = val.iterator();
-
-      while (i$.hasNext()) {
-        Map.Entry<String, ?> entry = (Map.Entry<String, ?>) i$.next();
-        if (first) {
-          first = false;
-        } else {
-          this.writeValueSeparator();
-        }
-
-        if (sz > 1) {
-          this.indent();
-        }
-
-        this.writeString(entry.getKey());
-        this.writeNameSeparator();
-        this.write(entry.getValue());
-      }
-
-      this.endObject();
-    }
-  }
 }

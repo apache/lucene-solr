@@ -52,10 +52,10 @@ public class TestLTRWithFacet extends TestRerankBase {
   @Test
   public void testRankingSolrFacet() throws Exception {
     // before();
-    loadFeature("powpularityS", SolrFeature.class.getCanonicalName(),
+    loadFeature("powpularityS", SolrFeature.class.getName(),
         "{\"q\":\"{!func}pow(popularity,2)\"}");
 
-    loadModel("powpularityS-model", LinearModel.class.getCanonicalName(),
+    loadModel("powpularityS-model", LinearModel.class.getName(),
         new String[] {"powpularityS"}, "{\"weights\":{\"powpularityS\":1.0}}");
 
     final SolrQuery query = new SolrQuery();

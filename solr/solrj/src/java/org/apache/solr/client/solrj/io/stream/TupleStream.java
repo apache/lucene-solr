@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,16 +41,12 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  * @since 5.1.0
  */
 public abstract class TupleStream implements Closeable, Serializable, MapWriter {
-
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long serialVersionUID = 1;
   
@@ -138,7 +133,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       CloudSolrClient cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
-      Collection<Slice> slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
+      Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();

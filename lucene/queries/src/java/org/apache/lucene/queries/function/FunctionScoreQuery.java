@@ -29,6 +29,7 @@ import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -149,6 +150,11 @@ public final class FunctionScoreQuery extends Query {
     }
 
     @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return inner.matches(context, doc);
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Explanation scoreExplanation = inner.explain(context, doc);
       if (scoreExplanation.isMatch() == false) {
@@ -209,7 +215,7 @@ public final class FunctionScoreQuery extends Query {
           return 0;
         }
         @Override
-        public float maxScore() {
+        public float getMaxScore(int upTo) throws IOException {
           return Float.POSITIVE_INFINITY;
         }
       };
@@ -262,6 +268,19 @@ public final class FunctionScoreQuery extends Query {
       if (o == null || getClass() != o.getClass()) return false;
       MultiplicativeBoostValuesSource that = (MultiplicativeBoostValuesSource) o;
       return Objects.equals(boost, that.boost);
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+      if (scoreExplanation.isMatch() == false) {
+        return scoreExplanation;
+      }
+      Explanation boostExpl = boost.explain(ctx, docId, scoreExplanation);
+      if (boostExpl.isMatch() == false) {
+        return scoreExplanation;
+      }
+      return Explanation.match(scoreExplanation.getValue().doubleValue() * boostExpl.getValue().doubleValue(),
+          "product of:", scoreExplanation, boostExpl);
     }
 
     @Override
@@ -338,6 +357,15 @@ public final class FunctionScoreQuery extends Query {
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       return query.isCacheable(ctx);
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+      Explanation inner = query.explain(ctx, docId, scoreExplanation);
+      if (inner.isMatch() == false) {
+        return inner;
+      }
+      return Explanation.match(boost, "Matched boosting query " + query.toString());
     }
   }
 }

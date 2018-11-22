@@ -136,6 +136,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   }
 
   @Override
+  @SuppressWarnings("resource")
   public boolean reload() throws SolrException {
     InputStream ratesJsonStream = null;
     try {
@@ -151,10 +152,12 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reloading exchange rates", e);
     } finally {
-      if (ratesJsonStream != null) try {
-        ratesJsonStream.close();
-      } catch (IOException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error closing stream", e);
+      if (ratesJsonStream != null) {
+        try {
+          ratesJsonStream.close();
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Error closing stream", e);
+        }
       }
     }
   }

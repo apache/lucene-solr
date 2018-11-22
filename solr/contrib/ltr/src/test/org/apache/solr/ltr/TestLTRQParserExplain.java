@@ -38,7 +38,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
 
   @Test
   public void testRerankedExplain() throws Exception {
-    loadModel("linear2", LinearModel.class.getCanonicalName(), new String[] {
+    loadModel("linear2", LinearModel.class.getName(), new String[] {
         "constant1", "constant2", "pop"},
         "{\"weights\":{\"pop\":1.0,\"constant1\":1.5,\"constant2\":3.5}}");
 

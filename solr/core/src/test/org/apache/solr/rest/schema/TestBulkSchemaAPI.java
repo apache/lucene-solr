@@ -24,6 +24,7 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.misc.SweetSpotSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.schema.SimilarityFactory;
@@ -84,7 +85,6 @@ public class TestBulkSchemaAPI extends RestTestBase {
       jetty.stop();
       jetty = null;
     }
-    client = null;
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -390,13 +390,15 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                       'name':'a2',\n" +
         "                       'type': 'string',\n" +
         "                       'stored':true,\n" +
-        "                       'indexed':true\n" +
+        "                       'indexed':true,\n" +
+        "                       'uninvertible':true,\n" +
         "                       },\n" +
         "          'add-dynamic-field' : {\n" +
         "                       'name' :'*_lol',\n" +
         "                       'type':'string',\n" +
         "                       'stored':true,\n" +
-        "                       'indexed':true\n" +
+        "                       'indexed':true,\n" +
+        "                       'uninvertible':false,\n" +
         "                       },\n" +
         "          'add-copy-field' : {\n" +
         "                       'source' :'a1',\n" +
@@ -470,6 +472,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "          'add-field-type' : {" +
         "                       'name' : 'myWhitespaceTxtField',\n" +
         "                       'class':'solr.TextField',\n" +
+        "                       'uninvertible':false,\n" +
         "                       'analyzer' : {'class' : 'org.apache.lucene.analysis.core.WhitespaceAnalyzer'}\n" +
         "                       },\n"+
         "          'add-field' : {\n" +
@@ -532,6 +535,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals("string", m.get("type"));
     assertEquals(Boolean.TRUE, m.get("stored"));
     assertEquals(Boolean.TRUE, m.get("indexed"));
+    assertEquals(Boolean.TRUE, m.get("uninvertible"));
 
     m = getObj(harness,"*_lol", "dynamicFields");
     assertNotNull("field *_lol not created", m);
@@ -539,6 +543,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals("string", m.get("type"));
     assertEquals(Boolean.TRUE, m.get("stored"));
     assertEquals(Boolean.TRUE, m.get("indexed"));
+    assertEquals(Boolean.FALSE, m.get("uninvertible"));
 
     l = getSourceCopyFields(harness, "a1");
     s = new HashSet();
@@ -579,11 +584,13 @@ public class TestBulkSchemaAPI extends RestTestBase {
     
     m = getObj(harness, "myWhitespaceTxtField", "fieldTypes");
     assertNotNull(m);
+    assertEquals(Boolean.FALSE, m.get("uninvertible"));
     assertNull(m.get("similarity")); // unspecified, expect default
 
     m = getObj(harness, "a5", "fields");
     assertNotNull("field a5 not created", m);
     assertEquals("myWhitespaceTxtField", m.get("type"));
+    assertNull(m.get("uninvertible")); // inherited, but API shouldn't return w/o explicit showDefaults
     assertFieldSimilarity("a5", BM25Similarity.class); // unspecified, expect default
 
     m = getObj(harness, "wdf_nocase", "fields");
@@ -840,7 +847,61 @@ public class TestBulkSchemaAPI extends RestTestBase {
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(map.get("error"));
   }
+  public void testSortableTextFieldWithAnalyzer() throws Exception {
+    String fieldTypeName = "sort_text_type";
+    String fieldName = "sort_text";
+    String payload = "{\n" +
+        "  'add-field-type' : {" +
+        "    'name' : '" + fieldTypeName + "',\n" +
+        "    'stored':true,\n" +
+        "    'indexed':true\n" +
+        "    'maxCharsForDocValues':6\n" +
+        "    'class':'solr.SortableTextField',\n" +
+        "    'analyzer' : {'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'}},\n" +
+        "  },\n"+
+        "  'add-field' : {\n" +
+        "    'name':'" + fieldName + "',\n" +
+        "    'type': '"+fieldTypeName+"',\n" +
+        "  }\n" +
+        "}\n";
 
+    String response = restTestHarness.post("/schema", json(payload));
+
+    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(response, map.get("errors"));
+
+    Map fields = getObj(restTestHarness, fieldName, "fields");
+    assertNotNull("field " + fieldName + " not created", fields);
+
+    assertEquals(0,
+                 getSolrClient().add(Arrays.asList(sdoc("id","1",fieldName,"xxx aaa"),
+                                                   sdoc("id","2",fieldName,"xxx bbb aaa"),
+                                                   sdoc("id","3",fieldName,"xxx bbb zzz"))).getStatus());
+                                                   
+    assertEquals(0, getSolrClient().commit().getStatus());
+    {
+      SolrDocumentList docs = getSolrClient().query
+        (params("q",fieldName+":xxx","sort", fieldName + " asc, id desc")).getResults();
+         
+      assertEquals(3L, docs.getNumFound());
+      assertEquals(3L, docs.size());
+      assertEquals("1", docs.get(0).getFieldValue("id"));
+      assertEquals("3", docs.get(1).getFieldValue("id"));
+      assertEquals("2", docs.get(2).getFieldValue("id"));
+    }
+    {
+      SolrDocumentList docs = getSolrClient().query
+        (params("q",fieldName+":xxx", "sort", fieldName + " desc, id asc")).getResults();
+                                                           
+      assertEquals(3L, docs.getNumFound());
+      assertEquals(3L, docs.size());
+      assertEquals("2", docs.get(0).getFieldValue("id"));
+      assertEquals("3", docs.get(1).getFieldValue("id"));
+      assertEquals("1", docs.get(2).getFieldValue("id"));
+    }
+    
+  }
+  
   public void testSimilarityParser() throws Exception {
     RestTestHarness harness = restTestHarness;
 

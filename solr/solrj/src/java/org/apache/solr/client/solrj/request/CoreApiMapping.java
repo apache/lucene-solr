@@ -56,8 +56,7 @@ public class CoreApiMapping {
     REQUESTSTATUS(PER_CORE_COMMANDS, GET, CoreAdminAction.REQUESTSTATUS, "request-status", null),/*TODO*/
     OVERSEEROP(NODEAPIS, POST, CoreAdminAction.OVERSEEROP, "overseer-op", null),
     REJOINLEADERELECTION(NODEAPIS, POST, CoreAdminAction.REJOINLEADERELECTION, "rejoin-leader-election", null),
-    INVOKE(NODEINVOKE, GET, CoreAdminAction.INVOKE,"invoke",  null),
-    FORCEPREPAREFORLEADERSHIP(PER_CORE_COMMANDS, POST, CoreAdminAction.FORCEPREPAREFORLEADERSHIP, "force-prepare-for-leadership", null);
+    INVOKE(NODEINVOKE, GET, CoreAdminAction.INVOKE,"invoke",  null);
 
     public final String commandName;
     public final EndPoint endPoint;

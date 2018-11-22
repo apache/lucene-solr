@@ -51,10 +51,15 @@ public class StreamingSolrClients {
 
   private ExecutorService updateExecutor;
 
+  private int socketTimeout;
+  private int connectionTimeout;
+
   public StreamingSolrClients(UpdateShardHandler updateShardHandler) {
     this.updateExecutor = updateShardHandler.getUpdateExecutor();
     
-    httpClient = updateShardHandler.getHttpClient();
+    httpClient = updateShardHandler.getUpdateOnlyHttpClient();
+    socketTimeout = updateShardHandler.getSocketTimeout();
+    connectionTimeout = updateShardHandler.getConnectionTimeout();
   }
 
   public List<Error> getErrors() {
@@ -78,6 +83,8 @@ public class StreamingSolrClients {
           .withThreadCount(runnerCount)
           .withExecutorService(updateExecutor)
           .alwaysStreamDeletes()
+          .withSocketTimeout(socketTimeout)
+          .withConnectionTimeout(connectionTimeout)
           .build();
       client.setPollQueueTime(Integer.MAX_VALUE); // minimize connections created
       client.setParser(new BinaryResponseParser());
@@ -136,7 +143,6 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClien
   
   @Override
   public void handleError(Throwable ex) {
-    req.trackRequestResult(null, false);
     log.error("error", ex);
     Error error = new Error();
     error.e = (Exception) ex;
@@ -145,6 +151,10 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClien
     }
     error.req = req;
     errors.add(error);
+    if (!req.shouldRetry(error)) {
+      // only track the error if we are not retrying the request
+      req.trackRequestResult(null, false);
+    }
   }
   @Override
   public void onSuccess(HttpResponse resp) {
@@ -160,7 +170,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClien
       this.req = req;
       this.errors = errors;
     }
-    
+
     public ErrorReportingConcurrentUpdateSolrClient build() {
       return new ErrorReportingConcurrentUpdateSolrClient(this);
     }

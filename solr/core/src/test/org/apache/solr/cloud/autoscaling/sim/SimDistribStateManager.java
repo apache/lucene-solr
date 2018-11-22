@@ -38,7 +38,8 @@ import org.apache.jute.Record;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -67,7 +68,7 @@ import org.slf4j.LoggerFactory;
  * invoked.
  */
 public class SimDistribStateManager implements DistribStateManager {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final class Node {
     ReentrantLock dataLock = new ReentrantLock();
@@ -213,6 +214,8 @@ public class SimDistribStateManager implements DistribStateManager {
   private final String id;
   private final Node root;
 
+  private int juteMaxbuffer = 0xfffff;
+
   public SimDistribStateManager() {
     this(null);
   }
@@ -225,6 +228,8 @@ public class SimDistribStateManager implements DistribStateManager {
     this.id = IdUtils.timeRandomId();
     this.root = root != null ? root : createNewRootNode();
     watchersPool = ExecutorUtil.newMDCAwareFixedThreadPool(10, new DefaultSolrThreadFactory("sim-watchers"));
+    String bufferSize = System.getProperty("jute.maxbuffer", Integer.toString(0xffffff));
+    juteMaxbuffer = Integer.parseInt(bufferSize);
   }
 
   public SimDistribStateManager(ActionThrottle actionThrottle, ActionError actionError) {
@@ -469,7 +474,7 @@ public class SimDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void removeData(String path, int version) throws NoSuchElementException, BadVersionException, IOException {
+  public void removeData(String path, int version) throws NoSuchElementException, NotEmptyException, BadVersionException, IOException {
     multiLock.lock();
     try {
       Node n = traverse(path, false, CreateMode.PERSISTENT);
@@ -480,6 +485,9 @@ public class SimDistribStateManager implements DistribStateManager {
       if (parent == null) {
         throw new IOException("Cannot remove root node");
       }
+      if (!n.children.isEmpty()) {
+        throw new NotEmptyException(path);
+      }
       parent.removeChild(n.name, version);
     } finally {
       multiLock.unlock();
@@ -489,6 +497,9 @@ public class SimDistribStateManager implements DistribStateManager {
 
   @Override
   public void setData(String path, byte[] data, int version) throws NoSuchElementException, BadVersionException, IOException {
+    if (data.length > juteMaxbuffer) {
+      throw new IOException("Len error " + data.length);
+    }
     multiLock.lock();
     Node n = null;
     try {

@@ -31,6 +31,7 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -202,7 +203,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
     Map<String, Metric> metrics = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName()).getMetrics();
 
-    MetricsMap mm = (MetricsMap)metrics.get("CACHE.searcher.queryResultCache");
+    MetricsMap mm = (MetricsMap)((SolrMetricManager.GaugeWrapper)metrics.get("CACHE.searcher.queryResultCache")).getGauge();
     {
       Map<String,Object> statPre = mm.getValue();
       h.query(req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true"));

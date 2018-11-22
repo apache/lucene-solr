@@ -102,6 +102,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
   }
 
   @Test
+  // commented 4-Sep-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testDirectoryCleanupAfterDeleteShard() throws InterruptedException, IOException, SolrServerException {
 
     final String collection = "deleteshard_test";

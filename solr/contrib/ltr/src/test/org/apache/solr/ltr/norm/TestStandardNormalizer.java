@@ -34,7 +34,7 @@ public class TestStandardNormalizer {
       float expectedAvg, float expectedStd) {
     final Normalizer n = Normalizer.getInstance(
         solrResourceLoader,
-        StandardNormalizer.class.getCanonicalName(),
+        StandardNormalizer.class.getName(),
         params);
     assertTrue(n instanceof StandardNormalizer);
     final StandardNormalizer sn = (StandardNormalizer)n;
@@ -122,7 +122,7 @@ public class TestStandardNormalizer {
     params.put("std", "1.5f");
     final Normalizer norm = Normalizer.getInstance(
         solrResourceLoader,
-        StandardNormalizer.class.getCanonicalName(),
+        StandardNormalizer.class.getName(),
         params);
 
     for (final float v : new float[] {10f, 20f, 25f, 30f, 31f, 40f, 42f, 100f,

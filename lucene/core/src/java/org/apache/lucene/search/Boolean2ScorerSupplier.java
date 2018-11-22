@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -29,13 +30,13 @@ import org.apache.lucene.search.BooleanClause.Occur;
 
 final class Boolean2ScorerSupplier extends ScorerSupplier {
 
-  private final BooleanWeight weight;
+  private final Weight weight;
   private final Map<BooleanClause.Occur, Collection<ScorerSupplier>> subs;
   private final ScoreMode scoreMode;
   private final int minShouldMatch;
   private long cost = -1;
 
-  Boolean2ScorerSupplier(BooleanWeight weight,
+  Boolean2ScorerSupplier(Weight weight,
       Map<Occur, Collection<ScorerSupplier>> subs,
       ScoreMode scoreMode, int minShouldMatch) {
     if (minShouldMatch < 0) {
@@ -110,7 +111,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       assert scoreMode.needsScores();
       return new ReqOptSumScorer(
           excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost),
-          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost));
+          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost), scoreMode);
     }
   }
 
@@ -135,7 +136,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
             return 0f;
           }
           @Override
-          public float maxScore() {
+          public float getMaxScore(int upTo) throws IOException {
             return 0f;
           }
         };
@@ -150,9 +151,16 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       }
       for (ScorerSupplier s : requiredScoring) {
         Scorer scorer = s.get(leadCost);
-        requiredScorers.add(scorer);
         scoringScorers.add(scorer);
       }
+      if (scoreMode == ScoreMode.TOP_SCORES && scoringScorers.size() > 1) {
+        Scorer blockMaxScorer = new BlockMaxConjunctionScorer(weight, scoringScorers);
+        if (requiredScorers.isEmpty()) {
+          return blockMaxScorer;
+        }
+        scoringScorers = Collections.singletonList(blockMaxScorer);
+      }
+      requiredScorers.addAll(scoringScorers);
       return new ConjunctionScorer(weight, requiredScorers, scoringScorers);
     }
   }
@@ -179,7 +187,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       } else if (scoreMode == ScoreMode.TOP_SCORES) {
         return new WANDScorer(weight, optionalScorers);
       } else {
-        return new DisjunctionSumScorer(weight, optionalScorers, scoreMode.needsScores());
+        return new DisjunctionSumScorer(weight, optionalScorers, scoreMode);
       }
     }
   }

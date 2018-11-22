@@ -87,15 +87,11 @@ public final class ConstantScoreQuery extends Query {
     private LeafCollector wrapCollector(LeafCollector collector) {
       return new FilterLeafCollector(collector) {
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           // we must wrap again here, but using the scorer passed in as parameter:
-          in.setScorer(new FilterScorer(scorer) {
+          in.setScorer(new FilterScorable(scorer) {
             @Override
-            public float score() throws IOException {
-              return theScore;
-            }
-            @Override
-            public float maxScore() {
+            public float score() {
               return theScore;
             }
           });
@@ -141,12 +137,12 @@ public final class ConstantScoreQuery extends Query {
                   return score;
                 }
                 @Override
-                public float maxScore() {
+                public float getMaxScore(int upTo) throws IOException {
                   return score;
                 }
                 @Override
-                public Collection<ChildScorer> getChildren() {
-                  return Collections.singleton(new ChildScorer(innerScorer, "constant"));
+                public Collection<ChildScorable> getChildren() {
+                  return Collections.singleton(new ChildScorable(innerScorer, "constant"));
                 }
               };
             }
@@ -156,6 +152,11 @@ public final class ConstantScoreQuery extends Query {
               return innerScorerSupplier.cost();
             }
           };
+        }
+
+        @Override
+        public Matches matches(LeafReaderContext context, int doc) throws IOException {
+          return innerWeight.matches(context, doc);
         }
 
         @Override

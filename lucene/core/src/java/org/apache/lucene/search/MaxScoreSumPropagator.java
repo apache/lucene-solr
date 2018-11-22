@@ -16,10 +16,13 @@
  */
 package org.apache.lucene.search;
 
+import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.MathUtil;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Utility class to propagate scoring information in {@link BooleanQuery}, which
@@ -39,12 +42,12 @@ final class MaxScoreSumPropagator {
     // sum for i<j and i>j and then sum them.
     double[] sum1 = new double[v.length];
     for (int i = 1; i < sum1.length; ++i) {
-      sum1[i] = sum1[i-1] + v[i-1];
+      sum1[i] = sum1[i - 1] + v[i - 1];
     }
 
     double[] sum2 = new double[v.length];
     for (int i = sum2.length - 2; i >= 0; --i) {
-      sum2[i] = sum2[i+1] + v[i+1];
+      sum2[i] = sum2[i + 1] + v[i + 1];
     }
 
     double[] result = new double[v.length];
@@ -55,17 +58,18 @@ final class MaxScoreSumPropagator {
   }
 
   private final int numClauses;
-  private final float maxScore;
   private final Scorer[] scorers;
   private final double[] sumOfOtherMaxScores;
 
-  MaxScoreSumPropagator(Collection<? extends Scorer> scorerList) {
+  MaxScoreSumPropagator(Collection<? extends Scorer> scorerList) throws IOException {
     numClauses = scorerList.size();
     scorers = scorerList.toArray(new Scorer[numClauses]);
+
     // We'll need max scores multiple times so we cache them
     float[] maxScores = new float[numClauses];
     for (int i = 0; i < numClauses; ++i) {
-      maxScores[i] = scorers[i].maxScore();
+      scorers[i].advanceShallow(0);
+      maxScores[i] = scorers[i].getMaxScore(NO_MORE_DOCS);
     }
     // Sort by decreasing max score
     new InPlaceMergeSorter() {
@@ -78,6 +82,7 @@ final class MaxScoreSumPropagator {
         maxScores[i] = maxScores[j];
         maxScores[j] = tmpF;
       }
+
       @Override
       protected int compare(int i, int j) {
         return Float.compare(maxScores[j], maxScores[i]);
@@ -85,21 +90,36 @@ final class MaxScoreSumPropagator {
     }.sort(0, scorers.length);
 
     sumOfOtherMaxScores = computeSumOfComplement(maxScores);
-    if (numClauses == 0) {
-      maxScore = 0;
-    } else {
-      maxScore = sumUpperBound(maxScores[0] + sumOfOtherMaxScores[0]);
+  }
+
+  void advanceShallow(int target) throws IOException {
+    for (Scorer s : scorers) {
+      if (s.docID() < target) {
+        s.advanceShallow(target);
+      }
     }
   }
 
-  public float maxScore() {
-    return maxScore;
+  float getMaxScore(int upTo) throws IOException {
+    double maxScore = 0;
+    for (Scorer s : scorers) {
+      if (s.docID() <= upTo) {
+        maxScore += s.getMaxScore(upTo);
+      }
+    }
+    return scoreSumUpperBound(maxScore);
   }
 
-  public void setMinCompetitiveScore(float minScoreSum) {
+  void setMinCompetitiveScore(float minScore) throws IOException {
+    if (minScore == 0) {
+      return ;
+    }
+    // A double that is less than 'minScore' might still be converted to 'minScore'
+    // when casted to a float, so we go to the previous float to avoid this issue
+    float minScoreDown = Math.nextDown(minScore);
     for (int i = 0; i < numClauses; ++i) {
       double sumOfOtherMaxScores = this.sumOfOtherMaxScores[i];
-      float minCompetitiveScore = getMinCompetitiveScore(minScoreSum, sumOfOtherMaxScores);
+      float minCompetitiveScore = getMinCompetitiveScore(minScoreDown, sumOfOtherMaxScores);
       if (minCompetitiveScore <= 0) {
         // given that scorers are sorted by decreasing max score, next scorers will
         // have 0 as a minimum competitive score too
@@ -123,19 +143,19 @@ final class MaxScoreSumPropagator {
     // TODO: is there an efficient way to find the greatest value that meets this requirement?
     float minScore = (float) (minScoreSum - sumOfOtherMaxScores);
     int iters = 0;
-    while (sumUpperBound(minScore + sumOfOtherMaxScores) > minScoreSum) {
+    while (scoreSumUpperBound(minScore + sumOfOtherMaxScores) > minScoreSum) {
       // Important: use ulp of minScoreSum and not minScore to make sure that we
       // converge quickly.
       minScore -= Math.ulp(minScoreSum);
       // this should converge in at most two iterations:
       //  - one because of the subtraction rounding error
       //  - one because of the error introduced by sumUpperBound
-      assert ++iters <= 2: iters;
+      assert ++iters <= 2 : iters;
     }
     return Math.max(minScore, 0f);
   }
 
-  private float sumUpperBound(double sum) {
+  private float scoreSumUpperBound(double sum) {
     if (numClauses <= 2) {
       // When there are only two clauses, the sum is always the same regardless
       // of the order.
@@ -153,5 +173,4 @@ final class MaxScoreSumPropagator {
     double b = MathUtil.sumRelativeErrorBound(numClauses);
     return (float) ((1.0 + 2 * b) * sum);
   }
-
 }

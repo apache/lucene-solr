@@ -253,7 +253,7 @@ Look closely at step 2. In large graphs, step 2 can lead to a very large travers
 . A large traversal that visit millions of unique nodes is slow and takes a lot of memory because cycle detection is tracked in memory.
 . High frequency nodes are also not useful in determining users with similar tastes. The content that fewer people have viewed provides a more precise recommendation.
 
-The `nodes` function has the `maxDocFreq` param to allow for filtering out high frequency nodes. The sample code below shows steps 1 and 2 of the recommendation:
+The `nodes` function has the `maxDocFreq` parameter to allow for filtering out high frequency nodes. The sample code below shows steps 1 and 2 of the recommendation:
 
 [source,plain]
 ----
@@ -433,7 +433,7 @@ Let's break down the expression above step-by-step.
 There is a filter applied to pull back only records where the "action:read". It returns the `articleID` for each record found. In other words, this expression returns all the articles "user1" has read.
 . The inner `nodes` expression operates over the articleIDs returned from step 1. It takes each `articleID` found and searches them against the `articleID` field.
 +
-Note that it skips high frequency nodes using the `maxDocFreq` param to filter out articles that appear over 10,000 times in the logs. It gathers userIDs and aggregates the counts for each user. This step finds the users that have read the same articles that "user1" has read and counts how many of the same articles they have read.
+Note that it skips high frequency nodes using the `maxDocFreq` parameter to filter out articles that appear over 10,000 times in the logs. It gathers userIDs and aggregates the counts for each user. This step finds the users that have read the same articles that "user1" has read and counts how many of the same articles they have read.
 . The inner `top` expression ranks the users emitted from step 2. It will emit the top 30 users who have the most overlap with user1's reading list.
 . The outer `nodes` expression gathers the reading list for the users emitted from step 3. It counts the articleIDs that are gathered.
 +

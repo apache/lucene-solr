@@ -32,6 +32,7 @@ import org.noggit.ObjectBuilder;
 /**
  * Tests the useDocValuesAsStored functionality.
  */
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestUseDocValuesAsStored2 extends RestTestBase {
 
   @Before

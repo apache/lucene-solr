@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,8 +60,10 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
   private long maxRamBytes;
 
   private MetricsMap cacheMap;
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
+  private SolrMetricManager metricManager;
+  private String registryName;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -137,7 +139,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
   }
 
   protected String generateDescription(long maxRamBytes, long ramLowerWatermark, boolean newThread) {
-    String description = "Concurrent LRU Cache(ramMinSize=" + ramLowerWatermark + ", ramMaxSize" + maxRamBytes
+    String description = "Concurrent LRU Cache(ramMinSize=" + ramLowerWatermark + ", ramMaxSize=" + maxRamBytes
         + ", cleanupThread=" + newThread;
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
@@ -226,7 +228,9 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registryName;
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
@@ -277,8 +281,9 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
         }
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, true, scope, getCategory().toString());
+    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
+
 
   // for unit tests only
   MetricsMap getMetricsMap() {

@@ -21,7 +21,10 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
+import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
@@ -30,7 +33,7 @@ import org.apache.solr.common.util.TimeSource;
  * Base class for overriding some behavior of {@link SolrCloudManager}.
  */
 public class DelegatingCloudManager implements SolrCloudManager {
-  private final SolrCloudManager delegate;
+  protected final SolrCloudManager delegate;
   private ObjectCache objectCache = new ObjectCache();
   private TimeSource timeSource = TimeSource.NANO_TIME;
 

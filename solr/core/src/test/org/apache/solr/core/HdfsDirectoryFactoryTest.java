@@ -57,6 +57,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath(), false);
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "1024");
   }
   
   @AfterClass
@@ -64,6 +65,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     HdfsTestUtil.teardownClass(dfsCluster);
     System.clearProperty("solr.hdfs.home");
     System.clearProperty(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_MAXMERGESIZEMB);
+    System.clearProperty("solr.hdfs.blockcache.blocksperbank");
     dfsCluster = null;
   }
 
@@ -146,32 +148,33 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   @Test
   public void testCleanupOldIndexDirectories() throws Exception {
 
-    HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory();
+    try (HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
 
-    System.setProperty("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr1");
-    hdfsFactory.init(new NamedList<>());
-    String dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
-    assertTrue(dataHome.endsWith("/solr1/mock/data"));
-    System.clearProperty("solr.hdfs.home");
+      System.setProperty("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr1");
+      hdfsFactory.init(new NamedList<>());
+      String dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
+      assertTrue(dataHome.endsWith("/solr1/mock/data"));
+      System.clearProperty("solr.hdfs.home");
 
-    FileSystem hdfs = dfsCluster.getFileSystem();
+      FileSystem hdfs = dfsCluster.getFileSystem();
 
-    org.apache.hadoop.fs.Path dataHomePath = new org.apache.hadoop.fs.Path(dataHome);
-    org.apache.hadoop.fs.Path currentIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index");
-    assertTrue(!hdfs.isDirectory(currentIndexDirPath));
-    hdfs.mkdirs(currentIndexDirPath);
-    assertTrue(hdfs.isDirectory(currentIndexDirPath));
+      org.apache.hadoop.fs.Path dataHomePath = new org.apache.hadoop.fs.Path(dataHome);
+      org.apache.hadoop.fs.Path currentIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index");
+      assertTrue(!hdfs.isDirectory(currentIndexDirPath));
+      hdfs.mkdirs(currentIndexDirPath);
+      assertTrue(hdfs.isDirectory(currentIndexDirPath));
 
-    String timestamp1 = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
-    org.apache.hadoop.fs.Path oldIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index."+timestamp1);
-    assertTrue(!hdfs.isDirectory(oldIndexDirPath));
-    hdfs.mkdirs(oldIndexDirPath);
-    assertTrue(hdfs.isDirectory(oldIndexDirPath));
+      String timestamp1 = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
+      org.apache.hadoop.fs.Path oldIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index." + timestamp1);
+      assertTrue(!hdfs.isDirectory(oldIndexDirPath));
+      hdfs.mkdirs(oldIndexDirPath);
+      assertTrue(hdfs.isDirectory(oldIndexDirPath));
 
-    hdfsFactory.cleanupOldIndexDirectories(dataHomePath.toString(), currentIndexDirPath.toString(), false);
+      hdfsFactory.cleanupOldIndexDirectories(dataHomePath.toString(), currentIndexDirPath.toString(), false);
 
-    assertTrue(hdfs.isDirectory(currentIndexDirPath));
-    assertTrue(!hdfs.isDirectory(oldIndexDirPath));
+      assertTrue(hdfs.isDirectory(currentIndexDirPath));
+      assertTrue(!hdfs.isDirectory(oldIndexDirPath));
+    }
   }
   
   @Test
@@ -190,10 +193,10 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     props.put(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_ENABLE, "false");
     props.put(HdfsDirectoryFactory.LOCALITYMETRICS_ENABLED, "true");
     factory.init(new NamedList<>(props));
-    factory.initializeMetrics(metricManager, registry, scope);
+    factory.initializeMetrics(metricManager, registry, "foo", scope);
 
     // get the metrics map for the locality bean
-    MetricsMap metrics = (MetricsMap)metricManager.registry(registry).getMetrics().get("OTHER." + scope + ".hdfsLocality");
+    MetricsMap metrics = (MetricsMap)((SolrMetricManager.GaugeWrapper)metricManager.registry(registry).getMetrics().get("OTHER." + scope + ".hdfsLocality")).getGauge();
     // We haven't done anything, so there should be no data
     Map<String,Object> statistics = metrics.getValue();
     assertEquals("Saw bytes that were not written: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL), 0l,

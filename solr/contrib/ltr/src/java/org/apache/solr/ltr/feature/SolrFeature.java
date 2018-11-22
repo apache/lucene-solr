@@ -179,7 +179,7 @@ public class SolrFeature extends Feature {
         // leaving nothing for the phrase query to parse.
         if (query != null) {
           queryAndFilters.add(query);
-          solrQueryWeight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+          solrQueryWeight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
         } else {
           solrQueryWeight = null;
         }
@@ -288,7 +288,7 @@ public class SolrFeature extends Feature {
       }
 
       @Override
-      public float maxScore() {
+      public float getMaxScore(int upTo) throws IOException {
         return Float.POSITIVE_INFINITY;
       }
     }

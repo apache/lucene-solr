@@ -53,27 +53,27 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
         "w1 w1 w1 w2 w2", "popularity", "8"));
     assertU(commit());
 
-    loadFeature("nomatchfeature", SolrFeature.class.getCanonicalName(),
+    loadFeature("nomatchfeature", SolrFeature.class.getName(),
         "{\"q\":\"foobarbat12345\",\"df\":\"title\"}");
-    loadFeature("yesmatchfeature", SolrFeature.class.getCanonicalName(),
+    loadFeature("yesmatchfeature", SolrFeature.class.getName(),
         "{\"q\":\"w1\",\"df\":\"title\"}");
-    loadFeature("nomatchfeature2", SolrFeature.class.getCanonicalName(),
+    loadFeature("nomatchfeature2", SolrFeature.class.getName(),
         "{\"q\":\"foobarbat12345\",\"df\":\"title\"}");
     loadModel(
         "nomatchmodel",
-        LinearModel.class.getCanonicalName(),
+        LinearModel.class.getName(),
         new String[] {"nomatchfeature", "yesmatchfeature", "nomatchfeature2"},
         "{\"weights\":{\"nomatchfeature\":1.0,\"yesmatchfeature\":1.1,\"nomatchfeature2\":1.1}}");
 
-    loadFeature("nomatchfeature3", SolrFeature.class.getCanonicalName(),
+    loadFeature("nomatchfeature3", SolrFeature.class.getName(),
         "{\"q\":\"foobarbat12345\",\"df\":\"title\"}");
-    loadModel("nomatchmodel2", LinearModel.class.getCanonicalName(),
+    loadModel("nomatchmodel2", LinearModel.class.getName(),
         new String[] {"nomatchfeature3"},
         "{\"weights\":{\"nomatchfeature3\":1.0}}");
 
-    loadFeature("nomatchfeature4", SolrFeature.class.getCanonicalName(),
+    loadFeature("nomatchfeature4", SolrFeature.class.getName(),
         "noMatchFeaturesStore", "{\"q\":\"foobarbat12345\",\"df\":\"title\"}");
-    loadModel("nomatchmodel3", LinearModel.class.getCanonicalName(),
+    loadModel("nomatchmodel3", LinearModel.class.getName(),
         new String[] {"nomatchfeature4"}, "noMatchFeaturesStore",
         "{\"weights\":{\"nomatchfeature4\":1.0}}");
   }
@@ -239,7 +239,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     //  MultipleAdditiveTrees will return scores even for docs without any feature matches
     loadModel(
         "nomatchmodel4",
-        MultipleAdditiveTreesModel.class.getCanonicalName(),
+        MultipleAdditiveTreesModel.class.getName(),
         new String[] {"nomatchfeature4"},
         "noMatchFeaturesStore",
         "{\"trees\":[{\"weight\":\"1f\", \"root\":{\"feature\": \"matchedTitle\",\"threshold\": \"0.5f\",\"left\":{\"value\" : \"-10\"},\"right\":{\"value\" : \"9\"}}}]}");

@@ -27,7 +27,7 @@ import org.apache.lucene.util.StringHelper;
 /** The base for the original two SPT's: Geohash and Quad. Don't subclass this for new SPTs.
  * @lucene.internal */
 //public for RPT pruneLeafyBranches code
-public abstract class LegacyCell implements Cell {
+public abstract class LegacyCell implements CellCanPrune {
 
   // Important: A LegacyCell doesn't share state for getNextLevelCells(), and
   //  LegacySpatialPrefixTree assumes this in its simplify tree logic.
@@ -158,11 +158,6 @@ public abstract class LegacyCell implements Cell {
    * @return A set of cells (no dups), sorted, modifiable, not empty, not null.
    */
   protected abstract Collection<Cell> getSubCells();
-
-  /**
-   * {@link #getSubCells()}.size() -- usually a constant. Should be &gt;=2
-   */
-  public abstract int getSubCellsSize();
 
   @Override
   public boolean isPrefixOf(Cell c) {

@@ -130,8 +130,7 @@ public class CloudConfig {
     private static final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = 30;  // 30 seconds
     private static final boolean DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE = false; 
  
-    // TODO: tune defaults
-    private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 30000;
+    private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 120000;
 
     private String zkHost = System.getProperty("zkHost");
     private int zkClientTimeout = Integer.getInteger("zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);

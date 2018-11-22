@@ -37,13 +37,16 @@ public class TestClusteringResponse extends SolrJettyTestBase {
   @Test
   public void testClusteringResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    /*Load a simple XML with the clustering response encoded in an XML format*/
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleClusteringResponse.xml");
-    assertNotNull(is);
-    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
-    NamedList<Object> response = parser.processResponse(in);
-    in.close();
+    NamedList<Object> response = null;
 
+    /*Load a simple XML with the clustering response encoded in an XML format*/
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource("solrj/sampleClusteringResponse.xml")) {
+      assertNotNull(is);
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+        response = parser.processResponse(in);
+      }
+    }
     QueryResponse qr = new QueryResponse(response, null);
     ClusteringResponse clusteringResponse = qr.getClusteringResponse();
     List<Cluster> clusters = clusteringResponse.getClusters();

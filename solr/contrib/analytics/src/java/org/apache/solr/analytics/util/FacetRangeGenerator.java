@@ -283,7 +283,7 @@ class IntegerFacetRangeGenerator extends FacetRangeGenerator<Integer> {
   }
   @Override
   public Integer parseAndAddGap(Integer value, String gap) {
-    return new Integer(value.intValue() + Integer.valueOf(gap).intValue());
+    return value.intValue() + Integer.valueOf(gap).intValue();
   }
 }
 class LongFacetRangeGenerator extends FacetRangeGenerator<Long> {
@@ -295,7 +295,7 @@ class LongFacetRangeGenerator extends FacetRangeGenerator<Long> {
   }
   @Override
   public Long parseAndAddGap(Long value, String gap) {
-    return new Long(value.longValue() + Long.valueOf(gap).longValue());
+    return value.longValue() + Long.valueOf(gap).longValue();
   }
 }
 
@@ -308,7 +308,7 @@ class FloatFacetRangeGenerator extends FacetRangeGenerator<Float> {
   }
   @Override
   public Float parseAndAddGap(Float value, String gap) {
-    return new Float(value.floatValue() + Float.valueOf(gap).floatValue());
+    return value.floatValue() + Float.valueOf(gap).floatValue();
   }
 }
 
@@ -321,7 +321,7 @@ class DoubleFacetRangeGenerator extends FacetRangeGenerator<Double> {
   }
   @Override
   public Double parseAndAddGap(Double value, String gap) {
-    return new Double(value.doubleValue() + Double.valueOf(gap).doubleValue());
+    return value.doubleValue() + Double.valueOf(gap).doubleValue();
   }
 }
 class DateFacetRangeGenerator extends FacetRangeGenerator<Date> {

@@ -39,7 +39,7 @@ public class IdUtils {
    * uses {@link TimeSource#CURRENT_TIME} for timestamp values.
    */
   public static final String timeRandomId() {
-    return timeRandomId(TimeUnit.MILLISECONDS.convert(TimeSource.CURRENT_TIME.getTime(), TimeUnit.NANOSECONDS));
+    return timeRandomId(TimeUnit.MILLISECONDS.convert(TimeSource.CURRENT_TIME.getTimeNs(), TimeUnit.NANOSECONDS));
   }
 
   /**

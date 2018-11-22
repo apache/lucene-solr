@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<schema name="minimal" version="1.6">
+  <uniqueKey>id</uniqueKey>
+  
+  <field name="id" type="str" indexed="true" docValues="true" stored="true" />
+  <field name="id_i" type="int" indexed="true" docValues="true" stored="true" />
+
+  <!-- NOTE: docValues="true" should be implicit for SortableTextField -->
+
+  <field name="whitespace_stxt" type="whitespace_stxt" indexed="true" stored="true" />
+  <field name="whitespace_m_stxt" type="whitespace_stxt" indexed="true" stored="true" multiValued="true" />
+  <!-- explicit docValues="false" in this version... -->
+  <field name="whitespace_nodv_stxt" type="whitespace_stxt" indexed="true" docValues="false" stored="true" />
+  <!-- only docValues in this version, no index or stored... -->
+  <field name="whitespace_nois_stxt" type="whitespace_stxt" indexed="false" docValues="true" stored="false" />
+
+  <field name="whitespace_max3_stxt" type="whitespace_max3_stxt" />
+  <field name="whitespace_max6_stxt" type="whitespace_max6_stxt" />
+  <field name="whitespace_max0_stxt" type="whitespace_max0_stxt" />
+  <field name="whitespace_maxNeg_stxt" type="whitespace_maxNeg_stxt" />
+  
+  <field name="whitespace_f_stxt" type="whitespace_f_stxt" indexed="true" docValues="true" stored="true" />
+  <field name="whitespace_l_stxt" type="whitespace_l_stxt" indexed="true" docValues="true" stored="true" />
+
+  <field name="keyword_stxt" type="keyword_stxt" indexed="true" stored="true" />
+  <!-- explicit docValues="true" in this field version... -->
+  <field name="keyword_dv_stxt" type="keyword_stxt" indexed="true" docValues="true" stored="true" />
+
+  <!-- for behavioral equivilency testing -->
+  <field name="whitespace_plain_txt" type="whitespace_plain_txt" />
+  <field name="whitespace_plain_str" type="str" />
+  <field name="keyword_s_dv" type="str" indexed="false" docValues="true" stored="true" />
+  <field name="keyword_s" type="str" indexed="true" docValues="false" stored="true" />
+
+  <!-- . -->
+  
+  <copyField source="whitespace_stxt" dest="whitespace_m_stxt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_nodv_stxt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_nois_stxt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_max3_stxt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_max6_stxt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_max0_stxt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_maxNeg_stxt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_plain_txt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_plain_str"/>
+  
+  <copyField source="whitespace_f_stxt" dest="whitespace_l_stxt"/>
+  
+  <copyField source="keyword_stxt" dest="keyword_dv_stxt"/>
+  <copyField source="keyword_stxt" dest="keyword_s"/>
+  <copyField source="keyword_stxt" dest="keyword_s_dv"/>
+  
+  <copyField source="id" dest="id_i"/>
+  
+  <!-- . -->
+  
+  <!-- NOTE: explicitly not specifying docValues=true on these, it should be implicit default -->
+  <fieldType name="whitespace_stxt" class="solr.SortableTextField">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="whitespace_max3_stxt" class="solr.SortableTextField" maxCharsForDocValues="3">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="whitespace_max6_stxt" class="solr.SortableTextField" maxCharsForDocValues="6">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="whitespace_max0_stxt" class="solr.SortableTextField" maxCharsForDocValues="0">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="whitespace_maxNeg_stxt" class="solr.SortableTextField" maxCharsForDocValues="-42">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="whitespace_l_stxt" class="solr.SortableTextField" sortMissingLast="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="whitespace_f_stxt" class="solr.SortableTextField" sortMissingFirst="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="keyword_stxt" class="solr.SortableTextField">
+    <analyzer>
+      <tokenizer class="solr.KeywordTokenizerFactory" />
+    </analyzer>
+  </fieldType>
+
+  <!-- some special edge cases for testing how useDocValuesAsStored (on type or field)
+       interacts with maxCharsForDocValues
+       NOTE: 2 types and 6 fields ending in '_usedvs': either '_has_usedvs' or '_negates_usedvs'
+  -->
+  <!-- max6 -->
+  <field name="max6_field_has_usedvs" type="whitespace_max6_stxt" stored="false" useDocValuesAsStored="true" />
+  <field name="max6_type_has_usedvs" type="max6_type_has_usedvs" />
+  <field name="max6_field_negates_usedvs" type="max6_type_has_usedvs" useDocValuesAsStored="false" />
+  <fieldType name="max6_type_has_usedvs" class="solr.SortableTextField" stored="false"
+             maxCharsForDocValues="6" useDocValuesAsStored="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory" />
+    </analyzer>
+  </fieldType>
+  <!-- max0 -->
+  <field name="max0_field_has_usedvs" type="whitespace_max0_stxt" stored="false" useDocValuesAsStored="true" />
+  <field name="max0_type_has_usedvs" type="max0_type_has_usedvs" />
+  <field name="max0_field_negates_usedvs" type="max0_type_has_usedvs" useDocValuesAsStored="false" />
+  <fieldType name="max0_type_has_usedvs" class="solr.SortableTextField" stored="false"
+             maxCharsForDocValues="0" useDocValuesAsStored="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory" />
+    </analyzer>
+  </fieldType>
+
+  
+  <fieldType name="str" class="solr.StrField"/>
+  <fieldType name="whitespace_plain_txt" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory" />
+    </analyzer>
+  </fieldType>
+  
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}"/>
+</schema>

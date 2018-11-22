@@ -76,20 +76,21 @@ public interface CollectionParams {
     RELOAD(true, LockLevel.COLLECTION),
     SYNCSHARD(true, LockLevel.SHARD),
     CREATEALIAS(true, LockLevel.COLLECTION),
-    CREATEROUTEDALIAS(true, LockLevel.COLLECTION),
     DELETEALIAS(true, LockLevel.COLLECTION),
-    MODIFYALIAS(true, LockLevel.COLLECTION),
+    ALIASPROP(true, LockLevel.COLLECTION),
     LISTALIASES(false, LockLevel.NONE),
-    ROUTEDALIAS_CREATECOLL(true, LockLevel.COLLECTION),
+    MAINTAINROUTEDALIAS(true, LockLevel.COLLECTION),
+    DELETEROUTEDALIASCOLLECTIONS(true, LockLevel.COLLECTION),
     SPLITSHARD(true, LockLevel.SHARD),
     DELETESHARD(true, LockLevel.SHARD),
     CREATESHARD(true, LockLevel.COLLECTION),
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
-    MIGRATE(true, LockLevel.SHARD),
+    MIGRATE(true, LockLevel.COLLECTION),
     ADDROLE(true, LockLevel.NONE),
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
+    COLLECTIONPROP(true, LockLevel.COLLECTION),
     REQUESTSTATUS(false, LockLevel.NONE),
     DELETESTATUS(false, LockLevel.NONE),
     ADDREPLICA(true, LockLevel.SHARD),
@@ -117,7 +118,10 @@ public interface CollectionParams {
     //TODO when we have a node level lock use it here
     REPLACENODE(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
-    MOCK_REPLICA_TASK(false, LockLevel.REPLICA)
+    MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
+    NONE(false, LockLevel.NONE),
+    // TODO: not implemented yet
+    MERGESHARDS(true, LockLevel.SHARD)
     ;
     public final boolean isWrite;
 

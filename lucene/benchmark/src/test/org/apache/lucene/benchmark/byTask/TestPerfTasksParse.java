@@ -38,8 +38,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
-import conf.ConfLoader;
-
 /** Test very simply that perf tasks are parses as expected. */
 @SuppressSysoutChecks(bugUrl = "very noisy")
 public class TestPerfTasksParse extends LuceneTestCase {
@@ -114,7 +112,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
   public void testParseExamples() throws Exception {
     // hackedy-hack-hack
     boolean foundFiles = false;
-    final Path examplesDir = Paths.get(ConfLoader.class.getResource(".").toURI());
+    final Path examplesDir = Paths.get(getClass().getResource("/conf").toURI());
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(examplesDir, "*.alg")) {
       for (Path path : stream) {
         Config config = new Config(Files.newBufferedReader(path, StandardCharsets.UTF_8));

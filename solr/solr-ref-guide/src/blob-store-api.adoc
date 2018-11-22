@@ -34,7 +34,7 @@ The BlobHandler is automatically registered in the .system collection. The `solr
 
 If you do not use the `-shards` or `-replicationFactor` options, then defaults of numShards=1 and replicationFactor=3 (or maximum nodes in the cluster) will be used.
 
-You can create the `.system` collection with the <<collections-api.adoc#collections-api,Collections API>>, as in this example:
+You can create the `.system` collection with the <<collections-api.adoc#create,CREATE command>> of the Collections API, as in this example:
 
 [.dynamic-tabs]
 --
@@ -44,8 +44,10 @@ You can create the `.system` collection with the <<collections-api.adoc#collecti
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/admin/collections?action=CREATE&name=.system&replicationFactor=2
+curl http://localhost:8983/solr/admin/collections?action=CREATE&name=.system&replicationFactor=2&numShards=2
 ----
+
+Note that this example will create the .system collection across 2 shards with a replication factor of 2; you may need to customize this for your Solr implementation.
 ====
 
 [example.tab-pane#v2create]
@@ -54,8 +56,10 @@ curl http://localhost:8983/solr/admin/collections?action=CREATE&name=.system&rep
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"create":{"name":".system", "replicationFactor": 2}}' http://localhost:8983/api/collections
+curl -X POST -H 'Content-type: application/json' -d '{"create": {"name": ".system", "numShards": "2", "replicationFactor": "2"}}' http://localhost:8983/api/collections
 ----
+
+Note that this example will create the .system collection across 2 shards with a replication factor of 2; you may need to customize this for your Solr implementation.
 ====
 --
 
@@ -64,6 +68,12 @@ IMPORTANT: The `bin/solr` script cannot be used to create the `.system` collecti
 == Upload Files to Blob Store
 
 After the `.system` collection has been created, files can be uploaded to the blob store with a request similar to the following:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1upload]
+====
+[.tab-label]*V1 API*
 
 [source,bash]
 ----
@@ -76,39 +86,42 @@ For example, to upload a file named "test1.jar" as a blob named "test", you woul
 ----
 curl -X POST -H 'Content-Type: application/octet-stream' --data-binary @test1.jar http://localhost:8983/solr/.system/blob/test
 ----
+====
+
+[example.tab-pane#v2upload]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/octet-stream' --data-binary @{filename} http://localhost:8983/api/collections/.system/blob/{blobname}
+----
+
+For example, to upload a file named "test1.jar" as a blob named "test", you would make a POST request like:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/octet-stream' --data-binary @test1.jar http://localhost:8983/api/collections/.system/blob/test
+----
+====
+--
 
 A GET request will return the list of blobs and other details:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1getblob]
+====
+[.tab-label]*V1 API*
+
+For all blobs:
 
 [source,bash]
 ----
 curl http://localhost:8983/solr/.system/blob?omitHeader=true
 ----
 
-Output:
-
-[source,json]
-----
-{
-  "response":{"numFound":1,"start":0,"docs":[
-      {
-        "id":"test/1",
-        "md5":"20ff915fa3f5a5d66216081ae705c41b",
-        "blobName":"test",
-        "version":1,
-        "timestamp":"2015-02-04T16:45:48.374Z",
-        "size":13108}]
-  }
-}
-----
-
-Details on individual blobs can be accessed with a request similar to:
-
-[source,bash]
-----
-curl http://localhost:8983/solr/.system/blob/{blobname}
-----
-
-For example, this request will return only the blob named 'test':
+For a single blob:
 
 [source,bash]
 ----
@@ -131,20 +144,85 @@ Output:
   }
 }
 ----
+====
 
-The filestream response writer can return a particular version of a blob for download, as in:
+[example.tab-pane#v2getblob]
+====
+[.tab-label]*V2 API*
 
+For all blobs:
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/.system/blob?omitHeader=true
+----
+
+For a single blob:
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/.system/blob/test?omitHeader=true
+----
+
+Output:
+
+[source,json]
+----
+{
+  "response":{"numFound":1,"start":0,"docs":[
+      {
+        "id":"test/1",
+        "md5":"20ff915fa3f5a5d66216081ae705c41b",
+        "blobName":"test",
+        "version":1,
+        "timestamp":"2015-02-04T16:45:48.374Z",
+        "size":13108}]
+  }
+}
+----
+====
+--
+
+The filestream response writer can retrieve a blob for download, as in:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1retrieveblob]
+====
+[.tab-label]*V1 API*
+
+For a specific version of a blob, include the version to the request:
 [source,bash]
 ----
 curl http://localhost:8983/solr/.system/blob/{blobname}/{version}?wt=filestream > {outputfilename}
 ----
 
-For the latest version of a blob, the \{version} can be omitted,
+For the latest version of a blob, the `\{version}` can be omitted:
 
 [source,bash]
 ----
 curl http://localhost:8983/solr/.system/blob/{blobname}?wt=filestream > {outputfilename}
 ----
+====
+
+[example.tab-pane#v2retrieveblob]
+====
+[.tab-label]*V2 API*
+For a specific version of a blob, include the version to the request:
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/.system/blob/{blobname}/{version}?wt=filestream > {outputfilename}
+----
+
+For the latest version of a blob, the `\{version}` can be omitted:
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/.system/blob/{blobname}?wt=filestream > {outputfilename}
+----
+====
+--
 
 == Use a Blob in a Handler or Component
 

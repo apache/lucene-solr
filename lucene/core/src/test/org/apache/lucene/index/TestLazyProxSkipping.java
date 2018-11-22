@@ -130,7 +130,6 @@ public class TestLazyProxSkipping extends LuceneTestCase {
  
     public void testLazySkipping() throws IOException {
       final String fieldFormat = TestUtil.getPostingsFormat(this.field);
-      assumeFalse("This test cannot run with Memory postings format", fieldFormat.equals("Memory"));
       assumeFalse("This test cannot run with Direct postings format", fieldFormat.equals("Direct"));
       assumeFalse("This test cannot run with SimpleText postings format", fieldFormat.equals("SimpleText"));
 
@@ -152,7 +151,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         writer.close();
         IndexReader reader = DirectoryReader.open(directory);
 
-        PostingsEnum tp = MultiFields.getTermPositionsEnum(reader,
+        PostingsEnum tp = MultiTerms.getTermPostingsEnum(reader,
                                                                    this.field,
                                                                    new BytesRef("b"));
 
@@ -162,7 +161,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
             assertEquals(tp.nextPosition(), 1);
         }
 
-        tp = MultiFields.getTermPositionsEnum(reader,
+        tp = MultiTerms.getTermPostingsEnum(reader,
                                               this.field,
                                               new BytesRef("a"));
 

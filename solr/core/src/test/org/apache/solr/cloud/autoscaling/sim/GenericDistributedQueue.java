@@ -37,7 +37,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.Stats;
@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * Implementation based on {@link org.apache.solr.cloud.ZkDistributedQueue}
  */
 public class GenericDistributedQueue implements DistributedQueue {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String PREFIX = "qn-";
 
@@ -252,7 +252,7 @@ public class GenericDistributedQueue implements DistributedQueue {
             try {
               stateManager.removeData(ops.get(j).getPath(), -1);
             } catch (NoSuchElementException e2) {
-              LOG.debug("Can not remove node which is not exist : " + ops.get(j).getPath());
+              log.debug("Can not remove node which is not exist : " + ops.get(j).getPath());
             }
           }
         }
@@ -419,7 +419,7 @@ public class GenericDistributedQueue implements DistributedQueue {
         for (String childName : childNames) {
           // Check format
           if (!childName.regionMatches(0, PREFIX, 0, PREFIX.length())) {
-            LOG.debug("Found child node with improper name: " + childName);
+            log.debug("Found child node with improper name: " + childName);
             continue;
           }
           orderedChildren.add(childName);

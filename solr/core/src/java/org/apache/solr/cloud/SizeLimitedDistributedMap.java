@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.util.List;
-
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.KeeperException;
@@ -34,9 +33,19 @@ public class SizeLimitedDistributedMap extends DistributedMap {
 
   private final int maxSize;
 
+  /**
+   * This observer will be called when this map overflows, and deletes the excess of elements
+   */
+  private final OnOverflowObserver onOverflowObserver;
+
   public SizeLimitedDistributedMap(SolrZkClient zookeeper, String dir, int maxSize) {
+    this(zookeeper, dir, maxSize, null);
+  }
+  
+  public SizeLimitedDistributedMap(SolrZkClient zookeeper, String dir, int maxSize, OnOverflowObserver onOverflowObserver) {
     super(zookeeper, dir);
     this.maxSize = maxSize;
+    this.onOverflowObserver = onOverflowObserver;
   }
 
   @Override
@@ -47,7 +56,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
 
       int cleanupSize = maxSize / 10;
 
-      final PriorityQueue priorityQueue = new PriorityQueue<Long>(cleanupSize) {
+      final PriorityQueue<Long> priorityQueue = new PriorityQueue<Long>(cleanupSize) {
         @Override
         protected boolean lessThan(Long a, Long b) {
           return (a > b);
@@ -59,15 +68,21 @@ public class SizeLimitedDistributedMap extends DistributedMap {
         priorityQueue.insertWithOverflow(stat.getMzxid());
       }
 
-      long topElementMzxId = (Long) priorityQueue.top();
+      long topElementMzxId = priorityQueue.top();
 
       for (String child : children) {
         Stat stat = zookeeper.exists(dir + "/" + child, null, true);
-        if (stat.getMzxid() <= topElementMzxId)
+        if (stat.getMzxid() <= topElementMzxId) {
           zookeeper.delete(dir + "/" + child, -1, true);
+          if (onOverflowObserver != null) onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
+        }
       }
     }
 
     super.put(trackingId, data);
+  }
+  
+  interface OnOverflowObserver {
+    void onChildDelete(String child) throws KeeperException, InterruptedException;
   }
 }

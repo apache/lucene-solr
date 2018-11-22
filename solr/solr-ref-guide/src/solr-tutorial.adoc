@@ -1,11 +1,27 @@
 = Solr Tutorial
 :page-tocclass: right
 :experimental:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
-This tutorial covers getting Solr up and running, ingesting a variety of data sources into multiple collections,
+This tutorial covers getting Solr up and running, ingesting a variety of data sources into Solr collections,
 and getting a feel for the Solr administrative and search interfaces.
 
-It is organized into three sections that each build on the one before it. The <<exercise-1,first exercise>> will ask you to start Solr, create a collection, index some basic documents, and then perform a few searches.
+The tutorial is organized into three sections that each build on the one before it. The <<exercise-1,first exercise>> will ask you to start Solr, create a collection, index some basic documents, and then perform some searches.
 
 The <<exercise-2,second exercise>> works with a different set of data, and explores requesting facets with the dataset.
 
@@ -18,7 +34,7 @@ Finally, we'll introduce <<Spatial Queries,spatial search>> and show you how to 
 To follow along with this tutorial, you will need...
 
 // TODO possibly remove this system requirements or only replace the link
-. To meet the {solr-javadocs}/solr/api/SYSTEM_REQUIREMENTS.html[system requirements]
+. To meet the {solr-javadocs}/SYSTEM_REQUIREMENTS.html[system requirements]
 . An Apache Solr release http://lucene.apache.org/solr/downloads.html[download]. This tutorial is designed for Apache Solr {solr-docs-version}.
 
 For best results, please run the browser showing this tutorial and the Solr server on the same machine so tutorial links will correctly point to your Solr server.
@@ -267,7 +283,7 @@ Solr has very powerful search options, and this tutorial won't be able to cover 
 
 ==== Search for a Single Term
 
-To search for a term, enter it as the `q` param value in the Solr Admin UI Query screen, replacing `\*:*` with the term you want to find.
+To search for a term, enter it as the `q` parameter value in the Solr Admin UI Query screen, replacing `\*:*` with the term you want to find.
 
 Enter "foundation" and hit btn:[Execute Query] again.
 
@@ -497,6 +513,8 @@ This starts the first node. When it's done start the second node, and tell it ho
 
 `./bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983`
 
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+
 === Create a New Collection
 
 We're going to use a whole new data set in this exercise, so it would be better to have a new collection instead of trying to reuse the one we had before.
@@ -529,7 +547,7 @@ WARNING: Using _default configset. Data driven schema functionality is enabled b
          NOT RECOMMENDED for production use.
 
          To turn it off:
-            curl http://localhost:7574/solr/films/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+            bin/solr config -c films -p 7574 -action set-user-property -property update.autoCreateFields -value false
 
 Connecting to ZooKeeper at localhost:9983 ...
 INFO  - 2017-07-27 15:07:46.191; org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider; Cluster at localhost:9983 ready
@@ -567,7 +585,7 @@ First, we are using a "managed schema", which is configured to only be modified 
 
 Second, we are using "field guessing", which is configured in the `solrconfig.xml` file (and includes most of Solr's various configuration settings). Field guessing is designed to allow us to start using Solr without having to define all the fields we think will be in our documents before trying to index them. This is why we call it "schemaless", because you can start quickly and let Solr create fields for you as it encounters them in documents.
 
-Sounds great! Well, not really, there are limitations. It's a bit brute force, and if it guesses wrong, you can't change much about a field after data has been indexed without having to reindex. If we only have a few thousand documents that might not be bad, but if you have millions and millions of documents, or, worse, don't have access to the original data anymore, this can be a real problem.
+Sounds great! Well, not really, there are limitations. It's a bit brute force, and if it guesses wrong, you can't change much about a field after data has been indexed without having to re-index. If we only have a few thousand documents that might not be bad, but if you have millions and millions of documents, or, worse, don't have access to the original data anymore, this can be a real problem.
 
 For these reasons, the Solr community does not recommend going to production without a schema that you have defined yourself. By this we mean that the schemaless features are fine to start with, but you should still always make sure your schema matches your expectations for how you want your data indexed and how users are going to query it.
 
@@ -918,7 +936,7 @@ Go ahead and edit any of the existing example data files, change some of the dat
 
 === Deleting Data
 
-If you need to iterate a few times to get your schema right, you may want to delete documents to clear out the collection and try again. Note, however, that merely removing documents doesn't change the underlying field definitions. Essentially, this will allow you to reindex your data after making changes to fields for your needs.
+If you need to iterate a few times to get your schema right, you may want to delete documents to clear out the collection and try again. Note, however, that merely removing documents doesn't change the underlying field definitions. Essentially, this will allow you to re-index your data after making changes to fields for your needs.
 
 You can delete data by POSTing a delete command to the update URL and specifying the value of the document's unique key field, or a query that matches multiple documents (be careful with that one!). We can use `bin/post` to delete documents also if we structure the request properly.
 

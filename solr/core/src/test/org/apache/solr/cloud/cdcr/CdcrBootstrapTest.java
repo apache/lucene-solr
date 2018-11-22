@@ -57,6 +57,8 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
    * call returns the same version as the last update indexed on the source.
    */
   @Test
+  // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testConvertClusterToCdcrAndBootstrap() throws Exception {
     // start the target first so that we know its zkhost
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(1, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
@@ -105,7 +107,8 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
 
         // setup the target cluster
         target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
-        CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 1)
+        CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 2)
+            .setMaxShardsPerNode(2)
             .process(target.getSolrClient());
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
@@ -118,6 +121,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         log.info("Cdcr queue response: " + response.getResponse());
         long foundDocs = CdcrTestsUtil.waitForClusterToSync(numDocs, targetSolrClient);
         assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
+        assertTrue(CdcrTestsUtil.assertShardInSync("cdcr-target", "shard1", targetSolrClient)); // with more than 1 replica
 
         params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.COLLECTIONCHECKPOINT.toString());
@@ -235,6 +239,9 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     }
   }
 
+  // 29-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+  @Test
   public void testBootstrapWithContinousIndexingOnSourceCluster() throws Exception {
     // start the target first so that we know its zkhost
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(1, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
@@ -298,5 +305,4 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
       target.shutdown();
     }
   }
-
 }

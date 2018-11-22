@@ -166,7 +166,9 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     if (TEST_NIGHTLY) addVmOpt(b, SYSPROP_NIGHTLY, TEST_NIGHTLY);
     if (TEST_WEEKLY) addVmOpt(b, SYSPROP_WEEKLY, TEST_WEEKLY);
     if (TEST_SLOW) addVmOpt(b, SYSPROP_SLOW, TEST_SLOW);
+    if (TEST_MONSTER) addVmOpt(b, SYSPROP_MONSTER, TEST_MONSTER);
     if (TEST_AWAITSFIX) addVmOpt(b, SYSPROP_AWAITSFIX, TEST_AWAITSFIX);
+    if (TEST_BADAPPLES) addVmOpt(b, SYSPROP_BADAPPLES, TEST_BADAPPLES);
 
     // Codec, postings, directories.
     if (!TEST_CODEC.equals("random")) addVmOpt(b, "tests.codec", TEST_CODEC);

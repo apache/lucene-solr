@@ -37,7 +37,7 @@ public class TestSetOnce extends LuceneTestCase {
     public void run() {
       try {
         sleep(RAND.nextInt(10)); // sleep for a short time
-        set.set(new Integer(Integer.parseInt(getName().substring(2))));
+        set.set(Integer.valueOf(getName().substring(2)));
         success = true;
       } catch (InterruptedException e) {
         // ignore
@@ -57,17 +57,17 @@ public class TestSetOnce extends LuceneTestCase {
   
   @Test(expected=AlreadySetException.class)
   public void testSettingCtor() throws Exception {
-    SetOnce<Integer> set = new SetOnce<>(new Integer(5));
+    SetOnce<Integer> set = new SetOnce<>(5);
     assertEquals(5, set.get().intValue());
-    set.set(new Integer(7));
+    set.set(7);
   }
   
   @Test(expected=AlreadySetException.class)
   public void testSetOnce() throws Exception {
     SetOnce<Integer> set = new SetOnce<>();
-    set.set(new Integer(5));
+    set.set(5);
     assertEquals(5, set.get().intValue());
-    set.set(new Integer(7));
+    set.set(7);
   }
   
   @Test

@@ -84,11 +84,8 @@ abstract class TermsCollector<DV> extends DocValuesTermsCollector<DV> {
 
     @Override
     public void collect(int doc) throws IOException {
-      if (docValues.docID() < doc) {
-        docValues.advance(doc);
-      }
       BytesRef term;
-      if (docValues.docID() == doc) {
+      if (docValues.advanceExact(doc)) {
         term = docValues.binaryValue();
       } else {
         term = new BytesRef(BytesRef.EMPTY_BYTES);

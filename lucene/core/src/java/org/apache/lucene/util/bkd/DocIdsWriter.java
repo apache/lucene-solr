@@ -142,7 +142,7 @@ class DocIdsWriter {
     }
   }
 
-  static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count; i++) {
       visitor.visit(in.readInt());
     }

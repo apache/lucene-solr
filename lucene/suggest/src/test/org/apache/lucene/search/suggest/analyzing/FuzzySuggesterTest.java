@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.analyzing;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,7 +35,6 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.suggest.Input;
@@ -240,50 +238,24 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   public void testGraphDups() throws Exception {
 
-    final Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
-        
-        return new TokenStreamComponents(tokenizer) {
-          int tokenStreamCounter = 0;
-          final TokenStream[] tokenStreams = new TokenStream[] {
-            new CannedTokenStream(new Token[] {
-                token("wifi",1,1),
-                token("hotspot",0,2),
-                token("network",1,1),
-                token("is",1,1),
-                token("slow",1,1)
-              }),
-            new CannedTokenStream(new Token[] {
-                token("wi",1,1),
-                token("hotspot",0,3),
-                token("fi",1,1),
-                token("network",1,1),
-                token("is",1,1),
-                token("fast",1,1)
-
-              }),
-            new CannedTokenStream(new Token[] {
-                token("wifi",1,1),
-                token("hotspot",0,2),
-                token("network",1,1)
-              }),
-          };
-
-          @Override
-          public TokenStream getTokenStream() {
-            TokenStream result = tokenStreams[tokenStreamCounter];
-            tokenStreamCounter++;
-            return result;
-          }
-         
-          @Override
-          protected void setReader(final Reader reader) {
-          }
-        };
-      }
-    };
+    final Analyzer analyzer = new AnalyzingSuggesterTest.MultiCannedAnalyzer(
+        new CannedTokenStream(
+            token("wifi", 1, 1),
+            token("hotspot", 0, 2),
+            token("network", 1, 1),
+            token("is", 1, 1),
+            token("slow", 1, 1)),
+        new CannedTokenStream(
+            token("wi", 1, 1),
+            token("hotspot", 0, 3),
+            token("fi", 1, 1),
+            token("network", 1, 1),
+            token("is", 1, 1),
+            token("fast", 1, 1)),
+        new CannedTokenStream(
+            token("wifi", 1, 1),
+            token("hotspot",0,2),
+            token("network",1,1)));
 
     Input keys[] = new Input[] {
         new Input("wifi network is slow", 50),
@@ -326,43 +298,18 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     //  using the above map, so that the suggest module does not need a dependency on the 
     //  synonym module 
 
-    final Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
-        
-        return new TokenStreamComponents(tokenizer) {
-          int tokenStreamCounter = 0;
-          final TokenStream[] tokenStreams = new TokenStream[] {
-            new CannedTokenStream(new Token[] {
-                token("ab",1,1),
-                token("ba",0,1),
-                token("xc",1,1)
-              }),
-            new CannedTokenStream(new Token[] {
-                token("ba",1,1),          
-                token("xd",1,1)
-              }),
-            new CannedTokenStream(new Token[] {
-                token("ab",1,1),
-                token("ba",0,1),
-                token("x",1,1)
-              })
-          };
-
-          @Override
-          public TokenStream getTokenStream() {
-            TokenStream result = tokenStreams[tokenStreamCounter];
-            tokenStreamCounter++;
-            return result;
-          }
-         
-          @Override
-          protected void setReader(final Reader reader) {
-          }
-        };
-      }
-    };
+    final Analyzer analyzer = new AnalyzingSuggesterTest.MultiCannedAnalyzer(
+        new CannedTokenStream(
+            token("ab", 1, 1),
+            token("ba", 0, 1),
+            token("xc", 1, 1)),
+        new CannedTokenStream(
+            token("ba", 1, 1),
+            token("xd", 1, 1)),
+        new CannedTokenStream(
+            token("ab", 1, 1),
+            token("ba", 0, 1),
+            token("x", 1, 1)));
 
     Input keys[] = new Input[] {
         new Input("ab xc", 50),
@@ -399,41 +346,17 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     ts.end();
     ts.close();
   } 
-  */ 
+  */
 
-  private final Analyzer getUnusualAnalyzer() {
-    return new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
-        
-        return new TokenStreamComponents(tokenizer) {
-
-          int count;
-
-          @Override
-          public TokenStream getTokenStream() {
-            // 4th time we are called, return tokens a b,
-            // else just a:
-            if (count++ != 3) {
-              return new CannedTokenStream(new Token[] {
-                  token("a", 1, 1),
-                });
-            } else {
-              // After that "a b":
-              return new CannedTokenStream(new Token[] {
-                  token("a", 1, 1),
-                  token("b", 1, 1),
-                });
-            }
-          }
-         
-          @Override
-          protected void setReader(final Reader reader) {
-          }
-        };
-      }
-    };
+  private Analyzer getUnusualAnalyzer() {
+    // First three calls just returns "a", then returns ["a","b"], then "a" again
+    return new AnalyzingSuggesterTest.MultiCannedAnalyzer(
+        new CannedTokenStream(token("a", 1, 1)),
+        new CannedTokenStream(token("a", 1, 1)),
+        new CannedTokenStream(token("a", 1, 1)),
+        new CannedTokenStream(token("a", 1, 1), token("b", 1, 1)),
+        new CannedTokenStream(token("a", 1, 1)),
+        new CannedTokenStream(token("a", 1, 1)));
   }
 
   public void testExactFirst() throws Exception {

@@ -1,0 +1,137 @@
+= Scalar Math
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The most basic math expressions are scalar expressions. Scalar expressions
+perform mathematical operations on numbers.
+
+For example the expression below adds two numbers together:
+
+[source,text]
+----
+add(1, 1)
+----
+
+When this expression is sent to the `/stream` handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "return-value": 2
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 2
+      }
+    ]
+  }
+}
+----
+
+Math expressions can be nested. For example in the expression
+below the output of the `add` function is the second parameter
+of the `pow` function:
+
+[source,text]
+----
+pow(10, add(1,1))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "return-value": 100
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+== Streaming Scalar Math
+
+Scalar math expressions can also be applied to each tuple in a stream
+through use of the `select` stream decorator. The `select` function wraps a
+stream of tuples and selects fields to include in each tuple.
+The `select` function can also use math expressions to compute
+new values and add them to the outgoing tuples.
+
+In the example below the `select` expression is wrapping a search
+expression. The `select` function is selecting the *price_f* field
+and computing a new field called *newPrice* using the `mult` math
+expression.
+
+The first parameter of the `mult` expression is the *price_f* field.
+The second parameter is the scalar value 10. This multiplies the value
+of the *price_f* field in each tuple by 10.
+
+[source,text]
+----
+select(search(collection2, q="*:*", fl="price_f", sort="price_f desc", rows="3"),
+       price_f,
+       mult(price_f, 10) as newPrice)
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "price_f": 0.99999994,
+        "newPrice": 9.9999994
+      },
+      {
+        "price_f": 0.99999994,
+        "newPrice": 9.9999994
+      },
+      {
+        "price_f": 0.9999992,
+        "newPrice": 9.999992
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3
+      }
+    ]
+  }
+}
+----
+
+== More Scalar Math Functions
+
+The following scalar math functions are available in the math expressions library:
+
+`abs`, `add`, `div`, `mult`, `sub`, `log`, `log10`,
+`pow`, `mod`, `ceil`, `floor`, `sin`, `asin`,
+`sinh`, `cos`, `acos`, `cosh`, `tan`, `atan`,
+`tanh`, `round`, `precision`, `recip`, `sqrt`, `cbrt`
+

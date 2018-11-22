@@ -33,6 +33,7 @@ import org.apache.solr.response.transform.RenameFieldTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.response.transform.ValueSourceAugmenter;
+import org.apache.solr.search.SolrDocumentFetcher.RetrieveFieldsOptimizer;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * The default implementation of return fields parsing for Solr.
@@ -67,6 +69,27 @@ public class SolrReturnFields extends ReturnFields {
   protected boolean _wantsScore = false;
   protected boolean _wantsAllFields = false;
   protected Map<String,String> renameFields = Collections.emptyMap();
+
+  // Only set currently with the SolrDocumentFetcher.solrDoc method. Primarily used
+  // at this time for testing to ensure we get fields from the expected places.
+  public enum FIELD_SOURCES {
+      NOT_SET, ALL_FROM_DV, ALL_FROM_STORED, MIXED_SOURCES
+  }
+
+  public FIELD_SOURCES getFieldSources() {
+    return fieldSources;
+  }
+
+  public void setFieldSources(FIELD_SOURCES fieldSources) {
+    this.fieldSources = fieldSources;
+  }
+
+  private FIELD_SOURCES fieldSources = FIELD_SOURCES.NOT_SET;
+  // For each individual result list, we need to have a separate fetch optimizer
+  // to use. It's particularly important to keep this list separated during, say,
+  // sub-query transformations.
+  //
+  private RetrieveFieldsOptimizer fetchOptimizer = null;
 
   public SolrReturnFields() {
     _wantsAllFields = true;
@@ -99,6 +122,14 @@ public class SolrReturnFields extends ReturnFields {
   public SolrReturnFields(String[] fl, SolrQueryRequest req) {
     parseFieldList(fl, req);
   }
+
+  public RetrieveFieldsOptimizer getFetchOptimizer(Supplier<RetrieveFieldsOptimizer> supplier) {
+    if (fetchOptimizer == null) {
+      fetchOptimizer = supplier.get();
+    }
+    return fetchOptimizer;
+  }
+
 
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
     _wantsScore = false;

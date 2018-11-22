@@ -18,16 +18,20 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.Random;
 
 import junit.framework.Assert;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Utility class for asserting expected hits in tests.
@@ -54,7 +58,7 @@ public class CheckHits {
       if (ignore.contains(Integer.valueOf(doc))) continue;
 
       Explanation exp = searcher.explain(q, doc);
-      Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
+      assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
       Assert.assertFalse("Explanation of [["+d+"]] for #"+doc+
                          " doesn't indicate non-match: " + exp.toString(),
@@ -115,7 +119,7 @@ public class CheckHits {
     }
     private int base = 0;
     @Override
-    public void setScorer(Scorer scorer) throws IOException {}
+    public void setScorer(Scorable scorer) throws IOException {}
     @Override
     public void collect(int doc) {
       bag.add(Integer.valueOf(doc + base));
@@ -298,6 +302,16 @@ public class CheckHits {
                     (query, defaultFieldName, searcher, deep));
 
   }
+
+  /**
+   * Asserts that the result of calling {@link Weight#matches(LeafReaderContext, int)}
+   * for every document matching a query returns a non-null {@link Matches}
+   * @param query     the query to test
+   * @param searcher  the search to test against
+   */
+  public static void checkMatches(Query query, IndexSearcher searcher) throws IOException {
+    searcher.search(query, new MatchesAsserter(query, searcher));
+  }
   
   private static final Pattern COMPUTED_FROM_PATTERN = Pattern.compile(".*, computed as .* from:");
 
@@ -473,7 +487,7 @@ public class CheckHits {
     String d;
     boolean deep;
     
-    Scorer scorer;
+    Scorable scorer;
     private int base = 0;
 
     /** Constructs an instance which does shallow tests on the Explanation */
@@ -488,7 +502,7 @@ public class CheckHits {
     }      
     
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;     
     }
     
@@ -503,7 +517,7 @@ public class CheckHits {
           ("exception in hitcollector of [["+d+"]] for #"+doc, e);
       }
       
-      Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
+      assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
       verifyExplanation(d,doc,scorer.score(),deep,exp);
       Assert.assertTrue("Explanation of [["+d+"]] for #"+ doc + 
                         " does not indicate match: " + exp.toString(), 
@@ -520,6 +534,190 @@ public class CheckHits {
     }
   }
 
+  /**
+   * Asserts that the {@link Matches} from a query is non-null whenever
+   * the document its created for is a hit.
+   *
+   * Also checks that the previous non-matching document has a {@code null} {@link Matches}
+   */
+  public static class MatchesAsserter extends SimpleCollector {
+
+    private final Weight weight;
+    private LeafReaderContext context;
+    int lastCheckedDoc = -1;
+
+    public MatchesAsserter(Query query, IndexSearcher searcher) throws IOException {
+      this.weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
+    }
+
+    @Override
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
+      this.context = context;
+      this.lastCheckedDoc = -1;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      Matches matches = this.weight.matches(context, doc);
+      assertNotNull("Unexpected null Matches object in doc" + doc + " for query " + this.weight.getQuery(), matches);
+      if (lastCheckedDoc != doc - 1) {
+        assertNull("Unexpected non-null Matches object in non-matching doc" + doc + " for query " + this.weight.getQuery(),
+            this.weight.matches(context, doc - 1));
+      }
+      lastCheckedDoc = doc;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
+    }
+  }
+
+  public static void checkTopScores(Random random, Query query, IndexSearcher searcher) throws IOException {
+    // Check it computed the top hits correctly
+    doCheckTopScores(query, searcher, 1);
+    doCheckTopScores(query, searcher, 10);
+
+    // Now check that the exposed max scores and block boundaries are valid
+    doCheckMaxScores(random, query, searcher);
+  }
+
+  private static void doCheckTopScores(Query query, IndexSearcher searcher, int numHits) throws IOException {
+    TopScoreDocCollector collector1 = TopScoreDocCollector.create(numHits, null, Integer.MAX_VALUE); // COMPLETE
+    TopScoreDocCollector collector2 = TopScoreDocCollector.create(numHits, null, 1); // TOP_SCORES
+    searcher.search(query, collector1);
+    searcher.search(query, collector2);
+    checkEqual(query, collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
+  }
+
+  private static void doCheckMaxScores(Random random, Query query, IndexSearcher searcher) throws IOException {
+    query = searcher.rewrite(query);
+    Weight w1 = searcher.createWeight(query, ScoreMode.COMPLETE, 1);
+    Weight w2 = searcher.createWeight(query, ScoreMode.TOP_SCORES, 1);
+
+    // Check boundaries and max scores when iterating all matches
+    for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+      Scorer s1 = w1.scorer(ctx);
+      Scorer s2 = w2.scorer(ctx);
+      if (s1 == null) {
+        Assert.assertTrue(s2 == null || s2.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        continue;
+      }
+      TwoPhaseIterator twoPhase1 = s1.twoPhaseIterator();
+      TwoPhaseIterator twoPhase2 = s2.twoPhaseIterator();
+      DocIdSetIterator approx1 = twoPhase1 == null ? s1.iterator() : twoPhase1.approximation;
+      DocIdSetIterator approx2 = twoPhase2 == null ? s2.iterator() : twoPhase2.approximation;
+      int upTo = -1;
+      float maxScore = 0;
+      float minScore = 0;
+      for (int doc2 = approx2.nextDoc(); ; doc2 = approx2.nextDoc()) {
+        int doc1;
+        for (doc1 = approx1.nextDoc(); doc1 < doc2; doc1 = approx1.nextDoc()) {
+          if (twoPhase1 == null || twoPhase1.matches()) {
+            Assert.assertTrue(s1.score() < minScore);
+          }
+        }
+        Assert.assertEquals(doc1, doc2);
+        if (doc2 == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
+        }
+
+        if (doc2 > upTo) {
+          upTo = s2.advanceShallow(doc2);
+          Assert.assertTrue(upTo >= doc2);
+          maxScore = s2.getMaxScore(upTo);
+        }
+
+        if (twoPhase2 == null || twoPhase2.matches()) {
+          Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
+          float score = s2.score();
+          Assert.assertEquals(s1.score(), score);
+          Assert.assertTrue(score + " > " + maxScore + " up to " + upTo, score <= maxScore);
+
+          if (score >= minScore && random.nextInt(10) == 0) {
+            // On some scorers, changing the min score changes the way that docs are iterated
+            minScore = score;
+            s2.setMinCompetitiveScore(minScore);
+          }
+        }
+      }
+    }
+
+    // Now check advancing
+    for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+      Scorer s1 = w1.scorer(ctx);
+      Scorer s2 = w2.scorer(ctx);
+      if (s1 == null) {
+        Assert.assertTrue(s2 == null || s2.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        continue;
+      }
+      TwoPhaseIterator twoPhase1 = s1.twoPhaseIterator();
+      TwoPhaseIterator twoPhase2 = s2.twoPhaseIterator();
+      DocIdSetIterator approx1 = twoPhase1 == null ? s1.iterator() : twoPhase1.approximation;
+      DocIdSetIterator approx2 = twoPhase2 == null ? s2.iterator() : twoPhase2.approximation;
+
+      int upTo = -1;
+      float minScore = 0;
+      float maxScore = 0;
+      while (true) {
+        int doc2 = s2.docID();
+        boolean advance;
+        int target;
+        if (random.nextBoolean()) {
+          advance = false;
+          target = doc2 + 1;
+        } else {
+          advance = true;
+          int delta = Math.min(1 + random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - doc2);
+          target = s2.docID() + delta;
+        }
+
+        if (target > upTo && random.nextBoolean()) {
+          int delta = Math.min(random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - target);
+          upTo = target + delta;
+          int m = s2.advanceShallow(target);
+          assertTrue(m >= target);
+          maxScore = s2.getMaxScore(upTo);
+        }
+
+        if (advance) {
+          doc2 = approx2.advance(target);
+        } else {
+          doc2 = approx2.nextDoc();
+        }
+
+        int doc1;
+        for (doc1 = approx1.advance(target); doc1 < doc2; doc1 = approx1.nextDoc()) {
+          if (twoPhase1 == null || twoPhase1.matches()) {
+            Assert.assertTrue(s1.score() < minScore);
+          }
+        }
+        assertEquals(doc1, doc2);
+
+        if (doc2 == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
+        }
+
+        if (twoPhase2 == null || twoPhase2.matches()) {
+          Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
+          float score = s2.score();
+          Assert.assertEquals(s1.score(), score);
+
+          if (doc2 > upTo) {
+            upTo = s2.advanceShallow(doc2);
+            Assert.assertTrue(upTo >= doc2);
+            maxScore = s2.getMaxScore(upTo);
+          }
+
+          Assert.assertTrue(score <= maxScore);
+
+          if (score >= minScore && random.nextInt(10) == 0) {
+            // On some scorers, changing the min score changes the way that docs are iterated
+            minScore = score;
+            s2.setMinCompetitiveScore(minScore);
+          }
+        }
+      }
+    }
+  }
 }
-
-

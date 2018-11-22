@@ -68,7 +68,7 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/information-white.png );
   background-position: 22% 1px;
-  color: #c0c0c0;
+  color: #4D4D4D;
 }
 
 #content #cores .actions form .error
@@ -164,14 +164,6 @@ limitations under the License.
   background-image: url( ../../img/ico/arrow-switch.png );
 }
 
-#content #cores .actions #optimize
-{
-}
-
-#content #cores .actions #optimize span
-{
-  background-image: url( ../../img/ico/hammer-screwdriver.png );
-}
 
 #content #cores .actions div.action
 {

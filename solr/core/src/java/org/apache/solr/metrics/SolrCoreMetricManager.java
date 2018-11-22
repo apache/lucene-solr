@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.util.Utils;
@@ -57,7 +56,7 @@ public class SolrCoreMetricManager implements Closeable {
    */
   public SolrCoreMetricManager(SolrCore core) {
     this.core = core;
-    this.tag = String.valueOf(core.hashCode());
+    this.tag = core.getMetricTag();
     this.metricManager = core.getCoreContainer().getMetricManager();
     initCloudMode();
     registryName = createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
@@ -128,7 +127,7 @@ public class SolrCoreMetricManager implements Closeable {
       throw new IllegalArgumentException("registerMetricProducer() called with illegal arguments: " +
           "scope = " + scope + ", producer = " + producer);
     }
-    producer.initializeMetrics(metricManager, getRegistryName(), scope);
+    producer.initializeMetrics(metricManager, getRegistryName(), tag, scope);
   }
 
   /**
@@ -143,7 +142,7 @@ public class SolrCoreMetricManager implements Closeable {
   }
 
   /**
-   * Closes reporters specific to this core.
+   * Closes reporters specific to this core and unregisters gauges with this core's instance tag.
    */
   @Override
   public void close() throws IOException {
@@ -151,12 +150,7 @@ public class SolrCoreMetricManager implements Closeable {
     if (getLeaderRegistryName() != null) {
       metricManager.closeReporters(getLeaderRegistryName(), tag);
     }
-    MetricRegistry metricRegistry = getRegistry();
-    metricRegistry.getGauges().forEach((k, v) -> {
-      Object val = v.getValue();
-      metricRegistry.remove(k);
-      metricRegistry.register(k, (Gauge)() -> val);
-    });
+    metricManager.unregisterGauges(getRegistryName(), tag);
   }
 
   public SolrCore getCore() {

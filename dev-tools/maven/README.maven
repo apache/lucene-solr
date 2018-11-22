@@ -116,6 +116,13 @@ D. How to use Maven to build Lucene/Solr
 
          ant clean-maven-build
 
+   5. Please keep in mind that this is just a minimal Maven build. The resulting
+      artifacts are not the same as those created by the native Ant-based build.
+      It should be fine to enable Lucene builds in several Maven-based IDEs,
+      but should never be used for Lucene/Solr production usage, as they may lack
+      optimized class files (e.g., Java 9 MR-JAR support). To install Lucene/Solr
+      in your local repository, see instructions above.
+
 
    Some example Maven commands you can use after you perform the above
    preparatory steps:
@@ -127,6 +134,11 @@ D. How to use Maven to build Lucene/Solr
 
      After compiling and packaging, but before installing each module's 
      artifact, the above command will also run all the module's tests.
+     
+     The resulting artifacts are not the same as those created by the native
+     Ant-based build. They should never be used for Lucene/Solr production
+     usage, as they may lack optimized class files (e.g., Java 9 MR-JAR
+     support).
 
    - Compile, package, and install all binary artifacts to your local
      repository, without running any tests:

@@ -111,7 +111,7 @@ If you are on Windows machine, simply replace `zkcli.sh` with `zkcli.bat` in the
 .Bootstrap with chroot
 [NOTE]
 ====
-Using the boostrap command with a zookeeper chroot in the `-zkhost` parameter, e.g., `-zkhost 127.0.0.1:2181/solr`, will automatically create the chroot path before uploading the configs.
+Using the boostrap command with a ZooKeeper chroot in the `-zkhost` parameter, e.g., `-zkhost 127.0.0.1:2181/solr`, will automatically create the chroot path before uploading the configs.
 ====
 
 === Put Arbitrary Data into a New ZooKeeper file

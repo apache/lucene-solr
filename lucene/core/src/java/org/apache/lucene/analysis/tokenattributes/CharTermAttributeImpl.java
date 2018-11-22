@@ -23,6 +23,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.FutureObjects;
 
 /** Default implementation of {@link CharTermAttribute}. */
 public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttribute, TermToBytesRefAttribute, Cloneable {
@@ -71,11 +72,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
 
   @Override
   public final CharTermAttribute setLength(int length) {
-    if (length < 0) {
-      throw new IllegalArgumentException("length " + length + " must not be negative");
-    }
-    if (length > termBuffer.length)
-      throw new IllegalArgumentException("length " + length + " exceeds the size of the termBuffer (" + termBuffer.length + ")");
+    FutureObjects.checkFromIndexSize(0, length, termBuffer.length);
     termLength = length;
     return this;
   }
@@ -102,15 +99,13 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   
   @Override
   public final char charAt(int index) {
-    if (index >= termLength)
-      throw new IndexOutOfBoundsException();
+    FutureObjects.checkIndex(index, termLength);
     return termBuffer[index];
   }
   
   @Override
   public final CharSequence subSequence(final int start, final int end) {
-    if (start > termLength || end > termLength)
-      throw new IndexOutOfBoundsException();
+    FutureObjects.checkFromToIndex(start, end, termLength);
     return new String(termBuffer, start, end - start);
   }
   
@@ -127,9 +122,9 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   public final CharTermAttribute append(CharSequence csq, int start, int end) {
     if (csq == null) // needed for Appendable compliance
       csq = "null";
-    final int len = end - start, csqlen = csq.length();
-    if (len < 0 || start > csqlen || end > csqlen)
-      throw new IndexOutOfBoundsException();
+    // TODO: the optimized cases (jdk methods) will already do such checks, maybe re-organize this?
+    FutureObjects.checkFromToIndex(start, end, csq.length());
+    final int len = end - start;
     if (len == 0)
       return this;
     resizeBuffer(termLength + len);

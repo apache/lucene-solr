@@ -29,6 +29,7 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
     doTest("bad-schema-not-indexed-but-norms.xml", "bad_field");
     doTest("bad-schema-not-indexed-but-tf.xml", "bad_field");
     doTest("bad-schema-not-indexed-but-pos.xml", "bad_field");
+    doTest("bad-schema-not-indexed-but-uninvertible.xml", "bad_field");
     doTest("bad-schema-omit-tf-but-not-pos.xml", "bad_field");
   }
 

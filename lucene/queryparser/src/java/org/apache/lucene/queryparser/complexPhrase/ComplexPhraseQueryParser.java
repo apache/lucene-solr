@@ -398,6 +398,13 @@ public class ComplexPhraseQueryParser extends QueryParser {
         } else if (childQuery instanceof BooleanQuery) {
           BooleanQuery cbq = (BooleanQuery) childQuery;
           addComplexPhraseClause(chosenList, cbq);
+        } else if (childQuery instanceof MatchNoDocsQuery) {
+          // Insert fake term e.g. phrase query was for "Fred Smithe*" and
+          // there were no "Smithe*" terms - need to
+          // prevent match on just "Fred".
+          SpanQuery stq = new SpanTermQuery(new Term(field,
+                                                     "Dummy clause because no terms found - must match nothing"));
+          chosenList.add(stq);
         } else {
           // TODO alternatively could call extract terms here?
           throw new IllegalArgumentException("Unknown query type:"

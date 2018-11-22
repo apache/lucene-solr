@@ -82,7 +82,8 @@
         },
         "autoAddReplicas": {
           "type": "boolean",
-          "description": "When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://lucene.apache.org/solr/guide/running-solr-on-hdfs.html for more details on settings and overrides.",
+          "description": "When set to true, enables auto addition of replicas when the number of active replicas falls below the value set for replicationFactor.",
+          "documentation": "https://lucene.apache.org/solr/guide/solrcloud-autoscaling-auto-add-replicas.html",
           "default": "false"
         },
         "rule": {
@@ -128,7 +129,7 @@
     },
     "create-alias": {
       "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
-      "description": "Allows one or more collections to be known by another name. If this command is used on an existing alias, the existing alias will be replaced with the new collection details.",
+      "description": "Allows one or more collections to be known by another name (to include time partitioned collections). If this command is used on an existing alias, the existing alias will be replaced with the new collection details.",
       "type": "object",
       "properties": {
         "name": {
@@ -137,34 +138,15 @@
         },
         "collections": {
           "type": "array",
-          "description": "The list of collections to be known as this alias.",
+          "description": "The list of collections to be known as this alias. Incompatible with any of the routing parameters. Either this parameter or a complete set of routing parameters is required.",
           "items": {
             "type": "string"
           }
         },
-        "async": {
-          "type": "string",
-          "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously."
-        }
-      },
-      "required": [
-        "name",
-        "collections"
-      ]
-    },
-    "create-routed-alias": {
-      "type": "object",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
-      "description": "Creates an alias that manages a series of time-partitioned collections.",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "The alias name to be created."
-        },
         "router" : {
           "type":"object",
           "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
-          "description":"routing specific attributes",
+          "description":"Routing specific properties to define a time routed alias.  Do not specify 'collections' when creating a time routed alias.",
           "properties" : {
             "name" : {
               "type" : "string",
@@ -182,9 +164,17 @@
               "type": "string",
               "description": "A specification of the width of the interval for each partition collection. For time based routing this should be a date math expression fragment starting with the + character."
             },
-            "max-future-ms": {
+            "maxFutureMs": {
               "type": "integer",
-              "description":"How many milliseconds into the future to accept document. Documents with a value in router.field that is greater than now() + max-future-ms will be rejected to avoid provisioning too much resources."
+              "description":"How many milliseconds into the future to accept document. Documents with a value in router.field that is greater than now() + maxFutureMs will be rejected to avoid provisioning too much resources."
+            },
+            "preemptiveCreateMath":{
+              "type": "string",
+              "description": "If a document arrives with a timestamp that is after the end time of the most recent collection minus this interval, then the next collection will be created asynchronously. Without this setting, collections are created synchronously when required by the document time stamp and thus block the flow of documents until the collection is created (possibly several seconds). Preemptive creation reduces these hiccups. If set to enough time (perhaps an hour or more) then if there are problems creating a collection, this window of time might be enough to take corrective action. However after a successful preemptive creation,  the collection is consuming resources without being used, and new documents will tend to be routed through it only to be routed elsewhere. Also, note that router.autoDeleteAge is currently evaluated relative to the date of a newly created collection, and so you may want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too soon."
+            },
+            "autoDeleteAge": {
+              "type": "string",
+              "description": "A date math expressions yielding a time in the past. Collections covering a period of time entirely before this age will be automatically deleted."
             }
           }
         },
@@ -204,9 +194,7 @@
         }
       },
       "required": [
-        "name",
-        "router",
-        "create-collection"
+        "name"
       ]
     },
     "delete-alias": {
@@ -227,18 +215,18 @@
         "name"
       ]
     },
-    "modify-alias": {
+    "set-alias-property": {
       "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#modifyalias",
-      "description": "Allows changing the metadata on an alias. If a key is set with an empty string then it will be removed",
+      "description": "Allows changing the properties on an alias. If a key is set with an empty string then it will be removed",
       "type": "object",
       "properties": {
         "name": {
           "type": "string",
-          "description": "The alias name on which to set metadata."
+          "description": "The alias name on which to set properties."
         },
-        "metadata" : {
+        "properties" : {
           "type": "object",
-          "description": "A map of key/value pairs that will be associated with the alias as alias metadata. An empty value will delete any existing value for a given key.",
+          "description": "A map of key/value pairs that will be associated with the alias as alias properties (metadata). An empty value will delete any existing value for a given key.",
           "additionalProperties": true
         },
         "async": {

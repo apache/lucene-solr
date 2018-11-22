@@ -26,11 +26,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.solr.legacy.LegacyIntField;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -73,9 +72,13 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       }
       TermRangeQuery cq=TermRangeQuery.newStringRange("asc", format.format(lower), format.format(upper), true, true);
       LegacyNumericRangeQuery<Integer> tq= LegacyNumericRangeQuery.newIntRange("trie", lower, upper, true, true);
-      TopDocs trTopDocs = searcher.search(cq, 1);
-      TopDocs nrTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits, nrTopDocs.totalHits );
+      TopScoreDocCollector trCollector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
+      TopScoreDocCollector nrCollector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
+      searcher.search(cq, trCollector);
+      searcher.search(tq, nrCollector);
+      TopDocs trTopDocs = trCollector.topDocs();
+      TopDocs nrTopDocs = nrCollector.topDocs();
+      assertEquals("Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits.value, nrTopDocs.totalHits.value );
     }
     reader.close();
     directory.close();

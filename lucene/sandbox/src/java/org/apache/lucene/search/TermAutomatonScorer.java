@@ -86,7 +86,7 @@ class TermAutomatonScorer extends Scorer {
    *  the same (lowest) docID. */
   private static class DocIDQueue extends PriorityQueue<EnumAndScorer> {
     public DocIDQueue(int maxSize) {
-      super(maxSize, false);
+      super(maxSize);
     }
 
     @Override
@@ -99,7 +99,7 @@ class TermAutomatonScorer extends Scorer {
    *  position. */
   private static class PositionQueue extends PriorityQueue<EnumAndScorer> {
     public PositionQueue(int maxSize) {
-      super(maxSize, false);
+      super(maxSize);
     }
 
     @Override
@@ -360,8 +360,8 @@ class TermAutomatonScorer extends Scorer {
   }
 
   @Override
-  public float maxScore() {
-    return docScorer.maxScore();
+  public float getMaxScore(int upTo) throws IOException {
+    return docScorer.getSimScorer().score(Float.MAX_VALUE, 1L);
   }
 
   static class TermRunAutomaton extends RunAutomaton {

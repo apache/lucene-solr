@@ -59,7 +59,8 @@ public abstract class HashBasedRouter extends DocRouter {
   }
 
   protected Slice hashToSlice(int hash, DocCollection collection) {
-    for (Slice slice : collection.getActiveSlices()) {
+    final Slice[] slices = collection.getActiveSlicesArr();
+    for (Slice slice : slices) {
       Range range = slice.getRange();
       if (range != null && range.includes(hash)) return slice;
     }

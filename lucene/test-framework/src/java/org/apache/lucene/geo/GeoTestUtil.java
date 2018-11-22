@@ -304,12 +304,12 @@ public class GeoTestUtil {
 
   /** returns next pseudorandom box: can cross the 180th meridian */
   public static Rectangle nextBox() {
-    return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), true);
+    return nextBoxInternal(true);
   }
 
   /** returns next pseudorandom box: does not cross the 180th meridian */
   public static Rectangle nextBoxNotCrossingDateline() {
-    return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
+    return nextBoxInternal( false);
   }
 
   /** Makes an n-gon, centered at the provided lat/lon, and each vertex approximately
@@ -402,7 +402,7 @@ public class GeoTestUtil {
       }
     }
 
-    Rectangle box = nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
+    Rectangle box = nextBoxInternal(false);
     if (random().nextBoolean()) {
       // box
       return boxPolygon(box);
@@ -412,7 +412,20 @@ public class GeoTestUtil {
     }
   }
 
-  private static Rectangle nextBoxInternal(double lat0, double lat1, double lon0, double lon1, boolean canCrossDateLine) {
+  private static Rectangle nextBoxInternal(boolean canCrossDateLine) {
+    // prevent lines instead of boxes
+    double lat0 = nextLatitude();
+    double lat1 = nextLatitude();
+    while (lat0 == lat1) {
+      lat1 = nextLatitude();
+    }
+    // prevent lines instead of boxes
+    double lon0 = nextLongitude();
+    double lon1 = nextLongitude();
+    while (lon0 == lon1) {
+      lon1 = nextLongitude();
+    }
+
     if (lat1 < lat0) {
       double x = lat0;
       lat0 = lat1;
@@ -483,21 +496,9 @@ public class GeoTestUtil {
         //System.out.println("    len=" + len);
         double lat = centerLat + len * Math.cos(SloppyMath.toRadians(angle));
         double lon = centerLon + len * Math.sin(SloppyMath.toRadians(angle));
-        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
-          // cannot cross dateline: try again!
-          continue newPoly;
-        }
-        if (lat > 90) {
-          // cross the north pole
-          lat = 180 - lat;
-          lon = 180 - lon;
-        } else if (lat < -90) {
-          // cross the south pole
-          lat = -180 - lat;
-          lon = 180 - lon;
-        }
-        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
-          // cannot cross dateline: try again!
+        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL ||
+            lat > 90 || lat < -90) {
+          // cannot cross dateline or pole: try again!
           continue newPoly;
         }
         lats.add(lat);

@@ -33,6 +33,7 @@ import java.util.*;
  *
  * @since solr 1.3
  */
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
 
   @Override

@@ -50,7 +50,7 @@ public class TestOmitPositions extends LuceneTestCase {
     IndexReader reader = w.getReader();
     w.close();
     
-    assertNotNull(MultiFields.getTermPositionsEnum(reader, "foo", new BytesRef("test")));
+    assertNotNull(MultiTerms.getTermPostingsEnum(reader, "foo", new BytesRef("test")));
     
     PostingsEnum de = TestUtil.docs(random(), reader, "foo", new BytesRef("test"), null, PostingsEnum.FREQS);
     while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -69,85 +69,28 @@ public class TestOmitPositions extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
     Document d = new Document();
         
-    // f1,f2,f3: docs only
+    // f1: docs only
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS);
     
     Field f1 = newField("f1", "This field has docs only", ft);
     d.add(f1);
-       
-    Field f2 = newField("f2", "This field has docs only", ft);
-    d.add(f2);
-    
-    Field f3 = newField("f3", "This field has docs only", ft);
-    d.add(f3);
 
     FieldType ft2 = new FieldType(TextField.TYPE_NOT_STORED);
     ft2.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
     
-    // f4,f5,f6 docs and freqs
-    Field f4 = newField("f4", "This field has docs and freqs", ft2);
-    d.add(f4);
-       
-    Field f5 = newField("f5", "This field has docs and freqs", ft2);
-    d.add(f5);
-    
-    Field f6 = newField("f6", "This field has docs and freqs", ft2);
-    d.add(f6);
+    // f2: docs and freqs
+    Field f2 = newField("f2", "This field has docs and freqs", ft2);
+    d.add(f2);
     
     FieldType ft3 = new FieldType(TextField.TYPE_NOT_STORED);
     ft3.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     
-    // f7,f8,f9 docs/freqs/positions
-    Field f7 = newField("f7", "This field has docs and freqs and positions", ft3);
-    d.add(f7);
-       
-    Field f8 = newField("f8", "This field has docs and freqs and positions", ft3);
-    d.add(f8);
-    
-    Field f9 = newField("f9", "This field has docs and freqs and positions", ft3);
-    d.add(f9);
+    // f3: docs/freqs/positions
+    Field f3 = newField("f3", "This field has docs and freqs and positions", ft3);
+    d.add(f3);
         
     writer.addDocument(d);
-    writer.forceMerge(1);
-
-    // now we add another document which has docs-only for f1, f4, f7, docs/freqs for f2, f5, f8, 
-    // and docs/freqs/positions for f3, f6, f9
-    d = new Document();
-    
-    // f1,f4,f7: docs only
-    f1 = newField("f1", "This field has docs only", ft);
-    d.add(f1);
-    
-    f4 = newField("f4", "This field has docs only", ft);
-    d.add(f4);
-    
-    f7 = newField("f7", "This field has docs only", ft);
-    d.add(f7);
-
-    // f2, f5, f8: docs and freqs
-    f2 = newField("f2", "This field has docs and freqs", ft2);
-    d.add(f2);
-    
-    f5 = newField("f5", "This field has docs and freqs", ft2);
-    d.add(f5);
-    
-    f8 = newField("f8", "This field has docs and freqs", ft2);
-    d.add(f8);
-    
-    // f3, f6, f9: docs and freqs and positions
-    f3 = newField("f3", "This field has docs and freqs and positions", ft3);
-    d.add(f3);     
-    
-    f6 = newField("f6", "This field has docs and freqs and positions", ft3);
-    d.add(f6);
-    
-    f9 = newField("f9", "This field has docs and freqs and positions", ft3);
-    d.add(f9);
-        
-    writer.addDocument(d);
-
-    // force merge
     writer.forceMerge(1);
     // flush
     writer.close();
@@ -156,22 +99,10 @@ public class TestOmitPositions extends LuceneTestCase {
     FieldInfos fi = reader.getFieldInfos();
     // docs + docs = docs
     assertEquals(IndexOptions.DOCS, fi.fieldInfo("f1").getIndexOptions());
-    // docs + docs/freqs = docs
-    assertEquals(IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
-    // docs + docs/freqs/pos = docs
-    assertEquals(IndexOptions.DOCS, fi.fieldInfo("f3").getIndexOptions());
-    // docs/freqs + docs = docs
-    assertEquals(IndexOptions.DOCS, fi.fieldInfo("f4").getIndexOptions());
     // docs/freqs + docs/freqs = docs/freqs
-    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f5").getIndexOptions());
-    // docs/freqs + docs/freqs/pos = docs/freqs
-    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f6").getIndexOptions());
-    // docs/freqs/pos + docs = docs
-    assertEquals(IndexOptions.DOCS, fi.fieldInfo("f7").getIndexOptions());
-    // docs/freqs/pos + docs/freqs = docs/freqs
-    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f8").getIndexOptions());
+    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f2").getIndexOptions());
     // docs/freqs/pos + docs/freqs/pos = docs/freqs/pos
-    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f9").getIndexOptions());
+    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f3").getIndexOptions());
     
     reader.close();
     ram.close();
@@ -210,57 +141,8 @@ public class TestOmitPositions extends LuceneTestCase {
 
     assertNoPrx(ram);
     
-    // now add some documents with positions, and check there is no prox after optimization
-    d = new Document();
-    f1 = newTextField("f1", "This field has positions", Field.Store.NO);
-    d.add(f1);
-    
-    for(int i=0;i<30;i++)
-      writer.addDocument(d);
-
-    // force merge
-    writer.forceMerge(1);
-    // flush
     writer.close();
-
-    assertNoPrx(ram);
     ram.close();
   }
-  
-  /** make sure we downgrade positions and payloads correctly */
-  public void testMixing() throws Exception {
-    // no positions
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-    
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    
-    for (int i = 0; i < 20; i++) {
-      Document doc = new Document();
-      if (i < 19 && random().nextBoolean()) {
-        for (int j = 0; j < 50; j++) {
-          doc.add(new TextField("foo", "i have positions", Field.Store.NO));
-        }
-      } else {
-        for (int j = 0; j < 50; j++) {
-          doc.add(new Field("foo", "i have no positions", ft));
-        }
-      }
-      iw.addDocument(doc);
-      iw.commit();
-    }
-    
-    if (random().nextBoolean()) {
-      iw.forceMerge(1);
-    }
-    
-    DirectoryReader ir = iw.getReader();
-    FieldInfos fis = MultiFields.getMergedFieldInfos(ir);
-    assertEquals(IndexOptions.DOCS_AND_FREQS, fis.fieldInfo("foo").getIndexOptions());
-    assertFalse(fis.fieldInfo("foo").hasPayloads());
-    iw.close();
-    ir.close();
-    dir.close(); // checkindex
-  }
+
 }

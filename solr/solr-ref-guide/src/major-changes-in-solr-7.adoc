@@ -168,7 +168,7 @@ The following changes were made in SolrJ.
 * `HttpClientUtil` now allows configuring `HttpClient` instances via `SolrHttpClientBuilder` rather than an `HttpClientConfigurer`. Use of env variable `SOLR_AUTHENTICATION_CLIENT_CONFIGURER` no longer works, please use `SOLR_AUTHENTICATION_CLIENT_BUILDER`
 * `SolrClient` implementations now use their own internal configuration for socket timeouts, connect timeouts, and allowing redirects rather than what is set as the default when building the `HttpClient` instance. Use the appropriate setters on the `SolrClient` instance.
 * `HttpSolrClient#setAllowCompression` has been removed and compression must be enabled as a constructor param.
-* `HttpSolrClient#setDefaultMaxConnectionsPerHost` and `HttpSolrClient#setMaxTotalConnections` have been removed. These now default very high and can only be changed via param when creating an HttpClient instance.
+* `HttpSolrClient#setDefaultMaxConnectionsPerHost` and `HttpSolrClient#setMaxTotalConnections` have been removed. These now default very high and can only be changed via parameter when creating an HttpClient instance.
 
 === Other Deprecations and Removals
 * The `defaultOperator` parameter in the schema is no longer supported. Use the `q.op` parameter instead. This option had been deprecated for several releases. See the section <<the-standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.

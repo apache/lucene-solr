@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -92,7 +93,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     MultiReader mr3 = new MultiReader(readers2);
 
     // test mixing up TermDocs and TermEnums from different readers.
-    TermsEnum te2 = MultiFields.getTerms(mr2, "body").iterator();
+    TermsEnum te2 = MultiTerms.getTerms(mr2, "body").iterator();
     te2.seekCeil(new BytesRef("wow"));
     PostingsEnum td = TestUtil.docs(random(), mr2,
         "body",
@@ -100,7 +101,7 @@ public class TestDirectoryReader extends LuceneTestCase {
         null,
         0);
 
-    TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator();
+    TermsEnum te3 = MultiTerms.getTerms(mr3, "body").iterator();
     te3.seekCeil(new BytesRef("wow"));
     td = TestUtil.docs(random(), te3,
         td,
@@ -184,7 +185,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     writer.close();
     // set up reader
     DirectoryReader reader = DirectoryReader.open(d);
-    FieldInfos fieldInfos = MultiFields.getMergedFieldInfos(reader);
+    FieldInfos fieldInfos = FieldInfos.getMergedFieldInfos(reader);
     assertNotNull(fieldInfos.fieldInfo("keyword"));
     assertNotNull(fieldInfos.fieldInfo("text"));
     assertNotNull(fieldInfos.fieldInfo("unindexed"));
@@ -245,7 +246,7 @@ public class TestDirectoryReader extends LuceneTestCase {
 
     // verify fields again
     reader = DirectoryReader.open(d);
-    fieldInfos = MultiFields.getMergedFieldInfos(reader);
+    fieldInfos = FieldInfos.getMergedFieldInfos(reader);
 
     Collection<String> allFieldNames = new HashSet<>();
     Collection<String> indexedFieldNames = new HashSet<>();
@@ -558,8 +559,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     assertEquals("Single segment test differs.", index1.leaves().size() == 1, index2.leaves().size() == 1);
 
     // check field names
-    FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(index1);
-    FieldInfos fieldInfos2 = MultiFields.getMergedFieldInfos(index2);
+    FieldInfos fieldInfos1 = FieldInfos.getMergedFieldInfos(index1);
+    FieldInfos fieldInfos2 = FieldInfos.getMergedFieldInfos(index2);
     assertEquals("IndexReaders have different numbers of fields.", fieldInfos1.size(), fieldInfos2.size());
     final int numFields = fieldInfos1.size();
     for(int fieldID=0;fieldID<numFields;fieldID++) {
@@ -590,8 +591,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     }
     
     // check deletions
-    final Bits liveDocs1 = MultiFields.getLiveDocs(index1);
-    final Bits liveDocs2 = MultiFields.getLiveDocs(index2);
+    final Bits liveDocs1 = MultiBits.getLiveDocs(index1);
+    final Bits liveDocs2 = MultiBits.getLiveDocs(index2);
     for (int i = 0; i < index1.maxDoc(); i++) {
       assertEquals("Doc " + i + " only deleted in one index.",
                    liveDocs1 == null || !liveDocs1.get(i),
@@ -618,19 +619,19 @@ public class TestDirectoryReader extends LuceneTestCase {
     }
     
     // check dictionary and posting lists
-    Fields fields1 = MultiFields.getFields(index1);
-    Fields fields2 = MultiFields.getFields(index2);
+    TreeSet<String> fields1 = new TreeSet<>(FieldInfos.getIndexedFields(index1));
+    TreeSet<String> fields2 = new TreeSet<>(FieldInfos.getIndexedFields(index2));
     Iterator<String> fenum2 = fields2.iterator();
     for (String field1 : fields1) {
       assertEquals("Different fields", field1, fenum2.next());
-      Terms terms1 = fields1.terms(field1);
+      Terms terms1 = MultiTerms.getTerms(index1, field1);
       if (terms1 == null) {
-        assertNull(fields2.terms(field1));
+        assertNull(MultiTerms.getTerms(index2, field1));
         continue;
       }
       TermsEnum enum1 = terms1.iterator();
 
-      Terms terms2 = fields2.terms(field1);
+      Terms terms2 = MultiTerms.getTerms(index2, field1);
       assertNotNull(terms2);
       TermsEnum enum2 = terms2.iterator();
 

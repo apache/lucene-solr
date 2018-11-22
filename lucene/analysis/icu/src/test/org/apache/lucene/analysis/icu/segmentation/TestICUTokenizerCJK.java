@@ -21,10 +21,12 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
 /**
  * test ICUTokenizer with dictionary-based CJ segmentation
  */
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8222")
 public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
   Analyzer a;
   
@@ -106,13 +108,11 @@ public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
   }
   
   /** blast some random strings through the analyzer */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5575")
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5575")
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
     checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);

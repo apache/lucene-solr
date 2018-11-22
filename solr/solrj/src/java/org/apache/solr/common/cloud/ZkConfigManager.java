@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  */
 public class ZkConfigManager {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** ZkNode where named configs are stored */
   public static final String CONFIGS_ZKNODE = "/configs";
@@ -139,7 +139,7 @@ public class ZkConfigManager {
         List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
         if (children.size() == 0) {
           final String toZkFilePath = toZkPath + "/" + file;
-          logger.info("Copying zk node {} to {}",
+          log.info("Copying zk node {} to {}",
               fromZkPath + "/" + file, toZkFilePath);
           byte[] data = zkClient.getData(fromZkPath + "/" + file, null, null, true);
           zkClient.makePath(toZkFilePath, data, true);
@@ -162,7 +162,7 @@ public class ZkConfigManager {
    * @throws IOException if an I/O error occurs
    */
   public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
-    copyConfigDir(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, null);
+    copyConfigDir(fromConfig, toConfig, null);
   }
 
   /**

@@ -28,7 +28,6 @@ import org.apache.lucene.validation.ivyde.IvyNodeElementAdapter;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
-import org.apache.tools.ant.types.LogLevel;
 import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.types.resources.FileResource;
@@ -544,11 +543,11 @@ public class LibVersionsCheckTask extends Task {
         Integer sm1 = SPECIAL_MEANINGS.get(parts1[i].toLowerCase(Locale.ROOT));
         Integer sm2 = SPECIAL_MEANINGS.get(parts2[i].toLowerCase(Locale.ROOT));
         if (sm1 != null) {
-          sm2 = sm2 == null ? new Integer(0) : sm2;
+          sm2 = sm2 == null ? 0 : sm2;
           return sm1.compareTo(sm2);
         }
         if (sm2 != null) {
-          return new Integer(0).compareTo(sm2);
+          return Integer.valueOf(0).compareTo(sm2);
         }
         return parts1[i].compareTo(parts2[i]);
       }

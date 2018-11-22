@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.MemClassLoader;
@@ -125,10 +126,10 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
         Arrays.asList("overlay", "runtimeLib", blobName, "version"),
         1l, 10);
 
-    Map map = TestSolrConfigHandler.getRespMap("/runtime", client);
-    String s = (String) Utils.getObjectByPath(map, false, Arrays.asList("error", "msg"));
-    assertNotNull(TestBlobHandler.getAsString(map), s);
-    assertTrue(TestBlobHandler.getAsString(map), s.contains("should be signed with one of the keys in ZK /keys/exe"));
+    LinkedHashMapWriter map = TestSolrConfigHandler.getRespMap("/runtime", client);
+    String s = map._getStr( "error/msg",null);
+    assertNotNull(map.toString(), s);
+    assertTrue(map.toString(), s.contains("should be signed with one of the keys in ZK /keys/exe"));
 
     String wrongSig = "QKqHtd37QN02iMW9UEgvAO9g9qOOuG5vEBNkbUsN7noc2hhXKic/ABFIOYJA9PKw61mNX2EmNFXOcO3WClYdSw==";
 
@@ -146,8 +147,8 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
 
     map = TestSolrConfigHandler.getRespMap("/runtime", client);
     s = (String) Utils.getObjectByPath(map, false, Arrays.asList("error", "msg"));
-    assertNotNull(TestBlobHandler.getAsString(map), s);//No key matched signature for jar
-    assertTrue(TestBlobHandler.getAsString(map), s.contains("No key matched signature for jar"));
+    assertNotNull(map.toString(), s);//No key matched signature for jar
+    assertTrue(map.toString(), s.contains("No key matched signature for jar"));
 
     String rightSig = "YkTQgOtvcM/H/5EQdABGl3wjjrPhonAGlouIx59vppBy2cZEofX3qX1yZu5sPNRmJisNXEuhHN2149dxeUmk2Q==";
 

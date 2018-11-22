@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
+import org.apache.lucene.util.FutureObjects;
 
 /**
  * LeafReader implemented by codec APIs.
@@ -94,9 +95,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   }
   
   private void checkBounds(int docID) {
-    if (docID < 0 || docID >= maxDoc()) {       
-      throw new IndexOutOfBoundsException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
-    }
+    FutureObjects.checkIndex(docID, maxDoc());
   }
 
   @Override
@@ -195,7 +194,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   public final PointValues getPointValues(String field) throws IOException {
     ensureOpen();
     FieldInfo fi = getFieldInfos().fieldInfo(field);
-    if (fi == null || fi.getPointDimensionCount() == 0) {
+    if (fi == null || fi.getPointDataDimensionCount() == 0) {
       // Field does not exist or does not index points
       return null;
     }

@@ -52,7 +52,7 @@ import static org.apache.solr.common.params.CommonParams.TZ;
  * Holds configuration for a routed alias, and some common code and constants.
  *
  * @see CreateAliasCmd
- * @see RoutedAliasCreateCollectionCmd
+ * @see MaintainRoutedAliasCmd
  * @see org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor
  */
 public class TimeRoutedAlias {
@@ -63,7 +63,9 @@ public class TimeRoutedAlias {
   public static final String ROUTER_FIELD = ROUTER_PREFIX + "field";
   public static final String ROUTER_START = ROUTER_PREFIX + "start";
   public static final String ROUTER_INTERVAL = ROUTER_PREFIX + "interval";
-  public static final String ROUTER_MAX_FUTURE = ROUTER_PREFIX + "max-future-ms";
+  public static final String ROUTER_MAX_FUTURE = ROUTER_PREFIX + "maxFutureMs";
+  public static final String ROUTER_PREEMPTIVE_CREATE_MATH = ROUTER_PREFIX + "preemptiveCreateMath";
+  public static final String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
   public static final String CREATE_COLLECTION_PREFIX = "create-collection.";
   // plus TZ and NAME
 
@@ -80,11 +82,14 @@ public class TimeRoutedAlias {
   /**
    * Optional parameters for creating a routed alias excluding parameters for collection creation.
    */
+  //TODO lets find a way to remove this as it's harder to maintain than required list
   public static final List<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableList(Arrays.asList(
       ROUTER_MAX_FUTURE,
+      ROUTER_AUTO_DELETE_AGE,
+      ROUTER_PREEMPTIVE_CREATE_MATH,
       TZ)); // kinda special
 
-  static Predicate<String> PARAM_IS_METADATA =
+  static Predicate<String> PARAM_IS_PROP =
       key -> key.equals(TZ) ||
           (key.startsWith(ROUTER_PREFIX) && !key.equals(ROUTER_START)) || //TODO reconsider START special case
           key.startsWith(CREATE_COLLECTION_PREFIX);
@@ -122,8 +127,10 @@ public class TimeRoutedAlias {
 
   private final String aliasName;
   private final String routeField;
+  private final String intervalMath; // ex: +1DAY
   private final long maxFutureMs;
-  private final String intervalDateMath; // ex: +1DAY
+  private final String preemptiveCreateMath;
+  private final String autoDeleteAgeMath; // ex: /DAY-30DAYS  *optional*
   private final TimeZone timeZone;
 
   public TimeRoutedAlias(String aliasName, Map<String, String> aliasMetadata) {
@@ -134,19 +141,45 @@ public class TimeRoutedAlias {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only 'time' routed aliases is supported right now.");
     }
     routeField = required.get(ROUTER_FIELD);
-    intervalDateMath = required.get(ROUTER_INTERVAL);
+    intervalMath = required.get(ROUTER_INTERVAL);
 
     //optional:
     maxFutureMs = params.getLong(ROUTER_MAX_FUTURE, TimeUnit.MINUTES.toMillis(10));
+    // the date math configured is an interval to be subtracted from the most recent collection's time stamp
+    String pcmTmp = params.get(ROUTER_PREEMPTIVE_CREATE_MATH);
+    preemptiveCreateMath = pcmTmp != null ? (pcmTmp.startsWith("-") ? pcmTmp : "-" + pcmTmp) : null;
+    autoDeleteAgeMath = params.get(ROUTER_AUTO_DELETE_AGE); // no default
     timeZone = TimeZoneUtils.parseTimezone(aliasMetadata.get(CommonParams.TZ));
 
     // More validation:
 
-    // check that the interval is valid date math
+    // check that the date math is valid
+    final Date now = new Date();
     try {
-      new DateMathParser(timeZone).parseMath(intervalDateMath);
-    } catch (ParseException e) {
+      final Date after = new DateMathParser(now, timeZone).parseMath(intervalMath);
+      if (!after.after(now)) {
+        throw new SolrException(BAD_REQUEST, "duration must add to produce a time in the future");
+      }
+    } catch (Exception e) {
       throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_INTERVAL + ", " + e, e);
+    }
+
+    if (autoDeleteAgeMath != null) {
+      try {
+        final Date before =  new DateMathParser(now, timeZone).parseMath(autoDeleteAgeMath);
+        if (now.before(before)) {
+          throw new SolrException(BAD_REQUEST, "duration must round or subtract to produce a time in the past");
+        }
+      } catch (Exception e) {
+        throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE + ", " + e, e);
+      }
+    }
+    if (preemptiveCreateMath != null) {
+      try {
+        new DateMathParser().parseMath(preemptiveCreateMath);
+      } catch (ParseException e) {
+        throw new SolrException(BAD_REQUEST, "Invalid date math for preemptiveCreateMath:" + preemptiveCreateMath);
+      }
     }
 
     if (maxFutureMs < 0) {
@@ -162,12 +195,20 @@ public class TimeRoutedAlias {
     return routeField;
   }
 
+  public String getIntervalMath() {
+    return intervalMath;
+  }
+
   public long getMaxFutureMs() {
     return maxFutureMs;
   }
 
-  public String getIntervalDateMath() {
-    return intervalDateMath;
+  public String getPreemptiveCreateWindow() {
+    return preemptiveCreateMath;
+  }
+
+  public String getAutoDeleteAgeMath() {
+    return autoDeleteAgeMath;
   }
 
   public TimeZone getTimeZone() {
@@ -179,8 +220,10 @@ public class TimeRoutedAlias {
     return Objects.toStringHelper(this)
         .add("aliasName", aliasName)
         .add("routeField", routeField)
+        .add("intervalMath", intervalMath)
         .add("maxFutureMs", maxFutureMs)
-        .add("intervalDateMath", intervalDateMath)
+        .add("preemptiveCreateMath", preemptiveCreateMath)
+        .add("autoDeleteAgeMath", autoDeleteAgeMath)
         .add("timeZone", timeZone)
         .toString();
   }
@@ -204,7 +247,7 @@ public class TimeRoutedAlias {
   /** Computes the timestamp of the next collection given the timestamp of the one before. */
   public Instant computeNextCollTimestamp(Instant fromTimestamp) {
     final Instant nextCollTimestamp =
-        DateMathParser.parseMath(Date.from(fromTimestamp), "NOW" + intervalDateMath, timeZone).toInstant();
+        DateMathParser.parseMath(Date.from(fromTimestamp), "NOW" + intervalMath, timeZone).toInstant();
     assert nextCollTimestamp.isAfter(fromTimestamp);
     return nextCollTimestamp;
   }

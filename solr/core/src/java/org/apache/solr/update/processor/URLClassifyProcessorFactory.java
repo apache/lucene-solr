@@ -32,7 +32,7 @@ public class URLClassifyProcessorFactory extends UpdateRequestProcessorFactory {
   @Override
   public void init(@SuppressWarnings("rawtypes") final NamedList args) {
     if (args != null) {
-      this.params = SolrParams.toSolrParams(args);
+      this.params = args.toSolrParams();
     }
   }
   

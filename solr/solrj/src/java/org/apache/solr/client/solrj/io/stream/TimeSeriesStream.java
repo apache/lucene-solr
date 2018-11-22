@@ -21,10 +21,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -255,9 +257,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
 
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);
-    ModifiableSolrParams tmpParams = new ModifiableSolrParams(SolrParams.toMultiMap(params.toNamedList()));
 
-    child.setExpression(tmpParams.getMap().entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
+    child.setExpression(params.stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue()))).collect(Collectors.joining(",")));
 
     explanation.addChild(child);
 
@@ -273,12 +274,12 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   }
 
   public void open() throws IOException {
-    if(cache != null) {
+    if (cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new Builder()
-          .withZkHost(zkHost)
-          .build();
+      final List<String> hosts = new ArrayList<>();
+      hosts.add(zkHost);
+      cloudSolrClient = new Builder(hosts, Optional.empty()).build();
     }
 
     String json = getJsonFacetString(field, metrics, start, end, gap);
@@ -396,6 +397,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
             } else {
               t.put(identifier, d.doubleValue());
             }
+          } else {
+            t.put(identifier, 0);
           }
           ++m;
         } else {

@@ -1018,6 +1018,10 @@ public class SolrPluginUtils {
         }
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
       }
+      catch (AssertionError ae) {
+        throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName()+
+            ". This might be a case of SOLR-12207", ae);
+      }
     }
   }
 
@@ -1070,6 +1074,41 @@ public class SolrPluginUtils {
           return builder.toString();
       }
       return UNKNOWN_VALUE;
+  }
+
+  private static final String[] purposeUnknown = new String[] { UNKNOWN_VALUE };
+
+  /**
+   * Given the integer purpose of a request generates a readable value corresponding
+   * the request purposes (there can be more than one on a single request). If
+   * there is a purpose parameter present that's not known this method will
+   * return a 1-element array containing {@value #UNKNOWN_VALUE}
+   * @param reqPurpose Numeric request purpose
+   * @return an array of purpose names.
+   */
+  public static String[] getRequestPurposeNames(Integer reqPurpose) {
+    if (reqPurpose != null) {
+      int valid = 0;
+      for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+        if ((reqPurpose & entry.getKey()) != 0) {
+          valid++;
+        }
+      }
+      if (valid == 0) {
+        return purposeUnknown;
+      } else {
+        String[] result = new String[valid];
+        int i = 0;
+        for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+          if ((reqPurpose & entry.getKey()) != 0) {
+            result[i] = entry.getValue();
+            i++;
+          }
+        }
+        return result;
+      }
+    }
+    return purposeUnknown;
   }
 
 }

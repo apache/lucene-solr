@@ -105,7 +105,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
     else if( value instanceof NamedList ) {
       // nothing
     }
-    else if( value instanceof Iterable ) {
+    else if( value instanceof Iterable && !(value instanceof SolrDocumentBase)) {
       ArrayList<Object> lst = new ArrayList<>();
       for( Object o : (Iterable)value ) {
         lst.add( o );
@@ -154,7 +154,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
     }
     
     // Add the values to the collection
-    if( value instanceof Iterable ) {
+    if( value instanceof Iterable && !(value instanceof SolrDocumentBase)) {
       for( Object o : (Iterable<Object>)value ) {
         vals.add( o );
       }
@@ -388,7 +388,6 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
      }
    }
 
-   /** Returns the list of child documents, or null if none. */
    @Override
    public List<SolrDocument> getChildDocuments() {
      return _childDocuments;

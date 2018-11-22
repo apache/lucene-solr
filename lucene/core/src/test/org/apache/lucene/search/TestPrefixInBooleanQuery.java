@@ -85,12 +85,12 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
   public void testPrefixQuery() throws Exception {
     Query query = new PrefixQuery(new Term(FIELD, "tang"));
     assertEquals("Number of matched documents", 2,
-                 searcher.search(query, 1000).totalHits);
+                 searcher.search(query, 1000).totalHits.value);
   }
   public void testTermQuery() throws Exception {
     Query query = new TermQuery(new Term(FIELD, "tangfulin"));
     assertEquals("Number of matched documents", 2,
-                 searcher.search(query, 1000).totalHits);
+                 searcher.search(query, 1000).totalHits.value);
   }
   public void testTermBooleanQuery() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -99,7 +99,7 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
     query.add(new TermQuery(new Term(FIELD, "notexistnames")),
               BooleanClause.Occur.SHOULD);
     assertEquals("Number of matched documents", 2,
-                 searcher.search(query.build(), 1000).totalHits);
+                 searcher.search(query.build(), 1000).totalHits.value);
 
   }
   public void testPrefixBooleanQuery() throws Exception {
@@ -109,6 +109,6 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
     query.add(new TermQuery(new Term(FIELD, "notexistnames")),
               BooleanClause.Occur.SHOULD);
     assertEquals("Number of matched documents", 2,
-                 searcher.search(query.build(), 1000).totalHits);
+                 searcher.search(query.build(), 1000).totalHits.value);
   }
 }

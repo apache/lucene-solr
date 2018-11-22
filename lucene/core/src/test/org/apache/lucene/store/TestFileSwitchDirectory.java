@@ -33,6 +33,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.util.TestUtil;
 
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
 
   /**

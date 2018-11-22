@@ -21,16 +21,18 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
@@ -47,42 +49,78 @@ import org.slf4j.LoggerFactory;
  * It handles state snapshot / restore in ZK.
  */
 public abstract class TriggerBase implements AutoScaling.Trigger {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final String name;
-  protected final SolrCloudManager cloudManager;
-  protected final DistribStateManager stateManager;
+  protected SolrCloudManager cloudManager;
+  protected SolrResourceLoader loader;
+  protected DistribStateManager stateManager;
   protected final Map<String, Object> properties = new HashMap<>();
+  /**
+   * Set of valid property names. Subclasses may add to this set
+   * using {@link TriggerUtils#validProperties(Set, String...)}
+   */
+  protected final Set<String> validProperties = new HashSet<>();
+  /**
+   * Set of required property names. Subclasses may add to this set
+   * using {@link TriggerUtils#requiredProperties(Set, Set, String...)}
+   * (required properties are also valid properties).
+   */
+  protected final Set<String> requiredProperties = new HashSet<>();
   protected final TriggerEventType eventType;
-  protected final int waitForSecond;
+  protected int waitForSecond;
   protected Map<String,Object> lastState;
   protected final AtomicReference<AutoScaling.TriggerEventProcessor> processorRef = new AtomicReference<>();
-  protected final List<TriggerAction> actions;
-  protected final boolean enabled;
+  protected List<TriggerAction> actions;
+  protected boolean enabled;
   protected boolean isClosed;
 
 
-  protected TriggerBase(TriggerEventType eventType, String name, Map<String, Object> properties, SolrResourceLoader loader, SolrCloudManager cloudManager) {
+  protected TriggerBase(TriggerEventType eventType, String name) {
     this.eventType = eventType;
     this.name = name;
+
+    // subclasses may modify this set to include other supported properties
+    TriggerUtils.validProperties(validProperties, "name", "class", "event", "enabled", "waitFor", "actions");
+  }
+
+  @Override
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
     this.cloudManager = cloudManager;
+    this.loader = loader;
     this.stateManager = cloudManager.getDistribStateManager();
     if (properties != null) {
       this.properties.putAll(properties);
     }
     this.enabled = Boolean.parseBoolean(String.valueOf(this.properties.getOrDefault("enabled", "true")));
     this.waitForSecond = ((Number) this.properties.getOrDefault("waitFor", -1L)).intValue();
-    List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
+    List<Map<String, Object>> o = (List<Map<String, Object>>) properties.get("actions");
     if (o != null && !o.isEmpty()) {
       actions = new ArrayList<>(3);
-      for (Map<String, String> map : o) {
-        TriggerAction action = loader.newInstance(map.get("class"), TriggerAction.class);
+      for (Map<String, Object> map : o) {
+        TriggerAction action = null;
+        try {
+          action = loader.newInstance((String)map.get("class"), TriggerAction.class);
+        } catch (Exception e) {
+          throw new TriggerValidationException("action", "exception creating action " + map + ": " + e.toString());
+        }
+        action.configure(loader, cloudManager, map);
         actions.add(action);
       }
     } else {
       actions = Collections.emptyList();
     }
 
+
+    Map<String, String> results = new HashMap<>();
+    TriggerUtils.checkProperties(this.properties, results, requiredProperties, validProperties);
+    if (!results.isEmpty()) {
+      throw new TriggerValidationException(name, results);
+    }
+  }
+
+  @Override
+  public void init() throws Exception {
     try {
       if (!stateManager.hasData(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH)) {
         stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
@@ -90,18 +128,11 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyExistsException e) {
       // ignore
     } catch (InterruptedException | KeeperException | IOException e) {
-      LOG.warn("Exception checking ZK path " + ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
+      log.warn("Exception checking ZK path " + ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
+      throw e;
     }
-  }
-
-  @Override
-  public void init() {
-    List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
-    if (o != null && !o.isEmpty()) {
-      for (int i = 0; i < o.size(); i++) {
-        Map<String, String> map = o.get(i);
-        actions.get(i).init(map);
-      }
+    for (TriggerAction action : actions) {
+      action.init();
     }
   }
 
@@ -209,7 +240,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
       }
       lastState = state;
     } catch (InterruptedException | BadVersionException | AlreadyExistsException | IOException | KeeperException e) {
-      LOG.warn("Exception updating trigger state '" + path + "'", e);
+      log.warn("Exception updating trigger state '" + path + "'", e);
     }
   }
 
@@ -223,7 +254,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
         data = versionedData.getData();
       }
     } catch (Exception e) {
-      LOG.warn("Exception getting trigger state '" + path + "'", e);
+      log.warn("Exception getting trigger state '" + path + "'", e);
     }
     if (data != null) {
       Map<String, Object> restoredState = (Map<String, Object>)Utils.fromJSON(data);

@@ -1,0 +1,431 @@
+= Time Series
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section of the user guide provides an overview of time series *aggregation*,
+*smoothing* and *differencing*.
+
+== Time Series Aggregation
+
+The `timeseries` function performs fast, distributed time
+series aggregation leveraging Solr's builtin faceting and date math capabilities.
+
+The example below performs a monthly time series aggregation:
+
+[source,text]
+----
+timeseries(collection1,
+           q=*:*,
+           field="recdate_dt",
+           start="2012-01-20T17:33:18Z",
+           end="2012-12-20T17:33:18Z",
+           gap="+1MONTH",
+           format="YYYY-MM",
+           count(*))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "recdate_dt": "2012-01",
+        "count(*)": 8703
+      },
+      {
+        "recdate_dt": "2012-02",
+        "count(*)": 8648
+      },
+      {
+        "recdate_dt": "2012-03",
+        "count(*)": 8621
+      },
+      {
+        "recdate_dt": "2012-04",
+        "count(*)": 8533
+      },
+      {
+        "recdate_dt": "2012-05",
+        "count(*)": 8792
+      },
+      {
+        "recdate_dt": "2012-06",
+        "count(*)": 8598
+      },
+      {
+        "recdate_dt": "2012-07",
+        "count(*)": 8679
+      },
+      {
+        "recdate_dt": "2012-08",
+        "count(*)": 8469
+      },
+      {
+        "recdate_dt": "2012-09",
+        "count(*)": 8637
+      },
+      {
+        "recdate_dt": "2012-10",
+        "count(*)": 8536
+      },
+      {
+        "recdate_dt": "2012-11",
+        "count(*)": 8785
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 16
+      }
+    ]
+  }
+}
+----
+
+== Vectorizing the Time Series
+
+Before a time series result can be operated on by math expressions
+ the data will need to be vectorized. Specifically
+in the example above, the aggregation field count(*) will need to by moved into an array.
+As described in the Streams and Vectorization section of the user guide, the `col` function can be used
+to copy a numeric column from a list of tuples into an array.
+
+The expression below demonstrates the vectorization of the count(*) field.
+
+[source,text]
+----
+let(a=timeseries(collection1,
+                 q=*:*,
+                 field="test_dt",
+                 start="2012-01-20T17:33:18Z",
+                 end="2012-12-20T17:33:18Z",
+                 gap="+1MONTH",
+                 format="YYYY-MM",
+                 count(*)),
+    b=col(a, count(*)))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          8703,
+          8648,
+          8621,
+          8533,
+          8792,
+          8598,
+          8679,
+          8469,
+          8637,
+          8536,
+          8785
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 5
+      }
+    ]
+  }
+}
+----
+
+== Smoothing
+
+Time series smoothing is often used to remove the noise from a time series and help
+spot the underlying trends.
+The math expressions library has three *sliding window* approaches
+for time series smoothing. The *sliding window* approaches use a summary value
+from a sliding window of the data to calculate a new set of smoothed data points.
+
+The three *sliding window* functions are lagging indicators, which means
+they don't start to move in the direction of the trend until the trend effects
+the summary value of the sliding window. Because of this lagging quality these smoothing
+functions are often used to confirm the direction of the trend.
+
+=== Moving Average
+
+The `movingAvg` function computes a simple moving average over a sliding window of data.
+The example below generates a time series, vectorizes the count(*) field and computes the
+moving average with a window size of 3.
+
+The moving average function returns an array that is of shorter length
+then the original data set. This is because results are generated only when a full window of data
+is available for computing the average. With a window size of three the moving average will
+begin generating results at the 3rd value. The prior values are not included in the result.
+
+This is true for all the sliding window functions.
+
+[source,text]
+----
+let(a=timeseries(collection1,
+                 q=*:*,
+                 field="test_dt",
+                 start="2012-01-20T17:33:18Z",
+                 end="2012-12-20T17:33:18Z",
+                 gap="+1MONTH",
+                 format="YYYY-MM",
+                 count(*)),
+    b=col(a, count(*)),
+    c=movingAvg(b, 3))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": [
+          8657.333333333334,
+          8600.666666666666,
+          8648.666666666666,
+          8641,
+          8689.666666666666,
+          8582,
+          8595,
+          8547.333333333334,
+          8652.666666666666
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 7
+      }
+    ]
+  }
+}
+----
+
+=== Exponential Moving Average
+
+The `expMovingAvg` function uses a different formula for computing the moving average that
+responds faster to changes in the underlying data. This means that it is
+less of a lagging indicator then the simple moving average.
+
+Below is an example that computes an exponential moving average:
+
+[source,text]
+----
+let(a=timeseries(collection1, q=*:*,
+                 field="test_dt",
+                 start="2012-01-20T17:33:18Z",
+                 end="2012-12-20T17:33:18Z",
+                 gap="+1MONTH",
+                 format="YYYY-MM",
+                 count(*)),
+    b=col(a, count(*)),
+    c=expMovingAvg(b, 3))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": [
+          8657.333333333334,
+          8595.166666666668,
+          8693.583333333334,
+          8645.791666666668,
+          8662.395833333334,
+          8565.697916666668,
+          8601.348958333334,
+          8568.674479166668,
+          8676.837239583334
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 5
+      }
+    ]
+  }
+}
+----
+
+=== Moving Median
+
+The `movingMedian` function uses the median of the sliding window rather than the average.
+In many cases the moving median will be more *robust* to outliers then moving averages.
+
+Below is an example computing the moving median:
+
+[source,text]
+----
+let(a=timeseries(collection1,
+                 q=*:*,
+                 field="test_dt",
+                 start="2012-01-20T17:33:18Z",
+                 end="2012-12-20T17:33:18Z",
+                 gap="+1MONTH",
+                 format="YYYY-MM",
+                 count(*)),
+    b=col(a, count(*)),
+    c=movingMedian(b, 3))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": [
+          8648,
+          8621,
+          8621,
+          8598,
+          8679,
+          8598,
+          8637,
+          8536,
+          8637
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 7
+      }
+    ]
+  }
+}
+----
+
+== Differencing
+
+Differencing is often used to remove the
+trend or seasonality from a time series. This is known as making a time series
+*stationary*.
+
+=== First Difference
+
+The actual technique of differencing is to use the difference between values rather then the
+original values. The *first difference* takes the difference between a value and the value
+that came directly before it. The first difference is often used to remove the trend
+from a time series.
+
+In the example below, the `diff` function computes the first difference of a time series.
+The result array length is one value smaller then the original array.
+This is because the `diff` function only returns a result for values
+where the prior value has been subtracted.
+
+[source,text]
+----
+let(a=timeseries(collection1,
+                 q=*:*,
+                 field="test_dt",
+                 start="2012-01-20T17:33:18Z",
+                 end="2012-12-20T17:33:18Z",
+                 gap="+1MONTH",
+                 format="YYYY-MM",
+                 count(*)),
+    b=col(a, count(*)),
+    c=diff(b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": [
+          -55,
+          -27,
+          -88,
+          259,
+          -194,
+          81,
+          -210,
+          168,
+          -101,
+          249
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 11
+      }
+    ]
+  }
+}
+----
+
+=== Lagged Differences
+
+The `diff` function has an optional second parameter to specify a lag in the difference.
+If a lag is specified the difference is taken between a value and the value at a specified
+lag in the past. Lagged differences are often used to remove seasonality from a time series.
+
+The simple example below demonstrates how lagged differencing works.
+Notice that the array in the example follows a simple repeated pattern. This type of pattern
+is often displayed with seasonality. In this example we can remove this pattern using
+the `diff` function with a lag of 4. This will subtract the value lagging four indexes
+behind the current index. Notice that result set size is the original array size minus the lag.
+This is because the `diff` function only returns results for values where the lag of 4
+is possible to compute.
+
+[source,text]
+----
+let(a=array(1,2,5,2,1,2,5,2,1,2,5),
+     b=diff(a, 4))
+----
+
+Expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----

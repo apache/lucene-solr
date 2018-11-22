@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="analyzers-nori" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+  <description>
+    Korean Morphological Analyzer
+  </description>
+
+  <!-- currently whether rat detects this as binary or not
+       is platform dependent?! -->
+  <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
+  <property name="rat.additional-includes" value="src/tools/**"/>
+
+  <!-- we don't want to pull in ipadic/naist etc -->
+  <property name="ivy.default.configuration" value="default"/>
+  <import file="../analysis-module-build.xml"/>
+
+  <!-- default configuration for Korean: uses mecab-ko-dic -->
+  <property name="dict.type" value="mecab-ko-dic"/>
+  <property name="dict.version" value="mecab-ko-dic-2.0.3-20170922" />
+
+  <property name="dict.src.file" value="${dict.version}.tar.gz" />
+  <property name="dict.src.dir" value="${build.dir}/${dict.version}" />
+  <property name="dict.encoding" value="utf-8"/>
+  <property name="dict.normalize" value="false"/>
+  <property name="dict.target.dir" location="${resources.dir}"/>
+
+  <available type="dir" file="${build.dir}/${dict.version}" property="mecab-ko.dict.available"/>
+
+  <path id="classpath">
+    <pathelement path="${analyzers-common.jar}"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
+  <target name="download-dict" depends="ivy-availability-check,ivy-fail,ivy-configure" unless="mecab-ko.dict.available">
+    <ivy:retrieve pattern="${build.dir}/${dict.src.file}" conf="${dict.type}" symlink="${ivy.symlink}"/>
+    <!-- TODO: we should checksum too -->
+    <gunzip src="${build.dir}/${dict.src.file}"/>
+    <untar src="${build.dir}/${dict.version}.tar" dest="${build.dir}"/>
+  </target>
+
+  <path id="tools.dependencies">
+    <fileset dir="../icu/lib"/>
+  </path>
+
+  <path id="tools.classpath">
+    <path refid="classpath"/>
+    <path refid="tools.dependencies"/>
+    <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${build.dir}/classes/tools"/>
+  </path>
+
+  <path id="tools.test.classpath">
+    <path refid="tools.classpath"/>
+    <path refid="test.base.classpath"/>
+    <pathelement location="${build.dir}/classes/tools-test"/>
+  </path>
+
+  <target name="build-dict" depends="compile-tools, download-dict">
+    <sequential>
+      <delete verbose="true">
+        <fileset dir="${resources.dir}/org/apache/lucene/analysis/ko/dict" includes="**/*"/>
+      </delete>
+      <!-- TODO: optimize the dictionary construction a bit so that you don't need 1G -->
+      <java fork="true" failonerror="true" maxmemory="1g" classname="org.apache.lucene.analysis.ko.util.DictionaryBuilder">
+        <classpath>
+          <path refid="tools.classpath"/>
+        </classpath>
+        <assertions>
+          <enable package="org.apache.lucene"/>
+        </assertions>
+        <arg value="${dict.src.dir}"/>
+        <arg value="${dict.target.dir}"/>
+        <arg value="${dict.encoding}"/>
+        <arg value="${dict.normalize}"/>
+      </java>
+    </sequential>
+  </target>
+
+  <!-- we don't actually need to compile this thing, we just want its lib -->
+  <target name="resolve-icu">
+    <ant dir="../icu/" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="compile-tools" depends="resolve-icu, compile-core, common.compile-tools">
+    <compile
+        srcdir="src/tools/java"
+        destdir="${build.dir}/classes/tools">
+      <classpath>
+        <path refid="tools.classpath"/>
+      </classpath>
+    </compile>
+  </target>
+
+  <target name="compile-tools-tests" depends="compile-tools">
+    <compile
+        srcdir="src/tools/test"
+        destdir="${build.dir}/classes/tools-test">
+      <classpath>
+        <path refid="tools.test.classpath"/>
+        <pathelement path="src/tools/test"/>
+      </classpath>
+    </compile>
+  </target>
+
+  <target name="test-tools" depends="compile-tools-tests">
+    <test-macro dataDir="src/tools/test" junit.classpath="tools.test.classpath"/>
+  </target>
+
+  <target name="compile-test" depends="module-build.compile-test, compile-tools-tests"/>
+  <!-- TODO: not until we properly make 'test-tools' work with clover etc
+  <target name="test" depends="module-build.test, test-tools"/> -->
+
+  <target name="regenerate" depends="build-dict"/>
+</project>

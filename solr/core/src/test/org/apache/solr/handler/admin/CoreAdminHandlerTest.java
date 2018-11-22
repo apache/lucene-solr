@@ -422,8 +422,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
           , resp);
       fail("Was able to successfully reload non-existent-core");
     } catch (Exception e) {
-      String e1 = e.getCause().getMessage();
-      assertEquals("Expected error message for non-existent core.", "No such core: non-existent-core", e.getCause().getMessage());
+      assertEquals("Expected error message for non-existent core.", "No such core: non-existent-core", e.getMessage());
     }
 
     // test null core

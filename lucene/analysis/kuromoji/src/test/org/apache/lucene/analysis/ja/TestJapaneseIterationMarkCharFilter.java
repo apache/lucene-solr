@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase {
   private Analyzer keywordAnalyzer, japaneseAnalyzer;
   

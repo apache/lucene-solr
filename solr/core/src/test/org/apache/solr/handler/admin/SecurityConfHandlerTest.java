@@ -50,23 +50,25 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.setContentStreams(Collections.singletonList(o));
     handler.handleRequestBody(req,new SolrQueryResponse());
 
-    BasicAuthPlugin basicAuth = new BasicAuthPlugin();
-    SecurityConfig securityCfg = handler.m.get("/security.json");
-    basicAuth.init((Map<String, Object>) securityCfg.getData().get("authentication"));
-    assertTrue(basicAuth.authenticate("tom", "TomIsUberCool"));
+    try (BasicAuthPlugin basicAuth = new BasicAuthPlugin()) {
+      SecurityConfig securityCfg = handler.m.get("/security.json");
+      basicAuth.init((Map<String, Object>) securityCfg.getData().get("authentication"));
+      assertTrue(basicAuth.authenticate("tom", "TomIsUberCool"));
 
-    command = "{\n" +
-        "'set-user': {'harry':'HarryIsCool'},\n" +
-        "'delete-user': ['tom','harry']\n" +
-        "}";
-    o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8),"");
-    req.setContentStreams(Collections.singletonList(o));
-    handler.handleRequestBody(req,new SolrQueryResponse());
-    securityCfg = handler.m.get("/security.json");
-    assertEquals(3, securityCfg.getVersion());
-    Map result = (Map) securityCfg.getData().get("authentication");
-    result = (Map) result.get("credentials");
-    assertTrue(result.isEmpty());
+
+      command = "{\n" +
+          "'set-user': {'harry':'HarryIsCool'},\n" +
+          "'delete-user': ['tom','harry']\n" +
+          "}";
+      o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
+      req.setContentStreams(Collections.singletonList(o));
+      handler.handleRequestBody(req, new SolrQueryResponse());
+      securityCfg = handler.m.get("/security.json");
+      assertEquals(3, securityCfg.getVersion());
+      Map result = (Map) securityCfg.getData().get("authentication");
+      result = (Map) result.get("credentials");
+      assertTrue(result.isEmpty());
+    }
 
 
     

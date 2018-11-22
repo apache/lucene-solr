@@ -54,7 +54,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
   @Override
   public void init( final NamedList args ) {
     if( args != null ) {
-      SolrParams params = SolrParams.toSolrParams( args );
+      SolrParams params = args.toSolrParams();
       maxNumToLog = params.getInt( "maxNumToLog", maxNumToLog );
       slowUpdateThresholdMillis = params.getInt("slowUpdateThresholdMillis", slowUpdateThresholdMillis);
     }

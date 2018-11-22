@@ -83,6 +83,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testBasicAuth() throws Exception {
     boolean isUseV2Api = random().nextBoolean();
     String authcPrefix = "/admin/authentication";

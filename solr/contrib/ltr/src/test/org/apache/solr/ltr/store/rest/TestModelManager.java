@@ -74,7 +74,7 @@ public class TestModelManager extends TestRerankBase {
     // schema-rest.xml used by this test
     assertJQ("/schema/managed", "/responseHeader/status==0");
 
-    final String valueFeatureClassName = ValueFeature.class.getCanonicalName();
+    final String valueFeatureClassName = ValueFeature.class.getName();
 
     // Add features
     String feature = "{\"name\": \"test1\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }";
@@ -98,14 +98,14 @@ public class TestModelManager extends TestRerankBase {
     assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures,
         "/responseHeader/status==0");
 
-    final String fieldValueFeatureClassName = FieldValueFeature.class.getCanonicalName();
+    final String fieldValueFeatureClassName = FieldValueFeature.class.getName();
 
     // Add bad feature (wrong params)_
     final String badfeature = "{\"name\": \"fvalue\", \"class\": \""+fieldValueFeatureClassName+"\", \"params\": {\"value\": 1} }";
     assertJPut(ManagedFeatureStore.REST_END_POINT, badfeature,
         "/error/msg/=='No setter corrresponding to \\'value\\' in "+fieldValueFeatureClassName+"'");
 
-    final String linearModelClassName = LinearModel.class.getCanonicalName();
+    final String linearModelClassName = LinearModel.class.getName();
 
     // Add models
     String model = "{ \"name\":\"testmodel1\", \"class\":\""+linearModelClassName+"\", \"features\":[] }";

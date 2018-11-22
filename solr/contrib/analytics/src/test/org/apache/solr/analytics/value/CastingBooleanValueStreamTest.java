@@ -63,7 +63,7 @@ public class CastingBooleanValueStreamTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValues(false, true, false);
-    Iterator<Object> values = Arrays.<Object>asList(new Boolean(false), new Boolean(true), new Boolean(false)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(Boolean.FALSE, Boolean.TRUE, Boolean.FALSE).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
@@ -39,6 +38,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * 
  * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
+ *
+ * @since 3.1
  */
 public final class GreekAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Greek stopwords. */
@@ -92,14 +93,13 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
-   *         {@link GreekLowerCaseFilter}, {@link StandardFilter},
+   *         {@link GreekLowerCaseFilter},
    *         {@link StopFilter}, and {@link GreekStemFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
     TokenStream result = new GreekLowerCaseFilter(source);
-    result = new StandardFilter(result);
     result = new StopFilter(result, stopwords);
     result = new GreekStemFilter(result);
     return new TokenStreamComponents(source, result);
@@ -107,8 +107,6 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new GreekLowerCaseFilter(result);
-    return result;
+    return new GreekLowerCaseFilter(in);
   }
 }

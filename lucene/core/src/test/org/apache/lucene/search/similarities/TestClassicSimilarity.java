@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -70,7 +71,7 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
   public void testHit() throws IOException {
     Query query = new TermQuery(new Term("test", "hit"));
     TopDocs topDocs = indexSearcher.search(query, 1);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(1, topDocs.scoreDocs.length);
     assertTrue(topDocs.scoreDocs[0].score != 0);
   }
@@ -78,13 +79,13 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
   public void testMiss() throws IOException {
     Query query = new TermQuery(new Term("test", "miss"));
     TopDocs topDocs = indexSearcher.search(query, 1);
-    assertEquals(0, topDocs.totalHits);
+    assertEquals(0, topDocs.totalHits.value);
   }
 
   public void testEmpty() throws IOException {
     Query query = new TermQuery(new Term("empty", "miss"));
     TopDocs topDocs = indexSearcher.search(query, 1);
-    assertEquals(0, topDocs.totalHits);
+    assertEquals(0, topDocs.totalHits.value);
   }
 
   public void testBQHit() throws IOException {
@@ -92,7 +93,7 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
       .add(new TermQuery(new Term("test", "hit")), Occur.SHOULD)
       .build();
     TopDocs topDocs = indexSearcher.search(query, 1);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(1, topDocs.scoreDocs.length);
     assertTrue(topDocs.scoreDocs[0].score != 0);
   }
@@ -103,7 +104,7 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
       .add(new TermQuery(new Term("test", "miss")), Occur.SHOULD)
       .build();
     TopDocs topDocs = indexSearcher.search(query, 1);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(1, topDocs.scoreDocs.length);
     assertTrue(topDocs.scoreDocs[0].score != 0);
   }
@@ -114,7 +115,7 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
       .add(new TermQuery(new Term("empty", "miss")), Occur.SHOULD)
       .build();
     TopDocs topDocs = indexSearcher.search(query, 1);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(1, topDocs.scoreDocs.length);
     assertTrue(topDocs.scoreDocs[0].score != 0);
   }
@@ -125,7 +126,7 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
         new TermQuery(new Term("test", "hit"))),
       0);
     TopDocs topDocs = indexSearcher.search(query, 1);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(1, topDocs.scoreDocs.length);
     assertTrue(topDocs.scoreDocs[0].score != 0);
   }
@@ -137,7 +138,7 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
         new TermQuery(new Term("test", "miss"))),
       0);
     TopDocs topDocs = indexSearcher.search(query, 1);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(1, topDocs.scoreDocs.length);
     assertTrue(topDocs.scoreDocs[0].score != 0);
   }
@@ -149,7 +150,7 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
         new TermQuery(new Term("empty", "miss"))),
       0);
     TopDocs topDocs = indexSearcher.search(query, 1);
-    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.totalHits.value);
     assertEquals(1, topDocs.scoreDocs.length);
     assertTrue(topDocs.scoreDocs[0].score != 0);
   }
@@ -176,7 +177,9 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
       final int length = TestUtil.nextInt(random(), 1, 1000);
       final int position = random().nextInt(length);
       final int numOverlaps = random().nextInt(length);
-      FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", position, length, numOverlaps, 100);
+      final int maxTermFrequency = 1;
+      final int uniqueTermCount = 1;
+      FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", IndexOptions.DOCS_AND_FREQS, position, length, numOverlaps, 100, maxTermFrequency, uniqueTermCount);
       assertEquals(
           sim2.computeNorm(state),
           sim1.computeNorm(state),

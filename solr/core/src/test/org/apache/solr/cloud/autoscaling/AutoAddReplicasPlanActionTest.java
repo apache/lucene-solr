@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterStateUtil;
@@ -51,9 +52,16 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+
+    new V2Request.Builder("/cluster")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{set-obj-property:{defaults : {cluster: {useLegacyReplicaAssignment:true}}}}}")
+        .build()
+        .process(cluster.getSolrClient());
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
     JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);
@@ -152,12 +160,13 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to create unique id")
   private List<SolrRequest> getOperations(JettySolrRunner actionJetty, String lostNodeName) throws Exception {
-    AutoAddReplicasPlanAction action = new AutoAddReplicasPlanAction();
-    TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST, ".auto_add_replicas", Collections.singletonList(System.currentTimeMillis()), Collections.singletonList(lostNodeName));
-    ActionContext context = new ActionContext(actionJetty.getCoreContainer().getZkController().getSolrCloudManager(), null, new HashMap<>());
-    action.process(lostNode, context);
-    List<SolrRequest> operations = (List) context.getProperty("operations");
-    return operations;
+    try (AutoAddReplicasPlanAction action = new AutoAddReplicasPlanAction()) {
+      TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST, ".auto_add_replicas", Collections.singletonList(System.currentTimeMillis()), Collections.singletonList(lostNodeName), CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+      ActionContext context = new ActionContext(actionJetty.getCoreContainer().getZkController().getSolrCloudManager(), null, new HashMap<>());
+      action.process(lostNode, context);
+      List<SolrRequest> operations = (List) context.getProperty("operations");
+      return operations;
+    }
   }
 
   private void assertOperations(String collection, List<SolrRequest> operations, String lostNodeName,

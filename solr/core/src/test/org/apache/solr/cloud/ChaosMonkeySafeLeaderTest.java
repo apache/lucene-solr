@@ -81,6 +81,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  // 29-June-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
     
     handle.clear();

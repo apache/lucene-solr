@@ -32,8 +32,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -102,6 +102,15 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     log.debug("OverseerTriggerThread has been closed explicitly");
   }
 
+  /**
+   * For tests.
+   * @lucene.internal
+   * @return current {@link ScheduledTriggers} instance
+   */
+  public ScheduledTriggers getScheduledTriggers() {
+    return scheduledTriggers;
+  }
+
   @Override
   public boolean isClosed() {
     return isClosed;
@@ -112,13 +121,19 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     int lastZnodeVersion = znodeVersion;
 
     // we automatically add a trigger for auto add replicas if it does not exists already
+    // we also automatically add a scheduled maintenance trigger
     while (!isClosed)  {
       try {
+        if (Thread.currentThread().isInterrupted()) {
+          log.warn("Interrupted");
+          break;
+        }
         AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-        AutoScalingConfig withAutoAddReplicasTrigger = withAutoAddReplicasTrigger(autoScalingConfig);
-        if (withAutoAddReplicasTrigger.equals(autoScalingConfig)) break;
-        log.debug("Adding .autoAddReplicas trigger");
-        cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(withAutoAddReplicasTrigger), withAutoAddReplicasTrigger.getZkVersion());
+        AutoScalingConfig updatedConfig = withAutoAddReplicasTrigger(autoScalingConfig);
+        updatedConfig = withScheduledMaintenanceTrigger(updatedConfig);
+        if (updatedConfig.equals(autoScalingConfig)) break;
+        log.debug("Adding .auto_add_replicas and .scheduled_maintenance triggers");
+        cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(updatedConfig), updatedConfig.getZkVersion());
         break;
       } catch (BadVersionException bve) {
         // somebody else has changed the configuration so we must retry
@@ -127,8 +142,16 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         Thread.currentThread().interrupt();
         log.warn("Interrupted", e);
         break;
-      } catch (IOException | KeeperException e) {
-        log.error("A ZK error has occurred", e);
+      }
+      catch (IOException | KeeperException e) {
+        if (e instanceof KeeperException.SessionExpiredException ||
+            (e.getCause()!=null && e.getCause() instanceof KeeperException.SessionExpiredException)) {
+          log.warn("Solr cannot talk to ZK, exiting " + 
+              getClass().getSimpleName() + " main queue loop", e);
+          return;
+        } else {
+          log.error("A ZK error has occurred", e);
+        }
       }
     }
 
@@ -215,7 +238,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           if (entry.getValue().getEventType().equals(TriggerEventType.NODEADDED)) {
             cleanOldNodeAddedMarkers = false;
           }
-          scheduledTriggers.add(entry.getValue());
+          try {
+            scheduledTriggers.add(entry.getValue());
+          } catch (Exception e) {
+            log.warn("Exception initializing trigger " + entry.getKey() + ", configuration ignored", e);
+          }
         }
       } catch (AlreadyClosedException e) {
         // this _should_ mean that we're closing, complain loudly if that's not the case
@@ -329,6 +356,15 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   private AutoScalingConfig withAutoAddReplicasTrigger(AutoScalingConfig autoScalingConfig) {
     Map<String, Object> triggerProps = AutoScaling.AUTO_ADD_REPLICAS_TRIGGER_PROPS;
+    return withDefaultTrigger(triggerProps, autoScalingConfig);
+  }
+
+  private AutoScalingConfig withScheduledMaintenanceTrigger(AutoScalingConfig autoScalingConfig) {
+    Map<String, Object> triggerProps = AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_PROPS;
+    return withDefaultTrigger(triggerProps, autoScalingConfig);
+  }
+
+  private AutoScalingConfig withDefaultTrigger(Map<String, Object> triggerProps, AutoScalingConfig autoScalingConfig) {
     String triggerName = (String) triggerProps.get("name");
     Map<String, AutoScalingConfig.TriggerConfig> configs = autoScalingConfig.getTriggerConfigs();
     for (AutoScalingConfig.TriggerConfig cfg : configs.values()) {
@@ -358,7 +394,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       AutoScalingConfig.TriggerConfig cfg = entry.getValue();
       TriggerEventType eventType = cfg.event;
       String triggerName = entry.getKey();
-      triggerMap.put(triggerName, triggerFactory.create(eventType, triggerName, cfg.properties));
+      try {
+        triggerMap.put(triggerName, triggerFactory.create(eventType, triggerName, cfg.properties));
+      } catch (TriggerValidationException e) {
+        log.warn("Error in trigger '" + triggerName + "' configuration, trigger config ignored: " + cfg, e);
+      }
     }
     return triggerMap;
   }

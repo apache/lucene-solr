@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -75,7 +76,7 @@ public class DelegatingDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void removeData(String path, int version) throws NoSuchElementException, IOException, BadVersionException, KeeperException, InterruptedException {
+  public void removeData(String path, int version) throws NoSuchElementException, NotEmptyException, IOException, BadVersionException, KeeperException, InterruptedException {
     delegate.removeData(path, version);
   }
 

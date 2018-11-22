@@ -59,7 +59,9 @@ public class OpenNLPOpsFactory {
   public static SentenceModel getSentenceModel(String modelName, ResourceLoader loader) throws IOException {
     SentenceModel model = sentenceModels.get(modelName);
     if (model == null) {
-      model = new SentenceModel(loader.openResource(modelName));
+      try (InputStream resource = loader.openResource(modelName)) {
+        model = new SentenceModel(resource);
+      }
       sentenceModels.put(modelName, model);
     }
     return model;
@@ -77,7 +79,9 @@ public class OpenNLPOpsFactory {
   public static TokenizerModel getTokenizerModel(String modelName, ResourceLoader loader) throws IOException {
     TokenizerModel model = tokenizerModels.get(modelName);
     if (model == null) {
-      model = new TokenizerModel(loader.openResource(modelName));
+      try (InputStream resource = loader.openResource(modelName)) {
+        model = new TokenizerModel(resource);
+      }
       tokenizerModels.put(modelName, model);
     }
     return model;
@@ -91,7 +95,9 @@ public class OpenNLPOpsFactory {
   public static POSModel getPOSTaggerModel(String modelName, ResourceLoader loader) throws IOException {
     POSModel model = posTaggerModels.get(modelName);
     if (model == null) {
-      model = new POSModel(loader.openResource(modelName));
+      try (InputStream resource = loader.openResource(modelName)) {
+        model = new POSModel(resource);
+      }
       posTaggerModels.put(modelName, model);
     }
     return model;
@@ -105,7 +111,9 @@ public class OpenNLPOpsFactory {
   public static ChunkerModel getChunkerModel(String modelName, ResourceLoader loader) throws IOException {
     ChunkerModel model = chunkerModels.get(modelName);
     if (model == null) {
-      model = new ChunkerModel(loader.openResource(modelName));
+      try (InputStream resource = loader.openResource(modelName)) {
+        model = new ChunkerModel(resource);
+      }
       chunkerModels.put(modelName, model);
     }
     return model;
@@ -119,7 +127,9 @@ public class OpenNLPOpsFactory {
   public static TokenNameFinderModel getNERTaggerModel(String modelName, ResourceLoader loader) throws IOException {
     TokenNameFinderModel model = nerModels.get(modelName);
     if (model == null) {
-      model = new TokenNameFinderModel(loader.openResource(modelName));
+      try (InputStream resource = loader.openResource(modelName)) {
+        model = new TokenNameFinderModel(resource);
+      }
       nerModels.put(modelName, model);
     }
     return model;
@@ -139,18 +149,19 @@ public class OpenNLPOpsFactory {
   public static String getLemmatizerDictionary(String dictionaryFile, ResourceLoader loader) throws IOException {
     String dictionary = lemmaDictionaries.get(dictionaryFile);
     if (dictionary == null) {
-      Reader reader = new InputStreamReader(loader.openResource(dictionaryFile), StandardCharsets.UTF_8);
-      StringBuilder builder = new StringBuilder();
-      char[] chars = new char[8092];
-      int numRead = 0;
-      do {
-        numRead = reader.read(chars, 0, chars.length);
-        if (numRead > 0) {
-          builder.append(chars, 0, numRead);
-        }
-      } while (numRead > 0);
-      dictionary = builder.toString();
-      lemmaDictionaries.put(dictionaryFile, dictionary);
+      try (Reader reader = new InputStreamReader(loader.openResource(dictionaryFile), StandardCharsets.UTF_8)) {
+        StringBuilder builder = new StringBuilder();
+        char[] chars = new char[8092];
+        int numRead = 0;
+        do {
+          numRead = reader.read(chars, 0, chars.length);
+          if (numRead > 0) {
+            builder.append(chars, 0, numRead);
+          }
+        } while (numRead > 0);
+        dictionary = builder.toString();
+        lemmaDictionaries.put(dictionaryFile, dictionary);
+      }
     }
     return dictionary;
   }
@@ -158,7 +169,9 @@ public class OpenNLPOpsFactory {
   public static LemmatizerModel getLemmatizerModel(String modelName, ResourceLoader loader) throws IOException {
     LemmatizerModel model = lemmatizerModels.get(modelName);
     if (model == null) {
-      model = new LemmatizerModel(loader.openResource(modelName));
+      try (InputStream resource = loader.openResource(modelName)) {
+        model = new LemmatizerModel(resource);
+      }
       lemmatizerModels.put(modelName, model);
     }
     return model;

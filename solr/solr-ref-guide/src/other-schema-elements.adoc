@@ -29,7 +29,7 @@ You can define the unique key field by naming it:
 <uniqueKey>id</uniqueKey>
 ----
 
-Schema defaults and `copyFields` cannot be used to populate the `uniqueKey` field. The `fieldType` of `uniqueKey` must not be analyzed. You can use `UUIDUpdateProcessorFactory` to have `uniqueKey` values generated automatically.
+Schema defaults and `copyFields` cannot be used to populate the `uniqueKey` field. The `fieldType` of `uniqueKey` must not be analyzed and must not be any of the `*PointField` types. You can use `UUIDUpdateProcessorFactory` to have `uniqueKey` values generated automatically.
 
 Further, the operation will fail if the `uniqueKey` field is used, but is multivalued (or inherits the multivalue-ness from the `fieldtype`). However, `uniqueKey` will continue to work, as long as the field is properly used.
 
@@ -92,4 +92,4 @@ In the example above `IBSimilarityFactory` (using the Information-Based model) w
 
 If `SchemaSimilarityFactory` is explicitly declared without configuring a `defaultSimFromFieldType`, then `BM25Similarity` is implicitly used as the default.
 
-In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory`, etc.... For details, see the Solr Javadocs for the {solr-javadocs}/solr-core/org/apache/solr/schema/SimilarityFactory.html[similarity factories].
+In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory`, etc. For details, see the Solr Javadocs for the {solr-javadocs}/solr-core/org/apache/solr/schema/SimilarityFactory.html[similarity factories].

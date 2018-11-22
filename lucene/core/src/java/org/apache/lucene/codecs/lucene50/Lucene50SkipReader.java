@@ -200,8 +200,7 @@ class Lucene50SkipReader extends MultiLevelSkipListReader {
     return delta;
   }
 
-  // The default impl skips impacts since they are only useful if we have a SimScorer
-  // to compute the scores that impacts map to.
+  // The default impl skips impacts
   protected void readImpacts(int level, IndexInput skipStream) throws IOException {
     if (version >= Lucene50PostingsFormat.VERSION_IMPACT_SKIP_DATA) {
       // The base implementation skips impacts, they are not used

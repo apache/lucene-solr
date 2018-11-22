@@ -36,6 +36,8 @@ import java.util.regex.Pattern;
  * &lt;/fieldType&gt;</pre>
  *
  * @see PatternReplaceFilter
+ *
+ * @since 3.1
  */
 public class PatternReplaceFilterFactory extends TokenFilterFactory {
   final Pattern pattern;

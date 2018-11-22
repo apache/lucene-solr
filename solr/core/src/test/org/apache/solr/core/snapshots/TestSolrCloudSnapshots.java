@@ -88,6 +88,13 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
     BackupRestoreUtils.verifyDocs(nDocs, solrClient, collectionName);
 
+    // Set a collection property
+    final boolean collectionPropertySet = usually();
+    if (collectionPropertySet) {
+      CollectionAdminRequest.CollectionProp setProperty = CollectionAdminRequest.setCollectionProperty(collectionName, "test.property", "test.value");
+      setProperty.process(solrClient);
+    }
+
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
 
     // Verify if snapshot creation works with replica failures.
@@ -191,6 +198,14 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
           restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
       BackupRestoreUtils.verifyDocs(nDocs, solrClient, restoreCollectionName);
+    }
+
+    // Check collection property
+    Map<String, String> collectionProperties = solrClient.getZkStateReader().getCollectionProperties(restoreCollectionName);
+    if (collectionPropertySet) {
+      assertEquals("Snapshot restore hasn't restored collection properties", "test.value", collectionProperties.get("test.property"));
+    } else {
+      assertNull("Collection property shouldn't be present", collectionProperties.get("test.property"));
     }
 
     // Verify if the snapshot deletion works correctly when one or more replicas containing the snapshot are

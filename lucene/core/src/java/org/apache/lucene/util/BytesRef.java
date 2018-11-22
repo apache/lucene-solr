@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
-import java.util.Arrays;
-
 /** Represents byte[], as a slice (offset + length) into an
  *  existing byte[].  The {@link #bytes} member should never be null;
  *  use {@link #EMPTY_BYTES} if necessary.
@@ -96,20 +93,8 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * @lucene.internal
    */
   public boolean bytesEquals(BytesRef other) {
-    assert other != null;
-    if (length == other.length) {
-      int otherUpto = other.offset;
-      final byte[] otherBytes = other.bytes;
-      final int end = offset + length;
-      for(int upto=offset;upto<end;upto++,otherUpto++) {
-        if (bytes[upto] != otherBytes[otherUpto]) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return false;
-    }
+    return FutureArrays.equals(this.bytes, this.offset, this.offset + this.length, 
+                               other.bytes, other.offset, other.offset + other.length);
   }
 
   /**
@@ -172,27 +157,8 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /** Unsigned byte order comparison */
   @Override
   public int compareTo(BytesRef other) {
-    // TODO: Once we are on Java 9 replace this by java.util.Arrays#compareUnsigned()
-    // which is implemented by a Hotspot intrinsic! Also consider building a
-    // Multi-Release-JAR!
-    final byte[] aBytes = this.bytes;
-    int aUpto = this.offset;
-    final byte[] bBytes = other.bytes;
-    int bUpto = other.offset;
-    
-    final int aStop = aUpto + Math.min(this.length, other.length);
-    while(aUpto < aStop) {
-      int aByte = aBytes[aUpto++] & 0xff;
-      int bByte = bBytes[bUpto++] & 0xff;
-
-      int diff = aByte - bByte;
-      if (diff != 0) {
-        return diff;
-      }
-    }
-
-    // One is a prefix of the other, or, they are equal:
-    return this.length - other.length;
+    return FutureArrays.compareUnsigned(this.bytes, this.offset, this.offset + this.length, 
+                                        other.bytes, other.offset, other.offset + other.length);
   }
     
   /**
@@ -203,11 +169,7 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * and an offset of zero.
    */
   public static BytesRef deepCopyOf(BytesRef other) {
-    BytesRef copy = new BytesRef();
-    copy.bytes = Arrays.copyOfRange(other.bytes, other.offset, other.offset + other.length);
-    copy.offset = 0;
-    copy.length = other.length;
-    return copy;
+    return new BytesRef(ArrayUtil.copyOfSubArray(other.bytes, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

@@ -19,7 +19,7 @@ limitations under the License.
 
 #content #index .bar-desc
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
   font-weight: normal;
   margin-left: 10px;
   white-space: pre;
@@ -58,7 +58,7 @@ limitations under the License.
 #content #index .bar-holder .bar-max.val
 {
   border-color: #f0f0f0;
-  color: #d6d6d6;
+  color: #8D8D8D;
 }
 
 #content #index .bar-holder .bar-total.bar
@@ -69,7 +69,7 @@ limitations under the License.
 #content #index .bar-holder .bar-total.val
 {
   border-color: #c0c0c0;
-  color: #c0c0c0;
+  color: #4D4D4D;
 }
 
 #content #index .bar-holder .bar-used.bar
@@ -144,7 +144,7 @@ limitations under the License.
 
 #content #index .data li dd.odd
 {
-  color: #999;
+  background-color: #f0f0f0;
 }
 
 #content #index .data dt span
@@ -203,7 +203,7 @@ limitations under the License.
 
 #content #index #system .content .no-info
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
   display: none;
   font-style: italic;
 }

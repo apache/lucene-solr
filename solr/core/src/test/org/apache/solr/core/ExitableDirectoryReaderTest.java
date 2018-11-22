@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,10 +89,10 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   public void testCacheAssumptions() throws Exception {
     String fq= "name:d*";
     SolrCore core = h.getCore();
-    MetricsMap filterCacheStats = (MetricsMap)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+    MetricsMap filterCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache")).getGauge();
     long fqInserts = (long) filterCacheStats.getValue().get("inserts");
 
-    MetricsMap queryCacheStats = (MetricsMap)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    MetricsMap queryCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
     long qrInserts = (long) queryCacheStats.getValue().get("inserts");
 
     // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed and it gets 100 back and the for loop below
@@ -130,7 +131,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   public void testQueryResults() throws Exception {
     String q = "name:e*";
     SolrCore core = h.getCore();
-    MetricsMap queryCacheStats = (MetricsMap)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    MetricsMap queryCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
     Map<String,Object> nl = queryCacheStats.getValue();
     long inserts = (long) nl.get("inserts");
 

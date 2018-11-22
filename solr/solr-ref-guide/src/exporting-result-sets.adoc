@@ -52,7 +52,8 @@ http://localhost:8983/solr/core_name/export?q=my-query&sort=severity+desc,timest
 
 The `sort` property defines how documents will be sorted in the exported result set. Results can be sorted by any field that has a field type of int,long, float, double, string. The sort fields must be single valued fields.
 
-Up to four sort fields can be specified per request, with the 'asc' or 'desc' properties.
+The export performance will get slower as you add more sort fields. If there is enough physical memory available outside of the JVM to load up the sort fields then the performance will be linearly slower with addition of sort fields.
+It can get worse otherwise.
 
 === Specifying the Field List
 

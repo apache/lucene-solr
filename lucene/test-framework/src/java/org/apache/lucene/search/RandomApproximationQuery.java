@@ -109,18 +109,29 @@ public class RandomApproximationQuery extends Query {
     }
 
     @Override
-    public float maxScore() {
-      return scorer.maxScore();
+    public int advanceShallow(int target) throws IOException {
+      if (scorer.docID() > target && twoPhaseView.approximation.docID() != scorer.docID()) {
+        // The random approximation can return doc ids that are not present in the underlying
+        // scorer. These additional doc ids are always *before* the next matching doc so we
+        // cannot use them to shallow advance the main scorer which is already ahead.
+        target = scorer.docID();
+      }
+      return scorer.advanceShallow(target);
+    }
+
+    @Override
+    public float getMaxScore(int upTo) throws IOException {
+      return scorer.getMaxScore(upTo);
     }
 
     @Override
     public int docID() {
-      return scorer.docID();
+      return twoPhaseView.approximation().docID();
     }
 
     @Override
     public DocIdSetIterator iterator() {
-      return scorer.iterator();
+      return  TwoPhaseIterator.asDocIdSetIterator(twoPhaseView);
     }
 
   }

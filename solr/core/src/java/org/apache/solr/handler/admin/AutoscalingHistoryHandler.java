@@ -18,9 +18,11 @@ package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -47,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * collection.
  */
 public class AutoscalingHistoryHandler extends RequestHandlerBase implements PermissionNameProvider {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String SYSTEM_COLLECTION_PARAM = "systemCollection";
 
@@ -123,16 +125,17 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
         }
       }
     }
-    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
-        .withZkHost(coreContainer.getZkController().getZkServerAddress())
-        .withHttpClient(coreContainer.getUpdateShardHandler().getHttpClient())
+    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(coreContainer.getZkController().getZkServerAddress()), Optional.empty())
+        .withHttpClient(coreContainer.getUpdateShardHandler().getDefaultHttpClient())
         .build()) {
       QueryResponse qr = cloudSolrClient.query(collection, params);
-      rsp.getValues().add("response", qr.getResults());
+      rsp.setAllValues(qr.getResponse());
     } catch (Exception e) {
       if ((e instanceof SolrException) && e.getMessage().contains("Collection not found")) {
         // relatively benign
-        LOG.info("Collection " + collection + " does not exist.");
+        String msg = "Collection " + collection + " does not exist.";
+        log.info(msg);
+        rsp.getValues().add("error", msg);
       } else {
         throw e;
       }

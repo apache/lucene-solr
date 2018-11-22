@@ -19,7 +19,6 @@ package org.apache.lucene.search.uhighlight;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -38,57 +37,33 @@ public class Passage {
   private int[] matchStarts = new int[8];
   private int[] matchEnds = new int[8];
   private BytesRef[] matchTerms = new BytesRef[8];
+  private int[] matchTermFreqInDoc = new int[8];
   private int numMatches = 0;
 
   /** @lucene.internal */
-  public void addMatch(int startOffset, int endOffset, BytesRef term) {
+  public void addMatch(int startOffset, int endOffset, BytesRef term, int termFreqInDoc) {
     assert startOffset >= this.startOffset && startOffset <= this.endOffset;
     if (numMatches == matchStarts.length) {
       int newLength = ArrayUtil.oversize(numMatches + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
       int newMatchStarts[] = new int[newLength];
       int newMatchEnds[] = new int[newLength];
+      int newMatchTermFreqInDoc[] = new int[newLength];
       BytesRef newMatchTerms[] = new BytesRef[newLength];
       System.arraycopy(matchStarts, 0, newMatchStarts, 0, numMatches);
       System.arraycopy(matchEnds, 0, newMatchEnds, 0, numMatches);
       System.arraycopy(matchTerms, 0, newMatchTerms, 0, numMatches);
+      System.arraycopy(matchTermFreqInDoc, 0, newMatchTermFreqInDoc, 0, numMatches);
       matchStarts = newMatchStarts;
       matchEnds = newMatchEnds;
       matchTerms = newMatchTerms;
+      matchTermFreqInDoc = newMatchTermFreqInDoc;
     }
     assert matchStarts.length == matchEnds.length && matchEnds.length == matchTerms.length;
     matchStarts[numMatches] = startOffset;
     matchEnds[numMatches] = endOffset;
     matchTerms[numMatches] = term;
+    matchTermFreqInDoc[numMatches] = termFreqInDoc;
     numMatches++;
-  }
-
-  /** @lucene.internal */
-  public void sort() {
-    final int starts[] = matchStarts;
-    final int ends[] = matchEnds;
-    final BytesRef terms[] = matchTerms;
-    new InPlaceMergeSorter() {
-      @Override
-      protected void swap(int i, int j) {
-        int temp = starts[i];
-        starts[i] = starts[j];
-        starts[j] = temp;
-
-        temp = ends[i];
-        ends[i] = ends[j];
-        ends[j] = temp;
-
-        BytesRef tempTerm = terms[i];
-        terms[i] = terms[j];
-        terms[j] = tempTerm;
-      }
-
-      @Override
-      protected int compare(int i, int j) {
-        return Integer.compare(starts[i], starts[j]);
-      }
-
-    }.sort(0, numMatches);
   }
 
   /** @lucene.internal */
@@ -136,11 +111,19 @@ public class Passage {
     return endOffset;
   }
 
+  public int getLength() {
+    return endOffset - startOffset;
+  }
+
   /**
    * Passage's score.
    */
   public float getScore() {
     return score;
+  }
+
+  public void setScore(float score) {
+    this.score = score;
   }
 
   /**
@@ -174,12 +157,25 @@ public class Passage {
   }
 
   /**
-   * BytesRef (term text) of the matches, corresponding with {@link #getMatchStarts()}.
+   * BytesRef (term text) of the matches, corresponding with {@link #getMatchStarts()}.  The primary purpose of this
+   * method is to expose the number of unique terms per passage for use in passage scoring.
+   * The actual term byte content is not well defined by this highlighter, and thus use of it is more subject to
+   * change.
+   * <p>
+   * The term might be simply the analyzed term at this position.
+   * Depending on the highlighter's configuration, the match term may be a phrase (instead of a word), and in such
+   * a case might be a series of space-separated analyzed terms.
+   * If the match is from a {@link org.apache.lucene.search.MultiTermQuery} then the match term may be the toString() of
+   * that query.
    * <p>
    * Only {@link #getNumMatches()} are valid.
    */
   public BytesRef[] getMatchTerms() {
     return matchTerms;
+  }
+
+  public int[] getMatchTermFreqsInDoc() {
+    return matchTermFreqInDoc;
   }
 
   /** @lucene.internal */
@@ -193,8 +189,4 @@ public class Passage {
     this.endOffset = endOffset;
   }
 
-  /** @lucene.internal */
-  public void setScore(float score) {
-    this.score = score;
-  }
 }

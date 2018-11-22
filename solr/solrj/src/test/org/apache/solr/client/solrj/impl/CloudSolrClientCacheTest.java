@@ -80,10 +80,8 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
     LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
-    try (CloudSolrClient cloudClient = new CloudSolrClient.Builder()
+    try (CloudSolrClient cloudClient = new CloudSolrClientBuilder(getStateProvider(livenodes, refs))
         .withLBHttpSolrClient(mockLbclient)
-        .withClusterStateProvider(getStateProvider(livenodes, refs))
-
         .build()) {
       livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       ClusterState cs = ClusterState.load(1, coll1State.getBytes(UTF_8),

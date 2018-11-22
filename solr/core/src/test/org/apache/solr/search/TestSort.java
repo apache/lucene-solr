@@ -282,10 +282,8 @@ public class TestSort extends SolrTestCaseJ4 {
         final String nullRep = luceneSort || sortMissingFirst && !reverse || sortMissingLast && reverse ? "" : "zzz";
         final String nullRep2 = luceneSort2 || sortMissingFirst2 && !reverse2 || sortMissingLast2 && reverse2 ? "" : "zzz";
 
-        boolean trackScores = r.nextBoolean();
-        boolean trackMaxScores = r.nextBoolean();
         boolean scoreInOrder = r.nextBoolean();
-        final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, true, trackScores, trackMaxScores, true);
+        final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
 
         final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves

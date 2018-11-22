@@ -988,4 +988,82 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
                /*id*/2, /*score*/5,
                /*id*/1, /*score*/2);
   }
+
+  @Test
+  public void testEqualFunction() {
+    clearIndex();
+    assertU(adoc("id", "1", "field1_s", "value1", "field2_s", "value1",
+        "field1_s_dv", "value1", "field2_s_dv", "value2", "field_b", "true"));
+    assertU(adoc("id", "2", "field1_s", "value1", "field2_s", "value2",
+        "field1_s_dv", "value1", "field2_s_dv", "value1", "field_b", "false"));
+    assertU(commit());
+
+    singleTest("field1_s", "if(eq(field1_s,field2_s),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/2);
+    singleTest("field1_s_dv", "if(eq(field1_s_dv,field2_s_dv),5,2)",
+        /*id*/2, /*score*/5,
+        /*id*/1, /*score*/2);
+    singleTest("field1_s", "if(eq(field1_s,field1_s_dv),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/5);
+    singleTest("field2_s", "if(eq(field2_s,field2_s_dv),5,2)",
+        /*id*/1, /*score*/2,
+        /*id*/2, /*score*/2);
+    singleTest("field2_s", "if(eq(field2_s,'value1'),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/2);
+    singleTest("field1_s", "if(eq('value1','value1'),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/5);
+    singleTest("field_b", "if(eq(if(field_b,'value1','value2'),'value1'),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/2);
+  }
+
+  @Test
+  public void testEqualNumericComparisons() {
+    clearIndex();
+    assertU(adoc("id", "1", "field_d", "5.0", "field_i", "5"));
+    assertU(adoc("id", "2",  "field_d", "3.0", "field_i", "3"));
+    assertU(commit());
+    singleTest("field_d", "if(eq(field_d,5),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/2);
+    singleTest("field_d", "if(eq(field_d,5.0),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/2);
+    singleTest("field_d", "if(eq(5,def(field_d,5)),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/2);
+    singleTest("field_i", "if(eq(5.0,def(field_i,5)),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/2);
+    singleTest("field_not_existed_i", "if(def(field_not_existed_i,5.0),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/5);
+    singleTest("field_not_existed_i", "if(def(field_not_existed_i,5),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/5);
+  }
+
+  @Test
+  public void testDifferentTypesComparisons() {
+    clearIndex();
+    assertU(adoc("id", "1", "field_s", "value"));
+    assertU(adoc("id", "2"));
+    assertU(commit());
+    singleTest("field_s", "if(eq(field_s,'value'),5,2)",
+        /*id*/1, /*score*/5,
+        /*id*/2, /*score*/2);
+    singleTest("field_s", "if(eq(def(field_s,5),5),5,2)",
+        /*id*/2, /*score*/5,
+        /*id*/1, /*score*/2);
+    singleTest("field_s", "if(eq(def(field_s,5),5.0),5,2)",
+        /*id*/2, /*score*/5,
+        /*id*/1, /*score*/2);
+    singleTest("field_s", "if(eq(def(field_s,'5'),5),5,2)",
+        /*id*/1, /*score*/2,
+        /*id*/2, /*score*/2);
+  }
 }

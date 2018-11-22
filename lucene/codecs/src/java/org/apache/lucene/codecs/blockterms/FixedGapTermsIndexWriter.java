@@ -150,7 +150,13 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
     @Override
     public void add(BytesRef text, TermStats stats, long termsFilePointer) throws IOException {
-      final int indexedTermLength = indexedTermPrefixLength(lastTerm.get(), text);
+      final int indexedTermLength;
+      if (numIndexTerms == 0) {
+        // no previous term: no bytes to write
+        indexedTermLength = 0;
+      } else {
+        indexedTermLength = indexedTermPrefixLength(lastTerm.get(), text);
+      }
       //System.out.println("FGW: add text=" + text.utf8ToString() + " " + text + " fp=" + termsFilePointer);
 
       // write only the min prefix that shows the diff

@@ -201,22 +201,25 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testOffsetWindowTokenFilter() throws Exception {
     String[] multivalued = { "a b c d", "e f g", "h", "i j k l m n" };
-    Analyzer a1 = new WhitespaceAnalyzer();
-    TokenStream tokenStream = a1.tokenStream("", "a b c d e f g h i j k l m n");
+    try (Analyzer a1 = new WhitespaceAnalyzer()) {
+      TokenStream tokenStream = a1.tokenStream("", "a b c d e f g h i j k l m n");
 
-    OffsetWindowTokenFilter tots = new OffsetWindowTokenFilter(tokenStream);
-    for( String v : multivalued ){
-      TokenStream ts1 = tots.advanceToNextWindowOfLength(v.length());
-      ts1.reset();
-      Analyzer a2 = new WhitespaceAnalyzer();
-      TokenStream ts2 = a2.tokenStream("", v);
-      ts2.reset();
+      try (OffsetWindowTokenFilter tots = new OffsetWindowTokenFilter(tokenStream)) {
+        for (String v : multivalued) {
+          TokenStream ts1 = tots.advanceToNextWindowOfLength(v.length());
+          ts1.reset();
+          try (Analyzer a2 = new WhitespaceAnalyzer()) {
+            TokenStream ts2 = a2.tokenStream("", v);
+            ts2.reset();
 
-      while (ts1.incrementToken()) {
-        assertTrue(ts2.incrementToken());
-        assertEquals(ts1, ts2);
+            while (ts1.incrementToken()) {
+              assertTrue(ts2.incrementToken());
+              assertEquals(ts1, ts2);
+            }
+            assertFalse(ts2.incrementToken());
+          }
+        }
       }
-      assertFalse(ts2.incrementToken());
     }
   }
 

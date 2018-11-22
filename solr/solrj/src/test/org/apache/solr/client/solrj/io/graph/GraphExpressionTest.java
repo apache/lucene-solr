@@ -97,6 +97,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  // commented 4-Sep-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testShortestPathStream() throws Exception {
 
     new UpdateRequest()
@@ -646,23 +647,23 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 4);
     assertTrue(tuples.get(0).getString("node").equals("bill"));
-    assertTrue(tuples.get(0).getLong("level").equals(new Long(0)));
+    assertTrue(tuples.get(0).getLong("level").equals(0L));
     assertTrue(tuples.get(0).getStrings("ancestors").size() == 0);
     assertTrue(tuples.get(1).getString("node").equals("jim"));
-    assertTrue(tuples.get(1).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(1).getLong("level").equals(1L));
     List<String> ancestors = tuples.get(1).getStrings("ancestors");
     System.out.println("##################### Ancestors:"+ancestors);
     assert(ancestors.size() == 1);
     assert(ancestors.get(0).equals("bill"));
 
     assertTrue(tuples.get(2).getString("node").equals("max"));
-    assertTrue(tuples.get(2).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(2).getLong("level").equals(1L));
     ancestors = tuples.get(2).getStrings("ancestors");
     assert(ancestors.size() == 1);
     assert(ancestors.get(0).equals("bill"));
 
     assertTrue(tuples.get(3).getString("node").equals("sam"));
-    assertTrue(tuples.get(3).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(3).getLong("level").equals(1L));
     ancestors = tuples.get(3).getStrings("ancestors");
     assert(ancestors.size() == 1);
     assert(ancestors.get(0).equals("bill"));
@@ -705,13 +706,13 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 4);
     assertTrue(tuples.get(0).getString("node").equals("bill"));
-    assertTrue(tuples.get(0).getLong("level").equals(new Long(0)));
+    assertTrue(tuples.get(0).getLong("level").equals(0L));
     assertTrue(tuples.get(1).getString("node").equals("jim"));
-    assertTrue(tuples.get(1).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(1).getLong("level").equals(1L));
     assertTrue(tuples.get(2).getString("node").equals("max"));
-    assertTrue(tuples.get(2).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(2).getLong("level").equals(1L));
     assertTrue(tuples.get(3).getString("node").equals("sam"));
-    assertTrue(tuples.get(3).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(3).getLong("level").equals(1L));
 
     expr = "gatherNodes(collection1, " +
         "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
@@ -777,19 +778,19 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     assertTrue(tuples.size() == 7);
     assertTrue(tuples.get(0).getString("node").equals("ann"));
-    assertTrue(tuples.get(0).getLong("level").equals(new Long(2)));
+    assertTrue(tuples.get(0).getLong("level").equals(2L));
     assertTrue(tuples.get(1).getString("node").equals("bill"));
-    assertTrue(tuples.get(1).getLong("level").equals(new Long(0)));
+    assertTrue(tuples.get(1).getLong("level").equals(0L));
     assertTrue(tuples.get(2).getString("node").equals("jim"));
-    assertTrue(tuples.get(2).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(2).getLong("level").equals(1L));
     assertTrue(tuples.get(3).getString("node").equals("kip"));
-    assertTrue(tuples.get(3).getLong("level").equals(new Long(2)));
+    assertTrue(tuples.get(3).getLong("level").equals(2L));
     assertTrue(tuples.get(4).getString("node").equals("max"));
-    assertTrue(tuples.get(4).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(4).getLong("level").equals(1L));
     assertTrue(tuples.get(5).getString("node").equals("sam"));
-    assertTrue(tuples.get(5).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(5).getLong("level").equals(1L));
     assertTrue(tuples.get(6).getString("node").equals("steve"));
-    assertTrue(tuples.get(6).getLong("level").equals(new Long(2)));
+    assertTrue(tuples.get(6).getLong("level").equals(2L));
 
     //Add a cycle from jim to bill
     new UpdateRequest()
@@ -817,10 +818,10 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     assertTrue(tuples.size() == 7);
     assertTrue(tuples.get(0).getString("node").equals("ann"));
-    assertTrue(tuples.get(0).getLong("level").equals(new Long(2)));
+    assertTrue(tuples.get(0).getLong("level").equals(2L));
     //Bill should now have one ancestor
     assertTrue(tuples.get(1).getString("node").equals("bill"));
-    assertTrue(tuples.get(1).getLong("level").equals(new Long(0)));
+    assertTrue(tuples.get(1).getLong("level").equals(0L));
     assertTrue(tuples.get(1).getStrings("ancestors").size() == 2);
     List<String> anc = tuples.get(1).getStrings("ancestors");
 
@@ -829,15 +830,15 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     assertTrue(anc.get(1).equals("sam"));
 
     assertTrue(tuples.get(2).getString("node").equals("jim"));
-    assertTrue(tuples.get(2).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(2).getLong("level").equals(1L));
     assertTrue(tuples.get(3).getString("node").equals("kip"));
-    assertTrue(tuples.get(3).getLong("level").equals(new Long(2)));
+    assertTrue(tuples.get(3).getLong("level").equals(2L));
     assertTrue(tuples.get(4).getString("node").equals("max"));
-    assertTrue(tuples.get(4).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(4).getLong("level").equals(1L));
     assertTrue(tuples.get(5).getString("node").equals("sam"));
-    assertTrue(tuples.get(5).getLong("level").equals(new Long(1)));
+    assertTrue(tuples.get(5).getLong("level").equals(1L));
     assertTrue(tuples.get(6).getString("node").equals("steve"));
-    assertTrue(tuples.get(6).getLong("level").equals(new Long(2)));
+    assertTrue(tuples.get(6).getLong("level").equals(2L));
 
     cache.close();
 

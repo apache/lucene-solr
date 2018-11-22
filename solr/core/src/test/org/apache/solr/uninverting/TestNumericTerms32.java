@@ -127,7 +127,7 @@ public class TestNumericTerms32 extends LuceneTestCase {
       }
       Query tq= LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
       TopDocs topDocs = searcher.search(tq, noDocs, new Sort(new SortField(field, SortField.Type.INT, true)));
-      if (topDocs.totalHits==0) continue;
+      if (topDocs.totalHits.value==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       int last = searcher.doc(sd[0].doc).getField(field).numericValue().intValue();

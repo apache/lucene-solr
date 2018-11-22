@@ -125,7 +125,7 @@ limitations under the License.
 {
   background-image: url( ../../img/ico/ui-check-box-uncheck.png );
   background-position: 0 50%;
-  color: #c0c0c0;
+  color: #4D4D4D;
   display: block;
   padding-left: 21px;
 }
@@ -156,7 +156,7 @@ limitations under the License.
 
 #content #dataimport #current_state .last_update
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
   font-size: 11px;
 }
 
@@ -322,7 +322,7 @@ limitations under the License.
 #content #dataimport #config h2 a.debug_mode
 {
   background-image: url( ../../img/ico/hammer.png );
-  color: #c0c0c0;
+  color: #4D4D4D;
 }
 
 #content #dataimport #config.debug_mode h2 a.debug_mode
@@ -365,6 +365,6 @@ limitations under the License.
 
 #content #dataimport #debug_response em
 {
-  color: #c0c0c0;
+  color: #4D4D4D;
   font-style: normal;
 }

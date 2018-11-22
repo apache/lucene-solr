@@ -41,13 +41,18 @@ import org.junit.Test;
 @Limit(bytes=20000)
 public class QueryResponseTest extends LuceneTestCase {
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleRangeFacetResponse.xml");
-    assertNotNull(is);
-    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
-    NamedList<Object> response = parser.processResponse(in);
-    in.close();
+    NamedList<Object> response = null;
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource("solrj/sampleRangeFacetResponse.xml")) {
+      assertNotNull(is);
+
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+        response = parser.processResponse(in);
+      }
+    }
 
     QueryResponse qr = new QueryResponse(response, null);
     Assert.assertNotNull(qr);
@@ -98,13 +103,17 @@ public class QueryResponseTest extends LuceneTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testGroupResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleGroupResponse.xml");
-    assertNotNull(is);
-    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
-    NamedList<Object> response = parser.processResponse(in);
-    in.close();
+    NamedList<Object> response = null;
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource("solrj/sampleGroupResponse.xml")) {
+      assertNotNull(is);
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+        response = parser.processResponse(in);
+      }
+    }
 
     QueryResponse qr = new QueryResponse(response, null);
     assertNotNull(qr);
@@ -200,13 +209,18 @@ public class QueryResponseTest extends LuceneTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSimpleGroupResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleSimpleGroupResponse.xml");
-    assertNotNull(is);
-    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
-    NamedList<Object> response = parser.processResponse(in);
-    in.close();
+    NamedList<Object> response = null;
+
+    try (SolrResourceLoader loader = new SolrResourceLoader();
+         InputStream is = loader.openResource("solrj/sampleSimpleGroupResponse.xml")) {
+      assertNotNull(is);
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+        response = parser.processResponse(in);
+      }
+    }
 
     QueryResponse qr = new QueryResponse(response, null);
     assertNotNull(qr);
@@ -240,7 +254,8 @@ public class QueryResponseTest extends LuceneTestCase {
     assertEquals("708_HI", documents.get(9).getFieldValue("acco_id"));
   }
   
-  
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIntervalFacetsResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     try(SolrResourceLoader loader = new SolrResourceLoader()) {

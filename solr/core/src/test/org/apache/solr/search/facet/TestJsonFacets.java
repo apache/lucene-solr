@@ -37,7 +37,9 @@ import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -212,6 +214,439 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
   }
 
+  public void testBehaviorEquivilenceOfUninvertibleFalse() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    // regardless of the facet method (parameterized via default at test class level)
+    // faceting on an "uninvertible=false docValues=false" field is not supported.
+    //
+    // it should behave the same as any attempt (using any method) at faceting on
+    // and "indexed=false docValues=false" field...
+    for (String f : Arrays.asList("where_s_not_indexed_sS",
+                                  "where_s_multi_not_uninvert",
+                                  "where_s_single_not_uninvert")) {
+      SolrQueryRequest request = req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                                     "{x: {type:terms, field:'"+f+"'}}");
+      if (FacetField.FacetMethod.DEFAULT_METHOD == FacetField.FacetMethod.DVHASH
+          && !f.contains("multi")) {
+        // DVHASH is (currently) weird...
+        //
+        // it's ignored for multi valued fields -- but for single valued fields, it explicitly
+        // checks the *FieldInfos* on the reader to see if the DocVals type is ok.
+        //
+        // Which means that unlike most other facet method:xxx options, it fails hard if you try to use it
+        // on a field where no docs have been indexed (yet).
+        expectThrows(SolrException.class, () ->{
+            assertJQ(request);
+          });
+        
+      } else {
+        // In most cases, we should just get no buckets back...
+        assertJQ(request
+                 , "response/numFound==3"
+                 , "facets/count==3"
+                 , "facets/x=={buckets:[]}"
+
+                 );
+      }
+    }
+
+    // regardless of the facet method (parameterized via default at test class level)
+    // faceting on an "uninvertible=false docValues=true" field should work,
+    //
+    // it should behave equivilently to it's copyField source...
+    for (String f : Arrays.asList("where_s",
+                                  "where_s_multi_not_uninvert_dv",
+                                  "where_s_single_not_uninvert_dv")) {
+      assertJQ(req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                   "{x: {type:terms, field:'"+f+"'}}")
+               , "response/numFound==3"
+               , "facets/count==3"
+               , "facets/x=={buckets:[ {val:NY, count:2} , {val:NJ, count:1} ]}"
+               );
+    }
+   
+    // faceting on an "uninvertible=false docValues=false" field should be possible
+    // when using method:enum w/sort:index
+    //
+    // it should behave equivilent to it's copyField source...
+    for (String f : Arrays.asList("where_s",
+                                  "where_s_multi_not_uninvert",
+                                  "where_s_single_not_uninvert")) {
+      assertJQ(req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                                     "{x: {type:terms, sort:'index asc', method:enum, field:'"+f+"'}}")
+               , "response/numFound==3"
+               , "facets/count==3"
+               , "facets/x=={buckets:[ {val:NJ, count:1} , {val:NY, count:2} ]}"
+               );
+    }
+  }
+  
+  /**
+   * whitebox sanity checks that a shard request range facet that returns "between" or "after"
+   * will cause the correct "actual_end" to be returned
+   */
+  public void testRangeOtherWhitebox() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    // false is default, but randomly check explicit false as well
+    final String nohardend = random().nextBoolean() ? "" : " hardend:false, ";
+    
+    { // first check some "phase #1" requests
+      
+      final SolrParams p = params("q", "*:*", "rows", "0", "isShard", "true", "distrib", "false",
+                                   "_facet_", "{}", "shards.purpose", ""+FacetModule.PURPOSE_GET_JSON_FACETS);
+      final String basic_opts = "type:range, field:num_d, start:-5, end:10, gap:7, ";
+      final String buckets = "buckets:[ {val:-5.0,count:1}, {val:2.0,count:2}, {val:9.0,count:1} ], ";
+      
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + nohardend + " other:before}}")
+                    , "facets=={count:6, f:{" + buckets
+                    // before doesn't need actual_end
+                    + "   before:{count:1}"
+                    + "} }"
+                    );
+      client.testJQ(params(p, "json.facet", "{f:{" + basic_opts + nohardend + "other:after}}")
+                    , "facets=={count:6, f:{" + buckets
+                    + "   after:{count:0}, _actual_end:'16.0'"
+                    + "} }"
+                    );
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + nohardend + "other:between}}")
+                    , "facets=={count:6, f:{" + buckets
+                    + "   between:{count:4}, _actual_end:'16.0'"
+                    + "} }"
+                    );
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + nohardend + "other:all}}")
+                    , "facets=={count:6, f:{" + buckets
+                    + "   before:{count:1},"
+                    + "   after:{count:0},"
+                    + "   between:{count:4},"
+                    + "   _actual_end:'16.0'"
+                    + "} }"
+                    );
+      // with hardend:true, not only do the buckets change, but actual_end should not need to be returned
+      client.testJQ(params(p, "json.facet", "{f:{ " + basic_opts + " hardend:true, other:after}}")
+                    , "facets=={count:6, f:{"
+                    + "   buckets:[ {val:-5.0,count:1}, {val:2.0,count:2}, {val:9.0,count:0} ], "
+                    + "   after:{count:1}"
+                    + "} }"
+                    );
+    }
+
+    { // now check some "phase #2" requests with refinement buckets already specified
+
+      final String facet
+        = "{ top:{ type:range, field:num_i, start:-5, end:5, gap:7," + nohardend
+        + "        other:all, facet:{ x:{ type:terms, field:cat_s, limit:1, refine:true } } } }";
+
+      // the behavior should be the same, regardless of wether we pass actual_end to the shards
+      // because in a "mixed mode" rolling update, the shards should be smart enough to re-compute if
+      // the merging node is running an older version that doesn't send it
+      for (String actual_end : Arrays.asList(", _actual_end:'9'", "")) {
+        client.testJQ(params("q", "*:*", "rows", "0", "isShard", "true", "distrib", "false",
+                             "shards.purpose", ""+FacetModule.PURPOSE_REFINE_JSON_FACETS,
+                             "json.facet", facet,
+                             "_facet_", "{ refine: { top: { between:{ x:{ _l:[B] } }" + actual_end + "} } }")
+                      , "facets=={top:{ buckets:[], between:{x:{buckets:[{val:B,count:3}] }} } }");
+      }
+    }
+  }
+  
+  @Test
+  public void testExplicitQueryDomain() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    { // simple 'query' domain
+      
+      // the facet buckets for all of the requests below should be identical
+      // only the numFound & top level facet count should differ
+      final String expectedFacets
+        = "facets/w=={ buckets:["
+        + "  { val:'NJ', count:2}, "
+        + "  { val:'NY', count:1} ] }";
+      
+      assertJQ(req("rows", "0", "q", "cat_s:B", "json.facet",
+                   "{w: {type:terms, field:'where_s'}}"),
+               "response/numFound==3",
+               "facets/count==3",
+               expectedFacets);
+      assertJQ(req("rows", "0", "q", "id:3", "json.facet",
+                   "{w: {type:terms, field:'where_s', domain: { query:'cat_s:B' }}}"),
+               "response/numFound==1",
+               "facets/count==1",
+               expectedFacets);
+      assertJQ(req("rows", "0", "q", "*:*", "fq", "-*:*", "json.facet",
+                   "{w: {type:terms, field:'where_s', domain: { query:'cat_s:B' }}}"),
+               "response/numFound==0",
+               "facets/count==0",
+               expectedFacets);
+      assertJQ(req("rows", "0", "q", "*:*", "fq", "-*:*", "domain_q", "cat_s:B", "json.facet",
+                   "{w: {type:terms, field:'where_s', domain: { query:{param:domain_q} }}}"),
+               "response/numFound==0",
+               "facets/count==0",
+               expectedFacets);
+    }
+    
+    { // a nested explicit query domain
+
+      // for all of the "top" buckets, the subfacet should have identical sub-buckets
+      final String expectedSubBuckets = "{ buckets:[ { val:'B', count:3}, { val:'A', count:2} ] }";
+      assertJQ(req("rows", "0", "q", "num_i:[0 TO *]", "json.facet",
+                   "{w: {type:terms, field:'where_s', " + 
+                   "     facet: { c: { type:terms, field:'cat_s', domain: { query:'*:*' }}}}}")
+               , "facets/w=={ buckets:["
+               + "  { val:'NJ', count:2, c: " + expectedSubBuckets + "}, "
+               + "  { val:'NY', count:1, c: " + expectedSubBuckets + "} "
+               + "] }"
+               );
+    }
+
+    { // an (effectively) empty query should produce an error
+      ignoreException("'query' domain can not be null");
+      ignoreException("'query' domain must not evaluate to an empty list");
+      for (String raw : Arrays.asList("null", "[ ]", "{param:bogus}")) {
+        expectThrows(SolrException.class, () -> {
+            assertJQ(req("rows", "0", "q", "num_i:[0 TO *]", "json.facet",
+                         "{w: {type:terms, field:'where_s', " + 
+                         "     facet: { c: { type:terms, field:'cat_s', domain: { query: "+raw+" }}}}}"));
+          });
+      }
+    }
+  }
+
+  
+  @Test
+  public void testSimpleSKG() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    // using relatedness() as a top level stat, not nested under any facet
+    // (not particularly useful, but shouldn't error either)
+    assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
+                 "fore", "where_s:NY", "back", "*:*",
+                 "json.facet", " { skg: 'relatedness($fore,$back)' }")
+             , "facets=={"
+             + "   count:5, "
+             + "   skg : { relatedness: 0.00699,"
+             + "           foreground_popularity: 0.33333,"
+             + "           background_popularity: 0.83333,"
+             + "   } }"
+             );
+    
+    // simple single level facet w/skg stat & sorting
+    for (String sort : Arrays.asList("index asc", "skg desc")) {
+      // the relatedness score of each of our cat_s values is (conviniently) also alphabetical order
+      // so both of these sort options should produce identical output
+      // and testinging "index" sort allows the randomized use of "stream" processor as default to be tested
+      assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
+                   "fore", "where_s:NY", "back", "*:*",
+                   "json.facet", ""
+                   + "{x: { type: terms, field: 'cat_s', sort: '"+sort+"', "
+                   + "      facet: { skg: 'relatedness($fore,$back)' } } }")
+               , "facets=={count:5, x:{ buckets:["
+               + "   { val:'A', count:2, "
+               + "     skg : { relatedness: 0.00554, "
+               //+ "             foreground_count: 1, "
+               //+ "             foreground_size: 2, "
+               //+ "             background_count: 2, "
+               //+ "             background_size: 6,"
+               + "             foreground_popularity: 0.16667,"
+               + "             background_popularity: 0.33333, },"
+               + "   }, "
+               + "   { val:'B', count:3, "
+               + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+               //+ "             foreground_count: 1, "
+               //+ "             foreground_size: 2, "
+               //+ "             background_count: 3, "
+               //+ "             background_size: 6,"
+               + "             foreground_popularity: 0.16667,"
+               + "             background_popularity: 0.5 },"
+               + "   } ] } } "
+               );
+    }
+    
+    // SKG used in multiple nested facets
+    //
+    // we'll re-use these params in 2 requests, one will simulate a shard request
+    final SolrParams nestedSKG = params
+      ("q", "cat_s:[* TO *]", "rows", "0", "fore", "num_i:[-1000 TO 0]", "back", "*:*", "json.facet"
+       , "{x: { type: terms, field: 'cat_s', sort: 'skg desc', "
+       + "      facet: { skg: 'relatedness($fore,$back)', "
+       + "               y:   { type: terms, field: 'where_s', sort: 'skg desc', "
+       + "                      facet: { skg: 'relatedness($fore,$back)' } } } } }");
+       
+    // plain old request
+    assertJQ(req(nestedSKG)
+             , "facets=={count:5, x:{ buckets:["
+             + "   { val:'B', count:3, "
+             + "     skg : { relatedness: 0.01539, "
+             //+ "             foreground_count: 2, "
+             //+ "             foreground_size: 2, "
+             //+ "             background_count: 3, "
+             //+ "             background_size: 6, "
+             + "             foreground_popularity: 0.33333,"
+             + "             background_popularity: 0.5 },"
+             + "     y : { buckets:["
+             + "            {  val:'NY', count: 1, "
+             + "               skg : { relatedness: 0.00554, " 
+             //+ "                       foreground_count: 1, "
+             //+ "                       foreground_size: 2, "
+             //+ "                       background_count: 2, "
+             //+ "                       background_size: 6, "
+             + "                       foreground_popularity: 0.16667, "
+             + "                       background_popularity: 0.33333, "
+             + "            } }, "
+             + "            {  val:'NJ', count: 2, "
+             + "               skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+             //+ "                       foreground_count: 1, "
+             //+ "                       foreground_size: 2, "
+             //+ "                       background_count: 3, "
+             //+ "                       background_size: 6, "
+             + "                       foreground_popularity: 0.16667, "
+             + "                       background_popularity: 0.5, "
+             + "            } }, "
+             + "     ] } "
+             + "   }, "
+             + "   { val:'A', count:2, "
+             + "     skg : { relatedness:-0.01097, "
+             //+ "             foreground_count: 0, "
+             //+ "             foreground_size: 2, "
+             //+ "             background_count: 2, "
+             //+ "             background_size: 6,"
+             + "             foreground_popularity: 0.0,"
+             + "             background_popularity: 0.33333 },"
+             + "     y : { buckets:["
+             + "            {  val:'NJ', count: 1, "
+             + "               skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+             //+ "                       foreground_count: 0, "
+             //+ "                       foreground_size: 0, "
+             //+ "                       background_count: 3, "
+             //+ "                       background_size: 6, "
+             + "                       foreground_popularity: 0.0, "
+             + "                       background_popularity: 0.5, "
+             + "            } }, "
+             + "            {  val:'NY', count: 1, "
+             + "               skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+             //+ "                       foreground_count: 0, "
+             //+ "                       foreground_size: 0, "
+             //+ "                       background_count: 2, "
+             //+ "                       background_size: 6, "
+             + "                       foreground_popularity: 0.0, "
+             + "                       background_popularity: 0.33333, "
+             + "            } }, "
+             + "   ] } } ] } } ");
+
+    // same request, but with whitebox params testing isShard
+    // to verify the raw counts/sizes
+    assertJQ(req(nestedSKG,
+                 // fake an initial shard request
+                 "distrib", "false", "isShard", "true", "_facet_", "{}",
+                 "shards.purpose", ""+FacetModule.PURPOSE_GET_JSON_FACETS)
+             , "facets=={count:5, x:{ buckets:["
+             + "   { val:'B', count:3, "
+             + "     skg : { "
+             + "             foreground_count: 2, "
+             + "             foreground_size: 2, "
+             + "             background_count: 3, "
+             + "             background_size: 6 }, "
+             + "     y : { buckets:["
+             + "            {  val:'NY', count: 1, "
+             + "               skg : { " 
+             + "                       foreground_count: 1, "
+             + "                       foreground_size: 2, "
+             + "                       background_count: 2, "
+             + "                       background_size: 6, "
+             + "            } }, "
+             + "            {  val:'NJ', count: 2, "
+             + "               skg : { " 
+             + "                       foreground_count: 1, "
+             + "                       foreground_size: 2, "
+             + "                       background_count: 3, "
+             + "                       background_size: 6, "
+             + "            } }, "
+             + "     ] } "
+             + "   }, "
+             + "   { val:'A', count:2, "
+             + "     skg : { " 
+             + "             foreground_count: 0, "
+             + "             foreground_size: 2, "
+             + "             background_count: 2, "
+             + "             background_size: 6 },"
+             + "     y : { buckets:["
+             + "            {  val:'NJ', count: 1, "
+             + "               skg : { " 
+             + "                       foreground_count: 0, "
+             + "                       foreground_size: 0, "
+             + "                       background_count: 3, "
+             + "                       background_size: 6, "
+             + "            } }, "
+             + "            {  val:'NY', count: 1, "
+             + "               skg : { " 
+             + "                       foreground_count: 0, "
+             + "                       foreground_size: 0, "
+             + "                       background_count: 2, "
+             + "                       background_size: 6, "
+             + "            } }, "
+             + "   ] } } ] } } ");
+
+    
+    // SKG w/min_pop (NOTE: incredibly contrived and not-useful fore/back for testing min_pop w/shard sorting)
+    //
+    // we'll re-use these params in 2 requests, one will simulate a shard request
+    final SolrParams minPopSKG = params
+      ("q", "cat_s:[* TO *]", "rows", "0", "fore", "num_i:[0 TO 1000]", "back", "cat_s:B", "json.facet"
+       , "{x: { type: terms, field: 'cat_s', sort: 'skg desc', "
+       + "      facet: { skg: { type:func, func:'relatedness($fore,$back)', "
+       + "                      min_popularity: 0.001 }" 
+       + "             } } }");
+
+    // plain old request
+    assertJQ(req(minPopSKG)
+             , "facets=={count:5, x:{ buckets:["
+             + "   { val:'B', count:3, "
+             + "     skg : { relatedness: -1.0, "
+             //+ "             foreground_count: 1, "
+             //+ "             foreground_size: 3, "
+             //+ "             background_count: 3, "
+             //+ "             background_size: 3, "
+             + "             foreground_popularity: 0.33333," 
+             + "             background_popularity: 1.0," 
+             + "   } }, "
+             + "   { val:'A', count:2, "
+             + "     skg : { relatedness:'-Infinity', " // bg_pop is below min_pop (otherwise 1.0)
+             //+ "             foreground_count: 2, "
+             //+ "             foreground_size: 3, "
+             //+ "             background_count: 0, "
+             //+ "             background_size: 3, "
+             + "             foreground_popularity: 0.66667,"
+             + "             background_popularity: 0.0,"
+             + "   } } ] } } ");
+
+    // same request, but with whitebox params testing isShard
+    // to verify the raw counts/sizes and that per-shard sorting doesn't pre-emptively sort "A" to the bottom
+    assertJQ(req(minPopSKG,
+                 // fake an initial shard request
+                 "distrib", "false", "isShard", "true", "_facet_", "{}",
+                 "shards.purpose", ""+FacetModule.PURPOSE_GET_JSON_FACETS)
+             , "facets=={count:5, x:{ buckets:["
+             + "   { val:'A', count:2, "
+             + "     skg : { " 
+             + "             foreground_count: 2, "
+             + "             foreground_size: 3, "
+             + "             background_count: 0, "
+             + "             background_size: 3, "
+             + "   } }, "
+             + "   { val:'B', count:3, "
+             + "     skg : { "
+             + "             foreground_count: 1, "
+             + "             foreground_size: 3, "
+             + "             background_count: 3, "
+             + "             background_size: 3, "
+             + "   } } ] } }");
+  }
+
   @Test
   public void testRepeatedNumerics() throws Exception {
     Client client = Client.localClient();
@@ -257,6 +692,49 @@ public class TestJsonFacets extends SolrTestCaseHS {
              );
   }
   
+  public void testDomainGraph() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    // should be the same as join self
+    assertJQ(req("q", "*:*", "rows", "0",
+        "json.facet", ""
+            + "{x: { type: terms, field: 'num_i', "
+            + "      facet: { y: { domain: { graph: { from: 'cat_s', to: 'cat_s' } }, "
+            + "                    type: terms, field: 'where_s' "
+            + "                  } } } }")
+        , "facets=={count:6, x:{ buckets:["
+            + "   { val:-5, count:2, "
+            + "     y : { buckets:[{ val:'NJ', count:2 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:2, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:3, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:7, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:2 }, { val:'NY', count:1 } ] } } ] } }"
+    );
+
+    // This time, test with a traversalFilter
+    // should be the same as join self
+    assertJQ(req("q", "*:*", "rows", "0",
+        "json.facet", ""
+            + "{x: { type: terms, field: 'num_i', "
+            + "      facet: { y: { domain: { graph: { from: 'cat_s', to: 'cat_s', traversalFilter: 'where_s:NY' } }, "
+            + "                    type: terms, field: 'where_s' "
+            + "                  } } } }")
+        , "facets=={count:6, x:{ buckets:["
+            + "   { val:-5, count:2, "
+            + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:2, count:1, "
+            + "     y : { buckets:[{ val:'NY', count:1 } ] } }, "
+            + "   { val:3, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+            + "   { val:7, count:1, "
+            + "     y : { buckets:[{ val:'NJ', count:1  }, { val:'NY', count:1 } ] } } ] } }"
+    );
+  }
+
+
   public void testNestedJoinDomain() throws Exception {
     Client client = Client.localClient();
 
@@ -514,6 +992,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   public static void doStatsTemplated(Client client, ModifiableSolrParams p) throws Exception {
+    int numShards = client.local() ? 1 : client.getClientProvider().all().size();
     p.set("Z_num_i", "Z_" + p.get("num_i") );
     p.set("Z_num_l", "Z_" + p.get("num_l") );
     p.set("sparse_num_d", "sparse_" + p.get("num_d") );
@@ -524,8 +1003,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     if (terms == null) terms="";
     int limit=0;
     switch (random().nextInt(4)) {
-      case 0: limit=-1;
-      case 1: limit=1000000;
+      case 0: limit=-1; break;
+      case 1: limit=1000000; break;
       case 2: // fallthrough
       case 3: // fallthrough
     }
@@ -686,6 +1165,16 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0}, { val:'A', count:2, n1:6.0 }]} }"
     );
 
+    // test sorting by other stats and more than one facet
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'sum(${num_d})', n2:'avg(${num_d})'}  }}" +
+                          " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc' , facet:{n1:'sum(${num_d})', n2:'avg(${num_d})'}  }} }"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'A', count:2, n1:6.0 , n2:3.0 }, { val:'B', count:3, n1:-3.0, n2:-1.0}]}" +
+            ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0, n2:-1.0}, { val:'A', count:2, n1:6.0 , n2:3.0 }]} }"
+    );
+
     // test sorting by other stats
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{f1:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'min(${num_d})'}  }" +
@@ -745,6 +1234,22 @@ public class TestJsonFacets extends SolrTestCaseHS {
               "}"
       );
     }
+
+    // test field faceting on date field
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{" +
+            " f1:{${terms}  type:field, field:${date}}" +
+            ",f2:{${terms}  type:field, field:${date} sort:'index asc'}" +
+            ",f3:{${terms}  type:field, field:${date} sort:'index desc'}" +
+            // ",f4:{${terms}  type:field, field:${date}, facet:{x:{type:field,field:${num_is},limit:1}}     }" +
+            "}"
+        )
+        , "facets=={count:6 " +
+            ",f1:{ buckets:[ {val:'2001-01-01T01:01:01Z', count:1},{val:'2001-02-03T01:02:03Z', count:1},{val:'2002-02-02T02:02:02Z', count:1},{val:'2002-03-01T03:02:01Z', count:1},{val:'2003-03-03T03:03:03Z', count:1} ] }" +
+            ",f2:{ buckets:[ {val:'2001-01-01T01:01:01Z', count:1},{val:'2001-02-03T01:02:03Z', count:1},{val:'2002-02-02T02:02:02Z', count:1},{val:'2002-03-01T03:02:01Z', count:1},{val:'2003-03-03T03:03:03Z', count:1} ] }" +
+            ",f3:{ buckets:[ {val:'2003-03-03T03:03:03Z', count:1},{val:'2002-03-01T03:02:01Z', count:1},{val:'2002-02-02T02:02:02Z', count:1},{val:'2001-02-03T01:02:03Z', count:1},{val:'2001-01-01T01:01:01Z', count:1} ] }" +
+            "}"
+    );
 
 
     // percentiles 0,10,50,90,100
@@ -1661,6 +2166,33 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
     //////////////////////////////////////////////////////////////// end phase testing
 
+    //
+    // Refinement should not be needed to get exact results here, so this tests that
+    // extra refinement requests are not sent out.  This currently relies on counting the number of times
+    // debug() aggregation is parsed... which is somewhat fragile.  Please replace this with something
+    // better in the future - perhaps debug level info about number of refinements or additional facet phases.
+    //
+    for (String facet_field : new String[]{cat_s,where_s,num_d,num_i,num_is,num_fs,super_s,date,val_b,multi_ss}) {
+      ModifiableSolrParams test = params(p, "q", "id:(1 2)", "facet_field",facet_field, "debug", "true"
+          , "json.facet", "{ " +
+              " f1:{type:terms, field:'${facet_field}',  refine:${refine},  facet:{x:'debug()'}   }" +
+              ",f2:{type:terms, method:dvhash, field:'${facet_field}',  refine:${refine},  facet:{x:'debug()'}   }" +
+              ",f3:{type:terms, field:'${facet_field}',  refine:${refine},  facet:{x:'debug()',  y:{type:terms,field:'${facet_field}',refine:${refine}}}   }" +  // facet within facet
+              " }"
+      );
+      long startParses = DebugAgg.parses.get();
+      client.testJQ(params(test, "refine", "false")
+          , "facets==" + ""
+      );
+      long noRefineParses = DebugAgg.parses.get() - startParses;
+
+      startParses = DebugAgg.parses.get();
+      client.testJQ(params(test, "refine", "true")
+          , "facets==" + ""
+      );
+      long refineParses = DebugAgg.parses.get() - startParses;
+      assertEquals(noRefineParses, refineParses);
+    }
 
 
   }
@@ -1949,7 +2481,72 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", books2:{ buckets:[ {val:q,count:1} ] }" +
             "}"
     );
+  }
 
+  /**
+   * An explicit test for unique*(_root_) across all methods
+   */
+  public void testUniquesForMethod() throws Exception {
+    final Client client = Client.localClient();
+
+    final SolrParams p = params("rows","0");
+
+    client.deleteByQuery("*:*", null);
+
+    SolrInputDocument parent;
+    parent = sdoc("id", "1", "type_s","book", "book_s","A", "v_t","q");
+    client.add(parent, null);
+
+    parent = sdoc("id", "2", "type_s","book", "book_s","B", "v_t","q w");
+    parent.addChildDocument( sdoc("id","2.1", "type_s","page", "page_s","a", "v_t","x y z")  );
+    parent.addChildDocument( sdoc("id","2.2", "type_s","page", "page_s","b", "v_t","x y  ") );
+    parent.addChildDocument( sdoc("id","2.3", "type_s","page", "page_s","c", "v_t","  y z" )  );
+    client.add(parent, null);
+
+    parent = sdoc("id", "3", "type_s","book", "book_s","C", "v_t","q w e");
+    parent.addChildDocument( sdoc("id","3.1", "type_s","page", "page_s","d", "v_t","x    ")  );
+    parent.addChildDocument( sdoc("id","3.2", "type_s","page", "page_s","e", "v_t","  y  ")  );
+    parent.addChildDocument( sdoc("id","3.3", "type_s","page", "page_s","f", "v_t","    z")  );
+    client.add(parent, null);
+
+    parent = sdoc("id", "4", "type_s","book", "book_s","D", "v_t","e");
+    client.add(parent, null);
+
+    client.commit();
+
+    client.testJQ(params(p, "q", "type_s:page"
+        , "json.facet", "{" +
+            "  types: {" +
+            "    type:terms," +
+            "    field:type_s," +
+            "    limit:-1," +
+            "    facet: {" +
+            "           in_books: \"unique(_root_)\" }"+
+            "  }," +
+            "  pages: {" +
+            "    type:terms," +
+            "    field:page_s," +
+            "    limit:-1," +
+            "    facet: {" +
+            "           in_books: \"uniqueBlock(_root_)\" }"+
+            "  }" +
+            "}" )
+
+        , "response=={numFound:6,start:0,docs:[]}"
+        , "facets=={ count:6," +
+            "types:{" +
+            "    buckets:[ {val:page, count:6, in_books:2} ]}" +
+            "pages:{" +
+            "    buckets:[ " +
+            "     {val:a, count:1, in_books:1}," +
+            "     {val:b, count:1, in_books:1}," +
+            "     {val:c, count:1, in_books:1}," +
+            "     {val:d, count:1, in_books:1}," +
+            "     {val:e, count:1, in_books:1}," +
+            "     {val:f, count:1, in_books:1}" +
+            "    ]}" +
+            "}"
+    );
   }
 
 

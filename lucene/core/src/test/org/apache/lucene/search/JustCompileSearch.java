@@ -50,7 +50,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorable scorer) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -176,7 +176,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

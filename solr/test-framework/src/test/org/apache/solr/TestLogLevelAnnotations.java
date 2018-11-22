@@ -17,31 +17,27 @@
 
 package org.apache.solr;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.LogLevel;
 import org.junit.Test;
 
-@SuppressForbidden(reason="We need to use log4J classes to access the log levels")
+@SuppressForbidden(reason="We need to use log4J2 classes to access the log levels")
 @LogLevel("org.apache.solr.ClassLogLevel=error;org.apache.solr.MethodLogLevel=warn")
 public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
 
   @Test
   public void testClassLogLevels() {
-    Logger classLogLevel = Logger.getLogger("org.apache.solr.ClassLogLevel");
-    assertEquals(Level.ERROR, classLogLevel.getLevel());
-    Logger methodLogLevel = Logger.getLogger("org.apache.solr.MethodLogLevel");
-    assertEquals(Level.WARN, methodLogLevel.getLevel());
+    assertEquals(Level.ERROR, LogManager.getLogger("org.apache.solr.ClassLogLevel").getLevel());
+    assertEquals(Level.WARN, LogManager.getLogger("org.apache.solr.MethodLogLevel").getLevel());
   }
 
   @Test
   @LogLevel("org.apache.solr.MethodLogLevel=debug")
   public void testMethodLogLevels() {
-    Logger classLogLevel = Logger.getLogger("org.apache.solr.ClassLogLevel");
-    assertEquals(Level.ERROR, classLogLevel.getLevel());
-    Logger methodLogLevel = Logger.getLogger("org.apache.solr.MethodLogLevel");
-    assertEquals(Level.DEBUG, methodLogLevel.getLevel());
+    assertEquals(Level.ERROR, LogManager.getLogger("org.apache.solr.ClassLogLevel").getLevel());
+    assertEquals(Level.DEBUG, LogManager.getLogger("org.apache.solr.MethodLogLevel").getLevel());
   }
 
 }

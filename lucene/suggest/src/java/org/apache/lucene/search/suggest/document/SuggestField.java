@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexOptions;
@@ -140,7 +141,7 @@ public class SuggestField extends Field {
 
   private boolean isReserved(char c) {
     switch (c) {
-      case CompletionAnalyzer.SEP_LABEL:
+      case ConcatenateGraphFilter.SEP_LABEL:
       case CompletionAnalyzer.HOLE_CHARACTER:
       case NRTSuggesterBuilder.END_BYTE:
         return true;

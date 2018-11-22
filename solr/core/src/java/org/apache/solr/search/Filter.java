@@ -89,7 +89,7 @@ public abstract class Filter extends Query {
   //
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
     return new Weight(this) {
 
       @Override
@@ -127,13 +127,13 @@ public abstract class Filter extends Query {
               return 10; // TODO use cost of bits.get()
             }
           };
-          return new ConstantScoreScorer(this, 0f, twoPhase);
+          return new ConstantScoreScorer(this, 0f, scoreMode, twoPhase);
         }
         final DocIdSetIterator iterator = set.iterator();
         if (iterator == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, 0f, iterator);
+        return new ConstantScoreScorer(this, 0f, scoreMode, iterator);
       }
 
       @Override

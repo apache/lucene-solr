@@ -28,6 +28,8 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
@@ -151,6 +153,28 @@ public class ToParentBlockJoinQuery extends Query {
       }
       return Explanation.noMatch("Not a match");
     }
+
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      // The default implementation would delegate to the joinQuery's Weight, which
+      // matches on children.  We need to match on the parent instead
+      Scorer scorer = scorer(context);
+      if (scorer == null) {
+        return null;
+      }
+      final TwoPhaseIterator twoPhase = scorer.twoPhaseIterator();
+      if (twoPhase == null) {
+        if (scorer.iterator().advance(doc) != doc) {
+          return null;
+        }
+      }
+      else {
+        if (twoPhase.approximation().advance(doc) != doc || twoPhase.matches() == false) {
+          return null;
+        }
+      }
+      return MatchesUtils.MATCH_WITH_NO_TERMS;
+    }
   }
 
   private static class ParentApproximation extends DocIdSetIterator {
@@ -256,8 +280,8 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public Collection<ChildScorer> getChildren() {
-      return Collections.singleton(new ChildScorer(childScorer, "BLOCK_JOIN"));
+    public Collection<ChildScorable> getChildren() {
+      return Collections.singleton(new ChildScorable(childScorer, "BLOCK_JOIN"));
     }
 
     @Override
@@ -287,14 +311,8 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public float maxScore() {
-      switch(scoreMode) {
-        case Max:
-        case Min:
-          return childScorer.maxScore();
-        default:
-          return Float.POSITIVE_INFINITY;
-      }
+    public float getMaxScore(int upTo) throws IOException {
+      return Float.POSITIVE_INFINITY;
     }
 
     private void setScoreAndFreq() throws IOException {

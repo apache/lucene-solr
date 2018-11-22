@@ -38,10 +38,4 @@ public final class NoDeletionPolicy extends IndexDeletionPolicy {
 
   @Override
   public void onInit(List<? extends IndexCommit> commits) {}
-
-  @Override
-  public IndexDeletionPolicy clone() {
-    return this;
-  }
-
 }

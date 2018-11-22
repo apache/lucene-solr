@@ -92,6 +92,22 @@ public final class DoubleRange extends Range {
     return "DoubleRange(" + label + ": " + min + " to " + max + ")";
   }
 
+  @Override
+  public boolean equals(Object _that) {
+    if (_that instanceof DoubleRange == false) {
+      return false;
+    }
+    DoubleRange that = (DoubleRange) _that;
+    return that.label.equals(this.label) &&
+      Double.compare(that.min, this.min) == 0 &&
+      Double.compare(that.max, this.max) == 0;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(label, min, max);
+  }
+
   private static class ValueSourceQuery extends Query {
     private final DoubleRange range;
     private final Query fastMatchQuery;
@@ -170,7 +186,7 @@ public final class DoubleRange extends Range {
               return 100; // TODO: use cost of range.accept()
             }
           };
-          return new ConstantScoreScorer(this, score(), twoPhase);
+          return new ConstantScoreScorer(this, score(), scoreMode, twoPhase);
         }
 
         @Override

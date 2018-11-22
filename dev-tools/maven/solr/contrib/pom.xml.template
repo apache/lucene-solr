@@ -39,7 +39,7 @@
     <module>extraction</module>
     <module>langid</module>
     <module>ltr</module>
-    <module>uima</module>
+    <module>prometheus-exporter</module>
     <module>velocity</module>
   </modules>
   <build>

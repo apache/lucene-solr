@@ -21,7 +21,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -34,7 +34,7 @@ abstract class TermsWithScoreCollector<DV> extends DocValuesTermsCollector<DV>
   final BytesRefHash collectedTerms = new BytesRefHash();
   final ScoreMode scoreMode;
 
-  Scorer scorer;
+  Scorable scorer;
   float[] scoreSums = new float[INITIAL_ARRAY_SIZE];
 
   TermsWithScoreCollector(Function<DV> docValuesCall, ScoreMode scoreMode) {
@@ -58,7 +58,7 @@ abstract class TermsWithScoreCollector<DV> extends DocValuesTermsCollector<DV>
   }
 
   @Override
-  public void setScorer(Scorer scorer) throws IOException {
+  public void setScorer(Scorable scorer) throws IOException {
     this.scorer = scorer;
   }
 
@@ -96,11 +96,8 @@ abstract class TermsWithScoreCollector<DV> extends DocValuesTermsCollector<DV>
 
     @Override
     public void collect(int doc) throws IOException {
-      if (docValues.docID() < doc) {
-        docValues.advance(doc);
-      }
       BytesRef value;
-      if (docValues.docID() == doc) {
+      if (docValues.advanceExact(doc)) {
         value = docValues.binaryValue();
       } else {
         value = new BytesRef(BytesRef.EMPTY_BYTES);
@@ -155,11 +152,8 @@ abstract class TermsWithScoreCollector<DV> extends DocValuesTermsCollector<DV>
 
       @Override
       public void collect(int doc) throws IOException {
-        if (docValues.docID() < doc) {
-          docValues.advance(doc);
-        }
         BytesRef value;
-        if (docValues.docID() == doc) {
+        if (docValues.advanceExact(doc)) {
           value = docValues.binaryValue();
         } else {
           value = new BytesRef(BytesRef.EMPTY_BYTES);
@@ -207,10 +201,7 @@ abstract class TermsWithScoreCollector<DV> extends DocValuesTermsCollector<DV>
 
     @Override
     public void collect(int doc) throws IOException {
-      if (doc > docValues.docID()) {
-        docValues.advance(doc);
-      }
-      if (doc == docValues.docID()) {
+      if (docValues.advanceExact(doc)) {
         long ord;
         while ((ord = docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
           int termID = collectedTerms.add(docValues.lookupOrd(ord));
@@ -255,10 +246,7 @@ abstract class TermsWithScoreCollector<DV> extends DocValuesTermsCollector<DV>
 
       @Override
       public void collect(int doc) throws IOException {
-        if (doc > docValues.docID()) {
-          docValues.advance(doc);
-        }
-        if (doc == docValues.docID()) {
+        if (docValues.advanceExact(doc)) {
           long ord;
           while ((ord = docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
             int termID = collectedTerms.add(docValues.lookupOrd(ord));

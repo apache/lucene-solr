@@ -40,22 +40,34 @@ Listener configuration can also specify what particular actions are of interest,
 == Listener Configuration
 Currently the following listener configuration properties are supported:
 
-* `name` - (string, required) A unique listener configuration name.
-* `trigger` - (string, required) The name of an existing trigger configuration.
-* `class` - (string, required) A listener implementation class name.
-* `stage` - (list of strings, optional, ignored case) A list of processing stages that
+`name`::
+(string, required) A unique listener configuration name.
+
+`trigger`::
+(string, required) The name of an existing trigger configuration.
+
+`class`::
+(string, required) A listener implementation class name.
+
+`stage`::
+(list of strings, optional, ignored case) A list of processing stages that
  this listener should be notified. Default is empty list.
-* `beforeAction` - (list of strings, optional) A list of action names (as defined in trigger configuration) before
+
+`beforeAction`::
+(list of strings, optional) A list of action names (as defined in trigger configuration) before
 which the listener will be notified. Default is empty list.
-* `afterAction` - (list of strings, optional) A list of action names after which the listener will be notified.
+
+`afterAction`::
+(list of strings, optional) A list of action names after which the listener will be notified.
 Default is empty list.
-* Additional implementation-specific properties may be provided.
+
+TIP: Additional implementation-specific properties may be provided, depending on the listener implementation.
 
 Note: when both `stage` and `beforeAction` / `afterAction` lists are non-empty then the listener will be notified both
 when a specified stage is entered and before / after specified actions.
 
 === Managing Listener Configurations
-Listener configurations can be managed using the Autoscaling Write API, and using `set-listener` and `remove-listener`
+Listener configurations are managed using the Autoscaling Write API, and using `set-listener` and `remove-listener`
 commands.
 
 For example:
@@ -95,9 +107,12 @@ actions related to the autoscaling framework are logged to the `.system` collect
 
 Supported configuration properties:
 
-* `collection` - (string, optional) specifies the target collection where documents are sent.
-Default value is `.system`
-* `enabled` - (boolean, optional) enables the listener when true. Default value is true.
+`collection`::
+(string, optional) Specifies the target collection where documents are sent.
+Default value is `.system`.
+
+`enabled`::
+(boolean, optional) Enables the listener when true. Default value is true.
 
 Documents created by this listener have several predefined fields:
 
@@ -148,12 +163,23 @@ if the value is absent.
 
 Supported configuration properties:
 
-* `url` - (string, required) A URL template.
-* `payload` - (string, optional) A payload template. If absent, a JSON map of all properties listed above will be used.
-* `contentType` - (string, optional) A payload content type. If absent then `application/json` will be used.
-* `header.*` - (string, optional) A header template(s). The name of the property without "header." prefix defines the literal header name.
-* `timeout` - (int, optional) Connection and socket timeout in milliseconds. Default is `60000` milliseconds (60 seconds).
-* `followRedirects` - (boolean, optional) Allows following redirects. Default is `false`.
+`url`::
+(string, required) A URL template.
+
+`payload`::
+(string, optional) A payload template. If absent, a JSON map of all properties listed above will be used.
+
+`contentType`::
+(string, optional) A payload content type. If absent then `application/json` will be used.
+
+`header.*`::
+(string, optional) A header template(s). The name of the property without "header." prefix defines the literal header name.
+
+`timeout`::
+(int, optional) Connection and socket timeout in milliseconds. Default is `60000` milliseconds (60 seconds).
+
+`followRedirects`::
+(boolean, optional) Allows following redirects. Default is `false`.
 
 The following properties are available in context and can be referenced from templates:
 

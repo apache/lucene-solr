@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.RandomIndexWriter;
 
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
   
   @Override
@@ -39,11 +40,12 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
   }
   
   // we wrap the directory in slow stuff, so only run nightly
-  @Override @Nightly
-  public void testThreadSafety() throws Exception {
-    super.testThreadSafety();
+  @Override
+  @Nightly
+  public void testThreadSafetyInListAll() throws Exception {
+    super.testThreadSafetyInListAll();
   }
-  
+
   public void testDiskFull() throws IOException {
     // test writeBytes
     MockDirectoryWrapper dir = newMockDirectory();

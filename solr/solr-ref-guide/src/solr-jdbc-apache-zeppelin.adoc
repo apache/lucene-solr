@@ -46,6 +46,20 @@ image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_4.png[image,width=517,
 .Provide a name and click "Create Note"
 image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_5.png[image,width=839,height=400]
 
+== JDBC Interpreter Copy Sheet
+
+To facilitate easy copying the parameters mentioned in the screenshots, here is a consolidated list of the parameters:
+
+[source,text,subs=attributes]
+----
+Name : Solr
+Interpreter : jdbc
+default.url : jdbc:solr://SOLR_ZK_CONNECTION_STRING?collection=<collection_name>
+default.driver : org.apache.solr.client.solrj.io.sql.DriverImpl
+default.user : solr
+dependency : org.apache.solr:solr-solrj:{solr-docs-version}.0
+----
+
 == Query with the Notebook
 
 [IMPORTANT]

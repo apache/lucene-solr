@@ -24,18 +24,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 
 /**
  * Trigger for the {@link TriggerEventType#NODELOST} event
@@ -43,21 +47,22 @@ import org.slf4j.LoggerFactory;
 public class NodeLostTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private Set<String> lastLiveNodes;
+  private Set<String> lastLiveNodes = new HashSet<>();
 
   private Map<String, Long> nodeNameVsTimeRemoved = new HashMap<>();
 
-  public NodeLostTrigger(String name, Map<String, Object> properties,
-                         SolrResourceLoader loader,
-                         SolrCloudManager dataProvider) {
-    super(TriggerEventType.NODELOST, name, properties, loader, dataProvider);
-    lastLiveNodes = new HashSet<>(dataProvider.getClusterStateProvider().getLiveNodes());
-    log.debug("Initial livenodes: {}", lastLiveNodes);
+  private String preferredOp;
+
+  public NodeLostTrigger(String name) {
+    super(TriggerEventType.NODELOST, name);
+    TriggerUtils.validProperties(validProperties, PREFERRED_OP);
   }
 
   @Override
-  public void init() {
+  public void init() throws Exception {
     super.init();
+    lastLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
+    log.debug("NodeLostTrigger {} - Initial livenodes: {}", name, lastLiveNodes);
     // pick up lost nodes for which marker paths were created
     try {
       List<String> lost = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
@@ -65,7 +70,7 @@ public class NodeLostTrigger extends TriggerBase {
         // don't add nodes that have since came back
         if (!lastLiveNodes.contains(n)) {
           log.debug("Adding lost node from marker path: {}", n);
-          nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTime());
+          nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
         }
         removeMarker(n);
       });
@@ -77,13 +82,32 @@ public class NodeLostTrigger extends TriggerBase {
   }
 
   @Override
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+    super.configure(loader, cloudManager, properties);
+    preferredOp = (String) properties.getOrDefault(PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+    preferredOp = preferredOp.toLowerCase(Locale.ROOT);
+    // verify
+    CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+    switch (action) {
+      case MOVEREPLICA:
+      case DELETENODE:
+      case NONE:
+        break;
+      default:
+        throw new TriggerValidationException("Unsupported preferredOperation=" + preferredOp + " specified for node lost trigger");
+    }
+  }
+
+  @Override
   public void restoreState(AutoScaling.Trigger old) {
     assert old.isClosed();
     if (old instanceof NodeLostTrigger) {
       NodeLostTrigger that = (NodeLostTrigger) old;
       assert this.name.equals(that.name);
-      this.lastLiveNodes = new HashSet<>(that.lastLiveNodes);
-      this.nodeNameVsTimeRemoved = new HashMap<>(that.nodeNameVsTimeRemoved);
+      this.lastLiveNodes.clear();
+      this.lastLiveNodes.addAll(that.lastLiveNodes);
+      this.nodeNameVsTimeRemoved.clear();
+      this.nodeNameVsTimeRemoved.putAll(that.nodeNameVsTimeRemoved);
     } else  {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
           "Unable to restore state from an unknown type of trigger");
@@ -135,7 +159,7 @@ public class NodeLostTrigger extends TriggerBase {
       copyOfLastLiveNodes.removeAll(newLiveNodes);
       copyOfLastLiveNodes.forEach(n -> {
         log.debug("Tracking lost node: {}", n);
-        nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTime());
+        nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
       });
 
       // has enough time expired to trigger events for a node?
@@ -145,7 +169,7 @@ public class NodeLostTrigger extends TriggerBase {
         Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeRemoved = entry.getValue();
-        long now = cloudManager.getTimeSource().getTime();
+        long now = cloudManager.getTimeSource().getTimeNs();
         if (TimeUnit.SECONDS.convert(now - timeRemoved, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           nodeNames.add(nodeName);
           times.add(timeRemoved);
@@ -156,7 +180,7 @@ public class NodeLostTrigger extends TriggerBase {
       if (!nodeNames.isEmpty()) {
         if (processor != null) {
           log.debug("NodeLostTrigger firing registered processor for lost nodes: {}", nodeNames);
-          if (processor.process(new NodeLostEvent(getEventType(), getName(), times, nodeNames)))  {
+          if (processor.process(new NodeLostEvent(getEventType(), getName(), times, nodeNames, preferredOp)))  {
             // remove from tracking set only if the fire was accepted
             nodeNames.forEach(n -> {
               nodeNameVsTimeRemoved.remove(n);
@@ -193,11 +217,12 @@ public class NodeLostTrigger extends TriggerBase {
 
   public static class NodeLostEvent extends TriggerEvent {
 
-    public NodeLostEvent(TriggerEventType eventType, String source, List<Long> times, List<String> nodeNames) {
+    public NodeLostEvent(TriggerEventType eventType, String source, List<Long> times, List<String> nodeNames, String preferredOp) {
       // use the oldest time as the time of the event
       super(eventType, source, times.get(0), null);
       properties.put(NODE_NAMES, nodeNames);
       properties.put(EVENT_TIMES, times);
+      properties.put(PREFERRED_OP, preferredOp);
     }
   }
 }

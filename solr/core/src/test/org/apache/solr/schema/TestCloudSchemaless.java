@@ -31,7 +31,6 @@ import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.Math;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -44,6 +43,7 @@ import java.util.function.UnaryOperator;
  * Tests a schemaless collection configuration with SolrCloud
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
@@ -87,6 +87,7 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 8)
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void test() throws Exception {
     setupRestTestHarnesses();
 

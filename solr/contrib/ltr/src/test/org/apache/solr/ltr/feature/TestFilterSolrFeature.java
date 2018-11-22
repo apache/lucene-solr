@@ -56,11 +56,11 @@ public class TestFilterSolrFeature extends TestRerankBase {
 
   @Test
   public void testUserTermScoreWithFQ() throws Exception {
-    loadFeature("SomeTermFQ", SolrFeature.class.getCanonicalName(),
+    loadFeature("SomeTermFQ", SolrFeature.class.getName(),
         "{\"fq\":[\"{!terms f=popularity}88888\"]}");
-    loadFeature("SomeEfiFQ", SolrFeature.class.getCanonicalName(),
+    loadFeature("SomeEfiFQ", SolrFeature.class.getName(),
         "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
-    loadModel("Term-modelFQ", LinearModel.class.getCanonicalName(),
+    loadModel("Term-modelFQ", LinearModel.class.getName(),
         new String[] {"SomeTermFQ", "SomeEfiFQ"},
         "{\"weights\":{\"SomeTermFQ\":1.6, \"SomeEfiFQ\":2.0}}");
     final SolrQuery query = new SolrQuery();
@@ -80,7 +80,7 @@ public class TestFilterSolrFeature extends TestRerankBase {
   public void testBadFeature() throws Exception {
     // Missing q/fq
     final String feature = getFeatureInJson("badFeature", "test",
-        SolrFeature.class.getCanonicalName(), "{\"df\":\"foo\"]}");
+        SolrFeature.class.getName(), "{\"df\":\"foo\"]}");
     assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
         "/responseHeader/status==500");
   }

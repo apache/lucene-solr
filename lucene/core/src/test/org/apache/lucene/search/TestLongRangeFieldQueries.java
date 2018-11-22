@@ -28,6 +28,7 @@ import org.apache.lucene.util.TestUtil;
 /**
  * Random testing for LongRange Queries.
  */
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "longRangeField";
 

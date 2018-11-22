@@ -259,7 +259,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     try {
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
-      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
+      Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -305,11 +305,13 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
   }
 
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (isCloseCache && cache != null) {
       cache.close();
     }
 
-    executorService.shutdown();
+    if (executorService != null) {
+      executorService.shutdown();
+    }
   }
 
   /** Return the stream sort - ie, the order in which records are returned */

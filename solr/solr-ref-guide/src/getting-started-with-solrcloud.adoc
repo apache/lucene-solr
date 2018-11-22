@@ -124,7 +124,7 @@ You can see how your collection is deployed across the cluster by visiting the c
 bin/solr healthcheck -c gettingstarted
 ----
 
-The healthcheck command gathers basic information about each replica in a collection, such as number of docs, current status (active, down, etc), and address (where the replica lives in the cluster).
+The healthcheck command gathers basic information about each replica in a collection, such as number of docs, current status (active, down, etc.), and address (where the replica lives in the cluster).
 
 Documents can now be added to SolrCloud using the <<post-tool.adoc#post-tool,Post Tool>>.
 
@@ -168,7 +168,7 @@ Adding a node to an existing cluster is a bit advanced and involves a little mor
 
 [source,bash]
 ----
-mkdir <solr.home for new solr node>
+mkdir <solr.home for new Solr node>
 cp <existing solr.xml path> <new solr.home>
 bin/solr start -cloud -s solr.home/solr -p <port num> -z <zk hosts string>
 ----

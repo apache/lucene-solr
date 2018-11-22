@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -121,6 +122,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private OverseerNodePrioritizer prioritizer;
 
+  private String thisNode;
+
   public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
                                         Stats stats,
                                         OverseerMessageHandlerSelector selector,
@@ -141,10 +144,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.runningZKTasks = new HashSet<>();
     this.runningTasks = new HashSet<>();
     this.completedTasks = new HashMap<>();
+    thisNode = Utils.getMDCNode();
   }
 
   @Override
   public void run() {
+    MDCLoggingContext.setNode(thisNode);
     log.debug("Process current queue of overseer operations");
     LeaderStatus isLeader = amILeader();
     while (isLeader == LeaderStatus.DONT_KNOW) {
@@ -388,10 +393,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     String statsName = "collection_am_i_leader";
     Timer.Context timerContext = stats.time(statsName);
     boolean success = true;
+    String propsId = null;
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
           Overseer.OVERSEER_ELECT + "/leader", null, null, true));
-      if (myId.equals(props.getStr(ID))) {
+      propsId = props.getStr(ID);
+      if (myId.equals(propsId)) {
         return LeaderStatus.YES;
       }
     } catch (KeeperException e) {
@@ -401,6 +408,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         return LeaderStatus.DONT_KNOW;
       } else if (e.code() != KeeperException.Code.SESSIONEXPIRED) {
         log.warn("", e);
+      } else {
+        log.debug("", e);
       }
     } catch (InterruptedException e) {
       success = false;
@@ -413,7 +422,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         stats.error(statsName);
       }
     }
-    log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
+    log.info("According to ZK I (id={}) am no longer a leader. propsId={}", myId, propsId);
     return LeaderStatus.NO;
   }
 

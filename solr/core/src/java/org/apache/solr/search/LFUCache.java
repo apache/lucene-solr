@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,8 +65,10 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   private int showItems = 0;
   private Boolean timeDecay = true;
   private MetricsMap cacheMap;
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
+  private SolrMetricManager metricManager;
+  private String registryName;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -234,7 +236,9 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registryName;
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
@@ -288,7 +292,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
 
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, true, scope, getCategory().toString());
+    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
 
   // for unit tests only

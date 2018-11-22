@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.common.SolrException;
@@ -57,6 +58,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final String name;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
+  private final Slice[] activeSlicesArr;
   private final Map<String, List<Replica>> nodeNameReplicas;
   private final Map<String, List<Replica>> nodeNameLeaderReplicas;
   private final DocRouter router;
@@ -111,6 +113,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         addNodeNameReplica(replica);
       }
     }
+    this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
     this.znode = znode == null? ZkStateReader.CLUSTER_STATE : znode;
     assert name != null && slices != null;
@@ -174,6 +177,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return slices.get(sliceName);
   }
 
+  /**
+   * @param consumer consume shardName vs. replica
+   */
   public void forEachReplica(BiConsumer<String, Replica> consumer) {
     slices.forEach((shard, slice) -> slice.getReplicasMap().forEach((s, replica) -> consumer.accept(shard, replica)));
   }
@@ -191,6 +197,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public Collection<Slice> getActiveSlices() {
     return activeSlices.values();
+  }
+
+  /**
+   * Return array of active slices for this collection (performance optimization).
+   */
+  public Slice[] getActiveSlicesArr() {
+    return activeSlicesArr;
   }
 
   /**
@@ -321,7 +334,22 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     return replicas;
   }
-  
+
+  /**
+   * @param predicate test against shardName vs. replica
+   * @return the first replica that matches the predicate
+   */
+  public Replica getReplica(BiPredicate<String, Replica> predicate) {
+    final Replica[] result = new Replica[1];
+    forEachReplica((s, replica) -> {
+      if (result[0] != null) return;
+      if (predicate.test(s, replica)) {
+        result[0] = replica;
+      }
+    });
+    return result[0];
+  }
+
   public List<Replica> getReplicas(EnumSet<Replica.Type> s) {
     List<Replica> replicas = new ArrayList<>();
     for (Slice slice : this) {
@@ -377,5 +405,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public String getPolicyName() {
     return policy;
+  }
+
+  public int getExpectedReplicaCount(Replica.Type type, int def) {
+    Integer result = null;
+    if (type == Replica.Type.NRT) result = numNrtReplicas;
+    if (type == Replica.Type.PULL) result = numPullReplicas;
+    if (type == Replica.Type.TLOG) result = numTlogReplicas;
+    return result == null ? def : result;
+
   }
 }

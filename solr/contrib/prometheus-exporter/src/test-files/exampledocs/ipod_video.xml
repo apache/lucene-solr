@@ -1,0 +1,40 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<add><doc>
+  <field name="id">MA147LL/A</field>
+  <field name="name">Apple 60 GB iPod with Video Playback Black</field>
+  <field name="manu">Apple Computer Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">apple</field>
+  <field name="cat">electronics</field>
+  <field name="cat">music</field>
+  <field name="features">iTunes, Podcasts, Audiobooks</field>
+  <field name="features">Stores up to 15,000 songs, 25,000 photos, or 150 hours of video</field>
+  <field name="features">2.5-inch, 320x240 color TFT LCD display with LED backlight</field>
+  <field name="features">Up to 20 hours of battery life</field>
+  <field name="features">Plays AAC, MP3, WAV, AIFF, Audible, Apple Lossless, H.264 video</field>
+  <field name="features">Notes, Calendar, Phone book, Hold button, Date display, Photo wallet, Built-in games, JPEG photo playback, Upgradeable firmware, USB 2.0 compatibility, Playback speed control, Rechargeable capability, Battery level indication</field>
+  <field name="includes">earbud headphones, USB cable</field>
+  <field name="weight">5.5</field>
+  <field name="price">399.00</field>
+  <field name="popularity">10</field>
+  <field name="inStock">true</field>
+  <!-- Dodge City store -->
+  <field name="store">37.7752,-100.0232</field>
+  <field name="manufacturedate_dt">2005-10-12T08:00:00Z</field>
+</doc></add>

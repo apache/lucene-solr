@@ -17,15 +17,10 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.highlight.TermVectorLeafReader;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Uses term vectors that contain offsets.
@@ -34,8 +29,8 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public class TermVectorOffsetStrategy extends FieldOffsetStrategy {
 
-  public TermVectorOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
-    super(field, queryTerms, phraseHelper, automata);
+  public TermVectorOffsetStrategy(UHComponents components) {
+    super(components);
   }
 
   @Override
@@ -44,16 +39,20 @@ public class TermVectorOffsetStrategy extends FieldOffsetStrategy {
   }
 
   @Override
-  public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    Terms tvTerms = reader.getTermVector(docId, field);
+  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
+    Terms tvTerms = reader.getTermVector(docId, getField());
     if (tvTerms == null) {
-      return Collections.emptyList();
+      return OffsetsEnum.EMPTY;
     }
 
-    LeafReader leafReader = new TermVectorLeafReader(field, tvTerms);
-    docId = 0;
-
-    return createOffsetsEnumsFromReader(leafReader, docId);
+    LeafReader singleDocReader = new TermVectorLeafReader(getField(), tvTerms);
+    return createOffsetsEnumFromReader(
+        new OverlaySingleDocTermsLeafReader(
+            reader,
+            singleDocReader,
+            getField(),
+            docId),
+        docId);
   }
 
 }

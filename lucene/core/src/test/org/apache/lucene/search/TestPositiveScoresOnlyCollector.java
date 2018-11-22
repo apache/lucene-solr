@@ -17,6 +17,8 @@
 package org.apache.lucene.search;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -38,7 +40,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     }
 
     @Override
-    public float maxScore() {
+    public float getMaxScore(int upTo) throws IOException {
       return Float.POSITIVE_INFINITY;
     }
 
@@ -97,7 +99,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     Weight fake = new TermQuery(new Term("fake", "weight")).createWeight(searcher, ScoreMode.COMPLETE, 1f);
     Scorer s = new SimpleScorer(fake);
-    TopDocsCollector<ScoreDoc> tdc = TopScoreDocCollector.create(scores.length);
+    TopDocsCollector<ScoreDoc> tdc = TopScoreDocCollector.create(scores.length, Integer.MAX_VALUE);
     Collector c = new PositiveScoresOnlyCollector(tdc);
     LeafCollector ac = c.getLeafCollector(ir.leaves().get(0));
     ac.setScorer(s);
@@ -106,7 +108,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     }
     TopDocs td = tdc.topDocs();
     ScoreDoc[] sd = td.scoreDocs;
-    assertEquals(numPositiveScores, td.totalHits);
+    assertEquals(numPositiveScores, td.totalHits.value);
     for (int i = 0; i < sd.length; i++) {
       assertTrue("only positive scores should return: " + sd[i].score, sd[i].score > 0);
     }

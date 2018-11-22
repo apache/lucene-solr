@@ -32,6 +32,7 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark; //jdoc
 import org.noggit.ObjectBuilder;
@@ -524,10 +525,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final MetricsMap filterCacheStats =
-        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+        (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache")).getGauge();
     assertNotNull(filterCacheStats);
     final MetricsMap queryCacheStats =
-        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+        (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
     assertNotNull(queryCacheStats);
 
     final long preQcIn = (Long) queryCacheStats.getValue().get("inserts");
@@ -841,13 +842,13 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     throws Exception {
 
     try {
-      ignoreException(expSubstr);
-      assertJQ(req(p));
-      fail("no exception matching expected: " + expCode.code + ": " + expSubstr);
-    } catch (SolrException e) {
+      SolrException e = expectThrows(SolrException.class, () -> {
+        ignoreException(expSubstr);
+        assertJQ(req(p));
+      });
       assertEquals(expCode.code, e.code());
       assertTrue("Expected substr not found: " + expSubstr + " <!< " + e.getMessage(),
-                 e.getMessage().contains(expSubstr));
+          e.getMessage().contains(expSubstr));
     } finally {
       unIgnoreException(expSubstr);
     }

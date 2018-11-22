@@ -326,7 +326,7 @@ else
   mv "$SOLR_INSTALL_DIR/bin/solr.in.cmd" "$SOLR_INSTALL_DIR/bin/solr.in.cmd.orig"  
   echo "SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
 SOLR_HOME=\"$SOLR_VAR_DIR/data\"
-LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j.properties\"
+LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j2.xml\"
 SOLR_LOGS_DIR=\"$SOLR_VAR_DIR/logs\"
 SOLR_PORT=\"$SOLR_PORT\"
 " >> "/etc/default/$SOLR_SERVICE.in.sh"
@@ -342,10 +342,10 @@ if [ -f "$SOLR_VAR_DIR/data/solr.xml" ]; then
 else
   cp "$SOLR_INSTALL_DIR/server/solr/"{solr.xml,zoo.cfg} "$SOLR_VAR_DIR/data/"
 fi
-if [ -f "$SOLR_VAR_DIR/log4j.properties" ]; then
-  echo -e "\n$SOLR_VAR_DIR/log4j.properties already exists. Skipping install ...\n"
+if [ -f "$SOLR_VAR_DIR/log4j2.xml" ]; then
+  echo -e "\n$SOLR_VAR_DIR/log4j2.xml already exists. Skipping install ...\n"
 else
-  cp "$SOLR_INSTALL_DIR/server/resources/log4j.properties" "$SOLR_VAR_DIR/log4j.properties"
+  cp "$SOLR_INSTALL_DIR/server/resources/log4j2.xml" "$SOLR_VAR_DIR/log4j2.xml"
 fi
 chown -R "$SOLR_USER:" "$SOLR_VAR_DIR"
 find "$SOLR_VAR_DIR" -type d -print0 | xargs -0 chmod 0750
