@@ -105,6 +105,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
     public E poll(int timeout, TimeUnit unit) throws InterruptedException {
       E e = queue.poll(timeout, unit);
+      if (e == null) {
+        return null;
+      }
       if (e == backdoorE)
         return null;
       available.release();
@@ -331,7 +334,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       return client.request(request, collection);
     }
     UpdateRequest req = (UpdateRequest) request;
-    log.info("Client send req:{} to:{}", request, basePath);
     req.setBasePath(basePath);
     // this happens for commit...
     if (streamDeletes) {
