@@ -102,7 +102,7 @@ public final class KoreanTokenizer extends Tokenizer {
    */
   public static final DecompoundMode DEFAULT_DECOMPOUND = DecompoundMode.DISCARD;
 
-  private static final boolean VERBOSE = false;
+  private static final boolean VERBOSE = Boolean.parseBoolean(System.getProperty("tests.verbose", "false"));
 
   // For safety:
   private static final int MAX_UNKNOWN_WORD_LENGTH = 1024;
@@ -194,6 +194,10 @@ public final class KoreanTokenizer extends Tokenizer {
     dictionaryMap.put(Type.KNOWN, dictionary);
     dictionaryMap.put(Type.UNKNOWN, unkDictionary);
     dictionaryMap.put(Type.USER, userDictionary);
+
+    if (VERBOSE) {
+      setGraphvizFormatter(new GraphvizFormatter(ConnectionCosts.getInstance()));
+    }
   }
 
   private GraphvizFormatter dotOut;
@@ -208,6 +212,12 @@ public final class KoreanTokenizer extends Tokenizer {
   public void close() throws IOException {
     super.close();
     buffer.reset(input);
+    if (dotOut != null) {
+      final String dotString = dotOut.finish();
+      if (VERBOSE) {
+        System.out.println(dotString);
+      }
+    }
   }
 
   @Override
@@ -719,10 +729,13 @@ public final class KoreanTokenizer extends Tokenizer {
 
         // Find unknown match:
         final int characterId = characterDefinition.getCharacterClass(firstCharacter);
-        final boolean isPunct = isPunctuation(firstCharacter);
+        final int scriptId = Character.UnicodeScript.of(characterId).ordinal();
+        byte[] characterClasses = new byte[0];
+        int characterClassesCount = 0;
 
         // NOTE: copied from UnknownDictionary.lookup:
         int unknownWordLength;
+        int previousScriptId = scriptId;
         if (!characterDefinition.isGroup(firstCharacter)) {
           unknownWordLength = 1;
         } else {
@@ -733,8 +746,22 @@ public final class KoreanTokenizer extends Tokenizer {
             if (ch == -1) {
               break;
             }
-            if (characterId == characterDefinition.getCharacterClass((char) ch) &&
-                isPunctuation((char) ch) == isPunct) {
+            characterClasses = ArrayUtil.grow(characterClasses, ++characterClassesCount);
+            characterClasses[characterClassesCount] = (characterDefinition.getCharacterClass((char) ch));
+            int currentScriptId = Character.UnicodeScript.of(ch).ordinal();
+            if (isCommonOrInherited(currentScriptId)) {
+              currentScriptId = previousScriptId;
+            } else {
+              previousScriptId = currentScriptId;
+            }
+            /*
+             * From UTR #24: Implementations that determine the boundaries between
+             * characters of given scripts should never break between a non-spacing
+             * mark and its base character. Thus for boundary determinations and
+             * similar sorts of processing, a non-spacing mark — whatever its script
+             * value — should inherit the script value of its base character.
+             */
+            if (!isSameScript(currentScriptId, scriptId) && Character.getType(ch) != Character.NON_SPACING_MARK) {
               unknownWordLength++;
             } else {
               break;
@@ -957,5 +984,16 @@ public final class KoreanTokenizer extends Tokenizer {
       default:
         return false;
     }
+  }
+
+  private static boolean isCommonOrInherited(int script) {
+    return script == Character.UnicodeScript.COMMON.ordinal() ||
+           script == Character.UnicodeScript.INHERITED.ordinal();
+  }
+
+  private static boolean isSameScript(int scriptOne, int scriptTwo) {
+    return scriptOne == scriptTwo ||
+           isCommonOrInherited(scriptOne) ||
+           isCommonOrInherited(scriptTwo);
   }
 }
