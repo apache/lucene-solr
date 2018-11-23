@@ -25,7 +25,6 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -43,24 +42,18 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
   @Override
   public SolrClient createNewSolrClient()
   {
-    try {
-      // setup the server...
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      // smaller queue size hits locks more often
-      Http2SolrClient solrClient = new Http2SolrClient.Builder()
-          .build();
-      solrClient.setParser(new XMLResponseParser());
-      solrClient.setRequestWriter(new RequestWriter());
-      ConcurrentUpdateHttp2SolrClient concurrentClient = new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
-          .withQueueSize(2)
-          .withThreadCount(5)
-          .build();
-      return concurrentClient;
-    }
-
-    catch( Exception ex ) {
-      throw new RuntimeException( ex );
-    }
+    // setup the server...
+    String url = jetty.getBaseUrl().toString() + "/collection1";
+    // smaller queue size hits locks more often
+    Http2SolrClient solrClient = new Http2SolrClient.Builder()
+        .build();
+    solrClient.setParser(new XMLResponseParser());
+    solrClient.setRequestWriter(new RequestWriter());
+    ConcurrentUpdateHttp2SolrClient concurrentClient = new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
+        .withQueueSize(2)
+        .withThreadCount(5)
+        .build();
+    return concurrentClient;
   }
 
   public void testWaitOptions() throws Exception {
