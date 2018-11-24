@@ -131,7 +131,8 @@ Other Changes
 Bug Fixes
 ----------------------
 
-(No Changes)
+* SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy) 
+
 Improvements
 ----------------------
 
