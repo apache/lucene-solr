@@ -31,6 +31,7 @@ import org.apache.lucene.luke.app.LukeState;
 import org.apache.lucene.luke.app.desktop.MessageBroker;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
 
+/** Provider of the tabbed pane */
 public final class TabbedPaneProvider implements Provider<JTabbedPane>, TabSwitcherProxy.TabSwitcher {
 
   private final MessageBroker messageBroker;
@@ -128,6 +129,7 @@ public final class TabbedPaneProvider implements Provider<JTabbedPane>, TabSwitc
     }
   }
 
+  /** Tab */
   public enum Tab {
     OVERVIEW(0), DOCUMENTS(1), SEARCH(2), ANALYZER(3), COMMITS(4);
 

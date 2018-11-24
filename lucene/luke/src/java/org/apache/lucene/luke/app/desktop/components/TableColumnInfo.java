@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+/** Holder of table column attributes */
 public interface TableColumnInfo {
 
   String getColName();

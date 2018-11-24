@@ -40,6 +40,7 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.util.Version;
 
+/** Provider of the menu bar */
 public final class MenuBarProvider implements Provider<JMenuBar> {
 
   private final Preferences prefs;

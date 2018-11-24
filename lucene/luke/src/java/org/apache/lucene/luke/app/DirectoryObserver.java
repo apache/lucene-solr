@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.app;
 
+/** Directory open/close observer */
 public interface DirectoryObserver extends Observer {
 
   void openDirectory(LukeState state);

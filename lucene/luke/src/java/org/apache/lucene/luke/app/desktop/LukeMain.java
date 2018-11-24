@@ -33,6 +33,7 @@ import org.apache.lucene.luke.app.desktop.util.TextAreaAppender;
 
 import static org.apache.lucene.luke.app.desktop.util.ExceptionHandler.handle;
 
+/** Luke entry class */
 public class LukeMain {
 
   private static JFrame frame;

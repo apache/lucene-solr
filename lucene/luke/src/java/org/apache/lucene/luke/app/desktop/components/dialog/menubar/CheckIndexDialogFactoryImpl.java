@@ -62,6 +62,7 @@ import org.apache.lucene.util.NamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Default implementation of {@link CheckIndexDialogFactory} */
 public final class CheckIndexDialogFactoryImpl implements CheckIndexDialogFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

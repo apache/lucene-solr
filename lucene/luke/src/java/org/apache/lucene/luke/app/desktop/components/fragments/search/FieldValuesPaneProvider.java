@@ -41,6 +41,7 @@ import org.apache.lucene.luke.app.desktop.components.TableModelBase;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 
+/** Provider of the FieldValues pane (tab) */
 public final class FieldValuesPaneProvider implements Provider<JScrollPane>, FieldValuesTabOperator {
 
   private final JCheckBox loadAllCB = new JCheckBox();

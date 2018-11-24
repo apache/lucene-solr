@@ -61,6 +61,7 @@ import org.apache.lucene.luke.models.commits.CommitsFactory;
 import org.apache.lucene.luke.models.commits.File;
 import org.apache.lucene.luke.models.commits.Segment;
 
+/** Provider of Commits panel */
 public final class CommitsPanelProvider implements Provider<JPanel> {
 
   private final CommitsFactory commitsFactory;

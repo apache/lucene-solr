@@ -19,6 +19,7 @@ package org.apache.lucene.luke.models.documents;
 
 import org.apache.lucene.index.IndexReader;
 
+/** Factory of {@link Documents} */
 public class DocumentsFactory {
 
   public Documents newInstance(IndexReader reader) {

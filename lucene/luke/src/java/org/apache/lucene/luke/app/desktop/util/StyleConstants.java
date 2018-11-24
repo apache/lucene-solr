@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop.util;
 import java.awt.Color;
 import java.awt.Font;
 
+/** Constants for the default styles */
 public class StyleConstants {
 
   public static Font FONT_BUTTON_LARGE = new Font("SanSerif", Font.PLAIN, 15);

@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.luke.util.IndexUtils;
+import org.apache.lucene.luke.models.util.IndexUtils;
 
 /**
  * An utility class that collects term counts terms for all fields in a index.

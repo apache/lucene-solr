@@ -41,6 +41,7 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.models.analysis.Analysis;
 
+/** Default implementation of {@link TokenAttributeDialogFactory} */
 public final class TokenAttributeDialogFactoryImpl implements TokenAttributeDialogFactory {
 
   private final Preferences prefs;

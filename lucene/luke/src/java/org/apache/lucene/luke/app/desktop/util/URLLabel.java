@@ -29,6 +29,7 @@ import java.net.URL;
 
 import org.apache.lucene.luke.models.LukeException;
 
+/** JLabel extension for representing urls */
 public final class URLLabel extends JLabel {
 
   private final URL link;

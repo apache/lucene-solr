@@ -52,6 +52,7 @@ import org.apache.lucene.luke.models.documents.DocValues;
 import org.apache.lucene.luke.util.BytesRefUtils;
 import org.apache.lucene.util.NumericUtils;
 
+/** Default implementation of {@link DocValuesDialogFactory} */
 public final class DocValuesDialogFactoryImpl implements DocValuesDialogFactory {
 
   private final Preferences prefs;
@@ -257,7 +258,7 @@ public final class DocValuesDialogFactoryImpl implements DocValuesDialogFactory 
   }
 
 
-  public enum Decoder {
+  enum Decoder {
 
     LONG("long"), FLOAT("float"), DOUBLE("double");
 

@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.models.documents.TermVectorEntry;
 
+/** Factory of term vector dialog */
 public interface TermVectorDialogFactory extends DialogOpener.DialogFactory {
   void setField(String field);
 

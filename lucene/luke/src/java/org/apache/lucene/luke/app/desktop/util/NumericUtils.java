@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import com.google.common.base.Strings;
 
+/** Utilities for numeric values */
 public class NumericUtils {
 
   public static int[] convertToIntArray(String value, boolean ignoreException) throws NumberFormatException {

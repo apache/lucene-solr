@@ -49,6 +49,7 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.URLLabel;
 import org.apache.lucene.luke.models.LukeException;
 
+/** Default implementation of {@link AboutDialogFactory} */
 public final class AboutDialogFactoryImpl implements AboutDialogFactory {
 
   private final Preferences prefs;

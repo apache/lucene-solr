@@ -72,6 +72,7 @@ import org.apache.lucene.luke.models.analysis.Analysis;
 import org.apache.lucene.luke.models.analysis.CustomAnalyzerConfig;
 import org.apache.lucene.util.SuppressForbidden;
 
+/** Provider of the custom analyzer panel */
 public final class CustomAnalyzerPanelProvider implements Provider<JPanel>, CustomAnalyzerPanelOperator {
 
   private final ComponentOperatorRegistry operatorRegistry;

@@ -34,6 +34,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 
+/** Log appender for text areas */
 @Plugin(name = "TextAreaAppender", category = "Core", elementType = "appender", printObject = true)
 public final class TextAreaAppender extends AbstractAppender {
 

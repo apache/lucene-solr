@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 import org.apache.lucene.luke.app.desktop.LukeMain;
 
+/** An utility class for opening a dialog */
 public class DialogOpener<T extends DialogOpener.DialogFactory> {
 
   private final T factory;
@@ -43,6 +44,7 @@ public class DialogOpener<T extends DialogOpener.DialogFactory> {
     dialog.setVisible(true);
   }
 
+  /** Base interface of factory of the dialogs */
   public interface DialogFactory {
     JDialog create(Window owner, String title, int width, int height);
   }

@@ -53,6 +53,7 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.models.search.MLTConfig;
 
+/** Provider of the MLT pane (tab) */
 public final class MLTPaneProvider implements Provider<JScrollPane>, MLTTabOperator {
 
   private final JLabel analyzerLbl = new JLabel(StandardAnalyzer.class.getName());

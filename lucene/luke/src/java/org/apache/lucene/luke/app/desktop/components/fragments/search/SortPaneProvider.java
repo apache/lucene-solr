@@ -42,6 +42,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSortField;
 
+/** Provider of the Sort pane (tab) */
 public final class SortPaneProvider implements Provider<JScrollPane>, SortTabOperator {
 
   private static final String COMMAND_FIELD_COMBO1 = "fieldCombo1";

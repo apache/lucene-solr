@@ -45,6 +45,7 @@ import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.search.Explanation;
 
+/** Default implementation of {@link ExplainDialogFactory} */
 public final class ExplainDialogFactoryImpl implements ExplainDialogFactory {
 
   private final Preferences prefs;

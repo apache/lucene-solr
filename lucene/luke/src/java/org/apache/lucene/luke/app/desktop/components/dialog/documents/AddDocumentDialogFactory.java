@@ -19,5 +19,6 @@ package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 
+/** Factory of add document dialog */
 public interface AddDocumentDialogFactory extends DialogOpener.DialogFactory {
 }

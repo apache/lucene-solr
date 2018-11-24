@@ -23,9 +23,10 @@ import java.io.IOException;
 
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.models.LukeException;
-import org.apache.lucene.luke.util.IndexUtils;
+import org.apache.lucene.luke.models.util.IndexUtils;
 import org.apache.lucene.store.Directory;
 
+/** Directory open/close handler */
 public final class DirectoryHandler extends AbstractHandler<DirectoryObserver> {
 
   private LukeStateImpl state;
@@ -78,7 +79,7 @@ public final class DirectoryHandler extends AbstractHandler<DirectoryObserver> {
     return state;
   }
 
-  public static class LukeStateImpl implements LukeState {
+  static class LukeStateImpl implements LukeState {
     private boolean closed = false;
 
     private String indexPath;

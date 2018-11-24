@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luke.util;
+package org.apache.lucene.luke.models.util;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

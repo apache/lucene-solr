@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.app.desktop.util.lang.Callable;
 
+/** Factory of edit filters dialog */
 public interface EditFiltersDialogFactory extends DialogOpener.DialogFactory {
   void setSelectedFilters(List<String> selectedFilters);
 

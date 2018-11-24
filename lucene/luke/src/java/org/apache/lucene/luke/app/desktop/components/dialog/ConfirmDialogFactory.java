@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop.components.dialog;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.app.desktop.util.lang.Callable;
 
+/** Factory of confirm dialog */
 public interface ConfirmDialogFactory extends DialogOpener.DialogFactory {
   void setMessage(String message);
 

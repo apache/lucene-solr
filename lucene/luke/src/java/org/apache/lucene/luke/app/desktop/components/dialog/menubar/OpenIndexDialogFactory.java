@@ -19,5 +19,6 @@ package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 
+/** Factory of open index dialog */
 public interface OpenIndexDialogFactory extends DialogOpener.DialogFactory {
 }

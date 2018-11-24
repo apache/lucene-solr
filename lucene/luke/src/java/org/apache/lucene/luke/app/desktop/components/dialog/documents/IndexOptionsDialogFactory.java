@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 import org.apache.lucene.luke.app.desktop.dto.documents.NewField;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 
+/** Factory of index options dialog */
 public interface IndexOptionsDialogFactory extends DialogOpener.DialogFactory {
   void setNewField(NewField nf);
 }

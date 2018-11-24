@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+/** Operator of the Search tab */
 public interface SearchTabOperator extends ComponentOperatorRegistry.ComponentOperator {
   void searchByTerm(String field, String term);
 

@@ -37,11 +37,12 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.LukeModel;
 import org.apache.lucene.luke.util.BytesRefUtils;
-import org.apache.lucene.luke.util.IndexUtils;
+import org.apache.lucene.luke.models.util.IndexUtils;
 import org.apache.lucene.util.BytesRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Default implementation of {@link Documents} */
 public final class DocumentsImpl extends LukeModel implements Documents {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

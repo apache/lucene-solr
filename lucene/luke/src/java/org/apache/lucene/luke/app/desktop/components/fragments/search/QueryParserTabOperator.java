@@ -22,6 +22,7 @@ import java.util.Collection;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.models.search.QueryParserConfig;
 
+/** Operator of the QueryParser tab */
 public interface QueryParserTabOperator extends ComponentOperatorRegistry.ComponentOperator {
   void setSearchableFields(Collection<String> searchableFields);
 

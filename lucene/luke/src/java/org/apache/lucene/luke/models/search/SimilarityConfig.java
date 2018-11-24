@@ -34,6 +34,7 @@ public final class SimilarityConfig {
 
   private final boolean discountOverlaps;
 
+  /** {@link SimilarityConfig} builder */
   public static class Builder {
     private boolean useClassicSimilarity = false;
     private float k1 = 1.2f;

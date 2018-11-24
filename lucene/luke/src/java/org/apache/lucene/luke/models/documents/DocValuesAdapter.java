@@ -31,7 +31,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.luke.util.IndexUtils;
+import org.apache.lucene.luke.models.util.IndexUtils;
 import org.apache.lucene.util.BytesRef;
 
 /**

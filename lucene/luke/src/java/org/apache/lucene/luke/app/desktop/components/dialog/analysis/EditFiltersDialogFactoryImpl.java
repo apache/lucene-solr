@@ -50,6 +50,7 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.app.desktop.util.lang.Callable;
 
+/** Default implementation of {@link EditFiltersDialogFactory} */
 public final class EditFiltersDialogFactoryImpl implements EditFiltersDialogFactory {
 
   private final Preferences prefs;

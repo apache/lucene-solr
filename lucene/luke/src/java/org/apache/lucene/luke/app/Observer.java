@@ -17,5 +17,6 @@
 
 package org.apache.lucene.luke.app;
 
+/** Marker interface for observers */
 public interface Observer {
 }

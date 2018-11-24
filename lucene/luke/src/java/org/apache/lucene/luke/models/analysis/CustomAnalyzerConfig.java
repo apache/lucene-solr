@@ -39,6 +39,7 @@ public final class CustomAnalyzerConfig {
 
   private final List<ComponentConfig> tokenFilterConfigs;
 
+  /** {@link CustomAnalyzerConfig} builder */
   public static class Builder {
     private String configDir;
     private final ComponentConfig tokenizerConfig;

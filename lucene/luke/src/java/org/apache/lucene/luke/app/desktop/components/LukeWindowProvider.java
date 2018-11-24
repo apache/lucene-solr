@@ -47,7 +47,7 @@ import org.apache.lucene.luke.app.desktop.util.ImageUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.util.Version;
 
-
+/** Provider of the top level window */
 public final class LukeWindowProvider implements Provider<JFrame>, LukeWindowOperator {
 
   private static final String WINDOW_TITLE = MessageUtils.getLocalizedMessage("window.title") + " - v" + Version.LATEST.toString();

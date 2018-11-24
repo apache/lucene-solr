@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop.components;
 import java.util.ArrayList;
 import java.util.List;
 
+/** An utility class for switching tabs. */
 public class TabSwitcherProxy {
 
   private final List<TabSwitcher> switcherHolder = new ArrayList<>();
@@ -37,6 +38,7 @@ public class TabSwitcherProxy {
     switcherHolder.get(0).switchTab(tab);
   }
 
+  /** Tab switcher */
   public interface TabSwitcher {
     void switchTab(TabbedPaneProvider.Tab tab);
   }

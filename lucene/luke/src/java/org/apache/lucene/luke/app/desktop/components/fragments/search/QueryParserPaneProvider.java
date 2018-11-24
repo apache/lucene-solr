@@ -55,6 +55,7 @@ import org.apache.lucene.luke.models.search.QueryParserConfig;
 
 import static org.apache.lucene.luke.app.desktop.components.fragments.search.PointTypesTableModel.NumType.INT;
 
+/** Provider of the QueryParser pane (tab) */
 public final class QueryParserPaneProvider implements Provider<JScrollPane>, QueryParserTabOperator {
 
   private final JRadioButton standardRB = new JRadioButton();

@@ -20,7 +20,7 @@ package org.apache.lucene.luke.models.commits;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.luke.util.IndexUtils;
+import org.apache.lucene.luke.models.util.IndexUtils;
 
 /**
  * Holder for a commit.

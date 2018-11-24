@@ -19,6 +19,7 @@ package org.apache.lucene.luke.models.overview;
 
 import org.apache.lucene.index.IndexReader;
 
+/** Factory of {@link Overview} */
 public class OverviewFactory {
 
   public Overview newInstance(IndexReader reader, String indexPath) {

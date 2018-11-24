@@ -85,6 +85,7 @@ import org.apache.lucene.luke.models.documents.TermPosting;
 import org.apache.lucene.luke.models.documents.TermVectorEntry;
 import org.apache.lucene.luke.util.BytesRefUtils;
 
+/** Provider of Documents panel */
 public final class DocumentsPanelProvider implements Provider<JPanel>, DocumentsTabOperator {
 
   private final DocumentsFactory documentsFactory;

@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.analysis;
 
+/** Edit parameters mode*/
 public enum EditParamsMode {
   CHARFILTER, TOKENIZER, TOKENFILTER;
 }

@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+/** Operator of the Documents tab */
 public interface DocumentsTabOperator extends ComponentOperatorRegistry.ComponentOperator {
   void browseTerm(String field, String term);
 

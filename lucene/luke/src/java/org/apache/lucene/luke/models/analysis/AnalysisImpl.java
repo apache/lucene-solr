@@ -52,6 +52,7 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 
+/** Default implementation of {@link AnalysisImpl} */
 public final class AnalysisImpl implements Analysis {
 
   private final List<Class<? extends Analyzer>> presetAnalyzerTypes;

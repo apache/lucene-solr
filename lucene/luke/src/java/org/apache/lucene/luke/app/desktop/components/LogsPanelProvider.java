@@ -31,6 +31,7 @@ import com.google.inject.Provider;
 import com.google.inject.name.Named;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
+/** Provider of Logs panel */
 public final class LogsPanelProvider implements Provider<JPanel> {
 
   private static final String LOG_FILE = System.getProperty("user.home") +

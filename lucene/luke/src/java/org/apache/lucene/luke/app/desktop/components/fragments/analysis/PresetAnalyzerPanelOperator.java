@@ -22,6 +22,7 @@ import java.util.Collection;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 
+/** Operator of the preset analyzer panel */
 public interface PresetAnalyzerPanelOperator extends ComponentOperatorRegistry.ComponentOperator {
   void setPresetAnalyzers(Collection<Class<? extends Analyzer>> presetAnalyzers);
 

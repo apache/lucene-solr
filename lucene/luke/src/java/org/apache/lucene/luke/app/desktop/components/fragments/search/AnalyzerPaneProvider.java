@@ -47,6 +47,7 @@ import org.apache.lucene.luke.app.desktop.components.TabbedPaneProvider;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
+/** Provider of the Analyzer pane (tab) */
 public final class AnalyzerPaneProvider implements Provider<JScrollPane>, AnalyzerTabOperator {
 
   private final TabSwitcherProxy tabSwitcher;

@@ -63,6 +63,7 @@ import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Default implementation of {@link OpenIndexDialogFactory} */
 public final class OpenIndexDialogFactoryImpl implements OpenIndexDialogFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

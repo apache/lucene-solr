@@ -31,6 +31,7 @@ import org.apache.lucene.document.DateTools;
  */
 public final class QueryParserConfig {
 
+  /** (Default) operator */
   public enum Operator {
     AND, OR
   }
@@ -65,6 +66,7 @@ public final class QueryParserConfig {
   // standard parser only configurations
   private final Map<String, Class<? extends Number>> typeMap;
 
+  /** {@link QueryParserConfig} builder */
   public static class Builder {
     private boolean useClassicParser = true;
     private boolean enablePositionIncrements = true;

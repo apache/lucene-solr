@@ -40,6 +40,7 @@ import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
+/** Default implementation of {@link AnalysisChainDialogFactory} */
 public class AnalysisChainDialogFactoryImpl implements AnalysisChainDialogFactory {
 
   private final Preferences prefs;

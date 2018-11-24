@@ -37,6 +37,7 @@ import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.lang.Callable;
 
+/** Default implementation of {@link ConfirmDialogFactory} */
 public final class ConfirmDialogFactoryImpl implements ConfirmDialogFactory {
 
   private final Preferences prefs;

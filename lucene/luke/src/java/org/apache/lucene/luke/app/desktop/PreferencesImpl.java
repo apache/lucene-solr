@@ -29,6 +29,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.SuppressForbidden;
 import org.ini4j.Ini;
 
+/** Default implementation of {@link Preferences} */
 public final class PreferencesImpl implements Preferences {
 
   private static final String CONFIG_DIR = System.getProperty("user.home") + FileSystems.getDefault().getSeparator() + ".luke.d";

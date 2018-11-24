@@ -41,6 +41,7 @@ import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
+/** Default implementation of {@link StoredValueDialogFactory} */
 public final class StoredValueDialogFactoryImpl implements StoredValueDialogFactory {
 
   private final Preferences prefs;

@@ -22,7 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
 /**
- * Holder for current index/directory.
+ * Holder of index/directory status.
  */
 public interface LukeState {
 

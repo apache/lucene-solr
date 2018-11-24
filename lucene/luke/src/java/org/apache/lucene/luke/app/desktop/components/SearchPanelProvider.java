@@ -89,6 +89,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 
+/** Provider of Search panel */
 public final class SearchPanelProvider implements Provider<JPanel>, SearchTabOperator {
 
   private static final int DEFAULT_PAGE_SIZE = 10;
@@ -743,7 +744,7 @@ public final class SearchPanelProvider implements Provider<JPanel>, SearchTabOpe
 
   }
 
-  public enum Tab {
+  enum Tab {
     QPARSER(0), ANALYZER(1), SIMILARITY(2), SORT(3), VALUES(4), MLT(5);
 
     private int tabIdx;

@@ -37,6 +37,7 @@ public final class MLTConfig {
 
   private final int minTermFreq;
 
+  /** {@link MLTConfig} builder */
   public static class Builder {
 
     private final List<String> fields = new ArrayList<>();

@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop.components.dialog.search;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.search.Explanation;
 
+/** Factory of explain dialog */
 public interface ExplainDialogFactory extends DialogOpener.DialogFactory {
   void setDocid(int docid);
 

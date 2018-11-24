@@ -19,6 +19,7 @@ package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 
+/** Factory of stored values dialog */
 public interface StoredValueDialogFactory extends DialogOpener.DialogFactory {
   void setField(String field);
 

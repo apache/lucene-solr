@@ -62,6 +62,7 @@ import org.apache.lucene.luke.models.overview.OverviewFactory;
 import org.apache.lucene.luke.models.overview.TermCountsOrder;
 import org.apache.lucene.luke.models.overview.TermStats;
 
+/** Provider of Overview panel */
 public final class OverviewPanelProvider implements Provider<JPanel> {
 
   private static final int GRIDX_DESC = 0;

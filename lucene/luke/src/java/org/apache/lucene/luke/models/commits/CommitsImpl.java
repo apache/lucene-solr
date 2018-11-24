@@ -39,6 +39,7 @@ import org.apache.lucene.store.Directory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Default implementation of {@link Commits} */
 public final class CommitsImpl extends LukeModel implements Commits {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

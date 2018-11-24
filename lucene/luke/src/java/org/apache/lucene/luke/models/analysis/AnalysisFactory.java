@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.models.analysis;
 
+/** Factory of {@link Analysis} */
 public class AnalysisFactory {
 
   public Analysis newInstance() {

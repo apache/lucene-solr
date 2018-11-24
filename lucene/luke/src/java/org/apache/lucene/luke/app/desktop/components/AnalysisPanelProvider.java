@@ -63,7 +63,7 @@ import org.apache.lucene.luke.models.analysis.Analysis;
 import org.apache.lucene.luke.models.analysis.AnalysisFactory;
 import org.apache.lucene.luke.models.analysis.CustomAnalyzerConfig;
 
-
+/** Provider of Analysis panel */
 public final class AnalysisPanelProvider implements Provider<JPanel>, AnalysisTabOperator {
 
   private static final String TYPE_PRESET = "preset";

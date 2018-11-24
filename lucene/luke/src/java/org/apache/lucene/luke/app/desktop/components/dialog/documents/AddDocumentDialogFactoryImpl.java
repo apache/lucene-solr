@@ -96,6 +96,7 @@ import org.apache.lucene.util.BytesRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Default implementation of {@link AddDocumentDialogFactory} */
 public final class AddDocumentDialogFactoryImpl implements AddDocumentDialogFactory, AddDocumentDialogOperator {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

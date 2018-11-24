@@ -41,7 +41,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.LukeModel;
-import org.apache.lucene.luke.util.IndexUtils;
+import org.apache.lucene.luke.models.util.IndexUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -65,6 +65,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Default implementation of {@link Search} */
 public final class SearchImpl extends LukeModel implements Search {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

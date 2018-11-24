@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.models.analysis.Analysis;
 
+/** Factory of token attribute dialog */
 public interface TokenAttributeDialogFactory extends DialogOpener.DialogFactory {
   void setTerm(String term);
 

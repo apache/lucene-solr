@@ -43,6 +43,7 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.models.documents.TermVectorEntry;
 
+/** Default implementation of {@link TermVectorDialogFactory} */
 public final class TermVectorDialogFactoryImpl implements TermVectorDialogFactory {
 
   private final Preferences prefs;

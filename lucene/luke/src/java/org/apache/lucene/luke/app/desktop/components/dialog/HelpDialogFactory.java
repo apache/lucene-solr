@@ -21,6 +21,7 @@ import javax.swing.JComponent;
 
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 
+/** Factory of help dialog */
 public interface HelpDialogFactory extends DialogOpener.DialogFactory {
   void setDesc(String desc);
 

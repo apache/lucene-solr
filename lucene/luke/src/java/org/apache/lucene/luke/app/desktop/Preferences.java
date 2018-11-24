@@ -21,6 +21,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.util.List;
 
+/** Preference */
 public interface Preferences {
 
   List<String> getHistory();
@@ -43,6 +44,7 @@ public interface Preferences {
 
   void setColorTheme(ColorTheme theme) throws IOException;
 
+  /** Color theme */
   enum ColorTheme {
 
     /* Gray theme */

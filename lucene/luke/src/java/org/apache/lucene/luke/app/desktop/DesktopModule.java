@@ -81,7 +81,7 @@ import org.apache.lucene.luke.app.desktop.components.fragments.search.QueryParse
 import org.apache.lucene.luke.app.desktop.components.fragments.search.SimilarityPaneProvider;
 import org.apache.lucene.luke.app.desktop.components.fragments.search.SortPaneProvider;
 
-
+/** Guice configuration */
 public final class DesktopModule extends AbstractModule {
 
   private static final Injector injector = Guice.createInjector(new DesktopModule());

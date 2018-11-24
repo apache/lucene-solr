@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
+/** Font utilities */
 public class FontUtils {
 
   @SuppressWarnings("unchecked")

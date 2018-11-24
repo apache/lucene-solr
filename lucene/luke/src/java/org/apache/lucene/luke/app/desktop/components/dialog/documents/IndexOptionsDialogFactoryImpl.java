@@ -45,6 +45,7 @@ import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.dto.documents.NewField;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
+/** Default implementation of {@link IndexOptionsDialogFactory} */
 public final class IndexOptionsDialogFactoryImpl implements IndexOptionsDialogFactory {
 
   private final Preferences prefs;

@@ -34,6 +34,7 @@ import com.google.inject.Inject;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
+/** Default implementation of {@link HelpDialogFactory} */
 public final class HelpDialogFactoryImpl implements HelpDialogFactory {
 
   private final Preferences prefs;

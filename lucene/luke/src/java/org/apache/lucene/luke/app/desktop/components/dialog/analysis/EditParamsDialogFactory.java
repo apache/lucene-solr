@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.app.desktop.util.lang.Callable;
 
+/** Factory of edit parameters dialog */
 public interface EditParamsDialogFactory extends DialogOpener.DialogFactory {
   void setMode(EditParamsMode mode);
 

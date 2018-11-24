@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/** An utility class for interaction between components */
 public class ComponentOperatorRegistry {
 
   private final Map<Class<?>, Object> operators = new HashMap<>();
@@ -36,6 +37,7 @@ public class ComponentOperatorRegistry {
     return Optional.ofNullable((T) operators.get(type));
   }
 
+  /** Base interface of component operator */
   public interface ComponentOperator {
   }
 

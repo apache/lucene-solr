@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop.components;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.luke.models.analysis.CustomAnalyzerConfig;
 
+/** Operator of the Analysis tab */
 public interface AnalysisTabOperator extends ComponentOperatorRegistry.ComponentOperator {
 
   void setAnalyzerByType(String analyzerType);

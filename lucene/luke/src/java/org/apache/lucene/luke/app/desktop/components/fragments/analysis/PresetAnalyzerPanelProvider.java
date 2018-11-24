@@ -36,6 +36,7 @@ import org.apache.lucene.luke.app.desktop.components.AnalysisTabOperator;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
+/** Provider of the preset analyzer panel */
 public final class PresetAnalyzerPanelProvider implements Provider<JPanel>, PresetAnalyzerPanelOperator {
 
   private final ComponentOperatorRegistry operatorRegistry;

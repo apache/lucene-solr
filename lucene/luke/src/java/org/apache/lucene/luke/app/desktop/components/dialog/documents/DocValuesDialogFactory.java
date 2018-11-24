@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.models.documents.DocValues;
 
+/** Factory of doc values dialog */
 public interface DocValuesDialogFactory extends DialogOpener.DialogFactory {
   void setValue(String field, DocValues docValues);
 }

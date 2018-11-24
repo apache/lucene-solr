@@ -20,6 +20,7 @@ package org.apache.lucene.luke.models.tools;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
+/** Factory of {@link IndexTools} */
 public class IndexToolsFactory {
 
   public IndexTools newInstance(Directory dir) {

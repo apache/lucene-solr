@@ -19,5 +19,6 @@ package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 
+/** Factory of about dialog */
 public interface AboutDialogFactory extends DialogOpener.DialogFactory {
 }

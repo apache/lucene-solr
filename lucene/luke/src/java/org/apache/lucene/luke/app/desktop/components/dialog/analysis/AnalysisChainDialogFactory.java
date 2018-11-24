@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop.components.dialog.analysis;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 
+/** Factory of analysis chain dialog */
 public interface AnalysisChainDialogFactory extends DialogOpener.DialogFactory {
   void setAnalyzer(CustomAnalyzer analyzer);
 }

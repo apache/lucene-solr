@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
 
+/** Table utilities */
 public class TableUtils {
 
   public static void setupTable(JTable table, int selectionModel, TableModel model, MouseListener mouseListener,

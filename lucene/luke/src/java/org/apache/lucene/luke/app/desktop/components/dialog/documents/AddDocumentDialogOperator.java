@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 
+/** Operator of add dodument dialog */
 public interface AddDocumentDialogOperator extends ComponentOperatorRegistry.ComponentOperator {
   void setAnalyzer(Analyzer analyzer);
 }

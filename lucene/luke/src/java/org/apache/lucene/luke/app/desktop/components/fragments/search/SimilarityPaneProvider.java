@@ -37,6 +37,7 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.StyleConstants;
 import org.apache.lucene.luke.models.search.SimilarityConfig;
 
+/** Provider of the Similarity pane (tab) */
 public final class SimilarityPaneProvider implements Provider<JScrollPane>, SimilarityTabOperator {
 
   private final JCheckBox tfidfCB = new JCheckBox();

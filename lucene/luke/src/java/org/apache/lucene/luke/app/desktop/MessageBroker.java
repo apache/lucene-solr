@@ -20,6 +20,7 @@ package org.apache.lucene.luke.app.desktop;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Message broker */
 public class MessageBroker {
 
   private List<MessageReceiver> receivers = new ArrayList<>();
@@ -46,6 +47,7 @@ public class MessageBroker {
     }
   }
 
+  /** Message receiver */
   public interface MessageReceiver {
     void showStatusMessage(String message);
 

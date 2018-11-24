@@ -28,6 +28,7 @@ import org.apache.lucene.luke.models.overview.OverviewFactory;
 import org.apache.lucene.luke.models.search.SearchFactory;
 import org.apache.lucene.luke.models.tools.IndexToolsFactory;
 
+/** Guice configuration */
 public final class LukeModule extends AbstractModule {
 
   @Override

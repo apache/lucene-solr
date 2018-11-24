@@ -20,11 +20,8 @@ package org.apache.lucene.luke.app.desktop.util;
 import javax.swing.ImageIcon;
 import java.awt.Image;
 
+/** Image utilities */
 public class ImageUtils {
-
-  private static final int DEFAULT_ICON_WIDTH = 20;
-
-  private static final int DEFAULT_ICON_HEIGHT = 20;
 
   public static ImageIcon createImageIcon(String path, int width, int height) {
     return createImageIcon(path, "", width, height);

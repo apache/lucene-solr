@@ -17,6 +17,7 @@
 
 package org.apache.lucene.luke.app;
 
+/** Index open/close observer */
 public interface IndexObserver extends Observer {
 
   void openIndex(LukeState state);

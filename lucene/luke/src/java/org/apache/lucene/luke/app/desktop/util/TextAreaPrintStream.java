@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.slf4j.Logger;
 
+/** PrintStream for text areas */
 public final class TextAreaPrintStream extends PrintStream {
 
   private Logger logger;

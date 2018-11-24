@@ -29,8 +29,9 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.LukeModel;
-import org.apache.lucene.luke.util.IndexUtils;
+import org.apache.lucene.luke.models.util.IndexUtils;
 
+/** Default implementation of {@link Overview} */
 public final class OverviewImpl extends LukeModel implements Overview {
 
   private final String indexPath;

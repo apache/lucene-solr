@@ -35,6 +35,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.luke.app.desktop.util.NumericUtils;
 
+/** Data holder for a new field. This is used in the add document dialog. */
 public final class NewField {
 
   private boolean deleted;

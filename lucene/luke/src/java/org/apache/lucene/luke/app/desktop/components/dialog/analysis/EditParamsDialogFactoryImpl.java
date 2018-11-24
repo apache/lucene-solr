@@ -46,6 +46,7 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.app.desktop.util.lang.Callable;
 
+/** Default implementation of {@link EditParamsDialogFactory} */
 public final class EditParamsDialogFactoryImpl implements EditParamsDialogFactory {
 
   private final Preferences prefs;
