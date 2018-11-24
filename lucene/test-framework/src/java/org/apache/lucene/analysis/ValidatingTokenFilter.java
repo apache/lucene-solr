@@ -56,7 +56,7 @@ public final class ValidatingTokenFilter extends TokenFilter {
   private final OffsetAttribute offsetAtt = getAttribute(OffsetAttribute.class);
   private final CharTermAttribute termAtt = getAttribute(CharTermAttribute.class);
 
-  // record all the Tokens seen so they can be dumped on failure
+  // record the last MAX_DEBUG_TOKENS tokens seen so they can be dumped on failure
   private final List<Token> tokens = new LinkedList<>();
 
   private final String name;
