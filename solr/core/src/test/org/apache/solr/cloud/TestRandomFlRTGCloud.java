@@ -70,6 +70,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /** Always included in fl so we can vet what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
+
+  /** Since nested documents are not tested, when _root_ is declared in schema, it is always the same as id */
+  private static final FlValidator ROOT_VALIDATOR = new RenameFieldValueValidator("id" , "_root_");
   
   /** 
    * Types of things we will randomly ask for in fl param, and validate in response docs.
@@ -352,6 +355,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     
     final Set<FlValidator> validators = new LinkedHashSet<>();
     validators.add(ID_VALIDATOR); // always include id so we can be confident which doc we're looking at
+    validators.add(ROOT_VALIDATOR); // always added in a nested schema, with the same value as id
     addRandomFlValidators(random(), validators);
     FlValidator.addParams(validators, params);
 
