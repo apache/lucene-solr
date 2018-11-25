@@ -48,8 +48,9 @@ Other Changes
 
 Bug Fixes
 ----------------------
+* SOLR-12546: CVSResponseWriter omits useDocValuesAsStored=true field when fl=*
+  (Munendra S N via Mikhail Khludnev)
 
-(No Changes)
 Improvements
 ----------------------
 
