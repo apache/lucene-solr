@@ -1,4 +1,4 @@
-= Migrate to Policy Rules
+= Migrating Rule-Based Replica Rules to Autoscaling Policies
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,52 +16,83 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Replica placement rules (legacy) are deprecated in favor of the new policy and preferences syntax (new). This document helps you to migrate your existing replica placement rules to the new syntax.
+Creating rules for replica placement in a Solr cluster is now done with the <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,autoscaling framework>>.
 
+This document outlines how to migrate from the legacy <<rule-based-replica-placement.adoc#rule-based-replica-placement,rule-based replica placement>> to an <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,autoscaling policy>>.
 
-Every rule in the legacy framework can be expressed in the new syntax. Please refer to <<solrcloud-autoscaling-policy-preferences.adoc#cluster-preferences-specification,Cluster Preferences Specification>> document for more details.
+The autoscaling framework is designed to fully automate your cluster management.
+However, if you do not want actions taken on your cluster in an automatic way, you can still use the framework to set rules and preferences.
+With a set of rules and preferences in place, instead of taking action directly the system will suggest actions you can take manually.
 
+The section <<solrcloud-autoscaling-policy-preferences.adoc#cluster-preferences-specification,Cluster Preferences Specification>> describes the capabilities of an autoscaling policy in detail.
+Below we'll walk through a few examples to show how you would express the your legacy rules in the autoscaling syntax.
+Every rule in the legacy rule-based replica framework can be expressed in the new syntax.
 
-The following is the legacy syntax for a rule that limits maximum one replica for each shard in any Solr node
+== How Rules are Defined
+
+One key difference between the frameworks is the way rules are defined.
+
+With the rule-based replica placement framework, rules are defined with the Collections API at the time of collection creation.
+
+The autoscaling framework, however, has its own <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,API>>.
+Policies can be configured for the entire cluster or for individual collections depending on your needs.
+
+The following is the legacy syntax for a rule that limits the cluster to one replica for each shard in any Solr node:
+
 [source,text]
 ----
 replica:<2,node:*,shard:**
 ----
-The rules are specified along with a collection creation operation as the `rules` parameter
 
-The equivalent new syntax is
+The equivalent rule in the autoscaling policy is:
+
 [source,json]
 ----
-{"replica":"<2","node":"#ANY","shard":"#EACH"}
+{"replica":"<2", "node":"#ANY", "shard":"#EACH"}
 ----
 
-The new policy rules have to be created separately using an API call  <<solrcloud-autoscaling-api.adoc#cluster-specific-policies, See examples>>
+== Differences in Rule Syntaxes
+
+Many elements of defining rules are similar in both frameworks, but some elements are different.
 
 [[rule-operators1]]
-== Rule Operators
+=== Rule Operators
 
-All the following operators can be directly used in the new policy syntax and they mean the same.
+All of the following operators can be directly used in the new policy syntax and they mean the same in both frameworks.
 
-* *equals (no operator required)*: `tag:x` means tag value must be equal to ‘x’
-* *greater than (>)*: `tag:>x` means tag value greater than ‘x’. x must be a number
-* *less than (<)*: `tag:<x` means tag value less than ‘x’. x must be a number
-* *not equal (!)*: `tag:!x` means tag value MUST NOT be equal to ‘x’. The equals check is performed on String value
+* *equals (no operator required)*: `tag:x` means the value for a tag must be equal to `'x'`.
+* *greater than (>)*: `tag:>x` means the tag value must be greater than `'x'`. In this case, `'x'` must be a number.
+* *less than (<)*: `tag:<x` means the tag value must be less than `‘x’`. In this case also, `'x'` must be a number.
+* *not equal (!)*: `tag:!x` means tag value MUST NOT be equal to `‘x’`. The equals check is performed on a String value.
 
 [[fuzzy-operator1]]
-=== Fuzzy Operator (~)
-There is no `~` operator in the new syntax. Please use the attribute `"strict":false` instead
+==== Fuzzy Operator (~)
 
-example:
+There is no `~` operator in the autoscaling policy syntax.
+Instead, it uses the `strict` parameter, which can be `true` or `false`.
+To replace the `~` operator, use the attribute `"strict":false` instead.
+
+For example:
+
+.Rule-based replica placement framework:
+[source,text]
+----
+replica:<2~,node:*,shard:**
+----
+
+.Autoscaling framework:
 [source,json]
 ----
-{"replica":"<2","node":"#ANY","shard":"#EACH", "strict": false}
+{"replica":"<2", "node":"#ANY", "shard":"#EACH", "strict": false}
 ----
 
 [[tag-names1]]
-== Tag names
+=== Attributes
 
-Tag values are provided by the framework and these tags mean the same the new syntax as well
+Attributes were known as "tags" in the rule-based replica placement framework.
+In the autoscaling framework, they are attributes that are used for node selection or to set global cluster-wide rules.
 
+The available attributes in the autoscaling framework are similar to the tags that were available with rule-based replica placement. Attributes with the same name mean the same in both frameworks.
 
 * *cores*: Number of cores in the node
 * *freedisk*: Disk space available in the node
@@ -73,104 +104,95 @@ Tag values are provided by the framework and these tags mean the same the new sy
 * *sysprop.\{PROPERTY_NAME}*: These are values available from system properties. `sysprop.key` means a value that is passed to the node as `-Dkey=keyValue` during the node startup. It is possible to use rules like `sysprop.key:expectedVal,shard:*`
 
 [[snitches1]]
-== Snitches
-There is no equivalent for a snitch in the new policy framework
+=== Snitches
 
-== Porting existing Replica placement rules
-[[keep-less-than-2-replicas]]
-=== Keep less than 2 replicas (at most 1 replica) of this collection on any node
+There is no equivalent for a snitch in the autoscaling policy framework.
+
+== Porting Existing Replica Placement Rules
+
+There is no automatic way to move from using rule-based replica placement rules to an autoscaling policy.
+Instead you will need to remove your replica rules from each collection and institute a policy using the <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,autoscaling API>>.
+
+The following examples are intended to help you translate your existing rules into new rules that fit the autoscaling framework.
+
+*Keep less than 2 replicas (at most 1 replica) of this collection on any node*
 
 For this rule, we define the `replica` condition with operators for "less than 2", and use a pre-defined tag named `node` to define nodes with any name.
 
-*legacy:*
-
+.Rule-based replica placement framework:
 [source,text]
 ----
 replica:<2,node:*
 ----
 
-*new:*
-
+.Autoscaling framework:
 [source,json]
 ----
 {"replica":"<2","node":"#ANY"}
 ----
-[[keep-less-than-2-replicas--per-shard]]
-=== For a given shard, keep less than 2 replicas on any node
+
+*For a given shard, keep less than 2 replicas on any node*
 
 For this rule, we use the `shard` condition to define any shard, the `replica` condition with operators for "less than 2", and finally a pre-defined tag named `node` to define nodes with any name.
 
-*legacy:*
-
+.Rule-based replica placement framework:
 [source,text]
 ----
 shard:*,replica:<2,node:*
 ----
 
-*new:*
-
+.Autoscaling framework:
 [source,json]
 ----
 {"replica":"<2","shard":"#EACH", "node":"#ANY"}
 ----
 
-[[all-replicas-on-shard-730]]
-=== Assign all replicas in shard1 to rack 730
+*Assign all replicas in shard1 to rack 730*
 
-This rule limits the `shard` condition to 'shard1', but any number of replicas. We're also referencing a custom tag named `rack`. Before defining this rule, we will need to configure a custom Snitch which provides values for the tag `rack`.
+This rule limits the `shard` condition to 'shard1', but any number of replicas. We're also referencing a custom tag named `rack`.
 
-*legacy:*
-
+.Rule-based replica placement framework:
 [source,text]
 ----
 shard:shard1,replica:*,rack:730
 ----
 
-*new:*
-
+.Autoscaling framework:
 [source,json]
 ----
 {"replica":"#ALL", "shard":"shard1", "sysprop.rack":"730"}
 ----
 
-Please note that all your nodes must be started with a system property `-Drack=<rack-number>`
+In the rule-based replica placement framework, we needed to configure a custom Snitch which provides values for the tag `rack`.
 
-[[less-than-5-cores]]
-=== Create replicas in nodes with less than 5 cores only
+With the autoscaling framework, however, we need to start all nodes with a system property to define the rack values. For example, `bin/solr start -c -Drack=<rack-number>`.
+
+*Create replicas in nodes with less than 5 cores only*
 
 This rule uses the `replica` condition to define any number of replicas, but adds a pre-defined tag named `core` and uses operators for "less than 5".
 
-*legacy:*
-
+.Rule-based replica placement framework:
 [source,text]
 ----
 cores:<5
 ----
 
-*new:*
-
+.Autoscaling framework:
 [source,json]
 ----
 {"cores":"<5", "node":"#ANY"}
 ----
-[[do-not-create-on-host]]
-=== Do not create any replicas in host 192.45.67.3
 
-*legacy:*
+*Do not create any replicas in host 192.45.67.3*
 
+.legacy syntax:
 [source,text]
 ----
 host:!192.45.67.3
 ----
 
-*new:*
-
+.autoscaling framework:
 [source,json]
 ----
 {"replica": 0, "host":"192.45.67.3"}
 ----
-
-[[defining-rules1]]
-== Defining Rules
-
-Rules are always defined in along with the collection in the legacy system. The new syntax allows you to specify rules globally as well as on a <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, per collection basis>>
