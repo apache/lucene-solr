@@ -72,6 +72,14 @@ New Features
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
+Improvements
+----------------------
+
+* SOLR-5211: If _root_ is defined in the schema, it is now always populated automatically.  This allows documents with
+ children to be updated with a document that does not have children, whereas before it would break block-join queries.
+ If you don't use nested documents then _root_ can be removed from the schema.  (Dr Oleg Savrasov, Moshe Bla,
+ David Smiley, Mikhail Khludnev)
+
 Optimizations
 ----------------------
 
