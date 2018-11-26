@@ -28,12 +28,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.CoreMatchers.is;
 
+@Ignore("pending SOLR-5211 moshe fixing")
 public class RootFieldTest extends SolrJettyTestBase {
   private static boolean useRootSchema;
   private static final String MESSAGE = "Update handler should create and process _root_ field " +
@@ -49,8 +51,8 @@ public class RootFieldTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     useRootSchema = random().nextBoolean();
-    // schema.xml declares _root_ field while schema11.xml does not.
-    String schema = useRootSchema ? "schema.xml" : "schema11.xml";
+    // schema.xml declares _root_ field while schema15.xml does not.
+    String schema = useRootSchema ? "schema.xml" : "schema15.xml";
     initCore("solrconfig.xml", schema);
   }
 
@@ -78,7 +80,7 @@ public class RootFieldTest extends SolrJettyTestBase {
 
     // Check retrieved field values
     assertThat(foundDoc.getFieldValue( "id" ), is(docId));
-    assertThat( ((List)foundDoc.getFieldValue( "name" )).get(0), is("child free doc"));
+    assertThat(foundDoc.getFieldValue( "name" ), is("child free doc"));
 
     String expectedRootValue = expectRoot() ? docId : null;
     assertThat(MESSAGE, foundDoc.getFieldValue( "_root_" ), is(expectedRootValue));
