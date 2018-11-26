@@ -68,7 +68,7 @@ public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase 
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    SolrInputDocument doc = sdoc("id", "a", "level_s", "root", "_root_", "a");
+    SolrInputDocument doc = sdoc("id", "a", "level_s", "root");
 
     final SolrParams params = new ModifiableSolrParams().set("update.chain", "nested-rtg").set("wt", "json").set("_route_", "a");
 
@@ -130,7 +130,7 @@ public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase 
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    SolrInputDocument doc = sdoc("id", "a", "level_s", "root", "_root_", "a");
+    SolrInputDocument doc = sdoc("id", "a", "level_s", "root");
 
     final SolrParams params = new ModifiableSolrParams().set("update.chain", "nested-rtg").set("wt", "json").set("_route_", "a");
 

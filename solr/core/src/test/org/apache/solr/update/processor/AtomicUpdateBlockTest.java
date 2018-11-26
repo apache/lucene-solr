@@ -74,7 +74,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBlockAtomicInplaceUpdates() throws Exception {
-    SolrInputDocument doc = sdoc("id", "1", "string_s", "root", "_root_", "1");
+    SolrInputDocument doc = sdoc("id", "1", "string_s", "root");
     addDoc(adoc(doc), "nested-rtg");
 
     assertU(commit());
@@ -530,7 +530,7 @@ public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
   @Test
   public void testAtomicUpdateDeleteNoRootField() throws Exception {
     SolrInputDocument doc = sdoc("id", "1",
-        "cat_ss", new String[]{"aaa", "bbb"}, "_root_", "1");
+        "cat_ss", new String[]{"aaa", "bbb"});
     addDoc(adoc(doc), "nested-rtg");
 
     assertJQ(req("q", "id:1")

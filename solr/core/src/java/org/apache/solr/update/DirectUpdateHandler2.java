@@ -983,7 +983,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   private Term getIdTerm(BytesRef termVal, boolean isNested) {
     boolean useRootId = isNested || core.getLatestSchema().isUsableForChildDocs();
-    return new Term(useRootId ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), );
+    return new Term(useRootId ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), termVal);
   }
 
   /////////////////////////////////////////////////////////////////////
