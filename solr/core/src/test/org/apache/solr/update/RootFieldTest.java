@@ -49,7 +49,7 @@ public class RootFieldTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     useRootSchema = random().nextBoolean();
-    // schema.xml declares _root_ field while schema11.xml does not.
+    // schema.xml declares _root_ field while schema15.xml does not.
     String schema = useRootSchema ? "schema.xml" : "schema15.xml";
     initCore("solrconfig.xml", schema);
   }
