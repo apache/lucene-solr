@@ -179,6 +179,10 @@ public class JavaBinCodec implements PushWriter {
 
   byte version;
 
+  public Object unmarshal(byte[] buf) throws IOException {
+    FastInputStream dis = initRead(buf);
+    return readVal(dis);
+  }
   public Object unmarshal(InputStream is) throws IOException {
     FastInputStream dis = initRead(is);
     return readVal(dis);
@@ -187,6 +191,15 @@ public class JavaBinCodec implements PushWriter {
   protected FastInputStream initRead(InputStream is) throws IOException {
     assert !alreadyUnmarshalled;
     FastInputStream dis = FastInputStream.wrap(is);
+    return _init(dis);
+  }
+  protected FastInputStream initRead(byte[] buf) throws IOException {
+    assert !alreadyUnmarshalled;
+    FastInputStream dis = new FastInputStream(null, buf, 0, buf.length);
+    return _init(dis);
+  }
+
+  private FastInputStream _init(FastInputStream dis) throws IOException {
     version = dis.readByte();
     if (version != VERSION) {
       throw new RuntimeException("Invalid version (expected " + VERSION +
