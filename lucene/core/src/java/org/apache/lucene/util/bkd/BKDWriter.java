@@ -770,6 +770,10 @@ public class BKDWriter implements Closeable {
   /** Sort the heap writer by the specified dim */
   private void sortHeapPointWriter(final HeapPointWriter writer, int dim) {
     final int pointCount = Math.toIntExact(this.pointCount);
+    sortHeapPointWriter(writer, pointCount, dim);
+  }
+  /** Sort the heap writer by the specified dim */
+  private void sortHeapPointWriter(final HeapPointWriter writer, int pointCount, int dim) {
     // Tie-break by docID:
 
     // No need to tie break on ord, for the case where the same doc has the same value in a given dimension indexed more than once: it
@@ -962,7 +966,7 @@ public class BKDWriter implements Closeable {
     }
 
     LongBitSet ordBitSet;
-    if (numDataDims > 1) {
+    if (numIndexDims > 1) {
       if (singleValuePerDoc) {
         ordBitSet = new LongBitSet(maxDoc);
       } else {
@@ -997,7 +1001,7 @@ public class BKDWriter implements Closeable {
     assert pointCount / numLeaves <= maxPointsInLeafNode: "pointCount=" + pointCount + " numLeaves=" + numLeaves + " maxPointsInLeafNode=" + maxPointsInLeafNode;
 
     // Sort all docs once by each dimension:
-    PathSlice[] sortedPointWriters = new PathSlice[numDataDims];
+    PathSlice[] sortedPointWriters = new PathSlice[numIndexDims];
 
     // This is only used on exception; on normal code paths we close all files we opened:
     List<Closeable> toCloseHeroically = new ArrayList<>();
@@ -1005,9 +1009,7 @@ public class BKDWriter implements Closeable {
     boolean success = false;
     try {
       //long t0 = System.nanoTime();
-      // even with selective indexing we create the sortedPointWriters so we can compress
-      // the leaf node data by common prefix
-      for(int dim=0;dim<numDataDims;dim++) {
+      for(int dim=0;dim<numIndexDims;dim++) {
         sortedPointWriters[dim] = new PathSlice(sort(dim), 0, pointCount);
       }
       //long t1 = System.nanoTime();
@@ -1448,7 +1450,7 @@ public class BKDWriter implements Closeable {
       boolean result = reader.next();
       assert result: "rightCount=" + rightCount + " source.count=" + source.count + " source.writer=" + source.writer;
       System.arraycopy(reader.packedValue(), splitDim*bytesPerDim, scratch1, 0, bytesPerDim);
-      if (numDataDims > 1) {
+      if (numIndexDims > 1) {
         assert ordBitSet.get(reader.ord()) == false;
         ordBitSet.set(reader.ord());
         // Subtract 1 from rightCount because we already did the first value above (so we could record the split value):
@@ -1622,7 +1624,7 @@ public class BKDWriter implements Closeable {
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
       writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues);
-      
+
       out.writeBytes(scratchOut.getBytes(), 0, scratchOut.getPosition());
       scratchOut.reset();
 
@@ -1681,10 +1683,10 @@ public class BKDWriter implements Closeable {
                      long[] leafBlockFPs,
                      List<Closeable> toCloseHeroically) throws IOException {
 
-    for(PathSlice slice : slices) {
+    for (PathSlice slice : slices) {
       assert slice.count == slices[0].count;
     }
-    
+
     if (numDataDims == 1 && slices[0].writer instanceof OfflinePointWriter && slices[0].count <= maxPointsSortInHeap) {
       // Special case for 1D, to cutover to heap once we recurse deeply enough:
       slices[0] = switchToHeap(slices[0], toCloseHeroically);
@@ -1698,7 +1700,7 @@ public class BKDWriter implements Closeable {
       int sortedDim = 0;
       int sortedDimCardinality = Integer.MAX_VALUE;
 
-      for (int dim=0;dim<numDataDims;dim++) {
+      for (int dim=0;dim<numIndexDims;dim++) {
         if (slices[dim].writer instanceof HeapPointWriter == false) {
           // Adversarial cases can cause this, e.g. very lopsided data, all equal points, such that we started
           // offline, but then kept splitting only in one dimension, and so never had to rewrite into heap writer
@@ -1743,7 +1745,41 @@ public class BKDWriter implements Closeable {
         }
       }
 
-      PathSlice source = slices[sortedDim];
+      PathSlice dataDimPathSlice = null;
+
+      if (numDataDims != numIndexDims) {
+        HeapPointWriter heapSource = (HeapPointWriter) slices[0].writer;
+        int from = (int) slices[0].start;
+        int to = from + (int) slices[0].count;
+        Arrays.fill(commonPrefixLengths, numIndexDims, numDataDims, bytesPerDim);
+        heapSource.readPackedValue(from, scratch1);
+        for (int i = from + 1; i < to; ++i) {
+          heapSource.readPackedValue(i, scratch2);
+          for (int dim = numIndexDims; dim < numDataDims; dim++) {
+            final int offset = dim * bytesPerDim;
+            for (int j = 0; j < commonPrefixLengths[dim]; j++) {
+              if (scratch1[offset + j] != scratch2[offset + j]) {
+                commonPrefixLengths[dim] = j;
+                break;
+              }
+            }
+          }
+        }
+        //handle case when all index dimensions contain the same value but not the data dimensions
+        if (commonPrefixLengths[sortedDim] == bytesPerDim) {
+          for (int dim = numIndexDims; dim < numDataDims; ++dim) {
+            if (commonPrefixLengths[dim] != bytesPerDim) {
+              sortedDim = dim;
+              //create a new slice in memory
+              dataDimPathSlice = switchToHeap(slices[0], toCloseHeroically);
+              sortHeapPointWriter((HeapPointWriter) dataDimPathSlice.writer, (int) dataDimPathSlice.count, sortedDim);
+              break;
+            }
+          }
+        }
+      }
+
+      PathSlice source = (dataDimPathSlice != null) ? dataDimPathSlice : slices[sortedDim];
 
       // We ensured that maxPointsSortInHeap was >= maxPointsInLeafNode, so we better be in heap at this point:
       HeapPointWriter heapSource = (HeapPointWriter) source.writer;
@@ -1807,8 +1843,8 @@ public class BKDWriter implements Closeable {
 
       // Partition all PathSlice that are not the split dim into sorted left and right sets, so we can recurse:
 
-      PathSlice[] leftSlices = new PathSlice[numDataDims];
-      PathSlice[] rightSlices = new PathSlice[numDataDims];
+      PathSlice[] leftSlices = new PathSlice[numIndexDims];
+      PathSlice[] rightSlices = new PathSlice[numIndexDims];
 
       byte[] minSplitPackedValue = new byte[packedIndexBytesLength];
       System.arraycopy(minPackedValue, 0, minSplitPackedValue, 0, packedIndexBytesLength);
@@ -1818,13 +1854,13 @@ public class BKDWriter implements Closeable {
 
       // When we are on this dim, below, we clear the ordBitSet:
       int dimToClear;
-      if (numDataDims - 1 == splitDim) {
-        dimToClear = numDataDims - 2;
+      if (numIndexDims - 1 == splitDim) {
+        dimToClear = numIndexDims - 2;
       } else {
-        dimToClear = numDataDims - 1;
+        dimToClear = numIndexDims - 1;
       }
 
-      for(int dim=0;dim<numDataDims;dim++) {
+      for(int dim=0;dim<numIndexDims;dim++) {
 
         if (dim == splitDim) {
           // No need to partition on this dim since it's a simple slice of the incoming already sorted slice, and we
@@ -1861,7 +1897,7 @@ public class BKDWriter implements Closeable {
             ordBitSet, out,
             minPackedValue, maxSplitPackedValue, parentSplits,
             splitPackedValues, leafBlockFPs, toCloseHeroically);
-      for(int dim=0;dim<numDataDims;dim++) {
+      for(int dim=0;dim<numIndexDims;dim++) {
         // Don't destroy the dim we split on because we just re-used what our caller above gave us for that dim:
         if (dim != splitDim) {
           leftSlices[dim].writer.destroy();
@@ -1874,7 +1910,7 @@ public class BKDWriter implements Closeable {
             ordBitSet, out,
             minSplitPackedValue, maxPackedValue, parentSplits,
             splitPackedValues, leafBlockFPs, toCloseHeroically);
-      for(int dim=0;dim<numDataDims;dim++) {
+      for(int dim=0;dim<numIndexDims;dim++) {
         // Don't destroy the dim we split on because we just re-used what our caller above gave us for that dim:
         if (dim != splitDim) {
           rightSlices[dim].writer.destroy();
