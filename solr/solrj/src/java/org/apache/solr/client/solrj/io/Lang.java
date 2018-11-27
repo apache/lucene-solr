@@ -36,7 +36,7 @@ public class Lang {
   public static void register(StreamFactory streamFactory) {
     streamFactory
         // source streams
-        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("search", SearchFacadeStream.class)
         .withFunctionName("facet", FacetStream.class)
         .withFunctionName("update", UpdateStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
@@ -80,6 +80,7 @@ public class Lang {
         .withFunctionName("significantTerms", SignificantTermsStream.class)
         .withFunctionName("cartesianProduct", CartesianProductStream.class)
         .withFunctionName("shuffle", ShuffleStream.class)
+        .withFunctionName("export", ShuffleStream.class)
         .withFunctionName("calc", CalculatorStream.class)
         .withFunctionName("eval", EvalStream.class)
         .withFunctionName("echo", EchoStream.class)
