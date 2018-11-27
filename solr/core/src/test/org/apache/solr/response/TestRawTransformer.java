@@ -78,9 +78,9 @@ public class TestRawTransformer extends SolrTestCaseJ4 {
     strResponse = h.query(req);
     assertTrue("response should include indented JSON formatted field text: " + strResponse,
         strResponse.contains("\"subject_clean_json_s\":[{\n" + 
-            "  \"poffL\" : [ {\n" + 
-            "    \"offL\" : [ {"));    
-    
+            "          \"poffL\" : [ {\n" + 
+            "            \"offL\" : [ {"));    
+      
     req = req("q", "*:*", "fl", "id,subject:[json]", "wt", "json", "indent","true");
     strResponse = h.query(req);
     assertTrue("response should return non indented JSON if it can't be parsed: " + strResponse,

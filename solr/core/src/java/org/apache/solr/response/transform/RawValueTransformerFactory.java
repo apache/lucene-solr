@@ -33,6 +33,7 @@ import org.apache.solr.common.util.WriteableValue;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -170,7 +171,8 @@ public class RawValueTransformerFactory extends TransformerFactory
       if (mapper != null) {
         try {
           Object obj = mapper.readValue(str, Object.class); 
-          str = mapper.writeValueAsString(obj);
+          str = mapper.writer(new IndentedPrettyPrinter()).writeValueAsString(obj);
+          str = str + "\n      ";
         }
         catch (IOException e) {
           // If we can't parse the JSON for whatever reason, just ignore indenting.
@@ -188,7 +190,16 @@ public class RawValueTransformerFactory extends TransformerFactory
       }
       return val.toString();
     }
+    
+    private class IndentedPrettyPrinter extends DefaultPrettyPrinter{
+      public IndentedPrettyPrinter() {
+        super();
+        this._nesting = 4; // Start nested in 4 levels to match wrapping Solr indentation.
+      }
+    }
   }
+  
+  
 }
 
 
