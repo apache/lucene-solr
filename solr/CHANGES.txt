@@ -98,6 +98,14 @@ New Features
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
+Improvements
+----------------------
+
+* SOLR-5211: If _root_ is defined in the schema, it is now always populated automatically.  This allows documents with
+ children to be updated with a document that does not have children, whereas before it would break block-join queries.
+ If you don't use nested documents then _root_ can be removed from the schema.  (Dr Oleg Savrasov, Moshe Bla,
+ David Smiley, Mikhail Khludnev)
+
 Optimizations
 ----------------------
 
@@ -123,6 +131,9 @@ Other Changes
 * SOLR-11812: Remove backward compatibility of old LIR implementation in 8.0 (Cao Manh Dat)
 
 * SOLR-12620: Remove the Admin UI Cloud -> Graph (Radial) view (janhoy)
+
+* SOLR-12775: LowerCaseTokenizer is deprecated, and should be replaced by LetterTokenizer and
+  LowerCaseFilter (Alan Woodward)
 
 ==================  7.7.0 ==================
 
@@ -154,8 +165,8 @@ Other Changes
 
 Bug Fixes
 ----------------------
-
-(No Changes)
+* SOLR-12546: CVSResponseWriter omits useDocValuesAsStored=true field when fl=*
+  (Munendra S N via Mikhail Khludnev)
 
 Improvements
 ----------------------
@@ -297,6 +308,8 @@ Other Changes
 
 * SOLR-12497: Add documentation to use Hadoop credential provider-based keystore/trustsore.
 (Mano Kovacs, Cassandra Targett)
+
+* SOLR-13006: ZkNodeProps to be able to load from both javabin and JSON (noble)
 
 Bug Fixes
 ----------------------

@@ -62,11 +62,12 @@ public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSp
 
   @Override
   public void reflectWith(AttributeReflector reflector) {
-    reflector.reflect(PartOfSpeechAttribute.class, "posType", getPOSType().name());
-    Tag leftPOS = getLeftPOS();
-    reflector.reflect(PartOfSpeechAttribute.class, "leftPOS", leftPOS.name() + "(" + leftPOS.description() + ")");
-    Tag rightPOS = getRightPOS();
-    reflector.reflect(PartOfSpeechAttribute.class, "rightPOS", rightPOS.name() + "(" + rightPOS.description() + ")");
+    String posName = getPOSType() == null ? null : getPOSType().name();
+    String rightPOS = getRightPOS() == null ? null : getRightPOS().name() + "(" + getRightPOS().description() + ")";
+    String leftPOS = getLeftPOS() == null ? null : getLeftPOS().name() + "(" + getLeftPOS().description() + ")";
+    reflector.reflect(PartOfSpeechAttribute.class, "posType", posName);
+    reflector.reflect(PartOfSpeechAttribute.class, "leftPOS", leftPOS);
+    reflector.reflect(PartOfSpeechAttribute.class, "rightPOS", rightPOS);
     reflector.reflect(PartOfSpeechAttribute.class, "morphemes", displayMorphemes(getMorphemes()));
   }
 

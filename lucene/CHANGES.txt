@@ -148,6 +148,9 @@ New Features
   based on the haversine distance of a LatLonPoint field to a provided point. This is
   typically useful to boost by distance. (Ignacio Vera)
 
+* LUCENE-8216: Added a new BM25FQuery in sandbox to blend statistics across several fields
+  using the BM25F formula. (Adrien Grand, Jim Ferenczi)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
@@ -221,6 +224,9 @@ Improvements
 
 * LUCENE-8463: TopFieldCollector can now early-terminates queries when sorting by SortField.DOC.
   (Christophe Bismuth via Jim Ferenczi)
+
+* LUCENE-8562: Speed up merging segments of points with data dimensions by only sorting on the indexed
+  dimensions. (Ignacio Vera)
 
 Optimizations
 
