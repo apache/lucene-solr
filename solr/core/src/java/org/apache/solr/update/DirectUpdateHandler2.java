@@ -959,7 +959,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       Iterable<Document> nestedDocs = cmd.getLuceneDocsIfNested();
       boolean isNested = nestedDocs != null; // AKA nested child docs
-      Term idTerm = getIdTerm(new BytesRef(cmd.getHashableId()), isNested);
+      Term idTerm = getIdTerm(isNested? new BytesRef(cmd.getRootIdUsingRouteParam()): cmd.getIndexedId(), isNested);
       Term updateTerm = hasUpdateTerm ? cmd.updateTerm : idTerm;
       if (isNested) {
         log.debug("updateDocuments({})", cmd);

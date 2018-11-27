@@ -645,7 +645,7 @@ public class RealTimeGetComponent extends SearchComponent
         final boolean isNestedRequest = resolveStrategy == Resolution.DOC_WITH_CHILDREN || resolveStrategy == Resolution.ROOT_WITH_CHILDREN;
         decorateDocValueFields(docFetcher, sid, docid, onlyTheseNonStoredDVs, isNestedRequest || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
         SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
-        if((isNestedRequest) && schema.isUsableForChildDocs() && rootField!=null) {
+        if((isNestedRequest) && schema.isUsableForChildDocs() && schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) && rootField!=null) {
           // doc is part of a nested structure
           final boolean resolveRootDoc = resolveStrategy == Resolution.ROOT_WITH_CHILDREN;
           String id = resolveRootDoc? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();

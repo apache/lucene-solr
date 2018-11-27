@@ -674,7 +674,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (zkEnabled) {
       zkCheck();
-      nodes = setupRequest(cmd.getHashableId(), cmd.getSolrInputDocument());
+      nodes = setupRequest(cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
     } else {
       isLeader = getNonZkLeaderAssumption(req);
     }
@@ -703,7 +703,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (zkEnabled && isLeader && !isSubShardLeader)  {
       DocCollection coll = zkController.getClusterState().getCollection(collection);
-      List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getHashableId(), cmd.getSolrInputDocument());
+      List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
       // the list<node> will actually have only one element for an add request
       if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
@@ -714,7 +714,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         cmdDistrib.distribAdd(cmd, subShardLeaders, params, true);
       }
       final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll,
-          cmd.getHashableId(), cmd.getSolrInputDocument());
+          cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -1082,7 +1082,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         if (versionsStored) {
 
-
           long bucketVersion = bucket.highest;
 
           if (leaderLogic) {
@@ -1208,7 +1207,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
-
 
         // if the update updates a doc that is part of a nested structure,
         // force open a realTimeSearcher to trigger a ulog cache refresh.
@@ -1826,7 +1824,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       zkCheck();
       if (cmd instanceof AddUpdateCommand) {
         AddUpdateCommand acmd = (AddUpdateCommand)cmd;
-        nodes = setupRequest(acmd.getHashableId(), acmd.getSolrInputDocument());
+        nodes = setupRequest(acmd.getRootIdUsingRouteParam(), acmd.getSolrInputDocument());
       } else if (cmd instanceof DeleteUpdateCommand) {
         DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
         nodes = setupRequest(dcmd.getId(), null);
@@ -2142,8 +2140,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   public static boolean shouldRefreshUlogCaches(AddUpdateCommand cmd) {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
-    // is part of a block
-    if (sdoc.containsKey(IndexSchema.ROOT_FIELD_NAME)) return true;
     // update adds children
     if (sdoc.hasChildDocuments()) return true;
     if (sdoc.values().stream().anyMatch(x -> (x.getFirstValue() instanceof SolrInputDocument))) return true;
