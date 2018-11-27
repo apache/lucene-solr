@@ -37,7 +37,7 @@
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <!-- required to test updates nested inplaceUpdates -->
-  <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" docValues="true" default="0"/>
+  <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" docValues="true"/>
 
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
