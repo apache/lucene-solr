@@ -233,6 +233,11 @@ Optimizations
 * LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
   (Christophe Bismuth via David Smiley)
 
+Other
+
+* LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
+  (Christoph Büscher via Adrien Grand)
+
 ======================= Lucene 7.6.0 =======================
 
 Build
