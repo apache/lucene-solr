@@ -17,8 +17,6 @@
 
 package org.apache.solr.update;
 
-import java.util.List;
-
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -28,14 +26,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.CoreMatchers.is;
 
-@Ignore("pending SOLR-5211 moshe fixing")
 public class RootFieldTest extends SolrJettyTestBase {
   private static boolean useRootSchema;
   private static final String MESSAGE = "Update handler should create and process _root_ field " +
@@ -51,8 +47,8 @@ public class RootFieldTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     useRootSchema = random().nextBoolean();
-    // schema.xml declares _root_ field while schema15.xml does not.
-    String schema = useRootSchema ? "schema.xml" : "schema15.xml";
+    // schema15.xml declares _root_ field, while schema-rest.xml does not.
+    String schema = useRootSchema ? "schema15.xml" : "schema-rest.xml";
     initCore("solrconfig.xml", schema);
   }
 
@@ -96,7 +92,7 @@ public class RootFieldTest extends SolrJettyTestBase {
 
     // Check updated field values
     assertThat(foundDoc.getFieldValue( "id" ), is(docId));
-    assertThat( ((List)foundDoc.getFieldValue( "name" )).get(0), is("updated doc"));
+    assertThat(foundDoc.getFieldValue( "name" ), is("updated doc"));
     assertThat(MESSAGE, foundDoc.getFieldValue( "_root_" ), is(expectedRootValue));
   }
 
