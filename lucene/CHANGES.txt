@@ -225,6 +225,9 @@ Improvements
 * LUCENE-8463: TopFieldCollector can now early-terminates queries when sorting by SortField.DOC.
   (Christophe Bismuth via Jim Ferenczi)
 
+* LUCENE-8562: Speed up merging segments of points with data dimensions by only sorting on the indexed
+  dimensions. (Ignacio Vera)
+
 Optimizations
 
 * LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
