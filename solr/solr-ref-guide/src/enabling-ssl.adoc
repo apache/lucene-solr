@@ -176,7 +176,7 @@ Note that if the `javax.net.ssl.\*` configurations are not set, they will fallba
 
 === Configure Solr to use Hadoop Credential Store
 
-Solr needs requires three parameters to be configured in order to use the credential store file for keystore passwords.
+Solr requires three parameters to be configured in order to use the credential store file for keystore passwords.
 
 `solr.ssl.credential.provider.chain`::
 The credential provider chain. This should be set to `hadoop`.
