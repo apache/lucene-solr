@@ -146,7 +146,6 @@ use a TokenFilter chain as you would with any other Tokenizer.
 Both Highlighter and FastVectorHighlighter need a custom WeightedSpanTermExtractor or FieldQuery respectively
 in order to support ToParent/ToChildBlockJoinQuery.
 
-
 ## MultiTermAwareComponent replaced by CharFilterFactory#normalize() and TokenFilterFactory#normalize() ##
 
 Normalization is now type-safe, with CharFilterFactory#normalize() returning a Reader and
@@ -157,4 +156,5 @@ TokenFilterFactory#normalize() returning a TokenFilter.
 Scores computed by the BM25 similarity are lower than previously as the k1+1
 constant factor was removed from the numerator of the scoring formula.
 Ordering of results is preserved unless scores are computed from multiple
-fields using different similarities.
+fields using different similarities. The previous behaviour is now exposed
+through the LegacyBM25Similarity class.
