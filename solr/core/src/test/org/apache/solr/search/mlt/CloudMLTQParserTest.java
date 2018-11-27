@@ -31,20 +31,16 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class CloudMLTQParserTest extends SolrCloudTestCase {
-
-  @BeforeClass
-  public static void configureCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-dynamic"))
-        .configure();
-  }
   
   @Before
   public void setupCluster() throws Exception {
+    configureCluster(2)
+    .addConfig("conf", configset("cloud-dynamic"))
+    .configure();
+    
     final CloudSolrClient client = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
@@ -94,7 +90,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   
   @After
   public void cleanCluster() throws Exception {
-    cluster.deleteAllCollections();
+    cluster.shutdown();
   }
 
   public static final String COLLECTION = "mlt-collection";
