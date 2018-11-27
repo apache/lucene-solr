@@ -678,13 +678,10 @@ public class BKDWriter implements Closeable {
       checkMaxLeafNodeCount(leafBlockFPs.size());
 
       // Find per-dim common prefix:
-      int prefix = bytesPerDim;
       int offset = (leafCount - 1) * packedBytesLength;
-      for(int j=0;j<bytesPerDim;j++) {
-        if (leafValues[j] != leafValues[offset+j]) {
-          prefix = j;
-          break;
-        }
+      int prefix = FutureArrays.mismatch(leafValues, 0, bytesPerDim, leafValues, offset, offset + bytesPerDim);
+      if (prefix == -1) {
+          prefix = bytesPerDim;
       }
 
       commonPrefixLengths[0] = prefix;
@@ -1156,11 +1153,10 @@ public class BKDWriter implements Closeable {
       //System.out.println("recursePack inner nodeID=" + nodeID + " splitDim=" + splitDim + " splitValue=" + new BytesRef(splitPackedValues, address, bytesPerDim));
 
       // find common prefix with last split value in this dim:
-      int prefix = 0;
-      for(;prefix<bytesPerDim;prefix++) {
-        if (splitPackedValues[address+prefix] != lastSplitValues[splitDim * bytesPerDim + prefix]) {
-          break;
-        }
+      int prefix = FutureArrays.mismatch(splitPackedValues, address, address + bytesPerDim, lastSplitValues,
+          splitDim * bytesPerDim, splitDim * bytesPerDim + bytesPerDim);
+      if (prefix == -1) {
+        prefix = bytesPerDim;
       }
 
       //System.out.println("writeNodeData nodeID=" + nodeID + " splitDim=" + splitDim + " numDims=" + numDims + " bytesPerDim=" + bytesPerDim + " prefix=" + prefix);
@@ -1552,11 +1548,13 @@ public class BKDWriter implements Closeable {
         reader.getValue(i, scratchBytesRef2);
         for (int dim=0;dim<numDataDims;dim++) {
           final int offset = dim * bytesPerDim;
-          for(int j=0;j<commonPrefixLengths[dim];j++) {
-            if (scratchBytesRef1.bytes[scratchBytesRef1.offset+offset+j] != scratchBytesRef2.bytes[scratchBytesRef2.offset+offset+j]) {
-              commonPrefixLengths[dim] = j;
-              break;
-            }
+          int dimensionPrefixLength = commonPrefixLengths[dim];
+          commonPrefixLengths[dim] = FutureArrays.mismatch(scratchBytesRef1.bytes, scratchBytesRef1.offset + offset,
+              scratchBytesRef1.offset + offset + dimensionPrefixLength,
+              scratchBytesRef2.bytes, scratchBytesRef2.offset + offset,
+              scratchBytesRef2.offset + offset + dimensionPrefixLength);
+          if (commonPrefixLengths[dim] == -1) {
+            commonPrefixLengths[dim] = dimensionPrefixLength;
           }
         }
       }
@@ -1632,12 +1630,11 @@ public class BKDWriter implements Closeable {
       final int splitDim = split(minPackedValue, maxPackedValue, parentSplits);
       final int mid = (from + to + 1) >>> 1;
 
-      int commonPrefixLen = bytesPerDim;
-      for (int i = 0; i < bytesPerDim; ++i) {
-        if (minPackedValue[splitDim * bytesPerDim + i] != maxPackedValue[splitDim * bytesPerDim + i]) {
-          commonPrefixLen = i;
-          break;
-        }
+      int commonPrefixLen = FutureArrays.mismatch(minPackedValue, splitDim * bytesPerDim,
+          splitDim * bytesPerDim + bytesPerDim, maxPackedValue, splitDim * bytesPerDim,
+          splitDim * bytesPerDim + bytesPerDim);
+      if (commonPrefixLen == -1) {
+        commonPrefixLen = bytesPerDim;
       }
 
       MutablePointsReaderUtils.partition(maxDoc, splitDim, bytesPerDim, commonPrefixLen,
@@ -1713,12 +1710,9 @@ public class BKDWriter implements Closeable {
         heapSource.readPackedValue(Math.toIntExact(source.start + source.count - 1), scratch2);
 
         int offset = dim * bytesPerDim;
-        commonPrefixLengths[dim] = bytesPerDim;
-        for(int j=0;j<bytesPerDim;j++) {
-          if (scratch1[offset+j] != scratch2[offset+j]) {
-            commonPrefixLengths[dim] = j;
-            break;
-          }
+        commonPrefixLengths[dim] = FutureArrays.mismatch(scratch1, offset, offset + bytesPerDim, scratch2, offset, offset + bytesPerDim);
+        if (commonPrefixLengths[dim] == -1) {
+          commonPrefixLengths[dim] = bytesPerDim;
         }
 
         int prefix = commonPrefixLengths[dim];
@@ -1754,11 +1748,11 @@ public class BKDWriter implements Closeable {
           heapSource.readPackedValue(i, scratch2);
           for (int dim = numIndexDims; dim < numDataDims; dim++) {
             final int offset = dim * bytesPerDim;
-            for (int j = 0; j < commonPrefixLengths[dim]; j++) {
-              if (scratch1[offset + j] != scratch2[offset + j]) {
-                commonPrefixLengths[dim] = j;
-                break;
-              }
+            int dimensionPrefixLength = commonPrefixLengths[dim];
+            commonPrefixLengths[dim] = FutureArrays.mismatch(scratch1, offset, offset + dimensionPrefixLength,
+                scratch2, offset, offset + dimensionPrefixLength);
+            if (commonPrefixLengths[dim] == -1) {
+                commonPrefixLengths[dim] = dimensionPrefixLength;
             }
           }
         }
