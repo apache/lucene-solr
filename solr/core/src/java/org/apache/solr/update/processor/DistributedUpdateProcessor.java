@@ -1390,7 +1390,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // full (non-inplace) atomic update
-    final boolean isNestedSchema = req.getSchema().isUsableForChildDocs();
+    final boolean isDeeplyNestedSchema = req.getSchema().isUsableForChildDocs() && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME);
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
     SolrInputDocument nestedDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
@@ -1410,8 +1410,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // create a new doc by default if an old one wasn't found
       mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
     } else {
-      if(isNestedSchema && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) &&
-          nestedDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) &&
+      if(isDeeplyNestedSchema && nestedDoc.containsKey(IndexSchema.ROOT_FIELD_NAME) &&
           !sdoc.getField(idField.getName()).getFirstValue().toString().equals((String) nestedDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
         SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, RealTimeGetComponent.Resolution.DOC_WITH_CHILDREN);
         String docPath = (String) oldDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
