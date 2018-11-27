@@ -109,8 +109,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection2", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection2", 4, 4);
 
 
     assertFalse("CloudCollectionsListener notified after removal", oldResults.get(1).contains("testcollection1"));
@@ -136,13 +135,11 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
-
+    cluster.waitForActiveCollection("testcollection1", 4, 4);
+    
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection2", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection2", 4, 4);
 
     Map<Integer, Set<String>> oldResults = new HashMap<>();
     Map<Integer, Set<String>> newResults = new HashMap<>();
@@ -226,8 +223,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .setStateFormat(1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection1", 4, 4);
 
     assertEquals("CloudCollectionsListener has old collections with size > 0 after collection created with old stateFormat", 0, oldResults.get(1).size());
     assertEquals("CloudCollectionsListener has old collections with size > 0 after collection created with old stateFormat", 0, oldResults.get(2).size());
@@ -240,8 +236,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection2", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection2", 4, 4);
 
     assertEquals("CloudCollectionsListener has incorrect old collections after collection created with new stateFormat", 1, oldResults.get(1).size());
     assertEquals("CloudCollectionsListener has incorrect old collections after collection created with new stateFormat", 1, oldResults.get(2).size());
@@ -257,8 +252,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("testcollection3", "config", 4, 1)
         .setStateFormat(1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection3", 4, 4);
 
     assertEquals("CloudCollectionsListener has incorrect old collections after collection created with old stateFormat", 2, oldResults.get(1).size());
     assertEquals("CloudCollectionsListener updated after removal", 1, oldResults.get(2).size());
