@@ -28,9 +28,9 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,13 +45,6 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
   private static final int MAX_WAIT_TIMEOUT = 30;
 
-  @BeforeClass
-  public static void startCluster() throws Exception {
-    configureCluster(CLUSTER_SIZE)
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
-        .configure();
-  }
-
   @AfterClass
   public static void shutdownBackgroundExecutors() {
     executor.shutdown();
@@ -59,11 +52,20 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
   @Before
   public void prepareCluster() throws Exception {
+    configureCluster(CLUSTER_SIZE)
+    .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+    .configure();
+    
     int missingServers = CLUSTER_SIZE - cluster.getJettySolrRunners().size();
     for (int i = 0; i < missingServers; i++) {
       cluster.startJettySolrRunner();
     }
     cluster.waitForAllNodes(30);
+  }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
