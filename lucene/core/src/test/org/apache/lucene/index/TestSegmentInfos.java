@@ -18,7 +18,9 @@ package org.apache.lucene.index;
 
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
@@ -26,6 +28,9 @@ import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class TestSegmentInfos extends LuceneTestCase {
 
@@ -96,6 +101,54 @@ public class TestSegmentInfos extends LuceneTestCase {
     sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(Version.LUCENE_7_0_0, sis.getMinSegmentLuceneVersion());
     assertEquals(Version.LATEST, sis.getCommitLuceneVersion());
+    dir.close();
+  }
+
+  /** Test toString method */
+  public void testToString() throws Throwable{
+    SegmentInfo si;
+    final Directory dir = newDirectory();
+    Codec codec = Codec.getDefault();
+
+    // diagnostics map
+    Map<String, String> diagnostics = new LinkedHashMap<>();
+    diagnostics.put("key1", "value1");
+    diagnostics.put("key2", "value2");
+
+    // attributes map
+    Map<String,String> attributes = new LinkedHashMap<>();
+    attributes.put("key1", "value1");
+    attributes.put("key2", "value2");
+
+    // diagnostics X, attributes X
+    si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), Sort.INDEXORDER);
+    assertEquals("TEST(" + Version.LATEST.toString() + ")" +
+        ":C10000" +
+        ":[indexSort=<doc>]", si.toString());
+
+    // diagnostics O, attributes X
+    si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, diagnostics, StringHelper.randomId(), new HashMap<>(), Sort.INDEXORDER);
+    assertEquals("TEST(" + Version.LATEST.toString() + ")" +
+        ":C10000" +
+        ":[indexSort=<doc>]" +
+        ":[diagnostics={key1=value1, key2=value2}]", si.toString());
+
+    // diagnostics X, attributes O
+    si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), attributes, Sort.INDEXORDER);
+    assertEquals("TEST(" + Version.LATEST.toString() + ")" +
+        ":C10000" +
+        ":[indexSort=<doc>]" +
+        ":[attributes={key1=value1, key2=value2}]", si.toString());
+
+    // diagnostics O, attributes O
+    si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, diagnostics, StringHelper.randomId(), attributes, Sort.INDEXORDER);
+    System.out.println(si.toString());
+    assertEquals("TEST(" + Version.LATEST.toString() + ")" +
+        ":C10000" +
+        ":[indexSort=<doc>]" +
+        ":[diagnostics={key1=value1, key2=value2}]" +
+        ":[attributes={key1=value1, key2=value2}]", si.toString());
+
     dir.close();
   }
 }
