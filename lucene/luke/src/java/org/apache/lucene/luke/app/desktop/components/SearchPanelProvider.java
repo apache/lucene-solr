@@ -74,6 +74,7 @@ import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.app.desktop.util.TabUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.search.MLTConfig;
@@ -229,7 +230,8 @@ public final class SearchPanelProvider implements Provider<JPanel>, SearchTabOpe
     tabbedPane.addTab("Sort", sort);
     tabbedPane.addTab("Field Values", values);
     tabbedPane.addTab("More Like This", mlt);
-    tabbedPane.setOpaque(false);
+    TabUtils.forceTransparent(tabbedPane);
+
     panel.add(tabbedPane, BorderLayout.CENTER);
 
     return panel;

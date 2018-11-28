@@ -30,6 +30,7 @@ import org.apache.lucene.luke.app.IndexObserver;
 import org.apache.lucene.luke.app.LukeState;
 import org.apache.lucene.luke.app.desktop.MessageBroker;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.TabUtils;
 
 /** Provider of the tabbed pane */
 public final class TabbedPaneProvider implements Provider<JTabbedPane>, TabSwitcherProxy.TabSwitcher {
@@ -86,7 +87,7 @@ public final class TabbedPaneProvider implements Provider<JTabbedPane>, TabSwitc
     tabbedPane.addTab(FontUtils.elegantIconHtml("&#xe0ea;", "Commits"), commitsPanel);
     tabbedPane.addTab(FontUtils.elegantIconHtml("&#xe058;", "Logs"), logsPanel);
 
-    tabbedPane.setOpaque(false);
+    TabUtils.forceTransparent(tabbedPane);
     return tabbedPane;
   }
 
