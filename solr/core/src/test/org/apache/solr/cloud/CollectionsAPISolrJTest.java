@@ -58,8 +58,8 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -67,15 +67,12 @@ import com.google.common.collect.ImmutableList;
 @LuceneTestCase.Slow
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
-  }
-
   @Before
   public void beforeTest() throws Exception {
+    configureCluster(4)
+    .addConfig("conf", configset("cloud-minimal"))
+    .configure();
+    
     // clear any persisted auto scaling configuration
     zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
     cluster.deleteAllCollections();
@@ -83,6 +80,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final ClusterProperties props = new ClusterProperties(zkClient());
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
     assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), null);
+  }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   /**
