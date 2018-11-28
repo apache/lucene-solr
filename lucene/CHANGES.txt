@@ -231,6 +231,9 @@ Improvements
 * LUCENE-8529: TopSuggestDocsCollector will now use the completion key to tiebreak completion
   suggestion with identical scores. (Jim Ferenczi)
 
+* LUCENE-8575: SegmentInfos#toString now includes attributes and diagnostics.
+  (Namgyu Kim via Adrien Grand)
+
 Optimizations
 
 * LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
