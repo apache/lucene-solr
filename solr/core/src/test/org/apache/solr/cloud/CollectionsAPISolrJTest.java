@@ -348,6 +348,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13021")
   public void testCreateAndDeleteShard() throws Exception {
     // Create an implicit collection
     String collectionName = "solrj_implicit";
