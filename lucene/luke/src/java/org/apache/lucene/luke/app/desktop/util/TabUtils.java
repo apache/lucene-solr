@@ -30,7 +30,7 @@ public class TabUtils {
       return;
     }
     // https://coderanch.com/t/600541/java/JtabbedPane-transparency
-    tabbedPane.setUI(new javax.swing.plaf.basic.BasicTabbedPaneUI() {
+    tabbedPane.setUI(new javax.swing.plaf.metal.MetalTabbedPaneUI() {
       protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
       }
     });
