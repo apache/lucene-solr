@@ -253,6 +253,9 @@ Upgrade Notes
   WINDOWS USERS: This JIRA corrects a bug in the start scripts that put example logs under ...\server, solr.log is
   now under ...\example. (Erick Erickson)
 
+* SOLR-12398: The heatmap facet response structure, when returned in JSON, changed from an even/odd name/value array to
+  an object style.  Although the object style makes more sense, this was an overlooked back-compat break; sorry.
+
 
 New Features
 ----------------------
