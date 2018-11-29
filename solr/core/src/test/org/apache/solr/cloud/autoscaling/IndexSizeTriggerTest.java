@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -44,7 +45,6 @@ import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
@@ -54,7 +54,6 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -68,7 +67,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 /**
  *
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+//@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.handler.admin.MetricsHandler=DEBUG;org.apache.solr.core.SolrDeletionPolicy=DEBUG;org.apache.solr.core.IndexDeletionPolicyWrapper=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUGorg.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
 public class IndexSizeTriggerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -91,10 +90,11 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (random().nextBoolean()) {
+    if (random().nextBoolean() && false) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       solrClient = cluster.getSolrClient();
       loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
@@ -125,7 +125,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     } else {
       cluster.deleteAllCollections();
     }
-    cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig(new Policy(), null, null, null, 0);
+    cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(autoScalingConfig), -1);
     cloudManager.getTimeSource().sleep(5000);
     listenerEvents.clear();
     listenerCreated = new CountDownLatch(1);
@@ -210,7 +211,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         }
         Map<String, Object> params = (Map<String, Object>)op.getHints().get(Suggester.Hint.PARAMS);
         assertNotNull("params are null: " + op, params);
-        assertEquals("splitMethod: " + op, "rewrite", params.get(CommonAdminParams.SPLIT_METHOD));
+        assertEquals("splitMethod: " + op, "link", params.get(CommonAdminParams.SPLIT_METHOD));
       }
       assertTrue("shard1 should be split", shard1);
       assertTrue("shard2 should be split", shard2);
@@ -316,7 +317,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
 
-    boolean await = finished.await(60000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     CloudTestUtils.waitForState(cloudManager, collectionName, 20, TimeUnit.SECONDS, CloudTestUtils.clusterShape(6, 2, true, true));
     assertEquals(1, listenerEvents.size());
@@ -505,9 +506,10 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     }
     assertTrue("maxSize should be non-zero", maxSize > 0);
 
-    int aboveBytes = maxSize * 2 / 3;
+    int aboveBytes = maxSize * 8 / 10;
 
-    long waitForSeconds = 3 + random().nextInt(5);
+    // need to wait for recovery after splitting
+    long waitForSeconds = 10 + random().nextInt(5);
 
     // the trigger is initially disabled so that we have time to add listeners
     // and have them capture all events once the trigger is enabled
@@ -566,6 +568,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'name' : 'index_size_trigger4'" +
         "}" +
         "}";
+    log.info("-- resuming trigger");
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -574,6 +577,17 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
+    log.info("-- suspending trigger");
+    // suspend the trigger to avoid generating more events
+    String suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {" +
+        "'name' : 'index_size_trigger4'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
     assertEquals(1, listenerEvents.size());
     List<CapturedEvent> events = listenerEvents.get("capturing4");
     assertNotNull("'capturing4' events not found", events);
@@ -617,16 +631,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     listenerEvents.clear();
     finished = new CountDownLatch(1);
 
-    // suspend the trigger first so that we can safely delete all docs
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {" +
-        "'name' : 'index_size_trigger4'" +
-        "}" +
-        "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
 
+    log.info("-- deleting documents");
     for (int j = 0; j < 10; j++) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParam("collection", collectionName);
@@ -635,6 +641,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
       }
       solrClient.request(ureq);
     }
+    cloudManager.getTimeSource().sleep(5000);
     // make sure the actual index size is reduced by deletions, otherwise we may still violate aboveBytes
     UpdateRequest ur = new UpdateRequest();
     ur.setParam(UpdateParams.COMMIT, "true");
@@ -643,9 +650,28 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     ur.setParam(UpdateParams.MAX_OPTIMIZE_SEGMENTS, "1");
     ur.setParam(UpdateParams.WAIT_SEARCHER, "true");
     ur.setParam(UpdateParams.OPEN_SEARCHER, "true");
+    log.info("-- requesting optimize / expungeDeletes / commit");
     solrClient.request(ur, collectionName);
 
-    // resume trigger
+    // wait for the segments to merge to reduce the index size
+    cloudManager.getTimeSource().sleep(50000);
+
+    // add some docs so that every shard gets an update
+    // we can reduce the number of docs here but this also works
+    for (int j = 0; j < 1; j++) {
+      UpdateRequest ureq = new UpdateRequest();
+      ureq.setParam("collection", collectionName);
+      for (int i = 0; i < 98; i++) {
+        ureq.add("id", "id-" + (i * 100) + "-" + j);
+      }
+      solrClient.request(ureq);
+    }
+
+    log.info("-- requesting commit");
+    solrClient.commit(collectionName, true, true);
+
+    // resume the trigger
+    log.info("-- resuming trigger");
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -654,6 +680,12 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
+    log.info("-- suspending trigger");
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+//    System.exit(-1);
+
     assertEquals(1, listenerEvents.size());
     events = listenerEvents.get("capturing4");
     assertNotNull("'capturing4' events not found", events);

@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -87,7 +89,8 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
     if (cluster == null)
       throw new RuntimeException("SimCloudManager not configured - have you called configureCluster()?");
     // clear any persisted configuration
-    cluster.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig(new Policy(), null, null, null, 0);
+    cluster.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(autoScalingConfig), -1);
     cluster.getDistribStateManager().setData(ZkStateReader.ROLES, Utils.toJSON(new HashMap<>()), -1);
     cluster.getSimNodeStateProvider().simRemoveDeadNodes();
     cluster.getSimClusterStateProvider().simRemoveDeadNodes();

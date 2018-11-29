@@ -46,6 +46,6 @@
   </requestHandler>
   <indexConfig>
     <mergeScheduler class="${solr.mscheduler:org.apache.lucene.index.ConcurrentMergeScheduler}"/>
-  </indexConfig>
+:  </indexConfig>
 </config>
 

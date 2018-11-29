@@ -954,6 +954,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       sliceProperties.remove(collection);
       leaderThrottles.remove(collection);
       colShardReplicaMap.remove(collection);
+      SplitShardCmd.unlockForSplit(cloudManager, collection, null);
 
       opDelay(collection, CollectionParams.CollectionAction.DELETE.name());
 
@@ -1007,6 +1008,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         values.put(ImplicitSnitch.SYSLOADAVG, 1.0);
         values.put(ImplicitSnitch.HEAPUSAGE, 123450000);
       });
+      cloudManager.getDistribStateManager().removeRecursively(ZkStateReader.COLLECTIONS_ZKNODE, true, false);
     } finally {
       lock.unlock();
     }
@@ -1260,6 +1262,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       success = true;
     } finally {
       if (!success) {
+        Map<String, Object> sProps = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
+            .computeIfAbsent(sliceName.get(), s -> new ConcurrentHashMap<>());
+        sProps.remove(BUFFERED_UPDATES);
         SplitShardCmd.unlockForSplit(cloudManager, collectionName, sliceName.get());
       }
     }

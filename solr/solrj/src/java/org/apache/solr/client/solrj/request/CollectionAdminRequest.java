@@ -1154,6 +1154,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String shard;
     protected String splitMethod;
     protected Integer numSubShards;
+    protected Float splitFuzz;
 
     private Properties properties;
 
@@ -1181,6 +1182,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public String getSplitMethod() {
       return splitMethod;
+    }
+
+    public SplitShard setSplitFuzz(float splitFuzz) {
+      this.splitFuzz = splitFuzz;
+      return this;
+    }
+
+    public Float getSplitFuzz() {
+      return splitFuzz;
     }
 
     public SplitShard setSplitKey(String splitKey) {

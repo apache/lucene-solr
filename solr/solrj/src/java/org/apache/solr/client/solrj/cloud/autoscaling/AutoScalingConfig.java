@@ -324,7 +324,7 @@ public class AutoScalingConfig implements MapWriter {
     empty = jsonMap.isEmpty();
   }
 
-  private AutoScalingConfig(Policy policy, Map<String, TriggerConfig> triggerConfigs, Map<String,
+  public AutoScalingConfig(Policy policy, Map<String, TriggerConfig> triggerConfigs, Map<String,
       TriggerListenerConfig> listenerConfigs, Map<String, Object> properties, int zkVersion) {
     this.policy = policy;
     this.triggers = triggerConfigs != null ? Collections.unmodifiableMap(new LinkedHashMap<>(triggerConfigs)) : null;
