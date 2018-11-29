@@ -35,6 +35,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.store.hdfs.HdfsLockFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +73,8 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
         return new SingleInstanceLockFactory();
       case DirectoryFactory.LOCK_TYPE_NONE:
         return NoLockFactory.INSTANCE;
+      case DirectoryFactory.LOCK_TYPE_HDFS:
+        return HdfsLockFactory.INSTANCE;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unrecognized lockType: " + rawLockType);

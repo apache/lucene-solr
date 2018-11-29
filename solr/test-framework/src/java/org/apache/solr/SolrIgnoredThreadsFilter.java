@@ -19,6 +19,7 @@ package org.apache.solr;
 import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
+import org.apache.solr.store.hdfs.HdfsLockFactory;
 
 
 /**
@@ -59,6 +60,11 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
         threadName.startsWith("concurrentUpdateScheduler-")) {
       return true;
     }
+
+    if (threadName.startsWith(HdfsLockFactory.HDFS_LOCK_UPDATE_PREFIX)) {
+      return true;
+    }
+
 
     return false;
   }

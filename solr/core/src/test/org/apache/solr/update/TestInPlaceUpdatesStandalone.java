@@ -18,6 +18,7 @@
 
 package org.apache.solr.update;
 
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,8 +53,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.update.UpdateLogTest.buildAddUpdateCommand;
 import static org.junit.internal.matchers.StringContains.containsString;
+import static org.apache.solr.update.UpdateLogTest.buildAddUpdateCommand;
 
 
 /**
