@@ -79,6 +79,13 @@ public final class LegacyBM25Similarity extends Similarity {
     return bm25Similarity.getB();
   }
 
+  /** Sets whether overlap tokens (Tokens with 0 position increment) are
+   *  ignored when computing norm.  By default this is true, meaning overlap
+   *  tokens do not count when computing norms. */
+  public void setDiscountOverlaps(boolean v) {
+    bm25Similarity.setDiscountOverlaps(v);
+  }
+
   @Override
   public String toString() {
     return bm25Similarity.toString();
