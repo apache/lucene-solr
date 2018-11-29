@@ -100,6 +100,7 @@ public final class OptimizeIndexDialogFactoryImpl implements OptimizeIndexDialog
 
   private void initialize() {
     expungeCB.setText(MessageUtils.getLocalizedMessage("optimize.checkbox.expunge"));
+    expungeCB.setOpaque(false);
 
     maxSegSpnr.setModel(new SpinnerNumberModel(1, 1, 100, 1));
     maxSegSpnr.setPreferredSize(new Dimension(100, 30));

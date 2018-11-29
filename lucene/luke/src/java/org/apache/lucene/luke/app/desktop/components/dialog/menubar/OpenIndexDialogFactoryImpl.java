@@ -113,6 +113,7 @@ public final class OpenIndexDialogFactoryImpl implements OpenIndexDialogFactory 
 
     readOnlyCB.setText(MessageUtils.getLocalizedMessage("openindex.checkbox.readonly"));
     readOnlyCB.setSelected(prefs.isReadOnly());
+    readOnlyCB.setOpaque(false);
     readOnlyCB.addActionListener(listeners::toggleReadOnly);
 
     for (String clazzName : supportedDirImpls()) {
@@ -123,15 +124,19 @@ public final class OpenIndexDialogFactoryImpl implements OpenIndexDialogFactory 
 
     noReaderCB.setText(MessageUtils.getLocalizedMessage("openindex.checkbox.no_reader"));
     noReaderCB.setSelected(prefs.isNoReader());
+    noReaderCB.setOpaque(false);
 
     useCompoundCB.setText(MessageUtils.getLocalizedMessage("openindex.checkbox.use_compound"));
     useCompoundCB.setSelected(prefs.isUseCompound());
+    useCompoundCB.setOpaque(false);
 
     keepLastCommitRB.setText(MessageUtils.getLocalizedMessage("openindex.radio.keep_only_last_commit"));
     keepLastCommitRB.setSelected(!prefs.isKeepAllCommits());
+    keepLastCommitRB.setOpaque(false);
 
     keepAllCommitsRB.setText(MessageUtils.getLocalizedMessage("openindex.radio.keep_all_commits"));
     keepAllCommitsRB.setSelected(prefs.isKeepAllCommits());
+    keepAllCommitsRB.setOpaque(false);
 
   }
 

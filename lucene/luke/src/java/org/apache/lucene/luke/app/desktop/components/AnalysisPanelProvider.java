@@ -162,11 +162,13 @@ public final class AnalysisPanelProvider implements Provider<JPanel>, AnalysisTa
     presetRB.setActionCommand(TYPE_PRESET);
     presetRB.addActionListener(listeners::toggleMainPanel);
     presetRB.setSelected(true);
+    presetRB.setOpaque(false);
 
     customRB.setText(MessageUtils.getLocalizedMessage("analysis.radio.custom"));
     customRB.setActionCommand(TYPE_CUSTOM);
     customRB.addActionListener(listeners::toggleMainPanel);
     customRB.setSelected(false);
+    customRB.setOpaque(false);
 
     ButtonGroup group = new ButtonGroup();
     group.add(presetRB);

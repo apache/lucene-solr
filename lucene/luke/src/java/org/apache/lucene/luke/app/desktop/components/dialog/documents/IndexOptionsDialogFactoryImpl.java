@@ -84,13 +84,20 @@ public final class IndexOptionsDialogFactoryImpl implements IndexOptionsDialogFa
 
   private void initialize() {
     storedCB.setText(MessageUtils.getLocalizedMessage("idx_options.checkbox.stored"));
+    storedCB.setOpaque(false);
     tokenizedCB.setText(MessageUtils.getLocalizedMessage("idx_options.checkbox.tokenized"));
+    tokenizedCB.setOpaque(false);
     omitNormsCB.setText(MessageUtils.getLocalizedMessage("idx_options.checkbox.omit_norm"));
+    omitNormsCB.setOpaque(false);
     idxOptCombo.setPreferredSize(new Dimension(300, idxOptCombo.getPreferredSize().height));
     storeTVCB.setText(MessageUtils.getLocalizedMessage("idx_options.checkbox.store_tv"));
+    storeTVCB.setOpaque(false);
     storeTVPosCB.setText(MessageUtils.getLocalizedMessage("idx_options.checkbox.store_tv_pos"));
+    storeTVPosCB.setOpaque(false);
     storeTVOffCB.setText(MessageUtils.getLocalizedMessage("idx_options.checkbox.store_tv_off"));
+    storeTVOffCB.setOpaque(false);
     storeTVPayCB.setText(MessageUtils.getLocalizedMessage("idx_options.checkbox.store_tv_pay"));
+    storeTVPayCB.setOpaque(false);
     dimCountTF.setColumns(4);
     dimNumBytesTF.setColumns(4);
   }

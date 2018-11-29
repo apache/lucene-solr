@@ -168,6 +168,7 @@ public final class MLTPaneProvider implements Provider<JScrollPane>, MLTTabOpera
     header.add(new JLabel(MessageUtils.getLocalizedMessage("search_mlt.label.description")));
     loadAllCB.setText(MessageUtils.getLocalizedMessage("search_mlt.checkbox.select_all"));
     loadAllCB.setSelected(true);
+    loadAllCB.setOpaque(false);
     loadAllCB.addActionListener(listeners::loadAllFields);
     header.add(loadAllCB);
     panel.add(header, BorderLayout.PAGE_START);

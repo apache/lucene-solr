@@ -248,6 +248,7 @@ public final class CommitsPanelProvider implements Provider<JPanel> {
     diagRB.setActionCommand(ActionCommand.DIAGNOSTICS.name());
     diagRB.setSelected(true);
     diagRB.setEnabled(false);
+    diagRB.setOpaque(false);
     diagRB.addMouseListener(new MouseAdapter() {
       @Override
       public void mouseClicked(MouseEvent e) {
@@ -260,6 +261,7 @@ public final class CommitsPanelProvider implements Provider<JPanel> {
     attrRB.setActionCommand(ActionCommand.ATTRIBUTES.name());
     attrRB.setSelected(false);
     attrRB.setEnabled(false);
+    attrRB.setOpaque(false);
     attrRB.addMouseListener(new MouseAdapter() {
       @Override
       public void mouseClicked(MouseEvent e) {
@@ -272,6 +274,7 @@ public final class CommitsPanelProvider implements Provider<JPanel> {
     codecRB.setActionCommand(ActionCommand.CODEC.name());
     codecRB.setSelected(false);
     codecRB.setEnabled(false);
+    codecRB.setOpaque(false);
     codecRB.addMouseListener(new MouseAdapter() {
       @Override
       public void mouseClicked(MouseEvent e) {

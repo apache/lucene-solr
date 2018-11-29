@@ -130,9 +130,11 @@ public final class QueryParserPaneProvider implements Provider<JScrollPane>, Que
 
     standardRB.setText("StandardQueryParser");
     standardRB.setSelected(true);
+    standardRB.setOpaque(false);
     standardRB.addActionListener(listeners::selectStandardQParser);
 
     classicRB.setText("Classic QueryParser");
+    classicRB.setOpaque(false);
     classicRB.addActionListener(listeners::selectClassicQparser);
 
     ButtonGroup group = new ButtonGroup();
@@ -166,15 +168,18 @@ public final class QueryParserPaneProvider implements Provider<JScrollPane>, Que
 
     posIncCB.setText(MessageUtils.getLocalizedMessage("search_parser.checkbox.pos_incr"));
     posIncCB.setSelected(config.isEnablePositionIncrements());
+    posIncCB.setOpaque(false);
     panel.add(posIncCB);
 
     wildCardCB.setText(MessageUtils.getLocalizedMessage("search_parser.checkbox.lead_wildcard"));
     wildCardCB.setSelected(config.isAllowLeadingWildcard());
+    wildCardCB.setOpaque(false);
     panel.add(wildCardCB);
 
     splitWSCB.setText(MessageUtils.getLocalizedMessage("search_parser.checkbox.split_ws"));
     splitWSCB.setEnabled(config.isSplitOnWhitespace());
     splitWSCB.addActionListener(listeners::toggleSplitOnWhiteSpace);
+    splitWSCB.setOpaque(false);
     panel.add(splitWSCB);
 
     return panel;
@@ -195,6 +200,7 @@ public final class QueryParserPaneProvider implements Provider<JScrollPane>, Que
     genPQ.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
     genPhraseQueryCB.setText(MessageUtils.getLocalizedMessage("search_parser.checkbox.gen_pq"));
     genPhraseQueryCB.setEnabled(config.isAutoGeneratePhraseQueries());
+    genPhraseQueryCB.setOpaque(false);
     genPQ.add(genPhraseQueryCB);
     panel.add(genPQ);
 
@@ -203,6 +209,7 @@ public final class QueryParserPaneProvider implements Provider<JScrollPane>, Que
     genMTPQ.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
     genMultiTermSynonymsPhraseQueryCB.setText(MessageUtils.getLocalizedMessage("search_parser.checkbox.gen_mts"));
     genMultiTermSynonymsPhraseQueryCB.setEnabled(config.isAutoGenerateMultiTermSynonymsPhraseQuery());
+    genMultiTermSynonymsPhraseQueryCB.setOpaque(false);
     genMTPQ.add(genMultiTermSynonymsPhraseQueryCB);
     panel.add(genMTPQ);
 

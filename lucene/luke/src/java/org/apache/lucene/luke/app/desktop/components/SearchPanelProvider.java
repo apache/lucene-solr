@@ -254,6 +254,7 @@ public final class SearchPanelProvider implements Provider<JPanel>, SearchTabOpe
     panel.add(labelQE, c);
 
     termQueryCB.setText(MessageUtils.getLocalizedMessage("search.checkbox.term"));
+    termQueryCB.setOpaque(false);
     termQueryCB.addActionListener(listeners::toggleTermQuery);
     c.gridx = 2;
     c.gridy = 0;
@@ -302,6 +303,7 @@ public final class SearchPanelProvider implements Provider<JPanel>, SearchTabOpe
     panel.add(parseBtn, c);
 
     rewriteCB.setText(MessageUtils.getLocalizedMessage("search.checkbox.rewrite"));
+    rewriteCB.setOpaque(false);
     c.gridx = 1;
     c.gridy = 4;
     c.gridwidth = 2;
