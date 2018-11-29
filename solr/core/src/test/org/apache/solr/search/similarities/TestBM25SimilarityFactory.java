@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.similarities;
 
-import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarity.LegacyBM25Similarity;
 import org.junit.BeforeClass;

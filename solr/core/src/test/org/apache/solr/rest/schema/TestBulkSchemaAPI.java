@@ -16,31 +16,6 @@
  */
 package org.apache.solr.rest.schema;
 
-import org.apache.commons.io.FileUtils;
-
-import org.apache.lucene.search.similarities.DFISimilarity;
-import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
-import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.misc.SweetSpotSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
-
-import org.apache.lucene.search.similarity.LegacyBM25Similarity;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.search.similarities.SchemaSimilarityFactory;
-import org.apache.solr.util.RESTfulServerProvider;
-import org.apache.solr.util.RestTestBase;
-import org.apache.solr.util.RestTestHarness;
-
-import org.junit.After;
-import org.junit.Before;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
@@ -51,6 +26,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.misc.SweetSpotSimilarity;
+import org.apache.lucene.search.similarities.DFISimilarity;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarity.LegacyBM25Similarity;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.search.similarities.SchemaSimilarityFactory;
+import org.apache.solr.util.RESTfulServerProvider;
+import org.apache.solr.util.RestTestBase;
+import org.apache.solr.util.RestTestHarness;
+import org.junit.After;
+import org.junit.Before;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class TestBulkSchemaAPI extends RestTestBase {
