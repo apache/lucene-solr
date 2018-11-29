@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -42,6 +44,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
@@ -192,9 +195,36 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
     try {
-      SimpleSolrResponse rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
+      
+      SimpleSolrResponse rsp = null;
+      int cnt = 0;
+      while (cnt++ < 3) {
+        try {
+          rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
+        } catch (SolrException | SolrServerException | NoHttpResponseException e) {
+          boolean hasCauseNoHttpResponseException = false;
+          Throwable cause = e;
+          while (cause != null) {
+            if (cause instanceof NoHttpResponseException) {
+              hasCauseNoHttpResponseException = true;
+              break;
+            }
+            cause = cause.getCause();
+          }
+          if (hasCauseNoHttpResponseException || e instanceof NoHttpResponseException) {
+            log.info("Error on getting remote info, trying again: " + e.getMessage());
+            Thread.sleep(500);
+            continue;
+          } else {
+            throw e;
+          }
+        }
+      }
+      
+      
+      SimpleSolrResponse frsp = rsp;
       metricsKeyVsTag.forEach((key, tag) -> {
-        Object v = Utils.getObjectByPath(rsp.nl, true, Arrays.asList("metrics", key));
+        Object v = Utils.getObjectByPath(frsp.nl, true, Arrays.asList("metrics", key));
         if (tag instanceof Function) {
           Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
           ctx.getTags().put(p.first(), p.second());
@@ -271,7 +301,36 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       params.add("prefix", StrUtils.join(prefixes, ','));
 
       try {
-        SimpleSolrResponse rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
+        SimpleSolrResponse rsp = null;
+        int retries = 5;
+        int cnt = 0;
+        while (cnt++ < retries) {
+          try {
+            rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
+          } catch (SolrException | SolrServerException | SocketException e) {
+            boolean hasCauseSocketException = false;
+            Throwable cause = e;
+            while (cause != null) {
+              if (cause instanceof SocketException) {
+                hasCauseSocketException = true;
+                break;
+              }
+              cause = cause.getCause();
+            }
+            if (hasCauseSocketException || e instanceof SocketException) {
+              log.info("Error on getting remote info, trying again: " + e.getMessage());
+              Thread.sleep(500);
+              continue;
+            } else {
+              throw e;
+            }
+          }
+        }
+        
+        if (cnt == retries) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get remote info after many retries on NoHttpResponseException");
+        }
+                
         Map m = rsp.nl.asMap(4);
         if (requestedTags.contains(FREEDISK.tagName)) {
           Object n = Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.usableSpace");
@@ -298,7 +357,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
         }
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting remote info", e);
       }
     }
   }

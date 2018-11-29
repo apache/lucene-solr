@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +27,7 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -38,26 +41,28 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
-import org.junit.BeforeClass;
+import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static CountDownLatch triggerFiredLatch;
-  private static CountDownLatch listenerEventLatch;
+  private static volatile CountDownLatch triggerFiredLatch;
+  private static volatile CountDownLatch listenerEventLatch;
   private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
-  private static ZkStateReader zkStateReader;
-  private static ReentrantLock lock = new ReentrantLock();
+  private volatile ZkStateReader zkStateReader;
+  private static final ReentrantLock lock = new ReentrantLock();
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -70,6 +75,11 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     SolrClient solrClient = cluster.getSolrClient();
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+  }
+  
+  @After
+  public void teardownCluster() throws Exception {
+    shutdownCluster();
   }
 
   private static CountDownLatch getTriggerFiredLatch() {
@@ -94,6 +104,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     }
     // add a node
     JettySolrRunner node = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
       fail("onChange listener didn't execute on cluster change");
     }
@@ -105,18 +116,39 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     listener.reset();
     // stop overseer
     log.info("====== KILL OVERSEER 1");
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
+    JettySolrRunner j = cluster.stopJettySolrRunner(overseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
     if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
       fail("onChange listener didn't execute on cluster change");
     }
-    assertEquals(1, listener.lostNodes.size());
-    assertEquals(overseerLeader, listener.lostNodes.iterator().next());
+
     assertEquals(0, listener.addedNodes.size());
     // wait until the new overseer is up
     Thread.sleep(5000);
+    
+    assertEquals(1, listener.lostNodes.size());
+    assertEquals(overseerLeader, listener.lostNodes.iterator().next());
+    
+    
+    String pathLost = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + overseerLeader;
+    
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    try {
+      timeout.waitFor("zk path to go away", () -> {
+        try {
+          return !zkClient().exists(pathLost, true);
+        } catch (KeeperException e) {
+          throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+          return false;
+        }
+      });
+    } catch (TimeoutException e) {
+      // okay
+    }
+
     // verify that a znode does NOT exist - there's no nodeLost trigger,
     // so the new overseer cleaned up existing nodeLost markers
-    String pathLost = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + overseerLeader;
     assertFalse("Path " + pathLost + " exists", zkClient().exists(pathLost, true));
 
     listener.reset();
@@ -175,6 +207,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     // create another node
     log.info("====== ADD NODE 1");
     JettySolrRunner node1 = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
       fail("onChange listener didn't execute on cluster change");
     }
@@ -219,8 +252,8 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
   }
 
   private static class TestLiveNodesListener implements LiveNodesListener {
-    Set<String> lostNodes = new HashSet<>();
-    Set<String> addedNodes = new HashSet<>();
+    Set<String> lostNodes = ConcurrentHashMap.newKeySet();
+    Set<String> addedNodes = ConcurrentHashMap.newKeySet();
     CountDownLatch onChangeLatch = new CountDownLatch(1);
 
     public void reset() {
@@ -230,7 +263,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+    public boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
       onChangeLatch.countDown();
       Set<String> old = new HashSet<>(oldLiveNodes);
       old.removeAll(newLiveNodes);
@@ -241,6 +274,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
       if (!newLiveNodes.isEmpty()) {
         addedNodes.addAll(newLiveNodes);
       }
+      return false;
     }
   }
 

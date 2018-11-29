@@ -73,7 +73,6 @@ public class TestUtilizeNode extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    cluster.waitForAllNodes(5000);
     int REPLICATION = 2;
     String coll = "utilizenodecoll";
     CloudSolrClient cloudClient = cluster.getSolrClient();

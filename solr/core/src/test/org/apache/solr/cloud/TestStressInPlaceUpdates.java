@@ -105,14 +105,14 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     final int deletePercent = 4 + random().nextInt(25);
     final int deleteByQueryPercent = random().nextInt(8);
     final int ndocs = atLeast(5);
-    int nWriteThreads = 5 + random().nextInt(25);
+    int nWriteThreads = 5 + random().nextInt(12);
     int fullUpdatePercent = 5 + random().nextInt(50);
 
     // query variables
     final int percentRealtimeQuery = 75;
     // number of cumulative read/write operations by all threads
-    final AtomicLong operations = new AtomicLong(25000);  
-    int nReadThreads = 5 + random().nextInt(25);
+    final AtomicLong operations = new AtomicLong(5000);  
+    int nReadThreads = 5 + random().nextInt(12);
 
 
     /** // testing
@@ -151,7 +151,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
         public void run() {
           try {
             while (operations.decrementAndGet() > 0) {
-              int oper = rand.nextInt(100);
+              int oper = rand.nextInt(50);
 
               if (oper < commitPercent) {
                 Map<Integer, DocInfo> newCommittedModel;
@@ -245,7 +245,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                 int nextVal1 = val1;
                 long nextVal2 = val2;
 
-                int addOper = rand.nextInt(100);
+                int addOper = rand.nextInt(30);
                 Long returnedVersion;
                 if (addOper < fullUpdatePercent || info.version <= 0) { // if document was never indexed or was deleted
                   // FULL UPDATE

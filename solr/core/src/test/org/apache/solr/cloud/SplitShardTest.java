@@ -58,13 +58,16 @@ public class SplitShardTest extends SolrCloudTestCase {
         .createCollection(COLLECTION_NAME, "conf", 2, 1)
         .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
+    
     CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
         .setNumSubShards(5)
         .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
     waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
             cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getActiveSlices().size(),
-        COLLECTION_NAME, activeClusterShape(6, 1));
+        COLLECTION_NAME, activeClusterShape(6, 7));
 
     try {
       splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME).setShardName("shard2").setNumSubShards(10);

@@ -66,7 +66,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static List<HttpSolrClient> CLIENTS = Collections.synchronizedList(new ArrayList<>(5));
 
   /** Always included in fl so we can vet what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
@@ -146,7 +146,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         .withProperty("schema", "schema-psuedo-fields.xml")
         .process(CLOUD_CLIENT);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
+    cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards); 
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));

@@ -53,7 +53,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   public static SolrClient client = null;
   public static String context;
 
-  public static JettySolrRunner createJetty(String solrHome, String configFile, String schemaFile, String context,
+  public static JettySolrRunner createAndStartJetty(String solrHome, String configFile, String schemaFile, String context,
                                             boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) 
       throws Exception { 
     // creates the data dir
@@ -77,22 +77,22 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       nodeProps.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
 
-    return createJetty(solrHome, nodeProps, jettyConfig);
+    return createAndStartJetty(solrHome, nodeProps, jettyConfig);
   }
 
-  public static JettySolrRunner createJetty(String solrHome, String configFile, String context) throws Exception {
-    return createJetty(solrHome, configFile, null, context, true, null);
+  public static JettySolrRunner createAndStartJetty(String solrHome, String configFile, String context) throws Exception {
+    return createAndStartJetty(solrHome, configFile, null, context, true, null);
   }
 
-  public static JettySolrRunner createJetty(String solrHome, JettyConfig jettyConfig) throws Exception {
-    return createJetty(solrHome, new Properties(), jettyConfig);
+  public static JettySolrRunner createAndStartJetty(String solrHome, JettyConfig jettyConfig) throws Exception {
+    return createAndStartJetty(solrHome, new Properties(), jettyConfig);
   }
 
-  public static JettySolrRunner createJetty(String solrHome) throws Exception {
-    return createJetty(solrHome, new Properties(), JettyConfig.builder().withSSLConfig(sslConfig).build());
+  public static JettySolrRunner createAndStartJetty(String solrHome) throws Exception {
+    return createAndStartJetty(solrHome, new Properties(), JettyConfig.builder().withSSLConfig(sslConfig).build());
   }
 
-  public static JettySolrRunner createJetty(String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
+  public static JettySolrRunner createAndStartJetty(String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
 
     initCore(null, null, solrHome);
 

@@ -347,7 +347,7 @@ public class HttpClientUtil {
     HttpClientBuilder retBuilder = builder.setDefaultRequestConfig(requestConfig);
 
     if (config.getBool(HttpClientUtil.PROP_USE_RETRY, true)) {
-      retBuilder = retBuilder.setRetryHandler(new SolrHttpRequestRetryHandler(3));
+      retBuilder = retBuilder.setRetryHandler(new SolrHttpRequestRetryHandler(Integer.getInteger("solr.httpclient.retries", 3)));
 
     } else {
       retBuilder = retBuilder.setRetryHandler(NO_RETRY);
