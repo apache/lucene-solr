@@ -642,7 +642,17 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   public void close() {
     log.debug("Closing " + hashCode());
     if (collectService != null) {
-      collectService.shutdownNow();
+      boolean shutdown = false;
+      while (!shutdown) {
+        try {
+          // Wait a while for existing tasks to terminate
+          collectService.shutdownNow();
+          shutdown = collectService.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException ie) {
+          // Preserve interrupt status
+          Thread.currentThread().interrupt();
+        }
+      }
     }
     if (factory != null) {
       factory.close();

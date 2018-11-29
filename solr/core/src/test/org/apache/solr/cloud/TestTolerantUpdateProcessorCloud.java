@@ -110,7 +110,6 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     configureCluster(NUM_SERVERS)
       .addConfig(configName, configDir.toPath())
       .configure();
-    assertSpinLoopAllJettyAreRunning(cluster);
 
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
@@ -120,10 +119,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         .withProperty("schema", "schema15.xml") // string id for doc routing prefix
         .process(CLOUD_CLIENT);
     
+    cluster.waitForActiveCollection(COLLECTION_NAME, NUM_SHARDS, REPLICATION_FACTOR * NUM_SHARDS);
+
     ZkStateReader zkStateReader = CLOUD_CLIENT.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION_NAME, zkStateReader, true, true, 330);
-
-
     // really hackish way to get a URL for specific nodes based on shard/replica hosting
     // inspired by TestMiniSolrCloudCluster
     HashMap<String, String> urlMap = new HashMap<>();
@@ -921,40 +919,6 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertQueryDocIds(client, true, docId1);
     assertQueryDocIds(client, false, docId21, docId22);
                       
-  }
-
-  /**
-   * HACK: Loops over every Jetty instance in the specified MiniSolrCloudCluster to see if they are running,
-   * and sleeps small increments until they all report that they are, or a max num iters is reached
-   * 
-   * (work around for SOLR-8862.  Maybe something like this should be promoted into MiniSolrCloudCluster's 
-   * start() method? or SolrCloudTestCase's configureCluster?)
-   */
-  public static void assertSpinLoopAllJettyAreRunning(MiniSolrCloudCluster cluster) throws InterruptedException {
-    // NOTE: idealy we could use an ExecutorService that tried to open Sockets (with a long timeout)
-    // to each of the jetty instances in parallel w/o any sleeping -- but since they pick their ports
-    // dynamically and don't report them until/unless the server is up, that won't neccessarily do us
-    // any good.
-    final int numServers = cluster.getJettySolrRunners().size();
-    int numRunning = 0;
-    for (int i = 5; 0 <= i; i--) {
-      numRunning = 0;
-      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-        if (jetty.isRunning()) {
-          numRunning++;
-        }
-      }
-      if (numServers == numRunning) {
-        return;
-      } else if (0 == i) {
-        // give up
-        break;
-      }
-      // the more nodes we're waiting on, the longer we should try to sleep (within reason)
-      Thread.sleep(Math.min((numServers - numRunning) * 100, 1000));
-    }
-    assertEquals("giving up waiting for all jetty instances to be running",
-                 numServers, numRunning);
   }
   
   /** Asserts that the UpdateResponse contains the specified expectedErrs and no others */

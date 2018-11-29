@@ -29,12 +29,12 @@ import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
@@ -135,6 +135,8 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         log.debug("Adding .auto_add_replicas and .scheduled_maintenance triggers");
         cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(updatedConfig), updatedConfig.getZkVersion());
         break;
+      } catch (AlreadyClosedException e) {
+        break;
       } catch (BadVersionException bve) {
         // somebody else has changed the configuration so we must retry
       } catch (InterruptedException e) {
@@ -178,7 +180,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
         // must check for close here before we await on the condition otherwise we can only be woken up on interruption
         if (isClosed) {
-          log.warn("OverseerTriggerThread has been closed, exiting.");
+          log.info("OverseerTriggerThread has been closed, exiting.");
           break;
         }
 
@@ -190,7 +192,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
             // are we closed?
             if (isClosed) {
-              log.warn("OverseerTriggerThread woken up but we are closed, exiting.");
+              log.info("OverseerTriggerThread woken up but we are closed, exiting.");
               break;
             }
 
@@ -211,7 +213,6 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
-        log.warn("Interrupted", e);
         break;
       }
 
@@ -240,6 +241,8 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           }
           try {
             scheduledTriggers.add(entry.getValue());
+          } catch (AlreadyClosedException e) {
+
           } catch (Exception e) {
             log.warn("Exception initializing trigger " + entry.getKey() + ", configuration ignored", e);
           }
@@ -275,6 +278,8 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           });
         } catch (NoSuchElementException e) {
           // ignore
+        } catch (AlreadyClosedException e) {
+
         } catch (Exception e) {
           log.warn("Error removing old nodeAdded markers", e);
         }

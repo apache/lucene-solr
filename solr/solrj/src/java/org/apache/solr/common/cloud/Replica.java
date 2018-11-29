@@ -163,7 +163,7 @@ public class Replica extends ZkNodeProps {
   }
 
   public boolean isActive(Set<String> liveNodes) {
-    return liveNodes.contains(this.nodeName) && this.state == State.ACTIVE;
+    return this.nodeName != null && liveNodes.contains(this.nodeName) && this.state == State.ACTIVE;
   }
   
   public Type getType() {

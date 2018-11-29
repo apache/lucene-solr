@@ -40,6 +40,7 @@ import java.util.function.Supplier;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -52,8 +53,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,8 +66,8 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
   private static Map<URI, SocketProxy> proxies;
   private static Map<URI, JettySolrRunner> jettys;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -86,24 +87,24 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
   }
 
 
-  @AfterClass
-  public static void tearDownCluster() throws Exception {
+  @After
+  public void tearDownCluster() throws Exception {
     for (SocketProxy proxy:proxies.values()) {
       proxy.close();
     }
+    shutdownCluster();
     proxies = null;
     jettys = null;
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  // commented 15-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testNewReplicaOldLeader() throws Exception {
 
     String collection = "testNewReplicaOldLeader";
     CollectionAdminRequest.createCollection(collection, 1, 2)
         .setCreateNodeSet("")
         .process(cluster.getSolrClient());
+    
     Properties oldLir = new Properties();
     oldLir.setProperty("lirVersion", "old");
 
@@ -118,6 +119,9 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
         .setProperties(oldLir)
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(collection, 1, 2);
+    
     waitForState("Time waiting for 1x2 collection", collection, clusterShape(1, 2));
 
     addDocs(collection, 2, 0);
@@ -149,10 +153,19 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
             collectionState.getSlice("shard1").getReplica(notLeader.getName()).getState() == Replica.State.DOWN);
 
     JettySolrRunner notLeaderJetty = getJettyForReplica(notLeader);
+    String notLeaderJettyNodeName = notLeaderJetty.getNodeName();
     notLeaderJetty.stop();
+    
+    cluster.waitForJettyToStop(notLeaderJetty);
+    
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, missingLiveNode(notLeaderJettyNodeName));
+    
     waitForState("Node did not leave", collection, (liveNodes, collectionState) -> liveNodes.size() == 2);
+    
     upgrade(notLeaderJetty);
     notLeaderJetty.start();
+    
+    cluster.waitForAllNodes(30);
 
     getProxyForReplica(shard1.getLeader()).reopen();
     getProxyForReplica(notLeader).reopen();
@@ -164,8 +177,6 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
-  // commented 15-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testNewLeaderOldReplica() throws Exception {
     // in case of new leader & old replica, new leader can still put old replica into LIR
 
@@ -191,6 +202,9 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
         .setProperties(oldLir)
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(collection, 1, 2);
+    
     waitForState("Time waiting for 1x2 collection", collection, clusterShape(1, 2));
 
     Slice shard1 = getCollectionState(collection).getSlice("shard1");
@@ -318,12 +332,18 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
     getProxyForReplica(replicaInOldMode).close();
     addDoc(collection, 6, leaderJetty);
     JettySolrRunner oldJetty = getJettyForReplica(replicaInOldMode);
+    String oldJettyNodeName = oldJetty.getNodeName();
+
     oldJetty.stop();
-    waitForState("Node did not leave", collection, (liveNodes, collectionState)
-        -> liveNodes.size() == 2);
+    
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, missingLiveNode(oldJettyNodeName));
+    
     upgrade(oldJetty);
 
     oldJetty.start();
+    
+    cluster.waitForAllNodes(30);
+    
     getProxyForReplica(leader).reopen();
     getProxyForReplica(replicaInOldMode).reopen();
 
@@ -334,14 +354,11 @@ public class LIRRollingUpdatesTest extends SolrCloudTestCase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
-  // commented 15-Sep-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testNewLeaderAndMixedReplicas() throws Exception {
     testLeaderAndMixedReplicas(false);
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testOldLeaderAndMixedReplicas() throws Exception {
     testLeaderAndMixedReplicas(true);
   }

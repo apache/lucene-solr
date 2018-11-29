@@ -95,7 +95,7 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
 
     // start a new node which can be used to balance the cluster as per policy
     JettySolrRunner newNode = cluster.startJettySolrRunner();
-    cluster.waitForAllNodes(10);
+    cluster.waitForAllNodes(30);
 
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
@@ -112,7 +112,7 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    assertTrue("ScheduledTrigger did not fire within 20 seconds", triggerFiredLatch.await(20, TimeUnit.SECONDS));
+    assertTrue("ScheduledTrigger did not fire in time", triggerFiredLatch.await(45, TimeUnit.SECONDS));
     assertEquals(1, events.size());
     Map<String, Object> actionContextProps = actionContextPropertiesRef.get();
     assertNotNull(actionContextProps);

@@ -16,15 +16,21 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -36,13 +42,14 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
-import org.junit.BeforeClass;
+import org.apache.solr.util.TimeOut;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 /**
  * Test for {@link SystemLogListener}
@@ -75,15 +82,21 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
     }
   }
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 3)
         .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 3);
   }
 
+  @After
+  public void teardownCluster() throws Exception {
+    shutdownCluster();
+  }
+  
   @Test
   public void test() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -118,7 +131,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
-        "test", clusterShape(3, 2));
+        "test", clusterShape(3, 6));
 
     String setListenerCommand = "{" +
         "'set-listener' : " +
@@ -146,20 +159,43 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
       }
     }
     log.info("Stopping node " + cluster.getJettySolrRunner(nonOverseerLeaderIndex).getNodeName());
-    cluster.stopJettySolrRunner(nonOverseerLeaderIndex);
-    cluster.waitForAllNodes(30);
-    assertTrue("Trigger was not fired ", triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    JettySolrRunner j = cluster.stopJettySolrRunner(nonOverseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
+    assertTrue("Trigger was not fired ", triggerFiredLatch.await(60, TimeUnit.SECONDS));
     assertTrue(fired.get());
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
 
+    
+    
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    
+    ModifiableSolrParams query = new ModifiableSolrParams();
+    query.add(CommonParams.Q, "type:" + SystemLogListener.DOC_TYPE);
+    query.add(CommonParams.SORT, "id asc");
+    
+    try {
+      timeout.waitFor("", new Supplier<Boolean>() {
+
+        @Override
+        public Boolean get() {
+          try {
+            cluster.getSolrClient().commit(CollectionAdminParams.SYSTEM_COLL, true, true);
+
+            return cluster.getSolrClient().query(CollectionAdminParams.SYSTEM_COLL, query).getResults().size() == 9;
+          } catch (SolrServerException | IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      });
+    } catch (TimeoutException e) {
+      // fine
+    }
     // make sure the event docs are replicated and committed
     Thread.sleep(5000);
     cluster.getSolrClient().commit(CollectionAdminParams.SYSTEM_COLL, true, true);
 
-    ModifiableSolrParams query = new ModifiableSolrParams();
-    query.add(CommonParams.Q, "type:" + SystemLogListener.DOC_TYPE);
-    query.add(CommonParams.SORT, "id asc");
+
     QueryResponse resp = cluster.getSolrClient().query(CollectionAdminParams.SYSTEM_COLL, query);
     SolrDocumentList docs = resp.getResults();
     assertNotNull(docs);

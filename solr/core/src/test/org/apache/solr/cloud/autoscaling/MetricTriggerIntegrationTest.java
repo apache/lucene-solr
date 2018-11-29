@@ -84,8 +84,6 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testMetricTrigger() throws Exception {
-    cluster.waitForAllNodes(5);
-
     String collectionName = "testMetricTrigger";
     CloudSolrClient solrClient = cluster.getSolrClient();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -93,7 +91,7 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
     create.process(solrClient);
     solrClient.setDefaultCollection(collectionName);
 
-    waitForState("Timed out waiting for collection:" + collectionName + " to become active", collectionName, clusterShape(2, 2));
+    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     DocCollection docCollection = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
     String shardId = "shard1";

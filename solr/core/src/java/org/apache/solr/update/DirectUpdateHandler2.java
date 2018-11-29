@@ -813,25 +813,23 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
 
-  public static boolean commitOnClose = true;  // TODO: make this a real config option or move it to TestInjection
+  public static volatile boolean commitOnClose = true;  // TODO: make this a real config option or move it to TestInjection
 
   // IndexWriterCloser interface method - called from solrCoreState.decref(this)
   @Override
   public void closeWriter(IndexWriter writer) throws IOException {
 
     assert TestInjection.injectNonGracefullClose(core.getCoreContainer());
-    
+
     boolean clearRequestInfo = false;
-    solrCoreState.getCommitLock().lock();
+
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    if (SolrRequestInfo.getRequestInfo() == null) {
+      clearRequestInfo = true;
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp)); // important for debugging
+    }
     try {
-      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-      SolrQueryResponse rsp = new SolrQueryResponse();
-      if (SolrRequestInfo.getRequestInfo() == null) {
-        clearRequestInfo = true;
-        SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));  // important for debugging
-      }
-
-
       if (!commitOnClose) {
         if (writer != null) {
           writer.rollback();
@@ -844,58 +842,65 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         return;
       }
 
-      // do a commit before we quit?     
-      boolean tryToCommit = writer != null && ulog != null && ulog.hasUncommittedChanges() && ulog.getState() == UpdateLog.State.ACTIVE;
+      // do a commit before we quit?
+      boolean tryToCommit = writer != null && ulog != null && ulog.hasUncommittedChanges()
+          && ulog.getState() == UpdateLog.State.ACTIVE;
 
+      // be tactical with this lock! closing the updatelog can deadlock when it tries to commit
+      solrCoreState.getCommitLock().lock();
       try {
-        if (tryToCommit) {
-          log.info("Committing on IndexWriter close.");
-          CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
-          cmd.openSearcher = false;
-          cmd.waitSearcher = false;
-          cmd.softCommit = false;
+        try {
+          if (tryToCommit) {
+            log.info("Committing on IndexWriter close.");
+            CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
+            cmd.openSearcher = false;
+            cmd.waitSearcher = false;
+            cmd.softCommit = false;
 
-          // TODO: keep other commit callbacks from being called?
-         //  this.commit(cmd);        // too many test failures using this method... is it because of callbacks?
+            // TODO: keep other commit callbacks from being called?
+            // this.commit(cmd); // too many test failures using this method... is it because of callbacks?
 
-          synchronized (solrCoreState.getUpdateLock()) {
-            ulog.preCommit(cmd);
+            synchronized (solrCoreState.getUpdateLock()) {
+              ulog.preCommit(cmd);
+            }
+
+            // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
+            SolrIndexWriter.setCommitData(writer, cmd.getVersion());
+            writer.commit();
+
+            synchronized (solrCoreState.getUpdateLock()) {
+              ulog.postCommit(cmd);
+            }
           }
-
-          // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
-          SolrIndexWriter.setCommitData(writer, cmd.getVersion());
-          writer.commit();
-
-          synchronized (solrCoreState.getUpdateLock()) {
-            ulog.postCommit(cmd);
+        } catch (Throwable th) {
+          log.error("Error in final commit", th);
+          if (th instanceof OutOfMemoryError) {
+            throw (OutOfMemoryError) th;
           }
         }
-      } catch (Throwable th) {
-        log.error("Error in final commit", th);
-        if (th instanceof OutOfMemoryError) {
-          throw (OutOfMemoryError) th;
-        }
-      }
 
-      // we went through the normal process to commit, so we don't have to artificially
-      // cap any ulog files.
-      try {
-        if (ulog != null) ulog.close(false);
-      }  catch (Throwable th) {
-        log.error("Error closing log files", th);
-        if (th instanceof OutOfMemoryError) {
-          throw (OutOfMemoryError) th;
-        }
-      }
+      } finally {
+        solrCoreState.getCommitLock().unlock();
 
-      if (writer != null) {
-        writer.close();
       }
-
     } finally {
-      solrCoreState.getCommitLock().unlock();
       if (clearRequestInfo) SolrRequestInfo.clearRequestInfo();
     }
+    // we went through the normal process to commit, so we don't have to artificially
+    // cap any ulog files.
+    try {
+      if (ulog != null) ulog.close(false);
+    } catch (Throwable th) {
+      log.error("Error closing log files", th);
+      if (th instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError) th;
+      }
+    }
+
+    if (writer != null) {
+      writer.close();
+    }
+
   }
 
   @Override

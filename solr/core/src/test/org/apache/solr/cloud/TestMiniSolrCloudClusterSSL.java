@@ -236,11 +236,13 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     
     // shut down a server
     JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
+    cluster.waitForJettyToStop(stoppedServer);
     assertTrue(stoppedServer.isStopped());
     assertEquals(NUM_SERVERS - 1, cluster.getJettySolrRunners().size());
     
     // create a new server
     JettySolrRunner startedServer = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     assertTrue(startedServer.isRunning());
     assertEquals(NUM_SERVERS, cluster.getJettySolrRunners().size());
     

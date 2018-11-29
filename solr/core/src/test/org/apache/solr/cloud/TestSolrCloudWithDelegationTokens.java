@@ -183,6 +183,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
         .build();
     else delegationTokenClient = new CloudSolrClient.Builder(Collections.singletonList(miniCluster.getZkServer().getZkAddress()), Optional.empty())
         .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
+            .withSocketTimeout(30000).withConnectionTimeout(15000)
             .withResponseParser(client.getParser())
             .withHttpSolrClientBuilder(
                 new HttpSolrClient.Builder()

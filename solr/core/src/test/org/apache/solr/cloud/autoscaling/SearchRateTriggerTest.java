@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.AtomicDouble;
+
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -51,6 +52,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -70,21 +72,23 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+
   }
 
   @Before
   public void removeCollections() throws Exception {
-    cluster.deleteAllCollections();
-    if (cluster.getJettySolrRunners().size() < 4) {
-      cluster.startJettySolrRunner();
-    }
+    configureCluster(4)
+    .addConfig("conf", configset("cloud-minimal"))
+    .configure();
+  }
+  
+  @After
+  public void after() throws Exception {
+    shutdownCluster();
   }
 
   @Test
-  // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testTrigger() throws Exception {
     JettySolrRunner targetNode = cluster.getJettySolrRunner(0);
     SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
@@ -123,7 +127,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
       String url = baseUrl.toString() + "/" + coreName;
       try (HttpSolrClient simpleClient = new HttpSolrClient.Builder(url).build()) {
         SolrParams query = params(CommonParams.Q, "*:*", CommonParams.DISTRIB, "false");
-        for (int i = 0; i < 500; i++) {
+        for (int i = 0; i < 130; i++) {
           simpleClient.query(query);
         }
         String registryCoreName = coreName.replaceFirst("_", ".").replaceFirst("_", ".");
@@ -149,10 +153,11 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
         assertTrue((Double)info.getVariable(AutoScalingParams.RATE) > rate);
       }
       // close that jetty to remove the violation - alternatively wait for 1 min...
-      cluster.stopJettySolrRunner(1);
+      JettySolrRunner j = cluster.stopJettySolrRunner(1);
+      cluster.waitForJettyToStop(j);
       events.clear();
       SolrParams query = params(CommonParams.Q, "*:*");
-      for (int i = 0; i < 500; i++) {
+      for (int i = 0; i < 130; i++) {
         solrClient.query(COLL1, query);
       }
       Thread.sleep(waitForSeconds * 1000);
@@ -167,7 +172,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
       assertTrue(Rate > rate);
       events.clear();
 
-      for (int i = 0; i < 1000; i++) {
+      for (int i = 0; i < 150; i++) {
         solrClient.query(COLL2, query);
         solrClient.query(COLL1, query);
       }
@@ -233,7 +238,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
         "conf", 2, 2);
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS, clusterShape(2, 2));
+    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS, clusterShape(2, 4));
 
     long waitForSeconds = 5 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(Arrays.asList(COLL1, COLL2), waitForSeconds, 1.0, 0.1);
