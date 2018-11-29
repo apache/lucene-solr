@@ -27,7 +27,10 @@ import org.apache.lucene.search.similarities.Similarity;
  * the k1+1 factor to the numerator of the scoring formula
  *
  * @see BM25Similarity
+ *
+ * @deprecated {@link BM25Similarity} should be used instead
  */
+@Deprecated
 public final class LegacyBM25Similarity extends Similarity {
 
   private final BM25Similarity bm25Similarity;
