@@ -18,9 +18,12 @@
 
 The Blob Store REST API provides REST methods to store, retrieve or list files in a Lucene index.
 
-It can be used to upload a jar file which contains standard Solr components such as RequestHandlers, SearchComponents, or other custom code you have written for Solr. Schema components _do not_ yet support the Blob Store.
+It can be used to upload a jar file which contains standard Solr components such as RequestHandlers, SearchComponents,
+or other custom code you have written for Solr. Schema components _do not_ yet support the Blob Store.
 
-When using the blob store, note that the API does not delete or overwrite a previous object if a new one is uploaded with the same name. It always adds a new version of the blob to the index. Deletes can be performed with standard REST delete commands.
+When using the blob store, note that the API does not delete or overwrite a previous object if a new one is uploaded with the same name.
+It always adds a new version of the blob to the index.
+Because the `.system` collection is a standard Solr collection, deleting blobs is the same as deleting documents.
 
 *The blob store is only available when running in SolrCloud mode.* Solr in standalone mode does not support use of a blob store.
 
@@ -105,6 +108,10 @@ curl -X POST -H 'Content-Type: application/octet-stream' --data-binary @test1.ja
 ----
 ====
 --
+
+Note that by default, the blob store has a limit of 5Mb for any blob. This can be increased if necessary
+by changing the value for the `maxSize` setting in `solrconfig.xml` for the `.system` collection.
+See the section <<configuring-solrconfig-xml.adoc#configuring-solrconfig-xml,Configuring solrconfig.xml>> for information about how to modify `solrconfig.xml` for any collection.
 
 A GET request will return the list of blobs and other details:
 
@@ -242,3 +249,26 @@ For example, to use a blob named test, you would configure `solrconfig.xml` like
 If there are parameters available in the custom handler, you can define them in the same way as any other request handler definition.
 
 NOTE: Blob store can only be used to dynamically load components configured in `solrconfig.xml`. Components specified in `schema.xml` cannot be loaded from blob store.
+
+== Deleting Blobs
+
+Once loaded to the blob store, blobs are handled very similarly to usual indexed documents in Solr.
+To delete blobs, you can use the same approaches used to delete individual documents from the index,
+namely Delete By ID and Delete By Query.
+
+For example, to delete a blob with the id `test/1`, you would issue a command like this:
+
+[source,text]
+curl -H 'Content-Type: application/json' -d '{"delete": {"id": "test/1"}}' http://localhost:8983/solr/.system/update?commit=true
+
+Be sure to tell Solr to perform a <<updatehandlers-in-solrconfig.adoc#commits,commit>> as part of the request
+ (`commit=true` in the above example) to see the change immediately.
+If you do not instruct Solr to perform a commit, Solr will use the `.system` collection autoCommit settings,
+which may not be the expected behavior.
+
+You can also use the delete by query syntax, as so:
+
+[source,text]
+curl -H 'Content-Type: application/json' -d '{"delete": {"query": "id:test/1"}}' http://localhost:8983/solr/.system/update?commit=true
+
+For more on deleting documents generally, see the section <<uploading-data-with-index-handlers.adoc#sending-json-update-commands,Sending JSON Update Commands>>.
