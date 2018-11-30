@@ -112,7 +112,7 @@ public class CloudSolrClient extends SolrClient {
   private HttpClient myClient;
   private final boolean clientIsInternal;
   //no of times collection state to be reloaded if stale state error is received
-  private static final int MAX_STALE_RETRIES = 5;
+  private static final int MAX_STALE_RETRIES = Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
   Random rand = new Random();
   
   private final boolean updatesToLeaders;
@@ -212,9 +212,9 @@ public class CloudSolrClient extends SolrClient {
     final DocCollection cached;
     final long cachedAt;
     //This is the time at which the collection is retried and got the same old version
-    long retriedAt = -1;
+    volatile long retriedAt = -1;
     //flag that suggests that this is potentially to be rechecked
-    boolean maybeStale = false;
+    volatile boolean maybeStale = false;
 
     ExpiringCachedDocCollection(DocCollection cached) {
       this.cached = cached;
@@ -916,17 +916,17 @@ public class CloudSolrClient extends SolrClient {
       int errorCode = (rootCause instanceof SolrException) ?
           ((SolrException)rootCause).code() : SolrException.ErrorCode.UNKNOWN.code;
 
-      log.error("Request to collection {} failed due to (" + errorCode + ") {}, retry? " + retryCount,
-          inputCollections, rootCause.toString());
-
-      boolean wasCommError =
-          (rootCause instanceof ConnectException ||
-              rootCause instanceof ConnectTimeoutException ||
-              rootCause instanceof NoHttpResponseException ||
-              rootCause instanceof SocketException);
+          boolean wasCommError =
+              (rootCause instanceof ConnectException ||
+                  rootCause instanceof ConnectTimeoutException ||
+                  rootCause instanceof NoHttpResponseException ||
+                  rootCause instanceof SocketException);
+          
+      log.error("Request to collection {} failed due to (" + errorCode + ") {}, retry={} commError={} errorCode={} ",
+          inputCollections, rootCause.toString(), retryCount, wasCommError, errorCode);
 
       if (wasCommError
-          || (exc instanceof RouteException && (errorCode == 404 || errorCode == 503)) // 404 because the core does not exist 503 service unavailable
+          || (exc instanceof RouteException && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
           //TODO there are other reasons for 404. We need to change the solr response format from HTML to structured data to know that
           ) {
         // it was a communication error. it is likely that
@@ -946,15 +946,18 @@ public class CloudSolrClient extends SolrClient {
           // and we could not get any information from the server
           //it is probably not worth trying again and again because
           // the state would not have been updated
+          log.info("trying request again");
           return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections);
         }
+      } else {
+        log.info("request was not communication error it seems");
       }
 
       boolean stateWasStale = false;
       if (retryCount < MAX_STALE_RETRIES  &&
           requestedCollections != null    &&
           !requestedCollections.isEmpty() &&
-          SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE)
+          (SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE || errorCode == 404))
       {
         // cached state for one or more external collections was stale
         // re-issue request using updated state

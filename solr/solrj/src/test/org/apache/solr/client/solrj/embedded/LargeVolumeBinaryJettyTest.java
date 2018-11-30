@@ -28,6 +28,6 @@ import org.junit.BeforeClass;
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 }

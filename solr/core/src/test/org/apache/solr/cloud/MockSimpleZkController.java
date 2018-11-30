@@ -22,9 +22,9 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 
-public class MockZkController extends ZkController {
+public class MockSimpleZkController extends ZkController {
 
-  public MockZkController(CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig,
+  public MockSimpleZkController(CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig,
       CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException, TimeoutException, IOException {
     super(cc, zkServerAddress, zkClientConnectTimeout, cloudConfig, registerOnReconnect);
   }

@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -63,7 +64,9 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
     assertThat(response.getStatus(), is(0));
     assertThat(response.getResults().getNumFound(), is(100L));
 
-    cluster.stopJettySolrRunner(0);
+    JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
+    
+    cluster.waitForJettyToStop(stoppedServer);
 
     response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
     assertThat(response.getStatus(), is(0));

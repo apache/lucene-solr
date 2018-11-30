@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public abstract class TransientSolrCoreCacheFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private CoreContainer coreContainer = null;
+  private volatile CoreContainer coreContainer = null;
 
   public abstract TransientSolrCoreCache getTransientSolrCoreCache();
   /**

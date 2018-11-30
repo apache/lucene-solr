@@ -102,6 +102,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private final String metricTag = Integer.toHexString(hashCode());
   private SolrMetricManager metricManager;
   private String registryName;
+  private volatile boolean closeOnDestroy = true;
 
   /**
    * Enum to define action that needs to be processed.
@@ -294,26 +295,43 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
+    if (closeOnDestroy) {
+      close();
+    }
+  }
+  
+  public void close() {
+    CoreContainer cc = cores;
+    cores = null;
     try {
-      FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
-      if (fileCleaningTracker != null) {
-        fileCleaningTracker.exitWhenFinished();
-      }
-    } catch (Exception e) {
-      log.warn("Exception closing FileCleaningTracker", e);
-    } finally {
-      SolrRequestParsers.fileCleaningTracker = null;
-    }
-
-    if (metricManager != null) {
-      metricManager.unregisterGauges(registryName, metricTag);
-    }
-
-    if (cores != null) {
       try {
-        cores.shutdown();
+        FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
+        if (fileCleaningTracker != null) {
+          fileCleaningTracker.exitWhenFinished();
+        }
+      } catch (NullPointerException e) {
+        // okay
+      } catch (Exception e) {
+        log.warn("Exception closing FileCleaningTracker", e);
       } finally {
-        cores = null;
+        SolrRequestParsers.fileCleaningTracker = null;
+      }
+
+      if (metricManager != null) {
+        try {
+          metricManager.unregisterGauges(registryName, metricTag);
+        } catch (NullPointerException e) {
+          // okay
+        } catch (Exception e) {
+          log.warn("Exception closing FileCleaningTracker", e);
+        } finally {
+          metricManager = null;
+        }
+      }
+    } finally {
+      if (cc != null) {
+        httpClient = null;
+        cc.shutdown();
       }
     }
   }
@@ -593,5 +611,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } else {
       return response;
     }
+  }
+  
+  public void closeOnDestroy(boolean closeOnDestroy) {
+    this.closeOnDestroy = closeOnDestroy;
   }
 }

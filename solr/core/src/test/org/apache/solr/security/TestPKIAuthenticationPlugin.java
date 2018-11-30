@@ -21,8 +21,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.security.PublicKey;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.http.Header;
@@ -45,7 +45,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   static class MockPKIAuthenticationPlugin extends PKIAuthenticationPlugin {
     SolrRequestInfo solrRequestInfo;
 
-    Map<String, PublicKey> remoteKeys = new HashMap<>();
+    Map<String, PublicKey> remoteKeys = new ConcurrentHashMap<>();
 
     public MockPKIAuthenticationPlugin(CoreContainer cores, String node) {
       super(cores, node, new PublicKeyHandler());
@@ -101,6 +101,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     FilterChain filterChain = (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
     mock.doAuthenticate(mockReq, null, filterChain);
 
+    assertNotNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("solr", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
 

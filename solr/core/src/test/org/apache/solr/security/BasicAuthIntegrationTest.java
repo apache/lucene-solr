@@ -80,6 +80,8 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1).process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(COLLECTION, 3, 3);
   }
 
   @Test
@@ -105,7 +107,13 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
       randomJetty.stop();
+      
+      cluster.waitForJettyToStop(randomJetty);
+      
       randomJetty.start(false);
+      
+      cluster.waitForAllNodes(30);
+      
       baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 

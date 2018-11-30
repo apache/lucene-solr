@@ -90,5 +90,9 @@ grant {
   permission javax.security.auth.kerberos.ServicePermission "HTTP/127.0.0.1@EXAMPLE.COM", "initiate";
   permission javax.security.auth.kerberos.ServicePermission "HTTP/127.0.0.1@EXAMPLE.COM", "accept";
   permission javax.security.auth.kerberos.DelegationPermission "\"HTTP/127.0.0.1@EXAMPLE.COM\" \"krbtgt/EXAMPLE.COM@EXAMPLE.COM\"";
+  
+  // java 8 accessibility requires this perm - should not after 8 I believe (rrd4j is the root reason we hit an accessibility code path)
+  permission java.awt.AWTPermission "listenToAllAWTEvents";
+  permission java.awt.AWTPermission "accessEventQueue";
 
 };

@@ -348,7 +348,17 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   
       SolrCLI.RunExampleTool tool = new SolrCLI.RunExampleTool(executor, System.in, stdoutSim);
       try {
-        final int status = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        int status = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        
+        if (status == -1) {
+          // maybe it's the port, try again
+          try (ServerSocket socket = new ServerSocket(0)) {
+            bindPort = socket.getLocalPort();
+          }
+          Thread.sleep(100);
+          status = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));  
+        }
+        
         assertEquals("it should be ok "+tool+" "+Arrays.toString(toolArgs),0, status);
       } catch (Exception e) {
         log.error("RunExampleTool failed due to: " + e +

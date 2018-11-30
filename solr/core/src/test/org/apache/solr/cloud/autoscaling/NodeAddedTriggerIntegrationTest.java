@@ -40,6 +40,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,6 +66,20 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+
+  }
+  
+  @After 
+  public void after() throws Exception {
+    shutdownCluster();
+  }
+
+  private static CountDownLatch getTriggerFiredLatch() {
+    return triggerFiredLatch;
+  }
+
+  @Before
+  public void setupTest() throws Exception {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -76,27 +91,6 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
     SolrClient solrClient = cluster.getSolrClient();
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-  }
-
-  private static CountDownLatch getTriggerFiredLatch() {
-    return triggerFiredLatch;
-  }
-
-  @Before
-  public void setupTest() throws Exception {
-    // ensure that exactly 2 jetty nodes are running
-    int numJetties = cluster.getJettySolrRunners().size();
-    log.info("Found {} jetty instances running", numJetties);
-    for (int i = 2; i < numJetties; i++) {
-      int r = random().nextInt(cluster.getJettySolrRunners().size());
-      log.info("Shutdown extra jetty instance at port {}", cluster.getJettySolrRunner(r).getLocalPort());
-      cluster.stopJettySolrRunner(r);
-    }
-    for (int i = cluster.getJettySolrRunners().size(); i < 2; i++) {
-      // start jetty instances
-      cluster.startJettySolrRunner();
-    }
-    cluster.waitForAllNodes(5);
 
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     String overseerLeader = (String) overSeerStatus.get("leader");
@@ -117,13 +111,7 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
     log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
 
-    cluster.deleteAllCollections();
     cluster.getSolrClient().setDefaultCollection(null);
-
-    // restart Overseer. Even though we reset the autoscaling config some already running
-    // trigger threads may still continue to execute and produce spurious events
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
-    Thread.sleep(5000);
 
     waitForSeconds = 1 + random().nextInt(3);
     actionConstructorCalled = new CountDownLatch(1);
@@ -131,12 +119,6 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
     triggerFiredLatch = new CountDownLatch(1);
     triggerFired = new AtomicBoolean(false);
     events.clear();
-
-    while (cluster.getJettySolrRunners().size() < 2) {
-      // perhaps a test stopped a node but didn't start it back
-      // lets start a node
-      cluster.startJettySolrRunner();
-    }
 
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     // clear any events or markers
@@ -178,6 +160,8 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
 
     // start a new node
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    
+    cluster.waitForAllNodes(30);
 
     // ensure that the old trigger sees the new node, todo find a better way to do this
     Thread.sleep(500 + TimeUnit.SECONDS.toMillis(DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS));
@@ -229,6 +213,7 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(15);
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
