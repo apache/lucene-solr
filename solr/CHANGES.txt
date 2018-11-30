@@ -39,17 +39,14 @@ New Features
 
 
 (No Changes)
-Other Changes
-----------------------
-* SOLR-12981: SolrJ's QueryResponse now has a method `getJsonFacetingResponse()`,
-  which allows easier access to the response information for the JSON faceting API. (Jason Gerlowski)
-
-* SOLR-12972: deprecate unused SolrIndexConfig.luceneVersion (Christine Poerschke)
 
 Bug Fixes
 ----------------------
 * SOLR-12546: CVSResponseWriter omits useDocValuesAsStored=true field when fl=*
   (Munendra S N via Mikhail Khludnev)
+
+
+* SOLR-12933: Fix SolrCloud distributed commit. (Mark Miller)
 
 Improvements
 ----------------------
@@ -58,6 +55,29 @@ Improvements
 
 * SOLR-12992: When using binary format, ExportWriter to directly copy BytesRef instead of
   creating new String (noble)
+
+* SOLR-12898: Replace cluster state polling with ZkStateReader#waitFor. (Mark Miller)
+
+* SOLR-12897: Introduce AlreadyClosedException to clean up silly close / shutdown logging. (Mark Miller)
+
+* SOLR-12896: Introduce more checks for shutdown and closed to improve clean close and shutdown. (Mark Miller)
+
+* SOLR-12804: Remove static modifier from Overseer queue access. (Mark Miller)
+
+Other Changes
+----------------------
+
+* SOLR-12981: SolrJ's QueryResponse now has a method `getJsonFacetingResponse()`,
+  which allows easier access to the response information for the JSON faceting API. (Jason Gerlowski)
+
+* SOLR-12972: deprecate unused SolrIndexConfig.luceneVersion (Christine Poerschke)
+  
+* SOLR-12801: Make massive improvements to the tests. (Mark Miller)
+
+* SOLR-12923: The new AutoScaling tests are way too flaky and need special attention. (Mark Miller)
+
+* SOLR-12932: ant test (without badapples=false) should pass easily for developers. (Mark Miller)
+
 
 ==================  7.6.0 ==================
 

@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -184,11 +183,11 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     create.setMaxShardsPerNode(1);
     response = create.process(solrCluster.getSolrClient());
 
+    miniCluster.waitForActiveCollection(name, 1, 1);
+    
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
       fail("Could not create collection. Response" + response.toString());
     }
-    ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(name, zkStateReader, false, true, 100);
   }
 
   private SolrRequest getProxyRequest(String user, String doAs) {

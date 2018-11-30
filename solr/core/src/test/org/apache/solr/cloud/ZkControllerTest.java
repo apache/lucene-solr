@@ -93,9 +93,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-
       try (SolrZkClient client = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
 
         ZkController.createClusterZkNodes(client);
@@ -176,9 +173,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       String actualConfigName = "firstConfig";
 
@@ -227,9 +221,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       cc = getCoreContainer();
       ZkController zkController = null;
@@ -282,9 +273,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-
       cc = new MockCoreContainer()  {
         @Override
         public List<CoreDescriptor> getCoreDescriptors() {
@@ -336,8 +324,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
 
         long now = System.nanoTime();
-        long timeout = now + TimeUnit.NANOSECONDS.convert(ZkController.WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        zkController.publishAndWaitForDownStates();
+        long timeout = now + TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
+        zkController.publishAndWaitForDownStates(5);
         assertTrue("The ZkController.publishAndWaitForDownStates should have timed out but it didn't", System.nanoTime() >= timeout);
       } finally {
         if (zkController != null)

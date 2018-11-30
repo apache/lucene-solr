@@ -22,9 +22,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -38,16 +43,15 @@ import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
-import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams.FacetRangeMethod;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.common.params.FacetParams.FacetRangeMethod;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.handler.component.StatsComponentTest.StatSetCombinations;
@@ -100,6 +104,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // we validate the connection before use on the restarted
     // server so that we don't use a bad one
     System.setProperty("validateAfterInactivity", "200");
+    
+    System.setProperty("solr.httpclient.retries", "0");
+    System.setProperty("distribUpdateSoTimeout", "5000");
+    
+
   }
 
   public TestDistributedSearch() {
@@ -109,6 +118,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   
   @Test
   public void test() throws Exception {
+    
+    assertEquals(clients.size(), jettys.size());
+    
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
 
@@ -954,74 +966,81 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertEquals("should have an entry for each shard ["+sinfo+"] "+shards, cnt, sinfo.size());
 
     // test shards.tolerant=true
-    for(int numDownServers = 0; numDownServers < jettys.size()-1; numDownServers++)
-    {
-      List<JettySolrRunner> upJettys = new ArrayList<>(jettys);
-      List<SolrClient> upClients = new ArrayList<>(clients);
-      List<JettySolrRunner> downJettys = new ArrayList<>();
-      List<String> upShards = new ArrayList<>(Arrays.asList(shardsArr));
-      for(int i=0; i<numDownServers; i++)
-      {
-        // shut down some of the jettys
-        int indexToRemove = r.nextInt(upJettys.size());
-        JettySolrRunner downJetty = upJettys.remove(indexToRemove);
-        upClients.remove(indexToRemove);
-        upShards.remove(indexToRemove);
-        ChaosMonkey.stop(downJetty);
-        downJettys.add(downJetty);
+
+    List<JettySolrRunner> upJettys = Collections.synchronizedList(new ArrayList<>(jettys));
+    List<SolrClient> upClients = Collections.synchronizedList(new ArrayList<>(clients));
+    List<JettySolrRunner> downJettys = Collections.synchronizedList(new ArrayList<>());
+    List<String> upShards = Collections.synchronizedList(new ArrayList<>(Arrays.asList(shardsArr)));
+    
+    int cap =  Math.max(upJettys.size() - 1, 1);
+
+    int numDownServers = random().nextInt(cap);
+    for (int i = 0; i < numDownServers; i++) {
+      if (upJettys.size() == 1) {
+        continue;
       }
-
-      queryPartialResults(upShards, upClients, 
-          "q","*:*",
-          "facet","true", 
-          "facet.field",t1,
-          "facet.field",t1,
-          "facet.limit",5,
-          ShardParams.SHARDS_INFO,"true",
-          ShardParams.SHARDS_TOLERANT,"true");
-
-      queryPartialResults(upShards, upClients,
-          "q", "*:*",
-          "facet", "true",
-          "facet.query", i1 + ":[1 TO 50]",
-          "facet.query", i1 + ":[1 TO 50]",
-          ShardParams.SHARDS_INFO, "true",
-          ShardParams.SHARDS_TOLERANT, "true");
-
-      // test group query
-      queryPartialResults(upShards, upClients,
-           "q", "*:*",
-           "rows", 100,
-           "fl", "id," + i1,
-           "group", "true",
-           "group.query", t1 + ":kings OR " + t1 + ":eggs",
-           "group.limit", 10,
-           "sort", i1 + " asc, id asc",
-           CommonParams.TIME_ALLOWED, 1,
-           ShardParams.SHARDS_INFO, "true",
-           ShardParams.SHARDS_TOLERANT, "true");
-
-      queryPartialResults(upShards, upClients,
-          "q", "*:*",
-          "stats", "true",
-          "stats.field", i1,
-          ShardParams.SHARDS_INFO, "true",
-          ShardParams.SHARDS_TOLERANT, "true");
-
-      queryPartialResults(upShards, upClients,
-          "q", "toyata",
-          "spellcheck", "true",
-          "spellcheck.q", "toyata",
-          "qt", "/spellCheckCompRH_Direct",
-          "shards.qt", "/spellCheckCompRH_Direct",
-          ShardParams.SHARDS_INFO, "true",
-          ShardParams.SHARDS_TOLERANT, "true");
-
-      // restart the jettys
-      for (JettySolrRunner downJetty : downJettys) {
-        ChaosMonkey.start(downJetty);
-      }
+      // shut down some of the jettys
+      int indexToRemove = r.nextInt(upJettys.size() - 1);
+      JettySolrRunner downJetty = upJettys.remove(indexToRemove);
+      upClients.remove(indexToRemove);
+      upShards.remove(indexToRemove);
+      downJetty.stop();
+      downJettys.add(downJetty);
     }
+    
+    Thread.sleep(100);
+
+    queryPartialResults(upShards, upClients,
+        "q", "*:*",
+        "facet", "true",
+        "facet.field", t1,
+        "facet.field", t1,
+        "facet.limit", 5,
+        ShardParams.SHARDS_INFO, "true",
+        ShardParams.SHARDS_TOLERANT, "true");
+
+    queryPartialResults(upShards, upClients,
+        "q", "*:*",
+        "facet", "true",
+        "facet.query", i1 + ":[1 TO 50]",
+        "facet.query", i1 + ":[1 TO 50]",
+        ShardParams.SHARDS_INFO, "true",
+        ShardParams.SHARDS_TOLERANT, "true");
+
+    // test group query
+    queryPartialResults(upShards, upClients,
+        "q", "*:*",
+        "rows", 100,
+        "fl", "id," + i1,
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs",
+        "group.limit", 10,
+        "sort", i1 + " asc, id asc",
+        CommonParams.TIME_ALLOWED, 10000,
+        ShardParams.SHARDS_INFO, "true",
+        ShardParams.SHARDS_TOLERANT, "true");
+
+    queryPartialResults(upShards, upClients,
+        "q", "*:*",
+        "stats", "true",
+        "stats.field", i1,
+        ShardParams.SHARDS_INFO, "true",
+        ShardParams.SHARDS_TOLERANT, "true");
+
+    queryPartialResults(upShards, upClients,
+        "q", "toyata",
+        "spellcheck", "true",
+        "spellcheck.q", "toyata",
+        "qt", "/spellCheckCompRH_Direct",
+        "shards.qt", "/spellCheckCompRH_Direct",
+        ShardParams.SHARDS_INFO, "true",
+        ShardParams.SHARDS_TOLERANT, "true");
+
+    // restart the jettys
+    for (JettySolrRunner downJetty : downJettys) {
+      downJetty.start();
+    }
+    
 
     // This index has the same number for every field
     
@@ -1127,17 +1146,22 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     params.remove("distrib");
     setDistributedParams(params);
 
-    QueryResponse rsp = queryRandomUpServer(params,upClients);
+    if (upClients.size() == 0) {
+      return;
+    }
+    QueryResponse rsp = queryRandomUpServer(params, upClients);
 
     comparePartialResponses(rsp, controlRsp, upShards);
 
     if (stress > 0) {
       log.info("starting stress...");
-      Thread[] threads = new Thread[nThreads];
+      Set<Future<Object>> pending = new HashSet<>();;
+      ExecutorCompletionService<Object> cs = new ExecutorCompletionService<>(executor);
+      Callable[] threads = new Callable[nThreads];
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new Thread() {
+        threads[i] = new Callable() {
           @Override
-          public void run() {
+          public Object call() {
             for (int j = 0; j < stress; j++) {
               int which = r.nextInt(upClients.size());
               SolrClient client = upClients.get(which);
@@ -1150,21 +1174,32 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                 throw new RuntimeException(e);
               }
             }
+            return null;
           }
         };
-        threads[i].start();
+        pending.add(cs.submit(threads[i]));
+      }
+      
+      while (pending.size() > 0) {
+        Future<Object> future = cs.take();
+        pending.remove(future);
+        future.get();
       }
 
-      for (Thread thread : threads) {
-        thread.join();
-      }
     }
   }
 
-  protected QueryResponse queryRandomUpServer(ModifiableSolrParams params, List<SolrClient> upClients) throws SolrServerException, IOException {
+  protected QueryResponse queryRandomUpServer(ModifiableSolrParams params, List<SolrClient> upClients)
+      throws SolrServerException, IOException {
     // query a random "up" server
-    int which = r.nextInt(upClients.size());
-    SolrClient client = upClients.get(which);
+    SolrClient client;
+    if (upClients.size() == 1) {
+      client = upClients.get(0);
+    } else {
+      int which = r.nextInt(upClients.size() - 1);
+      client = upClients.get(which);
+    }
+
     QueryResponse rsp = client.query(params);
     return rsp;
   }
@@ -1197,7 +1232,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
               assertTrue("Expected timeAllowedError or to find shardAddress in the up shard info: " + info.toString(), info.get("shardAddress") != null);
             }
           } else {
-            assertEquals("Expected to find the " + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY + " header set if a shard is down",
+            assertEquals("Expected to find the " + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY + " header set if a shard is down. Response: " + rsp,
                 Boolean.TRUE, rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
             assertTrue("Expected to find error in the down shard info: " + info.toString(), info.get("error") != null);
           }

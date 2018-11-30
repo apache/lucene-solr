@@ -197,7 +197,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private boolean replicateOnStart = false;
 
-  private ScheduledExecutorService executorService;
+  private volatile ScheduledExecutorService executorService;
 
   private volatile long executorStartTime;
 
@@ -1369,6 +1369,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (restoreFuture != null) {
       restoreFuture.cancel(false);
     }
+    
+    ExecutorUtil.shutdownAndAwaitTermination(executorService);
   }
 
   /**

@@ -86,7 +86,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     }
     
     ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
+    cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     
     cloudSolrClient.setDefaultCollection(collectionName);
   }

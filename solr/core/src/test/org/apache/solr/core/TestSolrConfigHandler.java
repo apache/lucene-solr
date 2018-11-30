@@ -58,6 +58,8 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 public class TestSolrConfigHandler extends RestTestBase {
+  private static final int TIMEOUT_S = 10;
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static File tmpSolrHome;
@@ -205,7 +207,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("overlay", "requestHandler", "/x", "startup"),
         "lazy",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'update-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' ,registerPath :'/solr,/v2', " +
@@ -219,7 +221,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("overlay", "requestHandler", "/x", "a"),
         "b",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'update-requesthandler' : { 'name' : '/dump', " +
@@ -235,7 +237,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("overlay", "requestHandler", "/dump", "defaults", "c"),
         "C",
-        10);
+        TIMEOUT_S);
 
     testForResponseElement(writeHarness,
         testServerBaseUrl,
@@ -243,7 +245,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("getdefaults", "def_a"),
         "def A val",
-        10);
+        TIMEOUT_S);
 
     testForResponseElement(writeHarness,
         testServerBaseUrl,
@@ -251,7 +253,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("params", "multival"),
         asList("a", "b", "c"),
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'delete-requesthandler' : '/x'" +
@@ -282,7 +284,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "queryConverter", "qc", "class"),
         "org.apache.solr.spelling.SpellingQueryConverter",
-        10);
+        TIMEOUT_S);
     payload = "{\n" +
         "'update-queryconverter' : { 'name' : 'qc', 'class': 'org.apache.solr.spelling.SuggestQueryConverter'}\n" +
         "}";
@@ -293,7 +295,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "queryConverter", "qc", "class"),
         "org.apache.solr.spelling.SuggestQueryConverter",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'delete-queryconverter' : 'qc'" +
@@ -305,7 +307,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "queryConverter", "qc"),
         null,
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'create-searchcomponent' : { 'name' : 'tc', 'class': 'org.apache.solr.handler.component.TermsComponent'}\n" +
@@ -317,7 +319,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "searchComponent", "tc", "class"),
         "org.apache.solr.handler.component.TermsComponent",
-        10);
+        TIMEOUT_S);
     payload = "{\n" +
         "'update-searchcomponent' : { 'name' : 'tc', 'class': 'org.apache.solr.handler.component.TermVectorComponent' }\n" +
         "}";
@@ -328,7 +330,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "searchComponent", "tc", "class"),
         "org.apache.solr.handler.component.TermVectorComponent",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'delete-searchcomponent' : 'tc'" +
@@ -340,7 +342,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "searchComponent", "tc"),
         null,
-        10);
+        TIMEOUT_S);
     //<valueSourceParser name="countUsage" class="org.apache.solr.core.CountUsageValueSourceParser"/>
     payload = "{\n" +
         "'create-valuesourceparser' : { 'name' : 'cu', 'class': 'org.apache.solr.core.CountUsageValueSourceParser'}\n" +
@@ -352,7 +354,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "valueSourceParser", "cu", "class"),
         "org.apache.solr.core.CountUsageValueSourceParser",
-        10);
+        TIMEOUT_S);
     //  <valueSourceParser name="nvl" class="org.apache.solr.search.function.NvlValueSourceParser">
 //    <float name="nvlFloatValue">0.0</float>
 //    </valueSourceParser>
@@ -366,7 +368,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "valueSourceParser", "cu", "class"),
         "org.apache.solr.search.function.NvlValueSourceParser",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'delete-valuesourceparser' : 'cu'" +
@@ -378,7 +380,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "valueSourceParser", "cu"),
         null,
-        10);
+        TIMEOUT_S);
 //    <transformer name="mytrans2" class="org.apache.solr.response.transform.ValueAugmenterFactory" >
 //    <int name="value">5</int>
 //    </transformer>
@@ -392,7 +394,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "transformer", "mytrans", "class"),
         "org.apache.solr.response.transform.ValueAugmenterFactory",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'update-transformer' : { 'name' : 'mytrans', 'class': 'org.apache.solr.response.transform.ValueAugmenterFactory', 'value':'6'}\n" +
@@ -404,7 +406,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "transformer", "mytrans", "value"),
         "6",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'delete-transformer' : 'mytrans'," +
@@ -417,7 +419,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "transformer", "mytrans"),
         null,
-        10);
+        TIMEOUT_S);
 
     List l = (List) Utils.getObjectByPath(map, false, asList("config", "initParams"));
     assertNotNull("no object /config/initParams : "+ map , l);
@@ -444,7 +446,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "searchComponent", "myspellcheck", "spellchecker", "class"),
         "solr.DirectSolrSpellChecker",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "    'add-requesthandler': {\n" +
@@ -462,7 +464,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("config", "requestHandler", "/dump100", "class"),
         "org.apache.solr.handler.DumpRequestHandler",
-        10);
+        TIMEOUT_S);
 
     map = getRespMap("/dump100?json.nl=arrmap&initArgs=true", writeHarness);
     List initArgs = (List) map.get("initArgs");
@@ -485,7 +487,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("overlay", "requestHandler", "/dump101", "startup"),
         "lazy",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'add-cache' : {name:'lfuCacheDecayFalse', class:'solr.search.LFUCache', size:10 ,initialSize:9 , timeDecay:false }," +
@@ -498,7 +500,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         asList("overlay", "cache", "lfuCacheDecayFalse", "class"),
         "solr.search.LFUCache",
-        10);
+        TIMEOUT_S);
     assertEquals("solr.search.LRUCache",getObjectByPath(map, true, ImmutableList.of("overlay", "cache", "perSegFilter", "class")));
 
     map = getRespMap("/dump101?cacheNames=lfuCacheDecayFalse&cacheNames=perSegFilter", writeHarness);
@@ -609,7 +611,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("response", "params", "x", "a"),
         "A val",
-        10);
+        TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
@@ -618,7 +620,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("response", "params", "x", "b"),
         "B val",
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/d', registerPath :'/solr,/v2' , 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
@@ -633,7 +635,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("overlay", "requestHandler", "/d", "name"),
         "/d",
-        10);
+        TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(harness,
         null,
@@ -641,14 +643,14 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("params", "a"),
         "A val",
-        5);
+        TIMEOUT_S);
     TestSolrConfigHandler.testForResponseElement(harness,
         null,
         "/d?useParams=x&a=fomrequest",
         null,
         asList("params", "a"),
         "fomrequest",
-        5);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/dump1', registerPath :'/solr,/v2' , 'class': 'org.apache.solr.handler.DumpRequestHandler', 'useParams':'x' }\n" +
@@ -662,7 +664,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("overlay", "requestHandler", "/dump1", "name"),
         "/dump1",
-        10);
+        TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
@@ -671,7 +673,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("params", "a"),
         "A val",
-        5);
+        TIMEOUT_S);
 
 
     payload = " {\n" +
@@ -692,7 +694,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("response", "params", "y", "c"),
         "CY val",
-        10);
+        TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(harness,
         null,
@@ -700,7 +702,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("params", "c"),
         "CY val",
-        5);
+        TIMEOUT_S);
 
 
     TestSolrConfigHandler.testForResponseElement(
@@ -710,7 +712,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("params", "b"),
         "BY val",
-        5);
+        TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
@@ -719,7 +721,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("params", "a"),
         "A val",
-        5);
+        TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
@@ -728,7 +730,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("params", "d"),
         asList("val 1", "val 2"),
-        5);
+        TIMEOUT_S);
 
     payload = " {\n" +
         "  'update' : {'y': {\n" +
@@ -749,7 +751,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("response", "params", "y", "c"),
         "CY val modified",
-        10);
+        TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
@@ -758,7 +760,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("response", "params", "y", "e"),
         "EY val",
-        10);
+        TIMEOUT_S);
 
     payload = " {\n" +
         "  'set' : {'y': {\n" +
@@ -777,7 +779,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("response", "params", "y", "p"),
         "P val",
-        10);
+        TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
@@ -786,7 +788,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("response", "params", "y", "c"),
         null,
-        10);
+        TIMEOUT_S);
     payload = " {'delete' : 'y'}";
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
@@ -796,7 +798,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("response", "params", "y", "p"),
         null,
-        10);
+        TIMEOUT_S);
 
     payload = "{\n" +
         "  'create-requesthandler': {\n" +
@@ -824,7 +826,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         asList("overlay", "requestHandler", "aRequestHandler", "class"),
         "org.apache.solr.handler.DumpRequestHandler",
-        10);
+        TIMEOUT_S);
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
     restTestHarness.setServerProvider(() -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
 
@@ -850,7 +852,7 @@ public class TestSolrConfigHandler extends RestTestBase {
             return "{part1:part1_Value, part2 : part2_Value]";
           }
         },
-        10);
+        TIMEOUT_S);
     restTestHarness.setServerProvider(oldProvider);
 
   }

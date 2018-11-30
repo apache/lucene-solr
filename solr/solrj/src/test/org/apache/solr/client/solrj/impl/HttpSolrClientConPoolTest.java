@@ -46,12 +46,12 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
     // stealing the first made jetty
     yetty = jetty;
     barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
     
-    createJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
     
     fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
   }

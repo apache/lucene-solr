@@ -40,7 +40,7 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     String asyncId =
         CollectionAdminRequest.createCollection("asynccall", "conf", 2, 1).processAsync(cluster.getSolrClient());
 
-    waitForState("Expected collection 'asynccall' to have 2 shards and 1 replica", "asynccall", clusterShape(2, 1));
+    waitForState("Expected collection 'asynccall' to have 2 shards and 1 replica", "asynccall", clusterShape(2, 2));
 
     int tries = 0;
     while (true) {

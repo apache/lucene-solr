@@ -111,6 +111,7 @@ public class RestoreTriggerStateTest extends SolrCloudTestCase {
     events.clear();
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
@@ -125,7 +126,8 @@ public class RestoreTriggerStateTest extends SolrCloudTestCase {
     JettySolrRunner newNode2 = cluster.startJettySolrRunner();
     Thread.sleep(10000);
     // kill overseer leader
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
+    JettySolrRunner j = cluster.stopJettySolrRunner(overseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
     await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());

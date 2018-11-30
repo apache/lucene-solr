@@ -35,7 +35,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
   protected static ZkTestServer zkServer;
   
   @BeforeClass
-  public static void setUpClass() throws InterruptedException {
+  public static void setUpClass() throws Exception {
     zkDir = createTempDir("TestDistributedMap");
     zkServer = new ZkTestServer(zkDir.toFile().getAbsolutePath());
     zkServer.run();
@@ -171,7 +171,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
   }
   
   protected String getAndMakeInitialPath(SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    String path = String.format(Locale.ROOT, "/%s/%s", getClass().getName(), getTestName());
+    String path = String.format(Locale.ROOT, "/%s/%s", getClass().getName(), getSaferTestName());
     zkClient.makePath(path, false, true);
     return path;
   }

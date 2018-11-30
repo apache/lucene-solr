@@ -59,7 +59,7 @@ public class SolrClientCache implements Serializable {
     } else {
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
-      CloudSolrClient.Builder builder = new CloudSolrClient.Builder(hosts, Optional.empty());
+      CloudSolrClient.Builder builder = new CloudSolrClient.Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }
