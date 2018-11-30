@@ -37,8 +37,8 @@ Upgrade Notes
 New Features
 ----------------------
 
-
-(No Changes)
+* SOLR-12839: JSON 'terms' Faceting now supports a 'prelim_sort' option to use when initially selecting 
+  the top ranking buckets, prior to the final 'sort' option used after refinement.  (hossman)
 
 Bug Fixes
 ----------------------
