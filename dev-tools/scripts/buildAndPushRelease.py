@@ -105,8 +105,8 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  Check DOAP files')
   checkDOAPfiles(version)
 
-  print('  ant clean test validate documentation-lint')
-  run('ant clean test validate documentation-lint')
+  print('  ant -Dtests.badapples=false clean test validate documentation-lint')
+  run('ant -Dtests.badapples=false clean test validate documentation-lint')
 
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
