@@ -23,3 +23,8 @@
 // *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
 
 * Due to LIR redesign in SOLR-11702, all users must be on Solr 7.3 or higher to upgrade to Solr 8
+
+* SOLR-13025: BM25 scoring formula changes will lead to lower absolute scores. This is controlled by luceneMatchVersion,
+  so that existing scoring is kept as is when using BM25SimilarityFactory (the default) for 6.x and 7.x luceneMatchVersions
+  while for 8.0.0 and later the new formula will be used. There is also a new LegacyBM25SimilarityFactory that may
+  be used to force the old formula even for luceneMatchVersion>=8.x. See also explanation in Reference Guide.

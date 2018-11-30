@@ -16,12 +16,13 @@
  */
 package org.apache.solr.search.similarities;
 
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarity.LegacyBM25Similarity;
 import org.junit.BeforeClass;
 
 /**
- * Tests {@link BM25SimilarityFactory}
+ * Tests {@link BM25SimilarityFactory} and {@link LegacyBM25SimilarityFactory}
  */
 public class TestBM25SimilarityFactory extends BaseSimilarityTestCase {
   @BeforeClass
@@ -30,13 +31,27 @@ public class TestBM25SimilarityFactory extends BaseSimilarityTestCase {
   }
   
   /** bm25 with default parameters */
-  public void test() throws Exception {
-    assertEquals(LegacyBM25Similarity.class, getSimilarity("text").getClass());
+  public void testDefault() throws Exception {
+    assertEquals(BM25Similarity.class, getSimilarity("text").getClass());
   }
   
+  /** legacybm25 with default parameters */
+  public void testLegacyDefault() throws Exception {
+    assertEquals(LegacyBM25Similarity.class, getSimilarity("legacy_text").getClass());
+  }
+
   /** bm25 with parameters */
   public void testParameters() throws Exception {
     Similarity sim = getSimilarity("text_params");
+    assertEquals(BM25Similarity.class, sim.getClass());
+    BM25Similarity bm25 = (BM25Similarity) sim;
+    assertEquals(1.2f, bm25.getK1(), 0.01f);
+    assertEquals(0.76f, bm25.getB(), 0.01f);
+  }
+
+  /** bm25 with parameters */
+  public void testLegacyParameters() throws Exception {
+    Similarity sim = getSimilarity("legacy_text_params");
     assertEquals(LegacyBM25Similarity.class, sim.getClass());
     LegacyBM25Similarity bm25 = (LegacyBM25Similarity) sim;
     assertEquals(1.2f, bm25.getK1(), 0.01f);

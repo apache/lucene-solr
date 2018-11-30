@@ -37,6 +37,7 @@ import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.NamedNodeMap;
@@ -102,6 +103,11 @@ public final class FieldTypePluginLoader
     expression = "./similarity";
     anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
     SimilarityFactory simFactory = IndexSchema.readSimilarity(loader, anode);
+    
+    if (ft instanceof SolrCoreAware) {
+      
+    }
+    
     if (null != simFactory) {
       ft.setSimilarity(simFactory);
     }

@@ -59,6 +59,12 @@ Upgrade Notes
 * SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true.  If there are unforseen highlight problems,
   this may be the culprit.
 
+* SOLR-13025: BM25 scoring formula changes will lead to lower absolute scores. This is controlled by luceneMatchVersion,
+  so that existing scoring is kept as in v7.x is when using BM25SimilarityFactory with luceneMatchVersions < 8.0.0.
+  There is also a new LegacyBM25SimilarityFactory that may be used explicitly to force the old formula. 
+  See also explanation in Reference Guide.
+
+
 New Features
 ----------------------
 
@@ -84,6 +90,10 @@ Optimizations
 ----------------------
 
 * SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition. (ab)
+
+* SOLR-13025: Due to LUCENE-8563, the BM25 scores don't include the (k1+1) factor in their numerator
+  anymore. This doesn't affect ordering as this is a constant factor which is the same for every document.
+  See also upgrade notes (janhoy)
 
 Other Changes
 ----------------------
