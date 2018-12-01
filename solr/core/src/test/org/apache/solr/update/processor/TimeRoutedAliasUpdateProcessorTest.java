@@ -375,7 +375,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     assertUpdateResponse(solrClient.commit(alias));
 
     cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertEquals(3,cols.size());
+    assertEquals(4, cols.size());
     assertNumDocs("2017-10-23", 1);
     assertNumDocs("2017-10-24", 1);
     assertNumDocs("2017-10-25", 3);
@@ -387,7 +387,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
     waitCol("2017-10-26", numShards);
     cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertEquals(4,cols.size());
+    assertEquals(5, cols.size());
     assertNumDocs("2017-10-23", 1);
     assertNumDocs("2017-10-24", 1);
     assertNumDocs("2017-10-25", 4);
@@ -404,7 +404,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     waitCol("2017-10-27", numShards);
 
     cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertEquals(5,cols.size()); // only one created in async case
+    assertEquals(6,cols.size()); // only one created in async case
     assertNumDocs("2017-10-23", 1);
     assertNumDocs("2017-10-24", 1);
     assertNumDocs("2017-10-25", 5);
@@ -419,7 +419,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     waitCol("2017-10-28", numShards);
 
     cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertEquals(6,cols.size()); // Subsequent documents continue to create up to limit
+    assertEquals(7,cols.size()); // Subsequent documents continue to create up to limit
     assertNumDocs("2017-10-23", 1);
     assertNumDocs("2017-10-24", 1);
     assertNumDocs("2017-10-25", 6);
@@ -451,7 +451,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     waitCol("2017-10-29", numShards);
 
     cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertEquals(7,cols.size());
+    assertEquals(8,cols.size());
     assertNumDocs("2017-10-23", 1);
     assertNumDocs("2017-10-24", 1);
     assertNumDocs("2017-10-25", 6);
