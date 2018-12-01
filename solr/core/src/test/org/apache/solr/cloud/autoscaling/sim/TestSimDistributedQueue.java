@@ -215,7 +215,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
       super.tearDown();
     } catch (Exception exc) {
     }
-    executor.shutdown();
+    ExecutorUtil.shutdownAndAwaitTermination(executor);
   }
 
 }
