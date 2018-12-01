@@ -73,7 +73,6 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  // This apparently fails in both subclasses.
   public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
     JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);
@@ -83,11 +82,17 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
         .setAutoAddReplicas(true)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(COLLECTION1, 2, 4);
+    
     CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 2)
         .setCreateNodeSet(jetty2.getNodeName()+","+jetty3.getNodeName())
         .setAutoAddReplicas(false)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(COLLECTION2, 2, 4);
+    
     // the number of cores in jetty1 (5) will be larger than jetty3 (1)
     CollectionAdminRequest.createCollection("testSimple3", "conf", 3, 1)
         .setCreateNodeSet(jetty1.getNodeName())
@@ -95,6 +100,8 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
+    cluster.waitForActiveCollection("testSimple3", 3, 3);
+    
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
 
     // start the tests
