@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,6 +65,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
@@ -398,33 +398,35 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void destroyServers() throws Exception {
-    ForkJoinPool customThreadPool = new ForkJoinPool(12);
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
     
     customThreadPool.submit(() -> Collections.singleton(controlClient).parallelStream().forEach(c -> {
       IOUtils.closeQuietly(c);
     }));
 
-    customThreadPool.submit(() -> Collections.singleton(controlJetty).parallelStream().forEach(c -> {
+    customThreadPool.submit(() -> {
       try {
-        c.stop();
+        controlJetty.stop();
       } catch (NullPointerException e) {
         // ignore
       } catch (Exception e) {
         log.error("Error stopping Control Jetty", e);
       }
-    }));
+    });
 
-    customThreadPool.submit(() -> clients.parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
-
-    customThreadPool.submit(() -> jettys.parallelStream().forEach(c -> {
-      try {
-        c.stop();
-      } catch (Exception e) {
-        log.error("Error stopping Jetty", e);
-      }
-    }));
+    for (SolrClient client : clients) {
+      customThreadPool.submit(() ->  IOUtils.closeQuietly(client));
+    }
+    
+    for (JettySolrRunner jetty : jettys) {
+      customThreadPool.submit(() -> {
+        try {
+          jetty.stop();
+        } catch (Exception e) {
+          log.error("Error stopping Jetty", e);
+        }
+      });
+    }
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     
