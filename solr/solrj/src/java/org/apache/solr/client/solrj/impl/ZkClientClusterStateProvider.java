@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -39,11 +40,14 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  ZkStateReader zkStateReader;
+  volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
   String zkHost;
-  int zkConnectTimeout = 10000;
-  int zkClientTimeout = 10000;
+  int zkConnectTimeout = 15000;
+  int zkClientTimeout = 45000;
+
+
+  private volatile boolean isClosed = false;
 
   public ZkClientClusterStateProvider(ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
@@ -73,6 +77,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public Set<String> getLiveNodes() {
+    if (isClosed) throw new AlreadyClosedException();
     ClusterState clusterState = zkStateReader.getClusterState();
     if (clusterState != null) {
       return clusterState.getLiveNodes();
@@ -175,6 +180,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public void close() throws IOException {
+    isClosed  = true;
     if (zkStateReader != null && closeZkStateReader) {
       synchronized (this) {
         if (zkStateReader != null)

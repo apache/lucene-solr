@@ -168,7 +168,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
   
   private void restartNodes(List<CloudJettyRunner> nodesToRestart) throws Exception {
     for (CloudJettyRunner node : nodesToRestart) {
-      chaosMonkey.start(node.jetty);
+      node.jetty.start();
       nodesDown.remove(node);
     }
     waitTillNodesActive();
@@ -178,7 +178,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
   private void forceNodeFailures(List<CloudJettyRunner> replicasToShutDown) throws Exception {
     for (CloudJettyRunner replicaToShutDown : replicasToShutDown) {
-      chaosMonkey.killJetty(replicaToShutDown);
+      replicaToShutDown.jetty.stop();
     }
 
     int totalDown = 0;

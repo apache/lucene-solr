@@ -74,8 +74,14 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   
   private final Http2SolrClient updateOnlyClient;
   
+  private final CloseableHttpClient recoveryOnlyClient;
+  
   private final CloseableHttpClient defaultClient;
 
+  private final InstrumentedPoolingHttpClientConnectionManager updateOnlyConnectionManager;
+  
+  private final InstrumentedPoolingHttpClientConnectionManager recoveryOnlyConnectionManager;
+  
   private final InstrumentedPoolingHttpClientConnectionManager defaultConnectionManager;
 
   private final InstrumentedHttpRequestExecutor httpRequestExecutor;
@@ -90,9 +96,15 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
+    updateOnlyConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
+    recoveryOnlyConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
     defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null ) {
+      updateOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
+      updateOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
+      recoveryOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
+      recoveryOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       defaultConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
@@ -108,6 +120,8 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
     updateHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
+    recoveryOnlyClient = HttpClientUtil.createClient(clientParams, recoveryOnlyConnectionManager, false, httpRequestExecutor);
+    defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
     Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
@@ -122,8 +136,6 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
     queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
     updateOnlyClient.setQueryParams(queryParams);
-
-    defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
     ThreadFactory recoveryThreadFactory = new SolrjNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
@@ -208,6 +220,11 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     return updateOnlyClient;
   }
   
+  // don't introduce a bug, this client is for recovery ops only!
+  public HttpClient getRecoveryOnlyHttpClient() {
+    return recoveryOnlyClient;
+  }
+  
 
    /**
    * This method returns an executor that is meant for non search related tasks.
@@ -220,6 +237,10 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
   public PoolingHttpClientConnectionManager getDefaultConnectionManager() {
     return defaultConnectionManager;
+  }
+  
+  public PoolingHttpClientConnectionManager getRecoveryOnlyConnectionManager() {
+    return recoveryOnlyConnectionManager;
   }
 
   /**
@@ -236,11 +257,13 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
       ExecutorUtil.shutdownAndAwaitTermination(updateExecutor);
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      throw new RuntimeException(e);
     } finally {
       IOUtils.closeQuietly(updateOnlyClient);
+      HttpClientUtil.close(recoveryOnlyClient);
       HttpClientUtil.close(defaultClient);
       defaultConnectionManager.close();
+      recoveryOnlyConnectionManager.close();
     }
   }
 

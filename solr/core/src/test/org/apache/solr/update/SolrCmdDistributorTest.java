@@ -110,7 +110,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     seedSolrHome(controlHome);
     writeCoreProperties(controlHome.toPath().resolve("cores").resolve(DEFAULT_TEST_CORENAME), DEFAULT_TEST_CORENAME);
     controlJetty = createJetty(controlHome, testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
-
+    controlJetty.start();
     controlClient = createNewSolrClient(controlJetty.getLocalPort());
 
     shardsArr = new String[numShards];
@@ -125,6 +125,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       JettySolrRunner j = createJetty(shardHome.toFile(),
           testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
           getSchemaFile());
+      j.start();
       jettys.add(j);
       clients.add(createNewSolrClient(j.getLocalPort()));
       String shardStr = buildUrl(j.getLocalPort());

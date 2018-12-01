@@ -40,23 +40,23 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.equals(TimerThread.THREAD_NAME)) {
       return true;
     }
-
-    if (threadName.startsWith("facetExecutor-") || 
-        threadName.startsWith("cmdDistribExecutor-") ||
-        threadName.startsWith("httpShardExecutor-")) {
+    
+    // due to netty - will stop on it's own
+    if (threadName.startsWith("globalEventExecutor")) {
       return true;
     }
     
-    // This is a bug in ZooKeeper where they call System.exit(11) when
-    // this thread receives an interrupt signal.
-    if (threadName.startsWith("SyncThread")) {
+    // HttpClient Connection evictor threads can take a moment to wake and shutdown
+    if (threadName.startsWith("Connection evictor")) {
       return true;
     }
-
-    // THESE ARE LIKELY BUGS - these threads should be closed!
-    if (threadName.startsWith("Overseer-") ||
-        threadName.startsWith("aliveCheckExecutor-") ||
-        threadName.startsWith("concurrentUpdateScheduler-")) {
+    
+    // These is a java pool for the collection stream api
+    if (threadName.startsWith("ForkJoinPool.")) {
+      return true;
+    }
+    
+    if (threadName.startsWith("Image Fetcher")) {
       return true;
     }
 

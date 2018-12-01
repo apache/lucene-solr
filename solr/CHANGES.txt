@@ -26,17 +26,10 @@ Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
-Jetty 9.4.11.v20180605
+Jetty 9.4.14.v20181114
 
 Upgrade Notes
 ----------------------
-
-* Solr nodes can now listen and serve HTTP/2 requests. Most of internal requests (sent by UpdateShardHandler, HttpShardHandler)
-  Http2SolrClient is used. Since by default, internal requests are sent by using HTTP/2,
-  Solr 8.0 nodes can't talk to old nodes (7.x). However we can follow these steps to do rolling updates:
-  - Do rolling updates as normally, but the Solr 8.0 nodes must start with -Dsolr.http1=true as startup parameter.
-    By using this parameter internal requests are sent by using HTTP/1.1
-  - When all nodes are upgraded to 8.0, restart them, this time -Dsolr.http1 parameter should be removed.
 
 * LUCENE-7996: The 'func' query parser now returns scores that are equal to 0
   when a negative value is produced. This change is due to the fact that
@@ -63,26 +56,7 @@ Upgrade Notes
   "date.formats" configuration.  To ensure date strings are properly parsed, use ParseDateFieldUpdateProcessorFactory
   (an URP) commonly registered with the name "parse-date" in "schemaless mode".  (David Smiley, Bar Rotstein)
 
-* SOLR-12639: Solr is now using HTTP/2 (Http2SolrClient) for most of internal requests
-  (UpdateShardHandler, HttpShardHandler).
-
-* SOLR-12643: Since Http2SolrClient does not support exposing connections related metrics. These metrics are no longer
-  available 'QUERY.httpShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}',
-  'UPDATE.updateShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}'
-
-* SOLR-12605: UpdateShardHandler's updateOnlyClient is now a Http2SolrClient (previous HttpSolrClient). This new
-  client does not support 'maxConnections','maxConnectionsPerHost' parameters (Cao Manh Dat). StreamingsSolrClient which is removed and
-  ConcurrentUpdateSolrClient are no longer used to send updates, updates will be sent asynchronously (without-batching)
-  by Http2SolrClient.
-
-* SOLR-12640: HttpShardHandlerFactory's defaultClient is now a Http2SolrClient (previous HttpSolrClient). This new
-  client does not support 'maxConnections','maxConnectionsPerHost' parameters. LBHttpSolrClient.Req and LBHttpSolrClient.Rsp
-  are marked as deprecated, uses LBSolrClient.Req and LBSolrClient.Rsp instead.
-
-* SOLR-12644: Custom AuthenticationPlugin must provide its own setup for Http2SolrClient through
-  implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated.
-
-* SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true. If there are unforseen highlight problems,
+* SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true.  If there are unforseen highlight problems,
   this may be the culprit.
 
 New Features
@@ -145,7 +119,7 @@ Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.11
-Jetty 9.4.11.v20180605
+Jetty 9.4.14.v20181114
 
 
 Upgrade Notes
@@ -156,17 +130,16 @@ Upgrade Notes
 New Features
 ----------------------
 
-(No Changes)
-
-Other Changes
-----------------------
-
-* SOLR-12972: deprecate unused SolrIndexConfig.luceneVersion (Christine Poerschke)
+* SOLR-12839: JSON 'terms' Faceting now supports a 'prelim_sort' option to use when initially selecting
+  the top ranking buckets, prior to the final 'sort' option used after refinement.  (hossman)
 
 Bug Fixes
 ----------------------
+
 * SOLR-12546: CVSResponseWriter omits useDocValuesAsStored=true field when fl=*
   (Munendra S N via Mikhail Khludnev)
+  
+* SOLR-12933: Fix SolrCloud distributed commit. (Mark Miller)
 
 Improvements
 ----------------------
@@ -175,6 +148,25 @@ Improvements
 
 * SOLR-12992: When using binary format, ExportWriter to directly copy BytesRef instead of
   creating new String (noble)
+
+* SOLR-12898: Replace cluster state polling with ZkStateReader#waitFor. (Mark Miller)
+
+* SOLR-12897: Introduce AlreadyClosedException to clean up silly close / shutdown logging. (Mark Miller)
+
+* SOLR-12896: Introduce more checks for shutdown and closed to improve clean close and shutdown. (Mark Miller)
+
+* SOLR-12804: Remove static modifier from Overseer queue access. (Mark Miller)
+
+Other Changes
+----------------------
+
+* SOLR-12972: deprecate unused SolrIndexConfig.luceneVersion (Christine Poerschke)
+
+* SOLR-12801: Make massive improvements to the tests. (Mark Miller)
+
+* SOLR-12923: The new AutoScaling tests are way too flaky and need special attention. (Mark Miller)
+
+* SOLR-12932: ant test (without badapples=false) should pass easily for developers. (Mark Miller)
 
 ==================  7.6.0 ==================
 

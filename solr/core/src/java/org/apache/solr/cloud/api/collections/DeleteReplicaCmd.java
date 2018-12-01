@@ -246,7 +246,7 @@ public class DeleteReplicaCmd implements Cmd {
           ocmh.processResponses(results, shardHandler, false, null, asyncId, requestMap.get());
 
           //check if the core unload removed the corenode zk entry
-          if (ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 5000)) return Boolean.TRUE;
+          if (ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 30000)) return Boolean.TRUE;
         }
 
         // try and ensure core info is removed from cluster state

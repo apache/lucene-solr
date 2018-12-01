@@ -150,3 +150,11 @@ in order to support ToParent/ToChildBlockJoinQuery.
 
 Normalization is now type-safe, with CharFilterFactory#normalize() returning a Reader and
 TokenFilterFactory#normalize() returning a TokenFilter.
+
+## k1+1 constant factor removed from BM25 similarity numerator (LUCENE-8563) ##
+
+Scores computed by the BM25 similarity are lower than previously as the k1+1
+constant factor was removed from the numerator of the scoring formula.
+Ordering of results is preserved unless scores are computed from multiple
+fields using different similarities. The previous behaviour is now exposed
+by the LegacyBM25Similarity class which can be found in the lucene-misc jar.

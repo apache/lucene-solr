@@ -46,7 +46,6 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.MetricsHistoryHandler;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,24 +126,26 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
-      Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
       // wait for a while until we don't see the collection
-      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
-      boolean removed = false;
-      while (! timeout.hasTimedOut()) {
-        timeout.sleep(100);
-        removed = !zkStateReader.getClusterState().hasCollection(collection);
-        if (removed) {
-          timeout.sleep(500); // just a bit of time so it's more likely other
-          // readers see on return
-          break;
-        }
-      }
-      if (!removed) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not fully remove collection: " + collection);
-      }
+      zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState == null);
+      
+//      TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, timeSource);
+//      boolean removed = false;
+//      while (! timeout.hasTimedOut()) {
+//        timeout.sleep(100);
+//        removed = !zkStateReader.getClusterState().hasCollection(collection);
+//        if (removed) {
+//          timeout.sleep(500); // just a bit of time so it's more likely other
+//          // readers see on return
+//          break;
+//        }
+//      }
+//      if (!removed) {
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+//            "Could not fully remove collection: " + collection);
+//      }
     } finally {
 
       try {

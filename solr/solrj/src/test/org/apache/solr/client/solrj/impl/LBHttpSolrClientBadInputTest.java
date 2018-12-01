@@ -41,7 +41,7 @@ public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
     JettyConfig jettyConfig = JettyConfig.builder()
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
-    createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
   @Test

@@ -81,6 +81,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
 
   @Test
   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testExecute() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String collectionName = "testExecute";
@@ -156,7 +157,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // this test can fail to elect a leader, seems to be common among sim tests
   public void testIntegration() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
 

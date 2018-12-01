@@ -70,10 +70,10 @@ public class LBHttpSolrClient extends LBSolrClient {
   private final HttpClient httpClient;
   private final boolean clientIsInternal;
   private final ConcurrentHashMap<String, HttpSolrClient> urlToClient = new ConcurrentHashMap<>();
-  private HttpSolrClient.Builder httpSolrClientBuilder;
+  private final HttpSolrClient.Builder httpSolrClientBuilder;
 
   private Integer connectionTimeout;
-  private Integer soTimeout;
+  private volatile Integer soTimeout;
 
   /**
    * @deprecated use {@link LBSolrClient.Req} instead

@@ -114,6 +114,7 @@ public class HttpTriggerListenerTest extends SolrCloudTestCase {
     assertEquals(requests.toString(), 0, requests.size());
 
     cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
 

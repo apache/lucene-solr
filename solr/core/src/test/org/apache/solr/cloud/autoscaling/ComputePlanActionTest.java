@@ -102,7 +102,8 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         for (int i1 = 0; i1 < jettySolrRunners.size(); i1++) {
           JettySolrRunner jettySolrRunner = jettySolrRunners.get(i1);
           if (jettySolrRunner == randomJetty) {
-            cluster.stopJettySolrRunner(i1);
+            JettySolrRunner j = cluster.stopJettySolrRunner(i1);
+            cluster.waitForJettyToStop(j);
             break;
           }
         }
@@ -168,8 +169,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
-  //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  // commented 4-Sep-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") 
   public void testNodeLost() throws Exception  {
     // let's start a node so that we have at least two
     JettySolrRunner runner = cluster.startJettySolrRunner();
@@ -237,7 +237,8 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       JettySolrRunner jettySolrRunner = cluster.getJettySolrRunners().get(i);
       if (jettySolrRunner == node2)  {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
         break;
       }
     }
@@ -275,12 +276,14 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
-        "conf",2, 3);
+        "conf", 2, 3);
     create.setMaxShardsPerNode(2);
     create.process(solrClient);
+    
+    cluster.waitForActiveCollection("testNodeWithMultipleReplicasLost", 2, 6);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
-        "testNodeWithMultipleReplicasLost", clusterShape(2, 3));
+        "testNodeWithMultipleReplicasLost", clusterShape(2, 6));
 
     ClusterState clusterState = cluster.getSolrClient().getZkStateReader().getClusterState();
     DocCollection docCollection = clusterState.getCollection("testNodeWithMultipleReplicasLost");
@@ -294,14 +297,14 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
       if (replicas != null && replicas.size() == 2) {
         stoppedNodeName = jettySolrRunner.getNodeName();
         replicasToBeMoved = replicas;
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
         break;
       }
     }
     assertNotNull(stoppedNodeName);
-    cluster.waitForAllNodes(30);
 
-    assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(5, TimeUnit.SECONDS));
+    assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(15, TimeUnit.SECONDS));
     assertTrue(fired.get());
 
     TriggerEvent triggerEvent = eventRef.get();
@@ -451,25 +454,29 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testSelected1",
-        "conf",2, 2);
+        "conf", 2, 2);
     create.process(solrClient);
 
     create = CollectionAdminRequest.createCollection("testSelected2",
-        "conf",2, 2);
+        "conf", 2, 2);
     create.process(solrClient);
 
     create = CollectionAdminRequest.createCollection("testSelected3",
-        "conf",2, 2);
+        "conf", 2, 2);
     create.process(solrClient);
+    
+    cluster.waitForActiveCollection("testSelected1", 2, 4);
+    cluster.waitForActiveCollection("testSelected2", 2, 4);
+    cluster.waitForActiveCollection("testSelected3", 2, 4);
+    
+    waitForState("Timed out waiting for replicas of new collection to be active",
+        "testSelected1", clusterShape(2, 4));
 
     waitForState("Timed out waiting for replicas of new collection to be active",
-        "testSelected1", clusterShape(2, 2));
+        "testSelected2", clusterShape(2, 4));
 
     waitForState("Timed out waiting for replicas of new collection to be active",
-        "testSelected2", clusterShape(2, 2));
-
-    waitForState("Timed out waiting for replicas of new collection to be active",
-        "testSelected3", clusterShape(2, 2));
+        "testSelected3", clusterShape(2, 4));
 
     // find a node that has replicas from all collections
     SolrCloudManager cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
@@ -486,7 +493,8 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     String node = nodes.get(0);
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       if (cluster.getJettySolrRunner(i).getNodeName().equals(node)) {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
         break;
       }
     }
@@ -563,6 +571,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
             collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));
     assertTrue(fired.get());
     Map actionContext = actionContextPropsRef.get();
@@ -674,6 +683,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     }
 
     waitForState("Timed out waiting for all shards to have only 1 replica",
-        collectionNamePrefix + "_0", clusterShape(numShards, 1));
+        collectionNamePrefix + "_0", clusterShape(numShards, numShards));
   }
 }

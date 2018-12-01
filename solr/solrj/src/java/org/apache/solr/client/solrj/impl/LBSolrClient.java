@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.MDC;
@@ -74,7 +75,7 @@ public abstract class LBSolrClient extends SolrClient {
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
 
 
-  private ScheduledExecutorService aliveCheckExecutor;
+  private volatile ScheduledExecutorService aliveCheckExecutor;
 
   private int interval = CHECK_INTERVAL;
   private final AtomicInteger counter = new AtomicInteger(-1);
@@ -491,16 +492,6 @@ public abstract class LBSolrClient extends SolrClient {
     return requestWriter;
   }
 
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if(this.aliveCheckExecutor!=null)
-        this.aliveCheckExecutor.shutdownNow();
-    } finally {
-      super.finalize();
-    }
-  }
-
   private void checkAZombieServer(ServerWrapper zombieServer) {
     try {
       QueryRequest queryRequest = new QueryRequest(solrQuery);
@@ -702,8 +693,11 @@ public abstract class LBSolrClient extends SolrClient {
 
   @Override
   public void close() {
-    if (aliveCheckExecutor != null) {
-      aliveCheckExecutor.shutdownNow();
+    synchronized (this) {
+      if (aliveCheckExecutor != null) {
+        aliveCheckExecutor.shutdownNow();
+        ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
+      }
     }
   }
 }

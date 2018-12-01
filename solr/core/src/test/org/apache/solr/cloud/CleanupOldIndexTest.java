@@ -96,13 +96,13 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     assertTrue(oldIndexDir2.isDirectory());
 
     // bring shard replica down
-    ChaosMonkey.stop(jetty);
+    jetty.stop();
 
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
 
     // bring shard replica up
-    ChaosMonkey.start(jetty);
+    jetty.start();
 
     // make sure replication can start
     Thread.sleep(3000);

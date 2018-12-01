@@ -42,7 +42,7 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
     JettyConfig jettyConfig = JettyConfig.builder()
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
-    createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
   private void assertExceptionThrownWithMessageContaining(Class expectedType, List<String> expectedStrings, ThrowingRunnable runnable) {

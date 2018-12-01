@@ -120,12 +120,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // useFactory(null); // force an FS factory.
     master = new SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
     master.setUp();
-    masterJetty = createJetty(master);
+    masterJetty = createAndStartJetty(master);
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
     slave = new SolrInstance(createTempDir("solr-instance").toFile(), "slave", masterJetty.getLocalPort());
     slave.setUp();
-    slaveJetty = createJetty(slave);
+    slaveJetty = createAndStartJetty(slave);
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
     
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
@@ -154,7 +154,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     System.clearProperty("solr.indexfetcher.sotimeout");
   }
 
-  private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {
+  private static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
@@ -299,7 +299,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     slave.setTestPort(masterJetty.getLocalPort());
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave.xml", "solrconfig.xml");
-    slaveJetty = createJetty(slave);
+    slaveJetty = createAndStartJetty(slave);
     
     slaveClient.close();
     masterClient.close();
@@ -364,7 +364,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     try {
       repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", masterJetty.getLocalPort());
       repeater.setUp();
-      repeaterJetty = createJetty(repeater);
+      repeaterJetty = createAndStartJetty(repeater);
       repeaterClient = createNewSolrClient(repeaterJetty.getLocalPort());
 
       
@@ -535,7 +535,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterJetty.stop();
 
-    masterJetty = createJetty(master);
+    masterJetty = createAndStartJetty(master);
     masterClient.close();
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
@@ -554,7 +554,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     File slaveXsl = new File(slaveXsltDir, "dummy.xsl");
     assertFalse(slaveXsltDir.exists());
 
-    slaveJetty = createJetty(slave);
+    slaveJetty = createAndStartJetty(slave);
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
     //add a doc with new field and commit on master to trigger index fetch from slave.
@@ -715,7 +715,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.setTestPort(masterJetty.getLocalPort());
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
     slaveJetty.stop();
-    slaveJetty = createJetty(slave);
+    slaveJetty = createAndStartJetty(slave);
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
 
@@ -853,14 +853,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       slave.copyConfigFile(CONF_DIR +"solrconfig-slave1.xml", "solrconfig.xml");
       slave.copyConfigFile(CONF_DIR +slaveSchema, "schema.xml");
       slaveJetty.stop();
-      slaveJetty = createJetty(slave);
+      slaveJetty = createAndStartJetty(slave);
       slaveClient.close();
       slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
 
       master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml",
           "solrconfig.xml");
       masterJetty.stop();
-      masterJetty = createJetty(master);
+      masterJetty = createAndStartJetty(master);
       masterClient.close();
       masterClient = createNewSolrClient(masterJetty.getLocalPort());
       
@@ -868,8 +868,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       slaveClient.deleteByQuery("*:*");
       slaveClient.commit();
       
-      int maxDocs = TEST_NIGHTLY ? 1000 : 200;
-      int rounds = TEST_NIGHTLY ? 80 : 8;
+      int maxDocs = TEST_NIGHTLY ? 1000 : 75;
+      int rounds = TEST_NIGHTLY ? 45 : 3;
       int totalDocs = 0;
       int id = 0;
       for (int x = 0; x < rounds; x++) {
@@ -998,7 +998,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.setTestPort(masterJetty.getLocalPort());
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
     slaveJetty.stop();
-    slaveJetty = createJetty(slave);
+    slaveJetty = createAndStartJetty(slave);
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
 
@@ -1007,7 +1007,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       repeater.setUp();
       repeater.copyConfigFile(CONF_DIR + "solrconfig-repeater.xml",
           "solrconfig.xml");
-      repeaterJetty = createJetty(repeater);
+      repeaterJetty = createAndStartJetty(repeater);
       if (repeaterClient != null) {
         repeaterClient.close();
       }
@@ -1143,7 +1143,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterJetty.stop();
 
-    masterJetty = createJetty(master);
+    masterJetty = createAndStartJetty(master);
     masterClient.close();
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
     
@@ -1161,7 +1161,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
     //start slave
-    slaveJetty = createJetty(slave);
+    slaveJetty = createAndStartJetty(slave);
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
 
@@ -1195,7 +1195,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       
       masterJetty.stop();
       
-      masterJetty = createJetty(master);
+      masterJetty = createAndStartJetty(master);
       masterClient.close();
       masterClient = createNewSolrClient(masterJetty.getLocalPort());
       
@@ -1221,7 +1221,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
       
       // start slave
-      slaveJetty = createJetty(slave);
+      slaveJetty = createAndStartJetty(slave);
       slaveClient.close();
       slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
       
@@ -1255,7 +1255,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterJetty.stop();
 
-    masterJetty = createJetty(master);
+    masterJetty = createAndStartJetty(master);
     masterClient.close();
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
@@ -1273,7 +1273,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
     //start slave
-    slaveJetty = createJetty(slave);
+    slaveJetty = createAndStartJetty(slave);
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
     
@@ -1353,7 +1353,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterJetty.stop();
 
-    masterJetty = createJetty(master);
+    masterJetty = createAndStartJetty(master);
     masterClient.close();
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
@@ -1361,7 +1361,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
     slaveJetty.stop();
-    slaveJetty = createJetty(slave);
+    slaveJetty = createAndStartJetty(slave);
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
 
@@ -1407,12 +1407,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     //Start master with the new solrconfig
     master.copyConfigFile(CONF_DIR + "solrconfig-master-throttled.xml", "solrconfig.xml");
     useFactory(null);
-    masterJetty = createJetty(master);
+    masterJetty = createAndStartJetty(master);
     masterClient.close();
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
     //index docs
-    final int totalDocs = TestUtil.nextInt(random(), 50, 100);
+    final int totalDocs = TestUtil.nextInt(random(), 17, 53);
     for (int i = 0; i < totalDocs; i++)
       index(masterClient, "id", i, "name", TestUtil.randomSimpleString(random(), 1000 , 5000));
 
@@ -1434,13 +1434,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     //Start again and replicate the data
     useFactory(null);
-    masterJetty = createJetty(master);
+    masterJetty = createAndStartJetty(master);
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
     //start slave
     slave.setTestPort(masterJetty.getLocalPort());
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
-    slaveJetty = createJetty(slave);
+    slaveJetty = createAndStartJetty(slave);
     slaveClient.close();
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
 

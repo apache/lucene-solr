@@ -41,8 +41,18 @@ abstract class FacetRequestSorted extends FacetRequest {
    */
   int overrefine = -1;
   long mincount;
-  String sortVariable;
-  SortDirection sortDirection;
+  /** 
+   * The basic sorting to do on buckets, defaults to {@link FacetRequest.FacetSort#COUNT_DESC} 
+   * @see #prelim_sort
+   */
+  FacetSort sort;
+  /** 
+   * An optional "Pre-Sort" that defaults to null.
+   * If specified, then the <code>prelim_sort</code> is used as an optimization in place of {@link #sort} 
+   * during collection, and the full {@link #sort} values are only computed for the top candidate buckets 
+   * (after refinement)
+   */
+  FacetSort prelim_sort;
   RefineMethod refine; // null, NONE, or SIMPLE
 
   @Override
@@ -137,8 +147,15 @@ public class FacetField extends FacetRequestSorted {
     if (method == FacetMethod.ENUM) {// at the moment these two are the same
       method = FacetMethod.STREAM;
     }
-    if (method == FacetMethod.STREAM && sf.indexed() &&
-        "index".equals(sortVariable) && sortDirection == SortDirection.asc && !ft.isPointField()) {
+    if (method == FacetMethod.STREAM && sf.indexed() && !ft.isPointField() &&
+        // wether we can use stream processing depends on wether this is a shard request, wether
+        // re-sorting has been requested, and if the effective sort during collection is "index asc"
+        ( fcontext.isShard()
+          // for a shard request, the effective per-shard sort must be index asc
+          ? FacetSort.INDEX_ASC.equals(null == prelim_sort ? sort : prelim_sort)
+          // for a non-shard request, we can only use streaming if there is no pre-sorting
+          : (null == prelim_sort && FacetSort.INDEX_ASC.equals( sort ) ) ) ) {
+          
       return new FacetFieldProcessorByEnumTermsStream(fcontext, this, sf);
     }
 

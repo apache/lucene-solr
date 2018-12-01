@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.cloud.DocCollection;
@@ -82,46 +83,9 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
 
   @Override
   public ShardHandler getShardHandler() {
-    final ShardHandlerFactory factory = this;
-    final ShardHandler wrapped = super.getShardHandler();
-    return new ShardHandler() {
-      @Override
-      public void prepDistributed(ResponseBuilder rb) {
-        wrapped.prepDistributed(rb);
-      }
-
-      @Override
-      public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
-        synchronized (TrackingShardHandlerFactory.this) {
-          if (isTracking()) {
-            queue.offer(new ShardRequestAndParams(sreq, shard, params));
-          }
-        }
-        wrapped.submit(sreq, shard, params);
-      }
-
-      @Override
-      public ShardResponse takeCompletedIncludingErrors() {
-        return wrapped.takeCompletedIncludingErrors();
-      }
-
-      @Override
-      public ShardResponse takeCompletedOrError() {
-        return wrapped.takeCompletedOrError();
-      }
-
-      @Override
-      public void cancelAll() {
-        wrapped.cancelAll();
-      }
-
-      @Override
-      public ShardHandlerFactory getShardHandlerFactory() {
-        return factory;
-      }
-    };
+    return super.getShardHandler();
   }
-
+  
   @Override
   public void close() {
     super.close();
@@ -152,10 +116,13 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   public static void setTrackingQueue(List<JettySolrRunner> runners, Queue<ShardRequestAndParams> queue) {
     for (JettySolrRunner runner : runners) {
       CoreContainer container = runner.getCoreContainer();
-      ShardHandlerFactory factory = container.getShardHandlerFactory();
-      assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: " + factory.getClass();
-      TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
-      trackingShardHandlerFactory.setTrackingQueue(queue);
+      if (container != null) {
+        ShardHandlerFactory factory = container.getShardHandlerFactory();
+        assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: "
+            + factory.getClass();
+        TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
+        trackingShardHandlerFactory.setTrackingQueue(queue);
+      }
     }
   }
 
