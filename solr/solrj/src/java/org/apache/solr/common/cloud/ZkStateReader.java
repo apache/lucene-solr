@@ -836,6 +836,7 @@ public class ZkStateReader implements Closeable {
 
   public void close() {
     this.closed  = true;
+    
     notifications.shutdownNow();
     
     waitLatches.parallelStream().forEach(c -> { c.countDown(); });
