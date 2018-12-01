@@ -895,12 +895,8 @@ public class CoreContainer {
       }));
 
       if (metricsHistoryHandler != null) {
-        customThreadPool.submit(() -> Collections.singleton(metricsHistoryHandler).parallelStream().forEach(c -> {
-          IOUtils.closeQuietly(c);
-        }));
-        customThreadPool.submit(() -> Collections.singleton(metricsHistoryHandler.getSolrClient()).parallelStream().forEach(c -> {
-          IOUtils.closeQuietly(c);
-        }));
+        metricsHistoryHandler.close();
+        IOUtils.closeQuietly(metricsHistoryHandler.getSolrClient());
       }
 
       if (metricManager != null) {
