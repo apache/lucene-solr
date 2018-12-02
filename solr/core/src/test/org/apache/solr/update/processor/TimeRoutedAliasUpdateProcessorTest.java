@@ -534,7 +534,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     assertTrue("Preemptive creation beyond ROUTER_PREEMPTIVE_CREATE_MATH setting of 3DAY!",!cols.contains("myalias_2017-11-04"));
 
     assertUpdateResponse(add(alias, Collections.singletonList(
-        sdoc("id", "18", "timestamp_dt", "2017-11-01T23:01:00Z")), // should NOT cause preemptive creation 11-04
+        sdoc("id", "18", "timestamp_dt", "2017-11-01T23:01:00Z")), // should cause preemptive creation 11-04
         params));
     waitCol("2017-11-04",numShards);
 
