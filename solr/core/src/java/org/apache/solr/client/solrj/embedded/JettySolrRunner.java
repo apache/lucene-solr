@@ -45,6 +45,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -284,7 +285,7 @@ public class JettySolrRunner {
         configuration.addCustomizer(new SecureRequestCustomizer());
         HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
 
-        if (config.onlyHttp1) {
+        if (config.onlyHttp1 || !Constants.JRE_IS_MINIMUM_JAVA9) {
           connector = new ServerConnector(server, new SslConnectionFactory(sslcontext,
               http1ConnectionFactory.getProtocol()),
               http1ConnectionFactory);
