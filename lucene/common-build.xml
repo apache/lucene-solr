@@ -276,6 +276,13 @@
     <isset property="fetch.sources.javadocs"/>
   </condition>
 
+  <target name="install-ant-contrib" unless="ant-contrib.uptodate" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <property name="ant-contrib.uptodate" value="true"/>
+     <ivy:cachepath organisation="ant-contrib" module="ant-contrib" revision="1.0b3"
+       inline="true" conf="master" type="jar" pathid="ant-contrib.classpath"/>
+    <taskdef resource="ant-contrib.tasks" classpathref="ant-contrib.classpath"/>
+  </target>
+
   <!-- Check for minimum supported ANT version. -->
   <fail message="Minimum supported ANT version is 1.8.2. Yours: ${ant.version}">
     <condition>
@@ -1272,18 +1279,16 @@
                     showSuiteSummary="false"
                     timestamps="true"
                 />
-                
+
                 <!-- Emit the information about tests timings (could be used to determine
                      the slowest tests or for reuse in balancing). -->
                 <junit4:report-execution-times file="${tests.cachedir}/${name}/timehints.txt" historyLength="20" />
 
                 <!-- ANT-compatible XMLs for jenkins records etc. -->
-                <junit4:report-ant-xml dir="@{junit.output.dir}" outputStreams="no" />
+                <junit4:report-ant-xml dir="@{junit.output.dir}" outputStreams="no" ignoreDuplicateSuites="true"/>
 
-                <!--
-                Enable if you wish to have a nice HTML5 report.
-                <junit4:report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" outputStreams="no" />
-                -->
+                <!-- <junit4:report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" outputStreams="no" /> -->
+
             </listeners>
 
             <!-- Input test classes. -->
@@ -1508,7 +1513,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   </target>
 
   <target name="test" depends="clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
-  <target name="beast" depends="clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
+  <target name="beast" depends="install-ant-contrib,clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
 
   <target name="test-nocompile" depends="-clover.disable,install-junit4-taskdef,-init-totals,-test,-check-totals"
           description="Only runs unit tests.  Jars are not downloaded; compilation is not updated; and Clover is not enabled."/>
@@ -1568,13 +1573,15 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   </target>
 
   <!-- Beast the actual tests (must be wrapped with -init-totals, -check-totals) -->
-  <target name="-beast" depends="resolve-groovy">
+  <target name="-beast" depends="resolve-groovy,install-ant-contrib">
     <fail message="The Beast only works inside of individual modules (where 'junit.classpath' is defined)">
       <condition>
         <not><isreference refid="junit.classpath"/></not>
       </condition>
     </fail>
-    <groovy taskname="beaster" src="${common.dir}/tools/src/groovy/run-beaster.groovy"/>
+    <taskdef name="antcallback" classname="net.sf.antcontrib.logic.AntCallBack" classpathref="ant-contrib.classpath"/>
+    <groovy classpathref="ant-contrib.classpath" taskname="beaster" src="${common.dir}/tools/src/groovy/run-beaster.groovy"/>
+    <fail message="Fail baby fail" if="groovy.error"/>
   </target>
 
   <target name="-check-totals" if="tests.totals.toplevel" depends="resolve-groovy">
