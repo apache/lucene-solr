@@ -80,6 +80,10 @@ Improvements
  If you don't use nested documents then _root_ can be removed from the schema.  (Dr Oleg Savrasov, Moshe Bla,
  David Smiley, Mikhail Khludnev)
 
+* SOLR-6117: The response format has changed slightly for ReplicationHandler error-cases.  All errors now have a non-200
+  'status' field, a 'message' field giving more details on the error, and an optional 'exception' field.  (Shalin Mangar,
+  Jason Gerlowski)
+
 Optimizations
 ----------------------
 
