@@ -171,24 +171,27 @@ public class Http2SolrClient extends SolrClient {
     httpClientExecutor.setDaemon(true);
 
     SslContextFactory sslContextFactory;
+    boolean ssl;
     if (builder.sslConfig == null) {
       sslContextFactory = getDefaultSslContextFactory();
+      ssl = sslContextFactory.getTrustStore() != null || sslContextFactory.getTrustStorePath() != null;
     } else {
       sslContextFactory = builder.sslConfig.createContextFactory();
+      ssl = true;
     }
 
+    boolean sslOnJava8OrLower = ssl && !Constants.JRE_IS_MINIMUM_JAVA9;
     HttpClientTransport transport;
-    if (builder.useHttp1_1) {
-      log.debug("Create Http2SolrClient with HTTP/1.1 transport");
+    if (builder.useHttp1_1 || sslOnJava8OrLower) {
+      if (sslOnJava8OrLower && !builder.useHttp1_1) {
+        log.warn("Create Http2SolrClient with HTTP/1.1 transport since Java 8 or lower versions does not support SSL + HTTP/2");
+      } else {
+        log.debug("Create Http2SolrClient with HTTP/1.1 transport");
+      }
       transport = new HttpClientTransportOverHTTP(2);
       httpClient = new HttpClient(transport, sslContextFactory);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     } else {
-      if (sslContextFactory.getTrustStore() != null || sslContextFactory.getTrustStorePath() != null) {
-        if (!Constants.JRE_IS_MINIMUM_JAVA9) {
-          throw new IllegalArgumentException("SSL + HTTP/2 can only run on Java 9 or latter versions");
-        }
-      }
       log.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);
@@ -378,7 +381,7 @@ public class Http2SolrClient extends SolrClient {
       try {
         InputStreamResponseListener listener = new InputStreamResponseListener();
         req.send(listener);
-        Response response = listener.get(idleTimeout, TimeUnit.SECONDS);
+        Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
         InputStream is = listener.getInputStream();
         assert ObjectReleaseTracker.track(is);
         return processErrorsAndResponse(response, parser, is, getEncoding(response), isV2ApiRequest(solrRequest));
