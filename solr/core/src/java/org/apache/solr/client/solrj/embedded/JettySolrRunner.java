@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -527,7 +528,7 @@ public class JettySolrRunner {
     }
     ServerConnector c = (ServerConnector) conns[0];
 
-    protocol = c.getDefaultProtocol().toLowerCase().startsWith("ssl") ? "https" : "http";
+    protocol = c.getDefaultProtocol().toLowerCase(Locale.ROOT).startsWith("ssl") ? "https" : "http";
 
     this.protocol = protocol;
     this.host = c.getHost();
