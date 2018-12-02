@@ -45,6 +45,7 @@ Bug Fixes
 * SOLR-12546: CVSResponseWriter omits useDocValuesAsStored=true field when fl=*
   (Munendra S N via Mikhail Khludnev)
 
+* SOLR-6117: Fix 'status' of ReplicationHandler commands (Shalin Mangar, Jason Gerlowski)
 
 * SOLR-12933: Fix SolrCloud distributed commit. (Mark Miller)
 

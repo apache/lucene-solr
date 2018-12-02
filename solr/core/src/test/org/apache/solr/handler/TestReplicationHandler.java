@@ -49,6 +49,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -1480,6 +1481,35 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         } catch (Exception e) {}
       }
     }
+  }
+
+  @Test
+  public void testFileListShouldReportErrorsWhenTheyOccur() throws Exception {
+    SolrQuery q = new SolrQuery();
+    q.add("qt", "/replication")
+        .add("wt", "json")
+        .add("command", "filelist")
+        .add("generation", "-1"); // A 'generation' value not matching any commit point should cause error.
+    QueryResponse response = slaveClient.query(q);
+    NamedList<Object> resp = response.getResponse();
+    assertNotNull(resp);
+    assertEquals("File list for invalid 'generation' should have returned an error response", "invalid index generation", resp.get("status"));
+  }
+
+  @Test
+  public void testFetchIndexShouldReportErrorsWhenTheyOccur() throws Exception  {
+    int masterPort = masterJetty.getLocalPort();
+    masterJetty.stop();
+    SolrQuery q = new SolrQuery();
+    q.add("qt", "/replication")
+        .add("wt", "json")
+        .add("wait", "true")
+        .add("command", "fetchindex")
+        .add("masterUrl", buildUrl(masterPort));
+    QueryResponse response = slaveClient.query(q);
+    NamedList<Object> resp = response.getResponse();
+    assertNotNull(resp);
+    assertEquals("Fetch index with wait=true should have returned an error response", "ERROR", resp.get("status"));
   }
   
   private class AddExtraDocs implements Runnable {

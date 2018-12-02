@@ -242,7 +242,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     final SolrParams solrParams = req.getParams();
     String command = solrParams.get(COMMAND);
     if (command == null) {
-      rsp.add(STATUS, OK_STATUS);
+      rsp.add(STATUS, ERR_STATUS);
       rsp.add("message", "No command");
       return;
     }
@@ -279,52 +279,24 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       getFileList(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
       doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
-      rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_RESTORE)) {
       restore(new ModifiableSolrParams(solrParams), rsp, req);
-      rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_RESTORE_STATUS)) {
       rsp.add(CMD_RESTORE_STATUS, getRestoreStatus());
     } else if (command.equalsIgnoreCase(CMD_DELETE_BACKUP)) {
-      deleteSnapshot(new ModifiableSolrParams(solrParams));
-      rsp.add(STATUS, OK_STATUS);
+      deleteSnapshot(new ModifiableSolrParams(solrParams), rsp);
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
-      String masterUrl = solrParams.get(MASTER_URL);
-      if (!isSlave && masterUrl == null) {
-        rsp.add(STATUS,ERR_STATUS);
-        rsp.add("message","No slave configured or no 'masterUrl' Specified");
-        return;
-      }
-      final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
-      Thread fetchThread = new Thread(() -> doFetch(paramsCopy, false), "explicit-fetchindex-cmd") ;
-      fetchThread.setDaemon(false);
-      fetchThread.start();
-      if (solrParams.getBool(WAIT, false)) {
-        fetchThread.join();
-      }
-      rsp.add(STATUS, OK_STATUS);
+      fetchIndex(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
-      if (pollingIndexFetcher != null){
-        disablePoll();
+      disablePoll(rsp);
+    } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
+      enablePoll(rsp);
+    } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
+      if (abortFetch()) {
         rsp.add(STATUS, OK_STATUS);
       } else {
         rsp.add(STATUS, ERR_STATUS);
-        rsp.add("message","No slave configured");
-      }
-    } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
-      if (pollingIndexFetcher != null){
-        enablePoll();
-        rsp.add(STATUS, OK_STATUS);
-      }else {
-        rsp.add(STATUS,ERR_STATUS);
-        rsp.add("message","No slave configured");
-      }
-    } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
-      if (abortFetch()){
-        rsp.add(STATUS, OK_STATUS);
-      } else {
-        rsp.add(STATUS,ERR_STATUS);
-        rsp.add("message","No slave configured");
+        rsp.add("message", "No slave configured");
       }
     } else if (command.equals(CMD_SHOW_COMMITS)) {
       rsp.add(CMD_SHOW_COMMITS, getCommits());
@@ -349,7 +321,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private void deleteSnapshot(ModifiableSolrParams params) {
+  private void deleteSnapshot(ModifiableSolrParams params, SolrQueryResponse rsp) {
     String name = params.get(NAME);
     if(name == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Missing mandatory param: name");
@@ -358,6 +330,38 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     SnapShooter snapShooter = new SnapShooter(core, params.get(CoreAdminParams.BACKUP_LOCATION), params.get(NAME));
     snapShooter.validateDeleteSnapshot();
     snapShooter.deleteSnapAsync(this);
+    rsp.add(STATUS, OK_STATUS);
+  }
+
+  private void fetchIndex(SolrParams solrParams, SolrQueryResponse rsp) throws InterruptedException {
+    String masterUrl = solrParams.get(MASTER_URL);
+    if (!isSlave && masterUrl == null) {
+      rsp.add(STATUS,ERR_STATUS);
+      rsp.add("message","No slave configured or no 'masterUrl' Specified");
+      return;
+    }
+    final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
+    final IndexFetchResult[] results = new IndexFetchResult[1];
+    Thread fetchThread = new Thread(() -> {
+      IndexFetchResult result = doFetch(paramsCopy, false);
+      results[0] = result;
+    }, "explicit-fetchindex-cmd") ;
+    fetchThread.setDaemon(false);
+    fetchThread.start();
+    if (solrParams.getBool(WAIT, false)) {
+      fetchThread.join();
+      if (results[0] == null) {
+        rsp.add(STATUS, ERR_STATUS);
+        rsp.add("message", "Unable to determine result of synchronous index fetch");
+      } else if (results[0].getSuccessful()) {
+        rsp.add(STATUS, OK_STATUS);
+      } else {
+        rsp.add(STATUS, ERR_STATUS);
+        rsp.add("message", results[0].getMessage());
+      }
+    } else {
+      rsp.add(STATUS, OK_STATUS);
+    }
   }
 
   private List<NamedList<Object>> getCommits() {
@@ -496,6 +500,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       MDC.put("RestoreCore.backupName", name);
       restoreFuture = restoreExecutor.submit(restoreCore);
       currentRestoreName = name;
+      rsp.add(STATUS, OK_STATUS);
     } finally {
       MDC.remove("RestoreCore.core");
       MDC.remove("RestoreCore.backupLocation");
@@ -567,8 +572,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
       snapShooter.validateCreateSnapshot();
       snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
+      rsp.add(STATUS, OK_STATUS);
     } catch (Exception e) {
       log.error("Exception during creating a snapshot", e);
+      rsp.add(STATUS, ERR_STATUS);
       rsp.add("exception", e);
     }
   }
@@ -773,17 +780,25 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  void disablePoll() {
-    if (isSlave) {
+  private void disablePoll(SolrQueryResponse rsp) {
+    if (pollingIndexFetcher != null){
       pollDisabled.set(true);
       log.info("inside disable poll, value of pollDisabled = " + pollDisabled);
+      rsp.add(STATUS, OK_STATUS);
+    } else {
+      rsp.add(STATUS, ERR_STATUS);
+      rsp.add("message","No slave configured");
     }
   }
 
-  void enablePoll() {
-    if (isSlave) {
+  private void enablePoll(SolrQueryResponse rsp) {
+    if (pollingIndexFetcher != null){
       pollDisabled.set(false);
       log.info("inside enable poll, value of pollDisabled = " + pollDisabled);
+      rsp.add(STATUS, OK_STATUS);
+    } else {
+      rsp.add(STATUS,ERR_STATUS);
+      rsp.add("message","No slave configured");
     }
   }
 
