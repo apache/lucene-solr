@@ -33,12 +33,10 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.conscrypt.OpenSSLProvider;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
-import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,12 +51,6 @@ import java.util.List;
 public abstract class SolrClient implements Serializable, Closeable {
 
   private static final long serialVersionUID = 1L;
-  static {
-    // Set Conscrypt as default OpenSSLProvider for all clients
-    if (Security.getProvider("Conscrypt") == null) {
-      Security.insertProviderAt(new OpenSSLProvider(), 1);
-    }
-  }
 
   private DocumentObjectBinder binder;
 

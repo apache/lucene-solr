@@ -53,6 +53,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.client.solrj.util.Constants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -186,6 +187,11 @@ public class Http2SolrClient extends SolrClient {
       httpClient = new HttpClient(transport, sslContextFactory);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     } else {
+      if (sslContextFactory.getTrustStore() != null || sslContextFactory.getTrustStorePath() != null) {
+        if (!Constants.JRE_IS_MINIMUM_JAVA9) {
+          throw new IllegalArgumentException("SSL + HTTP/2 can only run on Java 9 or latter versions");
+        }
+      }
       log.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);

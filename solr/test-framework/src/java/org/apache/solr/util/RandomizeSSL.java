@@ -23,6 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -136,6 +137,9 @@ public @interface RandomizeSSL {
      * Returns an SSLRandomizer suitable for the specified (test) class
      */
     public static final SSLRandomizer getSSLRandomizerForClass(Class clazz) {
+      if (!Constants.JRE_IS_MINIMUM_JAVA9) {
+        return new SSLRandomizer(0.0D, 0.0D, "Only Java9 or latter versions support SSL with HTTP/2");
+      }
 
       final SuppressSSL suppression = (SuppressSSL) clazz.getAnnotation(SuppressSSL.class);
       if (null != suppression) {

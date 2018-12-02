@@ -155,7 +155,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
-    createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
   private Http2SolrClient getHttp2SolrClient(String url, int connectionTimeOut, int socketTimeout) {

@@ -43,7 +43,7 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
     JettyConfig jettyConfig = JettyConfig.builder()
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
-    createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
   @Test

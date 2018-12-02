@@ -288,7 +288,6 @@ public class JettySolrRunner {
               http1ConnectionFactory.getProtocol()),
               http1ConnectionFactory);
         } else {
-          sslcontext.setProvider("Conscrypt");
           sslcontext.setCipherComparator(HTTP2Cipher.COMPARATOR);
 
           connector = new ServerConnector(server);
@@ -528,7 +527,7 @@ public class JettySolrRunner {
     }
     ServerConnector c = (ServerConnector) conns[0];
 
-    protocol = c.getDefaultProtocol().startsWith("SSL") ? "https" : "http";
+    protocol = c.getDefaultProtocol().toLowerCase().startsWith("ssl") ? "https" : "http";
 
     this.protocol = protocol;
     this.host = c.getHost();

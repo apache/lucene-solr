@@ -27,7 +27,7 @@ import org.junit.BeforeClass;
 public class SolrExampleXMLHttp2Test extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Override

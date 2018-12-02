@@ -142,7 +142,6 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.conscrypt.OpenSSLProvider;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -200,13 +199,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String initialRootLogLevel;
   
   protected volatile static ExecutorService testExecutor;
-
-  static {
-    // Set Conscrypt as default OpenSSLProvider for all clients
-    if (Security.getProvider("Conscrypt") == null) {
-      Security.insertProviderAt(new OpenSSLProvider(), 1);
-    }
-  }
 
   protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
     Properties props = new Properties();
