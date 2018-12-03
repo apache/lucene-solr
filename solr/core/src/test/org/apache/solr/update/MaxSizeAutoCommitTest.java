@@ -72,6 +72,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13032")
   public void testAdds() throws Exception {
     int maxFileSizeBound = 1000;
     // Set max size bound
@@ -137,6 +138,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13032")
   public void testDeletes() throws Exception {
     int maxFileSizeBound = 1000;
 
