@@ -21,6 +21,7 @@ import java.util.Map;
 
 import com.codahale.metrics.Metric;
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.core.CoreContainer;
@@ -38,6 +39,7 @@ import org.junit.Test;
 /**
  *
  */
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class SolrCloudReportersTest extends SolrCloudTestCase {
   int leaderRegistries;
   int clusterRegistries;

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -28,6 +29,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class SplitShardTest extends SolrCloudTestCase {
 
   private final String COLLECTION_NAME = "splitshardtest-collection";

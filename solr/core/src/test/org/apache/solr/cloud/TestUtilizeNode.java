@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.NamedList;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.client.solrj.impl.SolrClientDataProvider=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper=TRACE")
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class TestUtilizeNode extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

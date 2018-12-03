@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -41,6 +42,7 @@ import org.junit.Test;
  * @see org.apache.solr.handler.component.MoreLikeThisComponent
  */
 @Slow
+@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   
   private String requestHandlerName;

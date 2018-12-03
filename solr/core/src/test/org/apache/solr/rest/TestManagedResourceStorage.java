@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -39,6 +40,7 @@ import org.junit.Test;
  */
 @Slow
 // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6443")
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13039") // added 3-December-2018
 public class TestManagedResourceStorage extends AbstractZkTestCase {
 
   /**

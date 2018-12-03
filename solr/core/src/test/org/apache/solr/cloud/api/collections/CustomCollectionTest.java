@@ -18,6 +18,7 @@ package org.apache.solr.cloud.api.collections;
 
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -56,6 +57,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
   public void testCustomCollectionsAPI() throws Exception {
 
     final String collection = "implicitcoll";

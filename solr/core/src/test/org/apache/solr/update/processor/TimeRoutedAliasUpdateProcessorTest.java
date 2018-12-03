@@ -34,6 +34,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -75,6 +76,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

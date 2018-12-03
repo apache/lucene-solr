@@ -69,6 +69,7 @@ import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAut
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 @LuceneTestCase.Slow
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class TestPolicyCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

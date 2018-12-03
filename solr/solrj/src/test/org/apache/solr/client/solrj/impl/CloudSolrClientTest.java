@@ -36,6 +36,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -84,6 +85,7 @@ import org.slf4j.LoggerFactory;
  * This test would be faster if we simulated the zk state instead.
  */
 @Slow
+@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";

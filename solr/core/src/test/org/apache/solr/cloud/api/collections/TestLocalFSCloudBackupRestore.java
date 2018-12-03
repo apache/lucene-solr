@@ -19,12 +19,15 @@ package org.apache.solr.cloud.api.collections;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.apache.lucene.util.LuceneTestCase;
+
 /**
  * This class implements the tests for local file-system integration for Solr backup/restore capability.
  * Note that the Solr backup/restore still requires a "shared" file-system. Its just that in this case
  * such file-system would be exposed via local file-system API.
  */
 //commented 9-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   private static String backupLocation;
 

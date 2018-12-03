@@ -33,6 +33,7 @@ import org.junit.BeforeClass;
     MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
 })
 //commented 23-AUG-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class HdfsAutoAddReplicasIntegrationTest extends AutoAddReplicasIntegrationTest {
 
   private static MiniDFSCluster dfsCluster;

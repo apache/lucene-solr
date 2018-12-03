@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see TestSSLRandomization
  */
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13039") // added 3-Dec-2018
 public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
   private static final SSLContext DEFAULT_SSL_CONTEXT;
