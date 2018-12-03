@@ -142,6 +142,10 @@ Changes in Runtime Behavior
   anymore. This doesn't affect ordering as this is a constant factor which is
   the same for every document. (Luca Cavanna via Adrien Grand)
 
+* LUCENE-8509: WordDelimiterGraphFilter will no longer set the offsets of internal
+  tokens by default, preventing a number of bugs when the filter is chained with
+  tokenfilters that change the length of their tokens (Alan Woodward)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
