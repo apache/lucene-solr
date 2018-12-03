@@ -155,6 +155,10 @@ New Features
 * LUCENE-8216: Added a new BM25FQuery in sandbox to blend statistics across several fields
   using the BM25F formula. (Adrien Grand, Jim Ferenczi)
 
+* LUCENE-8564: GraphTokenFilter is an abstract class useful for token filters that need
+  to read-ahead in the token stream and take into account graph structures.  This
+  also changes FixedShingleFilter to extend GraphTokenFilter (Alan Woodward)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
