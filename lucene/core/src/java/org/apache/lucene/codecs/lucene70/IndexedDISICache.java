@@ -33,7 +33,7 @@ import static org.apache.lucene.codecs.lucene70.IndexedDISI.MAX_ARRAY_LENGTH;
 /**
  * Caching of IndexedDISI with two strategies:
  *
- * A lookup table for block blockCache and index.
+ * A lookup table for block blockCache and index, and a rank structure for DENSE block lookups.
  *
  * The lookup table is an array of {@code long}s with an entry for each block. It allows for
  * direct jumping to the block, as opposed to iteration from the current position and forward
@@ -53,8 +53,30 @@ import static org.apache.lucene.codecs.lucene70.IndexedDISI.MAX_ARRAY_LENGTH;
  * In the case of non-existing blocks, the entry in the lookup table has index equal to the
  * previous entry and offset equal to the next non-empty block.
  *
- * The performance overhead for creating a cache instance is equivalent to visiting every 65536th
- * doc value for the given field, i.e. it scales lineary to field size.
+ *
+ * The rank structure for DENSE blocks is an array of unsigned {@code short}s with an entry
+ * for each sub-block of 512 bits out of the 65536 bits in the outer block.
+ *
+ * Each rank-entry states the number of set bits within the block up to the bit before the
+ * bit positioned at the start of the sub-block.
+ * Note that that the rank entry of the first sub-block is always 0 and that the last entry can
+ * at most be 65536-512 = 65024 and thus will always fit into an unsigned short.
+ *
+ * See https://en.wikipedia.org/wiki/Succinct_data_structure for details on rank structures.
+ * The alternative to using the rank structure is iteration and summing of set bits for all
+ * entries in the DENSE sub-block up until the wanted bit, with a worst-case of 1024 entries.
+ * The rank cache overhead for a single DENSE block is 128 shorts (128*16 = 2048 bits) or
+ * 1/32th.
+ *
+ * The ranks for the DENSE blocks are stored in a structure shared for the whole array of
+ * blocks, DENSE or not. To avoid overhead that structure is itself sparse. See
+ * {@link LongCompressor} for details on DENSE structure sparseness.
+ *
+ *
+ * The performance overhead for creating a cache instance is equivalent to accessing all
+ * DocValues values for the given field, i.e. it scales lineary to field size. On modern
+ * hardware it is in the ballpark of 1ms for 5M values on modern hardware. Caveat lector:
+ * At the point of writing, performance points are only available for 2 real-world setups.
  */
 public class IndexedDISICache implements Accountable {
   private static final int BLOCK = 65536;   // The number of docIDs that a single block represents
@@ -63,6 +85,12 @@ public class IndexedDISICache implements Accountable {
   private static final long BLOCK_INDEX_MASK = ~0L << BLOCK_INDEX_SHIFT; // The index bits in a lookup entry
   private static final long BLOCK_LOOKUP_MASK = ~BLOCK_INDEX_MASK; // The offset bits in a lookup entry
 
+  private static final int RANK_BLOCK = 512; // The number of docIDs/bits in each rank-sub-block within a DENSE block
+  static final int RANK_BLOCK_LONGS = 512/Long.SIZE; // The number of longs making up a rank-block (8)
+  private static final int RANK_BLOCK_BITS = 9;
+  private static final int RANKS_PER_BLOCK = BLOCK/RANK_BLOCK;
+
+  private PackedInts.Reader rank;   // One every 512 docs, sparsely represented as not all blocks are DENSE
   private long[] blockCache = null; // One every 65536 docs, contains index & slice position
   private String creationStats = "";
   private final String name; // Identifier for debug, log & inspection
@@ -86,6 +114,7 @@ public class IndexedDISICache implements Accountable {
 
   private IndexedDISICache() {
     this.blockCache = null;
+    this.rank = null;
     this.name = "";
   }
 
@@ -117,8 +146,43 @@ public class IndexedDISICache implements Accountable {
         -1 : (int)(blockCache[targetBlock] >>> BLOCK_INDEX_SHIFT);
   }
 
+  /**
+   * Given a target (docID), this method returns the first docID in the entry containing the target.
+   * @param target the docID for which an index is wanted.
+   * @return the docID where the rank is known. This will be lte target.
+   */
+  // TODO: This method requires a lot of knowledge of the intrinsics of the cache. Usage should be simplified
+  int denseRankPosition(int target) {
+       return target >> RANK_BLOCK_BITS << RANK_BLOCK_BITS;
+  }
+
   public boolean hasOffsets() {
     return blockCache != null;
+  }
+
+  boolean hasRank() {
+    return rank != null;
+  }
+  
+  /**
+   * Get the rank (index) for all set bits up to just before the given rankPosition in the block.
+   * The caller is responsible for deriving the count of bits up to the docID target from the rankPosition.
+   * The caller is also responsible for keeping track of set bits up to the current block.
+   * Important: This only accepts rankPositions that aligns to {@link #RANK_BLOCK} boundaries.
+   * Note 1: Use {@link #denseRankPosition(int)} to obtain a calid rankPosition for a wanted docID.
+   * Note 2: The caller should seek to the rankPosition in the underlying slice to keep everything in sync.
+   * @param rankPosition a docID target that aligns to {@link #RANK_BLOCK}.
+   * @return the rank (index / set bits count) up to just before the given rankPosition.
+   *         If rank is disabled, -1 is returned.
+   */
+  // TODO: This method requires a lot of knowledge of the intrinsics of the cache. Usage should be simplified
+  int getRankInBlock(int rankPosition) {
+    if (rank == null) {
+      return -1;
+    }
+    assert rankPosition == denseRankPosition(rankPosition);
+    int rankIndex = rankPosition >> RANK_BLOCK_BITS;
+    return rankIndex >= rank.size() ? -1 : (int) rank.get(rankIndex);
   }
 
   private void updateCaches(IndexInput slice) throws IOException {
@@ -135,17 +199,19 @@ public class IndexedDISICache implements Accountable {
 
     slice.seek(startOffset); // Leave it as we found it
     creationStats = String.format(Locale.ENGLISH,
-        "name=%s, blocks=%d (ALL=%d, DENSE=%d, SPARSE=%d, EMPTY=%d), time=%dms, block=%d bytes",
+        "name=%s, blocks=%d (ALL=%d, DENSE=%d, SPARSE=%d, EMPTY=%d), time=%dms, block=%d bytes, rank=%d bytes",
         name,
         largestBlock+1, statBlockALL.get(), statBlockDENSE.get(), statBlockSPARSE.get(),
         (largestBlock+1-statBlockALL.get()-statBlockDENSE.get()-statBlockSPARSE.get()),
         (System.nanoTime()-startTime)/1000000,
-        blockCache == null ? 0 : blockCache.length*Long.BYTES);
+        blockCache == null ? 0 : blockCache.length*Long.BYTES,
+        rank == null ? 0 : rank.ramBytesUsed());
   }
 
   private int fillCache(
       IndexInput slice, AtomicInteger statBlockALL, AtomicInteger statBlockDENSE, AtomicInteger statBlockSPARSE)
       throws IOException {
+    char[] buildRank = new char[256];
     int largestBlock = -1;
     long index = 0;
     int rankIndex = -1;
@@ -180,7 +246,27 @@ public class IndexedDISICache implements Accountable {
       // The block is DENSE
       statBlockDENSE.incrementAndGet();
       long nextBlockOffset = slice.getFilePointer() + (1 << 13);
-      slice.seek(nextBlockOffset);
+      int setBits = 0;
+      int rankOrigo = blockIndex << 16 >> 9; // Double shift for clarity: The compiler will simplify it
+      for (int rankDelta = 0 ; rankDelta < RANKS_PER_BLOCK ; rankDelta++) { // 128 rank-entries in a block
+        rankIndex = rankOrigo + rankDelta;
+        buildRank = ArrayUtil.grow(buildRank, rankIndex+1);
+        buildRank[rankIndex] = (char)setBits;
+        for (int i = 0 ; i < 512/64 ; i++) { // 8 longs for each rank-entry
+          setBits += Long.bitCount(slice.readLong());
+        }
+      }
+      assert slice.getFilePointer() == nextBlockOffset;
+    }
+    // Compress the buildRank as it is potentially very sparse
+    if (rankIndex < 0) {
+      rank = null;
+    } else {
+      PackedInts.Mutable ranks = PackedInts.getMutable(rankIndex, 16, PackedInts.DEFAULT); // Char = 16 bit
+      for (int i = 0 ; i < rankIndex ; i++) {
+        ranks.set(i, buildRank[i]);
+      }
+      rank = LongCompressor.compress(ranks);
     }
 
     return largestBlock;
@@ -189,6 +275,7 @@ public class IndexedDISICache implements Accountable {
   private void freezeCaches(int largestBlock) {
     if (largestBlock == -1) { // No set bit: Disable the caches
       blockCache = null;
+      rank = null;
       return;
     }
 
@@ -228,6 +315,7 @@ public class IndexedDISICache implements Accountable {
   @Override
   public long ramBytesUsed() {
     return (blockCache == null ? 0 : RamUsageEstimator.sizeOf(blockCache)) +
+        (rank == null ? 0 : rank.ramBytesUsed()) +
         RamUsageEstimator.NUM_BYTES_OBJECT_REF*3 +
         RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + creationStats.length()*2;
   }
