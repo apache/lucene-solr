@@ -92,6 +92,9 @@ Bug fixes
 * LUCENE-8556: Use latitude and longitude instead of encoding values to check if triangle is ear
   when using morton optimisation. (Ignacio Vera)
 
+* LUCENE-8586: Intervals.or() could get stuck in an infinite loop on certain indexes
+  (Alan Woodward)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
