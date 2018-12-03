@@ -465,44 +465,18 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
           }
         };
       } else {
-        final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
         if (entry.blockShift >= 0) {
           // dense but split into blocks of different bits per value
-          final int shift = entry.blockShift;
-          final long mul = entry.gcd;
-          final int mask = (1 << shift) - 1;
           return new DenseNumericDocValues(maxDoc) {
-            int block = -1;
-            long delta;
-            long offset;
-            long blockEndOffset;
-            LongValues values;
+            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry);
 
             @Override
             public long longValue() throws IOException {
-              final int block = doc >>> shift;
-              if (this.block != block) {
-                int bitsPerValue;
-                do {
-                  offset = blockEndOffset;
-                  bitsPerValue = slice.readByte(offset++);
-                  delta = slice.readLong(offset);
-                  offset += Long.BYTES;
-                  if (bitsPerValue == 0) {
-                    blockEndOffset = offset;
-                  } else {
-                    final int length = slice.readInt(offset);
-                    offset += Integer.BYTES;
-                    blockEndOffset = offset + length;
-                  }
-                  this.block ++;
-                } while (this.block != block);
-                values = bitsPerValue == 0 ? LongValues.ZEROES : DirectReader.getInstance(slice, bitsPerValue, offset);
-              }
-              return mul * values.get(doc & mask) + delta;
+              return vBPVReader.getLongValue(doc);
             }
           };
         } else {
+          final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
           final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
           if (entry.table != null) {
             final long[] table = entry.table;
@@ -536,45 +510,19 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
           }
         };
       } else {
-        final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
         if (entry.blockShift >= 0) {
           // sparse and split into blocks of different bits per value
-          final int shift = entry.blockShift;
-          final long mul = entry.gcd;
-          final int mask = (1 << shift) - 1;
           return new SparseNumericDocValues(disi) {
-            int block = -1;
-            long delta;
-            long offset;
-            long blockEndOffset;
-            LongValues values;
+            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry);
 
             @Override
             public long longValue() throws IOException {
               final int index = disi.index();
-              final int block = index >>> shift;
-              if (this.block != block) {
-                int bitsPerValue;
-                do {
-                  offset = blockEndOffset;
-                  bitsPerValue = slice.readByte(offset++);
-                  delta = slice.readLong(offset);
-                  offset += Long.BYTES;
-                  if (bitsPerValue == 0) {
-                    blockEndOffset = offset;
-                  } else {
-                    final int length = slice.readInt(offset);
-                    offset += Integer.BYTES;
-                    blockEndOffset = offset + length;
-                  }
-                  this.block ++;
-                } while (this.block != block);
-                values = bitsPerValue == 0 ? LongValues.ZEROES : DirectReader.getInstance(slice, bitsPerValue, offset);
-              }
-              return mul * values.get(index & mask) + delta;
+              return vBPVReader.getLongValue(index);
             }
           };
         } else {
+          final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
           final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
           if (entry.table != null) {
             final long[] table = entry.table;
@@ -608,47 +556,20 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         }
       };
     } else {
-      final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
       if (entry.blockShift >= 0) {
-        final int shift = entry.blockShift;
-        final long mul = entry.gcd;
-        final long mask = (1L << shift) - 1;
         return new LongValues() {
-          long block = -1;
-          long delta;
-          long offset;
-          long blockEndOffset;
-          LongValues values;
-
+          final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry);
+          @Override
           public long get(long index) {
-            final long block = index >>> shift;
-            if (this.block != block) {
-              assert block > this.block : "Reading backwards is illegal: " + this.block + " < " + block;
-              int bitsPerValue;
-              do {
-                offset = blockEndOffset;
-                try {
-                  bitsPerValue = slice.readByte(offset++);
-                  delta = slice.readLong(offset);
-                  offset += Long.BYTES;
-                  if (bitsPerValue == 0) {
-                    blockEndOffset = offset;
-                  } else {
-                    final int length = slice.readInt(offset);
-                    offset += Integer.BYTES;
-                    blockEndOffset = offset + length;
-                  }
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-                this.block ++;
-              } while (this.block != block);
-              values = bitsPerValue == 0 ? LongValues.ZEROES : DirectReader.getInstance(slice, bitsPerValue, offset);
+            try {
+              return vBPVReader.getLongValue(index);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
             }
-            return mul * values.get(index & mask) + delta;
           }
         };
       } else {
+        final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
         final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
         if (entry.table != null) {
           final long[] table = entry.table;
@@ -1457,4 +1378,64 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
     CodecUtil.checksumEntireFile(data);
   }
 
+  /**
+   * Reader for longs split into blocks of different bits per values.
+   * The longs are requested by index and must be accessed in monotonically increasing order.
+   */
+  // Note: The order requirement could be removed as the jump-tables allow for backwards iteration.
+  private class VaryingBPVReader {
+    final RandomAccessInput slice;
+    final NumericEntry entry;
+    final int shift;
+    final long mul;
+    final int mask;
+
+    long block = -1;
+    long delta;
+    long offset;
+    long blockEndOffset;
+    LongValues values;
+
+    VaryingBPVReader(NumericEntry entry) throws IOException {
+      this.entry = entry;
+      slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
+      shift = entry.blockShift;
+      mul = entry.gcd;
+      mask = (1 << shift) - 1;
+    }
+
+    long getLongValue(long index) throws IOException {
+      final long block = index >>> shift;
+      if (this.block != block) {
+        int bitsPerValue;
+        do {
+          // If the needed block is the one directly following the current block, it is cheaper to avoid the cache
+          if (block != this.block+1) {
+            IndexedDISICacheFactory.VaryingBPVJumpTable cache;
+            if ((cache = disiCacheFactory.getVBPVJumpTable(entry.name, slice, entry.valuesLength)) != null) {
+              long candidateOffset;
+              if ((candidateOffset = cache.getBlockOffset(block)) != -1) {
+                blockEndOffset = candidateOffset;
+                this.block = block - 1;
+              }
+            }
+          }
+          offset = blockEndOffset;
+          bitsPerValue = slice.readByte(offset++);
+          delta = slice.readLong(offset);
+          offset += Long.BYTES;
+          if (bitsPerValue == 0) {
+            blockEndOffset = offset;
+          } else {
+            final int length = slice.readInt(offset);
+            offset += Integer.BYTES;
+            blockEndOffset = offset + length;
+          }
+          this.block++;
+        } while (this.block != block);
+        values = bitsPerValue == 0 ? LongValues.ZEROES : DirectReader.getInstance(slice, bitsPerValue, offset);
+      }
+      return mul * values.get(index & mask) + delta;
+    }
+  }
 }

@@ -228,8 +228,8 @@ public class TestDocValues extends LuceneTestCase {
     }
     dir.close();
   }
-  
-  /** 
+
+  /**
    * field with binary docvalues
    */
   public void testBinaryField() throws Exception {

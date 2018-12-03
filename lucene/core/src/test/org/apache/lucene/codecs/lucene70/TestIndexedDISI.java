@@ -246,26 +246,26 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   private void assertAdvanceExactRandomized(IndexedDISI disi, BitSetIterator disi2, int disi2length, int step)
       throws IOException {
-        int index = -1;
+    int index = -1;
     for (int target = 0; target < disi2length; ) {
-          target += TestUtil.nextInt(random(), 0, step);
-          int doc = disi2.docID();
-          while (doc < target) {
-            doc = disi2.nextDoc();
-            index++;
-          }
-
-          boolean exists = disi.advanceExact(target);
-          assertEquals(doc == target, exists);
-          if (exists) {
-            assertEquals(index, disi.index());
-          } else if (random().nextBoolean()) {
-            assertEquals(doc, disi.nextDoc());
-            assertEquals(index, disi.index());
-            target = doc;
-          }
-        }
+      target += TestUtil.nextInt(random(), 0, step);
+      int doc = disi2.docID();
+      while (doc < target) {
+        doc = disi2.nextDoc();
+        index++;
       }
+
+      boolean exists = disi.advanceExact(target);
+      assertEquals(doc == target, exists);
+      if (exists) {
+        assertEquals(index, disi.index());
+      } else if (random().nextBoolean()) {
+        assertEquals(doc, disi.nextDoc());
+        assertEquals(index, disi.index());
+        target = doc;
+      }
+    }
+  }
 
   private void assertSingleStepEquality(IndexedDISI disi, BitSetIterator disi2) throws IOException {
     int i = 0;
@@ -274,7 +274,7 @@ public class TestIndexedDISI extends LuceneTestCase {
       assertEquals(i++, disi.index());
     }
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, disi.nextDoc());
-    }
+  }
 
   private void assertAdvanceEquality(IndexedDISI disi, BitSetIterator disi2, int step) throws IOException {
     int index = -1;
