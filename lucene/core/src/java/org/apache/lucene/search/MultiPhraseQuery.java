@@ -226,7 +226,6 @@ public class MultiPhraseQuery extends Query {
                 allTermStats.add(termStatistics);
               }
             }
-            allTermStats.add(searcher.termStatistics(term, ts));
           }
         }
         if (allTermStats.isEmpty()) {

@@ -18,7 +18,10 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
@@ -26,13 +29,16 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -101,7 +107,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     termsWithPrefix.clear();
     prefix = "blue";
     te.seekCeil(new BytesRef(prefix));
-    
+
     do {
       if (te.term().utf8ToString().startsWith(prefix)) {
         termsWithPrefix.add(new Term("body", te.term().utf8ToString()));
@@ -137,6 +143,48 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     writer.close();
     reader.close();
     indexStore.close();
+  }
+
+  public void testStats() throws IOException {
+      Directory indexStore = newDirectory();
+      RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
+      add("quick brown fox", writer);
+      add("quick pink fox", writer);
+      add("quick red fox", writer);
+      IndexReader reader = writer.getReader();
+      IndexSearcher searcher = newSearcher(reader);
+      final Similarity delegate = searcher.getSimilarity(true);
+      final Set<String> termSet = new HashSet<>();
+      termSet.addAll(Arrays.asList("quick", "brown", "black", "red", "fox"));
+      searcher.setSimilarity(new Similarity() {
+        @Override
+        public long computeNorm(FieldInvertState state) {
+          return delegate.computeNorm(state);
+        }
+
+        @Override
+        public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+          for (TermStatistics term : termStats) {
+            assertTrue(termSet.remove(term.term().utf8ToString()));
+          }
+          return delegate.computeWeight(boost, collectionStats, termStats);
+        }
+
+        @Override
+        public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+          return delegate.simScorer(weight, context);
+        }
+      });
+      MultiPhraseQuery.Builder builder = new MultiPhraseQuery.Builder();
+      builder.add(new Term("body", "quick"));
+      builder.add(new Term[] {new Term("body", "brown"), new Term("body", "red"), new Term("body", "black") });
+      builder.add(new Term("body", "fox"));
+      TopDocs topDocs = searcher.search(searcher.rewrite(builder.build()), 10);
+      assertTrue(termSet.isEmpty());
+      assertEquals(topDocs.totalHits, 2);
+      writer.close();
+      reader.close();
+      indexStore.close();
   }
 
   // LUCENE-2580

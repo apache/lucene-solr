@@ -49,6 +49,9 @@ Bug fixes
 * LUCENE-8586: Intervals.or() could get stuck in an infinite loop on certain indexes
   (Alan Woodward)
 
+* LUCENE-8589: Fix MultiPhraseQuery to not duplicate terms when building the phrase's weight.
+  (Jim Ferenczi)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
