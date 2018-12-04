@@ -21,6 +21,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.UIManager;
 import java.awt.Graphics;
 
+/** Tab utilities */
 public class TabUtils {
 
   public static void forceTransparent(JTabbedPane tabbedPane) {
