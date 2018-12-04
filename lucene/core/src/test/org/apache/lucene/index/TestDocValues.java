@@ -206,7 +206,6 @@ public class TestDocValues extends LuceneTestCase {
     iw.close();
 
     DirectoryReader dr = DirectoryReader.open(zeroDir);
-
     for (int id = 0 ; id < docValues.size() ; id++) {
       int readerIndex = dr.readerIndex(id);
       // We create a new reader each time as we want to test vBPV-skipping and not sequential iteration
@@ -215,6 +214,7 @@ public class TestDocValues extends LuceneTestCase {
       assertEquals(designation + ": The value for docID " + id + " should be as expected",
           docValues.get(id), Long.valueOf(numDV.longValue()));
     }
+    dr.close();
 
     // Clean up
     deleteAndClose(zeroDir);
