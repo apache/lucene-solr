@@ -65,6 +65,8 @@ Improvements
 
 * SOLR-12804: Remove static modifier from Overseer queue access. (Mark Miller)
 
+* SOLR-12833: Add configurable timeout to VersionBucket lock. (Jeffery Yuan, Mark Miller)
+
 Other Changes
 ----------------------
 
