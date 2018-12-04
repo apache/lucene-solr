@@ -594,7 +594,7 @@ final class FrozenBufferedUpdates {
       }
         
       // TODO: we traverse the terms in update order (not term order) so that we
-      // apply the updates in the correct order, i.e. if two terms udpate the
+      // apply the updates in the correct order, i.e. if two terms update the
       // same document, the last one that came in wins, irrespective of the
       // terms lexical order.
       // we can apply the updates in terms order if we keep an updatesGen (and
