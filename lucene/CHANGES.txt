@@ -260,6 +260,10 @@ Optimizations
 * LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
   (Christophe Bismuth via David Smiley)
 
+* LUCENE-8590: BufferedUpdates now uses an optimized storage for buffering docvalues updates that
+  can safe up to 80% of the heap used compared to the previous implementation and uses non-object
+  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grant)
+
 Other
 
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
