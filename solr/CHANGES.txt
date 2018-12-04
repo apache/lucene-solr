@@ -113,6 +113,8 @@ Other Changes
 * SOLR-12775: LowerCaseTokenizer is deprecated, and should be replaced by LetterTokenizer and
   LowerCaseFilter (Alan Woodward)
 
+* SOLR-13036: Fix retry logic in JettySolrRunner (Gus Heck)
+
 ==================  7.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -171,6 +173,9 @@ Other Changes
 * SOLR-12923: The new AutoScaling tests are way too flaky and need special attention. (Mark Miller)
 
 * SOLR-12932: ant test (without badapples=false) should pass easily for developers. (Mark Miller)
+
+* SOLR-13036: Fix retry logic in JettySolrRunner (Gus Heck)
+
 
 ==================  7.6.0 ==================
 
