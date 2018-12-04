@@ -66,9 +66,13 @@ grant {
   permission java.lang.RuntimePermission "accessClassInPackage.org.apache.xerces.util";
   // needed by jacoco to dump coverage
   permission java.lang.RuntimePermission "shutdownHooks";
+  // needed by org.apache.logging.log4j
+  permission java.lang.RuntimePermission "getenv.*";
+  permission java.lang.RuntimePermission "getClassLoader";
+  permission javax.management.MBeanServerPermission "createMBeanServer";
   
   // read access to all system properties:
-  permission java.util.PropertyPermission "*", "read";
+  permission java.util.PropertyPermission "*", "read,write";
   // write access to only these:
   // locale randomization
   permission java.util.PropertyPermission "user.language", "write";

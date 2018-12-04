@@ -561,6 +561,17 @@
     <property name="highlighter-javadocs.uptodate" value="true"/>
   </target>
 
+  <property name="luke.jar" value="${common.dir}/build/suggest/lucene-luke-${version}.jar"/>
+  <target name="check-luke-uptodate" unless="luke.uptodate">
+    <module-uptodate name="luke" jarfile="${luke.jar}" property="luke.uptodate"/>
+  </target>
+  <target name="jar-luke" unless="luke.uptodate" depends="check-luke-uptodate">
+    <ant dir="${common.dir}/luke" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="luke.uptodate" value="true"/>
+  </target>
+
   <property name="memory.jar" value="${common.dir}/build/memory/lucene-memory-${version}.jar"/>
   <target name="check-memory-uptodate" unless="memory.uptodate">
     <module-uptodate name="memory" jarfile="${memory.jar}" property="memory.uptodate"/>
