@@ -79,6 +79,8 @@ Other Changes
 
 * SOLR-12932: ant test (without badapples=false) should pass easily for developers. (Mark Miller)
 
+* SOLR-13036: Fix retry logic in JettySolrRunner (Gus Heck)
+
 
 ==================  7.6.0 ==================
 
