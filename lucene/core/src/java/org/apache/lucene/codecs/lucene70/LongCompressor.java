@@ -48,6 +48,11 @@ public class LongCompressor {
   private static final double DEFAULT_MIN_ZERO_VALUES_FRACTION_FOR_SPARSE = 0.2; // 20% (just guessing of a value here)
 
   /**
+   * LongCompressor exclusively uses static methods and is never instantiated.
+   */
+  private LongCompressor() { }
+
+  /**
    * Create a compact version of the given values.
    * @param values PackedInts with no special constraints.
    * @return a compact version of the given values or the given values if compression did not improve on heap overhead.
@@ -63,7 +68,7 @@ public class LongCompressor {
    * @return a compact version of the given values or the given values if compression did not improve on heap overhead.
    */
   public static PackedInts.Reader compress(PackedInts.Reader values, int length) {
-    return compress(values, values.size(), true);
+    return compress(values, length, true);
   }
 
   /**
