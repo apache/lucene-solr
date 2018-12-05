@@ -425,4 +425,52 @@ abstract class DocValuesFieldUpdates implements Accountable {
       return hasValue;
     }
   }
+
+  static abstract class SingleValueDocValuesFieldUpdates extends DocValuesFieldUpdates {
+
+    protected SingleValueDocValuesFieldUpdates(int maxDoc, long delGen, String field, DocValuesType type) {
+      super(maxDoc, delGen, field, type);
+    }
+
+    @Override
+    void add(int doc, long value) {
+      assert longValue() == value;
+      super.add(doc);
+    }
+
+    @Override
+    void add(int doc, BytesRef value) {
+      assert binaryValue().equals(value);
+      super.add(doc);
+    }
+
+    @Override
+    void add(int docId, Iterator iterator) {
+      throw new UnsupportedOperationException();
+    }
+
+    protected abstract BytesRef binaryValue();
+    
+    protected abstract long longValue();
+
+    @Override
+    Iterator iterator() {
+      return new DocValuesFieldUpdates.AbstractIterator(size, docs, delGen) {
+        @Override
+        protected void set(long idx) {
+          // nothing to do;
+        }
+
+        @Override
+        long longValue() {
+          return SingleValueDocValuesFieldUpdates.this.longValue();
+        }
+
+        @Override
+        BytesRef binaryValue() {
+          return SingleValueDocValuesFieldUpdates.this.binaryValue();
+        }
+      };
+    }
+  }
 }

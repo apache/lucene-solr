@@ -483,9 +483,10 @@ final class FrozenBufferedUpdates {
     long updateCount = 0;
 
     // We first write all our updates private, and only in the end publish to the ReadersAndUpdates */
-    Map<String, DocValuesFieldUpdates> holder = new HashMap<>();
+    final List<DocValuesFieldUpdates> resolvedUpdates = new ArrayList<>();
     for (Map.Entry<String, FieldUpdatesBuffer> fieldUpdate : updates.entrySet()) {
       String updateField = fieldUpdate.getKey();
+      DocValuesFieldUpdates dvUpdates = null;
       FieldUpdatesBuffer value = fieldUpdate.getValue();
       boolean isNumeric = value.isNumeric();
       FieldUpdatesBuffer.BufferedUpdateIterator iterator = value.iterator();
@@ -533,14 +534,19 @@ final class FrozenBufferedUpdates {
         if (termsEnum.seekExact(bufferedUpdate.termValue)) {
           // we don't need term frequencies for this
           postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
-          DocValuesFieldUpdates dvUpdates = holder.get(updateField);
           if (dvUpdates == null) {
             if (isNumeric) {
-              dvUpdates = new NumericDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc());
+              if (value.hasSingleValue()) {
+                dvUpdates = new NumericDocValuesFieldUpdates
+                    .SingleValueNumericDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc(),
+                    value.getNumericValue(0));
+              } else {
+                dvUpdates = new NumericDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc());
+              }
             } else {
               dvUpdates = new BinaryDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc());
             }
-            holder.put(updateField, dvUpdates);
+            resolvedUpdates.add(dvUpdates);
           }
           final IntConsumer docIdConsumer;
           final DocValuesFieldUpdates update = dvUpdates;
@@ -581,7 +587,7 @@ final class FrozenBufferedUpdates {
     }
 
     // now freeze & publish:
-    for (DocValuesFieldUpdates update : holder.values()) {
+    for (DocValuesFieldUpdates update : resolvedUpdates) {
       if (update.any()) {
         update.finish();
         segState.rld.addDVUpdate(update);

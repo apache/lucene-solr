@@ -36,9 +36,13 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
         new DocValuesUpdate.NumericDocValuesUpdate(new Term("id", "1"), "age", 6);
     FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, update, 15);
     buffer.addUpdate(new Term("id", "10"), 6, 15);
+    assertTrue(buffer.hasSingleValue());
     buffer.addUpdate(new Term("id", "8"), 12, 15);
+    assertFalse(buffer.hasSingleValue());
     buffer.addUpdate(new Term("some_other_field", "8"), 13, 17);
+    assertFalse(buffer.hasSingleValue());
     buffer.addUpdate(new Term("id", "8"), 12, 16);
+    assertFalse(buffer.hasSingleValue());
     assertTrue(buffer.isNumeric());
     FieldUpdatesBuffer.BufferedUpdateIterator iterator = buffer.iterator();
     FieldUpdatesBuffer.BufferedUpdate value = iterator.next();
@@ -214,14 +218,17 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
 
     int count = 0;
     while ((value = iterator.next()) != null) {
+      long v = buffer.getNumericValue(count);
       randomUpdate = updates.get(count++);
       assertEquals(randomUpdate.term.bytes.utf8ToString(), value.termValue.utf8ToString());
       assertEquals(randomUpdate.term.field, value.termField);
       assertEquals(randomUpdate.hasValue, value.hasValue);
       if (randomUpdate.hasValue) {
         assertEquals(randomUpdate.getValue(), value.numericValue);
+        assertEquals(v, value.numericValue);
       } else {
         assertEquals(0, value.numericValue);
+        assertEquals(0, v);
       }
       assertEquals(randomUpdate.docIDUpto, value.docUpTo);
     }
