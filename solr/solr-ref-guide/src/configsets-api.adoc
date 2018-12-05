@@ -174,7 +174,11 @@ http://localhost:8983/solr/admin/configs?action=LIST&wt=json
 
 `/admin/configs?action=UPLOAD&name=_name_`
 
-Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is uploaded in a "trusted" mode if authentication is enabled and this upload operation is performed as an authenticated request. Without authentication, a ConfigSet is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" ConfigSet, the following functionality would not work:
+Upload a ConfigSet, sent in as a zipped file.
+
+This functionality is enabled by default, but can be disabled via a runtime parameter `-Dconfigset.upload.enabled=false`. Disabling this feature is advisable if you want to expose Solr installation to untrusted users (even though you should never do that!).
+
+Please note that a ConfigSet is uploaded in a "trusted" mode if authentication is enabled and this upload operation is performed as an authenticated request. Without authentication, a ConfigSet is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" ConfigSet, the following functionality would not work:
 
  * RunExecutableListener does not initialize, if specified in the ConfigSet.
  * DataImportHandler's ScriptTransformer does not initialize, if specified in the ConfigSet.

@@ -1275,6 +1275,7 @@ public class ZkController {
             if (msgNodeName.equals(nodeName) && core.equals(msgCore)) {
               descriptor.getCloudDescriptor()
                   .setCoreNodeName(replica.getName());
+              getCoreContainer().getCoresLocator().persist(getCoreContainer(), descriptor);
               return;
             }
           }
@@ -1364,9 +1365,19 @@ public class ZkController {
   private void checkStateInZk(CoreDescriptor cd) throws InterruptedException {
     if (!Overseer.isLegacy(zkStateReader)) {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
-      String coreNodeName = cloudDesc.getCoreNodeName();
-      if (coreNodeName == null)
-        throw new SolrException(ErrorCode.SERVER_ERROR, "No coreNodeName for " + cd);
+      String nodeName = cloudDesc.getCoreNodeName();
+      if (nodeName == null) {
+        if (cc.repairCoreProperty(cd, CoreDescriptor.CORE_NODE_NAME) == false) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "No coreNodeName for " + cd);
+        }
+        nodeName = cloudDesc.getCoreNodeName();
+        // verify that the repair worked.
+        if (nodeName == null) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "No coreNodeName for " + cd);
+        }
+      }
+      final String coreNodeName = nodeName;
+
       if (cloudDesc.getShardId() == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "No shard id for " + cd);
       }

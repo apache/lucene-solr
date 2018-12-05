@@ -16,6 +16,90 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
+==================  6.6.6 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.16
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+
+(No Changes)
+
+
+==================  6.6.5 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+New Features
+----------------------
+
+* SOLR-12530: Ability to disable configset upload via -Dconfigset.upload.enabled=false startup parameter
+  (Ishan Chattopadhyaya)
+
+Bug Fixes
+----------------------
+
+* SOLR-12450: Don't allow referal to external resources in various config files (CVE-2018-8026).
+  (Yuyang Xiao, Uwe Schindler)
+
+==================  6.6.4 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.16
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+Bug Fixes
+----------------------
+
+* SOLR-12316: Do not allow to use absolute URIs for including other files in solrconfig.xml
+  and schema parsing (CVE-2018-8010).  (Ananthesh, Ishan Chattopadhyaya, Uwe Schindler)  
+
+==================  6.6.3 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.16
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+Bug Fixes
+----------------------
+
+* SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter (CVE-2018-1308).
+  (麦 香浓郁, Uwe Schindler)
+
+* SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
+
+* SOLR-11993: LeaderInitiatedRecoveryThread does not retry on UnknownHostException (shalin, Cao Manh Dat, Steve Rowe)
+
 ==================  6.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -137,6 +137,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   }
 
   private void handleConfigUploadRequest(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    if (!"true".equals(System.getProperty("configset.upload.enabled", "true"))) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Configset upload feature is disabled. To enable this, start Solr with '-Dconfigset.upload.enabled=true'.");
+    }
+
     String configSetName = req.getParams().get(NAME);
     if (StringUtils.isBlank(configSetName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
@@ -178,11 +179,11 @@ public class DataImporter {
   /**
    * Used by tests
    */
-  public void loadAndInit(String configStr) {
+  void loadAndInit(String configStr) {
     config = loadDataConfig(new InputSource(new StringReader(configStr)));
   }
 
-  public void loadAndInit(InputSource configFile) {
+  void loadAndInit(InputSource configFile) {
     config = loadDataConfig(configFile);
   }
 
@@ -191,8 +192,10 @@ public class DataImporter {
     DIHConfiguration dihcfg = null;
     try {
       DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      dbf.setValidating(false);
       
-      // only enable xinclude, if a a SolrCore and SystemId is present (makes no sense otherwise)
+      // only enable xinclude, if XML is coming from safe source (local file)
+      // and a a SolrCore and SystemId is present (makes no sense otherwise):
       if (core != null && configFile.getSystemId() != null) {
         try {
           dbf.setXIncludeAware(true);
@@ -203,8 +206,14 @@ public class DataImporter {
       }
       
       DocumentBuilder builder = dbf.newDocumentBuilder();
-      if (core != null)
+      // only enable xinclude / external entities, if XML is coming from
+      // safe source (local file) and a a SolrCore and SystemId is present:
+      if (core != null && configFile.getSystemId() != null) {
         builder.setEntityResolver(new SystemIdResolver(core.getResourceLoader()));
+      } else {
+        // Don't allow external entities without having a system ID:
+        builder.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
+      }
       builder.setErrorHandler(XMLLOG);
       Document document;
       try {
