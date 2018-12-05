@@ -183,6 +183,18 @@ final class FieldUpdatesBuffer {
     return isNumeric;
   }
 
+  boolean hasSingleValue() {
+    // we only do this optimization for numerics so far.
+    return isNumeric && numericValues.length == 1;
+  }
+
+  long getNumericValue(int idx) {
+    if (hasValues != null && hasValues.get(idx) == false) {
+      return 0;
+    }
+    return numericValues[getArrayIndex(numericValues.length, idx)];
+  }
+
   /**
    * Struct like class that is used to iterate over all updates in this buffer
    */
