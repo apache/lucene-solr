@@ -102,6 +102,10 @@ Bug fixes
 * LUCENE-8589: Fix MultiPhraseQuery to not duplicate terms when building the phrase's weight.
   (Jim Ferenczi)
 
+* LUCENE-8595: Fix interleaved DV update and reset. Interleaved update and reset value
+  to the same doc in the same updates package looses an update if the reset comes before
+  the update as well as loosing the reset if the update comes frist. (Simon Willnauer, Adrien Grant)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
