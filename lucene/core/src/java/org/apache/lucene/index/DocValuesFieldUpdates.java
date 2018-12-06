@@ -298,7 +298,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
         // increasing docID order:
         // NOTE: we can have ties here, when the same docID was updated in the same segment, in which case we rely on sort being
         // stable and preserving original order so the last update to that docID wins
-        return Long.compare(docs.get(i), docs.get(j));
+        return Long.compare(docs.get(i)>>>1, docs.get(j)>>>1);
       }
     }.sort(0, size);
   }
@@ -392,9 +392,13 @@ abstract class DocValuesFieldUpdates implements Accountable {
       }
       long longDoc = docs.get(idx);
       ++idx;
-      while (idx < size && docs.get(idx) == longDoc) {
+      for (; idx < size; idx++) {
         // scan forward to last update to this doc
-        ++idx;
+        final long nextLongDoc = docs.get(idx);
+        if ((longDoc >>> 1) != (nextLongDoc >>> 1)) {
+          break;
+        }
+        longDoc = nextLongDoc;
       }
       hasValue = (longDoc & HAS_VALUE_MASK) >  0;
       if (hasValue) {
