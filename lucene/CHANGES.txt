@@ -312,6 +312,10 @@ Bug fixes
 * LUCENE-8586: Intervals.or() could get stuck in an infinite loop on certain indexes
   (Alan Woodward)
 
+* LUCENE-8595: Fix interleaved DV update and reset. Interleaved update and reset value
+  to the same doc in the same updates package looses an update if the reset comes before
+  the update as well as loosing the reset if the update comes frist. (Simon Willnauer, Adrien Grant)
+
 New Features
 
 * LUCENE-8496: Selective indexing - modify BKDReader/BKDWriter to allow users
