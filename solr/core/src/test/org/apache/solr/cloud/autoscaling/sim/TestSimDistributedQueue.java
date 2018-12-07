@@ -65,7 +65,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
     assertNull(dq.poll());
 
     dq.offer(data);
-    dq.peek(true); // wait until data is definitely there before calling remove
+    dq.peek(15000); // wait until data is definitely there before calling remove
     assertArrayEquals(dq.remove(), data);
     assertNull(dq.poll());
 
@@ -90,7 +90,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
     DistributedQueue dq = makeDistributedQueue(dqZNode);
 
     assertNull(dq.peek());
-    Future<String> future = executor.submit(() -> new String(dq.peek(true), UTF8));
+    Future<String> future = executor.submit(() -> new String(dq.peek(15000), UTF8));
     try {
       future.get(1000, TimeUnit.MILLISECONDS);
       fail("TimeoutException expected");
@@ -105,7 +105,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
     assertNull(dq.peek(100));
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
-    future = executor.submit(() -> new String(dq.peek(true), UTF8));
+    future = executor.submit(() -> new String(dq.peek(15000), UTF8));
     try {
       future.get(1000, TimeUnit.MILLISECONDS);
       fail("TimeoutException expected");

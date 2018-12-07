@@ -91,7 +91,7 @@ public class JettySolrRunner {
 
   private static final int THREAD_POOL_MAX_THREADS = 10000;
   // NOTE: needs to be larger than SolrHttpClient.threadPoolSweeperMaxIdleTime
-  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 120000;
+  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 160000;
   
   Server server;
 
@@ -543,17 +543,40 @@ public class JettySolrRunner {
         log.info("Trying to start Jetty on port {} try number {} ...", port, tryCnt++);
         server.start();
         break;
-      } catch (BindException e) {
-        log.info("Port is in use, will try again until timeout of " + timeout);
-        server.stop();
-        Thread.sleep(3000);
-        if (!timeout.hasTimedOut()) {
-          continue;
+      } catch (IOException ioe) {
+        Exception e = lookForBindException(ioe);
+        if (e instanceof BindException) {
+          log.info("Port is in use, will try again until timeout of " + timeout);
+          server.stop();
+          Thread.sleep(3000);
+          if (!timeout.hasTimedOut()) {
+            continue;
+          }
         }
         
         throw e;
       }
     }
+  }
+
+  /**
+   * Traverses the cause chain looking for a BindException. Returns either a bind exception
+   * that was found in the chain or the original argument.
+   *
+   * @param ioe An IOException that might wrap a BindException
+   * @return A bind exception if present otherwise ioe
+   */
+  Exception lookForBindException(IOException ioe) {
+    Exception e = ioe;
+    while(e.getCause() != null && !(e == e.getCause()) && ! (e instanceof BindException)) {
+      if (e.getCause() instanceof Exception) {
+        e = (Exception) e.getCause();
+        if (e instanceof BindException) {
+          return e;
+        }
+      }
+    }
+    return ioe;
   }
 
   /**

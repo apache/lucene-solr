@@ -80,6 +80,10 @@ Improvements
  If you don't use nested documents then _root_ can be removed from the schema.  (Dr Oleg Savrasov, Moshe Bla,
  David Smiley, Mikhail Khludnev)
 
+* SOLR-6117: The response format has changed slightly for ReplicationHandler error-cases.  All errors now have a non-200
+  'status' field, a 'message' field giving more details on the error, and an optional 'exception' field.  (Shalin Mangar,
+  Jason Gerlowski)
+
 Optimizations
 ----------------------
 
@@ -108,6 +112,8 @@ Other Changes
 
 * SOLR-12775: LowerCaseTokenizer is deprecated, and should be replaced by LetterTokenizer and
   LowerCaseFilter (Alan Woodward)
+
+* SOLR-13036: Fix retry logic in JettySolrRunner (Gus Heck)
 
 ==================  7.7.0 ==================
 
@@ -157,6 +163,8 @@ Improvements
 
 * SOLR-12804: Remove static modifier from Overseer queue access. (Mark Miller)
 
+* SOLR-12833: Add configurable timeout to VersionBucket lock. (Jeffery Yuan, Mark Miller)
+
 Other Changes
 ----------------------
 
@@ -167,6 +175,9 @@ Other Changes
 * SOLR-12923: The new AutoScaling tests are way too flaky and need special attention. (Mark Miller)
 
 * SOLR-12932: ant test (without badapples=false) should pass easily for developers. (Mark Miller)
+
+* SOLR-13036: Fix retry logic in JettySolrRunner (Gus Heck)
+
 
 ==================  7.6.0 ==================
 

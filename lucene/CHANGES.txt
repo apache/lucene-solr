@@ -142,6 +142,10 @@ Changes in Runtime Behavior
   anymore. This doesn't affect ordering as this is a constant factor which is
   the same for every document. (Luca Cavanna via Adrien Grand)
 
+* LUCENE-8509: WordDelimiterGraphFilter will no longer set the offsets of internal
+  tokens by default, preventing a number of bugs when the filter is chained with
+  tokenfilters that change the length of their tokens (Alan Woodward)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
@@ -154,6 +158,10 @@ New Features
 
 * LUCENE-8216: Added a new BM25FQuery in sandbox to blend statistics across several fields
   using the BM25F formula. (Adrien Grand, Jim Ferenczi)
+
+* LUCENE-8564: GraphTokenFilter is an abstract class useful for token filters that need
+  to read-ahead in the token stream and take into account graph structures.  This
+  also changes FixedShingleFilter to extend GraphTokenFilter (Alan Woodward)
 
 Improvements
 
@@ -208,11 +216,20 @@ Optimizations
   to early terminate the iterator if the minimum score is greater than the constant
   score. (Christophe Bismuth via Jim Ferenczi)
 
+* LUCENE-8374: Reduce reads for sparse DocValues and whole number numeric DocValues.
+  (Toke Eskildsen)
+
 ======================= Lucene 7.7.0 =======================
 
 Build
 
 * LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
+
+Bug fixes:
+
+* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
+  detects script boundaries more accurately with Character#UnicodeScript#of.
+  (Christophe Bismuth, Jim Ferenczi)
 
 New Features
 
@@ -242,6 +259,10 @@ Optimizations
 
 * LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
   (Christophe Bismuth via David Smiley)
+
+* LUCENE-8590: BufferedUpdates now uses an optimized storage for buffering docvalues updates that
+  can safe up to 80% of the heap used compared to the previous implementation and uses non-object
+  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grant)
 
 Other
 
@@ -287,6 +308,13 @@ Bug fixes
 
 * LUCENE-8556: Use latitude and longitude instead of encoding values to check if triangle is ear
   when using morton optimisation. (Ignacio Vera)
+
+* LUCENE-8586: Intervals.or() could get stuck in an infinite loop on certain indexes
+  (Alan Woodward)
+
+* LUCENE-8595: Fix interleaved DV update and reset. Interleaved update and reset value
+  to the same doc in the same updates package looses an update if the reset comes before
+  the update as well as loosing the reset if the update comes frist. (Simon Willnauer, Adrien Grant)
 
 New Features
 
