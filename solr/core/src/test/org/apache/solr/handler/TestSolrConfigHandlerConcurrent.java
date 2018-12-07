@@ -66,11 +66,11 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     for (Object o : caches.entrySet()) {
       final Map.Entry e = (Map.Entry) o;
       if (e.getValue() instanceof Map) {
+        List<String> errs = new ArrayList<>();
+        collectErrors.add(errs);
         Map value = (Map) e.getValue();
         Thread t = new Thread(() -> {
           try {
-            List<String> errs = new ArrayList<>();
-            collectErrors.add(errs);
             invokeBulkCall((String)e.getKey() , errs, value);
           } catch (Exception e1) {
             e1.printStackTrace();

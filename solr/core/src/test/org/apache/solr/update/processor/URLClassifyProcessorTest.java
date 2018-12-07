@@ -23,8 +23,6 @@ import java.net.URISyntaxException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.processor.URLClassifyProcessor;
-import org.apache.solr.update.processor.URLClassifyProcessorFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

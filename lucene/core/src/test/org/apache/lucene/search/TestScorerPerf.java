@@ -153,7 +153,7 @@ public class TestScorerPerf extends LuceneTestCase {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
-          return new ConstantScoreScorer(this, score(), new BitSetIterator(docs, docs.approximateCardinality()));
+          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(docs, docs.approximateCardinality()));
         }
 
         @Override

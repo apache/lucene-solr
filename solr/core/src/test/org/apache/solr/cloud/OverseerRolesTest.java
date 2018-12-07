@@ -72,8 +72,12 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     URL overseerUrl = new URL("http://" + overseer.substring(0, overseer.indexOf('_')));
     int hostPort = overseerUrl.getPort();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      try {
       if (jetty.getBaseUrl().getPort() == hostPort)
         return jetty;
+      } catch (IllegalStateException e) {
+        
+      }
     }
     fail("Couldn't find overseer node " + overseer);
     return null; // to keep the compiler happy
@@ -85,8 +89,6 @@ public class OverseerRolesTest extends SolrCloudTestCase {
   }
 
   @Test
-  //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testOverseerRole() throws Exception {
 
     logOverseerState();
@@ -114,7 +116,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     JettySolrRunner leaderJetty = getOverseerJetty();
     logOverseerState();
 
-    ChaosMonkey.stop(leaderJetty);
+    leaderJetty.stop();
     waitForNewOverseer(10, overseer3);
 
     // add another node as overseer
@@ -136,7 +138,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     String leaderId = OverseerCollectionConfigSetProcessor.getLeaderId(zkClient());
     String leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
     log.info("### Sending QUIT to overseer {}", leader);
-    Overseer.getStateUpdateQueue(zkClient())
+    getOverseerJetty().getCoreContainer().getZkController().getOverseer().getStateUpdateQueue()
         .offer(Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
             "id", leaderId)));
 

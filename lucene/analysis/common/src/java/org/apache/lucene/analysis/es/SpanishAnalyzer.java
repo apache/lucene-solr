@@ -36,6 +36,8 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * {@link Analyzer} for Spanish.
+ *
+ * @since 3.1
  */
 public final class SpanishAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.blockterms;
 
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 

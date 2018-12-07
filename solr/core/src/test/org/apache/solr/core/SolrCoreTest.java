@@ -27,6 +27,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -309,6 +310,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
           RefCounted<SolrIndexSearcher> newSearcher = null;
           try {
             newSearcher = core.openNewSearcher(true, true);
+          } catch (SolrCoreState.CoreIsClosedException e) {
+            // closed
           } finally {
             if (newSearcher != null) {
               newSearcher.decref();

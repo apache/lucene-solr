@@ -1182,7 +1182,7 @@ if !JAVA_MAJOR_VERSION! GEQ 9  (
     echo ERROR: On Java 9 you cannot set GC_LOG_OPTS, only default GC logging is available. Exiting
     GOTO :eof
   )
-  set GC_LOG_OPTS="-Xlog:gc*:file=\"!SOLR_LOGS_DIR!\solr_gc.log\":time,uptime:filecount=9,filesize=20000"
+  set GC_LOG_OPTS="-Xlog:gc*:file=\"!SOLR_LOGS_DIR!\solr_gc.log\":time,uptime:filecount=9,filesize=20M"
 ) else (
   IF "%GC_LOG_OPTS%"=="" (
     rem Set defaults for Java 8

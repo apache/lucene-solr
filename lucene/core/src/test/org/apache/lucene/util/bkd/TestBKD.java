@@ -492,6 +492,35 @@ public class TestBKD extends LuceneTestCase {
     verify(docValues, null, numDataDims, numIndexDims, numBytesPerDim);
   }
 
+  public void testIndexDimEqualDataDimDifferent() throws Exception {
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
+    int numDataDims = TestUtil.nextInt(random(), 2, 5);
+    int numIndexDims = TestUtil.nextInt(random(), 1, numDataDims - 1);
+
+    int numDocs = atLeast(1000);
+    byte[][][] docValues = new byte[numDocs][][];
+
+    byte[][] indexDimensions = new byte[numDataDims][];
+    for(int dim=0;dim<numIndexDims;dim++) {
+      indexDimensions[dim] = new byte[numBytesPerDim];
+      random().nextBytes(indexDimensions[dim]);
+    }
+
+    for(int docID=0;docID<numDocs;docID++) {
+      byte[][] values = new byte[numDataDims][];
+      for(int dim=0;dim<numIndexDims;dim++) {
+        values[dim] = indexDimensions[dim];
+      }
+      for (int dim = numIndexDims; dim < numDataDims; dim++) {
+          values[dim] = new byte[numBytesPerDim];
+          random().nextBytes(values[dim]);
+      }
+      docValues[docID] = values;
+    }
+
+    verify(docValues, null, numDataDims, numIndexDims, numBytesPerDim);
+  }
+
   public void testOneDimEqual() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
     int numDataDims = TestUtil.nextInt(random(), 1, 5);

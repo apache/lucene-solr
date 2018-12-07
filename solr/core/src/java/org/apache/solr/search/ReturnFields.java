@@ -67,7 +67,7 @@ public abstract class ReturnFields {
 
   /** 
    * Returns <code>true</code> if the specified field should be returned <em>to the external client</em> 
-   * -- either using it's own name, or via an alias. 
+   * -- either using its own name, or via an alias. 
    * This method returns <code>false</code> even if the specified name is needed as an "extra" field
    * for use by transformers.
    */

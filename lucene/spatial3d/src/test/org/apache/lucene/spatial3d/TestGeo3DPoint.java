@@ -1204,6 +1204,40 @@ public class TestGeo3DPoint extends LuceneTestCase {
     }
   }
 
+  public void testMinValueQuantization(){
+    int encoded = Geo3DUtil.MIN_ENCODED_VALUE;
+    double minValue= -PlanetModel.WGS84.getMaximumMagnitude();
+    //Normal encoding
+    double decoded = Geo3DUtil.decodeValue(encoded);
+    assertEquals(minValue, decoded, 0d);
+    assertEquals(encoded, Geo3DUtil.encodeValue(decoded));
+    //Encoding floor
+    double decodedFloor = Geo3DUtil.decodeValueFloor(encoded);
+    assertEquals(minValue, decodedFloor, 0d);
+    assertEquals(encoded, Geo3DUtil.encodeValue(decodedFloor));
+    //Encoding ceiling
+    double decodedCeiling = Geo3DUtil.decodeValueCeil(encoded);
+    assertTrue(decodedCeiling > minValue);
+    assertEquals(encoded, Geo3DUtil.encodeValue(decodedCeiling));
+  }
+
+  public void testMaxValueQuantization(){
+    int encoded = Geo3DUtil.MAX_ENCODED_VALUE;
+    double maxValue= PlanetModel.WGS84.getMaximumMagnitude();
+    //Normal encoding
+    double decoded = Geo3DUtil.decodeValue(encoded);
+    assertEquals(maxValue, decoded, 0d);
+    assertEquals(encoded, Geo3DUtil.encodeValue(decoded));
+    //Encoding floor
+    double decodedFloor = Geo3DUtil.decodeValueFloor(encoded);
+    assertTrue(decodedFloor <  maxValue);
+    assertEquals(encoded, Geo3DUtil.encodeValue(decodedFloor));
+    //Encoding ceiling
+    double decodedCeiling = Geo3DUtil.decodeValueCeil(encoded);
+    assertEquals(maxValue, decodedCeiling, 0d);
+    assertEquals(encoded, Geo3DUtil.encodeValue(decodedCeiling));
+  }
+
   // poached from TestGeoEncodingUtils.testLatitudeQuantization:
 
   /**
@@ -1215,10 +1249,10 @@ public class TestGeo3DPoint extends LuceneTestCase {
     Random random = random();
     for (int i = 0; i < 10000; i++) {
       int encoded = random.nextInt();
-      if (encoded < Geo3DUtil.MIN_ENCODED_VALUE) {
+      if (encoded <= Geo3DUtil.MIN_ENCODED_VALUE) {
         continue;
       }
-      if (encoded > Geo3DUtil.MAX_ENCODED_VALUE) {
+      if (encoded >= Geo3DUtil.MAX_ENCODED_VALUE) {
         continue;
       }
       double min = encoded * Geo3DUtil.DECODE;

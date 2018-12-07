@@ -42,7 +42,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   private static ZkTestServer zkServer;
 
   @BeforeClass
-  public static void startZkServer() throws InterruptedException {
+  public static void startZkServer() throws Exception {
     zkServer = new ZkTestServer(createTempDir("zkData").toString());
     zkServer.run();
   }

@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -35,8 +34,6 @@ import org.junit.Test;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-//@ThreadLeakLingering(linger = 60000)
-@SuppressObjectReleaseTracker(bugUrl="Testing purposes")
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
 
@@ -48,6 +45,9 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   public static void beforeSuperClass() {
     schemaString = "schema15.xml";      // we need a string id
     System.setProperty("solr.autoCommit.maxTime", "15000");
+    System.clearProperty("solr.httpclient.retries");
+    System.clearProperty("solr.retries.on.forward");
+    System.clearProperty("solr.retries.to.followers"); 
     setErrorHook();
   }
   
@@ -57,10 +57,22 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     clearErrorHook();
   }
   
+  
+  
+  @Override
+  protected void destroyServers() throws Exception {
+    
+    super.destroyServers();
+  }
+  
   protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
   protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
 
   private int clientSoTimeout = 60000;
+
+  private volatile FullThrottleStoppableIndexingThread ftIndexThread;
+
+  private final boolean runFullThrottle;
   
   public String[] getFieldNames() {
     return fieldNames;
@@ -76,6 +88,16 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     // can help to hide this when testing and looking at logs
     //ignoreException("shard update error");
     useFactory("solr.StandardDirectoryFactory");
+  }
+  
+  @Override
+  public void distribTearDown() throws Exception {
+    try {
+      ftIndexThread.safeStop();
+    } catch (NullPointerException e) {
+      // okay
+    }
+    super.distribTearDown();
   }
   
   public ChaosMonkeyNothingIsSafeTest() {
@@ -94,11 +116,15 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     fixShardCount(numShards);
 
 
+    // TODO: we only do this sometimes so that we can sometimes compare against control,
+    // it's currently hard to know what requests failed when using ConcurrentSolrUpdateServer
+    runFullThrottle = random().nextBoolean();
+    
   }
 
   @Override
   protected boolean useTlogReplicas() {
-    return onlyLeaderIndexes;
+    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
   }
 
   @Override
@@ -119,9 +145,9 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     // None of the operations used here are particularly costly, so this should work.
     // Using this low timeout will also help us catch index stalling.
     clientSoTimeout = 5000;
-    cloudClient = createCloudClient(DEFAULT_COLLECTION);
+
     boolean testSuccessful = false;
-    try {
+    try  (CloudSolrClient ourCloudClient = createCloudClient(DEFAULT_COLLECTION)) {
       handle.clear();
       handle.put("timestamp", SKIPVAL);
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -155,13 +181,9 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         searchThread.start();
       }
       
-      // TODO: we only do this sometimes so that we can sometimes compare against control,
-      // it's currently hard to know what requests failed when using ConcurrentSolrUpdateServer
-      boolean runFullThrottle = random().nextBoolean();
       if (runFullThrottle) {
-        FullThrottleStoppableIndexingThread ftIndexThread = 
-            new FullThrottleStoppableIndexingThread(controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
-        threads.add(ftIndexThread);
+        ftIndexThread = 
+            new FullThrottleStoppableIndexingThread(cloudClient.getHttpClient(),controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
         ftIndexThread.start();
       }
       
@@ -189,6 +211,11 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // ideally this should go into chaosMonkey
       restartZk(1000 * (5 + random().nextInt(4)));
 
+      
+      if (runFullThrottle) {
+        ftIndexThread.safeStop();
+      }
+      
       for (StoppableThread indexThread : threads) {
         indexThread.safeStop();
       }
@@ -219,7 +246,6 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       zkStateReader.updateLiveNodes();
       assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);
       
-      
       // we expect full throttle fails, but cloud client should not easily fail
       for (StoppableThread indexThread : threads) {
         if (indexThread instanceof StoppableIndexingThread && !(indexThread instanceof FullThrottleStoppableIndexingThread)) {
@@ -229,6 +255,10 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         }
       }
       
+      
+      waitForThingsToLevelOut(20);
+      
+      commit();
       
       Set<String> addFails = getAddFails(indexTreads);
       Set<String> deleteFails = getDeleteFails(indexTreads);
@@ -253,7 +283,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
 
       // sometimes we restart zookeeper as well
       if (random().nextBoolean()) {
-        restartZk(1000 * (5 + random().nextInt(4)));
+       // restartZk(1000 * (5 + random().nextInt(4)));
       }
 
       try (CloudSolrClient client = createCloudClient("collection1", 30000)) {

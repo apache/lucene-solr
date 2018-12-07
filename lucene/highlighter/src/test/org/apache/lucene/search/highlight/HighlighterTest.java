@@ -81,11 +81,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
-import org.apache.lucene.search.join.BitSetProducer;
-import org.apache.lucene.search.join.QueryBitSetProducer;
-import org.apache.lucene.search.join.ScoreMode;
-import org.apache.lucene.search.join.ToChildBlockJoinQuery;
-import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
@@ -628,61 +623,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   }
   
-  public void testToParentBlockJoinQuery() throws Exception {
-    BitSetProducer parentFilter = new QueryBitSetProducer(
-        new TermQuery(new Term(FIELD_NAME, "parent")));
-    
-    query = new ToParentBlockJoinQuery(new TermQuery(new Term(FIELD_NAME, "child")),
-        parentFilter, ScoreMode.None);
-    searcher = newSearcher(reader);
-    hits = searcher.search(query, 100);
-    int maxNumFragmentsRequired = 2;
-    
-    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
-    Highlighter highlighter = new Highlighter(this, scorer);
-    
-    for (int i = 0; i < hits.totalHits.value; i++) {
-      String text = "child document";
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
-      
-      highlighter.setTextFragmenter(new SimpleFragmenter(40));
-      highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired, "...");
-    }
-    
-    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
-        numHighlights == 1);
-  }
-  
-  public void testToChildBlockJoinQuery() throws Exception {
-    BitSetProducer parentFilter = new QueryBitSetProducer(
-        new TermQuery(new Term(FIELD_NAME, "parent")));
-    
-    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
-    booleanQuery.add(new ToChildBlockJoinQuery(new TermQuery(
-        new Term(FIELD_NAME, "parent")), parentFilter), Occur.MUST);
-    booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "child")), Occur.MUST);
-    query = booleanQuery.build();
-    
-    searcher = newSearcher(reader);
-    hits = searcher.search(query, 100);
-    int maxNumFragmentsRequired = 2;
-    
-    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
-    Highlighter highlighter = new Highlighter(this, scorer);
-    
-    for (int i = 0; i < hits.totalHits.value; i++) {
-      String text = "parent document";
-      final int docId = hits.scoreDocs[i].doc;
-      TokenStream tokenStream = getAnyTokenStream(FIELD_NAME, docId);
-      
-      highlighter.setTextFragmenter(new SimpleFragmenter(40));
-      highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired, "...");
-    }
-    
-    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
-        numHighlights == 1);
-  }
-
   public void testSimpleQueryScorerPhraseHighlighting2() throws Exception {
     PhraseQuery phraseQuery = new PhraseQuery(5, FIELD_NAME, "text", "piece", "long");
     doSearching(phraseQuery);

@@ -23,7 +23,6 @@ import java.util.Queue;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.spell.SuggestMode;
 
 /**
  * <p>

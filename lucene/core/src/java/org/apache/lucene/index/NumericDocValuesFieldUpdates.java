@@ -111,4 +111,24 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
         + Long.BYTES
         + RamUsageEstimator.NUM_BYTES_OBJECT_REF;
   }
+
+  static class SingleValueNumericDocValuesFieldUpdates extends SingleValueDocValuesFieldUpdates {
+
+    private final long value;
+
+    SingleValueNumericDocValuesFieldUpdates(long delGen, String field, int maxDoc, long value) {
+      super(maxDoc, delGen, field, DocValuesType.NUMERIC);
+      this.value = value;
+    }
+
+    @Override
+    protected BytesRef binaryValue() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected long longValue() {
+      return value;
+    }
+  }
 }

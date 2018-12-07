@@ -71,8 +71,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(),
-        zkServer.getZkAddress(), "solrconfig.xml", "schema.xml");
+    zkServer.buildZooKeeper("solrconfig.xml", "schema.xml");
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
 

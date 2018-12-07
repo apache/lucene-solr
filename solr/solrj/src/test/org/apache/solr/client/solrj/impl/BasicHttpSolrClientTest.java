@@ -202,7 +202,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
         .withSSLConfig(sslConfig)
         .build();
-    createJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
   
   @Test

@@ -52,6 +52,11 @@ import org.noggit.ObjectBuilder;
  */
 public class DefaultWrapperModel extends WrapperModel {
 
+  /**
+   * resource is part of the LTRScoringModel params map
+   * and therefore here it does not individually
+   * influence the class hashCode, equals, etc.
+   */
   private String resource;
 
   public DefaultWrapperModel(String name, List<Feature> features, List<Normalizer> norms, String featureStoreName,

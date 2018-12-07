@@ -93,7 +93,7 @@ public class ReplicaInfo implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    BiPredicate<String, Object> p = dedupeKeyPredicate(new HashSet<>())
+    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(new HashSet<>())
         .and(NON_NULL_VAL);
     ew.put(name, (MapWriter) ew1 -> {
       ew1.put(ZkStateReader.CORE_NAME_PROP, core, p)

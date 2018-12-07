@@ -71,7 +71,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         + "zookeeper/server1/data";
     log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
-    zkServer.run();
+    zkServer.run(false);
     
     System.setProperty("zkHost", zkServer.getZkAddress());
     

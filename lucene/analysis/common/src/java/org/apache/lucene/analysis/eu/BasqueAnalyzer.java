@@ -34,6 +34,8 @@ import org.tartarus.snowball.ext.BasqueStemmer;
 
 /**
  * {@link Analyzer} for Basque.
+ *
+ * @since 3.1
  */
 public final class BasqueAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

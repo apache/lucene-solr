@@ -162,6 +162,7 @@ import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -764,10 +765,14 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     // Create the index if it doesn't exist.
     if (!indexExists) {
       log.debug("{}Solr index directory '{}' doesn't exist. Creating new index...", logid, indexDir);
-
-      SolrIndexWriter writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,
+      SolrIndexWriter writer = null;
+      try {
+       writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,
           getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
-      writer.close();
+      } finally {
+        IOUtils.closeQuietly(writer);
+      }
+   
     }
 
     cleanupOldIndexDirectories(reload);
@@ -992,6 +997,33 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
       this.updateHandler.informEventListeners(this);
+   
+      infoRegistry.put("core", this);
+
+      // register any SolrInfoMBeans SolrResourceLoader initialized
+      //
+      // this must happen after the latch is released, because a JMX server impl may
+      // choose to block on registering until properties can be fetched from an MBean,
+      // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
+      // from the core.
+      resourceLoader.inform(infoRegistry);
+
+      // Allow the directory factory to report metrics
+      if (directoryFactory instanceof SolrMetricProducer) {
+        ((SolrMetricProducer) directoryFactory).initializeMetrics(metricManager, coreMetricManager.getRegistryName(),
+            metricTag, "directoryFactory");
+      }
+
+      // seed version buckets with max from index during core initialization ... requires a searcher!
+      seedVersionBuckets();
+
+      bufferUpdatesIfConstructing(coreDescriptor);
+
+      this.ruleExpiryLock = new ReentrantLock();
+      this.snapshotDelLock = new ReentrantLock();
+
+      registerConfListener();
+
     } catch (Throwable e) {
       // release the latch, otherwise we block trying to do the close. This
       // should be fine, since counting down on a latch of 0 is still fine
@@ -1016,31 +1048,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       // allow firstSearcher events to fire and make sure it is released
       latch.countDown();
     }
-
-    infoRegistry.put("core", this);
-
-    // register any SolrInfoMBeans SolrResourceLoader initialized
-    //
-    // this must happen after the latch is released, because a JMX server impl may
-    // choose to block on registering until properties can be fetched from an MBean,
-    // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
-    // from the core.
-    resourceLoader.inform(infoRegistry);
-
-    // Allow the directory factory to report metrics
-    if (directoryFactory instanceof SolrMetricProducer) {
-      ((SolrMetricProducer)directoryFactory).initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, "directoryFactory");
-    }
-
-    // seed version buckets with max from index during core initialization ... requires a searcher!
-    seedVersionBuckets();
-
-    bufferUpdatesIfConstructing(coreDescriptor);
-
-    this.ruleExpiryLock = new ReentrantLock();
-    this.snapshotDelLock = new ReentrantLock();
-
-    registerConfListener();
     
     assert ObjectReleaseTracker.track(this);
   }
@@ -1999,7 +2006,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    */
   public RefCounted<SolrIndexSearcher>  openNewSearcher(boolean updateHandlerReopens, boolean realtime) {
     if (isClosed()) { // catch some errors quicker
-      throw new SolrException(ErrorCode.SERVER_ERROR, "openNewSearcher called on closed core");
+      throw new SolrCoreState.CoreIsClosedException();
     }
 
     SolrIndexSearcher tmp;
@@ -2372,7 +2379,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return returnSearcher ? newSearchHolder : null;
 
     } catch (Exception e) {
-      if (e instanceof SolrException) throw (SolrException)e;
+      if (e instanceof RuntimeException) throw (RuntimeException)e;
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } finally {
 
@@ -2491,6 +2498,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         // even in the face of errors.
         onDeckSearchers--;
         searcherLock.notifyAll();
+        assert TestInjection.injectSearcherHooks(getCoreDescriptor() != null && getCoreDescriptor().getCloudDescriptor() != null ? getCoreDescriptor().getCloudDescriptor().getCollectionName() : null);
       }
     }
   }
@@ -3008,7 +3016,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       int solrConfigversion, overlayVersion, managedSchemaVersion = 0;
       SolrConfig cfg = null;
       try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-        if (solrCore == null || solrCore.isClosed()) return;
+        if (solrCore == null || solrCore.isClosed() || solrCore.getCoreContainer().isShutDown()) return;
         cfg = solrCore.getSolrConfig();
         solrConfigversion = solrCore.getSolrConfig().getOverlay().getZnodeVersion();
         overlayVersion = solrCore.getSolrConfig().getZnodeVersion();
@@ -3042,7 +3050,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       }
       //some files in conf directory may have  other than managedschema, overlay, params
       try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-        if (solrCore == null || solrCore.isClosed()) return;
+        if (solrCore == null || solrCore.isClosed() || cc.isShutDown()) return;
         for (Runnable listener : solrCore.confListeners) {
           try {
             listener.run();

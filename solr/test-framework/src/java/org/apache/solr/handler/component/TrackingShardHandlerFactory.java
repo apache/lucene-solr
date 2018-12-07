@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.cloud.DocCollection;
@@ -82,9 +83,14 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
 
   @Override
   public ShardHandler getShardHandler() {
+    return super.getShardHandler();
+  }
+  
+  @Override
+  public ShardHandler getShardHandler(HttpClient client) {
     final ShardHandlerFactory factory = this;
-    final ShardHandler wrapped = super.getShardHandler();
-    return new ShardHandler() {
+    final ShardHandler wrapped = super.getShardHandler(client);
+    return new HttpShardHandler(this, client) {
       @Override
       public void prepDistributed(ResponseBuilder rb) {
         wrapped.prepDistributed(rb);
@@ -152,10 +158,13 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   public static void setTrackingQueue(List<JettySolrRunner> runners, Queue<ShardRequestAndParams> queue) {
     for (JettySolrRunner runner : runners) {
       CoreContainer container = runner.getCoreContainer();
-      ShardHandlerFactory factory = container.getShardHandlerFactory();
-      assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: " + factory.getClass();
-      TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
-      trackingShardHandlerFactory.setTrackingQueue(queue);
+      if (container != null) {
+        ShardHandlerFactory factory = container.getShardHandlerFactory();
+        assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: "
+            + factory.getClass();
+        TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
+        trackingShardHandlerFactory.setTrackingQueue(queue);
+      }
     }
   }
 

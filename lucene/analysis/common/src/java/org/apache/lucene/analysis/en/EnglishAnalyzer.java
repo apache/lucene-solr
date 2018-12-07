@@ -33,6 +33,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * {@link Analyzer} for English.
+ *
+ * @since 3.1
  */
 public final class EnglishAnalyzer extends StopwordAnalyzerBase {
 

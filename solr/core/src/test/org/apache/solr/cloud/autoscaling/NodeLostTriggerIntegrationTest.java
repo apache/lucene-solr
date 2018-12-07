@@ -40,6 +40,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,17 +66,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
-    // disable .scheduled_maintenance
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    SolrClient solrClient = cluster.getSolrClient();
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+ 
   }
 
   private static CountDownLatch getTriggerFiredLatch() {
@@ -84,19 +75,19 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
-    // ensure that exactly 2 jetty nodes are running
-    int numJetties = cluster.getJettySolrRunners().size();
-    log.info("Found {} jetty instances running", numJetties);
-    for (int i = 2; i < numJetties; i++) {
-      int r = random().nextInt(cluster.getJettySolrRunners().size());
-      log.info("Shutdown extra jetty instance at port {}", cluster.getJettySolrRunner(r).getLocalPort());
-      cluster.stopJettySolrRunner(r);
-    }
-    for (int i = cluster.getJettySolrRunners().size(); i < 2; i++) {
-      // start jetty instances
-      cluster.startJettySolrRunner();
-    }
-    cluster.waitForAllNodes(5);
+    
+    configureCluster(4)
+    .addConfig("conf", configset("cloud-minimal"))
+    .configure();
+    
+    // disable .scheduled_maintenance
+    String suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
+        "}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    SolrClient solrClient = cluster.getSolrClient();
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
 
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     String overseerLeader = (String) overSeerStatus.get("leader");
@@ -117,13 +108,9 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
     log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
 
-    cluster.deleteAllCollections();
+
     cluster.getSolrClient().setDefaultCollection(null);
 
-    // restart Overseer. Even though we reset the autoscaling config some already running
-    // trigger threads may still continue to execute and produce spurious events
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
-    Thread.sleep(5000);
 
     waitForSeconds = 1 + random().nextInt(3);
     actionConstructorCalled = new CountDownLatch(1);
@@ -132,12 +119,6 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
     triggerFired = new AtomicBoolean(false);
     events.clear();
 
-    while (cluster.getJettySolrRunners().size() < 2) {
-      // perhaps a test stopped a node but didn't start it back
-      // lets start a node
-      cluster.startJettySolrRunner();
-    }
-
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     // clear any events or markers
     // todo: consider the impact of such cleanup on regular cluster restarts
@@ -145,6 +126,11 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+  }
+  
+  @After
+  public void cleanUpTest() throws Exception {
+    shutdownCluster();
   }
 
   private void deleteChildrenRecursively(String path) throws Exception {
@@ -187,7 +173,8 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
       if (runner == newNode) index = i;
     }
     assertFalse(index == -1);
-    cluster.stopJettySolrRunner(index);
+    JettySolrRunner j = cluster.stopJettySolrRunner(index);
+    cluster.waitForJettyToStop(j);
 
     // ensure that the old trigger sees the stopped node, todo find a better way to do this
     Thread.sleep(500 + TimeUnit.SECONDS.toMillis(DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS));
@@ -250,7 +237,8 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
     triggerFired.set(false);
     triggerFiredLatch = new CountDownLatch(1);
     String lostNodeName = cluster.getJettySolrRunner(nonOverseerLeaderIndex).getNodeName();
-    cluster.stopJettySolrRunner(nonOverseerLeaderIndex);
+    JettySolrRunner j = cluster.stopJettySolrRunner(nonOverseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());

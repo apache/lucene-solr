@@ -113,6 +113,7 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
     listenerEvents.clear();
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());

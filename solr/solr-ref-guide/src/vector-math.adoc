@@ -143,6 +143,79 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+Elements of an array can be trimmed using the `ltrim` (left trim) and `rtrim` (right trim) functions.
+The `ltrim` and `rtrim` functions remove a specific number of elements from the left or right of an array.
+
+The example below shows the `lrtim` function trimming the first 2 elements of an array:
+
+[source,text]
+----
+ltrim(array(0,1,2,3,4,5,6), 2)
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "return-value": [
+          2,
+          3,
+          4,
+          5,
+          6,
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 1
+      }
+    ]
+  }
+}
+----
+
+== Vector Sorting
+
+An array can be sorted in natural ascending order with the `asc` function.
+
+The example below shows the `asc` function sorting an array:
+
+[source,text]
+----
+asc(array(10,1,2,3,4,5,6))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "return-value": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          10
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 1
+      }
+    ]
+  }
+}
+----
+
 == Vector Summarizations and Norms
 
 There are a set of functions that perform summarizations and return norms of arrays. These functions

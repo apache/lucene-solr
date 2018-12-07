@@ -223,4 +223,26 @@ public class TestLatLonShape extends LuceneTestCase {
 
     IOUtils.close(reader, dir);
   }
+
+  public void testPointIndexAndQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
+    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat, p.lon);
+    for (Field f : fields) {
+      document.add(f);
+    }
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    // search by same point
+    Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, p.lat, p.lat, p.lon, p.lon);
+    assertEquals(1, s.count(q));
+    IOUtils.close(r, dir);
+  }
 }

@@ -57,7 +57,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   private static String context = "/solr";
   private static long docsSeed; // see indexDocs()
 
-  private static JettySolrRunner createJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
+  private static JettySolrRunner createAndStartJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
@@ -89,7 +89,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     master.setUp();
     master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
-    masterJetty = createJetty(master);
+    masterJetty = createAndStartJetty(master);
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
     docsSeed = random().nextLong();
   }

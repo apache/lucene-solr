@@ -80,7 +80,7 @@ public final class FunctionMatchQuery extends Query {
             return 100; // TODO maybe DoubleValuesSource should have a matchCost?
           }
         };
-        return new ConstantScoreScorer(this, score(), twoPhase);
+        return new ConstantScoreScorer(this, score(), scoreMode, twoPhase);
       }
 
       @Override

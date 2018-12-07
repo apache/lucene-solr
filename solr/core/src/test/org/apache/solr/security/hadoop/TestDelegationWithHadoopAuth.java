@@ -172,6 +172,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     else delegationTokenClient = new CloudSolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
         .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
             .withResponseParser(client.getParser())
+            .withSocketTimeout(30000).withConnectionTimeout(15000)
             .withHttpSolrClientBuilder(
                 new HttpSolrClient.Builder()
                     .withKerberosDelegationToken(token)

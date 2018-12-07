@@ -19,17 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MergedIterator;
 
 /**
@@ -53,123 +47,9 @@ public final class MultiFields extends Fields {
   private final ReaderSlice[] subSlices;
   private final Map<String,Terms> terms = new ConcurrentHashMap<>();
 
-  /** Returns a single {@link Bits} instance for this
-   *  reader, merging live Documents on the
-   *  fly.  This method will return null if the reader 
-   *  has no deletions.
-   *
-   *  <p><b>NOTE</b>: this is a very slow way to access live docs.
-   *  For example, each Bits access will require a binary search.
-   *  It's better to get the sub-readers and iterate through them
-   *  yourself. */
-  public static Bits getLiveDocs(IndexReader reader) {
-    if (reader.hasDeletions()) {
-      final List<LeafReaderContext> leaves = reader.leaves();
-      final int size = leaves.size();
-      assert size > 0 : "A reader with deletions must have at least one leave";
-      if (size == 1) {
-        return leaves.get(0).reader().getLiveDocs();
-      }
-      final Bits[] liveDocs = new Bits[size];
-      final int[] starts = new int[size + 1];
-      for (int i = 0; i < size; i++) {
-        // record all liveDocs, even if they are null
-        final LeafReaderContext ctx = leaves.get(i);
-        liveDocs[i] = ctx.reader().getLiveDocs();
-        starts[i] = ctx.docBase;
-      }
-      starts[size] = reader.maxDoc();
-      return new MultiBits(liveDocs, starts, true);
-    } else {
-      return null;
-    }
-  }
-
-  /** This method may return null if the field does not exist or if it has no terms. */
-  public static Terms getTerms(IndexReader r, String field) throws IOException {
-    final List<LeafReaderContext> leaves = r.leaves();
-    if (leaves.size() == 1) {
-      return leaves.get(0).reader().terms(field);
-    }
-
-    final List<Terms> termsPerLeaf = new ArrayList<>(leaves.size());
-    final List<ReaderSlice> slicePerLeaf = new ArrayList<>(leaves.size());
-
-    for (int leafIdx = 0; leafIdx < leaves.size(); leafIdx++) {
-      LeafReaderContext ctx = leaves.get(leafIdx);
-      Terms subTerms = ctx.reader().terms(field);
-      if (subTerms != null) {
-        termsPerLeaf.add(subTerms);
-        slicePerLeaf.add(new ReaderSlice(ctx.docBase, r.maxDoc(), leafIdx));
-      }
-    }
-
-    if (termsPerLeaf.size() == 0) {
-      return null;
-    } else {
-      return new MultiTerms(termsPerLeaf.toArray(Terms.EMPTY_ARRAY),
-          slicePerLeaf.toArray(ReaderSlice.EMPTY_ARRAY));
-    }
-  }
-  
-  /** Returns {@link PostingsEnum} for the specified field and
-   *  term.  This will return null if the field or term does
-   *  not exist. */
-  public static PostingsEnum getTermDocsEnum(IndexReader r, String field, BytesRef term) throws IOException {
-    return getTermDocsEnum(r, field, term, PostingsEnum.FREQS);
-  }
-  
-  /** Returns {@link PostingsEnum} for the specified field and
-   *  term, with control over whether freqs are required.
-   *  Some codecs may be able to optimize their
-   *  implementation when freqs are not required.  This will
-   *  return null if the field or term does not exist.  See {@link
-   *  TermsEnum#postings(PostingsEnum,int)}.*/
-  public static PostingsEnum getTermDocsEnum(IndexReader r, String field, BytesRef term, int flags) throws IOException {
-    assert field != null;
-    assert term != null;
-    final Terms terms = getTerms(r, field);
-    if (terms != null) {
-      final TermsEnum termsEnum = terms.iterator();
-      if (termsEnum.seekExact(term)) {
-        return termsEnum.postings(null, flags);
-      }
-    }
-    return null;
-  }
-
-  /** Returns {@link PostingsEnum} for the specified
-   *  field and term.  This will return null if the field or
-   *  term does not exist or positions were not indexed. 
-   *  @see #getTermPositionsEnum(IndexReader, String, BytesRef, int) */
-  public static PostingsEnum getTermPositionsEnum(IndexReader r, String field, BytesRef term) throws IOException {
-    return getTermPositionsEnum(r, field, term, PostingsEnum.ALL);
-  }
-
-  /** Returns {@link PostingsEnum} for the specified
-   *  field and term, with control over whether offsets and payloads are
-   *  required.  Some codecs may be able to optimize
-   *  their implementation when offsets and/or payloads are not
-   *  required. This will return null if the field or term does not
-   *  exist. See {@link TermsEnum#postings(PostingsEnum,int)}. */
-  public static PostingsEnum getTermPositionsEnum(IndexReader r, String field, BytesRef term, int flags) throws IOException {
-    assert field != null;
-    assert term != null;
-    final Terms terms = getTerms(r, field);
-    if (terms != null) {
-      final TermsEnum termsEnum = terms.iterator();
-      if (termsEnum.seekExact(term)) {
-        return termsEnum.postings(null, flags);
-      }
-    }
-    return null;
-  }
-
   /**
-   * Expert: construct a new MultiFields instance directly.
-   * @lucene.internal
+   * Sole constructor.
    */
-  // TODO: why is this public?
   public MultiFields(Fields[] subs, ReaderSlice[] subSlices) {
     this.subs = subs;
     this.subSlices = subSlices;
@@ -221,35 +101,6 @@ public final class MultiFields extends Fields {
   @Override
   public int size() {
     return -1;
-  }
-
-  /** Call this to get the (merged) FieldInfos for a
-   *  composite reader. 
-   *  <p>
-   *  NOTE: the returned field numbers will likely not
-   *  correspond to the actual field numbers in the underlying
-   *  readers, and codec metadata ({@link FieldInfo#getAttribute(String)}
-   *  will be unavailable.
-   */
-  public static FieldInfos getMergedFieldInfos(IndexReader reader) {
-    final String softDeletesField = reader.leaves().stream()
-        .map(l -> l.reader().getFieldInfos().getSoftDeletesField())
-        .filter(Objects::nonNull)
-        .findAny().orElse(null);
-    final FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(softDeletesField));
-    for(final LeafReaderContext ctx : reader.leaves()) {
-      builder.add(ctx.reader().getFieldInfos());
-    }
-    return builder.finish();
-  }
-
-  /** Returns a set of names of fields that have a terms index.  The order is undefined. */
-  public static Collection<String> getIndexedFields(IndexReader reader) {
-    return reader.leaves().stream()
-        .flatMap(l -> StreamSupport.stream(l.reader().getFieldInfos().spliterator(), false)
-        .filter(fi -> fi.getIndexOptions() != IndexOptions.NONE))
-        .map(fi -> fi.name)
-        .collect(Collectors.toSet());
   }
 
 }

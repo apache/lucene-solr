@@ -133,8 +133,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .process(client);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish
-        (collectionName, client.getZkStateReader(), true, true, 330);
+    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
 
     // modify/query collection
 

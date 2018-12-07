@@ -20,11 +20,7 @@ package org.apache.lucene.analysis.fa;
 import java.io.Reader;
 import java.util.Map;
 
-import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.fa.PersianCharFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 
 /**
  * Factory for {@link PersianCharFilter}.
@@ -35,8 +31,10 @@ import org.apache.lucene.analysis.util.MultiTermAwareComponent;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
-public class PersianCharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
+public class PersianCharFilterFactory extends CharFilterFactory {
 
   /** Creates a new PersianCharFilterFactory */
   public PersianCharFilterFactory(Map<String,String> args) {
@@ -47,12 +45,12 @@ public class PersianCharFilterFactory extends CharFilterFactory implements Multi
   }
   
   @Override
-  public CharFilter create(Reader input) {
+  public Reader create(Reader input) {
     return new PersianCharFilter(input);
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public Reader normalize(Reader input) {
+    return create(input);
   }
 }

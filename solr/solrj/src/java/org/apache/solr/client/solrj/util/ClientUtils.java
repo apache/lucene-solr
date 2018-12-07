@@ -42,7 +42,8 @@ import org.apache.solr.common.util.XML;
 public class ClientUtils 
 {
   // Standard Content types
-  public static final String TEXT_XML = "application/xml; charset=UTF-8";  
+  public static final String TEXT_XML = "application/xml; charset=UTF-8";
+  public static final String TEXT_JSON = "application/json; charset=UTF-8";
   
   /**
    * Take a string and make it an iterable ContentStream

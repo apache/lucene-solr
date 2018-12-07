@@ -69,6 +69,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.StringHelper;
@@ -782,7 +783,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         // against an index that's currently open for
         // searching.  In this case we write the next
         // segments_N file with no segments:
-        final SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
+        final SegmentInfos sis = new SegmentInfos(config.getIndexCreatedVersionMajor());
         if (indexExists) {
           final SegmentInfos previous = SegmentInfos.readLatestCommit(directory);
           sis.updateGenerationVersionAndCounter(previous);
@@ -2607,7 +2608,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // Do this as an event so it applies higher in the stack when we are not holding DocumentsWriterFlushQueue.purgeLock:
     eventQueue.add(w -> {
       try {
-        packet.apply(w);
+        // we call tryApply here since we don't want to block if a refresh or a flush is already applying the
+        // packet. The flush will retry this packet anyway to ensure all of them are applied
+        packet.tryApply(w);
       } catch (Throwable t) {
         try {
           w.onTragicEvent(t, "applyUpdatesPacket");
@@ -4350,6 +4353,36 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
   }
 
+  private void countSoftDeletes(CodecReader reader, Bits wrappedLiveDocs, Bits hardLiveDocs, Counter softDeleteCounter,
+                                Counter hardDeleteCounter) throws IOException {
+    int hardDeleteCount = 0;
+    int softDeletesCount = 0;
+    DocIdSetIterator softDeletedDocs = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), reader);
+    if (softDeletedDocs != null) {
+      int docId;
+      while ((docId = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        if (wrappedLiveDocs == null || wrappedLiveDocs.get(docId)) {
+          if (hardLiveDocs == null || hardLiveDocs.get(docId)) {
+            softDeletesCount++;
+          } else {
+            hardDeleteCount++;
+          }
+        }
+      }
+    }
+    softDeleteCounter.addAndGet(softDeletesCount);
+    hardDeleteCounter.addAndGet(hardDeleteCount);
+  }
+
+  private boolean assertSoftDeletesCount(CodecReader reader, int expectedCount) throws IOException {
+    Counter count = Counter.newCounter(false);
+    Counter hardDeletes = Counter.newCounter(false);
+    countSoftDeletes(reader, reader.getLiveDocs(), null, count, hardDeletes);
+    assert count.get() == expectedCount : "soft-deletes count mismatch expected: "
+        + expectedCount  + " but actual: " + count.get() ;
+    return true;
+  }
+
   /** Does the actual (time-consuming) work of the merge,
    *  but without holding synchronized lock on IndexWriter
    *  instance */
@@ -4398,7 +4431,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
-      int softDeleteCount = 0;
+      Counter softDeleteCount = Counter.newCounter(false);
       for (int r = 0; r < merge.readers.size(); r++) {
         SegmentReader reader = merge.readers.get(r);
         CodecReader wrappedReader = merge.wrapForMerge(reader);
@@ -4406,34 +4439,31 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         if (softDeletesEnabled) {
           if (reader != wrappedReader) { // if we don't have a wrapped reader we won't preserve any soft-deletes
             Bits hardLiveDocs = merge.hardLiveDocs.get(r);
-            Bits wrappedLiveDocs = wrappedReader.getLiveDocs();
-            int hardDeleteCount = 0;
-            DocIdSetIterator softDeletedDocs = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader);
-            if (softDeletedDocs != null) {
-              int docId;
-              while ((docId = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                if (wrappedLiveDocs == null || wrappedLiveDocs.get(docId)) {
-                  if (hardLiveDocs == null || hardLiveDocs.get(docId)) {
-                    softDeleteCount++;
-                  } else {
-                    hardDeleteCount++;
+            if (hardLiveDocs != null) { // we only need to do this accounting if we have mixed deletes
+              Bits wrappedLiveDocs = wrappedReader.getLiveDocs();
+              Counter hardDeleteCounter = Counter.newCounter(false);
+              countSoftDeletes(wrappedReader, wrappedLiveDocs, hardLiveDocs, softDeleteCount, hardDeleteCounter);
+              int hardDeleteCount = Math.toIntExact(hardDeleteCounter.get());
+              // Wrap the wrapped reader again if we have excluded some hard-deleted docs
+              if (hardDeleteCount > 0) {
+                Bits liveDocs = wrappedLiveDocs == null ? hardLiveDocs : new Bits() {
+                  @Override
+                  public boolean get(int index) {
+                    return hardLiveDocs.get(index) && wrappedLiveDocs.get(index);
                   }
-                }
+
+                  @Override
+                  public int length() {
+                    return hardLiveDocs.length();
+                  }
+                };
+                wrappedReader = FilterCodecReader.wrapLiveDocs(wrappedReader, liveDocs, wrappedReader.numDocs() - hardDeleteCount);
               }
-            }
-            // Wrap the wrapped reader again if we have excluded some hard-deleted docs
-            if (hardLiveDocs != null && hardDeleteCount > 0) {
-              Bits liveDocs = wrappedLiveDocs == null ? hardLiveDocs : new Bits() {
-                @Override
-                public boolean get(int index) {
-                  return hardLiveDocs.get(index) && wrappedLiveDocs.get(index);
-                }
-                @Override
-                public int length() {
-                  return hardLiveDocs.length();
-                }
-              };
-              wrappedReader = FilterCodecReader.wrapLiveDocs(wrappedReader, liveDocs, wrappedReader.numDocs() - hardDeleteCount);
+            } else {
+              final int carryOverSoftDeletes = reader.getSegmentInfo().getSoftDelCount() - wrappedReader.numDeletedDocs();
+              assert carryOverSoftDeletes >= 0 : "carry-over soft-deletes must be positive";
+              assert assertSoftDeletesCount(wrappedReader, carryOverSoftDeletes);
+              softDeleteCount.addAndGet(carryOverSoftDeletes);
             }
           }
         }
@@ -4443,7 +4473,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                                                      merge.info.info, infoStream, dirWrapper,
                                                      globalFieldNumberMap, 
                                                      context);
-      merge.info.setSoftDelCount(softDeleteCount);
+      merge.info.setSoftDelCount(Math.toIntExact(softDeleteCount.get()));
       merge.checkAborted();
 
       merge.mergeStartNS = System.nanoTime();
