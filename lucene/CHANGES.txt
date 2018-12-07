@@ -104,7 +104,14 @@ Bug fixes
 
 * LUCENE-8595: Fix interleaved DV update and reset. Interleaved update and reset value
   to the same doc in the same updates package looses an update if the reset comes before
-  the update as well as loosing the reset if the update comes frist. (Simon Willnauer, Adrien Grant)
+  the update as well as loosing the reset if the update comes frist. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-8592: Fix index sorting corruption due to numeric overflow. The merge of sorted segments
+  can produce an invalid sort if the sort field is an Integer/Long that uses reverse order and contains
+  values equal to Integer/Long#MIN_VALUE. These values are always sorted first during a merge
+  (instead of last because of the reverse order) due to this bug. Indices affected by the bug can be
+  detected by running the CheckIndex command on a distribution that contains the fix (7.6+).
+  (Jim Ferenczi, Adrien Grand, Mike McCandless, Simon Willnauer)
 
 New Features
 
