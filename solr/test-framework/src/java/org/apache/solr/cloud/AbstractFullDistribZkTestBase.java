@@ -37,7 +37,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,6 +82,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -406,7 +407,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     cloudClient.waitForState(DEFAULT_COLLECTION, 30, TimeUnit.SECONDS, (l,c) -> c != null && c.getSlices().size() == sliceCount);
     
-    ForkJoinPool customThreadPool = new ForkJoinPool(12);
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
 
     int numOtherReplicas = numJettys - getPullReplicaCount() * sliceCount;
     
@@ -426,7 +427,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         numOtherReplicas--;
         if (useTlogReplicas()) {
           log.info("create jetty {} in directory {} of type {} in shard {}", i, jettyDir, Replica.Type.TLOG, ((currentI % sliceCount) + 1));
-          customThreadPool.submit(() -> Collections.singleton(controlClient).parallelStream().forEach(c -> {
+          customThreadPool.submit(() -> {
             try {
               JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
                   + cnt) : null, null, "solrconfig.xml", null, Replica.Type.TLOG);
@@ -444,17 +445,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               clients.add(client);
 
             } catch (IOException e) {
+              e.printStackTrace();
               throw new RuntimeException(e);
             } catch (Exception e) {
+              e.printStackTrace();
               throw new RuntimeException(e);
             }
-          }));
+          });
 
           addedReplicas++;
         } else {
           log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.NRT, ((currentI % sliceCount) + 1));
           
-          customThreadPool.submit(() -> Collections.singleton(controlClient).parallelStream().forEach(c -> {
+          customThreadPool.submit(() -> {
             try {
               JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
                   + cnt) : null, null, "solrconfig.xml", null, null);
@@ -469,17 +472,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               SolrClient client = createNewSolrClient(j.getLocalPort());
               clients.add(client);
             } catch (IOException e) {
+              e.printStackTrace();
               throw new RuntimeException(e);
             } catch (Exception e) {
+              e.printStackTrace();
               throw new RuntimeException(e);
             }
-          }));
+          });
           
           addedReplicas++;
         }
       } else {
         log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.PULL, ((currentI % sliceCount) + 1));
-        customThreadPool.submit(() -> Collections.singleton(controlClient).parallelStream().forEach(c -> {
+        customThreadPool.submit(() -> {
           try {
             JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
                 + cnt) : null, null, "solrconfig.xml", null, Replica.Type.PULL);
@@ -494,11 +499,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             SolrClient client = createNewSolrClient(j.getLocalPort());
             clients.add(client);
           } catch (IOException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
           } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
           }
-        }));
+        });
         addedReplicas++;
       }
 
@@ -506,33 +513,39 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     
-    customThreadPool = new ForkJoinPool(12);
-    customThreadPool.submit(() -> createReplicaRequests.parallelStream().forEach(r -> {
-      CollectionAdminResponse response;
-      try {
-        response = (CollectionAdminResponse) r.process(cloudClient);
-      } catch (SolrServerException | IOException e) {
-        throw new RuntimeException(e);
-      }
+    customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("createReplicaRequests"));
+    
+    for (CollectionAdminRequest r : createReplicaRequests) {
+      customThreadPool.submit(() -> {
+        CollectionAdminResponse response;
+        try {
+          response = (CollectionAdminResponse) r.process(cloudClient);
+        } catch (SolrServerException | IOException e) {
+          throw new RuntimeException(e);
+        }
 
-      assertTrue(response.isSuccess());
-      String coreName = response.getCollectionCoresStatus().keySet().iterator().next();
-    }));
+        assertTrue(response.isSuccess());
+        String coreName = response.getCollectionCoresStatus().keySet().iterator().next();
+      });
+    }
    
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     
-    customThreadPool = new ForkJoinPool(12);
-    customThreadPool.submit(() -> createPullReplicaRequests.parallelStream().forEach(r -> {
-      CollectionAdminResponse response;
-      try {
-        response = (CollectionAdminResponse) r.process(cloudClient);
-      } catch (SolrServerException | IOException e) {
-        throw new RuntimeException(e);
-      }
+    customThreadPool = ExecutorUtil
+        .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("createPullReplicaRequests"));
+    for (CollectionAdminRequest r : createPullReplicaRequests) {
+      customThreadPool.submit(() -> {
+        CollectionAdminResponse response;
+        try {
+          response = (CollectionAdminResponse) r.process(cloudClient);
+        } catch (SolrServerException | IOException e) {
+          throw new RuntimeException(e);
+        }
 
-      assertTrue(response.isSuccess());
-      String coreName = response.getCollectionCoresStatus().keySet().iterator().next();
-    }));
+        assertTrue(response.isSuccess());
+        String coreName = response.getCollectionCoresStatus().keySet().iterator().next();
+      });
+    }
     
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     
@@ -1654,7 +1667,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   @Override
   protected void destroyServers() throws Exception {
-    ForkJoinPool customThreadPool = new ForkJoinPool(6);
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
     
     customThreadPool.submit(() -> Collections.singleton(commonCloudSolrClient).parallelStream().forEach(c -> {
       IOUtils.closeQuietly(c);

@@ -93,6 +93,29 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testTermsFacetWithPrelimSort() throws Exception {
+    final TermsFacetMap categoriesFacetMap = new TermsFacetMap("cat")
+        .setPreliminarySort("count desc")
+        .setSort("index desc")
+        .setLimit(3);
+    final JsonQueryRequest request = new JsonQueryRequest()
+        .setQuery("*:*")
+        .withFacet("top_cats", categoriesFacetMap);
+
+    QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
+
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
+    //The prelim_sort/sort combination should give us the 3 most popular categories in reverse-alpha order
+    assertHasFacetWithBucketValues(topLevelFacetData, "top_cats",
+        new FacetBucket("memory", NUM_MEMORY),
+        new FacetBucket("electronics", NUM_ELECTRONICS),
+        new FacetBucket("currency", NUM_CURRENCY));
+
+  }
+
+  @Test
   public void testTermsFacetWithNumBucketsRequested() throws Exception {
     final TermsFacetMap categoriesFacetMap = new TermsFacetMap("cat")
         .includeTotalNumBuckets(true)

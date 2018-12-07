@@ -17,14 +17,13 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyBoolean;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -38,7 +37,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,6 +47,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -68,6 +68,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
@@ -313,27 +314,41 @@ public class OverseerTest extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     testDone = true;
     
-    ForkJoinPool customThreadPool = new ForkJoinPool(16);
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
   
-    customThreadPool.submit( () -> zkControllers.parallelStream().forEach(c -> { c.close(); }));
-    
-    customThreadPool.submit( () -> httpShardHandlerFactorys.parallelStream().forEach(c -> { c.close(); }));
-    
-    customThreadPool.submit( () -> updateShardHandlers.parallelStream().forEach(c -> { c.close(); }));
-    
-    customThreadPool.submit( () -> solrClients.parallelStream().forEach(c -> { IOUtils.closeQuietly(c); } ));
+    for (ZkController zkController : zkControllers) {
+      customThreadPool.submit( () -> zkController.close());
+    }
 
+    for (HttpShardHandlerFactory httpShardHandlerFactory : httpShardHandlerFactorys) {
+      customThreadPool.submit( () -> httpShardHandlerFactory.close());
+    }
+
+    for (UpdateShardHandler updateShardHandler : updateShardHandlers) {
+      customThreadPool.submit( () -> updateShardHandler.close());
+    }
     
-    customThreadPool.submit( () -> readers.parallelStream().forEach(c -> { c.close();}));
+    for (SolrClient solrClient : solrClients) {
+      customThreadPool.submit( () -> IOUtils.closeQuietly(solrClient));
+    }
+
+    for (ZkStateReader reader : readers) {
+      customThreadPool.submit( () -> reader.close());
+    }
     
-    customThreadPool.submit( () -> zkClients.parallelStream().forEach(c -> { IOUtils.closeQuietly(c); }));
+    for (SolrZkClient solrZkClient : zkClients) {
+      customThreadPool.submit( () -> IOUtils.closeQuietly(solrZkClient));
+    }
     
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     
-    customThreadPool = new ForkJoinPool(4);
+    customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+
     
-    customThreadPool.submit( () -> overseers.parallelStream().forEach(c -> { c.close(); }));
-    
+    for (Overseer overseer : overseers) {
+      customThreadPool.submit( () -> overseer.close());
+    }
+
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     
     overseers.clear();

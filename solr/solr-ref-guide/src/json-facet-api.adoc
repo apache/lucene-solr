@@ -218,7 +218,9 @@ json.facet={
 |field |The field name to facet over.
 |offset |Used for paging, this skips the first N buckets. Defaults to 0.
 |limit |Limits the number of buckets returned. Defaults to 10.
-|sort |Specifies how to sort the buckets produced. “count” specifies document count, “index” sorts by the index (natural) order of the bucket value. One can also sort by any <<json-facet-api.adoc#aggregation-functions,facet function / statistic>> that occurs in the bucket. The default is “count desc”. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
+|sort |Specifies how to sort the buckets produced.
+
+“count” specifies document count, “index” sorts by the index (natural) order of the bucket value. One can also sort by any <<json-facet-api.adoc#aggregation-functions,facet function / statistic>> that occurs in the bucket. The default is “count desc”. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
 |overrequest a|
 Number of buckets beyond the `limit` to internally request from shards during a distributed search.
 
@@ -248,6 +250,7 @@ This parameter indicates the facet algorithm to use:
 * "stream" Presently equivalent to "enum"
 * "smart" Pick the best method for the field type (this is the default)
 
+|prelim_sort |An optional parameter for specifying an approximation of the final `sort` to use during initial collection of top buckets when the <<json-facet-api.adoc#sorting-facets-by-nested-functions,`sort` param is very costly>>.
 |===
 
 == Query Facet
@@ -532,13 +535,13 @@ By default "top authors" is defined by simple document count descending, but we 
 
 === Sorting Facets By Nested Functions
 
-The default sort for a field or terms facet is by bucket count descending. We can optionally sort ascending or descending by any facet function that appears in each bucket.
+The default sort for a field or terms facet is by bucket count descending. We can optionally `sort` ascending or descending by any facet function that appears in each bucket.
 
 [source,java]
 ----
 {
   categories:{
-    type : terms      // terms facet creates a bucket for each indexed term in the field
+    type : terms,     // terms facet creates a bucket for each indexed term in the field
     field : cat,
     sort : "x desc",  // can also use sort:{x:desc}
     facet : {
@@ -548,6 +551,28 @@ The default sort for a field or terms facet is by bucket count descending. We ca
   }
 }
 ----
+
+In some situations the desired `sort` may be an aggregation function that is very costly to compute for every bucket.  A `prelim_sort` option can be used to specify an approximation of the `sort`, for initially ranking the buckets to determine the top candidates (based on the `limit` and `overrequest`).  Only after the top candidate buckets have been refined, will the actual `sort` be used.
+
+[source,java]
+----
+{
+  categories:{
+    type : terms,
+    field : cat,
+    refine: true,
+    limit: 10,
+    overrequest: 100,
+    prelim_sort: "sales_rank desc",
+    sort : "prod_quality desc",
+    facet : {
+      prod_quality : "avg(div(prod(rating,sales_rank),prod(num_returns,price)))"
+      sales_rank : "sum(sales_rank)"
+    }
+  }
+}
+----
+
 
 == Changing the Domain
 
@@ -804,6 +829,11 @@ When using the extended `type:func` syntax for specifying a `relatedness()` aggr
 ----
 
 This can be particularly useful when using a descending sorting on `relatedness()` with foreground and background queries that are disjoint, to ensure the "top buckets" are all relevant to both sets.
+
+[TIP]
+====
+When sorting on `relatedness(...)` requests can be processed much more quickly by adding a `prelim_sort: "count desc"` option.  Increasing the `overrequest` can help improve the accuracy of the top buckets.
+====
 
 === Semantic Knowledge Graph Example
 

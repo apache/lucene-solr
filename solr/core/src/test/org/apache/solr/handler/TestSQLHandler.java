@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -34,6 +35,7 @@ import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -53,8 +55,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     sliceCount = 2;
   }
 
+  @Override
   protected String getCloudSolrConfig() {
     return "solrconfig-sql.xml";
+  }
+  
+  @Override
+  protected String getCloudSchemaFile() {
+    return schemaString;
   }
 
   @Before
@@ -77,11 +85,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  //@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13040")
   public void doTest() throws Exception {
-    waitForRecoveriesToFinish(false);
+    cloudClient.waitForState(DEFAULT_COLLECTION, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(sliceCount, 4));
 
     testBasicSelect();
     testWhere();

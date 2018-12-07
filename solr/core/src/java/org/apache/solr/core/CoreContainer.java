@@ -51,7 +51,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 
 import org.apache.http.auth.AuthSchemeProvider;
@@ -82,6 +81,7 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -828,7 +828,7 @@ public class CoreContainer {
     log.info("Shutting down CoreContainer instance="
         + System.identityHashCode(this));
 
-    ForkJoinPool customThreadPool = new ForkJoinPool(6);
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
 
     isShutDown = true;
     try {
@@ -890,17 +890,13 @@ public class CoreContainer {
         solrCores.getModifyLock().notifyAll(); // wake up the thread
       }
       
-      customThreadPool.submit(() -> Collections.singleton(replayUpdatesExecutor).parallelStream().forEach(c -> {
-        c.shutdownAndAwaitTermination();
-      }));
+      customThreadPool.submit(() -> {
+        replayUpdatesExecutor.shutdownAndAwaitTermination();
+      });
 
       if (metricsHistoryHandler != null) {
-        customThreadPool.submit(() -> Collections.singleton(metricsHistoryHandler).parallelStream().forEach(c -> {
-          IOUtils.closeQuietly(c);
-        }));
-        customThreadPool.submit(() -> Collections.singleton(metricsHistoryHandler.getSolrClient()).parallelStream().forEach(c -> {
-          IOUtils.closeQuietly(c);
-        }));
+        metricsHistoryHandler.close();
+        IOUtils.closeQuietly(metricsHistoryHandler.getSolrClient());
       }
 
       if (metricManager != null) {
@@ -923,9 +919,9 @@ public class CoreContainer {
 
       try {
         if (coreAdminHandler != null) {
-          customThreadPool.submit(() -> Collections.singleton(coreAdminHandler).parallelStream().forEach(c -> {
-            c.shutdown();
-          }));
+          customThreadPool.submit(() -> {
+            coreAdminHandler.shutdown();
+          });
         }
       } catch (Exception e) {
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
@@ -934,9 +930,9 @@ public class CoreContainer {
     } finally {
       try {
         if (shardHandlerFactory != null) {
-          customThreadPool.submit(() -> Collections.singleton(shardHandlerFactory).parallelStream().forEach(c -> {
-            c.close();
-          }));
+          customThreadPool.submit(() -> {
+            shardHandlerFactory.close();
+          });
         }
       } finally {
         try {

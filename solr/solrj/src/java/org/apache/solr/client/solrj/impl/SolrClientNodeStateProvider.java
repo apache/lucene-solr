@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,7 +31,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -201,17 +199,17 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       while (cnt++ < 3) {
         try {
           rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
-        } catch (SolrException | SolrServerException | NoHttpResponseException e) {
-          boolean hasCauseNoHttpResponseException = false;
+        } catch (SolrException | SolrServerException | IOException e) {
+          boolean hasCauseIOException = false;
           Throwable cause = e;
           while (cause != null) {
-            if (cause instanceof NoHttpResponseException) {
-              hasCauseNoHttpResponseException = true;
+            if (cause instanceof IOException) {
+              hasCauseIOException = true;
               break;
             }
             cause = cause.getCause();
           }
-          if (hasCauseNoHttpResponseException || e instanceof NoHttpResponseException) {
+          if (hasCauseIOException || e instanceof IOException) {
             log.info("Error on getting remote info, trying again: " + e.getMessage());
             Thread.sleep(500);
             continue;
@@ -307,17 +305,21 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         while (cnt++ < retries) {
           try {
             rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
-          } catch (SolrException | SolrServerException | SocketException e) {
-            boolean hasCauseSocketException = false;
+          } catch (SolrException | SolrServerException | IOException e) {
+            if (e instanceof SolrServerException) {
+              
+            }
+            
+            boolean hasCauseIOException = false;
             Throwable cause = e;
             while (cause != null) {
-              if (cause instanceof SocketException) {
-                hasCauseSocketException = true;
+              if (cause instanceof IOException) {
+                hasCauseIOException = true;
                 break;
               }
               cause = cause.getCause();
             }
-            if (hasCauseSocketException || e instanceof SocketException) {
+            if (hasCauseIOException || e instanceof IOException) {
               log.info("Error on getting remote info, trying again: " + e.getMessage());
               Thread.sleep(500);
               continue;

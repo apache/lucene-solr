@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,6 +47,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -82,7 +85,7 @@ public class JettySolrRunner {
 
   private static final int THREAD_POOL_MAX_THREADS = 10000;
   // NOTE: needs to be larger than SolrHttpClient.threadPoolSweeperMaxIdleTime
-  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 120000;
+  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 160000;
   
   Server server;
 
@@ -506,17 +509,40 @@ public class JettySolrRunner {
         log.info("Trying to start Jetty on port {} try number {} ...", port, tryCnt++);
         server.start();
         break;
-      } catch (BindException e) {
-        log.info("Port is in use, will try again until timeout of " + timeout);
-        server.stop();
-        Thread.sleep(3000);
-        if (!timeout.hasTimedOut()) {
-          continue;
+      } catch (IOException ioe) {
+        Exception e = lookForBindException(ioe);
+        if (e instanceof BindException) {
+          log.info("Port is in use, will try again until timeout of " + timeout);
+          server.stop();
+          Thread.sleep(3000);
+          if (!timeout.hasTimedOut()) {
+            continue;
+          }
         }
         
         throw e;
       }
     }
+  }
+
+  /**
+   * Traverses the cause chain looking for a BindException. Returns either a bind exception
+   * that was found in the chain or the original argument.
+   *
+   * @param ioe An IOException that might wrap a BindException
+   * @return A bind exception if present otherwise ioe
+   */
+  Exception lookForBindException(IOException ioe) {
+    Exception e = ioe;
+    while(e.getCause() != null && !(e == e.getCause()) && ! (e instanceof BindException)) {
+      if (e.getCause() instanceof Exception) {
+        e = (Exception) e.getCause();
+        if (e instanceof BindException) {
+          return e;
+        }
+      }
+    }
+    return ioe;
   }
 
   /**
@@ -533,21 +559,23 @@ public class JettySolrRunner {
 
       // we want to shutdown outside of jetty cutting us off
       SolrDispatchFilter sdf = getSolrDispatchFilter();
-      Thread shutdownThead = null;
+      ExecutorService customThreadPool = null;
       if (sdf != null) {
-        shutdownThead = new Thread() {
+        customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jettyShutDown"));
 
-          public void run() {
-            try {
-              sdf.close();
-            } catch (Throwable t) {
-              log.error("Error shutting down Solr", t);
-            }
-          }
-
-        };
         sdf.closeOnDestroy(false);
-        shutdownThead.start();
+//        customThreadPool.submit(() -> {
+//          try {
+//            sdf.close();
+//          } catch (Throwable t) {
+//            log.error("Error shutting down Solr", t);
+//          }
+//        });
+        try {
+          sdf.close();
+        } catch (Throwable t) {
+          log.error("Error shutting down Solr", t);
+        }
       }
 
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
@@ -588,8 +616,8 @@ public class JettySolrRunner {
             -> rte.isStopped());
       }
 
-      if (shutdownThead != null) {
-        shutdownThead.join();
+      if (customThreadPool != null) {
+        ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
       }
 
       do {
