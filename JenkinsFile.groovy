@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage("ivy bootstrap") {
             steps {
-                sh "echo 'Bootstrapping"
+                sh "echo 'Bootstrapping'"
                 sh 'ant ivy-bootstrap'
             }
         }
