@@ -134,69 +134,71 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     for (int i = 0; i < solr.length; i++) {
       s[i] = solr[i].getUrl();
     }
-    LBHttpSolrClient client = getLBHttpSolrClient(httpClient, s);
-    client.setAliveCheckInterval(500);
-    SolrQuery solrQuery = new SolrQuery("*:*");
-    Set<String> names = new HashSet<>();
-    QueryResponse resp = null;
-    for (String value : s) {
-      resp = client.query(solrQuery);
-      assertEquals(10, resp.getResults().getNumFound());
-      names.add(resp.getResults().get(0).getFieldValue("name").toString());
-    }
-    assertEquals(3, names.size());
+    try (LBHttpSolrClient client = getLBHttpSolrClient(httpClient, s)) {
+      client.setAliveCheckInterval(500);
+      SolrQuery solrQuery = new SolrQuery("*:*");
+      Set<String> names = new HashSet<>();
+      QueryResponse resp = null;
+      for (String value : s) {
+        resp = client.query(solrQuery);
+        assertEquals(10, resp.getResults().getNumFound());
+        names.add(resp.getResults().get(0).getFieldValue("name").toString());
+      }
+      assertEquals(3, names.size());
 
-    // Kill a server and test again
-    solr[1].jetty.stop();
-    solr[1].jetty = null;
-    names.clear();
-    for (String value : s) {
-      resp = client.query(solrQuery);
-      assertEquals(10, resp.getResults().getNumFound());
-      names.add(resp.getResults().get(0).getFieldValue("name").toString());
-    }
-    assertEquals(2, names.size());
-    assertFalse(names.contains("solr1"));
+      // Kill a server and test again
+      solr[1].jetty.stop();
+      solr[1].jetty = null;
+      names.clear();
+      for (String value : s) {
+        resp = client.query(solrQuery);
+        assertEquals(10, resp.getResults().getNumFound());
+        names.add(resp.getResults().get(0).getFieldValue("name").toString());
+      }
+      assertEquals(2, names.size());
+      assertFalse(names.contains("solr1"));
 
-    // Start the killed server once again
-    solr[1].startJetty();
-    // Wait for the alive check to complete
-    Thread.sleep(1200);
-    names.clear();
-    for (String value : s) {
-      resp = client.query(solrQuery);
-      assertEquals(10, resp.getResults().getNumFound());
-      names.add(resp.getResults().get(0).getFieldValue("name").toString());
+      // Start the killed server once again
+      solr[1].startJetty();
+      // Wait for the alive check to complete
+      Thread.sleep(1200);
+      names.clear();
+      for (String value : s) {
+        resp = client.query(solrQuery);
+        assertEquals(10, resp.getResults().getNumFound());
+        names.add(resp.getResults().get(0).getFieldValue("name").toString());
+      }
+      assertEquals(3, names.size());
     }
-    assertEquals(3, names.size());
   }
 
   public void testTwoServers() throws Exception {
-    LBHttpSolrClient client = getLBHttpSolrClient(httpClient, solr[0].getUrl(), solr[1].getUrl());
-    client.setAliveCheckInterval(500);
-    SolrQuery solrQuery = new SolrQuery("*:*");
-    QueryResponse resp = null;
-    solr[0].jetty.stop();
-    solr[0].jetty = null;
-    resp = client.query(solrQuery);
-    String name = resp.getResults().get(0).getFieldValue("name").toString();
-    Assert.assertEquals("solr/collection11", name);
-    resp = client.query(solrQuery);
-    name = resp.getResults().get(0).getFieldValue("name").toString();
-    Assert.assertEquals("solr/collection11", name);
-    solr[1].jetty.stop();
-    solr[1].jetty = null;
-    solr[0].startJetty();
-    Thread.sleep(1200);
-    try {
+    try (LBHttpSolrClient client = getLBHttpSolrClient(httpClient, solr[0].getUrl(), solr[1].getUrl())) {
+      client.setAliveCheckInterval(500);
+      SolrQuery solrQuery = new SolrQuery("*:*");
+      QueryResponse resp = null;
+      solr[0].jetty.stop();
+      solr[0].jetty = null;
       resp = client.query(solrQuery);
-    } catch(SolrServerException e) {
-      // try again after a pause in case the error is lack of time to start server
-      Thread.sleep(3000);
+      String name = resp.getResults().get(0).getFieldValue("name").toString();
+      Assert.assertEquals("solr/collection11", name);
       resp = client.query(solrQuery);
+      name = resp.getResults().get(0).getFieldValue("name").toString();
+      Assert.assertEquals("solr/collection11", name);
+      solr[1].jetty.stop();
+      solr[1].jetty = null;
+      solr[0].startJetty();
+      Thread.sleep(1200);
+      try {
+        resp = client.query(solrQuery);
+      } catch (SolrServerException e) {
+        // try again after a pause in case the error is lack of time to start server
+        Thread.sleep(3000);
+        resp = client.query(solrQuery);
+      }
+      name = resp.getResults().get(0).getFieldValue("name").toString();
+      Assert.assertEquals("solr/collection10", name);
     }
-    name = resp.getResults().get(0).getFieldValue("name").toString();
-    Assert.assertEquals("solr/collection10", name);
   }
 
   public void testReliability() throws Exception {
@@ -207,21 +209,22 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
     CloseableHttpClient myHttpClient = HttpClientUtil.createClient(null);
     try {
-      LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, 500, 500, s);
-      client.setAliveCheckInterval(500);
-  
-      // Kill a server and test again
-      solr[1].jetty.stop();
-      solr[1].jetty = null;
-  
-      // query the servers
-      for (String value : s)
-        client.query(new SolrQuery("*:*"));
-  
-      // Start the killed server once again
-      solr[1].startJetty();
-      // Wait for the alive check to complete
-      waitForServer(30, client, 3, solr[1].name);
+      try (LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, 500, 500, s)) {
+        client.setAliveCheckInterval(500);
+
+        // Kill a server and test again
+        solr[1].jetty.stop();
+        solr[1].jetty = null;
+
+        // query the servers
+        for (String value : s)
+          client.query(new SolrQuery("*:*"));
+
+        // Start the killed server once again
+        solr[1].startJetty();
+        // Wait for the alive check to complete
+        waitForServer(30, client, 3, solr[1].name);
+      }
     } finally {
       HttpClientUtil.close(myHttpClient);
     }

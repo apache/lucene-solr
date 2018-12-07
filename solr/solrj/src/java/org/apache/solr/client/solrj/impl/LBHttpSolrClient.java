@@ -51,6 +51,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.MDC;
@@ -115,11 +116,11 @@ public class LBHttpSolrClient extends SolrClient {
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
 
 
-  private ScheduledExecutorService aliveCheckExecutor;
+  private volatile ScheduledExecutorService aliveCheckExecutor;
 
   private final HttpClient httpClient;
   private final boolean clientIsInternal;
-  private HttpSolrClient.Builder httpSolrClientBuilder;
+  private final HttpSolrClient.Builder httpSolrClientBuilder;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
@@ -129,7 +130,7 @@ public class LBHttpSolrClient extends SolrClient {
   private Set<String> queryParams = new HashSet<>();
   private Integer connectionTimeout;
 
-  private Integer soTimeout;
+  private volatile Integer soTimeout;
 
   static {
     solrQuery.setRows(0);
@@ -612,9 +613,13 @@ public class LBHttpSolrClient extends SolrClient {
 
   @Override
   public void close() {
-    if (aliveCheckExecutor != null) {
-      aliveCheckExecutor.shutdownNow();
+    synchronized (this) {
+      if (aliveCheckExecutor != null) {
+        aliveCheckExecutor.shutdownNow();
+        ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
+      }
     }
+
     if(clientIsInternal) {
       HttpClientUtil.close(httpClient);
     }
@@ -862,16 +867,6 @@ public class LBHttpSolrClient extends SolrClient {
   
   public RequestWriter getRequestWriter() {
     return requestWriter;
-  }
-  
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if(this.aliveCheckExecutor!=null)
-        this.aliveCheckExecutor.shutdownNow();
-    } finally {
-      super.finalize();
-    }
   }
 
   // defaults

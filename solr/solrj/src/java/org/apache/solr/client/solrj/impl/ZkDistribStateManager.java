@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
@@ -57,7 +58,8 @@ public class ZkDistribStateManager implements DistribStateManager {
     try {
       return zkClient.exists(path, true);
     } catch (InterruptedException e) {
-      throw e;
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
     }
   }
 
@@ -68,7 +70,8 @@ public class ZkDistribStateManager implements DistribStateManager {
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (InterruptedException e) {
-      throw e;
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
     }
   }
 
@@ -86,7 +89,8 @@ public class ZkDistribStateManager implements DistribStateManager {
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (InterruptedException e) {
-      throw e;
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
     }
   }
 
@@ -97,7 +101,8 @@ public class ZkDistribStateManager implements DistribStateManager {
     } catch (KeeperException.NodeExistsException e) {
       throw new AlreadyExistsException(path);
     } catch (InterruptedException e) {
-      throw e;
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
     }
   }
 
@@ -108,7 +113,8 @@ public class ZkDistribStateManager implements DistribStateManager {
     } catch (KeeperException.NodeExistsException e) {
       throw new AlreadyExistsException(path);
     } catch (InterruptedException e) {
-      throw e;
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
     }
   }
 
@@ -121,7 +127,8 @@ public class ZkDistribStateManager implements DistribStateManager {
     } catch (KeeperException.NodeExistsException e) {
       throw new AlreadyExistsException(path);
     } catch (InterruptedException e) {
-      throw e;
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
     }
   }
 
@@ -136,7 +143,8 @@ public class ZkDistribStateManager implements DistribStateManager {
     } catch (KeeperException.BadVersionException e) {
       throw new BadVersionException(version, path);
     } catch (InterruptedException e) {
-      throw e;
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
     }
   }
 
@@ -149,7 +157,8 @@ public class ZkDistribStateManager implements DistribStateManager {
     } catch (KeeperException.BadVersionException e) {
       throw new BadVersionException(version, path);
     } catch (InterruptedException e) {
-      throw e;
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
     }
   }
 
@@ -164,7 +173,8 @@ public class ZkDistribStateManager implements DistribStateManager {
     } catch (KeeperException.BadVersionException e) {
       throw new BadVersionException(-1, ops.toString());
     } catch (InterruptedException e) {
-      throw e;
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
     }
   }
 

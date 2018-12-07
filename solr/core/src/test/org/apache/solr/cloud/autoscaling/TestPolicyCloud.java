@@ -127,7 +127,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
   public void testDataProviderPerReplicaDetails() throws Exception {
     CollectionAdminRequest.createCollection("perReplicaDataColl", "conf", 1, 5)
         .process(cluster.getSolrClient());
-
+    cluster.waitForActiveCollection("perReplicaDataColl", 1, 5);
     DocCollection coll = getCollectionState("perReplicaDataColl");
     String autoScaleJson = "{" +
         "  'cluster-preferences': [" +
@@ -220,7 +220,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .setPolicy("c1")
         .process(cluster.getSolrClient());
-
+    cluster.waitForActiveCollection(collectionName, 1, 2);
     DocCollection docCollection = getCollectionState(collectionName);
     List<Replica> list = docCollection.getReplicas(firstNode.getNodeName());
     int replicasOnNode1 = list != null ? list.size() : 0;
@@ -327,6 +327,8 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
         .setMaxShardsPerNode(-1)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection("policiesTest", 1, 3);
 
     DocCollection coll = getCollectionState("policiesTest");
 
@@ -352,6 +354,9 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     CollectionAdminRequest.createShard("policiesTest", "s3").
         process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection("policiesTest", 2, 6);
+    
     coll = getCollectionState("policiesTest");
     assertEquals(3, coll.getSlice("s3").getReplicas().size());
     coll.forEachReplica(verifyReplicas);
@@ -383,6 +388,9 @@ public class TestPolicyCloud extends SolrCloudTestCase {
   public void testDataProvider() throws IOException, SolrServerException, KeeperException, InterruptedException {
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "shard1", 2)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection("policiesTest", 1, 2);
+    
     DocCollection rulesCollection = getCollectionState("policiesTest");
 
     try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient())) {

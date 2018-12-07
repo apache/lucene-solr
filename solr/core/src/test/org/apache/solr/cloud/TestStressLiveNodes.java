@@ -66,9 +66,6 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     // we only need 1 node, and we don't care about any configs or collections
     // we're going to fake all the live_nodes changes we want to fake.
     configureCluster(1).configure();
-
-    // give all nodes a chance to come alive
-    TestTolerantUpdateProcessorCloud.assertSpinLoopAllJettyAreRunning(cluster);
     
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.connect(); // force connection even though we aren't sending any requests

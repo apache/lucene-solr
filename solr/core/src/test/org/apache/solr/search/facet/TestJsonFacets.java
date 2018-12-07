@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.tdunning.math.stats.AVLTreeDigest;
@@ -50,7 +51,7 @@ import org.junit.Test;
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
 public class TestJsonFacets extends SolrTestCaseHS {
-
+  
   private static SolrInstances servers;  // for distributed testing
   private static int origTableSize;
   private static FacetField.FacetMethod origDefaultFacetMethod;
@@ -89,13 +90,20 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
-  // tip: when debugging a test, comment out the @ParametersFactory and edit the constructor to be no-arg
+  // tip: when debugging failures, change this variable to DEFAULT_METHOD
+  // (or if only one method is problematic, set to that explicitly)
+  private static final FacetField.FacetMethod TEST_ONLY_ONE_FACET_METHOD
+    = null; // FacetField.FacetMethod.DEFAULT_METHOD;
 
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
+    if (null != TEST_ONLY_ONE_FACET_METHOD) {
+      return Arrays.<Object[]>asList(new Object[] { TEST_ONLY_ONE_FACET_METHOD });
+    }
+    
     // wrap each enum val in an Object[] and return as Iterable
     return () -> Arrays.stream(FacetField.FacetMethod.values())
-        .map(it -> new Object[]{it}).iterator();
+      .map(it -> new Object[]{it}).iterator();
   }
 
   public TestJsonFacets(FacetField.FacetMethod defMethod) {
@@ -435,18 +443,28 @@ public class TestJsonFacets extends SolrTestCaseHS {
              + "   } }"
              );
     
-    // simple single level facet w/skg stat & sorting
-    for (String sort : Arrays.asList("index asc", "skg desc")) {
-      // the relatedness score of each of our cat_s values is (conviniently) also alphabetical order
-      // so both of these sort options should produce identical output
-      // and testinging "index" sort allows the randomized use of "stream" processor as default to be tested
+    // simple single level facet w/skg stat & (re)sorting
+    for (String sort : Arrays.asList("sort:'index asc'",
+                                     "sort:'y desc'",
+                                     "sort:'z desc'",
+                                     "sort:'skg desc'",
+                                     "prelim_sort:'count desc', sort:'index asc'",
+                                     "prelim_sort:'count desc', sort:'y desc'",
+                                     "prelim_sort:'count desc', sort:'z desc'",
+                                     "prelim_sort:'count desc', sort:'skg desc'")) {
+      // the relatedness score of each of our cat_s values is (conviniently) also alphabetical order,
+      // (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
+      //
+      // So all of these re/sort options should produce identical output (since the num buckets is < limit)
+      // - Testing "index" sort allows the randomized use of "stream" processor as default to be tested.
+      // - Testing (re)sorts on other stats sanity checks code paths where relatedness() is a "defered" Agg
       assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
                    "fore", "where_s:NY", "back", "*:*",
                    "json.facet", ""
-                   + "{x: { type: terms, field: 'cat_s', sort: '"+sort+"', "
-                   + "      facet: { skg: 'relatedness($fore,$back)' } } }")
+                   + "{x: { type: terms, field: 'cat_s', "+sort+", "
+                   + "      facet: { skg: 'relatedness($fore,$back)', y:'sum(num_i)', z:'min(num_i)' } } }")
                , "facets=={count:5, x:{ buckets:["
-               + "   { val:'A', count:2, "
+               + "   { val:'A', count:2, y:5.0, z:2, "
                + "     skg : { relatedness: 0.00554, "
                //+ "             foreground_count: 1, "
                //+ "             foreground_size: 2, "
@@ -455,7 +473,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                + "             foreground_popularity: 0.16667,"
                + "             background_popularity: 0.33333, },"
                + "   }, "
-               + "   { val:'B', count:3, "
+               + "   { val:'B', count:3, y:-3.0, z:-5, "
                + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
                //+ "             foreground_count: 1, "
                //+ "             foreground_size: 2, "
@@ -467,6 +485,37 @@ public class TestJsonFacets extends SolrTestCaseHS {
                );
     }
     
+    // trivial sanity check that we can (re)sort on SKG after pre-sorting on count...
+    // ...and it's only computed for the top N buckets (based on our pre-sort)
+    for (int overrequest : Arrays.asList(0, 1, 42)) {
+      // based on our counts & relatedness values, the blackbox output should be the same for both
+      // overrequest values ... only DebugAgg stats should change...
+      DebugAgg.Acc.collectDocs.set(0);
+      DebugAgg.Acc.collectDocSets.set(0);
+      
+      assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
+                   "fore", "where_s:NJ", "back", "*:*",
+                   "json.facet", ""
+                   + "{x: { type: terms, field: 'cat_s', prelim_sort: 'count desc', sort:'skg desc', "
+                   + "      limit: 1, overrequest: " + overrequest + ", "
+                   + "      facet: { skg: 'debug(wrap,relatedness($fore,$back))' } } }")
+               , "facets=={count:5, x:{ buckets:["
+               + "   { val:'B', count:3, "
+               + "     skg : { relatedness: 0.00638, " 
+               //+ "             foreground_count: 2, "
+               //+ "             foreground_size: 3, "
+               //+ "             background_count: 3, "
+               //+ "             background_size: 6,"
+               + "             foreground_popularity: 0.33333,"
+               + "             background_popularity: 0.5 },"
+               + "   }, "
+               + " ] } } "
+               );
+      // at most 2 buckets, regardless of overrequest...
+      assertEqualsAndReset(0 < overrequest ? 2 : 1, DebugAgg.Acc.collectDocSets);
+      assertEqualsAndReset(0, DebugAgg.Acc.collectDocs);
+    }
+      
     // SKG used in multiple nested facets
     //
     // we'll re-use these params in 2 requests, one will simulate a shard request
@@ -936,7 +985,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   public void doStats(Client client, ModifiableSolrParams p) throws Exception {
-
     Map<String, List<String>> fieldLists = new HashMap<>();
     fieldLists.put("noexist", getAlternatives("noexist_s"));
     fieldLists.put("cat_s", getAlternatives("cat_s"));
@@ -1165,6 +1213,31 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0}, { val:'A', count:2, n1:6.0 }]} }"
     );
 
+    // test trivial re-sorting by stats
+    // (there are other more indepth tests of this in doTestPrelimSorting, but this let's us sanity check
+    // small responses with multiple templatized params of diff real types)
+    client.testJQ(params(p, "q", "*:*", "json.facet" // num_d
+                         , "{f1:{terms:{${terms} field:'${cat_s}', "
+                         + "     prelim_sort:'count desc', sort:'n1 desc', facet:{n1:'sum(${num_d})'}  }},"
+                         + " f2:{terms:{${terms} field:'${cat_s}', "
+                         + "     prelim_sort:'count asc', sort:'n1 asc', facet:{n1:'sum(${num_d})'}  }} }"
+                         )
+                  , "facets=={ 'count':6 "
+                  + ", f1:{  'buckets':[{ val:'A', count:2, n1:6.0 }, { val:'B', count:3, n1:-3.0}]}"
+                  + ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0}, { val:'A', count:2, n1:6.0 }]} }"
+    );
+    client.testJQ(params(p, "q", "*:*", "json.facet" // num_i
+                         , "{f1:{terms:{${terms} field:'${cat_s}', "
+                         + "     prelim_sort:'count desc', sort:'n1 desc', facet:{n1:'sum(${num_i})'}  }},"
+                         + " f2:{terms:{${terms} field:'${cat_s}', "
+                         + "     prelim_sort:'count asc', sort:'n1 asc', facet:{n1:'sum(${num_i})'}  }} }"
+                         )
+                  , "facets=={ 'count':6 "
+                  + ", f1:{  'buckets':[{ val:'A', count:2, n1:5.0 }, { val:'B', count:3, n1:-3.0}]}"
+                  + ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0}, { val:'A', count:2, n1:5.0 }]} }"
+    );
+
+    
     // test sorting by other stats and more than one facet
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'sum(${num_d})', n2:'avg(${num_d})'}  }}" +
@@ -2193,10 +2266,390 @@ public class TestJsonFacets extends SolrTestCaseHS {
       long refineParses = DebugAgg.parses.get() - startParses;
       assertEquals(noRefineParses, refineParses);
     }
-
-
   }
 
+  public void testPrelimSortingSingleNode() throws Exception {
+    doTestPrelimSortingSingleNode(false, false);
+  }
+  
+  public void testPrelimSortingSingleNodeExtraStat() throws Exception {
+    doTestPrelimSortingSingleNode(true, false);
+  }
+  
+  public void testPrelimSortingSingleNodeExtraFacet() throws Exception {
+    doTestPrelimSortingSingleNode(false, true);
+  }
+  
+  public void testPrelimSortingSingleNodeExtraStatAndFacet() throws Exception {
+    doTestPrelimSortingSingleNode(true, true);
+  }
+  
+  /** @see #doTestPrelimSorting */
+  public void doTestPrelimSortingSingleNode(final boolean extraAgg, final boolean extraSubFacet) throws Exception {
+    // we're not using Client.localClient because it doesn't provide a SolrClient to
+    // use in doTestPrelimSorting -- so instead we make a single node, and don't use any shards param...
+    final SolrInstances nodes = new SolrInstances(1, "solrconfig-tlog.xml", "schema_latest.xml");
+    try {
+      final Client client = nodes.getClient(random().nextInt());
+      client.queryDefaults().set("debugQuery", Boolean.toString(random().nextBoolean()) );
+      doTestPrelimSorting(client, extraAgg, extraSubFacet);
+    } finally {
+      nodes.stop();
+    }
+  }
+  
+  public void testPrelimSortingDistrib() throws Exception {
+    doTestPrelimSortingDistrib(false, false);
+  }
+  
+  public void testPrelimSortingDistribExtraStat() throws Exception {
+    doTestPrelimSortingDistrib(true, false);
+  }
+  
+  public void testPrelimSortingDistribExtraFacet() throws Exception {
+    doTestPrelimSortingDistrib(false, true);
+  }
+  
+  public void testPrelimSortingDistribExtraStatAndFacet() throws Exception {
+    doTestPrelimSortingDistrib(true, true);
+  }
+
+  /** @see #doTestPrelimSorting */
+  public void doTestPrelimSortingDistrib(final boolean extraAgg, final boolean extraSubFacet) throws Exception {
+    // we only use 2 shards, but we also want to to sanity check code paths if one (additional) shard is empty
+    final int totalShards = random().nextBoolean() ? 2 : 3;
+    final SolrInstances nodes = new SolrInstances(totalShards, "solrconfig-tlog.xml", "schema_latest.xml");
+    try {
+      final Client client = nodes.getClient(random().nextInt());
+      client.queryDefaults().set( "shards", nodes.getShards(),
+                                  "debugQuery", Boolean.toString(random().nextBoolean()) );
+      doTestPrelimSorting(client, extraAgg, extraSubFacet);
+    } finally {
+      nodes.stop();
+    }
+  }
+  
+  /**
+   * Helper method that indexes a fixed set of docs to exactly <em>two</em> of the SolrClients 
+   * involved in the current Client such that each shard is identical for the purposes of simplified 
+   * doc/facet counting/assertions -- if there is only one SolrClient (Client.local) then it sends that 
+   * single shard twice as many docs so the counts/assertions will be consistent.
+   *
+   * Note: this test doesn't demonstrate practical uses of prelim_sort.
+   * The scenerios it tests are actualy fairly absurd, but help to ensure that edge cases are covered.
+   *
+   * @param client client to use -- may be local or multishard
+   * @param extraAgg if an extra aggregation function should be included, this hits slightly diff code paths
+   * @param extraSubFacet if an extra sub facet should be included, this hits slightly diff code paths
+   */
+  public void doTestPrelimSorting(final Client client,
+                                  final boolean extraAgg,
+                                  final boolean extraSubFacet) throws Exception {
+    
+    client.deleteByQuery("*:*", null);
+    
+    List<SolrClient> clients = client.getClientProvider().all();
+    
+    // carefully craft two balanced shards (assuming we have at least two) and leave any other shards
+    // empty to help check the code paths of some shards returning no buckets.
+    //
+    // if we are in a single node sitaution, these clients will be the same, and we'll have the same
+    // total docs in our collection, but the numShardsWithData will be diff
+    // (which will affect some assertions)
+    final SolrClient shardA = clients.get(0);
+    final SolrClient shardB = clients.get(clients.size()-1);
+    final int numShardsWithData = (shardA == shardB) ? 1 : 2;
+
+    // for simplicity, each foo_s "term" exists on each shard in the same number of docs as it's numeric 
+    // value (so count should be double the term) and bar_i is always 1 per doc (so sum(bar_i)
+    // should always be the same as count)
+    int id = 0;
+    for (int i = 1; i <= 20; i++) {
+      for (int j = 1; j <= i; j++) {
+        shardA.add(new SolrInputDocument("id", ""+(++id), "foo_s", "foo_" + i, "bar_i", "1"));
+        shardB.add(new SolrInputDocument("id", ""+(++id), "foo_s", "foo_" + i, "bar_i", "1"));
+      }
+    }
+    assertEquals(420, id); // sanity check
+    client.commit();
+    DebugAgg.Acc.collectDocs.set(0);
+    DebugAgg.Acc.collectDocSets.set(0);
+
+    // NOTE: sorting by index can cause some optimizations when using type=enum|stream
+    // that cause our stat to be collected differently, so we have to account for that when
+    // looking at DebugAdd collect stats if/when the test framework picks those
+    // ...BUT... this only affects cloud, for single node prelim_sort overrides streaming
+    final boolean indexSortDebugAggFudge = ( 1 < numShardsWithData ) &&
+      (FacetField.FacetMethod.DEFAULT_METHOD.equals(FacetField.FacetMethod.STREAM) ||
+       FacetField.FacetMethod.DEFAULT_METHOD.equals(FacetField.FacetMethod.ENUM));
+    
+    
+    final String common = "refine:true, type:field, field:'foo_s', facet: { "
+      + "x: 'debug(wrap,sum(bar_i))' "
+      + (extraAgg ? ", y:'min(bar_i)'" : "")
+      + (extraSubFacet ? ", z:{type:query, q:'bar_i:0'}" : "")
+      + "}";
+    final String yz = (extraAgg ? "y:1, " : "") + (extraSubFacet ? "z:{count:0}, " : "");
+    
+    // really basic: top 5 by (prelim_sort) count, (re)sorted by a stat
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet"
+                         , "{ foo_a:{ "+ common+", limit:5, overrequest:0, "
+                         + "          prelim_sort:'count desc', sort:'x asc' }"
+                         + "  foo_b:{ "+ common+", limit:5, overrequest:0, "
+                         + "          prelim_sort:'count asc', sort:'x desc' } }")
+                  , "facets=={ 'count':420, "
+                  + "  'foo_a':{ 'buckets':[" 
+                  + "    { val:foo_16, count:32, " + yz + "x:32.0},"
+                  + "    { val:foo_17, count:34, " + yz + "x:34.0},"
+                  + "    { val:foo_18, count:36, " + yz + "x:36.0},"
+                  + "    { val:foo_19, count:38, " + yz + "x:38.0},"
+                  + "    { val:foo_20, count:40, " + yz + "x:40.0},"
+                  + "] },"
+                  + "  'foo_b':{ 'buckets':[" 
+                  + "    { val:foo_5, count:10, " + yz + "x:10.0},"
+                  + "    { val:foo_4, count:8,  " + yz + "x:8.0},"
+                  + "    { val:foo_3, count:6,  " + yz + "x:6.0},"
+                  + "    { val:foo_2, count:4,  " + yz + "x:4.0},"
+                  + "    { val:foo_1, count:2,  " + yz + "x:2.0},"
+                  + "] },"
+                  + "}"
+                  );
+    // (re)sorting should prevent 'sum(bar_i)' from being computed for every doc
+    // only the choosen buckets should be collected (as a set) once per node...
+    assertEqualsAndReset(0, DebugAgg.Acc.collectDocs);
+    // 2 facets, 5 bucket, on each shard
+    assertEqualsAndReset(numShardsWithData * 2 * 5, DebugAgg.Acc.collectDocSets);
+
+    { // same really basic top 5 by (prelim_sort) count, (re)sorted by a stat -- w/allBuckets:true
+      // check code paths with and w/o allBuckets
+      // NOTE: allBuckets includes stats, but not other sub-facets...
+      final String aout = "allBuckets:{ count:420, "+ (extraAgg ? "y:1, " : "") + "x:420.0 }";
+      client.testJQ(params("q", "*:*", "rows", "0", "json.facet"
+                           , "{ foo_a:{ " + common+", allBuckets:true, limit:5, overrequest:0, "
+                           + "          prelim_sort:'count desc', sort:'x asc' }"
+                           + "  foo_b:{ " + common+", allBuckets:true, limit:5, overrequest:0, "
+                           + "          prelim_sort:'count asc', sort:'x desc' } }")
+                    , "facets=={ 'count':420, "
+                    + "  'foo_a':{ " + aout + " 'buckets':[" 
+                    + "    { val:foo_16, count:32, " + yz + "x:32.0},"
+                    + "    { val:foo_17, count:34, " + yz + "x:34.0},"
+                    + "    { val:foo_18, count:36, " + yz + "x:36.0},"
+                    + "    { val:foo_19, count:38, " + yz + "x:38.0},"
+                    + "    { val:foo_20, count:40, " + yz + "x:40.0},"
+                    + "] },"
+                    + "  'foo_b':{ " + aout + " 'buckets':[" 
+                    + "    { val:foo_5, count:10, " + yz + "x:10.0},"
+                    + "    { val:foo_4, count:8,  " + yz + "x:8.0},"
+                    + "    { val:foo_3, count:6,  " + yz + "x:6.0},"
+                    + "    { val:foo_2, count:4,  " + yz + "x:4.0},"
+                    + "    { val:foo_1, count:2,  " + yz + "x:2.0},"
+                    + "] },"
+                    + "}"
+                    );
+      // because of allBuckets, we collect every doc on everyshard (x2 facets) in a single "all" slot...
+      assertEqualsAndReset(2 * 420, DebugAgg.Acc.collectDocs);
+      // ... in addition to collecting each of the choosen buckets (as sets) once per node...
+      // 2 facets, 5 bucket, on each shard
+      assertEqualsAndReset(numShardsWithData * 2 * 5, DebugAgg.Acc.collectDocSets);
+    }
+    
+    // pagination (with offset) should happen against the re-sorted list (up to the effective limit)
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet"
+                         , "{ foo_a:{ "+common+", offset:2, limit:3, overrequest:0, "
+                         + "          prelim_sort:'count desc', sort:'x asc' }"
+                         + "  foo_b:{ "+common+", offset:2, limit:3, overrequest:0, "
+                         + "          prelim_sort:'count asc', sort:'x desc' } }")
+                  , "facets=={ 'count':420, "
+                  + "  'foo_a':{ 'buckets':[" 
+                  + "    { val:foo_18, count:36, " + yz + "x:36.0},"
+                  + "    { val:foo_19, count:38, " + yz + "x:38.0},"
+                  + "    { val:foo_20, count:40, " + yz + "x:40.0},"
+                  + "] },"
+                  + "  'foo_b':{ 'buckets':[" 
+                  + "    { val:foo_3, count:6,  " + yz + "x:6.0},"
+                  + "    { val:foo_2, count:4,  " + yz + "x:4.0},"
+                  + "    { val:foo_1, count:2,  " + yz + "x:2.0},"
+                  + "] },"
+                  + "}"
+                  );
+    assertEqualsAndReset(0, DebugAgg.Acc.collectDocs);
+    // 2 facets, 5 buckets (including offset), on each shard
+    assertEqualsAndReset(numShardsWithData * 2 * 5, DebugAgg.Acc.collectDocSets);
+    
+    // when overrequesting is used, the full list of candidate buckets should be considered
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet"
+                         , "{ foo_a:{ "+common+", limit:5, overrequest:5, "
+                         + "          prelim_sort:'count desc', sort:'x asc' }"
+                         + "  foo_b:{ "+common+", limit:5, overrequest:5, "
+                         + "          prelim_sort:'count asc', sort:'x desc' } }")
+                  , "facets=={ 'count':420, "
+                  + "  'foo_a':{ 'buckets':[" 
+                  + "    { val:foo_11, count:22, " + yz + "x:22.0},"
+                  + "    { val:foo_12, count:24, " + yz + "x:24.0},"
+                  + "    { val:foo_13, count:26, " + yz + "x:26.0},"
+                  + "    { val:foo_14, count:28, " + yz + "x:28.0},"
+                  + "    { val:foo_15, count:30, " + yz + "x:30.0},"
+                  + "] },"
+                  + "  'foo_b':{ 'buckets':[" 
+                  + "    { val:foo_10, count:20, " + yz + "x:20.0},"
+                  + "    { val:foo_9, count:18,  " + yz + "x:18.0},"
+                  + "    { val:foo_8, count:16,  " + yz + "x:16.0},"
+                  + "    { val:foo_7, count:14,  " + yz + "x:14.0},"
+                  + "    { val:foo_6, count:12,  " + yz + "x:12.0},"
+                  + "] },"
+                  + "}"
+                  );
+    assertEqualsAndReset(0, DebugAgg.Acc.collectDocs);
+    // 2 facets, 10 buckets (including overrequest), on each shard
+    assertEqualsAndReset(numShardsWithData * 2 * 10, DebugAgg.Acc.collectDocSets);
+
+    { // for an (effectively) unlimited facet, then from the black box perspective of the client,
+      // preliminary sorting should be completely ignored...
+      final StringBuilder expected = new StringBuilder("facets=={ 'count':420, 'foo_a':{ 'buckets':[\n");
+      for (int i = 20; 0 < i; i--) {
+        final int x = i * 2;
+        expected.append("{ val:foo_"+i+", count:"+x+", " + yz + "x:"+x+".0},\n");
+      }
+      expected.append("] } }");
+      for (int limit : Arrays.asList(-1, 100000)) {
+        for (String sortOpts : Arrays.asList("sort:'x desc'",
+                                             "prelim_sort:'count asc', sort:'x desc'",
+                                             "prelim_sort:'index asc', sort:'x desc'")) {
+          final String snippet = "limit: " + limit + ", " + sortOpts;
+          client.testJQ(params("q", "*:*", "rows", "0", "json.facet"
+                               , "{ foo_a:{ "+common+", " + snippet + "}}")
+                        , expected.toString());
+
+          // the only difference from a white box perspective, is when/if we are 
+          // optimized to use the sort SlotAcc during collection instead of the prelim_sort SlotAcc..
+          // (ie: sub facet preventing single pass (re)sort in single node mode)
+          if (((0 < limit || extraSubFacet) && snippet.contains("prelim_sort")) &&
+              ! (indexSortDebugAggFudge && snippet.contains("index asc"))) {
+            // by-pass single pass collection, do everything as sets...
+            assertEqualsAndReset(snippet, numShardsWithData * 20, DebugAgg.Acc.collectDocSets);
+            assertEqualsAndReset(snippet, 0, DebugAgg.Acc.collectDocs);
+          } else { // simple sort on x, or optimized single pass (re)sort, or indexSortDebugAggFudge
+            // no sets should have been (post) collected for our stat
+            assertEqualsAndReset(snippet, 0, DebugAgg.Acc.collectDocSets);
+            // every doc should be collected...
+            assertEqualsAndReset(snippet, 420, DebugAgg.Acc.collectDocs);
+          }
+        }
+      }
+    }
+
+    // test all permutations of (prelim_sort | sort) on (index | count | stat) since there are
+    // custom sort codepaths for index & count that work differnetly then general stats
+    //
+    // NOTE: there's very little value in re-sort by count/index after prelim_sort on something more complex,
+    // typically better to just ignore the prelim_sort, but we're testing it for completeness
+    // (and because you *might* want to prelim_sort by some function, for the purpose of "sampling" the
+    // top results and then (re)sorting by count/index)
+    for (String numSort : Arrays.asList("count", "x")) { // equivilent ordering
+      client.testJQ(params("q", "*:*", "rows", "0", "json.facet"
+                           , "{ foo_a:{ "+common+", limit:10, overrequest:0, "
+                           + "          prelim_sort:'"+numSort+" asc', sort:'index desc' }"
+                           + "  foo_b:{ "+common+", limit:10, overrequest:0, "
+                           + "          prelim_sort:'index asc', sort:'"+numSort+" desc' } }")
+                    , "facets=={ 'count':420, "
+                    + "  'foo_a':{ 'buckets':[" 
+                    + "    { val:foo_9,  count:18, " + yz + "x:18.0},"
+                    + "    { val:foo_8,  count:16, " + yz + "x:16.0},"
+                    + "    { val:foo_7,  count:14, " + yz + "x:14.0},"
+                    + "    { val:foo_6,  count:12, " + yz + "x:12.0},"
+                    + "    { val:foo_5,  count:10, " + yz + "x:10.0},"
+                    + "    { val:foo_4,  count:8,  " + yz + "x:8.0},"
+                    + "    { val:foo_3,  count:6,  " + yz + "x:6.0},"
+                    + "    { val:foo_2,  count:4,  " + yz + "x:4.0},"
+                    + "    { val:foo_10, count:20, " + yz + "x:20.0},"
+                    + "    { val:foo_1,  count:2,  " + yz + "x:2.0},"
+                    + "] },"
+                    + "  'foo_b':{ 'buckets':[" 
+                    + "    { val:foo_18, count:36, " + yz + "x:36.0},"
+                    + "    { val:foo_17, count:34, " + yz + "x:34.0},"
+                    + "    { val:foo_16, count:32, " + yz + "x:32.0},"
+                    + "    { val:foo_15, count:30, " + yz + "x:30.0},"
+                    + "    { val:foo_14, count:28, " + yz + "x:28.0},"
+                    + "    { val:foo_13, count:26, " + yz + "x:26.0},"
+                    + "    { val:foo_12, count:24, " + yz + "x:24.0},"
+                    + "    { val:foo_11, count:22, " + yz + "x:22.0},"
+                    + "    { val:foo_10, count:20, " + yz + "x:20.0},"
+                    + "    { val:foo_1,  count:2,  " + yz + "x:2.0},"
+                    + "] },"
+                    + "}"
+                    );
+      // since these behave differently, defer DebugAgg counter checks until all are done...
+    }
+    // These 3 permutations defer the compuation of x as docsets,
+    // so it's 3 x (10 buckets on each shard) (but 0 direct docs)
+    //      prelim_sort:count, sort:index
+    //      prelim_sort:index, sort:x
+    //      prelim_sort:index, sort:count
+    // ...except when streaming, prelim_sort:index does no docsets.
+    assertEqualsAndReset((indexSortDebugAggFudge ? 1 : 3) * numShardsWithData * 10,
+                         DebugAgg.Acc.collectDocSets);
+    // This is the only situation that should (always) result in every doc being collected (but 0 docsets)...
+    //      prelim_sort:x,     sort:index
+    // ...but the (2) prelim_sort:index streaming situations above will also cause all the docs in the first
+    // 10+1 buckets to be collected (enum checks limit+1 to know if there are "more"...
+    assertEqualsAndReset(420 + (indexSortDebugAggFudge ?
+                                2 * numShardsWithData * (1+10+11+12+13+14+15+16+17+18+19) : 0),
+                         DebugAgg.Acc.collectDocs);
+
+    // sanity check of prelim_sorting in a sub facet
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet"
+                         , "{ bar:{ type:query, query:'foo_s:[foo_10 TO foo_19]', facet: {"
+                         + "        foo:{ "+ common+", limit:5, overrequest:0, "
+                         + "              prelim_sort:'count desc', sort:'x asc' } } } }")
+                  , "facets=={ 'count':420, "
+                  + " 'bar':{ 'count':290, "
+                  + "    'foo':{ 'buckets':[" 
+                  + "      { val:foo_15, count:30, " + yz + "x:30.0},"
+                  + "      { val:foo_16, count:32, " + yz + "x:32.0},"
+                  + "      { val:foo_17, count:34, " + yz + "x:34.0},"
+                  + "      { val:foo_18, count:36, " + yz + "x:36.0},"
+                  + "      { val:foo_19, count:38, " + yz + "x:38.0},"
+                  + "    ] },"
+                  + "  },"
+                  + "}"
+                  );
+    // the prelim_sort should prevent 'sum(bar_i)' from being computed for every doc
+    // only the choosen buckets should be collected (as a set) once per node...
+    assertEqualsAndReset(0, DebugAgg.Acc.collectDocs);
+    // 5 bucket, on each shard
+    assertEqualsAndReset(numShardsWithData * 5, DebugAgg.Acc.collectDocSets);
+
+    { // sanity check how defered stats are handled
+      
+      // here we'll prelim_sort & sort on things that are both "not x" and using the debug() counters
+      // (wrapping x) to assert that 'x' is correctly defered and only collected for the final top buckets
+      final List<String> sorts = new ArrayList<String>(Arrays.asList("index asc", "count asc"));
+      if (extraAgg) {
+        sorts.add("y asc"); // same for every bucket, but index order tie breaker should kick in
+      }
+      for (String s : sorts) {
+        client.testJQ(params("q", "*:*", "rows", "0", "json.facet"
+                             , "{ foo:{ "+ common+", limit:5, overrequest:0, "
+                             + "          prelim_sort:'count desc', sort:'"+s+"' } }")
+                      , "facets=={ 'count':420, "
+                      + "  'foo':{ 'buckets':[" 
+                      + "    { val:foo_16, count:32, " + yz + "x:32.0},"
+                      + "    { val:foo_17, count:34, " + yz + "x:34.0},"
+                      + "    { val:foo_18, count:36, " + yz + "x:36.0},"
+                      + "    { val:foo_19, count:38, " + yz + "x:38.0},"
+                      + "    { val:foo_20, count:40, " + yz + "x:40.0},"
+                      + "] } }"
+                      );
+        // Neither prelim_sort nor sort should need 'sum(bar_i)' to be computed for every doc
+        // only the choosen buckets should be collected (as a set) once per node...
+        assertEqualsAndReset(0, DebugAgg.Acc.collectDocs);
+        // 5 bucket, on each shard
+        assertEqualsAndReset(numShardsWithData * 5, DebugAgg.Acc.collectDocSets);
+      }
+    }
+  }
+
+  
   @Test
   public void testOverrequest() throws Exception {
     initServers();
@@ -2796,4 +3249,16 @@ public class TestJsonFacets extends SolrTestCaseHS {
     hll.addRaw(987654321);
   }
 
+
+  /** atomicly resets the acctual AtomicLong value matches the expected and resets it to  0 */
+  private static final void assertEqualsAndReset(String msg, long expected, AtomicLong actual) {
+    final long current = actual.getAndSet(0);
+    assertEquals(msg, expected, current);
+  }
+  /** atomicly resets the acctual AtomicLong value matches the expected and resets it to  0 */
+  private static final void assertEqualsAndReset(long expected, AtomicLong actual) {
+    final long current = actual.getAndSet(0);
+    assertEquals(expected, current);
+  }
+  
 }

@@ -46,7 +46,6 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -82,8 +81,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+    cluster.waitForActiveCollection(collection, 2, 2);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }
@@ -224,6 +222,66 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrClientCache.close();
     }
   }
+
+  @Test
+  public void testSearchFacadeStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+
+    try {
+      StringBuilder buf = new StringBuilder();
+      for (String shardUrl : shardUrls) {
+        if (buf.length() > 0) {
+          buf.append(",");
+        }
+        buf.append(shardUrl);
+      }
+
+      ModifiableSolrParams solrParams = new ModifiableSolrParams();
+      solrParams.add("qt", "/stream");
+      solrParams.add("expr", "sort(search("+COLLECTIONORALIAS+"), by=\"a_i asc\")");
+      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      solrStream.setStreamContext(streamContext);
+      tuples = getTuples(solrStream);
+      assert (tuples.size() == 5);
+      assertOrder(tuples, 0, 1, 2, 3, 4);
+      assertLong(tuples.get(0), "a_i", 0);
+      assertDouble(tuples.get(0), "a_f", 0);
+      assertString(tuples.get(0), "a_s", "hello0");
+
+      assertLong(tuples.get(1), "a_i", 1);
+      assertDouble(tuples.get(1), "a_f", 1);
+      assertString(tuples.get(1), "a_s", "hello1");
+
+      assertLong(tuples.get(2), "a_i", 2);
+      assertDouble(tuples.get(2), "a_f", 0);
+      assertString(tuples.get(2), "a_s", "hello2");
+
+      assertLong(tuples.get(3), "a_i", 3);
+      assertDouble(tuples.get(3), "a_f", 3);
+      assertString(tuples.get(3), "a_s", "hello3");
+
+      assertLong(tuples.get(4), "a_i", 4);
+      assertDouble(tuples.get(4), "a_f", 4);
+      assertString(tuples.get(4), "a_s", "hello4");
+
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
 
   @Test
   public void testSqlStream() throws Exception {
@@ -2224,8 +2282,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Assume.assumeTrue(!useAlias);
 
     CollectionAdminRequest.createCollection("destinationCollection", "ml", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish("destinationCollection", cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+    cluster.waitForActiveCollection("destinationCollection", 2, 2);
 
     UpdateRequest updateRequest = new UpdateRequest();
     for (int i = 0; i < 5000; i+=2) {
@@ -2346,8 +2403,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Assume.assumeTrue(!useAlias);
 
     CollectionAdminRequest.createCollection("destinationCollection", "ml", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish("destinationCollection", cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+    cluster.waitForActiveCollection("destinationCollection", 2, 2);
 
     UpdateRequest updateRequest = new UpdateRequest();
     for (int i = 0; i < 5000; i+=2) {
@@ -2724,6 +2780,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         (null != expected && null == actual) ||
         (null != expected && !expected.equals(actual))){
       throw new Exception("Longs not equal:"+expected+" : "+actual);
+    }
+
+    return true;
+  }
+
+  public boolean assertDouble(Tuple tuple, String fieldName, double d) throws Exception {
+    double dv = tuple.getDouble(fieldName);
+    if(dv != d) {
+      throw new Exception("Doubles not equal:"+d+" : "+dv);
     }
 
     return true;

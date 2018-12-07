@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -107,6 +108,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028")
   public void testCreateCollectionAddReplica() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
     String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode();
@@ -120,18 +122,20 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
         .setPolicy("c1")
         .process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", collectionName,
+    CloudTestUtils.waitForState(cluster, collectionName, 120, TimeUnit.SECONDS,
         CloudTestUtils.clusterShape(1, 1, false, true));
 
     getCollectionState(collectionName).forEachReplica((s, replica) -> assertEquals(nodeId, replica.getNodeName()));
 
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1").process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timed out waiting to see 2 replicas for collection: " + collectionName,
-        collectionName, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 2);
+    CloudTestUtils.waitForState(cluster,
+        collectionName, 120l, TimeUnit.SECONDS,
+        (liveNodes, collectionState) -> collectionState.getReplicas().size() == 2);
 
     getCollectionState(collectionName).forEachReplica((s, replica) -> assertEquals(nodeId, replica.getNodeName()));
   }
-
+  
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testCreateCollectionSplitShard() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
     String firstNode = cluster.getSimClusterStateProvider().simGetRandomNode();

@@ -310,7 +310,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
 
       if (!schemaField.hasDocValues()) {
-        throw new IOException(field + " must have DocValues to use this feature.");
+        throw new IOException(schemaField + " must have DocValues to use this feature.");
       }
 
       boolean multiValued = schemaField.multiValued();

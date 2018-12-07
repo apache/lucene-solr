@@ -33,6 +33,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -56,9 +57,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+
   }
 
   @Before
@@ -66,6 +65,14 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     actionConstructorCalled = new AtomicBoolean(false);
     actionInitCalled = new AtomicBoolean(false);
     actionCloseCalled = new AtomicBoolean(false);
+    configureCluster(1)
+    .addConfig("conf", configset("cloud-minimal"))
+    .configure();
+  }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
@@ -82,6 +89,9 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
 
       JettySolrRunner newNode1 = cluster.startJettySolrRunner();
       JettySolrRunner newNode2 = cluster.startJettySolrRunner();
+      
+      cluster.waitForAllNodes(30);
+      
       AtomicBoolean fired = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       trigger.setProcessor(event -> {
@@ -254,6 +264,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     trigger.run();
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     trigger.setProcessor(null); // the processor may get called for old nodes
     trigger.run(); // this run should detect the new node
     trigger.close(); // close the old trigger

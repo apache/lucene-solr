@@ -28,12 +28,10 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -201,17 +199,17 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
       CollectionAdminRequest.Create create = CollectionAdminRequest.createCollectionWithImplicitRouter(name,config,"a,b,c",1);
       create.setMaxShardsPerNode(1);
       response = create.process(solrCluster.getSolrClient());
+      solrCluster.waitForActiveCollection(name, 3, 3);
     } else {
       CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
       create.setMaxShardsPerNode(1);
       response = create.process(solrCluster.getSolrClient());
+      solrCluster.waitForActiveCollection(name, 2, 2);
     }
 
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
       fail("Could not create collection. Response" + response.toString());
     }
-    ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(name, zkStateReader, false, true, 100);
   }
 
   private void addDocsRandomly() throws IOException, SolrServerException {

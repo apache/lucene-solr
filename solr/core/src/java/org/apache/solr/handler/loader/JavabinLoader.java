@@ -38,7 +38,6 @@ import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -89,13 +88,6 @@ public class JavabinLoader extends ContentStreamLoader {
       @Override
       public void update(SolrInputDocument document, UpdateRequest updateRequest, Integer commitWithin, Boolean overwrite) {
         if (document == null) {
-          // Perhaps commit from the parameters
-          try {
-            RequestHandlerUtils.handleCommit(req, processor, updateRequest.getParams(), false);
-            RequestHandlerUtils.handleRollback(req, processor, updateRequest.getParams(), false);
-          } catch (IOException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR handling commit/rollback");
-          }
           return;
         }
         if (addCmd == null) {

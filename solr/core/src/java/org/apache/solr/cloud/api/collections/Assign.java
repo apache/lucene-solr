@@ -115,7 +115,7 @@ public class Assign {
       } catch (IOException | KeeperException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error inc and get counter from Zookeeper for collection:"+collection, e);
       } catch (InterruptedException e) {
-        Thread.interrupted();
+        Thread.currentThread().interrupt();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error inc and get counter from Zookeeper for collection:" + collection, e);
       }
     }
@@ -182,21 +182,34 @@ public class Assign {
     return String.format(Locale.ROOT, "%s_%s_replica_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
   }
 
-  private static int defaultCounterValue(DocCollection collection, boolean newCollection) {
+  private static int defaultCounterValue(DocCollection collection, boolean newCollection, String shard) {
     if (newCollection) return 0;
-    int defaultValue = collection.getReplicas().size();
+
+    int defaultValue;
+    if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
+      return 0;
+    } else {
+      defaultValue = collection.getReplicas().size() * 2;
+    }
+
     if (collection.getReplicationFactor() != null) {
       // numReplicas and replicationFactor * numSlices can be not equals,
       // in case of many addReplicas or deleteReplicas are executed
       defaultValue = Math.max(defaultValue,
           collection.getReplicationFactor() * collection.getSlices().size());
     }
-    return defaultValue * 20;
+    return defaultValue;
+  }
+  
+  private static int defaultCounterValue(DocCollection collection, boolean newCollection) {
+    if (newCollection) return 0;
+    int defaultValue = collection.getReplicas().size();
+    return defaultValue;
   }
 
   public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
     Slice slice = collection.getSlice(shard);
-    int defaultValue = defaultCounterValue(collection, newCollection);
+    int defaultValue = defaultCounterValue(collection, newCollection, shard);
     int replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
     String coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
     while (existCoreName(coreName, slice)) {

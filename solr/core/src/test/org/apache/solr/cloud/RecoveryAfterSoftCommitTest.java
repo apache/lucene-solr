@@ -20,6 +20,7 @@ import java.io.File;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -42,7 +43,7 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   @Override
   protected boolean useTlogReplicas() {
-    return onlyLeaderIndexes;
+    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
   }
 
   @BeforeClass
