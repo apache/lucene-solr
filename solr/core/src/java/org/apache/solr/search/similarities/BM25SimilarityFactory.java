@@ -16,23 +16,15 @@
  */
 package org.apache.solr.search.similarities;
 
-import java.text.ParseException;
-
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarity.LegacyBM25Similarity;
-import org.apache.lucene.util.Version;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * Factory for BM25. If luceneMatchVersion is &lt; 8.0.0 then
- * an instance of {@link LegacyBM25Similarity} is returned, as this uses the same formula
- * as used for BM25Similarity shipped with those versions. If luceneMatchVersion is &gt;= 8.0.0 then
- * the new {@link BM25Similarity} without (k1 + 1) in in numerator is used.
- * This is the default similarity since 8.x 
+ * Factory for BM25Similarity. This is the default similarity since 8.x.
+ * If you need the exact same formula as in 6.x and 7.x you should instead look at
+ * {@link LegacyBM25SimilarityFactory}
  * <p>
  * Parameters:
  * <ul>
@@ -50,19 +42,11 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * @lucene.experimental
  * @since 8.0.0
  */
-public class BM25SimilarityFactory extends SimilarityFactory implements SolrCoreAware {
+public class BM25SimilarityFactory extends SimilarityFactory {
   private boolean discountOverlaps;
   private float k1;
   private float b;
-  private Version coreVersion;
-  private SolrCore core;
 
-  @Override
-  public void inform(SolrCore core) {
-    this.core = core;
-    this.coreVersion = this.core.getSolrConfig().luceneMatchVersion;
-  }
-  
   @Override
   public void init(SolrParams params) {
     super.init(params);
@@ -73,15 +57,6 @@ public class BM25SimilarityFactory extends SimilarityFactory implements SolrCore
 
   @Override
   public Similarity getSimilarity() {
-    if (null == core) {
-      throw new IllegalStateException("BM25SimilarityFactory can not be used until SolrCoreAware.inform has been called");
-    }
-    if (!coreVersion.onOrAfter(Version.LUCENE_8_0_0)) {
-      LegacyBM25Similarity sim = new LegacyBM25Similarity(k1, b);
-      sim.setDiscountOverlaps(discountOverlaps);
-      return sim;
-    }
-
     BM25Similarity sim = new BM25Similarity(k1, b);
     sim.setDiscountOverlaps(discountOverlaps);
     return sim;

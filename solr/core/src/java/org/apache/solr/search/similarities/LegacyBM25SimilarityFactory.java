@@ -24,7 +24,7 @@ import org.apache.solr.schema.SimilarityFactory;
 /**
  * Factory for {@link LegacyBM25Similarity}. 
  * Use this to force explicit creation of the BM25 formula that was used by BM25Similarity before Solr/Lucene 8.0.0.
- * The {@link BM25SimilarityFactory} will also create an instance of LegacyBM25Similarity if luceneMatchVersion is &lt; 8.0.0
+ * Note that {@link SchemaSimilarityFactory} will automatically create an instance of LegacyBM25Similarity if luceneMatchVersion is &lt; 8.0.0
  * <p>
  * Parameters:
  * <ul>
