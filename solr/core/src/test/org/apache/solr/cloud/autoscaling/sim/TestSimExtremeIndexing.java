@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.Locale;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
