@@ -42,18 +42,17 @@ final class MultiSorter {
 
     SortField fields[] = sort.getSort();
     final ComparableProvider[][] comparables = new ComparableProvider[fields.length][];
-    final int[] reverseMuls = new int[fields.length];
     for(int i=0;i<fields.length;i++) {
       comparables[i] = getComparableProviders(readers, fields[i]);
-      reverseMuls[i] = fields[i].getReverse() ? -1 : 1;
     }
+
     int leafCount = readers.size();
 
     PriorityQueue<LeafAndDocID> queue = new PriorityQueue<LeafAndDocID>(leafCount) {
         @Override
         public boolean lessThan(LeafAndDocID a, LeafAndDocID b) {
           for(int i=0;i<comparables.length;i++) {
-            int cmp = reverseMuls[i] * a.values[i].compareTo(b.values[i]);
+            int cmp = a.values[i].compareTo(b.values[i]);
             if (cmp != 0) {
               return cmp < 0;
             }
@@ -147,13 +146,14 @@ final class MultiSorter {
 
   /** Returns an object for this docID whose .compareTo represents the requested {@link SortField} sort order. */
   private interface ComparableProvider {
-    Comparable getComparable(int docID) throws IOException;
+    public Comparable getComparable(int docID) throws IOException;
   }
 
   /** Returns {@code ComparableProvider}s for the provided readers to represent the requested {@link SortField} sort order. */
   private static ComparableProvider[] getComparableProviders(List<CodecReader> readers, SortField sortField) throws IOException {
 
     ComparableProvider[] providers = new ComparableProvider[readers.size()];
+    final int reverseMul = sortField.getReverse() ? -1 : 1;
     final SortField.Type sortType = Sorter.getSortFieldType(sortField);
 
     switch(sortType) {
@@ -169,9 +169,9 @@ final class MultiSorter {
         OrdinalMap ordinalMap = OrdinalMap.build(null, values, PackedInts.DEFAULT);
         final int missingOrd;
         if (sortField.getMissingValue() == SortField.STRING_LAST) {
-          missingOrd = Integer.MAX_VALUE;
+          missingOrd = sortField.getReverse() ? Integer.MIN_VALUE : Integer.MAX_VALUE;
         } else {
-          missingOrd = Integer.MIN_VALUE;
+          missingOrd = sortField.getReverse() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
         }
 
         for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
@@ -197,7 +197,7 @@ final class MultiSorter {
                 }
                 if (readerDocID == docID) {
                   // translate segment's ord to global ord space:
-                  return Math.toIntExact(globalOrds.get(readerValues.ordValue()));
+                  return reverseMul * (int) globalOrds.get(readerValues.ordValue());
                 } else {
                   return missingOrd;
                 }
@@ -238,9 +238,9 @@ final class MultiSorter {
                   readerDocID = values.advance(docID);
                 }
                 if (readerDocID == docID) {
-                  return values.longValue();
+                  return reverseMul * values.longValue();
                 } else {
-                  return missingValue;
+                  return reverseMul * missingValue;
                 }
               }
             };
@@ -279,9 +279,9 @@ final class MultiSorter {
                   readerDocID = values.advance(docID);
                 }
                 if (readerDocID == docID) {
-                  return (int) values.longValue();
+                  return reverseMul * (int) values.longValue();
                 } else {
-                  return missingValue;
+                  return reverseMul * missingValue;
                 }
               }
             };
@@ -320,9 +320,9 @@ final class MultiSorter {
                   readerDocID = values.advance(docID);
                 }
                 if (readerDocID == docID) {
-                  return Double.longBitsToDouble(values.longValue());
+                  return reverseMul * Double.longBitsToDouble(values.longValue());
                 } else {
-                  return missingValue;
+                  return reverseMul * missingValue;
                 }
               }
             };
@@ -361,9 +361,9 @@ final class MultiSorter {
                   readerDocID = values.advance(docID);
                 }
                 if (readerDocID == docID) {
-                  return Float.intBitsToFloat((int) values.longValue());
+                  return reverseMul * Float.intBitsToFloat((int) values.longValue());
                 } else {
-                  return missingValue;
+                  return reverseMul * missingValue;
                 }
               }
             };
