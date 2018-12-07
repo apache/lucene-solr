@@ -59,7 +59,7 @@ Upgrade Notes
 * SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true.  If there are unforseen highlight problems,
   this may be the culprit.
 
-* If you explicitly use BM25SimilarityFactory in your schema the absolute scoring will be lower, see SOLR-13025.
+* If you explicitly use BM25SimilarityFactory in your schema, the absolute scoring will be lower, see SOLR-13025.
   But ordering of documents will not change in the normal case. Use LegacyBM25SimilarityFactory if you need to force
   the old 6.x/7.x scoring. Note that if you have not specified any similarity in schema or use the default 
   SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected for 'luceneMatchVersion' < 8.0.0.
