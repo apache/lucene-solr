@@ -455,7 +455,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
-      // /admin/info/key and /solr/ (Admin UI) must be always open. see SOLR-9188
+      // /admin/info/key must be always open. see SOLR-9188
       // tests work only w/ getPathInfo
       //otherwise it's just enough to have getServletPath()
       String requestPath = request.getPathInfo();
@@ -466,6 +466,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           log.debug("Pass through PKI authentication endpoint");
         return true;
       }
+      // /solr/ (Admin UI) must be always open to allow displaying Admin UI with login page  
       if ("/solr/".equals(requestPath) || "/".equals(requestPath)) {
         if (log.isDebugEnabled())
           log.debug("Pass through Admin UI entry point");

@@ -320,7 +320,7 @@ solrAdminApp.config([
     }
   };
 })
-.factory('httpInterceptor', function($q, $rootScope, $timeout, $injector) {
+.factory('httpInterceptor', function($q, $rootScope, $location, $timeout, $injector) {
   var activeRequests = 0;
 
   var started = function(config) {
@@ -331,6 +331,9 @@ solrAdminApp.config([
       delete $rootScope.exceptions[config.url];
     }
     activeRequests++;
+    if (sessionStorage.getItem("auth.header")) {
+      config.headers['Authorization'] = sessionStorage.getItem("auth.header");
+    }
     config.timeout = 10000;
     return config || $q.when(config);
   };
@@ -347,6 +350,11 @@ solrAdminApp.config([
         $rootScope.connectionRecovered=false;
         $rootScope.$broadcast('connectionStatusInactive');
       },2000);
+    }
+    if (!$location.path().startsWith('/login')) {
+      sessionStorage.removeItem("http401");
+      sessionStorage.removeItem("auth.state");
+      sessionStorage.removeItem("auth.statusText");
     }
     return response || $q.when(response);
   };
@@ -366,6 +374,26 @@ solrAdminApp.config([
       var $http = $injector.get('$http');
       var result = $http(rejection.config);
       return result;
+    } else if (rejection.status === 401) {
+      // Authentication redirect
+      var headers = rejection.headers();
+      var wwwAuthHeader = headers['www-authenticate'];
+      sessionStorage.setItem("auth.wwwAuthHeader", wwwAuthHeader);
+      sessionStorage.setItem("auth.statusText", rejection.statusText);
+      sessionStorage.setItem("http401", "true");
+      sessionStorage.removeItem("auth.scheme");
+      sessionStorage.removeItem("auth.realm");
+      sessionStorage.removeItem("auth.username");
+      sessionStorage.removeItem("auth.header");
+      sessionStorage.removeItem("auth.state");
+      if ($location.path().includes('/login')) {
+        if (!sessionStorage.getItem("auth.location")) {
+          sessionStorage.setItem("auth.location", "/");
+        }
+      } else {
+        sessionStorage.setItem("auth.location", $location.path());
+        $location.path('/login');
+      }
     } else {
       $rootScope.exceptions[rejection.config.url] = rejection.data.error;
     }
@@ -374,52 +402,8 @@ solrAdminApp.config([
 
   return {request: started, response: ended, responseError: failed};
 })
-// Intercept authentication request from Solr and forward to /solr/#/login    
-.factory('authInterceptor', function($q, $rootScope, $location, $timeout, $injector) {
-  var started = function(config) {
-    if (sessionStorage.getItem("auth.header")) {
-      config.headers['Authorization'] = sessionStorage.getItem("auth.header");
-    }
-    return config || $q.when(config);
-  };
-
-  var ended = function(response) {
-    if ($location.path() !== '/login') {
-      sessionStorage.removeItem("http401");
-      sessionStorage.removeItem("auth.statusText");
-    }
-    return response || $q.when(response);
-  };
-
-  var failed = function(rejection) {
-    if (rejection.status === 401) {
-      var headers = rejection.headers();
-      var wwwAuthHeader = headers['www-authenticate'];
-      sessionStorage.setItem("auth.wwwAuthHeader", wwwAuthHeader);
-      sessionStorage.setItem("auth.statusText", rejection.statusText);
-      if ($location.path() === '/login') {
-        sessionStorage.setItem("auth.location", "/");
-      } else {
-        sessionStorage.setItem("auth.location", $location.path());
-      }
-      sessionStorage.setItem("http401", "true");
-      sessionStorage.removeItem("auth.scheme");
-      sessionStorage.removeItem("auth.realm");
-      sessionStorage.removeItem("auth.username");
-      sessionStorage.removeItem("auth.header");
-      $location.path('/login');
-      return $q.reject(rejection);
-    } else {
-      $rootScope.$broadcast('loadingStatusInactive');
-      return $q.reject(rejection);    
-    }
-  };
-
-  return {request: started, response: ended, responseError: failed};
-})
 .config(function($httpProvider) {
   $httpProvider.interceptors.push("httpInterceptor");
-  $httpProvider.interceptors.push("authInterceptor");
   // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so browser will not pop up login dialogue
   $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 })
@@ -509,7 +493,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.showCore = function(core) {
-    $location.url("/" + core.name);
+    $location.url("/" + core.name + "/core-overview");
   }
 
   $scope.showCollection = function(collection) {

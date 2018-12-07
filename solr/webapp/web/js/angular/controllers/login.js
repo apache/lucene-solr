@@ -16,34 +16,37 @@
 */
 
 solrAdminApp.controller('LoginController',
-    ['$scope', '$routeParams', '$rootScope', '$location', 'AuthenticationService', 'Constants',
-      function ($scope, $routeParams, $rootScope, $location, AuthenticationService, Constants) {
+    ['$scope', '$routeParams', '$rootScope', '$location', '$window', 'AuthenticationService', 'Constants',
+      function ($scope, $routeParams, $rootScope, $location, $window, AuthenticationService, Constants) {
         $scope.resetMenu("login", Constants.IS_ROOT_PAGE);
+        $scope.subPath = $routeParams.route;
+        $rootScope.exceptions = {};
 
         // Session variables set in app.js 401 interceptor
         var wwwAuthHeader = sessionStorage.getItem("auth.wwwAuthHeader");
-        
-        // Parse www-authenticate header
-        var wwwHeader = wwwAuthHeader.match(/(\w+)\s+(.*)/);
-        var authScheme= wwwHeader[1];
-        var authParams= www_auth_parse_params(wwwHeader[2]);
-        if (typeof authParams === 'string' || authParams instanceof String) {
-          $scope.authParamsError = authParams; 
-        } else {
-          $scope.authParamsError = null;
+        var authScheme = sessionStorage.getItem("auth.scheme");
+        if (wwwAuthHeader) {
+          // Parse www-authenticate header
+          var wwwHeader = wwwAuthHeader.match(/(\w+)\s+(.*)/);
+          authScheme = wwwHeader[1];
+          var authParams = www_auth_parse_params(wwwHeader[2]);
+          if (typeof authParams === 'string' || authParams instanceof String) {
+            $scope.authParamsError = authParams;
+          } else {
+            $scope.authParamsError = undefined;
+          }
+          var realm = authParams['realm'];
+          sessionStorage.setItem("auth.realm", realm);
+          if (authScheme === 'Basic' || authScheme === 'xBasic') {
+            authScheme = 'Basic';
+          }
+          sessionStorage.setItem("auth.scheme", authScheme);
         }
-        var realm = authParams['realm'];
-        sessionStorage.setItem("auth.realm", realm);
-        $scope.authRealm = realm;
-        if (authScheme === 'Basic' || authScheme === 'xBasic') {
-          authScheme = 'Basic';
-        }
-        var supportedSchemes = ['Basic'];
-        $scope.authSchemeSupported = supportedSchemes.includes(authScheme);
-        
-        sessionStorage.setItem("auth.scheme", authScheme);
 
+        var supportedSchemes = ['Basic', 'Bearer'];
+        $scope.authSchemeSupported = supportedSchemes.includes(authScheme);
         $scope.authScheme = sessionStorage.getItem("auth.scheme");
+        $scope.authRealm = sessionStorage.getItem("auth.realm");
         $scope.wwwAuthHeader = sessionStorage.getItem("auth.wwwAuthHeader");
         $scope.statusText = sessionStorage.getItem("auth.statusText");
         $scope.authConfig = sessionStorage.getItem("auth.config");
