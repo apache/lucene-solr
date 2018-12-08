@@ -104,7 +104,7 @@ import org.slf4j.LoggerFactory;
 
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
-public class DistributedUpdateProcessor extends UpdateRequestProcessor {
+public class DistributedUpdateProcessor extends DistributedUpdateProcessorBase {
 
   final static String PARAM_WHITELIST_CTX_KEY = DistributedUpdateProcessor.class + "PARAM_WHITELIST_CTX_KEY";
   public static final String DISTRIB_FROM_SHARD = "distrib.from.shard";
@@ -218,7 +218,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger, UpdateRequestProcessor next) {
-    super(next);
+    super(req, rsp, docMerger, next);
     this.rsp = rsp;
     this.next = next;
     this.docMerger = docMerger;
