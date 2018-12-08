@@ -251,7 +251,7 @@ public class AtomicUpdateDocumentMerger {
    *        return indicates that this update can be re-tried as a full atomic update. Returns true if the in-place update
    *        succeeds.
    */
-  public boolean doInPlaceUpdateMerge(AddUpdateCommand cmd, Set<String> updatedFields) throws IOException {
+  public MergeStatus doInPlaceUpdateMerge(AddUpdateCommand cmd, Set<String> updatedFields) throws IOException {
     SolrInputDocument inputDoc = cmd.getSolrInputDocument();
     BytesRef idBytes = cmd.getIndexedId();
 
@@ -265,7 +265,7 @@ public class AtomicUpdateDocumentMerger {
                                               
     if (oldDocument == RealTimeGetComponent.DELETED || oldDocument == null) {
       // This doc was deleted recently. In-place update cannot work, hence a full atomic update should be tried.
-      return false;
+      return MergeStatus.PROCESS_UPDATE;
     }
 
     if (oldDocument.containsKey(CommonParams.VERSION_FIELD) == false) {
@@ -301,7 +301,9 @@ public class AtomicUpdateDocumentMerger {
       }
     }
     
-    merge(inputDoc, partialDoc);
+    if (merge(inputDoc, partialDoc) == null) {
+      return MergeStatus.IGNORED_UPDATE;
+    }
 
     // Populate the id field if not already populated (this can happen since stored fields were avoided during fetch from RTGC)
     if (!partialDoc.containsKey(schema.getUniqueKeyField().getName())) {
@@ -311,7 +313,7 @@ public class AtomicUpdateDocumentMerger {
 
     cmd.prevVersion = oldVersion;
     cmd.solrDoc = partialDoc;
-    return true;
+    return MergeStatus.MERGED_UPDATE;
   }
 
   protected void doSet(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
@@ -442,5 +444,8 @@ public class AtomicUpdateDocumentMerger {
     }
     return patterns;
   }
-  
+
+  public enum MergeStatus {
+    PROCESS_UPDATE, MERGED_UPDATE, IGNORED_UPDATE
+  }
 }
