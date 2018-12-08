@@ -48,8 +48,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
-import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
+import org.apache.solr.update.processor.DistributedUpdateProcessorBase.LeaderRequestReplicationTracker;
+import org.apache.solr.update.processor.DistributedUpdateProcessorBase.RollupRequestReplicationTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

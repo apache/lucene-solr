@@ -51,7 +51,7 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.HdfsUpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.update.processor.DistributedUpdateProcessorBase.DistribPhase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;

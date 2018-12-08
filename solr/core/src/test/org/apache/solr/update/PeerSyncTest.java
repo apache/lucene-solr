@@ -36,7 +36,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.update.processor.DistributedUpdateProcessorBase.DistribPhase;
 import org.junit.Test;
 import static org.junit.internal.matchers.StringContains.containsString;
 

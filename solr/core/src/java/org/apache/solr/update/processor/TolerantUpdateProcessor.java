@@ -40,7 +40,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor.Error;
-import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.update.processor.DistributedUpdateProcessorBase.DistribPhase;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
