@@ -32,9 +32,13 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -142,6 +146,19 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    */
   public ShardHandler getShardHandler(final Http2SolrClient httpClient){
     return new HttpShardHandler(this, httpClient);
+  }
+
+  @Deprecated
+  public ShardHandler getShardHandler(final HttpClient httpClient) {
+    // a little hack for backward-compatibility when we are moving from apache http client to jetty client
+    return new HttpShardHandler(this, null) {
+      @Override
+      protected NamedList<Object> request(String url, SolrRequest req) throws IOException, SolrServerException {
+        try (SolrClient client = new HttpSolrClient.Builder(url).withHttpClient(httpClient).build()) {
+          return client.request(req);
+        }
+      }
+    };
   }
 
   @Override
