@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
@@ -899,7 +900,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         assertVersions(masterClient, slaveClient);
         
         checkForSingleIndex(masterJetty);
-        checkForSingleIndex(slaveJetty);
+        
+        if (!Constants.WINDOWS) {
+          checkForSingleIndex(slaveJetty);
+        }
         
         if (random().nextBoolean()) {
           // move the slave ahead
