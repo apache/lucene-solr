@@ -29,9 +29,9 @@ import org.apache.solr.update.UpdateCommand;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-public class DistributedStandAloneUpdateProcessor extends DistributedUpdateProcessor {
+public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProcessor {
 
-  public DistributedStandAloneUpdateProcessor(
+  public DistributedStandaloneUpdateProcessor(
       SolrQueryRequest req,
       SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger, UpdateRequestProcessor next) {
     super(req, rsp, docMerger, next);

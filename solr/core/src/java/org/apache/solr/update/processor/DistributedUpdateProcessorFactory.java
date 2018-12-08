@@ -50,15 +50,15 @@ public class DistributedUpdateProcessorFactory
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    // note: will sometimes return DURP (no overhead) instead of wrapping
     DistributedUpdateProcessor proc = null;
     CoreContainer cc = req.getCore().getCoreContainer();
     if(cc.isZooKeeperAware()) {
       proc = new DistributedZkUpdateProcessor(req, rsp, new AtomicUpdateDocumentMerger(req), cc, next);
     } else {
-      proc = new DistributedStandAloneUpdateProcessor(req, rsp, new AtomicUpdateDocumentMerger(req), next);
+      proc = new DistributedStandaloneUpdateProcessor(req, rsp, new AtomicUpdateDocumentMerger(req), next);
     }
 
+    // note: will sometimes return DURP (no overhead) instead of wrapping
     return TimeRoutedAliasUpdateProcessor.wrap(req,
         proc);
   }

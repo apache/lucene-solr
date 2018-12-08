@@ -36,7 +36,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   @Test
   public void testShouldBufferUpdate() {
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
-    DistributedUpdateProcessor processor = new DistributedStandAloneUpdateProcessor(
+    DistributedUpdateProcessor processor = new DistributedStandaloneUpdateProcessor(
         req, null, null, null);
 
     AddUpdateCommand cmd = new AddUpdateCommand(req);

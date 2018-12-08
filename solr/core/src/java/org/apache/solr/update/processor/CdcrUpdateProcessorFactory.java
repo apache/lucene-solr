@@ -38,13 +38,13 @@ public class CdcrUpdateProcessorFactory
   }
 
   @Override
-  public CdcrZookeeperZkUpdateProcessor getInstance(SolrQueryRequest req,
+  public CdcrUpdateProcessor getInstance(SolrQueryRequest req,
                                          SolrQueryResponse rsp, UpdateRequestProcessor next) {
     CoreContainer cc = req.getCore().getCoreContainer();
     if(!cc.isZooKeeperAware()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CDCR cannot be instantiated if zookeeper is not enabled");
     }
-    return new CdcrZookeeperZkUpdateProcessor(req, rsp, cc, next);
+    return new CdcrUpdateProcessor(req, rsp, cc, next);
   }
 
 }
