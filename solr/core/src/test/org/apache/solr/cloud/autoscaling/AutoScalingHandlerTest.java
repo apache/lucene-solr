@@ -792,6 +792,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6)
         .setMaxShardsPerNode(3);
     CollectionAdminResponse adminResponse = create.process(solrClient);
+    cluster.waitForActiveCollection("readApiTestViolations", 1, 6);
     assertTrue(adminResponse.isSuccess());
 
     // reset the original cluster policy
