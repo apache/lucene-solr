@@ -55,12 +55,13 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   public MultiThreadedOCPTest() {
     sliceCount = 2;
+    
+    fixShardCount(3);
   }
 
   @Test
 // commented 20-July-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
 //commented 20-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
-  @ShardsFixed(num = 3)
   public void test() throws Exception {
     testParallelCollectionAPICalls();
     testTaskExclusivity();
