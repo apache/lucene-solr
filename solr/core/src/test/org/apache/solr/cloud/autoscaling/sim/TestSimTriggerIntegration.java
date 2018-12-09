@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.cloud.autoscaling.ScheduledTriggers.DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,6 +67,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -848,7 +850,19 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     cluster.getTimeSource().sleep(5000);
     // verify that a znode does NOT exist - there's no nodeLost trigger,
     // so the new overseer cleaned up existing nodeLost markers
+    
     String pathLost = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + overseerLeader;
+    
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeout.waitFor("Path " + pathLost + " exists", () -> {
+      try {
+        return !cluster.getDistribStateManager().hasData(pathLost);
+      } catch (IOException | KeeperException | InterruptedException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    });
+
     assertFalse("Path " + pathLost + " exists", cluster.getDistribStateManager().hasData(pathLost));
 
     listener.reset();
