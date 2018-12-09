@@ -263,8 +263,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     CollectionAdminRequest.createCollection(collection, CONF_NAME, NUM_SERVERS, 1)
         .withProperty("config", "solrconfig-tlog.xml")
         .process(cloudClient);
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, zkStateReader, true, true, 330);
+    cluster.waitForActiveCollection(collection, NUM_SERVERS, NUM_SERVERS);
     assertEquals("sanity query", 0, cloudClient.query(collection, params("q","*:*")).getStatus());
   }
   
