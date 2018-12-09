@@ -542,7 +542,8 @@ final class FrozenBufferedUpdates {
                     .SingleValueNumericDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc(),
                     value.getNumericValue(0));
               } else {
-                dvUpdates = new NumericDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc());
+                dvUpdates = new NumericDocValuesFieldUpdates(delGen, updateField, value.getMinNumeric(),
+                    value.getMaxNumeric(), segState.reader.maxDoc());
               }
             } else {
               dvUpdates = new BinaryDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc());

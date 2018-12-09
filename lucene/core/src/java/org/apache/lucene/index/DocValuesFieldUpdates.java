@@ -251,7 +251,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     }
     this.type = type;
     bitsPerValue = PackedInts.bitsRequired(maxDoc - 1) + SHIFT;
-    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
+    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.DEFAULT);
   }
 
   final boolean getFinished() {

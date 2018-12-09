@@ -30,7 +30,7 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestFieldUpdatesBuffer extends LuceneTestCase {
 
-  public void testBascis() throws IOException {
+  public void testBasics() throws IOException {
     Counter counter = Counter.newCounter();
     DocValuesUpdate.NumericDocValuesUpdate update =
         new DocValuesUpdate.NumericDocValuesUpdate(new Term("id", "1"), "age", 6);
@@ -44,6 +44,8 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     buffer.addUpdate(new Term("id", "8"), 12, 16);
     assertFalse(buffer.hasSingleValue());
     assertTrue(buffer.isNumeric());
+    assertEquals(13, buffer.getMaxNumeric());
+    assertEquals(6, buffer.getMinNumeric());
     FieldUpdatesBuffer.BufferedUpdateIterator iterator = buffer.iterator();
     FieldUpdatesBuffer.BufferedUpdate value = iterator.next();
     assertNotNull(value);
@@ -217,8 +219,12 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     FieldUpdatesBuffer.BufferedUpdate value;
 
     int count = 0;
+    long min = Long.MAX_VALUE;
+    long max = Long.MIN_VALUE;
     while ((value = iterator.next()) != null) {
       long v = buffer.getNumericValue(count);
+      min = Math.min(min, v);
+      max = Math.max(max, v);
       randomUpdate = updates.get(count++);
       assertEquals(randomUpdate.term.bytes.utf8ToString(), value.termValue.utf8ToString());
       assertEquals(randomUpdate.term.field, value.termField);
@@ -232,7 +238,16 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
       }
       assertEquals(randomUpdate.docIDUpto, value.docUpTo);
     }
+    assertEquals(max, buffer.getMaxNumeric());
+    assertEquals(min, buffer.getMinNumeric());
     assertEquals(count, updates.size());
   }
 
+  public void testNoNumericValue() {
+    DocValuesUpdate.NumericDocValuesUpdate update =
+        new DocValuesUpdate.NumericDocValuesUpdate(new Term("id", "1"), "age", null);
+    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(Counter.newCounter(), update, update.docIDUpto);
+    assertEquals(0, buffer.getMinNumeric());
+    assertEquals(0, buffer.getMaxNumeric());
+  }
 }
