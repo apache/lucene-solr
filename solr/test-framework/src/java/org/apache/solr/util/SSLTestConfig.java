@@ -98,8 +98,9 @@ public class SSLTestConfig extends SSLConfig {
    */
   public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
     super(useSSL, clientAuth, null, TEST_KEYSTORE_PASSWORD, null, TEST_KEYSTORE_PASSWORD);
+
     this.checkPeerName = checkPeerName;
-    
+
     final String resourceName = checkPeerName
       ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
     trustStore = keyStore = Resource.newClassPathResource(resourceName);
