@@ -85,8 +85,8 @@ grant {
   permission javax.security.auth.PrivateCredentialPermission "sun.security.jgss.krb5.Krb5Util$KeysFromKeyTab * \"*\"", "read";
   
   permission javax.security.auth.kerberos.ServicePermission "krbtgt/EXAMPLE.COM@EXAMPLE.COM", "initiate";
-  permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "initiate";
-  permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "accept";
+  permission javax.security.auth.kerberos.ServicePermission "zookeeper/localhost@EXAMPLE.COM", "initiate";
+  permission javax.security.auth.kerberos.ServicePermission "zookeeper/localhost@EXAMPLE.COM", "accept";
   permission javax.security.auth.kerberos.ServicePermission "HTTP/127.0.0.1@EXAMPLE.COM", "initiate";
   permission javax.security.auth.kerberos.ServicePermission "HTTP/127.0.0.1@EXAMPLE.COM", "accept";
   permission javax.security.auth.kerberos.DelegationPermission "\"HTTP/127.0.0.1@EXAMPLE.COM\" \"krbtgt/EXAMPLE.COM@EXAMPLE.COM\"";
