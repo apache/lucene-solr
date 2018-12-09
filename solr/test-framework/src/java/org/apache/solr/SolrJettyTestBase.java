@@ -118,7 +118,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
   @After
-  public void afterClass() throws Exception {
+  public synchronized void afterClass() throws Exception {
     if (client != null) client.close();
     client = null;
   }
@@ -132,13 +132,11 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
 
-  public SolrClient getSolrClient() {
-    {
-      if (client == null) {
-        client = createNewSolrClient();
-      }
-      return client;
+  public synchronized SolrClient getSolrClient() {
+    if (client == null) {
+      client = createNewSolrClient();
     }
+    return client;
   }
 
   /**
