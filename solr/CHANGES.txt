@@ -25,7 +25,7 @@ Versions of Major Components
 Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
-Apache ZooKeeper 3.4.11
+Apache ZooKeeper 3.4.13
 Jetty 9.4.14.v20181114
 
 
@@ -74,7 +74,7 @@ Other Changes
   which allows easier access to the response information for the JSON faceting API. (Jason Gerlowski)
 
 * SOLR-12972: deprecate unused SolrIndexConfig.luceneVersion (Christine Poerschke)
-  
+
 * SOLR-12801: Make massive improvements to the tests. (Mark Miller)
 
 * SOLR-12923: The new AutoScaling tests are way too flaky and need special attention. (Mark Miller)
