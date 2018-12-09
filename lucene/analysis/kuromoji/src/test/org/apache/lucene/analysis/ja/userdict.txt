@@ -8,3 +8,7 @@
 # Silly entry:
 abcd,a b cd,foo1 foo2 foo3,bar
 abcdefg,ab cd efg,foo1 foo2 foo4,bar
+
+# sharp test
+テスト#テスト,テスト # テスト,テスト # テスト,カスタム名刺
+

@@ -65,7 +65,7 @@ public final class UserDictionary implements Dictionary {
     // text, segmentation, readings, POS
     while ((line = br.readLine()) != null) {
       // Remove comments
-      line = line.replaceAll("#.*$", "");
+      line = line.replaceAll("^#.*$", "");
 
       // Skip empty lines or comment lines
       if (line.trim().length() == 0) {
