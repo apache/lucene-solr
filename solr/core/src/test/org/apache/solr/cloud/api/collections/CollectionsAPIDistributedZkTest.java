@@ -474,20 +474,20 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .add("id", "7")
         .add("id", "8")
         .commit(cluster.getSolrClient(), collectionName);
+    long numFound = 0;
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
-      try {
-        long numFound = cluster.getSolrClient().query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
-        assertEquals(3, numFound);
+
+      numFound = cluster.getSolrClient().query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
+      if (numFound == 3) {
         break;
-      } catch (Exception e) {
-        // Query node can have stale clusterstate
-        log.info("Error when query " + collectionName, e);
-        Thread.sleep(500);
       }
+
+      Thread.sleep(500);
     }
+    
     if (timeOut.hasTimedOut()) {
-      fail("Timeout on query " + collectionName);
+      fail("Timeout waiting to see 3 found, instead saw " + numFound + " for collection " + collectionName);
     }
 
     checkNoTwoShardsUseTheSameIndexDir();
