@@ -46,7 +46,10 @@ Optimizations
 
 * LUCENE-8590: BufferedUpdates now uses an optimized storage for buffering docvalues updates that
   can safe up to 80% of the heap used compared to the previous implementation and uses non-object
-  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grant)
+  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grand)
+
+* LUCENE-8598: Moved to the default accepted overhead ratio for packet ints in DocValuesFieldUpdats
+  yields an up-to 4x performance improvement when applying doc values updates. (Simon Willnauer, Adrien Grand)
 
 Other
 

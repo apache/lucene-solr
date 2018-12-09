@@ -55,6 +55,8 @@ final class FieldUpdatesBuffer {
   private int[] docsUpTo;
   private long[] numericValues; // this will be null if we are buffering binaries
   private FixedBitSet hasValues;
+  private long maxNumeric = Long.MIN_VALUE;
+  private long minNumeric = Long.MAX_VALUE;
   private String[] fields;
   private final boolean isNumeric;
 
@@ -82,6 +84,7 @@ final class FieldUpdatesBuffer {
     this(bytesUsed, initialValue, docUpTo, true);
     if (initialValue.hasValue()) {
       numericValues = new long[] {initialValue.getValue()};
+      maxNumeric = minNumeric = initialValue.getValue();
     } else {
       numericValues = new long[] {0};
     }
@@ -93,6 +96,22 @@ final class FieldUpdatesBuffer {
     if (initialValue.hasValue()) {
       byteValues.append(initialValue.getValue());
     }
+  }
+
+  long getMaxNumeric() {
+    assert isNumeric;
+    if (minNumeric == Long.MAX_VALUE && maxNumeric == Long.MIN_VALUE) {
+      return 0; // we don't have any value;
+    }
+    return maxNumeric;
+  }
+
+  long getMinNumeric() {
+    assert isNumeric;
+    if (minNumeric == Long.MAX_VALUE && maxNumeric == Long.MIN_VALUE) {
+      return 0; // we don't have any value
+    }
+    return minNumeric;
   }
 
   void add(String field, int docUpTo, int ord, boolean hasValue) {
@@ -144,6 +163,8 @@ final class FieldUpdatesBuffer {
     final int ord = append(term);
     String field = term.field;
     add(field, docUpTo, ord, true);
+    minNumeric = Math.min(minNumeric, value);
+    maxNumeric = Math.max(maxNumeric, value);
     if (numericValues[0] != value || numericValues.length != 1) {
       if (numericValues.length <= ord) {
         long[] array = ArrayUtil.grow(numericValues, ord+1);
