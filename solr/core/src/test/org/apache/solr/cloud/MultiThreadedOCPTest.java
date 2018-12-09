@@ -75,7 +75,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       DistributedQueue distributedQueue = new ZkDistributedQueue(cloudClient.getZkStateReader().getZkClient(),
           "/overseer/collection-queue-work", new Stats());
       //fill the work queue with blocked tasks by adding more than the no:of parallel tasks
-      for (int i = 0; i < MAX_PARALLEL_TASKS+5; i++) {
+      for (int i = 0; i < MAX_PARALLEL_TASKS + 15; i++) {
         distributedQueue.offer(Utils.toJSON(Utils.makeMap(
             "collection", "A_COLL",
             QUEUE_OPERATION, MOCK_COLL_TASK.toLower(),
@@ -87,7 +87,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         log.info("MOCK task added {}", i);
 
       }
-      Thread.sleep(10);//wait and post the next message
+      Thread.sleep(100);//wait and post the next message
 
       //this is not going to be blocked because it operates on another collection
       distributedQueue.offer(Utils.toJSON(Utils.makeMap(
@@ -99,7 +99,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
 
       Long acoll = null, bcoll = null;
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 500; i++) {
         if (bcoll == null) {
           CollectionAdminResponse statusResponse = getStatusResponse("200", client);
           bcoll = (Long) statusResponse.getResponse().get("MOCK_FINISHED");
@@ -112,7 +112,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         Thread.sleep(100);
       }
       assertTrue(acoll != null && bcoll != null);
-      assertTrue(acoll > bcoll);
+      assertTrue("acoll: " + acoll + " bcoll: " + bcoll, acoll > bcoll);
     }
 
   }
