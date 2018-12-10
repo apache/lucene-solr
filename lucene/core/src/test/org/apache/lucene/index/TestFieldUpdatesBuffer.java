@@ -221,10 +221,9 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     int count = 0;
     long min = Long.MAX_VALUE;
     long max = Long.MIN_VALUE;
+    boolean hasAtLeastOneValue = false;
     while ((value = iterator.next()) != null) {
       long v = buffer.getNumericValue(count);
-      min = Math.min(min, v);
-      max = Math.max(max, v);
       randomUpdate = updates.get(count++);
       assertEquals(randomUpdate.term.bytes.utf8ToString(), value.termValue.utf8ToString());
       assertEquals(randomUpdate.term.field, value.termField);
@@ -232,14 +231,22 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
       if (randomUpdate.hasValue) {
         assertEquals(randomUpdate.getValue(), value.numericValue);
         assertEquals(v, value.numericValue);
+        min = Math.min(min, v);
+        max = Math.max(max, v);
+        hasAtLeastOneValue = true;
       } else {
         assertEquals(0, value.numericValue);
         assertEquals(0, v);
       }
       assertEquals(randomUpdate.docIDUpto, value.docUpTo);
     }
-    assertEquals(max, buffer.getMaxNumeric());
-    assertEquals(min, buffer.getMinNumeric());
+    if (hasAtLeastOneValue) {
+      assertEquals(max, buffer.getMaxNumeric());
+      assertEquals(min, buffer.getMinNumeric());
+    } else {
+      assertEquals(0, buffer.getMaxNumeric());
+      assertEquals(0, buffer.getMinNumeric());
+    }
     assertEquals(count, updates.size());
   }
 
