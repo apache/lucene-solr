@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

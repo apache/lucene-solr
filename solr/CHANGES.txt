@@ -70,8 +70,6 @@ New Features
 
 * SOLR-12879: MinHash query parser that builds queries providing a measure of Jaccard similarity (Andy Hind via Tommaso Teofili)
 
-* SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis (janhoy) 
-
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
 * SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis.
