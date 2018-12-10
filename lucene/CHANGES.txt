@@ -51,6 +51,9 @@ Optimizations
 * LUCENE-8598: Moved to the default accepted overhead ratio for packet ints in DocValuesFieldUpdats
   yields an up-to 4x performance improvement when applying doc values updates. (Simon Willnauer, Adrien Grand)
 
+* LUCENE-8599: Use sparse bitset to store docs in SingleValueDocValuesFieldUpdates. 
+  (Simon Willnauer, Adrien Grand)
+
 Other
 
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
